@@ -26,9 +26,9 @@ import {
   Menu,
   Row
 } from 'antd';
+import classNames from 'classnames';
 import CodeEditor from '../../special/CodeEditor';
 import styles from '../Tools.css';
-
 import '../../../staticStyles/EndpointInput.css';
 
 @observer
@@ -353,9 +353,9 @@ export default class EndpointInput extends React.Component {
     );
     return (
       <div
+        className={classNames({'cp-tool-add-endpoint': this.props.even})}
         style={{
           width: '100%',
-          backgroundColor: this.props.even ? '#fafafa' : undefined,
           padding: 5
         }}>
         <Row type="flex" align="top">
@@ -366,10 +366,16 @@ export default class EndpointInput extends React.Component {
                 disabled={this.props.disabled}
                 value={this.port}
                 onChange={this.onChangePort}
+                className={
+                  classNames(
+                    {
+                      'cp-error': this.state.validation.port
+                    }
+                  )
+                }
                 style={{
                   width: 100,
-                  margin: '0px 5px',
-                  border: this.state.validation.port ? '1px solid red' : undefined
+                  margin: '0px 5px'
                 }}
                 size="small"
               />
@@ -378,10 +384,10 @@ export default class EndpointInput extends React.Component {
               this.state.validation.port &&
               <Row
                 type="flex"
+                className="cp-error"
                 style={{
                   margin: 0,
                   padding: 0,
-                  color: 'red',
                   fontSize: 'x-small',
                   lineHeight: 'normal'
                 }}>
@@ -398,10 +404,16 @@ export default class EndpointInput extends React.Component {
                 disabled={this.props.disabled}
                 value={this.name}
                 onChange={this.onChangeName}
+                className={
+                  classNames(
+                    {
+                      'cp-error': this.state.validation.name
+                    }
+                  )
+                }
                 style={{
                   flex: 1,
-                  marginLeft: 5,
-                  border: this.state.validation.name ? '1px solid red' : undefined
+                  marginLeft: 5
                 }}
                 size="small"
               />
@@ -410,10 +422,10 @@ export default class EndpointInput extends React.Component {
               this.state.validation.name &&
               <Row
                 type="flex"
+                className="cp-error"
                 style={{
                   margin: 0,
                   padding: 0,
-                  color: 'red',
                   fontSize: 'x-small',
                   lineHeight: 'normal'
                 }}>
@@ -463,10 +475,10 @@ export default class EndpointInput extends React.Component {
           this.state.validation.additional &&
           <Row
             type="flex"
+            className="cp-error"
             style={{
               margin: 0,
               padding: 0,
-              color: 'red',
               fontSize: 'x-small',
               lineHeight: 'normal'
             }}>

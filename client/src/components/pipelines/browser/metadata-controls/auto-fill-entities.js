@@ -520,7 +520,7 @@ function AutoFillEntitiesMarker ({visible, handleSize = 10, markerSize = 5}) {
     >
       <div
         data-auto-fill-entities="true"
-        className={styles.marker}
+        className={classNames(styles.marker, 'cp-library-metadata-table-marker')}
       >
         {'\u00A0'}
       </div>

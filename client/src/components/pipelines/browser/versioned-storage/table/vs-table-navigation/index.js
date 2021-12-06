@@ -20,10 +20,8 @@ import {
   Breadcrumb
 } from 'antd';
 import classNames from 'classnames';
-import styles from './vs-table-navigation.css';
 
 class VSTableNavigation extends React.Component {
-
   get navigationParts () {
     const {path} = this.props;
     if (!path) {
@@ -58,8 +56,10 @@ class VSTableNavigation extends React.Component {
     return (
       <span
         className={classNames(
-          styles.breadcrumb,
-          {[styles.lastBreadcrumb]: lastBreadcrumb}
+          'cp-versioned-storage-breadcrumb',
+          {
+            last: lastBreadcrumb
+          }
         )}
         onClick={() => !lastBreadcrumb && this.onBreadcrumbClick(route)}
       >
@@ -73,7 +73,6 @@ class VSTableNavigation extends React.Component {
       <Breadcrumb
         itemRender={this.breadcrumbRenderer}
         routes={this.navigationParts}
-        className={styles.container}
       />
     );
   };

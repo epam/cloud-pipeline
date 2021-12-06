@@ -1,0 +1,140 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cp-panel {
+  border: 1px solid @panel-border-color;
+  background-color: @panel-background-color;
+  color: @application-color;
+}
+
+.cp-panel.cp-panel-transparent {
+  background-color: transparent;
+  border-color: transparent;
+}
+
+.cp-panel.cp-panel-transparent:hover {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.cp-panel.cp-panel-no-hover:hover {
+  box-shadow: none;
+}
+
+.cp-panel.cp-panel-borderless,
+.cp-panel.cp-panel-borderless:hover {
+  border-color: transparent;
+}
+
+.cp-panel .cp-panel-card {
+  border: 1px solid @card-border-color;
+  background-color: @card-background-color;
+  margin: 2px;
+}
+
+.cp-panel .cp-panel-card.cp-launch-vs-tool {
+  margin: 2px 0;
+}
+
+.cp-panel .cp-panel-card.cp-hot-node-pool {
+  margin: 10px 0;
+}
+
+.cp-panel .cp-panel-card.cp-card-service {
+  border: 1px solid @card-service-border-color;
+  background-color: @card-service-background-color;
+}
+
+.cp-panel .cp-panel-card:hover {
+  box-shadow: 0 1px 6px @card-hovered-shadow-color;
+  border-color: @card-hovered-shadow-color;
+}
+
+.cp-panel .cp-panel-card.cp-card-service:hover {
+  box-shadow: 0 1px 6px @card-service-hovered-shadow-color;
+  border-color: @card-service-hovered-shadow-color;
+}
+
+.cp-panel .cp-panel-card .cp-panel-card-title,
+.cp-panel .cp-panel-card .cp-panel-card-text {
+  color: @application-color;
+}
+
+.cp-panel .cp-panel-card .cp-panel-card-sub-text {
+  color: @application-color-faded;
+}
+
+.cp-panel .cp-panel-card .cp-panel-card-title {
+  font-weight: bold;
+}
+
+.cp-panel .cp-panel-card .cp-card-action-button {
+  color: @primary-color;
+}
+
+.cp-panel .cp-panel-card .cp-card-action-button.cp-danger {
+  color: @btn-danger-color;
+}
+
+.cp-panel .cp-panel-card .cp-panel-card-actions .cp-panel-card-actions-background {
+  background-color: @card-background-color;
+}
+
+.cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions .cp-panel-card-actions-background {
+  background-color: @card-service-background-color;
+}
+
+.cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions:hover .cp-panel-card-actions-background,
+.cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
+  background-color: @card-service-actions-active-background;
+}
+
+.cp-panel .cp-panel-card .cp-panel-card-actions:hover .cp-panel-card-actions-background,
+.cp-panel .cp-panel-card .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
+  background-color: @card-actions-active-background;
+}
+
+.cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions:hover .cp-panel-card-actions-background,
+.cp-panel .cp-panel-card.cp-card-service .cp-panel-card-actions.hovered .cp-panel-card-actions-background {
+  background-color: @card-service-actions-active-background;
+}
+
+.cp-panel .cp-panel-card.cp-card-no-hover:hover,
+.cp-panel .cp-panel-card.cp-card-service.cp-card-no-hover:hover {
+  box-shadow: none;
+}
+
+.cp-content-panel {
+  background-color: @card-background-color;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+
+.cp-content-panel-header {
+  background-color: @card-header-background;
+  border-color: @card-border-color;
+  color: @application-color;
+}
+
+.cp-resizable-panel-anchor {
+  background-color: @card-header-background;
+}
+
+.cp-card-border {
+  border: 1px solid @card-border-color;
+}

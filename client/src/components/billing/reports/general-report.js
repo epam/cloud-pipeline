@@ -830,7 +830,7 @@ function DefaultReport (props) {
   return GeneralReport(props);
 }
 
-export default inject('billingCenters', 'users', 'preferences')(
+export default inject('billingCenters', 'users', 'preferences', 'reportThemes')(
   inject(injection)(
     Filters.attach(
       roleModel.authenticationInfo(

@@ -168,21 +168,30 @@ class FacetedFilter extends React.Component {
         className={
           classNames(
             styles.filter,
+            'cp-panel',
+            'cp-search-filter',
             className
           )
         }
       >
         <div
           className={
-            classNames(styles.header,
-              {[styles.expanded]: filterGroupExpanded})
+            classNames(
+              styles.header,
+              'cp-search-filter-header',
+              {
+                'cp-search-filter-header-expanded': filterGroupExpanded
+              }
+            )
           }
           onClick={this.toggleFilterGroup}
         >
           <div
             className={
-              classNames(styles.headerCaret,
-                {[styles.expanded]: filterGroupExpanded})
+              classNames(
+                styles.headerCaret,
+                'cp-search-filter-header-caret'
+              )
             }
           >
             <Icon type="caret-right" />

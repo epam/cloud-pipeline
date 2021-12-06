@@ -18,8 +18,9 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Row, Icon} from 'antd';
-import NotificationView from '../../special/notifications/controls/NotificationView';
+import classNames from 'classnames';
 import styles from './SystemNotification.css';
+import Markdown from '../../special/markdown';
 import displayDate from '../../../utils/displayDate';
 
 @observer
@@ -97,19 +98,19 @@ export default class SystemNotification extends React.Component {
       case 'INFO':
         return (
           <Icon
-            className={styles[this.props.notification.severity.toLowerCase()]}
+            className="cp-setting-info"
             type="info-circle-o" />
         );
       case 'WARNING':
         return (
           <Icon
-            className={styles[this.props.notification.severity.toLowerCase()]}
+            className="cp-setting-warning"
             type="exclamation-circle-o" />
         );
       case 'CRITICAL':
         return (
           <Icon
-            className={styles[this.props.notification.severity.toLowerCase()]}
+            className="cp-setting-critical"
             type="close-circle-o" />
         );
       default: return undefined;
@@ -121,8 +122,15 @@ export default class SystemNotification extends React.Component {
       <div
         id={`notification-${this.props.notification.notificationId}`}
         ref={this.onInitialized}
-        className={`${styles.notification} ${styles.container} ${styles[this.props.notification.severity.toLowerCase()]}`}
-        style={{right: -350, top: SystemNotification.margin, display: 'flex', flexDirection: 'row'}}>
+        className={
+          classNames(
+            styles.notification,
+            styles.container,
+            'cp-notification'
+          )
+        }
+        style={{right: -350, top: SystemNotification.margin, display: 'flex', flexDirection: 'row'}}
+      >
         <div className={styles.iconColumn}>
           {this.renderSeverityIcon()}
         </div>
@@ -141,13 +149,17 @@ export default class SystemNotification extends React.Component {
           </Row>
           <Row>
             <span className={styles.body}>
-              <NotificationView
-                text={this.props.notification.body}
+              <Markdown
+                md={this.props.notification.body}
               />
             </span>
           </Row>
           <Row type="flex" justify="end">
-            <span className={styles.date}>{displayDate(this.props.notification.createdDate)}</span>
+            <span
+              className={classNames(styles.date, 'cp-text-not-important')}
+            >
+              {displayDate(this.props.notification.createdDate)}
+            </span>
           </Row>
         </Row>
       </div>

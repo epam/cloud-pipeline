@@ -121,18 +121,23 @@ const plugin = {
     ctx.beginPath();
     const {datasetConfig, label} = labelConfig;
     const {borderColor: stroke} = datasetConfig || {};
-    const {text, position} = label;
+    const {
+      text,
+      position,
+      textColor = '#606060',
+      background = 'rgba(255, 255, 255, 0.85)'
+    } = label;
     if (stroke) {
       ctx.strokeStyle = stroke;
     }
     if (position) {
       ctx.lineWidth = 2;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillStyle = background;
       ctx.rect(position.x, position.y, position.width, position.height);
       ctx.fill();
       ctx.stroke();
       ctx.lineWidth = 1;
-      ctx.fillStyle = '#606060';
+      ctx.fillStyle = textColor;
       ctx.font = `bold 9pt sans-serif`;
       ctx.textBaseline = 'middle';
       ctx.fillText(text, position.labelX, position.labelY);
@@ -141,7 +146,11 @@ const plugin = {
   },
   getInitialLabelConfig: function (chart, ease, configuration) {
     const {datasetIndex} = configuration;
-    let {index} = configuration;
+    let {
+      index,
+      textColor,
+      background
+    } = configuration;
     if (isNotSet(datasetIndex)) {
       return null;
     }
@@ -208,7 +217,9 @@ const plugin = {
           right: rightAvailable
         },
         labelHeight: height + (margin + padding.y) * 2.0,
-        text: labelText
+        text: labelText,
+        textColor,
+        background
       }
     };
   }

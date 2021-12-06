@@ -55,15 +55,13 @@ const DTS_ENVIRONMENT = 'DTS';
 })
 @observer
 export default class ConfigurationPreview extends React.Component {
-
   static propTypes = {
     item: PropTypes.shape({
       id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @observable
@@ -122,7 +120,7 @@ export default class ConfigurationPreview extends React.Component {
   }
 
   @computed
-  get isSpot() {
+  get isSpot () {
     if (this.configurationEntry && this.configurationEntry.configuration) {
       return this.configurationEntry.configuration.is_spot;
     }
@@ -130,7 +128,7 @@ export default class ConfigurationPreview extends React.Component {
   }
 
   @computed
-  get currentCloudProvider() {
+  get currentCloudProvider () {
     if (this.configurationEntry && this.configurationEntry.configuration && this.props.cloudProviders.loaded) {
       const [provider] = (this.props.cloudProviders.value || [])
         .filter(p => p.id === this.configurationEntry.configuration.cloudProviderId);
@@ -148,7 +146,7 @@ export default class ConfigurationPreview extends React.Component {
 
     return (
       this.configurationEntry.configuration && this.configurationEntry.configuration.parameters
-      ) || this.configurationEntry.parameters;
+    ) || this.configurationEntry.parameters;
   }
 
   @computed
@@ -195,12 +193,6 @@ export default class ConfigurationPreview extends React.Component {
       return null;
     }
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      fontWeight: 'bold'
-    };
-
     let inputValue;
     if (this.pipeline) {
       inputValue = this.pipeline.name;
@@ -219,7 +211,7 @@ export default class ConfigurationPreview extends React.Component {
 
     return inputValue
       ? (<tr>
-        <td style={firstCellStyle}>
+        <td className={classNames(styles.firstCell, styles.bold)}>
           {this.isFireCloudEnvironment ? 'FireCloud method' : 'Pipeline'}
         </td>
         <td>
@@ -248,11 +240,7 @@ export default class ConfigurationPreview extends React.Component {
       return null;
     }
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      fontWeight: 'bold'
-    };
+    const firstCellClass = classNames(styles.firstCell, styles.bold);
 
     const configuration = this.configurationEntry;
 
@@ -261,10 +249,9 @@ export default class ConfigurationPreview extends React.Component {
       : configuration.configuration && configuration.configuration.docker_image;
     const cloudRegion = !this.isDtsEnvironment && !this.isFireCloudEnvironment
       ? <AWSRegionTag
-        darkMode
-        regionId={configuration.configuration.cloudRegionId}
-        displayName
-        style={{marginLeft: -5, verticalAlign: 'top'}} />
+          regionId={configuration.configuration.cloudRegionId}
+          displayName
+          style={{marginLeft: -5, verticalAlign: 'top'}} />
       : null;
 
     return (
@@ -273,7 +260,7 @@ export default class ConfigurationPreview extends React.Component {
           <tbody>
             {this.pipelineRow}
             <tr>
-              <td style={firstCellStyle}>
+              <td className={firstCellClass}>
                 Execution environment
               </td>
               <td>
@@ -283,7 +270,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               this.isDtsEnvironment && configuration.coresNumber &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Cores
                 </td>
                 <td>
@@ -294,7 +281,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               dockerImage &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Docker image
                 </td>
                 <td>
@@ -305,7 +292,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               configuration.configuration && configuration.configuration.instance_size &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Instance type
                 </td>
                 <td>
@@ -316,7 +303,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               cloudRegion &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Cloud region
                 </td>
                 <td>
@@ -327,7 +314,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               configuration.configuration && configuration.configuration.instance_disk &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Disk size (Gb)
                 </td>
                 <td>
@@ -352,11 +339,6 @@ export default class ConfigurationPreview extends React.Component {
     if (!this.configurationEntry) {
       return null;
     }
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      fontWeight: 'bold'
-    };
 
     const configuration = this.configurationEntry;
 
@@ -370,13 +352,15 @@ export default class ConfigurationPreview extends React.Component {
       return null;
     }
 
+    const firstCellClass = classNames(styles.firstCell, styles.bold);
+
     return (
       <div className={styles.contentPreview}>
         <table>
           <tbody>
             { !this.isDtsEnvironment && !this.isFireCloudEnvironment &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Price type
                 </td>
                 <td>
@@ -387,7 +371,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               timeout !== null &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Timeout (minutes)
                 </td>
                 <td>
@@ -398,7 +382,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               cmdTemplate &&
               <tr>
-                <td style={firstCellStyle}>
+                <td className={firstCellClass}>
                   Cmd template
                 </td>
                 <td>
@@ -426,12 +410,6 @@ export default class ConfigurationPreview extends React.Component {
 
     const parameters = this.configurationEntryParameters;
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      fontWeight: 'bold'
-    };
-
     const items = [];
     for (let key in parameters) {
       if (parameters.hasOwnProperty(key)) {
@@ -441,7 +419,7 @@ export default class ConfigurationPreview extends React.Component {
         }
         items.push(
           <tr key={key}>
-            <td style={firstCellStyle}>
+            <td className={classNames(styles.firstCell, styles.bold)}>
               {key}
             </td>
             <td>
@@ -477,12 +455,6 @@ export default class ConfigurationPreview extends React.Component {
 
     const parameters = this.configurationEntry[listPropName];
 
-    const padding = 20;
-    const firstCellStyle = {
-      paddingRight: padding,
-      fontWeight: 'bold'
-    };
-
     return parameters
       ? (<div className={styles.contentPreview}>
         <table>
@@ -490,7 +462,7 @@ export default class ConfigurationPreview extends React.Component {
             {
               parameters.map(param =>
                 (<tr key={param.name}>
-                  <td style={firstCellStyle}>
+                  <td className={classNames(styles.firstCell, styles.bold)}>
                     {param.name}
                   </td>
                   <td>
@@ -522,25 +494,23 @@ export default class ConfigurationPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {execEnvSection && renderSeparator()}

@@ -17,16 +17,12 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Alert} from 'antd';
+import classNames from 'classnames';
 import LoadToolHistory from '../../../../models/tools/LoadToolHistory';
 import LoadingView from '../../../special/LoadingView';
 import displaySize from '../../../../utils/displaySize';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import styles from './history.css';
-
-function processScript (script) {
-  return hljs.highlight('bash', script).value;
-}
+import BashCode from '../../../special/bash-code';
 
 @inject((stores, {params}) => {
   return {
@@ -59,10 +55,13 @@ export default class History extends React.Component {
           {
             (this.props.history.value || []).map((layer, index) => (
               <div
-                className={[
-                  styles.layer,
-                  this.state.selectedLayer === index ? styles.selected : false
-                ].filter(Boolean).join(' ')}
+                className={
+                  classNames(
+                    styles.layer,
+                    'cp-settings-sidebar-element',
+                    {'cp-table-element-selected': this.state.selectedLayer === index}
+                  )
+                }
                 onClick={() => this.onSelectLayer(index)}
               >
                 <span className={styles.index}>{index + 1}.</span>
@@ -75,14 +74,10 @@ export default class History extends React.Component {
         <div style={{flex: 1, padding: 5}}>
           {
             selectedLayer && (
-              <div
+              <BashCode
                 className={styles.code}
-              >
-                <code
-                  dangerouslySetInnerHTML={{
-                    __html: processScript(selectedLayer.command)
-                  }} />
-              </div>
+                code={(selectedLayer.command || '').trim()}
+              />
             )
           }
         </div>

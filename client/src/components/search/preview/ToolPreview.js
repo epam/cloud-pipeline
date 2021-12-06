@@ -27,34 +27,10 @@ import renderHighlights from './renderHighlights';
 import renderSeparator from './renderSeparator';
 import {metadataLoad, renderAttributes} from './renderAttributes';
 import {PreviewIcons} from './previewIcons';
-import styles from './preview.css';
-import Remarkable from 'remarkable';
 import {ScanStatuses} from '../../tools/utils';
 import VersionScanResult from '../../tools/elements/VersionScanResult';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
-
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import Markdown from '../../special/markdown';
+import styles from './preview.css';
 
 @inject('metadataCache', 'preferences')
 @inject((stores, params) => {
@@ -74,8 +50,7 @@ export default class ToolPreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -132,10 +107,7 @@ export default class ToolPreview extends React.Component {
     if (this.props.tool && this.props.tool.loaded && this.props.tool.value.description) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
-            <div
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.props.tool.value.description)}} />
-          </div>
+          <Markdown md={this.props.tool.value.description} />
         </div>
       );
     }
@@ -212,7 +184,7 @@ export default class ToolPreview extends React.Component {
       if (this.props.versions.error) {
         return (
           <div className={styles.contentPreview}>
-            <span style={{color: '#ff556b'}}>{this.props.versions.error}</span>
+            <span className={'cp-search-preview-error'}>{this.props.versions.error}</span>
           </div>
         );
       }
@@ -255,14 +227,14 @@ export default class ToolPreview extends React.Component {
   renderHeader = () => {
     const renderMainInfo = () => {
       const name = (
-        <Row key="name" className={styles.title} type="flex" align="middle">
+        <Row key="name" className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
           <Icon type={PreviewIcons[this.props.item.type]} />
           <span>{this.name}</span>
         </Row>
       );
       const path = this.path &&
         (
-          <Row key="path" className={styles.subTitle} type="flex" align="middle">
+          <Row key="path" className={classNames(styles.subTitle, 'cp-search-header-sub-title')} type="flex" align="middle">
             {
               this.path
                 .map((n, index) => <span style={{marginRight: 3}} key={index}>{n}</span>)
@@ -271,7 +243,7 @@ export default class ToolPreview extends React.Component {
         );
       const description = this.description &&
         (
-          <Row key="description" className={styles.toolDescription}>
+          <Row key="description" className={classNames(styles.toolDescription, 'cp-search-header-description')}>
             {this.description}
           </Row>
         );
@@ -281,11 +253,7 @@ export default class ToolPreview extends React.Component {
       return (
         <Row type="flex" className={styles.header} align="middle">
           <img
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-              width: 80,
-              borderRadius: 5
-            }}
+            className={classNames(styles.headerImage, 'cp-search-header-image')}
             alt={this.props.tool.value.image}
             src={ToolImage.url(this.props.item.id, this.props.tool.value.iconId)} />
           <div style={{paddingLeft: 10, flex: 1}}>
@@ -314,14 +282,12 @@ export default class ToolPreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         {this.renderHeader()}
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {versions && renderSeparator()}

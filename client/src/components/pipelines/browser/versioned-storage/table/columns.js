@@ -17,6 +17,7 @@
 import React from 'react';
 import classNames from 'classnames';
 import {
+  Button,
   Icon
 } from 'antd';
 import DOCUMENT_TYPES from '../document-types';
@@ -39,55 +40,61 @@ const renderActions = (item) => {
   const actions = [];
   if (item.type === DOCUMENT_TYPES.blob) {
     actions.push((
-      <Icon
+      <Button
         key="download"
-        type="download"
         className={styles.action}
         data-action="download"
-      />
+        size="small"
+      >
+        <Icon type="download" />
+      </Button>
     ));
     if (roleModel.writeAllowed(item)) {
       actions.push((
-        <Icon
+        <Button
           key="edit"
-          type="edit"
           className={styles.action}
           data-action="edit"
-        />
+          size="small"
+        >
+          <Icon type="edit" />
+        </Button>
       ));
       actions.push((
-        <Icon
+        <Button
           key="delete"
-          type="delete"
-          className={classNames(
-            styles.action,
-            styles.actionDelete
-          )}
+          type="danger"
+          className={styles.action}
           data-action="delete"
-        />
+          size="small"
+        >
+          <Icon type="delete" />
+        </Button>
       ));
     }
   }
   if (item.type === DOCUMENT_TYPES.tree) {
     if (roleModel.writeAllowed(item)) {
       actions.push((
-        <Icon
+        <Button
           key="edit"
-          type="edit"
           className={styles.action}
           data-action="edit"
-        />
+          size="small"
+        >
+          <Icon type="edit" />
+        </Button>
       ));
       actions.push((
-        <Icon
+        <Button
           key="delete"
-          type="delete"
-          className={classNames(
-            styles.action,
-            styles.actionDelete
-          )}
+          type="danger"
+          className={styles.action}
           data-action="delete"
-        />
+          size="small"
+        >
+          <Icon type="delete" />
+        </Button>
       ));
     }
   }
@@ -109,7 +116,7 @@ const COLUMNS = [{
   render: (name = '', record) => {
     return (
       <div className={styles.cellContent}>
-        <span className={styles.fileIcon}>
+        <span className={classNames(styles.fileIcon, 'cp-primary', 'cp-icon-larger')}>
           {FILES[record.type]}
         </span>
         <span>{name}</span>

@@ -25,7 +25,6 @@ import {
 import classNames from 'classnames';
 import moment from 'moment-timezone';
 import formStyles from './edit-hot-node-pool.css';
-import styles from './schedule-control.css';
 
 const Dates = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -228,7 +227,7 @@ class ScheduleControl extends React.Component {
           <span className={formStyles.label}>Starts on:</span>
           <Select
             showSearch
-            className={classNames({[styles.invalid]: invalid})}
+            className={classNames({'cp-error': invalid})}
             style={{width: 200}}
             value={from}
             onChange={this.onChangeFrom}
@@ -248,7 +247,7 @@ class ScheduleControl extends React.Component {
             }
           </Select>
           <TimePicker
-            className={classNames({[styles.invalid]: invalid})}
+            className={classNames({'cp-error': invalid})}
             style={{marginLeft: 5}}
             value={fromTime}
             format="HH:mm"
@@ -261,7 +260,7 @@ class ScheduleControl extends React.Component {
             Ends on:
           </span>
           <Select
-            className={classNames({[styles.invalid]: invalid})}
+            className={classNames({'cp-error': invalid})}
             showSearch
             style={{width: 200}}
             value={to}
@@ -282,7 +281,7 @@ class ScheduleControl extends React.Component {
             }
           </Select>
           <TimePicker
-            className={classNames({[styles.invalid]: invalid})}
+            className={classNames({'cp-error': invalid})}
             style={{marginLeft: 5}}
             value={toTime}
             format="HH:mm"

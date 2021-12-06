@@ -24,8 +24,6 @@
 .layout-header {
   padding: 0 10px 0 4px;
   width: 100%;
-  background-color: white;
-  border-bottom: 1px solid #eee;
   z-index: 5;
 }
 
@@ -41,13 +39,11 @@
   font-size: medium;
   margin-left: 5px;
   vertical-align: middle;
-  color: #444;
 }
 
 .section {
   border-radius: 0;
   margin-bottom: 5px;
-  border: 1px solid #ccc;
 }
 
 .form-item-row {
@@ -68,18 +64,12 @@
 
 }
 
-.price-loading {
-  color: #aaa;
-}
-
 .hidden-item {
   display: none;
 }
 
 .code-editor {
   height: 100px;
-  background-color: #efefef;
-  border: 1px solid #cccccc
 }
 
 .code-editor-label {
@@ -88,7 +78,7 @@
 }
 
 .parameters-menu {
-  cursor: pointer
+  cursor: pointer;
 }
 
 .parameter-name {
@@ -97,14 +87,9 @@
   border: 1px dashed #777;
 }
 
-.parameter-name:disabled {
-  color: #666;
-}
-
 .system-parameter-name {
   text-align: right;
   border: none;
-  color: black;
   font-weight: bold;
 }
 
@@ -146,10 +131,6 @@
   cursor: pointer;
 }
 
-.hint:hover {
-  color: #225780;
-}
-
 .actions button {
   vertical-align: middle;
 }
@@ -169,7 +150,6 @@
 .panel-description {
   margin-left: 5px;
   white-space: nowrap;
-  color: #777;
 }
 
 .panel-description::after {
@@ -209,15 +189,6 @@
   padding: 2px;
   border-radius: 5px;
   flex-wrap: nowrap;
-  -webkit-transition: background-color 250ms;
-  -moz-transition: background-color 250ms;
-  -ms-transition: background-color 250ms;
-  -o-transition: background-color 250ms;
-  transition: background-color 250ms;
-}
-
-.form-item-container:hover {
-  background-color: rgba(181, 209, 255, 0.15);
 }
 
 .form-item {
@@ -262,9 +233,6 @@
 
 .summary {
   min-height: 40px;
-  border: 1px solid #ccc;
-  background-color: #fafafa;
-  box-shadow: 0 0 3px #ddd;
   padding: 5px;
   display: flex;
   flex-direction: row;
@@ -275,9 +243,17 @@
 .summary-item {
   flex: 1;
   padding: 5px;
-  border: 1px solid #eee;
   font-size: larger;
   white-space: nowrap;
   margin: 2px;
   text-align: center;
+}
+
+.fire-cloud-sign-in-container {
+  display: flex;
+  flex-direction: column;
+  margin: 20px 5px 5px;
+  border: 1px dashed transparent;
+  border-radius: 5px;
+  padding: 20px;
 }

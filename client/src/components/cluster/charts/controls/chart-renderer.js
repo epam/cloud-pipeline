@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {PlotColors} from './utilities';
+import {getThemedPlotColors} from './utilities';
 
 function plotsMapper (plot, index) {
   return {...plot, index};
@@ -50,7 +50,8 @@ function ChartRenderer (
     timeline,
     valueAxis,
     identifier = 'plot',
-    isPercent = false
+    isPercent = false,
+    themes
   }
 ) {
   if (
@@ -104,7 +105,7 @@ function ChartRenderer (
   );
 }
 
-function splitDataParts(data) {
+function splitDataParts (data) {
   const result = [];
   let current;
   for (let d = 0; d < (data || []).length; d++) {
@@ -122,6 +123,7 @@ function splitDataParts(data) {
   return result;
 }
 
+@inject('themes')
 @observer
 class ChartRendererWithOffset extends React.PureComponent {
   state = {
@@ -134,6 +136,20 @@ class ChartRendererWithOffset extends React.PureComponent {
     canvasYStart: 0,
     plots: []
   };
+
+  @computed
+  get backgroundColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@card-background-color'] || 'white';
+    }
+    return 'white';
+  }
+
+  @computed
+  get plotColors () {
+    return getThemedPlotColors(this);
+  }
 
   @computed
   get data () {
@@ -149,7 +165,7 @@ class ChartRendererWithOffset extends React.PureComponent {
     };
     return plots.map((plot) => ({
       plot: plot.name,
-      color: PlotColors[plot.index % PlotColors.length],
+      color: this.plotColors[plot.index % this.plotColors.length],
       data: splitDataParts(
         (data || [])
           .map(i => ({x: getXCoordinate(i.x), y: getYCoordinate(i[plot.name])}))
@@ -233,7 +249,7 @@ class ChartRendererWithOffset extends React.PureComponent {
             cy={y}
             r={3}
             stroke={plot.color}
-            fill={'white'}
+            fill={this.backgroundColor}
             strokeWidth={2}
           />
         ))}
@@ -268,6 +284,6 @@ ChartRendererWithOffset.propTypes = {
   isPercent: PropTypes.bool
 };
 
-export default inject('data', 'dataGroup', 'plot', 'timeline', 'valueAxis')(
+export default inject('data', 'dataGroup', 'plot', 'timeline', 'valueAxis', 'themes')(
   observer(ChartRenderer)
 );

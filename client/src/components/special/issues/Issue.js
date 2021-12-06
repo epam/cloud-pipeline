@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, Button, Icon, message, Modal, Row, Tooltip} from 'antd';
+import classNames from 'classnames';
 import IssueCommentPreview from './controls/IssueCommentPreview';
 import IssueComment from './controls/IssueComment';
 import styles from './Issues.css';
@@ -35,16 +36,20 @@ import {processUnusedAttachments} from './utilities/UnusedAttachmentsProcessor';
 import LoadingView from '../../special/LoadingView';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
+import {
+  renderHtml,
+  injectCloudPipelineLinksHelpers
+} from '../markdown';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('issuesRenderer')
 @inject((stores, params) => {
   return {
     issueInfo: params.issue ? new IssueLoad(params.issue.id) : null,
     issueId: params.issue ? params.issue.id : null
   };
 })
+@injectCloudPipelineLinksHelpers
 @observer
 export default class Issue extends localization.LocalizedReactComponent {
 
@@ -112,7 +117,7 @@ export default class Issue extends localization.LocalizedReactComponent {
   };
   onRenameIssue = async (name) => {
     const text = this.props.issueInfo.loaded ? this.props.issueInfo.value.text : undefined;
-    const htmlText = await this.props.issuesRenderer.renderAsync(text, false);
+    const htmlText = await renderHtml(text, this.props);
     const payload = {
       labels: this.props.issueInfo.loaded ? (this.props.issueInfo.value.labels || []).map(l => l) : undefined,
       text,
@@ -135,7 +140,7 @@ export default class Issue extends localization.LocalizedReactComponent {
     const hide = message.loading('Updating comment...', 0);
     const issueAttachments = await processUnusedAttachments(text, attachments);
     issueAttachments.push(...(this.props.issueInfo.value.attachments || []));
-    const htmlText = await this.props.issuesRenderer.renderAsync(text, false);
+    const htmlText = await renderHtml(text, this.props);
     const payload = {
       labels: this.props.issueInfo.loaded ? (this.props.issueInfo.value.labels || []).map(l => l) : undefined,
       text,
@@ -182,7 +187,7 @@ export default class Issue extends localization.LocalizedReactComponent {
       const request = new IssueCommentUpdate(this.props.issueId, this.state.editableCommentId);
       const attachments = await processUnusedAttachments(this.state.editableCommentText, this.state.editableCommentAttachments);
       attachments.push(...(this.state.editableCommentOriginalAttachments || []));
-      const htmlText = await this.props.issuesRenderer.renderAsync(this.state.editableCommentText, false);
+      const htmlText = await renderHtml(this.state.editableCommentText, this.props);
       await request.send({
         text: this.state.editableCommentText,
         htmlText,
@@ -270,38 +275,49 @@ export default class Issue extends localization.LocalizedReactComponent {
       const actions = [];
       if (this.state.editableCommentId === comment.id) {
         actions.push(
-          <a
+          <Button
             disabled={this.state.editableCommentText === this.state.editableCommentOriginalText}
             key="apply"
-            onClick={this.onApplyEditCommentClicked}>
+            onClick={this.onApplyEditCommentClicked}
+            size="small"
+          >
             <Icon type="check" />
-          </a>
+          </Button>
         );
         actions.push(
-          <a key="cancel" onClick={this.onCancelEditCommentClicked}>
+          <Button
+            key="cancel"
+            onClick={this.onCancelEditCommentClicked}
+            size="small"
+          >
             <Icon type="close" />
-          </a>
+          </Button>
         );
       } else {
         const disabled = !!this.state.editableCommentId;
         if (this.canEditComment(comment)) {
           actions.push(
-            <a
+            <Button
               key="edit"
               disabled={disabled}
-              onClick={() => this.onEditCommentClicked(comment)}>
+              onClick={() => this.onEditCommentClicked(comment)}
+              size="small"
+            >
               <Icon type="edit" />
-            </a>
+            </Button>
           );
         }
         if (this.canRemoveComment(comment)) {
           actions.push(
-            <a
+            <Button
               key="delete"
               disabled={disabled}
-              onClick={() => this.onDeleteCommentClicked(comment)}>
+              onClick={() => this.onDeleteCommentClicked(comment)}
+              size="small"
+              type="danger"
+            >
               <Icon type="delete" />
-            </a>
+            </Button>
           );
         }
       }
@@ -311,12 +327,25 @@ export default class Issue extends localization.LocalizedReactComponent {
       <Row
         key={`comment_${index}`}
         type="flex"
-        className={isMine ? `${styles.commentContainer} ${styles.mine}` : styles.commentContainer}>
+        className={
+          classNames(
+            styles.commentContainer,
+            {[styles.mine]: isMine}
+          )
+        }
+      >
         <Row
           type="flex"
           align="middle"
           justify="space-between"
-          className={isMine ? `${styles.commentAuthorContainer} ${styles.mine}` : styles.commentAuthorContainer}>
+          className={
+            classNames(
+              styles.commentAuthorContainer,
+              {[styles.mine]: isMine},
+              'cp-content-panel-header'
+            )
+          }
+        >
           <span>{isMine ? 'You' : comment.author} commented {date}</span>
           <Row className={styles.actions}>
             {renderCommentActions()}
@@ -324,7 +353,14 @@ export default class Issue extends localization.LocalizedReactComponent {
         </Row>
         <Row
           type="flex"
-          className={isMine ? `${styles.commentTextContainer} ${styles.mine}` : styles.commentTextContainer}>
+          className={
+            classNames(
+              styles.commentTextContainer,
+              {[styles.mine]: isMine},
+              'cp-content-panel'
+            )
+          }
+        >
           {
             this.state.editableCommentId === comment.id &&
             <IssueComment
@@ -352,7 +388,7 @@ export default class Issue extends localization.LocalizedReactComponent {
   sendComment = async () => {
     const hide = message.loading('Sending comment...', 0);
     const request = new IssueCommentSend(this.props.issueId);
-    const htmlText = await this.props.issuesRenderer.renderAsync(this.state.newComment, false);
+    const htmlText = await renderHtml(this.state.newComment, this.props);
     const attachments = await processUnusedAttachments(this.state.newComment, this.state.newCommentAttachments);
     await request.send({text: this.state.newComment, htmlText, attachments});
     if (request.error) {
@@ -439,51 +475,49 @@ export default class Issue extends localization.LocalizedReactComponent {
     }
     return (
       <div className={styles.container}>
-        <table className={styles.issueNav} style={{width: '100%', tableLayout: 'fixed'}}>
-          <tbody>
-          <tr>
-            <td>
-              <Row type="flex" className={styles.itemHeader} align="middle">
-                <Button
-                  id="navigate-back-button"
-                  disabled={this.editCommentInAction}
-                  size="small"
-                  onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
-                  style={{marginRight: 5}}>
-                  <Icon type="arrow-left" />
-                </Button>
-                <EditableField
-                  inputId="issue-name"
-                  displayId="issue-name-input"
-                  style={{
-                    paddingTop: 6,
-                    flex: 1,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    display: 'flex'
-                  }}
-                  readOnly={!this.canEditIssue || this.state.operationInProgress || this.editCommentInAction}
-                  allowEpmty={false}
-                  onSave={this.operationWrapper(this.onRenameIssue)}
-                  editStyle={{flex: 1}}
-                  text={this.props.issueInfo && this.props.issueInfo.loaded ? this.props.issueInfo.value.name : ''} />
-              </Row>
-            </td>
-            <td className={styles.actions} style={{width: 40}}>
-              {
-                this.canRemoveIssue &&
-                <a
-                  disabled={this.state.operationInProgress || this.editCommentInAction}
-                  type="danger"
-                  onClick={this.deleteIssueConfirm}>
-                  <Icon type="delete" />
-                </a>
-              }
-            </td>
-          </tr>
-          </tbody>
-        </table>
+        <Row
+          type="flex"
+          className={classNames(styles.issueNav, styles.itemHeader)}
+          align="middle"
+        >
+          <Button
+            id="navigate-back-button"
+            disabled={this.editCommentInAction}
+            size="small"
+            onClick={() => this.props.onNavigateBack && this.props.onNavigateBack(false)}
+            style={{marginRight: 5}}>
+            <Icon type="arrow-left" />
+          </Button>
+          <EditableField
+            inputId="issue-name"
+            displayId="issue-name-input"
+            style={{
+              paddingTop: 6,
+              flex: 1,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              display: 'flex'
+            }}
+            readOnly={!this.canEditIssue || this.state.operationInProgress || this.editCommentInAction}
+            allowEpmty={false}
+            onSave={this.operationWrapper(this.onRenameIssue)}
+            editStyle={{flex: 1}}
+            text={this.props.issueInfo && this.props.issueInfo.loaded ? this.props.issueInfo.value.name : ''}
+          />
+          {
+            this.canRemoveIssue &&
+            <Button
+              disabled={this.state.operationInProgress || this.editCommentInAction}
+              type="danger"
+              onClick={this.deleteIssueConfirm}
+              size="small"
+              style={{marginLeft: 5}}
+            >
+              <Icon type="delete" />
+            </Button>
+          }
+        </Row>
         <div style={{flex: 1, overflow: 'auto'}}>
           {content}
           {

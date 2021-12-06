@@ -134,7 +134,7 @@ class CommitDiffButton extends React.Component {
       );
     }
     return (
-      <div className={styles.emptyContent}>
+      <div className={classNames(styles.emptyContent, 'cp-text-not-important')}>
         No content
       </div>
     );

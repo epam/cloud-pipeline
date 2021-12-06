@@ -59,12 +59,13 @@ class LimitMountsUserPreference extends React.Component {
     const {value = undefined} = metadata;
     const doNotMountStorages = /^none$/i.test(value);
     return (
-      <div className={styles.container}>
+      <div>
         <div
           className={
             classNames(
               styles.limitMountsRow,
-              styles.header
+              styles.header,
+              'cp-text'
             )
           }
         >
@@ -84,8 +85,7 @@ class LimitMountsUserPreference extends React.Component {
             <div
               className={
                 classNames(
-                  styles.limitMountsRow,
-                  styles.bgWhite
+                  styles.limitMountsRow
                 )
               }
             >
