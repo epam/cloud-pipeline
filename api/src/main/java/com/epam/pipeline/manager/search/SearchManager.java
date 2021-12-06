@@ -30,8 +30,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -55,12 +56,13 @@ public class SearchManager {
 
     public SearchResult search(final ElasticSearchRequest searchRequest) {
         validateRequest(searchRequest);
-        try (RestClient client = globalSearchElasticHelper.buildLowLevelClient()) {
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields =
                     new HashSet<>(ListUtils.emptyIfNull(searchRequest.getMetadataFields()));
-            final SearchResponse searchResult = new RestHighLevelClient(client).search(
-                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields));
+            final SearchRequest request = requestBuilder.buildRequest(
+                    searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields);
+            final SearchResponse searchResult = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields(),
                     metadataSourceFields, searchRequest.getScrollingParameters());
         } catch (IOException e) {
@@ -75,9 +77,10 @@ public class SearchManager {
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
                                         final boolean allowNoIndex) {
-        try (RestClient client = globalSearchElasticHelper.buildLowLevelClient()) {
-            final SearchResponse searchResponse = new RestHighLevelClient(client).search(requestBuilder
-                    .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path, allowNoIndex));
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
+            final SearchRequest request = requestBuilder.buildSumAggregationForStorage(
+                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex);
+            final SearchResponse searchResponse = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -90,12 +93,13 @@ public class SearchManager {
         if (Objects.isNull(searchRequest.getScrollingParameters()) && Objects.isNull(searchRequest.getOffset())) {
             searchRequest.setOffset(0);
         }
-        try (RestClient client = globalSearchElasticHelper.buildLowLevelClient()) {
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields =
                     new HashSet<>(ListUtils.emptyIfNull(searchRequest.getMetadataFields()));
-            final SearchResponse response = new RestHighLevelClient(client)
-                    .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName, metadataSourceFields));
+            final SearchRequest request = requestBuilder.buildFacetedRequest(
+                    searchRequest, typeFieldName, metadataSourceFields);
+            final SearchResponse response = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields(),
                     metadataSourceFields, searchRequest.getScrollingParameters());
         } catch (IOException e) {
