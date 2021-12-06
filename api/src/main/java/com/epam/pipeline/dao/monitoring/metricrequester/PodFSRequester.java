@@ -88,7 +88,7 @@ public class PodFSRequester extends FSRequester {
                 .map(SearchHits::getHits)
                 .map(Arrays::stream)
                 .orElseGet(Stream::empty)
-                .map(SearchHit::getSource)
+                .map(SearchHit::getSourceAsMap)
                 .map(this::toMonitoringStats)
                 .collect(Collectors.toList());
     }

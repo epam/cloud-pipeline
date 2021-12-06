@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -19,12 +20,11 @@ public class GlobalSearchElasticHelper {
 
     private final PreferenceManager preferenceManager;
 
-
     public RestHighLevelClient buildClient() {
-        return new RestHighLevelClient(buildLowLevelClient());
+        return new RestHighLevelClient(buildLowLevelClientBuilder());
     }
 
-    public RestClient buildLowLevelClient() {
+    public RestClientBuilder buildLowLevelClientBuilder() {
         final String host = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_HOST);
         final Integer port = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_PORT);
         final String schema = preferenceManager.getPreference(SystemPreferences.SEARCH_ELASTIC_SCHEME);
@@ -35,7 +35,7 @@ public class GlobalSearchElasticHelper {
                         + SystemPreferences.SEARCH_ELASTIC_PORT.getKey() + ", "
                         + SystemPreferences.SEARCH_ELASTIC_SCHEME.getKey()
         );
-        return RestClient.builder(new HttpHost(host, port, schema)).build();
+        return RestClient.builder(new HttpHost(host, port, schema));
     }
 
 }

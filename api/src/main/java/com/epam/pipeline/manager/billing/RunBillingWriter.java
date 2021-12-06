@@ -1,82 +1,54 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.billing.RunBilling;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.opencsv.CSVWriter;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-@RequiredArgsConstructor
-public class RunBillingWriter implements Closeable {
-
-    private static final char SEPARATOR = ',';
-    private static final int NUMERIC_SCALE = 2;
-    private static final long DURATION_DIVISOR = TimeUnit.MINUTES.convert(NumberUtils.LONG_ONE, TimeUnit.HOURS);
-    private static final long COST_DIVISOR = BigDecimal.ONE.setScale(4, RoundingMode.CEILING)
-            .unscaledValue()
-            .longValue();
-    private static final String[] FALLBACK_HEADER = new String[]{
-        "Run", "Owner", "Billing Center", "Pipeline", "Tool", "Type", "Instance", "Started", "Finished",
-        "Duration (hours)", "Cost ($)"};
+public class RunBillingWriter implements BillingWriter<RunBilling> {
 
     private final CSVWriter writer;
-    private final BillingHelper billingHelper;
-    private final PreferenceManager preferenceManager;
 
-    public RunBillingWriter(final Writer writer,
-                            final BillingHelper billingHelper,
-                            final PreferenceManager preferenceManager) {
-        this.writer = new CSVWriter(writer, SEPARATOR);
-        this.billingHelper = billingHelper;
-        this.preferenceManager = preferenceManager;
-    }
-
-    public void writeHeader() {
-        writer.writeNext(getHeader());
-    }
-
-    private String[] getHeader() {
-        return Optional.of(SystemPreferences.BILLING_EXPORT_RUN_HEADER)
-                .map(preferenceManager::getPreference)
-                .filter(StringUtils::isNotBlank)
-                .map(it -> StringUtils.split(it, SEPARATOR))
-                .orElse(FALLBACK_HEADER);
-    }
-
-    public void write(final RunBilling info) {
-        writer.writeNext(new String[]{
-                billingHelper.asString(info.getRunId()),
-                info.getOwner(),
-                info.getBillingCenter(),
-                info.getPipeline(),
-                info.getTool(),
-                info.getComputeType(),
-                info.getInstanceType(),
-                billingHelper.asString(info.getStarted()),
-                billingHelper.asString(info.getFinished()),
-                divided(info.getDuration(), DURATION_DIVISOR).toString(),
-                divided(info.getCost(), COST_DIVISOR).toString()});
-    }
-
-    private BigDecimal divided(final Long divider, final Long divisor) {
-        return Optional.ofNullable(divider)
-                .map(BigDecimal::valueOf)
-                .orElse(BigDecimal.ZERO)
-                .divide(BigDecimal.valueOf(divisor), NUMERIC_SCALE, RoundingMode.CEILING);
+    public RunBillingWriter(final Writer writer) {
+        this.writer = new CSVWriter(writer, BillingUtils.SEPARATOR);
     }
 
     @Override
-    public void close() throws IOException {
-        writer.close();
+    public void writeHeader() {
+        writer.writeNext(new String[]{
+            BillingUtils.RUN_COLUMN,
+            BillingUtils.OWNER_COLUMN,
+            BillingUtils.BILLING_CENTER_COLUMN,
+            BillingUtils.PIPELINE_COLUMN,
+            BillingUtils.TOOL_COLUMN,
+            BillingUtils.TYPE_COLUMN,
+            BillingUtils.INSTANCE_COLUMN,
+            BillingUtils.STARTED_COLUMN,
+            BillingUtils.FINISHED_COLUMN,
+            BillingUtils.DURATION_COLUMN,
+            BillingUtils.COST_COLUMN
+        });
+    }
+
+    @Override
+    public void write(final RunBilling billing) {
+        writer.writeNext(new String[]{
+            BillingUtils.asString(billing.getRunId()),
+            billing.getOwner(),
+            billing.getBillingCenter(),
+            billing.getPipeline(),
+            billing.getTool(),
+            billing.getComputeType(),
+            billing.getInstanceType(),
+            BillingUtils.asString(billing.getStarted()),
+            BillingUtils.asString(billing.getFinished()),
+            BillingUtils.asDurationString(billing.getDuration()),
+            BillingUtils.asCostString(billing.getCost())});
+    }
+
+    @Override
+    public void flush() throws IOException {
+        writer.flush();
     }
 }

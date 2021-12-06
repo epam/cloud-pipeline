@@ -1,0 +1,5 @@
+"Users","","October 2021","","","","November 2021","","","","2021-10-11 - 2021-11-11","","",""
+"User","Billing center","Runs (count)","Runs durations (hours)","Runs costs ($)","Storage costs ($)","Runs (count)","Runs durations (hours)","Runs costs ($)","Storage costs ($)","Runs (count)","Runs durations (hours)","Runs costs ($)","Storage costs ($)"
+"some_owner","some_billing_center","1","1.00","1.00","1.00","1","1.00","1.00","1.00","2","2.00","2.00","2.00"
+"some_other_owner","some_billing_center","10","10.00","10.00","10.00","10","10.00","10.00","10.00","20","20.00","20.00","20.00"
+"Grand total",,"11","11.00","11.00","11.00","11","11.00","11.00","11.00","22","22.00","22.00","22.00"
