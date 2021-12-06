@@ -28,7 +28,6 @@ import org.apache.commons.lang3.EnumUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHitField;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -111,21 +110,21 @@ public class SearchResultConverter {
     private SearchDocument buildDocument(final SearchHit hit,
                                          final String typeFieldName,
                                          final Set<String> aclFilterFields) {
+        final Map<String, Object> sourceFields = hit.getSourceAsMap();
         return SearchDocument.builder()
                 .elasticId(hit.getId())
                 .score(hit.getScore())
-                .id(getFieldIfPresent(hit, "id"))
-                .name(getFieldIfPresent(hit, "name"))
-                .parentId(getFieldIfPresent(hit, "parentId"))
-                .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(hit, typeFieldName)))
-                .description(getFieldIfPresent(hit, "description"))
+                .id(getFieldIfPresent(sourceFields, "id"))
+                .name(getFieldIfPresent(sourceFields, "name"))
+                .parentId(getFieldIfPresent(sourceFields, "parentId"))
+                .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(sourceFields, typeFieldName)))
+                .description(getFieldIfPresent(sourceFields, "description"))
                 .highlights(buildHighlights(hit.getHighlightFields(), aclFilterFields))
                 .build();
     }
 
-    private String getFieldIfPresent(final SearchHit hit, final String fieldName) {
-        return Optional.ofNullable(hit.getField(fieldName))
-                .map(SearchHitField::getValue)
+    private String getFieldIfPresent(final Map<String, Object> sourceFields, final String fieldName) {
+        return Optional.ofNullable(sourceFields.get(fieldName))
                 .map(Object::toString)
                 .orElse(null);
     }
