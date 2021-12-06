@@ -85,8 +85,8 @@ public class NatGatewayManager {
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
-    private final String tinyproxyServiceName;
     private final String tinyproxyNatServiceName;
+    private final String tinyproxyServiceLabelSelector;
     private final String dnsProxyConfigMapName;
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
@@ -96,10 +96,10 @@ public class NatGatewayManager {
                              final KubernetesManager kubernetesManager,
                              final MessageHelper messageHelper,
                              final PreferenceManager preferenceManager,
-                             @Value("${nat.gateway.cp.core.service.name:cp-tinyproxy}")
-                             final String tinyproxyServiceName,
-                             @Value("${nat.gateway.cp.service.suffix:-nat}")
-                             final String tinyproxyServiceSuffix,
+                             @Value("${nat.gateway.cp.service.name:cp-tinyproxy-nat}")
+                             final String tinyproxyNatServiceName,
+                             @Value("${nat.gateway.cp.service.label.selector:cp-tinyproxy}")
+                             final String tinyproxyServiceLabelSelector,
                              @Value("${nat.gateway.cm.dns.proxy.name:cp-dnsmasq-hosts}")
                              final String dnsProxyConfigMapName,
                              @Value("${nat.gateway.cm.global.name:cp-config-global}")
@@ -111,8 +111,8 @@ public class NatGatewayManager {
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
-        this.tinyproxyServiceName = tinyproxyServiceName;
-        this.tinyproxyNatServiceName = tinyproxyServiceName + tinyproxyServiceSuffix;
+        this.tinyproxyServiceLabelSelector = tinyproxyServiceLabelSelector;
+        this.tinyproxyNatServiceName = tinyproxyNatServiceName;
         this.dnsProxyConfigMapName = dnsProxyConfigMapName;
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
@@ -449,7 +449,7 @@ public class NatGatewayManager {
             Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyNatServiceName,
                                      KubernetesConstants.TRUE_LABEL_VALUE);
         final Map<String, String> selector =
-            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceLabelSelector,
                                      KubernetesConstants.TRUE_LABEL_VALUE);
         try {
             proxyServicesMapping.put(correspondingServiceName,
@@ -750,8 +750,8 @@ public class NatGatewayManager {
 
     private boolean refreshTinyProxy() {
         return kubernetesManager.refreshDeployment(
-            tinyproxyServiceName,
-            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+            tinyproxyServiceLabelSelector,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceLabelSelector,
                                      KubernetesConstants.TRUE_LABEL_VALUE));
     }
 
@@ -852,7 +852,7 @@ public class NatGatewayManager {
     }
 
     public String getProxyServiceName(final String externalName) {
-        return tinyproxyServiceName + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
+        return tinyproxyNatServiceName + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
     }
 
     private String getCurrentStatusLabelName(final Integer port) {
