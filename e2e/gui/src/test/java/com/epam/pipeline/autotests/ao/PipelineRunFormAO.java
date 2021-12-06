@@ -173,7 +173,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkTooltipText(String capability, String tooltip) {
-        $(byXpath(format("(//div[contains(text(), '%s')])", capability))).parent()
+        $(byXpath(format("(//span[text()='%s'])", capability))).closest(".ant-select-selection__choice")
                 .shouldHave(attribute("title", tooltip));
         return this;
     }
