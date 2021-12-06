@@ -53,6 +53,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
     private final String endpoint = C.VALID_ENDPOINT;
+    private final int pauseDuration = 25;
 
     @BeforeClass
     public void prerequisites() {
@@ -86,7 +87,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .switchToSystemLogs();
         SelenideElement adminInfo;
         SelenideElement userInfo;
-        sleep(20, SECONDS);
+        sleep(pauseDuration, SECONDS);
         try {
             if (impersonateMode()) {
                 systemLogsAO.filterByMessage("impersonation");
@@ -188,6 +189,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(admin.login)
                 .pressEnter()
                 .filterByMessage("Blocking status=false");
+        sleep(pauseDuration, SECONDS);
         final SelenideElement blockingInfoRow = systemLogsAO
                 .getInfoRow("Blocking status=false", admin.login, TYPE);
         final String userId = systemLogsAO.getUserId(blockingInfoRow);
