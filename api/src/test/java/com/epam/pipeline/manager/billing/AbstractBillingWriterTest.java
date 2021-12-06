@@ -41,6 +41,7 @@ public abstract class AbstractBillingWriterTest<B> {
     public static final String BILLING_CENTER = "some_billing_center";
     public static final String PIPELINE = "some_pipeline";
     public static final String TOOL = "some_registry/some_group/some_tool:some_tag";
+    public static final String COMPUTE_TYPE = "some_compute_type";
     public static final String INSTANCE_TYPE = "some_instance_type";
     public static final String STORAGE = "some_storage";
     public static final String REGION = "some_region";
