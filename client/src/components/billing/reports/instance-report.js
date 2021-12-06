@@ -34,7 +34,7 @@ import {
   GetGroupedTools,
   GetGroupedToolsWithPrevious,
   GetGroupedPipelines,
-  GetGroupedPipelinesWithPrevious, GetGroupedFileStorages
+  GetGroupedPipelinesWithPrevious
 } from '../../../models/billing';
 import {
   numberFormatter,
@@ -122,6 +122,8 @@ function injection (stores, props) {
   const summary = new GetBillingData({...filters, filterBy});
   summary.fetch();
   return {
+    user,
+    group,
     type,
     summary,
     instances,
@@ -323,12 +325,17 @@ class InstanceReport extends React.Component {
       pipelinesTable,
       exportInstances,
       exportPipelines,
-      exportTools
+      exportTools,
+      user,
+      group,
+      filters = {},
+      type: computeType
     } = this.props;
+    const {period, range, region: cloudRegionId} = filters;
     const {dataSample, previousDataSample} = this.state;
     const composers = [
       {
-        composer: ExportComposers.discountsComposer,
+        composer: ExportComposers.discountsComposer
       },
       {
         composer: ExportComposers.tableComposer,
@@ -435,6 +442,21 @@ class InstanceReport extends React.Component {
             <Export.Consumer
               className={styles.chartsContainer}
               composers={composers}
+              exportConfiguration={{
+                types: [
+                  'INSTANCE',
+                  'PIPELINE',
+                  'TOOL'
+                ],
+                user,
+                group,
+                period,
+                range,
+                filters: {
+                  compute_type: computeType ? [computeType.toUpperCase()] : undefined,
+                  cloudRegionId
+                }
+              }}
             >
               <Layout
                 layout={InstanceReportLayout.Layout}

@@ -269,9 +269,15 @@ function UserReport ({
   filters,
   exportCsvRequest,
   exportByUsersCsvRequest,
+  user,
   users,
   preferences
 }) {
+  const {
+    range,
+    period,
+    region: cloudRegionId
+  } = filters || {};
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
     filters
@@ -293,6 +299,12 @@ function UserReport ({
           <Export.Consumer
             className={styles.chartsContainer}
             composers={composers}
+            exportConfiguration={{
+              user,
+              period,
+              range,
+              filters: {cloudRegionId}
+            }}
           >
             <Layout
               layout={GeneralReportLayout.Layout}
@@ -492,6 +504,7 @@ function GroupReport ({
   users,
   preferences
 }) {
+  const {range, period, region: cloudRegionId} = filters || {};
   const billingCenterName = (group || []).join(' ');
   const title = `${billingCenterName} user's spendings`;
   const tableColumns = [{
@@ -554,6 +567,14 @@ function GroupReport ({
           <Export.Consumer
             className={styles.chartsContainer}
             composers={composers}
+            exportConfiguration={{
+              group,
+              period,
+              range,
+              filters: {
+                cloudRegionId
+              }
+            }}
           >
             <Layout
               layout={GeneralReportLayout.Layout}
@@ -657,8 +678,11 @@ function GeneralReport ({
   exportCsvRequest,
   exportByUsersCsvRequest,
   users,
-  preferences
+  preferences,
+  user,
+  group
 }) {
+  const {range, period, region: cloudRegionId} = filters || {};
   const onResourcesSelect = navigation.wrapNavigation(
     navigation.resourcesNavigation,
     filters
@@ -685,6 +709,15 @@ function GeneralReport ({
           <Export.Consumer
             className={styles.chartsContainer}
             composers={composers}
+            exportConfiguration={{
+              user,
+              group,
+              period,
+              range,
+              filters: {
+                cloudRegionId
+              }
+            }}
           >
             <Layout
               layout={GeneralReportLayout.Layout}
