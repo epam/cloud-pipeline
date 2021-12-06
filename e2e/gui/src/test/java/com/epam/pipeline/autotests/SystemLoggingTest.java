@@ -141,7 +141,8 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
             SystemLogsAO systemLogsAO = navigationMenu()
                     .settings()
                     .switchToSystemManagement()
-                    .switchToSystemLogs();
+                    .switchToSystemLogs()
+                    .sleep(pauseDuration, SECONDS);
             if (impersonateMode()) {
                 systemLogsAO
                         .validateRow(format("Authentication failed! User %s is blocked!",
