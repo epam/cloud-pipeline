@@ -71,9 +71,12 @@ public class VMMonitor {
     }
 
     public void monitor() {
-        ListUtils.emptyIfNull(apiClient.loadRegions())
-                .forEach(this::checkVMs);
-        notifier.sendNotifications();
+        try {
+            ListUtils.emptyIfNull(apiClient.loadRegions())
+                    .forEach(this::checkVMs);
+        } finally {
+            notifier.sendNotifications();
+        }
     }
 
     @SuppressWarnings("unchecked")
