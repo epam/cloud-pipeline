@@ -79,7 +79,9 @@ function injection (stores, props) {
   let filterBy = GetBillingData.FILTER_BY.storages;
   let storages;
   let storagesTable;
+  let storageType;
   if (/^file$/i.test(type)) {
+    storageType = 'FILE_STORAGE';
     storages = new GetGroupedFileStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
@@ -92,6 +94,7 @@ function injection (stores, props) {
       )));
     }
   } else if (/^object$/i.test(type)) {
+    storageType = 'OBJECT_STORAGE';
     storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedObjectStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.objectStorages;
@@ -131,7 +134,8 @@ function injection (stores, props) {
     summary,
     storages,
     exportCsvRequest,
-    storagesTable
+    storagesTable,
+    storageType
   };
 }
 
@@ -287,7 +291,17 @@ class StorageReports extends React.Component {
   };
 
   render () {
-    const {storages, exportCsvRequest, storagesTable, summary} = this.props;
+    const {
+      storages,
+      exportCsvRequest,
+      storagesTable,
+      summary,
+      user,
+      group,
+      filters = {},
+      storageType
+    } = this.props;
+    const {period, range, region: cloudRegionId} = filters;
     const composers = [
       {
         composer: ExportComposers.discountsComposer
@@ -358,6 +372,20 @@ class StorageReports extends React.Component {
             <Export.Consumer
               className={styles.chartsContainer}
               composers={composers}
+              exportConfiguration={{
+                types: ['STORAGE'],
+                user,
+                group,
+                period,
+                range,
+                filters: {
+                  storage_type: storageType ? [storageType.toUpperCase()] : undefined,
+                  cloudRegionId: cloudRegionId &&
+                  cloudRegionId.length > 0
+                    ? cloudRegionId
+                    : undefined
+                }
+              }}
             >
               <Layout
                 layout={StorageReportLayout.Layout}

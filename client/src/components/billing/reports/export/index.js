@@ -28,7 +28,8 @@ const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
   [ExportFormat.image]: 'As Image',
   [ExportFormat.csvCostCenters]: 'As CSV (Billing centers)',
-  [ExportFormat.csvUsers]: 'As CSV (Users)'
+  [ExportFormat.csvUsers]: 'As CSV (Users)',
+  [ExportFormat.rawCsv]: 'Export raw data'
 };
 
 class ExportReports extends React.Component {
@@ -53,6 +54,7 @@ class ExportReports extends React.Component {
       case ExportFormat.csv:
       case ExportFormat.csvCostCenters:
       case ExportFormat.csvUsers:
+      case ExportFormat.rawCsv:
         exportStore.doCsvExport(title, {format});
         break;
     }
@@ -65,8 +67,10 @@ class ExportReports extends React.Component {
     return (
       <Menu onClick={({key: format}) => this.onExport(format)}>
         {
-          formats.map((format) => (
-            <Menu.Item key={format}>{ExportFormatName[format]}</Menu.Item>
+          formats.map((format, index) => (
+            format === ExportFormat.divider
+              ? (<Menu.Divider key={`${format}-${index}`} />)
+              : (<Menu.Item key={format}>{ExportFormatName[format]}</Menu.Item>)
           ))
         }
       </Menu>
@@ -99,7 +103,9 @@ ExportReports.propTypes = {
     ExportFormat.csv,
     ExportFormat.csvCostCenters,
     ExportFormat.csvUsers,
-    ExportFormat.image
+    ExportFormat.image,
+    ExportFormat.rawCsv,
+    ExportFormat.divider
   ]))
 };
 
