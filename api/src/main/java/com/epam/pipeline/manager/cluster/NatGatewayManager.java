@@ -97,7 +97,7 @@ public class NatGatewayManager {
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
     private final String hostsKey;
-    private final String customDnsIp;
+    private final String defaultCustomDnsIP;
 
     public NatGatewayManager(final NatGatewayDao natGatewayDao,
                              final KubernetesManager kubernetesManager,
@@ -114,7 +114,7 @@ public class NatGatewayManager {
                              @Value("${nat.gateway.port.forwarding.key:CP_TP_TCP_DEST}")
                              final String portForwardingRuleKey,
                              @Value("${nat.gateway.custom.dns.server.ip:}")
-                             final String customDnsIp,
+                             final String defaultCustomDnsIP,
                              @Value("${nat.gateway.hosts.key:hosts}") final String hostsKey) {
         this.natGatewayDao = natGatewayDao;
         this.kubernetesManager = kubernetesManager;
@@ -126,7 +126,7 @@ public class NatGatewayManager {
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
         this.hostsKey = hostsKey;
-        this.customDnsIp = customDnsIp;
+        this.defaultCustomDnsIP = defaultCustomDnsIP;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -180,7 +180,7 @@ public class NatGatewayManager {
 
     private Set<String> tryResolveAddress(final String hostname, final String dnsServer) {
         try {
-            final String dnsServerIp = Optional.ofNullable(dnsServer).orElse(customDnsIp);
+            final String dnsServerIp = Optional.ofNullable(dnsServer).orElse(defaultCustomDnsIP);
             return StringUtils.isBlank(dnsServerIp)
                    ? resolveNameUsingSystemDefaultDns(hostname)
                    : resolveNameUsingCustomDns(hostname, dnsServerIp);
