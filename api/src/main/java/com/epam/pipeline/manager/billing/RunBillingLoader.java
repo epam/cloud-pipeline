@@ -96,8 +96,6 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
     }
 
     private RunBilling getBilling(final String id, final Aggregations aggregations) {
-        final Optional<Long> cost = billingHelper.getCostSum(aggregations);
-        final Optional<Long> duration = billingHelper.getRunUsageSum(aggregations);
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return RunBilling.builder()
                 .runId(NumberUtils.toLong(id))
@@ -109,8 +107,8 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                 .instanceType(BillingUtils.asString(topHitFields.get(BillingUtils.INSTANCE_TYPE_FIELD)))
                 .started(BillingUtils.asDateTime(topHitFields.get(BillingUtils.STARTED_FIELD)))
                 .finished(BillingUtils.asDateTime(topHitFields.get(BillingUtils.FINISHED_FIELD)))
-                .duration(duration.orElse(NumberUtils.LONG_ZERO))
-                .cost(cost.orElse(NumberUtils.LONG_ZERO))
+                .duration(billingHelper.getRunUsageSum(aggregations))
+                .cost(billingHelper.getCostSum(aggregations))
                 .build();
     }
 }

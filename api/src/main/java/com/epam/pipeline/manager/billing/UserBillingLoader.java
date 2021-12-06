@@ -129,10 +129,10 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
         return UserGeneralBilling.builder()
                 .name(name)
                 .totalMetrics(GeneralBillingMetrics.builder()
-                        .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsCost(billingHelper.getRunCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .storagesCost(billingHelper.getStorageCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .runsNumber(billingHelper.getRunCount(aggregations))
+                        .runsDuration(billingHelper.getRunUsageSum(aggregations))
+                        .runsCost(billingHelper.getRunCostSum(aggregations))
+                        .storagesCost(billingHelper.getStorageCostSum(aggregations))
                         .build())
                 .periodMetrics(getMetrics(aggregations))
                 .build();
@@ -148,11 +148,10 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 GeneralBillingMetrics.builder()
-                        .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsCost(billingHelper.getFilteredRunCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .storagesCost(billingHelper.getFilteredStorageCostSum(aggregations)
-                                .orElse(NumberUtils.LONG_ZERO))
+                        .runsNumber(billingHelper.getRunCount(aggregations))
+                        .runsDuration(billingHelper.getRunUsageSum(aggregations))
+                        .runsCost(billingHelper.getFilteredRunCostSum(aggregations))
+                        .storagesCost(billingHelper.getFilteredStorageCostSum(aggregations))
                         .build());
     }
 

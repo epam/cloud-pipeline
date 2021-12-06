@@ -114,9 +114,9 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
         return InstanceBilling.builder()
                 .name(name)
                 .totalMetrics(InstanceBillingMetrics.builder()
-                        .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .runsNumber(billingHelper.getRunCount(aggregations))
+                        .runsDuration(billingHelper.getRunUsageSum(aggregations))
+                        .runsCost(billingHelper.getCostSum(aggregations))
                         .build())
                 .periodMetrics(getMetrics(aggregations))
                 .build();
@@ -132,9 +132,9 @@ public class InstanceBillingLoader implements BillingLoader<InstanceBilling> {
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 InstanceBillingMetrics.builder()
-                        .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .runsNumber(billingHelper.getRunCount(aggregations))
+                        .runsDuration(billingHelper.getRunUsageSum(aggregations))
+                        .runsCost(billingHelper.getCostSum(aggregations))
                         .build());
     }
 }

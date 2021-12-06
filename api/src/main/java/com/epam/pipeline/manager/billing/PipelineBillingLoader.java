@@ -116,9 +116,9 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
         return PipelineBilling.builder()
                 .id(NumberUtils.toLong(id))
                 .totalMetrics(PipelineBillingMetrics.builder()
-                        .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .runsNumber(billingHelper.getRunCount(aggregations))
+                        .runsDuration(billingHelper.getRunUsageSum(aggregations))
+                        .runsCost(billingHelper.getCostSum(aggregations))
                         .build())
                 .periodMetrics(getMetrics(aggregations))
                 .build();
@@ -134,9 +134,9 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 PipelineBillingMetrics.builder()
-                        .runsNumber(billingHelper.getRunCount(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsDuration(billingHelper.getRunUsageSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .runsCost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .runsNumber(billingHelper.getRunCount(aggregations))
+                        .runsDuration(billingHelper.getRunUsageSum(aggregations))
+                        .runsCost(billingHelper.getCostSum(aggregations))
                         .build());
     }
 

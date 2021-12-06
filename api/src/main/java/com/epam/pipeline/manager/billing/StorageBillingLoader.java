@@ -123,8 +123,8 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                 .billingCenter(BillingUtils.asString(topHitFields.get(BillingUtils.BILLING_CENTER_FIELD)))
                 .type(DataStorageType.getByName(BillingUtils.asString(topHitFields.get(BillingUtils.PROVIDER_FIELD))))
                 .totalMetrics(StorageBillingMetrics.builder()
-                        .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .cost(billingHelper.getCostSum(aggregations))
+                        .averageVolume(billingHelper.getStorageUsageAvg(aggregations))
                         .currentVolume(Long.valueOf(BillingUtils.asString(
                                 topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
                         .build())
@@ -143,8 +143,8 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
         return Pair.of(
                 YearMonth.parse(period, DateTimeFormatter.ofPattern(BillingUtils.HISTOGRAM_AGGREGATION_FORMAT)),
                 StorageBillingMetrics.builder()
-                        .cost(billingHelper.getCostSum(aggregations).orElse(NumberUtils.LONG_ZERO))
-                        .averageVolume(billingHelper.getStorageUsageAvg(aggregations).orElse(NumberUtils.LONG_ZERO))
+                        .cost(billingHelper.getCostSum(aggregations))
+                        .averageVolume(billingHelper.getStorageUsageAvg(aggregations))
                         .currentVolume(Long.valueOf(BillingUtils.asString(
                                 topHitFields.get(BillingUtils.STORAGE_USAGE_FIELD))))
                         .build());

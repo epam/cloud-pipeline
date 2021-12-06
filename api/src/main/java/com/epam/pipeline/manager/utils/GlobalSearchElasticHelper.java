@@ -20,7 +20,6 @@ public class GlobalSearchElasticHelper {
 
     private final PreferenceManager preferenceManager;
 
-
     public RestHighLevelClient buildClient() {
         return new RestHighLevelClient(buildLowLevelClientBuilder());
     }

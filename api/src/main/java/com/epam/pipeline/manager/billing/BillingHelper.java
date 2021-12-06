@@ -294,51 +294,54 @@ public class BillingHelper {
         return String.join(separator, paths);
     }
 
-    public Optional<Long> getRunUsageSum(final Aggregations aggregations) {
+    public Long getRunUsageSum(final Aggregations aggregations) {
         return getLongValue(aggregations, BillingUtils.RUN_USAGE_AGG);
     }
 
-    public Optional<Long> getRunCostSum(final Aggregations aggregations) {
+    public Long getRunCostSum(final Aggregations aggregations) {
         return getLongValue(aggregations, BillingUtils.RUN_COST_AGG);
     }
 
-    public Optional<Long> getStorageUsageAvg(final Aggregations aggregations) {
+    public Long getStorageUsageAvg(final Aggregations aggregations) {
         return getLongValue(aggregations, BillingUtils.STORAGE_USAGE_AGG);
     }
 
-    public Optional<Long> getStorageCostSum(final Aggregations aggregations) {
+    public Long getStorageCostSum(final Aggregations aggregations) {
         return getLongValue(aggregations, BillingUtils.STORAGE_COST_AGG);
     }
 
-    public Optional<Long> getCostSum(final Aggregations aggregations) {
+    public Long getCostSum(final Aggregations aggregations) {
         return getLongValue(aggregations, BillingUtils.COST_FIELD);
     }
 
-    public Optional<Long> getLongValue(final Aggregations aggregations, final String aggregation) {
+    public Long getLongValue(final Aggregations aggregations, final String aggregation) {
         return getSingleValue(aggregations, aggregation)
                 .map(NumericMetricsAggregation.SingleValue::value)
                 .filter(it -> !it.isInfinite())
-                .map(Double::longValue);
+                .map(Double::longValue)
+                .orElse(NumberUtils.LONG_ZERO);
     }
 
-    public Optional<Long> getFilteredRunCostSum(final Aggregations aggregations) {
+    public Long getFilteredRunCostSum(final Aggregations aggregations) {
         return getFilteredCostSum(aggregations, BillingUtils.RUN_COST_AGG);
     }
 
-    public Optional<Long> getFilteredStorageCostSum(final Aggregations aggregations) {
+    public Long getFilteredStorageCostSum(final Aggregations aggregations) {
         return getFilteredCostSum(aggregations, BillingUtils.STORAGE_COST_AGG);
     }
 
-    private Optional<Long> getFilteredCostSum(final Aggregations aggregations, final String aggregation) {
+    private Long getFilteredCostSum(final Aggregations aggregations, final String aggregation) {
         return getFilter(aggregations, aggregation)
                 .map(ParsedFilter::getAggregations)
-                .flatMap(this::getCostSum);
+                .map(this::getCostSum)
+                .orElse(NumberUtils.LONG_ZERO);
     }
 
-    public Optional<Long> getRunCount(final Aggregations aggregations) {
+    public Long getRunCount(final Aggregations aggregations) {
         return getSingleValue(aggregations, BillingUtils.RUN_COUNT_AGG)
                 .map(NumericMetricsAggregation.SingleValue::value)
-                .map(Double::longValue);
+                .map(Double::longValue)
+                .orElse(NumberUtils.LONG_ZERO);
     }
 
     public Map<String, Object> getLastByDateDocFields(final Aggregations aggregations) {
