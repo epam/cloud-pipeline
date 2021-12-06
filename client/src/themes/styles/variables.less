@@ -93,6 +93,7 @@
 @nfs-icon-color: #116118;
 
 @icons-root: '/icons';
+@public-root: '/';
 @aws-icon: url('@{icons-root}/providers/aws.svg');
 @aws-icon-contrast: url('@{icons-root}/providers/aws-light.svg');
 @gcp-icon: url('@{icons-root}/providers/gcp.svg');
@@ -140,17 +141,15 @@
 @table-border-color: @card-border-color;
 @table-head-color: @application-color-accent;
 
-@menu-color: @application-color;
 @menu-active-color: @primary-color;
-@menu-border-color: @table-border-color;
 
-@btn-color: @primary-text-color;
-@btn-primary-active: @primary-active-color;
 @btn-danger-color: @color-error;
-@btn-danger-active-color: #d73435;
+@btn-danger-background-color: @btn-disabled-background-color;
+@btn-danger-active-color: @primary-text-color;
+@btn-danger-active-background: #d73435;
+
 @btn-disabled-color: rgba(0, 0, 0, 0.25);
 @btn-disabled-background-color: #f7f7f7;
-@btn-danger-background-color: @btn-disabled-background-color;
 
 @code-background-color: darken(@card-background-color, 5%);
 
@@ -158,3 +157,5 @@
 @search-highlight-text-background-color: @color-warning;
 
 @background-image: none;
+@navigation-background-image: none;
+@logo-image: url('@{public-root}logo.png');

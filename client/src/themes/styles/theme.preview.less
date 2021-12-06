@@ -69,14 +69,14 @@
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button-danger {
-  background-color: @btn-danger-color;;
-  border-color: @btn-danger-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 
 .theme-identifier.theme-preview .cp-theme-preview-button {
@@ -122,6 +122,19 @@
   background-color: @application-color;
 }
 
+.theme-identifier .theme-preview-bordered {
+  border: 1px solid @application-color;
+}
+
 .color-presenter {
   border-color: @application-color;
+}
+
+.image-uploader {
+  border-color: @application-color;
+  background-color: @application-background-color;
+}
+
+.image-uploader .uploader-thumb-image {
+  background-color: fade(@application-background-color, 25%);
 }

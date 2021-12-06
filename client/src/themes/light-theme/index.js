@@ -86,6 +86,7 @@ export default {
     '@tag-key-value-divider-color': '#ddd',
     '@tag-value-background-color': '#fefefe',
     '@nfs-icon-color': '#116118',
+    '@public-root': "'/'",
     '@aws-icon': "@static_resource('icons/providers/aws.svg')",
     '@aws-icon-contrast': "@static_resource('icons/providers/aws-light.svg')",
     '@gcp-icon': "@static_resource('icons/providers/gcp.svg')",
@@ -126,19 +127,18 @@ export default {
     '@table-element-hover-color': '@element-hover-color',
     '@table-border-color': '@card-border-color',
     '@table-head-color': '@application-color-accent',
-    '@menu-color': '@application-color',
     '@menu-active-color': '@primary-color',
-    '@menu-border-color': '@table-border-color',
-    '@btn-color': '@primary-text-color',
-    '@btn-primary-active': '@primary-active-color',
     '@btn-danger-color': '@color-error',
-    '@btn-danger-active-color': '#d73435',
+    '@btn-danger-background-color': '@btn-disabled-background-color',
+    '@btn-danger-active-color': '@primary-text-color',
+    '@btn-danger-active-background': '#d73435',
     '@btn-disabled-color': 'rgba(0, 0, 0, 0.25)',
     '@btn-disabled-background-color': '#f7f7f7',
-    '@btn-danger-background-color': '@btn-disabled-background-color',
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
     '@search-highlight-text-background-color': '@color-warning',
-    '@background-image': 'none'
+    '@background-image': 'none',
+    '@navigation-background-image': 'none',
+    '@logo-image': "@static_resource('logo.png')"
   }
 };

@@ -30,13 +30,13 @@
   align-items: center;
 }
 
-.appearance-management .header .actions {
+.actions {
   margin-left: 5px;
   display: flex;
   align-items: center;
 }
 
-.appearance-management .action {
+.actions .action {
   margin-left: 5px;
   line-height: 1;
 }

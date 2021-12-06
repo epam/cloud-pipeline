@@ -103,17 +103,17 @@
 
 @even-element-background: lighten(@card-background-color, 5%);
 
-@alert-success-background: darken(@color-success, 15%);
-@alert-success-border: @color-success;
+@alert-success-background: fade(@color-success, 25%);
+@alert-success-border: fade(@color-success, 50%);
 @alert-success-icon: @color-success;
-@alert-warning-background: darken(@color-warning, 15%);
-@alert-warning-border: @color-warning;
+@alert-warning-background: fade(@color-warning, 15%);
+@alert-warning-border: fade(@color-warning, 50%);
 @alert-warning-icon: @color-warning;
-@alert-error-background: darken(@color-error, 15%);
-@alert-error-border: @color-error;
+@alert-error-background: fade(@color-error, 25%);
+@alert-error-border: fade(@color-error, 50%);
 @alert-error-icon: @color-error;
-@alert-info-background: darken(@color-info, 15%);
-@alert-info-border: @color-info;
+@alert-info-background: fade(@color-info, 25%);
+@alert-info-border: fade(@color-info, 50%);
 @alert-info-icon: @color-info;
 
 @table-element-selected-background-color: @element-selected-background-color;
@@ -123,15 +123,13 @@
 @table-border-color: @card-border-color;
 @table-head-color: @application-color-accent;
 
-@menu-color: @application-color;
 @menu-active-color: @application-color;
-@menu-border-color: @panel-border-color;
 
-@btn-color: @primary-text-color;
-@btn-primary-active: @primary-active-color;
 @btn-danger-color: @color-error;
 @btn-danger-background-color: @btn-disabled-background-color;
-@btn-danger-active-color: darken(@btn-danger-color, 20%);
+@btn-danger-active-color: @primary-text-color;
+@btn-danger-active-background: darken(@btn-danger-color, 20%);
+
 @btn-disabled-color: lighten(@panel-background-color, 40%);
 @btn-disabled-background-color: lighten(@panel-background-color, 4%);
 
@@ -139,4 +137,3 @@
 
 @search-highlight-text-color: @application-color;
 @search-highlight-text-background-color: @navigation-panel-color-impersonated;
-

@@ -58,13 +58,13 @@ export default `
   margin: 2px;
 }
 @THEME.theme-preview .cp-theme-preview-button-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME.theme-preview .cp-theme-preview-button-danger {
-  background-color: @btn-danger-color;;
-  border-color: @btn-danger-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 @THEME.theme-preview .cp-theme-preview-button {
   color: @primary-color;
@@ -100,8 +100,18 @@ export default `
 @THEME.theme-preview .cp-theme-preview-text {
   background-color: @application-color;
 }
+@THEME .theme-preview-bordered {
+  border: 1px solid @application-color;
+}
 @THEME .color-presenter {
   border-color: @application-color;
+}
+@THEME .image-uploader {
+  border-color: @application-color;
+  background-color: @application-background-color;
+}
+@THEME .image-uploader .uploader-thumb-image {
+  background-color: fade(@application-background-color, 25%);
 }
 
 @THEME body[class*="dark"] {
@@ -202,7 +212,7 @@ export default `
 }
 @THEME .cp-sensitive-tag {
   background-color: @color-sensitive;
-  color: @btn-color;
+  color: @btn-danger-active-color;
 }
 @THEME .cp-sensitive-tag.bordered {
   background-color: transparent;
@@ -256,6 +266,8 @@ export default `
 }
 @THEME .ant-layout-sider {
   background-color: @navigation-panel-color;
+  background-image: @navigation-background-image;
+  background-size: cover;
 }
 @THEME .ant-layout {
   background-color: @application-background-color;
@@ -279,6 +291,10 @@ export default `
   background-color: @input-background;
   border-color: @input-border;
   color: @input-color;
+}
+@THEME .transparent-upload .ant-upload {
+  background-color: transparent;
+  border-color: transparent;
 }
 @THEME .chrome-picker input {
   background-color: @input-background !important;
@@ -410,7 +426,7 @@ export default `
 @THEME .ant-modal-close:hover {
   color: @application-color;
 }
-@THEME .cp-even-odd-element:nth-child(even) {
+@THEME .cp-even-odd-element:nth-child(even):not(.cp-table-element-selected) {
   background-color: @even-element-background;
 }
 @THEME .ant-tree li .ant-tree-node-content-wrapper {
@@ -427,8 +443,8 @@ export default `
 @THEME .ant-menu,
 @THEME .ant-menu-submenu > .ant-menu {
   background-color: transparent;
-  color: @menu-color;
-  border-color: @menu-border-color;
+  color: @application-color;
+  border-color: @panel-border-color;
 }
 @THEME .ant-menu > .ant-menu-item > a,
 @THEME .ant-menu > .ant-menu-submenu > a {
@@ -459,10 +475,10 @@ export default `
   background-color: transparent;
 }
 @THEME .ant-tabs {
-  color: @menu-color;
+  color: @application-color;
 }
 @THEME .ant-tabs .ant-tabs-bar {
-  border-color: @menu-border-color;
+  border-color: @panel-border-color;
 }
 @THEME .ant-tabs .ant-tabs-bar .ant-tabs-ink-bar {
   background-color: @menu-active-color;
@@ -608,22 +624,22 @@ export default `
   border-color: @primary-color;
 }
 @THEME .ant-btn-primary {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME .ant-btn-primary:hover,
 @THEME .ant-btn-primary:focus {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-hover-color;
   border-color: @primary-hover-color;
 }
 @THEME .ant-btn-primary.active,
 @THEME .ant-btn-primary:active,
 @THEME .ant-btn-primary.ant-btn-clicked {
-  color: @btn-color;
-  background-color: @btn-primary-active;
-  border-color: @btn-primary-active;
+  color: @primary-text-color;
+  background-color: @primary-active-color;
+  border-color: @primary-active-color;
 }
 @THEME .ant-btn-background-ghost.ant-btn-primary {
   color: @primary-color;
@@ -636,27 +652,23 @@ export default `
   border-color: @input-border;
 }
 @THEME .ant-btn-danger:focus,
-@THEME .ant-btn-danger:hover {
-  color: @btn-color;
-  background-color: @btn-danger-color;
-  border-color: @btn-danger-color;
-}
+@THEME .ant-btn-danger:hover,
 @THEME .ant-btn-danger.active,
 @THEME .ant-btn-danger:active {
-  color: @btn-color;
-  background-color: @btn-danger-active-color;
-  border-color: @btn-danger-active-color;
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
+  border-color: @btn-danger-active-background;
 }
 @THEME .ant-btn-group .ant-btn-primary:first-child:not(:last-child) {
-  border-right-color: @btn-primary-active;
+  border-right-color: @primary-active-color;
 }
 @THEME .ant-btn-group .ant-btn-primary:last-child:not(:first-child),
 @THEME .ant-btn-group .ant-btn-primary + .ant-btn-primary {
-  border-left-color: @btn-primary-active;
+  border-left-color: @primary-active-color;
 }
 @THEME .ant-btn-group .ant-btn-primary:not(:first-child):not(:last-child) {
-  border-right-color: @btn-primary-active;
-  border-left-color: @btn-primary-active;
+  border-right-color: @primary-active-color;
+  border-left-color: @primary-active-color;
 }
 @THEME .ant-btn.disabled,
 @THEME .ant-btn.disabled.active,
@@ -888,16 +900,16 @@ export default `
 @THEME .rc-dropdown-menu,
 @THEME .ant-mention-dropdown {
   background-color: fade(@panel-background-color, 100%);
-  color: @menu-color;
+  color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
-  border-color: @menu-border-color;
+  border-color: @panel-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
-  background-color: @menu-border-color;
+  background-color: @panel-border-color;
 }
 @THEME .ant-select-selection__placeholder,
 @THEME .ant-select-selection__clear,
@@ -924,7 +936,7 @@ export default `
 }
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item {
-  color: @menu-color;
+  color: @application-color;
 }
 @THEME .ant-select-dropdown-menu-item.cp-danger,
 @THEME .rc-dropdown-menu > .rc-dropdown-menu-item.cp-danger,
@@ -954,8 +966,8 @@ export default `
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item.cp-danger:hover,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item-active.cp-danger,
 @THEME .ant-dropdown-menu > .ant-dropdown-menu-item-selected.cp-danger {
-  color: @btn-color;
-  background-color: @btn-danger-active-color;
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
 }
 @THEME .rc-menu-item.rc-menu-item-disabled,
 @THEME .rc-menu-submenu-title.rc-menu-item-disabled,
@@ -1203,21 +1215,21 @@ export default `
   color: @application-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn:focus,
 @THEME .ant-calendar .ant-calendar-ok-btn:hover {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-hover-color;
   border-color: @primary-hover-color;
 }
 @THEME .ant-calendar .ant-calendar-ok-btn.active,
 @THEME .ant-calendar .ant-calendar-ok-btn:active {
-  color: @btn-color;
-  background-color: @btn-primary-active;
-  border-color: @btn-primary-active;
+  color: @primary-text-color;
+  background-color: @primary-active-color;
+  border-color: @primary-active-color;
 }
 @THEME .ant-time-picker-input {
   color: @application-color;
@@ -1540,6 +1552,13 @@ export default `
 @THEME .cp-navigation-panel .cp-navigation-menu-item.cp-runs-menu-item.active {
   color: @navigation-item-runs-color;
 }
+@THEME .cp-navigation-item-logo {
+  height: 26px;
+  width: 26px;
+  display: block;
+  background-image: @logo-image;
+  background-size: cover;
+}
 
 @THEME .cp-dashboard-sticky-panel {
   background-color: @application-background-color;
@@ -1551,8 +1570,12 @@ export default `
 @THEME .cp-project-tag-value {
   background-color: @tag-value-background-color;
 }
-@THEME .cp-dashboard-panel-card-header {
+@THEME .cp-dashboard-panel-card-header,
+@THEME .cp-panel-card .cp-dashboard-panel-card-header {
   background-color: @card-header-background;
+}
+@THEME .cp-panel-card.cp-card-service .cp-dashboard-panel-card-header {
+  background-color: @card-service-header-background;
 }
 @THEME .cp-nfs-storage-type {
   color: @nfs-icon-color;
@@ -1629,29 +1652,6 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
-@THEME @fn: @theme-transition-function;
-@ms: @theme-transition-duration;
-
-.cp-theme-transition-background {
-  transition: background-color @fn @ms;
-}
-@THEME .cp-theme-transition-color {
-  transition: color @fn @ms;
-}
-@THEME .cp-theme-transition {
-  transition: color @fn @ms, background-color @fn @ms;
-}
-@THEME .ant-layout-sider,
-@THEME .ant-layout,
-@THEME .ant-input,
-@THEME .cp-panel,
-@THEME .cp-panel-card,
-@THEME .cp-panel-card-actions-background,
-@THEME .cp-navigation-panel,
-@THEME .cp-navigation-panel .cp-navigation-menu-item {
-  .cp-theme-transition();
-}
-
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -1697,7 +1697,7 @@ export default `
 }
 
 @THEME .cp-tool-header {
-  border-color: @menu-border-color;
+  border-color: @panel-border-color;
 }
 @THEME .cp-tool-panel + .cp-tool-panel {
   margin-left: 10px;
@@ -1755,6 +1755,7 @@ export default `
 @THEME .cp-edit-permissions-selected-row {
   background-color: @element-selected-background-color;
 }
+
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
 }
@@ -1885,7 +1886,7 @@ export default `
 }
 @THEME .cp-billing-menu .cp-billing-sub-menu.ant-menu-submenu-open .ant-menu-submenu-title {
   background-color: transparent;
-  color: @menu-color;
+  color: @application-color;
 }
 @THEME .cp-billing-menu .cp-billing-sub-menu.cp-billing-sub-menu-selected .ant-menu-submenu-title {
   background-color: transparent;
@@ -2172,13 +2173,13 @@ export default `
   border-color: @primary-color;
 }
 @THEME .cp-search-faceted-button.selected {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-color;
   border-color: @primary-color;
 }
 @THEME .cp-search-faceted-button.selected:hover,
 @THEME .cp-search-faceted-button.selected:focus {
-  color: @btn-color;
+  color: @primary-text-color;
   background-color: @primary-hover-color;
   border-color: @primary-hover-color;
 }

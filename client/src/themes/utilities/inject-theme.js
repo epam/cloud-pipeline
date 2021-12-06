@@ -21,13 +21,14 @@ function generateTheme (theme = {}, template = themesTemplate) {
   const {
     identifier,
     configuration,
-    getParsedConfiguration = (() => configuration)
+    getParsedConfiguration = (() => configuration),
+    parsed
   } = theme;
-  if (!configuration || !identifier) {
+  if ((!configuration && !parsed) || !identifier) {
     return undefined;
   }
   let themeContent = template;
-  const parsedConfiguration = getParsedConfiguration() || {};
+  const parsedConfiguration = parsed || getParsedConfiguration() || {};
   const vars = Object
     .entries(parsedConfiguration)
     .sort((a, b) => b[0].length - a[0].length);
@@ -72,10 +73,14 @@ export function ejectTheme (theme) {
 }
 
 export default function injectTheme (theme) {
-  try {
-    console.log('injecting theme', theme.identifier);
-    injectCss(theme.identifier, generateTheme(theme));
-  } catch (e) {
-    console.warn(`Error applying theme: ${e.message}`);
-  }
+  return new Promise((resolve) => {
+    try {
+      console.log('injecting theme', theme.identifier);
+      const cssContent = generateTheme(theme);
+      injectCss(theme.identifier, cssContent);
+    } catch (e) {
+      console.warn(`Error applying theme: ${e.message}`);
+    }
+    resolve();
+  });
 }

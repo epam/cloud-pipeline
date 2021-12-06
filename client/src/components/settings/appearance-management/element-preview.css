@@ -15,12 +15,19 @@
  */
 
 .container {
-  width: 400px;
+  min-width: 200px;
   padding: 10px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
+  align-items: flex-end;
+  justify-content: space-around;
+}
+
+.container .horizontal-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
 }
 
 .alert {
@@ -35,19 +42,17 @@
 
 .panel {
   min-width: 200px;
-  padding: 10px;
-  padding-left: 3%;
+  padding: 10px 10px 10px 3%;
 }
 
-.card {
-  padding: 10px;
-  width: 90%;
-}
-
-.input {
-  min-width: 200px;
+.input,
+.input-wrapper {
   width: 100%;
   margin: 5px 0;
+}
+
+.input-wrapper input {
+  width: 100%;
 }
 
 .navigation-panel-preview {
@@ -57,18 +62,115 @@
   width: 64px;
 }
 
-.mainLayout {
-  width: 100px;
-  height: 100px;
+.navigation-panel-preview + .navigation-panel-preview {
+  margin-left: 5px;
 }
 
-.mainPanel {
-  width: 90px;
-  height: 90px;
-  margin: auto;
-  text-align: center;
+.main-layout {
+  min-width: 300px;
+  min-height: 200px;
 }
 
-.mainContent {
+.preview-container {
+  min-width: 180px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.main-panel {
+  margin: 10px;
+}
+
+.main-panel .element-name {
+  margin: 10px;
+}
+
+.main-content {
   margin-top: 40px;
+}
+
+.text-preview {
+  display: inline-block;
+}
+
+.text-preview span:not(:last-child)::after {
+  content: ', ';
+}
+
+.card {
+  margin: 10px;
+}
+
+.card-content {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.card-content .content {
+  flex: 1;
+}
+
+.card-actions {
+  min-width: 100px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.card-actions .card-actions-background {
+  top: -10px;
+  left: 15px;
+  right: -10px;
+  bottom: -10px;
+  filter: blur(7px);
+  position: absolute;
+}
+
+.card-actions .card-actions-buttons {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  padding-right: 10px;
+}
+
+.job {
+  margin: 5px auto;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.job > span {
+  margin-left: 5px;
+}
+
+.divider {
+  margin: 5px 0;
+}
+
+.tags {
+  font-size: smaller;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.tags .tag {
+  margin: 2px 5px 0 0;
+  padding: 0 2px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
 }

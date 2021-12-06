@@ -60,3 +60,12 @@
 .color-picker.color-presenter {
   border-radius: 4px;
 }
+
+.button {
+  margin: 0 5px;
+  line-height: 1;
+}
+
+.button.small {
+  padding: 0 10px;
+}

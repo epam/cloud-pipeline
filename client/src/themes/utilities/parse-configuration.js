@@ -91,47 +91,66 @@ export class ParseConfigurationError extends Error {
   }
 }
 
-function parseValue (value, configuration, chain = []) {
+function parseValue (o, configuration, parsed, chain = []) {
+  const {
+    variable,
+    expression
+  } = o;
   if (chain.length > 1 && (new Set(chain)).size < chain.length) {
     throw new ParseConfigurationError(chain);
   }
-  const variables = Object.keys(configuration || {})
+  if (variable && parsed.hasOwnProperty(variable)) {
+    return parsed[variable];
+  }
+  const rules = Object.keys(configuration || {})
     .map(key => ({
       regExp: new RegExp(`(\\s*${key}\\s*)($|,|\\))`),
-      value: () => parseValue(configuration[key], configuration, [...chain, key]),
+      value: () => parseValue({variable: key}, configuration, parsed, [...chain, key]),
       length: exec => exec && exec.length > 0 ? exec[1].length : 0
     }))
     .concat([
       {
         regExp: /@static_resource\((.*)\)$/i,
-        value: o => staticResource(parseValue(o, configuration, chain)),
+        value: exp => staticResource(parseValue({expression: exp}, configuration, parsed, chain)),
         length: exec => exec && exec.length ? exec[0].length : 0
       }
     ]);
-  let parsed = value;
-  for (const variable of variables) {
-    let e = variable.regExp.exec(parsed);
+  let parsedValue = variable ? configuration[variable] : expression;
+  for (const rule of rules) {
+    let e = rule.regExp.exec(parsedValue);
     while (e) {
-      parsed = parsed
+      parsedValue = parsedValue
         .slice(0, e.index)
-        .concat(variable.value(...e.slice(1).map(o => o.trim())))
-        .concat(parsed.slice(e.index + variable.length(e)));
-      e = variable.regExp.exec(parsed);
+        .concat(rule.value(...e.slice(1).map(o => o.trim())))
+        .concat(parsedValue.slice(e.index + rule.length(e)));
+      e = rule.regExp.exec(parsedValue);
     }
   }
-  return parseFunctions(parsed);
+  parsedValue = parseFunctions(parsedValue);
+  if (variable) {
+    parsed[variable] = parsedValue;
+  }
+  return parsedValue;
 }
 
+const BYPASS_VARIABLES = [
+  '@background-image'
+];
+
 export default function parseConfiguration (configuration) {
-  const vars = Object.keys(configuration || {});
   const parsed = {};
+  const vars = Object.keys(configuration || {});
   for (const variable of vars) {
-    const variableValue = configuration[variable];
-    const parsedValue = parseValue(
-      variableValue,
-      Object.assign({}, configuration || {}, parsed)
-    );
-    parsed[variable] = parsedValue || 'inherit';
+    if (!BYPASS_VARIABLES.includes(variable)) {
+      const parsedValue = parseValue(
+        {variable},
+        configuration || {},
+        parsed
+      );
+      parsed[variable] = parsedValue || 'inherit';
+    } else {
+      parsed[variable] = configuration[variable];
+    }
   }
   return parsed;
 }

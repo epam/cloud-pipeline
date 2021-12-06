@@ -16,19 +16,33 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Alert, Button, Icon, message} from 'antd';
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Icon,
+  Input,
+  message,
+  Modal,
+  Radio
+} from 'antd';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
 import UIThemeEditForm from './ui-theme-edit-form';
-import SaveDialog from './save-dialog';
 import ThemeCard from './theme-card';
 import themesAreEqual from './utilities/themes-are-equal';
 import validateTheme from './utilities/theme-validation';
-import {DefaultThemeIdentifier, generateIdentifier} from '../../../themes';
+import {
+  DefaultThemeIdentifier,
+  generateIdentifier, ThemesPreferenceModes,
+  ThemesPreferenceName
+} from '../../../themes';
 import styles from './appearance-management.css';
+
+const INJECT_TESTING_THEME_DELAY_MS = 500;
 
 @roleModel.authenticationInfo
 @inject('themes', 'preferences')
@@ -41,8 +55,15 @@ class AppearanceManagement extends React.Component {
     themePayload: undefined,
     valid: true,
     pending: false,
-    saveDialogVisible: false
+    liveUpdate: false,
+    mode: undefined
   };
+
+  componentWillUnmount () {
+    if (this.injectEditableThemeStylesDelayed) {
+      clearTimeout(this.injectEditableThemeStylesDelayed);
+    }
+  }
 
   @computed
   get themes () {
@@ -55,14 +76,19 @@ class AppearanceManagement extends React.Component {
 
   renderThemesSelector = () => {
     const themes = this.themes;
+    const {
+      pending
+    } = this.state;
     const onSelectTheme = (identifier) => {
       const theme = themes.find(o => o.identifier === identifier);
       this.setState({
         editableTheme: theme,
         themePayload: {...theme},
         modified: false,
-        valid: true
-      }, this.injectEditableThemeStyles);
+        valid: true,
+        url: undefined,
+        mode: undefined
+      }, () => this.injectEditableThemeStyles(false));
     };
     return (
       <div
@@ -75,7 +101,7 @@ class AppearanceManagement extends React.Component {
               identifier={theme.identifier}
               name={theme.name}
               tag={theme.predefined ? 'PREDEFINED' : undefined}
-              readOnly={theme.predefined}
+              readOnly={theme.predefined || pending}
               onSelect={() => onSelectTheme(theme.identifier)}
             />
           ))
@@ -84,20 +110,35 @@ class AppearanceManagement extends React.Component {
     );
   };
 
-  injectEditableThemeStyles = () => {
+  injectEditableThemeStyles = (delayed = true) => {
     const {
       themes: themesStore
     } = this.props;
     const {
       editableTheme,
-      themePayload
+      themePayload,
+      liveUpdate
     } = this.state;
     if (themesStore && themePayload && editableTheme) {
       const {identifier} = editableTheme;
-      const previewClassName = themesStore.startTestingTheme({...themePayload, identifier});
-      this.setState({
-        editableThemePreviewClassName: previewClassName
-      });
+      if (this.injectEditableThemeStylesDelayed) {
+        clearTimeout(this.injectEditableThemeStylesDelayed);
+      }
+      const inject = () => {
+        themesStore
+          .startTestingTheme({...themePayload, identifier}, liveUpdate)
+          .then(previewClassName => this.setState({
+            editableThemePreviewClassName: previewClassName
+          }));
+      };
+      if (delayed) {
+        this.injectEditableThemeStylesDelayed = setTimeout(
+          () => inject(),
+          INJECT_TESTING_THEME_DELAY_MS
+        );
+      } else {
+        inject();
+      }
     }
   };
 
@@ -122,7 +163,7 @@ class AppearanceManagement extends React.Component {
         themePayload: payload,
         modified: !themesAreEqual(payload, editableTheme),
         valid
-      }, this.injectEditableThemeStyles);
+      }, () => this.injectEditableThemeStyles());
     }
   };
 
@@ -140,33 +181,66 @@ class AppearanceManagement extends React.Component {
         ...newTheme
       },
       modified: true,
-      valid: validateTheme(newTheme, this.themes)
-    }, this.injectEditableThemeStyles);
+      valid: validateTheme(newTheme, this.themes),
+      url: undefined,
+      mode: undefined
+    }, () => this.injectEditableThemeStyles(false));
   };
 
-  onSaveClicked = () => {
-    this.setState({
-      saveDialogVisible: true
-    });
-  };
-
-  closeSaveDialog = () => {
-    this.setState({
-      saveDialogVisible: false
-    });
-  };
-
-  onSaveTheme = async (options = {}) => {
+  onRemove = () => {
     const {
-      mode
-    } = options;
+      editableTheme
+    } = this.state;
+    if (editableTheme && !editableTheme.isNew) {
+      const {
+        identifier,
+        name
+      } = editableTheme;
+      const themesPayload = this.themes
+        .filter(o => !o.predefined && o.identifier !== identifier);
+      const hide = message.loading(
+        (
+          <span>
+            Removing <b>{name}</b> theme...
+          </span>
+        ),
+        5
+      );
+      this.save(themesPayload)
+        .then(hide);
+    }
+  };
+
+  saveCurrentThemes = (themes, mode, url) => {
+    return new Promise((resolve, reject) => {
+      const {themes: themesStore} = this.props;
+      const themesPayload = (themes || [])
+        .filter(o => !o.predefined)
+        .map(o => ({
+          identifier: o.identifier,
+          name: o.name,
+          extends: o.extends,
+          dark: o.dark,
+          configuration: {...(o.properties || {})}
+        }));
+      themesStore
+        .saveThemes(
+          themesPayload,
+          {
+            throwError: true,
+            mode,
+            url: mode === ThemesPreferenceModes.url ? url : undefined
+          })
+        .then(resolve)
+        .catch(reject);
+    });
+  };
+
+  onSaveTheme = async () => {
     const {
       editableTheme,
       themePayload
     } = this.state;
-    const {
-      themes: themesStore
-    } = this.props;
     if (editableTheme && themePayload) {
       const {
         isNew,
@@ -176,7 +250,7 @@ class AppearanceManagement extends React.Component {
       const createIdentifier = () => {
         let generated = generateIdentifier(themePayload.name);
         generated = (generated || '').concat(predefined ? '' : '-custom');
-        const r = new RegExp(`^${generated}(|-[\d]+)$`, 'i');
+        const r = new RegExp(`^${generated}(|-[\\d]+)$`, 'i');
         const existing = this.themes.filter(o => r.test(o.identifier)).length;
         if (existing > 0) {
           generated = generated.concat(`-${existing + 1}`);
@@ -190,14 +264,7 @@ class AppearanceManagement extends React.Component {
       const themesPayload = this.themes
         .filter(o => !o.predefined)
         .map(o => !isNew && o.identifier === identifier ? themeConfig : o)
-        .concat(isNew ? [themeConfig] : [])
-        .map(o => ({
-          identifier: o.identifier,
-          name: o.name,
-          extends: o.extends,
-          dark: o.dark,
-          configuration: {...(o.properties || {})}
-        }));
+        .concat(isNew ? [themeConfig] : []);
       const hide = message.loading(
         (
           <span>
@@ -206,26 +273,57 @@ class AppearanceManagement extends React.Component {
         ),
         5
       );
+      this.save(themesPayload)
+        .then(hide);
+    }
+  };
+
+  save = async (themes = []) => {
+    const {themes: themesStore} = this.props;
+    return new Promise((resolve) => {
       this.setState({
         pending: true
       }, () => {
         themesStore
-          .saveThemes(themesPayload, {throwError: true, mode})
-          .then(() => this.setState({
-            editableTheme: undefined,
-            themePayload: undefined,
-            modified: false,
-            valid: true,
-            saveDialogVisible: false
-          }))
+          .saveThemes(
+            themes
+              .filter(o => !o.predefined)
+              .map(o => ({
+                identifier: o.identifier,
+                name: o.name,
+                extends: o.extends,
+                dark: o.dark,
+                configuration: {...(o.properties || {})}
+              })),
+            {throwError: true}
+          )
+          .then(() => {
+            if (themesStore.mode === ThemesPreferenceModes.url) {
+              Modal.info({
+                title: 'Themes configuration file was downloaded',
+                content: (
+                  <div>
+                    You should copy configuration file to
+                    the <code>{themesStore.themesURL}</code>.
+                  </div>
+                )
+              });
+            }
+            this.setState({
+              editableTheme: undefined,
+              themePayload: undefined,
+              modified: false,
+              valid: true
+            });
+          })
           .catch(e => message.error(e.message, 5))
           .then(() => {
-            hide();
             this.ejectEditableThemeStyles();
             this.setState({pending: false});
+            resolve();
           });
       });
-    }
+    });
   };
 
   onCancelEdit = () => {
@@ -237,29 +335,45 @@ class AppearanceManagement extends React.Component {
     }, this.ejectEditableThemeStyles);
   };
 
+  toggleLiveUpdate = (e) => {
+    this.setState({
+      liveUpdate: e.target.checked
+    }, () => this.injectEditableThemeStyles(false));
+  };
+
   renderActions = () => {
     const {
       editableTheme,
       modified,
-      valid
+      valid,
+      liveUpdate,
+      pending
     } = this.state;
     if (editableTheme) {
       return (
         <div className={styles.actions}>
+          <Checkbox
+            checked={liveUpdate}
+            onChange={this.toggleLiveUpdate}
+            disabled={pending}
+          >
+            Live preview
+          </Checkbox>
           <Button
             key="cancel"
             id="cancel-edit-theme-button"
             className={styles.action}
             onClick={this.onCancelEdit}
+            disabled={pending}
           >
             Cancel
           </Button>
           <Button
             key="primary"
             id="save-theme-button"
-            disabled={!valid || !modified}
+            disabled={!valid || !modified || pending}
             className={styles.action}
-            onClick={this.onSaveClicked}
+            onClick={this.onSaveTheme}
             type="primary"
           >
             {
@@ -277,9 +391,141 @@ class AppearanceManagement extends React.Component {
           className={styles.action}
           onClick={this.onCreateTheme}
           type="primary"
+          disabled={pending}
         >
           New theme
         </Button>
+      </div>
+    );
+  };
+
+  renderPreferenceDisclaimer = () => {
+    const {
+      themes: themesStore,
+      preferences
+    } = this.props;
+    const {
+      mode,
+      url,
+      pending
+    } = this.state;
+    const currentMode = mode || themesStore.mode;
+    const cloudPipelineAppName = preferences.deploymentName || 'Cloud Pipeline';
+    const onChangeMode = (newMode) => {
+      if (newMode === ThemesPreferenceModes.payload) {
+        this.setState({mode: newMode, url: undefined});
+      } else {
+        this.setState({mode: newMode});
+      }
+    };
+    const onChangeUrl = (e) => this.setState({
+      url: e.target.value
+    });
+    const onCancel = () => this.setState({url: undefined, mode: undefined});
+    const onSave = () => {
+      this.setState({
+        pending: true
+      }, () => {
+        const hide = message.loading('Saving...', 0);
+        this.saveCurrentThemes(this.themes, mode, url)
+          .then(() => this.setState({url: undefined, mode: undefined}))
+          .catch(e => message.error(e.message, 5))
+          .then(() => {
+            hide();
+            this.setState({
+              pending: false
+            });
+          });
+      });
+    };
+    const downloadFile = () => this.saveCurrentThemes(this.themes, ThemesPreferenceModes.url);
+    return (
+      <div
+        className={
+          classNames(
+            styles.section,
+            'cp-divider',
+            'bottom'
+          )
+        }
+      >
+        <div className={styles.section}>
+          <b>{cloudPipelineAppName}</b> User Interface themes are configured
+          using <code>{ThemesPreferenceName}</code> preference. This preference may
+          contain an <b>URL</b> to the configuration file (recommended)
+          or <b>serialized</b> themes (JSON object).
+        </div>
+        <div className={styles.section}>
+          <div className={styles.section}>
+            <Radio
+              disabled={pending}
+              checked={currentMode === ThemesPreferenceModes.url}
+              onChange={() => onChangeMode(ThemesPreferenceModes.url)}
+            >
+              Specify <b>URL</b> to the themes configuration file
+            </Radio>
+            {
+              currentMode === ThemesPreferenceModes.url && (
+                <div style={{paddingLeft: 22}}>
+                  <div>
+                    You should <a onClick={downloadFile}>download</a> configuration
+                    file and save it <b>manually</b> by the given URL.
+                  </div>
+                  <div>
+                    <Input
+                      disabled={pending}
+                      value={url === undefined ? themesStore.themesURL : url}
+                      placeholder="URL to the configuration file"
+                      onChange={onChangeUrl}
+                    />
+                  </div>
+                </div>
+              )
+            }
+          </div>
+          <div className={styles.section}>
+            <Radio
+              disabled={pending}
+              checked={currentMode === ThemesPreferenceModes.payload}
+              onChange={() => onChangeMode(ThemesPreferenceModes.payload)}
+            >
+              Save themes as serialized object
+            </Radio>
+            <div style={{paddingLeft: 22}}>
+              This will increase overall preferences size due to
+              all images are stored as base64-encoded data.
+            </div>
+          </div>
+        </div>
+        {
+          ((currentMode !== themesStore.mode) || url !== undefined) && (
+            <div
+              className={
+                classNames(
+                  styles.section,
+                  styles.actions
+                )
+              }
+              style={{justifyContent: 'flex-end'}}
+            >
+              <Button
+                disabled={pending}
+                className={styles.action}
+                onClick={onCancel}
+              >
+                CANCEL
+              </Button>
+              <Button
+                disabled={(currentMode === ThemesPreferenceModes.url && !url) || pending}
+                className={styles.action}
+                type="primary"
+                onClick={onSave}
+              >
+                SAVE
+              </Button>
+            </div>
+          )
+        }
       </div>
     );
   };
@@ -298,8 +544,7 @@ class AppearanceManagement extends React.Component {
     const {
       editableTheme,
       pending,
-      editableThemePreviewClassName,
-      saveDialogVisible
+      editableThemePreviewClassName
     } = this.state;
     const goBack = () => {
       if (editableTheme) {
@@ -359,6 +604,9 @@ class AppearanceManagement extends React.Component {
           {this.renderActions()}
         </div>
         {
+          !editableTheme && this.renderPreferenceDisclaimer()
+        }
+        {
           !editableTheme && this.renderThemesSelector()
         }
         <UIThemeEditForm
@@ -367,12 +615,8 @@ class AppearanceManagement extends React.Component {
           onChange={this.onChangeTheme}
           themes={this.themes}
           readOnly={pending}
-        />
-        <SaveDialog
-          disabled={pending}
-          visible={saveDialogVisible}
-          onCancel={this.closeSaveDialog}
-          onSave={this.onSaveTheme}
+          removable={editableTheme && !editableTheme.isNew}
+          onRemove={this.onRemove}
         />
       </div>
     );
