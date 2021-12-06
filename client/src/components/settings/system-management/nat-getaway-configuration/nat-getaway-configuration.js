@@ -95,7 +95,8 @@ export default class NATGetaway extends React.Component {
           throw new Error(natRules.error);
         } else if (natRules.loaded && natRules.value) {
           state.routes = natRules.value.map(v => ({...v})) || [];
-          state.rules = natRules.value.map(v => ({...v})) || [];
+        } else {
+          state.routes = [];
         }
       } catch (e) {
         message.error(e.message, 5);
