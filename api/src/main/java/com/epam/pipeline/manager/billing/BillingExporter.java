@@ -3,9 +3,11 @@ package com.epam.pipeline.manager.billing;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportType;
 
-import java.io.OutputStream;
+import java.io.Writer;
 
 public interface BillingExporter {
+
+    String getName();
     BillingExportType getType();
-    void export(BillingExportRequest request, OutputStream out);
+    void export(BillingExportRequest request, Writer writer);
 }

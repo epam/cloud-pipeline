@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -51,10 +52,10 @@ public class SearchManager {
 
     public SearchResult search(final ElasticSearchRequest searchRequest) {
         validateRequest(searchRequest);
-        try (RestClient client = globalSearchElasticHelper.buildLowLevelClient()) {
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
-            final SearchResponse searchResult = new RestHighLevelClient(client).search(
-                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION));
+            final SearchRequest request = requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION);
+            final SearchResponse searchResult = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields());
         } catch (IOException e) {
             log.error(e.getMessage(), e);
@@ -68,9 +69,10 @@ public class SearchManager {
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
                                         final boolean allowNoIndex) {
-        try (RestClient client = globalSearchElasticHelper.buildLowLevelClient()) {
-            final SearchResponse searchResponse = new RestHighLevelClient(client).search(requestBuilder
-                    .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path, allowNoIndex));
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
+            final SearchRequest request = requestBuilder.buildSumAggregationForStorage(
+                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex);
+            final SearchResponse searchResponse = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
