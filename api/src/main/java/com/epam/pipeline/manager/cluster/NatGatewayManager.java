@@ -822,6 +822,8 @@ public class NatGatewayManager {
     }
 
     private boolean setStatusFailed(final String serviceName, final Integer externalPort, final String errorCause) {
+        log.error(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_FAILURE_SUMMARY),
+                  serviceName, externalPort, errorCause);
         updateStatusForRoutingRule(serviceName, externalPort, NatRouteStatus.TERMINATING, errorCause);
         return false;
     }
