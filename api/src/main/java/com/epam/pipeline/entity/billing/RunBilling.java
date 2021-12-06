@@ -10,9 +10,11 @@ import java.time.LocalDateTime;
 public class RunBilling {
     Long runId;
     String owner;
+    String billingCenter;
     String pipeline;
     String tool;
     String instanceType;
+    String computeType;
     LocalDateTime started;
     LocalDateTime finished;
     Long duration;

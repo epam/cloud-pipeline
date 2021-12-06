@@ -73,9 +73,11 @@ public class BillingHelper {
     public static final String ES_TERMS_AGG_BUCKET_KEY = "key";
     public static final String BUCKET_DOCUMENTS = "bucketDocs";
     public static final String OWNER_FIELD = "owner";
+    public static final String BILLING_CENTER_FIELD = "billing_center";
     public static final String CARDINALITY_AGG = "cardinality";
     public static final String PIPELINE_FIELD = "pipeline_name";
     public static final String TOOL_FIELD = "tool";
+    public static final String COMPUTE_TYPE_FIELD = "compute_type";
     public static final String INSTANCE_TYPE_FIELD = "instance_type";
     public static final String STARTED_FIELD = "started_date";
     public static final String FINISHED_FIELD = "finished_date";
@@ -259,14 +261,17 @@ public class BillingHelper {
     }
 
     public String asString(final Object value) {
-        return value != null ? value.toString() : null;
+        return Optional.ofNullable(value).map(Object::toString).orElse(null);
     }
 
     public String asString(final LocalDateTime value) {
-        return value != null ? DATE_TIME_FORMATTER.format(value) : null;
+        return Optional.ofNullable(value).map(DATE_TIME_FORMATTER::format).orElse(null);
     }
 
     public LocalDateTime asDateTime(final Object value) {
-        return value != null ? DATE_TIME_FORMATTER.parse(value.toString(), LocalDateTime::from) : null;
+        return Optional.ofNullable(value)
+                .map(Object::toString)
+                .map(it -> DATE_TIME_FORMATTER.parse(it, LocalDateTime::from))
+                .orElse(null);
     }
 }

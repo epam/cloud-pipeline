@@ -26,7 +26,8 @@ public class RunBillingWriter implements Closeable {
             .unscaledValue()
             .longValue();
     private static final String[] FALLBACK_HEADER = new String[]{
-        "Run", "Owner", "Pipeline", "Tool", "Instance", "Started", "Finished", "Duration (hours)", "Cost ($)"};
+        "Run", "Owner", "Billing Center", "Pipeline", "Tool", "Type", "Instance", "Started", "Finished",
+        "Duration (hours)", "Cost ($)"};
 
     private final CSVWriter writer;
     private final BillingHelper billingHelper;
@@ -56,8 +57,10 @@ public class RunBillingWriter implements Closeable {
         writer.writeNext(new String[]{
                 billingHelper.asString(info.getRunId()),
                 info.getOwner(),
+                info.getBillingCenter(),
                 info.getPipeline(),
                 info.getTool(),
+                info.getComputeType(),
                 info.getInstanceType(),
                 billingHelper.asString(info.getStarted()),
                 billingHelper.asString(info.getFinished()),

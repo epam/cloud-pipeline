@@ -93,6 +93,6 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
     }
 
     private String asString(final Date date) {
-        return date != null ? SIMPLE_DATE_FORMAT.format(date) : null;
+        return Optional.ofNullable(date).map(SIMPLE_DATE_FORMAT::format).orElse(null);
     }
 }
