@@ -69,7 +69,8 @@ public class SystemManagementAO extends SettingsPageAO {
 
     public class SystemLogsAO implements AccessObject<SystemLogsAO> {
 
-        private final ElementsCollection containerLogs = $(byClassName("ant-table-tbody"))
+        private final ElementsCollection containerLogs = $(byClassName("ystem-logs__container"))
+                .$(byClassName("ant-table-tbody"))
                 .should(exist)
                 .findAll(byClassName("ant-table-row"));
 

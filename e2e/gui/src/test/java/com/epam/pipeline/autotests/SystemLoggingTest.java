@@ -188,6 +188,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(admin.login)
                 .pressEnter()
                 .filterByMessage("Blocking status=false");
+
         final SelenideElement blockingInfoRow = systemLogsAO
                 .getInfoRow("Blocking status=false", admin.login, TYPE);
         final String userId = systemLogsAO.getUserId(blockingInfoRow);
