@@ -18,5 +18,7 @@ export default {
   csv: 'csv',
   image: 'image',
   csvCostCenters: 'csv-cost-centers',
-  csvUsers: 'csv-users'
+  csvUsers: 'csv-users',
+  rawCsv: 'csv-raw',
+  divider: 'divider'
 };

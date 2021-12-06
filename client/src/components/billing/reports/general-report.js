@@ -303,7 +303,12 @@ function UserReport ({
               user,
               period,
               range,
-              filters: {cloudRegionId}
+              filters: {
+                cloudRegionId: cloudRegionId &&
+                cloudRegionId.length > 0
+                  ? cloudRegionId
+                  : undefined
+              }
             }}
           >
             <Layout
@@ -572,7 +577,10 @@ function GroupReport ({
               period,
               range,
               filters: {
-                cloudRegionId
+                cloudRegionId: cloudRegionId &&
+                cloudRegionId.length > 0
+                  ? cloudRegionId
+                  : undefined
               }
             }}
           >
@@ -715,7 +723,10 @@ function GeneralReport ({
               period,
               range,
               filters: {
-                cloudRegionId
+                cloudRegionId: cloudRegionId &&
+                cloudRegionId.length > 0
+                  ? cloudRegionId
+                  : undefined
               }
             }}
           >

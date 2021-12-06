@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Provider as MobxProvider} from 'mobx-react';
 import {Button, Icon} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import ExportConsumer from './export-consumer';
 import ExportImageConsumer from './export-image-consumer';
@@ -30,7 +30,8 @@ const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
   [ExportFormat.image]: 'As Image',
   [ExportFormat.csvCostCenters]: 'As CSV (Billing centers)',
-  [ExportFormat.csvUsers]: 'As CSV (Users)'
+  [ExportFormat.csvUsers]: 'As CSV (Users)',
+  [ExportFormat.rawCsv]: 'Export raw data'
 };
 
 class ExportReports extends React.Component {
@@ -55,6 +56,7 @@ class ExportReports extends React.Component {
       case ExportFormat.csv:
       case ExportFormat.csvCostCenters:
       case ExportFormat.csvUsers:
+      case ExportFormat.rawCsv:
         exportStore.doCsvExport(title, {format});
         break;
     }
@@ -71,8 +73,10 @@ class ExportReports extends React.Component {
         selectedKeys={[]}
       >
         {
-          formats.map((format) => (
-            <MenuItem key={format}>{ExportFormatName[format]}</MenuItem>
+          formats.map((format, index) => (
+            format === ExportFormat.divider
+              ? (<Divider key={`${format}-${index}`} />)
+              : (<MenuItem key={format}>{ExportFormatName[format]}</MenuItem>)
           ))
         }
       </Menu>
@@ -105,7 +109,9 @@ ExportReports.propTypes = {
     ExportFormat.csv,
     ExportFormat.csvCostCenters,
     ExportFormat.csvUsers,
-    ExportFormat.image
+    ExportFormat.image,
+    ExportFormat.rawCsv,
+    ExportFormat.divider
   ]))
 };
 

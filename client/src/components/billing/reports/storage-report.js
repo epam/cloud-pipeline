@@ -380,7 +380,10 @@ class StorageReports extends React.Component {
                 range,
                 filters: {
                   storage_type: storageType ? [storageType.toUpperCase()] : undefined,
-                  cloudRegionId
+                  cloudRegionId: cloudRegionId &&
+                  cloudRegionId.length > 0
+                    ? cloudRegionId
+                    : undefined
                 }
               }}
             >

@@ -73,6 +73,9 @@ class ExportConsumer extends React.Component {
       case ExportFormats.csvCostCenters:
         types.push('BILLING_CENTER');
         break;
+      case ExportFormats.rawCsv:
+        types.push('RUN');
+        break;
       case ExportFormats.csv:
       default:
         types.push(

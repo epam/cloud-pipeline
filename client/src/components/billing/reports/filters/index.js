@@ -60,9 +60,17 @@ class Filters extends React.Component {
       return null;
     }
     const {children, users, cloudRegionsInfo} = this.props;
-    const exportFormats = /^general$/i.test(this.filterStore.report)
-      ? [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image]
-      : [ExportFormat.csv, ExportFormat.image];
+    let exportFormats = [ExportFormat.csv, ExportFormat.image];
+    if (/^general$/i.test(this.filterStore.report)) {
+      exportFormats = [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image];
+    } else if (/^instances$/i.test(this.filterStore.report)) {
+      exportFormats = [
+        ExportFormat.csv,
+        ExportFormat.image,
+        ExportFormat.divider,
+        ExportFormat.rawCsv
+      ];
+    }
     return (
       <div className={styles.container}>
         <div className={styles.reportFilter}>

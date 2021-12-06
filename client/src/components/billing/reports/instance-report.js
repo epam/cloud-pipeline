@@ -454,7 +454,10 @@ class InstanceReport extends React.Component {
                 range,
                 filters: {
                   compute_type: computeType ? [computeType.toUpperCase()] : undefined,
-                  cloudRegionId
+                  cloudRegionId: cloudRegionId &&
+                  cloudRegionId.length > 0
+                    ? cloudRegionId
+                    : undefined
                 }
               }}
             >
