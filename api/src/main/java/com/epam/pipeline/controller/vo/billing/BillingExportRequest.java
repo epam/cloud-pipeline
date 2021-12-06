@@ -1,5 +1,6 @@
 package com.epam.pipeline.controller.vo.billing;
 
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import lombok.Value;
 
 import java.time.LocalDate;
@@ -11,5 +12,6 @@ public class BillingExportRequest {
     LocalDate from;
     LocalDate to;
     Map<String, List<String>> filters;
-    BillingExportType type;
+    List<BillingExportType> types;
+    BillingDiscount discount;
 }

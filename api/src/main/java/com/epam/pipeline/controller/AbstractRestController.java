@@ -160,10 +160,14 @@ public abstract class AbstractRestController {
     protected void writeToResponse(final HttpServletResponse response,
                                    final ResultWriter writer,
                                    final MediaType contentType) throws IOException {
-        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment;filename=" + writer.getName());
+        response.addHeader(HttpHeaders.CONTENT_DISPOSITION, getContentDisposition(writer));
         response.setContentType(contentType.toString());
         writer.write(response);
         response.flushBuffer();
+    }
+
+    private String getContentDisposition(final ResultWriter writer) {
+        return "attachment;filename=" + writer.getName();
     }
 
     protected MediaType guessMediaType(String fileName) {

@@ -18,6 +18,7 @@ package com.epam.pipeline.app;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,13 +34,19 @@ public class ElasticsearchConfig {
 
     @Bean
     @ConditionalOnProperty("monitoring.elasticsearch.url")
-    public RestHighLevelClient elasticsearchClient() {
-        return new RestHighLevelClient(lowLevelClient());
+    public RestHighLevelClient elasticsearchClient(final RestClientBuilder lowLevelClientBuilder) {
+        return new RestHighLevelClient(lowLevelClientBuilder);
     }
 
     @Bean
     @ConditionalOnProperty("monitoring.elasticsearch.url")
-    public RestClient lowLevelClient() {
-        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, "http")).build();
+    public RestClient lowLevelClient(final RestClientBuilder lowLevelClientBuilder) {
+        return lowLevelClientBuilder.build();
+    }
+
+    @Bean
+    @ConditionalOnProperty("monitoring.elasticsearch.url")
+    public RestClientBuilder lowLevelClientBuilder() {
+        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, "http"));
     }
 }
