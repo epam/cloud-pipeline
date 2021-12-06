@@ -6,7 +6,6 @@ import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageException;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
-import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
@@ -30,6 +29,7 @@ import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.formatNfsPath;
 import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.getNfsRootPath;
+import static com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper.normalizeMountPath;
 
 @Service
 public class NFSStorageMounter {
@@ -124,16 +124,13 @@ public class NFSStorageMounter {
     }
 
     private File getStorageMountRoot(final NFSDataStorage dataStorage, final FileShareMount fileShareMount) {
-        final String storageMountPath = MountType.LUSTRE == fileShareMount.getMountType()
-                ? normalizeLustrePath(getNfsRootPath(dataStorage.getPath()))
-                : normalizePath(getNfsRootPath(dataStorage.getPath()));
+        final String storageMountPath = normalizeMountPath(fileShareMount.getMountType(),
+                getNfsRootPath(dataStorage.getPath()));
         return Paths.get(rootMountPoint, storageMountPath).toFile();
     }
 
     private File getShareRootMount(final FileShareMount fileShareMount) {
-        final String shareMountPath = MountType.LUSTRE == fileShareMount.getMountType()
-                ? normalizeLustrePath(fileShareMount.getMountRoot())
-                : normalizePath(fileShareMount.getMountRoot());
+        final String shareMountPath = normalizeMountPath(fileShareMount.getMountType(), fileShareMount.getMountRoot());
         return Paths.get(rootMountPoint, shareMountPath).toFile();
     }
 
@@ -150,13 +147,4 @@ public class NFSStorageMounter {
     private String getStorageName(String path) {
         return path.replace(getNfsRootPath(path), "");
     }
-
-    private String normalizePath(String nfsPath) {
-        return nfsPath.replace(":", "/");
-    }
-
-    private String normalizeLustrePath(final String nfsPath) {
-        return nfsPath.replaceAll(":/", "/").replace(":", "_");
-    }
-
 }

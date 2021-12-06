@@ -738,6 +738,8 @@ public class SystemPreferences {
 
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
+    public static final StringPreference KUBE_NETWORK_POLICY_NAME = new StringPreference(
+            "system.kube.network.policy.name", "sensitive-runs-policy", SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
