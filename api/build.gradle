@@ -240,6 +240,8 @@ dependencies {
     compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: '3.0.0'
 
     compile('io.reflectoring.diffparser:diffparser:1.4')
+
+    compile 'dnsjava:dnsjava:3.4.3'
 }
 
 // >>>>> processes profiles

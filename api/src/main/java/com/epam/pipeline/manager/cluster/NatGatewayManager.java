@@ -45,7 +45,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.xbill.DNS.ARecord;
+import org.xbill.DNS.Cache;
+import org.xbill.DNS.Lookup;
+import org.xbill.DNS.SimpleResolver;
+import org.xbill.DNS.Type;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
@@ -91,6 +97,7 @@ public class NatGatewayManager {
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
     private final String hostsKey;
+    private final String customDnsIp;
 
     public NatGatewayManager(final NatGatewayDao natGatewayDao,
                              final KubernetesManager kubernetesManager,
@@ -106,6 +113,8 @@ public class NatGatewayManager {
                              final String globalConfigMapName,
                              @Value("${nat.gateway.port.forwarding.key:CP_TP_TCP_DEST}")
                              final String portForwardingRuleKey,
+                             @Value("${nat.gateway.custom.dns.server.ip:}")
+                             final String customDnsIp,
                              @Value("${nat.gateway.hosts.key:hosts}") final String hostsKey) {
         this.natGatewayDao = natGatewayDao;
         this.kubernetesManager = kubernetesManager;
@@ -117,6 +126,7 @@ public class NatGatewayManager {
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
         this.hostsKey = hostsKey;
+        this.customDnsIp = customDnsIp;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -131,8 +141,8 @@ public class NatGatewayManager {
         processRoutesInKube();
     }
 
-    public Set<String> resolveAddress(final String hostname) {
-        final Set<String> resolvedAddresses = tryResolveAddress(hostname);
+    public Set<String> resolveAddress(final String hostname, final String dnsServer) {
+        final Set<String> resolvedAddresses = tryResolveAddress(hostname, dnsServer);
         if (CollectionUtils.isEmpty(resolvedAddresses)) {
             throw new IllegalArgumentException("Unable to resolve the given hostname: " + hostname);
         }
@@ -165,13 +175,43 @@ public class NatGatewayManager {
     }
 
     private Set<String> tryResolveAddress(final String hostname) {
+        return tryResolveAddress(hostname, null);
+    }
+
+    private Set<String> tryResolveAddress(final String hostname, final String dnsServer) {
         try {
-            return Stream.of(InetAddress.getAllByName(hostname))
-                .map(InetAddress::getHostAddress)
-                .collect(Collectors.toSet());
-        } catch (UnknownHostException e) {
+            final String dnsServerIp = Optional.ofNullable(dnsServer).orElse(customDnsIp);
+            return StringUtils.isBlank(dnsServerIp)
+                   ? resolveNameUsingSystemDefaultDns(hostname)
+                   : resolveNameUsingCustomDns(hostname, dnsServerIp);
+        } catch (IOException e) {
+            log.error(messageHelper.getMessage(MessageConstants.NAT_ADDRESS_RESOLVING_EXCEPTION), e.getMessage());
             return Collections.emptySet();
         }
+    }
+
+    private Set<String> resolveNameUsingCustomDns(final String hostname,
+                                                  final String dnsServerIp) throws IOException {
+        final String lookupHostname = StringUtils.endsWith(hostname, Constants.DOT)
+                                      ? hostname
+                                      : hostname + Constants.DOT;
+        final Lookup lookup = new Lookup(lookupHostname, Type.A);
+        lookup.setCache(new Cache());
+        lookup.setResolver(new SimpleResolver(dnsServerIp));
+        return Optional.ofNullable(lookup.run())
+            .map(Stream::of)
+            .orElse(Stream.empty())
+            .filter(ARecord.class::isInstance)
+            .map(ARecord.class::cast)
+            .map(ARecord::getAddress)
+            .map(InetAddress::getHostAddress)
+            .collect(Collectors.toSet());
+    }
+
+    private Set<String> resolveNameUsingSystemDefaultDns(String hostname) throws UnknownHostException {
+        return Stream.of(InetAddress.getAllByName(hostname))
+            .map(InetAddress::getHostAddress)
+            .collect(Collectors.toSet());
     }
 
     private void moveQueuedRoutesToKube() {
