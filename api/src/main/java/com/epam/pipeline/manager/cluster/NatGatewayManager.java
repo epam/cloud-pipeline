@@ -220,7 +220,7 @@ public class NatGatewayManager {
         log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE,
                                           allQueuedRoutes.size()));
         final Map<String, Service> proxyServicesMapping = loadProxyServicesFromKube().stream()
-            .collect(Collectors.toMap(this::getServiceName, Function.identity()));
+            .collect(Collectors.toMap(this::extractExternalRouteFromService, Function.identity()));
         allQueuedRoutes.forEach(route -> addQueuedRouteToKubeServices(proxyServicesMapping, route));
     }
 
@@ -430,10 +430,10 @@ public class NatGatewayManager {
     private void addQueuedRouteToKubeServices(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
         log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY,
                                           getQueuedRouteSummary(route)));
-        final String correspondingServiceName = getProxyServiceName(route.getExternalName());
+        final String targetExternalRoute = route.getExternalName();
         final NatRouteStatus statusInQueue = route.getStatus();
-        if (proxyServicesMapping.containsKey(correspondingServiceName)) {
-            final Service correspondingService = proxyServicesMapping.get(correspondingServiceName);
+        if (proxyServicesMapping.containsKey(targetExternalRoute)) {
+            final Service correspondingService = proxyServicesMapping.get(targetExternalRoute);
             final String externalIp = getServiceAnnotations(correspondingService).get(EXTERNAL_IP_LABEL);
             if (!NatRouteStatus.TERMINATION_SCHEDULED.equals(statusInQueue)
                 && !externalIp.equals(route.getExternalIp())) {
@@ -448,7 +448,7 @@ public class NatGatewayManager {
             if (!addQueuedRouteToExistingService(correspondingService, route)) {
                 log.warn(messageHelper.getMessage(
                     MessageConstants.NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED,
-                    route.getRouteId(), correspondingServiceName));
+                    route.getRouteId(), getServiceName(correspondingService)));
                 return;
             }
         } else if (!statusInQueue.isTerminationState()
@@ -475,12 +475,13 @@ public class NatGatewayManager {
                                               route.getRouteId()));
             return false;
         }
-        final String correspondingServiceName = getProxyServiceName(route.getExternalName());
+        final String routeExternalName = route.getExternalName();
+        final String correspondingServiceName = buildProxyServiceName(routeExternalName);
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
         final Map<String, String> annotations = getRouteUpdateAnnotations(targetStatusLabelName, statusInQueue, route);
-        annotations.put(EXTERNAL_NAME_LABEL, route.getExternalName());
+        annotations.put(EXTERNAL_NAME_LABEL, routeExternalName);
         annotations.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         final List<ServicePort> servicePorts =
             Collections.singletonList(buildNewServicePort(correspondingServiceName, externalPort,
@@ -493,7 +494,7 @@ public class NatGatewayManager {
             Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceLabelSelector,
                                      KubernetesConstants.TRUE_LABEL_VALUE);
         try {
-            proxyServicesMapping.put(correspondingServiceName,
+            proxyServicesMapping.put(routeExternalName,
                                      kubernetesManager.createService(correspondingServiceName, labels, annotations,
                                                                      servicePorts, selector));
             return true;
@@ -505,7 +506,7 @@ public class NatGatewayManager {
     }
 
     private boolean addQueuedRouteToExistingService(final Service service, final NatRoute route) {
-        final String correspondingServiceName = getProxyServiceName(route.getExternalName());
+        final String correspondingServiceName = getServiceName(service);
         log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE,
                                           route.getRouteId(), correspondingServiceName));
         final NatRouteStatus statusInQueue = route.getStatus();
@@ -686,7 +687,7 @@ public class NatGatewayManager {
         }
         final Set<String> existingDnsRecords = getExistingDnsRecords(dnsMap);
 
-        final String externalName = getServiceAnnotations(service).get(EXTERNAL_NAME_LABEL);
+        final String externalName = extractExternalRouteFromService(service);
         final String clusterIP = service.getSpec().getClusterIP();
         final String correspondingDnsRecord = getCorrespondingDnsRecord(externalName, clusterIP);
         if (!existingDnsRecords.contains(correspondingDnsRecord)) {
@@ -697,6 +698,10 @@ public class NatGatewayManager {
                                                         KubernetesConstants.SYSTEM_NAMESPACE,
                                                         hostsKey,
                                                         convertDnsRecordsListToString(existingDnsRecords));
+    }
+
+    private String extractExternalRouteFromService(final Service service) {
+        return getServiceAnnotations(service).get(EXTERNAL_NAME_LABEL);
     }
 
     private String getCorrespondingDnsRecord(final String externalName, final String clusterIP) {
@@ -746,7 +751,7 @@ public class NatGatewayManager {
             return false;
         }
         final Set<String> existingDnsRecords = getExistingDnsRecords(dnsMap);
-        final String externalName = getServiceAnnotations(service).get(EXTERNAL_NAME_LABEL);
+        final String externalName = extractExternalRouteFromService(service);
         final String clusterIP = service.getSpec().getClusterIP();
         final String requiredDnsRecord = getCorrespondingDnsRecord(externalName, clusterIP);
         if (!existingDnsRecords.contains(requiredDnsRecord)) {
@@ -894,7 +899,7 @@ public class NatGatewayManager {
         return Optional.ofNullable(getServiceAnnotations(service).get(labelName)).orElse(UNKNOWN);
     }
 
-    public String getProxyServiceName(final String externalName) {
+    public String buildProxyServiceName(final String externalName) {
         return tinyproxyNatServiceName + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
     }
 
