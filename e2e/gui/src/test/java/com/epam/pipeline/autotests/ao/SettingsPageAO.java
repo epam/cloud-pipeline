@@ -915,7 +915,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             private GroupsTabAO confirmGroupDeletion(final String groupName) {
                 new ConfirmationPopupAO(this.parentAO)
-                        .ensureTitleIs(format("Are you sure you want to delete group '%s'?", groupName))
+                        .ensureTitleIs(format("Are you sure you want to delete group %s?", groupName))
                         .sleep(1, SECONDS)
                         .click(OK);
                 return this;
