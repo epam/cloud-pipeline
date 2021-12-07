@@ -1102,13 +1102,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public class PreferencesAO extends SettingsPageAO {
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
-                entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
-                entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security"))),
-                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling"))),
-                entry(USER_INTERFACE_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("User Interface"))),
-                entry(LUSTRE_FS_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Lustre FS"))),
-                entry(LAUNCH_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Launch"))),
+                entry(CLUSTER_TAB, $(byClassName("section-cluster"))),
+                entry(SYSTEM_TAB, $(byClassName("section-system"))),
+                entry(DOCKER_SECURITY_TAB, $(byClassName("section-docker-security"))),
+                entry(AUTOSCALING_TAB, $(byClassName("section-grid-engine-autoscaling"))),
+                entry(USER_INTERFACE_TAB, $(byClassName("section-user-interface"))),
+                entry(LUSTRE_FS_TAB, $(byClassName("section-lustre-fs"))),
+                entry(LAUNCH_TAB, $(byClassName("section-launch"))),
                 entry(SEARCH,  context().find(byClassName("ant-input-search")).find(tagName("input"))),
                 entry(SAVE, $(byId("edit-preference-form-ok-button")))
         );
