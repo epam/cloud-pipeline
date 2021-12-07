@@ -252,8 +252,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final By qualifier) {
         final SelenideElement selenideElement = $(qualifier);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
