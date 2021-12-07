@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,8 @@
  *  limitations under the License.
  */
 
-export default {
-  csv: 'csv',
-  image: 'image',
-  csvCostCenters: 'csv-cost-centers',
-  csvUsers: 'csv-users',
-  rawCsv: 'csv-raw',
-  divider: 'divider'
-};
+import {API_PATH, SERVER} from '../../config';
+
+export default function exportBillingURL () {
+  return `${SERVER + API_PATH}/billing/export`;
+}
