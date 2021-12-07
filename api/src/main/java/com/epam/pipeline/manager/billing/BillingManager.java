@@ -32,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -280,21 +281,18 @@ public class BillingManager {
                         .query(billingHelper.queryByDateAndFilters(from, to, filters)));
 
         try {
-            final SearchResponse searchResponse =
-                searchForGrouping(elasticsearchLowLevelClient, searchRequest, grouping.getCorrespondingField());
-            final List<BillingChartInfo> billingChartInfoForGrouping =
-                getBillingChartInfoForGrouping(from, to, grouping, searchResponse, isLoadDetails);
-            return CollectionUtils.isEmpty(billingChartInfoForGrouping)
-                   ? getEmptyGroupingResponse(grouping)
-                   : billingChartInfoForGrouping;
+            return searchForGrouping(elasticsearchLowLevelClient, searchRequest, grouping.getCorrespondingField())
+                    .map(response -> getBillingChartInfoForGrouping(from, to, grouping, response, isLoadDetails))
+                    .filter(CollectionUtils::isNotEmpty)
+                    .orElseGet(() -> getEmptyGroupingResponse(grouping));
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
         }
     }
 
-    private SearchResponse searchForGrouping(final RestClient lowLevelClient, final SearchRequest request,
-                                             final String groupingName) throws IOException {
+    private Optional<SearchResponse> searchForGrouping(final RestClient lowLevelClient, final SearchRequest request,
+                                                       final String groupingName) throws IOException {
         final String searchEndpoint = String.format(BillingUtils.ES_INDICES_SEARCH_PATTERN,
                 String.join(BillingUtils.ES_ELEMENTS_SEPARATOR, request.indices()));
         final HttpEntity httpEntity = new NStringEntity(request.source().toString(), ContentType.APPLICATION_JSON);
@@ -305,10 +303,14 @@ public class BillingManager {
         MapUtils.emptyIfNull(parameters).forEach(lowLevelRequest::addParameter);
         lowLevelRequest.setEntity(httpEntity);
         final Response response = lowLevelClient.performRequest(lowLevelRequest);
+        final String body = EntityUtils.toString(response.getEntity());
+        if (StringUtils.equals(body, BillingUtils.ES_EMPTY_JSON)) {
+            return Optional.empty();
+        }
         final XContentParser parser = JsonXContent.jsonXContent
             .createParser(new NamedXContentRegistry(requiredGroupingAggregationsEntries),
-                    DeprecationHandler.THROW_UNSUPPORTED_OPERATION, EntityUtils.toString(response.getEntity()));
-        return SearchResponse.fromXContent(parser);
+                    DeprecationHandler.THROW_UNSUPPORTED_OPERATION, body);
+        return Optional.of(SearchResponse.fromXContent(parser));
     }
 
     private String buildResponseFilterForGrouping(final String groupingName) {

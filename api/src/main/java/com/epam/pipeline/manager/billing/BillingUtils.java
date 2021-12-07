@@ -72,6 +72,7 @@ public final class BillingUtils {
     public static final String TOTAL_PAGES = "totalPages";
     public static final String BILLING_DATE_FIELD = "created_date";
     public static final String HISTOGRAM_AGGREGATION_NAME = "hist_agg";
+    public static final String ES_EMPTY_JSON = "{}";
     public static final String ES_MONTHLY_DATE_REGEXP = "%d-%02d-*";
     public static final String ES_WILDCARD = "*";
     public static final String ES_DOC_FIELDS_SEPARATOR = ".";
