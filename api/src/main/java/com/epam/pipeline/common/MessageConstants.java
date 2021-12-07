@@ -631,6 +631,7 @@ public final class MessageConstants {
         "storage.quota.unknown.share.type.for.percentage";
 
     // NAT configuration
+    public static final String NAT_ADDRESS_RESOLVING_EXCEPTION = "nat.gateway.address.resolving.exception";
     public static final String NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE = "nat.gateway.routes.transfer.to.kube";
     public static final String NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT = "nat.gateway.route.creation.route.service.port";
     public static final String NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY = "nat.gateway.route.transfer.summary";
@@ -645,6 +646,7 @@ public final class MessageConstants {
         "nat.gateway.route.creation.existing.service.add.port";
     public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
     public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
+    public static final String NAT_ROUTE_CONFIG_FAILURE_SUMMARY = "nat.gateway.route.creation.failure.summary";
     public static final String NAT_ROUTE_CONFIG_INVALID_MANDATORY_FIELD = "nat.gateway.route.creation.invalid.field";
     public static final String NAT_ROUTE_CONFIG_INVALID_DESCRIPTION = "nat.gateway.route.creation.invalid.description";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
@@ -661,8 +663,8 @@ public final class MessageConstants {
         "nat.gateway.route.creation.port.forwarding.missing.port.error";
     public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
         "nat.gateway.route.creation.kube.dns.restart.error";
-    public static final String NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE =
-        "nat.gateway.route.creation.invalid.external.ip";
+    public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
+        "nat.gateway.route.extending.invalid.external.ip";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";

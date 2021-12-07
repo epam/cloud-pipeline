@@ -47,13 +47,14 @@ public class NatGatewayController extends AbstractRestController {
     @ResponseBody
     @ApiOperation(
         value = "Resolve IP for the given hostname.",
-        notes = "Resolve IP for the given hostname.",
+        notes = "Resolve IP for the given hostname (custom DNS service IP could be specified).",
         produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
         value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
         })
-    public Result<Set<String>> resolveAddress(@RequestParam final String hostname) {
-        return Result.success(natGatewayApiService.resolveAddress(hostname));
+    public Result<Set<String>> resolveAddress(@RequestParam final String hostname,
+                                              @RequestParam(required = false) final String dnsServer) {
+        return Result.success(natGatewayApiService.resolveAddress(hostname, dnsServer));
     }
 
     @PostMapping("/rules")

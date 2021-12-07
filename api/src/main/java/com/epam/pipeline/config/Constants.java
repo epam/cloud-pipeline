@@ -30,6 +30,7 @@ public final class Constants {
     public static final String X509_END_CERTIFICATE = "-----END CERTIFICATE-----";
     public static final String COMMA = ",";
     public static final String NEWLINE = "\n";
+    public static final String DOT = ".";
 
     public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
 

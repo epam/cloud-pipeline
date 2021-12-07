@@ -45,7 +45,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
+import org.xbill.DNS.ARecord;
+import org.xbill.DNS.Cache;
+import org.xbill.DNS.Lookup;
+import org.xbill.DNS.SimpleResolver;
+import org.xbill.DNS.Type;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
@@ -85,38 +91,42 @@ public class NatGatewayManager {
     private final KubernetesManager kubernetesManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
-    private final String tinyproxyServiceName;
     private final String tinyproxyNatServiceName;
+    private final String tinyproxyServiceLabelSelector;
     private final String dnsProxyConfigMapName;
     private final String globalConfigMapName;
     private final String portForwardingRuleKey;
     private final String hostsKey;
+    private final String defaultCustomDnsIP;
 
     public NatGatewayManager(final NatGatewayDao natGatewayDao,
                              final KubernetesManager kubernetesManager,
                              final MessageHelper messageHelper,
                              final PreferenceManager preferenceManager,
-                             @Value("${nat.gateway.cp.core.service.name:cp-tinyproxy}")
-                             final String tinyproxyServiceName,
-                             @Value("${nat.gateway.cp.service.suffix:-nat}")
-                             final String tinyproxyServiceSuffix,
+                             @Value("${nat.gateway.cp.service.name:cp-tinyproxy-nat}")
+                             final String tinyproxyNatServiceName,
+                             @Value("${nat.gateway.cp.service.label.selector:cp-tinyproxy}")
+                             final String tinyproxyServiceLabelSelector,
                              @Value("${nat.gateway.cm.dns.proxy.name:cp-dnsmasq-hosts}")
                              final String dnsProxyConfigMapName,
                              @Value("${nat.gateway.cm.global.name:cp-config-global}")
                              final String globalConfigMapName,
                              @Value("${nat.gateway.port.forwarding.key:CP_TP_TCP_DEST}")
                              final String portForwardingRuleKey,
+                             @Value("${nat.gateway.custom.dns.server.ip:}")
+                             final String defaultCustomDnsIP,
                              @Value("${nat.gateway.hosts.key:hosts}") final String hostsKey) {
         this.natGatewayDao = natGatewayDao;
         this.kubernetesManager = kubernetesManager;
         this.messageHelper = messageHelper;
         this.preferenceManager = preferenceManager;
-        this.tinyproxyServiceName = tinyproxyServiceName;
-        this.tinyproxyNatServiceName = tinyproxyServiceName + tinyproxyServiceSuffix;
+        this.tinyproxyServiceLabelSelector = tinyproxyServiceLabelSelector;
+        this.tinyproxyNatServiceName = tinyproxyNatServiceName;
         this.dnsProxyConfigMapName = dnsProxyConfigMapName;
         this.globalConfigMapName = globalConfigMapName;
         this.portForwardingRuleKey = portForwardingRuleKey;
         this.hostsKey = hostsKey;
+        this.defaultCustomDnsIP = defaultCustomDnsIP;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -131,8 +141,8 @@ public class NatGatewayManager {
         processRoutesInKube();
     }
 
-    public Set<String> resolveAddress(final String hostname) {
-        final Set<String> resolvedAddresses = tryResolveAddress(hostname);
+    public Set<String> resolveAddress(final String hostname, final String dnsServer) {
+        final Set<String> resolvedAddresses = tryResolveAddress(hostname, dnsServer);
         if (CollectionUtils.isEmpty(resolvedAddresses)) {
             throw new IllegalArgumentException("Unable to resolve the given hostname: " + hostname);
         }
@@ -165,13 +175,43 @@ public class NatGatewayManager {
     }
 
     private Set<String> tryResolveAddress(final String hostname) {
+        return tryResolveAddress(hostname, null);
+    }
+
+    private Set<String> tryResolveAddress(final String hostname, final String dnsServer) {
         try {
-            return Stream.of(InetAddress.getAllByName(hostname))
-                .map(InetAddress::getHostAddress)
-                .collect(Collectors.toSet());
-        } catch (UnknownHostException e) {
+            final String dnsServerIp = Optional.ofNullable(dnsServer).orElse(defaultCustomDnsIP);
+            return StringUtils.isBlank(dnsServerIp)
+                   ? resolveNameUsingSystemDefaultDns(hostname)
+                   : resolveNameUsingCustomDns(hostname, dnsServerIp);
+        } catch (IOException e) {
+            log.error(messageHelper.getMessage(MessageConstants.NAT_ADDRESS_RESOLVING_EXCEPTION), e.getMessage());
             return Collections.emptySet();
         }
+    }
+
+    private Set<String> resolveNameUsingCustomDns(final String hostname,
+                                                  final String dnsServerIp) throws IOException {
+        final String lookupHostname = StringUtils.endsWith(hostname, Constants.DOT)
+                                      ? hostname
+                                      : hostname + Constants.DOT;
+        final Lookup lookup = new Lookup(lookupHostname, Type.A);
+        lookup.setCache(new Cache());
+        lookup.setResolver(new SimpleResolver(dnsServerIp));
+        return Optional.ofNullable(lookup.run())
+            .map(Stream::of)
+            .orElse(Stream.empty())
+            .filter(ARecord.class::isInstance)
+            .map(ARecord.class::cast)
+            .map(ARecord::getAddress)
+            .map(InetAddress::getHostAddress)
+            .collect(Collectors.toSet());
+    }
+
+    private Set<String> resolveNameUsingSystemDefaultDns(String hostname) throws UnknownHostException {
+        return Stream.of(InetAddress.getAllByName(hostname))
+            .map(InetAddress::getHostAddress)
+            .collect(Collectors.toSet());
     }
 
     private void moveQueuedRoutesToKube() {
@@ -393,11 +433,12 @@ public class NatGatewayManager {
         final NatRouteStatus statusInQueue = route.getStatus();
         if (proxyServicesMapping.containsKey(correspondingServiceName)) {
             final Service correspondingService = proxyServicesMapping.get(correspondingServiceName);
-            if (NatRouteStatus.CREATION_SCHEDULED.equals(route.getStatus())
-                && correspondingService.getSpec().getClusterIP().equals(route.getExternalIp())) {
+            final String externalIp = getServiceAnnotations(correspondingService).get(EXTERNAL_IP_LABEL);
+            if (!NatRouteStatus.TERMINATION_SCHEDULED.equals(statusInQueue)
+                && !externalIp.equals(route.getExternalIp())) {
                 final NatRoute routeUpdate = route.toBuilder()
                     .lastErrorMessage(messageHelper.getMessage(
-                        MessageConstants.NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE))
+                        MessageConstants.NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP))
                     .status(NatRouteStatus.FAILED)
                     .build();
                 natGatewayDao.updateRoute(routeUpdate);
@@ -438,6 +479,8 @@ public class NatGatewayManager {
         final Integer externalPort = route.getExternalPort();
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
         final Map<String, String> annotations = getRouteUpdateAnnotations(targetStatusLabelName, statusInQueue, route);
+        annotations.put(EXTERNAL_NAME_LABEL, route.getExternalName());
+        annotations.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         final List<ServicePort> servicePorts =
             Collections.singletonList(buildNewServicePort(correspondingServiceName, externalPort,
                                                           freeTargetPort.map(IntOrString::new).get()));
@@ -446,7 +489,7 @@ public class NatGatewayManager {
             Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyNatServiceName,
                                      KubernetesConstants.TRUE_LABEL_VALUE);
         final Map<String, String> selector =
-            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceLabelSelector,
                                      KubernetesConstants.TRUE_LABEL_VALUE);
         try {
             proxyServicesMapping.put(correspondingServiceName,
@@ -493,8 +536,6 @@ public class NatGatewayManager {
                                                           final NatRouteStatus statusInQueue, final NatRoute route) {
         final Integer externalPort = route.getExternalPort();
         final Map<String, String> requiredProxyServiceLabels = new HashMap<>();
-        requiredProxyServiceLabels.put(EXTERNAL_NAME_LABEL, route.getExternalName());
-        requiredProxyServiceLabels.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         requiredProxyServiceLabels.put(getCurrentStatusLabelName(externalPort), statusInQueue.name());
         requiredProxyServiceLabels.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
         final NatRouteStatus targetStatus = statusInQueue.isTerminationState()
@@ -749,8 +790,8 @@ public class NatGatewayManager {
 
     private boolean refreshTinyProxy() {
         return kubernetesManager.refreshDeployment(
-            tinyproxyServiceName,
-            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceName,
+            tinyproxyServiceLabelSelector,
+            Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyServiceLabelSelector,
                                      KubernetesConstants.TRUE_LABEL_VALUE));
     }
 
@@ -821,6 +862,8 @@ public class NatGatewayManager {
     }
 
     private boolean setStatusFailed(final String serviceName, final Integer externalPort, final String errorCause) {
+        log.error(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_FAILURE_SUMMARY),
+                  serviceName, externalPort, errorCause);
         updateStatusForRoutingRule(serviceName, externalPort, NatRouteStatus.TERMINATING, errorCause);
         return false;
     }
@@ -851,7 +894,7 @@ public class NatGatewayManager {
     }
 
     public String getProxyServiceName(final String externalName) {
-        return tinyproxyServiceName + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
+        return tinyproxyNatServiceName + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
     }
 
     private String getCurrentStatusLabelName(final Integer port) {
