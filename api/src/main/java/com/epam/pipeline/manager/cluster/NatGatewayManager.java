@@ -49,9 +49,9 @@ import org.xbill.DNS.ARecord;
 import org.xbill.DNS.Cache;
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.SimpleResolver;
+import org.xbill.DNS.TextParseException;
 import org.xbill.DNS.Type;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.LocalDateTime;
@@ -174,45 +174,46 @@ public class NatGatewayManager {
         return updateRoutesInDatabase(request, NatRouteStatus.TERMINATION_SCHEDULED);
     }
 
-    private Set<String> tryResolveAddressUsingSystemDns(final String hostname) {
-        return tryResolveAddress(hostname, StringUtils.EMPTY);
+    private Set<String> tryResolveAddress(final String hostname, final String dnsServer) {
+        final String dnsServerIp = Optional.ofNullable(dnsServer).orElse(defaultCustomDnsIP);
+        return StringUtils.isBlank(dnsServerIp)
+               ? resolveNameUsingSystemDefaultDns(hostname)
+               : resolveNameUsingCustomDns(hostname, dnsServerIp);
     }
 
-    private Set<String> tryResolveAddress(final String hostname, final String dnsServer) {
+    private Set<String> resolveNameUsingCustomDns(final String hostname, final String dnsServerIp) {
+        final String lookupHostname = StringUtils.endsWith(hostname, Constants.DOT)
+                                      ? hostname
+                                      : hostname + Constants.DOT;
         try {
-            final String dnsServerIp = Optional.ofNullable(dnsServer).orElse(defaultCustomDnsIP);
-            return StringUtils.isBlank(dnsServerIp)
-                   ? resolveNameUsingSystemDefaultDns(hostname)
-                   : resolveNameUsingCustomDns(hostname, dnsServerIp);
-        } catch (IOException e) {
+            final Lookup lookup = new Lookup(lookupHostname, Type.A);
+            lookup.setCache(new Cache());
+            lookup.setResolver(new SimpleResolver(dnsServerIp));
+            return Optional.ofNullable(lookup.run())
+                .map(Stream::of)
+                .orElse(Stream.empty())
+                .filter(ARecord.class::isInstance)
+                .map(ARecord.class::cast)
+                .map(ARecord::getAddress)
+                .map(InetAddress::getHostAddress)
+                .collect(Collectors.toSet());
+        } catch (UnknownHostException | TextParseException e) {
             log.error(messageHelper.getMessage(MessageConstants.NAT_ADDRESS_RESOLVING_EXCEPTION,
                                                hostname, e.getMessage()));
             return Collections.emptySet();
         }
     }
 
-    private Set<String> resolveNameUsingCustomDns(final String hostname,
-                                                  final String dnsServerIp) throws IOException {
-        final String lookupHostname = StringUtils.endsWith(hostname, Constants.DOT)
-                                      ? hostname
-                                      : hostname + Constants.DOT;
-        final Lookup lookup = new Lookup(lookupHostname, Type.A);
-        lookup.setCache(new Cache());
-        lookup.setResolver(new SimpleResolver(dnsServerIp));
-        return Optional.ofNullable(lookup.run())
-            .map(Stream::of)
-            .orElse(Stream.empty())
-            .filter(ARecord.class::isInstance)
-            .map(ARecord.class::cast)
-            .map(ARecord::getAddress)
-            .map(InetAddress::getHostAddress)
-            .collect(Collectors.toSet());
-    }
-
-    private Set<String> resolveNameUsingSystemDefaultDns(final String hostname) throws UnknownHostException {
-        return Stream.of(InetAddress.getAllByName(hostname))
-            .map(InetAddress::getHostAddress)
-            .collect(Collectors.toSet());
+    private Set<String> resolveNameUsingSystemDefaultDns(final String hostname) {
+        try {
+            return Stream.of(InetAddress.getAllByName(hostname))
+                .map(InetAddress::getHostAddress)
+                .collect(Collectors.toSet());
+        } catch (UnknownHostException e) {
+            log.error(messageHelper.getMessage(MessageConstants.NAT_ADDRESS_RESOLVING_EXCEPTION,
+                                               hostname, e.getMessage()));
+            return Collections.emptySet();
+        }
     }
 
     private void moveQueuedRoutesToKube() {
@@ -790,7 +791,7 @@ public class NatGatewayManager {
             log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
             return false;
         }
-        final Set<String> resolvedAddresses = tryResolveAddressUsingSystemDns(externalName);
+        final Set<String> resolvedAddresses = resolveNameUsingSystemDefaultDns(externalName);
         return resolvedAddresses.size() == 1 && resolvedAddresses.contains(clusterIP);
     }
 
