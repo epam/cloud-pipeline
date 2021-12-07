@@ -551,7 +551,7 @@ public class LogAO implements AccessObject<LogAO> {
             this.reached = new Condition("status " + this.name()) {
                 @Override
                 public boolean apply(final WebElement element) {
-                    return $(element).find(byXpath(".//i[contains(@class, 'anticon-exclamation-circle')]"))
+                    return $(element).find(byXpath(".//i[contains(@class, 'anticon')]"))
                             .has(cssClass(iconClass));
                 }
 

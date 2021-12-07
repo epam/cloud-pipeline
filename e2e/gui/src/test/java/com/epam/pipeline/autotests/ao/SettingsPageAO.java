@@ -342,9 +342,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 private final CreateNotificationPopup parentAO;
 
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                        entry(INFO, context().find(By.className("edit-system-notification-form__info"))),
-                        entry(WARNING, context().find(By.className("edit-system-notification-form__warning"))),
-                        entry(CRITICAL, context().find(By.className("edit-system-notification-form__critical")))
+                        entry(INFO, context().find(byClassName("cp-setting-info"))),
+                        entry(WARNING, context().find(byClassName("cp-setting-warning"))),
+                        entry(CRITICAL, context().find(byClassName("cp-setting-critical")))
                 );
 
                 public NotificationSeverityCombobox(CreateNotificationPopup parentAO) {
