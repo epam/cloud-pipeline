@@ -509,17 +509,24 @@ export default class Tool extends localization.LocalizedReactComponent {
     const renderDescription = () => {
       if (this.state.editDescriptionMode) {
         return (
-          <Input
+          <Input.TextArea
+            autosize
+            autoFocus
             id="description-input"
             value={this.state.description}
             onChange={(e) => this.setState({description: e.target.value})}
-            type="textarea"
             onKeyDown={(e) => {
               if (e.key && e.key === 'Escape') {
                 this.toggleEditDescriptionMode(false);
               }
             }}
-            style={{width: '100%', height: '100%', resize: 'none'}} />
+            style={{
+              width: '100%',
+              height: '100%',
+              resize: 'none',
+              borderRadius: 0,
+              minHeight: '20vh'
+            }} />
         );
       } else {
         const description = this.props.tool.value.description;
@@ -550,7 +557,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             id={`${isShortDescription ? 'short-description' : 'description'}-edit-cancel-button`}
             key="cancel"
             size="small"
-            onClick={() => method(false)}>
+            onClick={() => method(false)}
+            style={{lineHeight: 1}}
+          >
             CANCEL
           </Button>
         );
@@ -560,7 +569,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             key="save"
             size="small"
             type="primary"
-            onClick={this.onSave(isShortDescription)}>
+            onClick={this.onSave(isShortDescription)}
+            style={{lineHeight: 1}}
+          >
             SAVE
           </Button>
         );
@@ -570,7 +581,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             id={`${isShortDescription ? 'short-description' : 'description'}-edit-button`}
             key="edit"
             size="small"
-            onClick={() => method(true)}>
+            onClick={() => method(true)}
+            style={{lineHeight: 1}}
+          >
             EDIT
           </Button>
         );
@@ -678,7 +691,15 @@ export default class Tool extends localization.LocalizedReactComponent {
           </Row>
           <Row
             type="flex"
-            className={classNames(styles.descriptionTableBody, 'cp-tool-panel-body')}
+            className={
+              classNames(
+                styles.descriptionTableBody,
+                'cp-tool-panel-body',
+                {
+                  'no-padding': this.state.editDescriptionMode
+                }
+              )
+            }
             style={{flex: 1, overflowY: 'auto'}}>
             {renderDescription()}
           </Row>
@@ -998,7 +1019,9 @@ export default class Tool extends localization.LocalizedReactComponent {
               (
                 <Button
                   size="small"
-                  onClick={(e) => this.toggleVersionWhiteList(e, version)}>
+                  onClick={(e) => this.toggleVersionWhiteList(e, version)}
+                  style={{lineHeight: 1}}
+                >
                   {version.fromWhiteList ? 'Remove from ' : 'Add to '}white list
                 </Button>
               )
@@ -1013,7 +1036,9 @@ export default class Tool extends localization.LocalizedReactComponent {
                   type="primary"
                   loading={version.status === ScanStatuses.pending}
                   size="small"
-                  onClick={(e) => this.toolScan(e, version.name)}>
+                  onClick={(e) => this.toolScan(e, version.name)}
+                  style={{lineHeight: 1}}
+                >
                   {version.status === ScanStatuses.pending ? 'SCANNING' : 'SCAN'}
                 </Button>
               )
@@ -1037,7 +1062,9 @@ export default class Tool extends localization.LocalizedReactComponent {
                     e.preventDefault();
                     e.stopPropagation();
                     this.deleteToolVersionConfirm(version.name);
-                  }}>
+                  }}
+                  style={{lineHeight: 1}}
+                >
                   <Icon type="delete" />
                 </Button>
               )
@@ -1085,14 +1112,19 @@ export default class Tool extends localization.LocalizedReactComponent {
           isContainsUnscannedVersion &&
           <Row className={styles.viewUnscannedVersion}>
             <Button
-              style={{marginTop: 10}}
+              style={{marginTop: 10, lineHeight: 1}}
               key="view_unscanned_version"
               size="large"
               type="primary"
               ghost
               disabled={!isContainsUnscannedVersion}
-              onClick={this.onChangeViewUnscannedVersion}>
-              {this.state.isShowUnscannedVersion ? 'HIDE UNSCANNED VERSIONS' : 'VIEW UNSCANNED VERSIONS'}
+              onClick={this.onChangeViewUnscannedVersion}
+            >
+              {
+                this.state.isShowUnscannedVersion
+                  ? 'HIDE UNSCANNED VERSIONS'
+                  : 'VIEW UNSCANNED VERSIONS'
+              }
             </Button>
           </Row>
         }
@@ -1598,7 +1630,9 @@ export default class Tool extends localization.LocalizedReactComponent {
               e.preventDefault();
               e.stopPropagation();
               this.runTool(version || this.anyTag);
-            }}>
+            }}
+            style={{lineHeight: 1}}
+          >
             {
               tooltip && !notLoaded
                 ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
@@ -1627,7 +1661,9 @@ export default class Tool extends localization.LocalizedReactComponent {
               e.preventDefault();
               e.stopPropagation();
               return this.runToolDefault(version);
-            }}>
+            }}
+            style={{lineHeight: 1}}
+          >
             {
               tooltip && !notLoaded
                 ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
@@ -1697,7 +1733,9 @@ export default class Tool extends localization.LocalizedReactComponent {
                 e.preventDefault();
                 e.stopPropagation();
                 return this.runToolDefault(version);
-              }}>
+              }}
+              style={{lineHeight: 1}}
+            >
               {
                 tooltip && !notLoaded
                   ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
@@ -1717,7 +1755,9 @@ export default class Tool extends localization.LocalizedReactComponent {
                 e.stopPropagation();
               }}
               size="small"
-              type="primary">
+              type="primary"
+              style={{lineHeight: 1}}
+            >
               <Icon type="down" style={{lineHeight: 'inherit'}} />
             </Button>
           </Dropdown>
@@ -1789,7 +1829,9 @@ export default class Tool extends localization.LocalizedReactComponent {
         overlay={displayOptionsMenu}>
         <Button
           id="display-attributes"
-          size="small">
+          size="small"
+          style={{lineHeight: 1}}
+        >
           <Icon type="appstore" style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
@@ -1858,6 +1900,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           disabled={!this.props.tool.loaded}
           size="small"
           onClick={this.openCreateLinkForm}
+          style={{lineHeight: 1}}
         >
           <Icon type="link" />
         </Button>
@@ -1892,7 +1935,7 @@ export default class Tool extends localization.LocalizedReactComponent {
     );
     return (
       <Dropdown overlay={menu} placement="bottomRight">
-        <Button id="setting-button" size="small">
+        <Button id="setting-button" size="small" style={{lineHeight: 1}}>
           <Icon type="setting" style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
@@ -1946,7 +1989,7 @@ export default class Tool extends localization.LocalizedReactComponent {
             <Button
               onClick={this.navigateBack}
               size="small"
-              style={{lineHeight: 'inherit'}}>
+              style={{lineHeight: 1}}>
               <Icon type="arrow-left" />
             </Button>
             <ToolLink link={this.link} style={{marginLeft: 5}} />

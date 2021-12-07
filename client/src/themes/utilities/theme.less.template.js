@@ -1715,6 +1715,9 @@ export default `
   background-color: @card-background-color;
   border-radius: 0 0 5px 5px;
 }
+@THEME .cp-tool-panel .cp-tool-panel-body.no-padding {
+  padding: 0;
+}
 @THEME .cp-tool-no-description {
   color: @application-color-faded;
 }
