@@ -17,6 +17,7 @@
 package com.epam.pipeline.dao.monitoring;
 
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
@@ -24,7 +25,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpMethod;
@@ -52,12 +52,13 @@ public class MonitoringESDao {
 
     private static final String INDEX_NAME_TOKEN = "heapster-";
 
-    private RestHighLevelClient client;
+    private HeapsterElasticRestHighLevelClient heapsterClient;
     private RestClient lowLevelClient;
 
     @Autowired
-    public MonitoringESDao(RestHighLevelClient client, RestClient lowLevelClient) {
-        this.client = client;
+    public MonitoringESDao(HeapsterElasticRestHighLevelClient heapsterClient,
+                           RestClient lowLevelClient) {
+        this.heapsterClient = heapsterClient;
         this.lowLevelClient = lowLevelClient;
     }
 
@@ -66,7 +67,7 @@ public class MonitoringESDao {
         if (CollectionUtils.isEmpty(resourceIds)) {
             return Collections.emptyMap();
         }
-        return AbstractMetricRequester.getRequester(metric, client).performRequest(resourceIds, from, to);
+        return AbstractMetricRequester.getRequester(metric, heapsterClient).performRequest(resourceIds, from, to);
     }
 
     /**
