@@ -219,7 +219,8 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
         events_logging_handler.setFormatter(logging.Formatter('%(message)s'))
         self._events_logger = logging.getLogger('nfs_events')
         self._events_logger.addHandler(events_logging_handler)
-        self._events_logger.setLevel(logging.DEBUG)
+        self._events_logger.setLevel(logging.INFO)
+        self._events_logger.propagate = False
 
     def _convert_event_to_str(self, event):
         for mnt_dest, mnt_src in self._target_path_mapping.items():
@@ -268,7 +269,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
             # TODO sorting might be skipped in case events will be sorted in the consuming service
             sorted_events = sorted(self._active_events.values(), key=lambda e: e.timestamp)
             for event in sorted_events:
-                self._events_logger.debug(self._convert_event_to_str(event))
+                self._events_logger.info(self._convert_event_to_str(event))
             logging.info(format_message('Cleaning activity list'))
             self._active_events.clear()
         for rollover_backup in range(EVENT_FILES_BACKUP_COUNT, 0, -1):
