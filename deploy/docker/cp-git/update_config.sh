@@ -88,7 +88,7 @@ gitlab_rails['smtp_enable_starttls_auto'] = ${CP_NOTIFIER_SMTP_START_TLS:-false}
 gitlab_rails['gitlab_email_from'] = \"$CP_NOTIFIER_SMTP_FROM\""
 fi
 
-cat >> /etc/gitlab/gitlab.rb <<-EOF
+cat > /etc/gitlab/gitlab.rb <<-EOF
 
 ${GIT_PROXIES}
 
