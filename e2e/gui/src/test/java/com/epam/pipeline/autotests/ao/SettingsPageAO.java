@@ -1592,7 +1592,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public class MyProfileAO implements AccessObject<MyProfileAO> {
         private final Map<Primitive,SelenideElement> elements = initialiseElements(
-                entry(USER_NAME, $(byClassName("ser-profile__header"))),
+                entry(USER_NAME, $(byClassName("rofile__header"))),
                 entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input"))),
                 entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
         );
