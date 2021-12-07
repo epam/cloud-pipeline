@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ResourceAlreadyExistsException;
@@ -31,7 +32,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
@@ -140,8 +140,10 @@ public class MonitoringESDaoTest {
         client = node.client();
         final RestClientBuilder lowLevelClientBuilder = RestClient.builder(
                 new HttpHost("localhost", ELASTICSEARCH_DEFAULT_PORT, "http"));
-        RestHighLevelClient highLevelClient = new RestHighLevelClient(lowLevelClientBuilder);
-        monitoringESDao = new MonitoringESDao(highLevelClient, highLevelClient.getLowLevelClient());
+        final HeapsterElasticRestHighLevelClient heapsterElasticHighLevelClient =
+                new HeapsterElasticRestHighLevelClient(lowLevelClientBuilder);
+        monitoringESDao = new MonitoringESDao(heapsterElasticHighLevelClient,
+                heapsterElasticHighLevelClient.getLowLevelClient());
     }
 
     private static void tryDelete(String indexName, Client client) {
