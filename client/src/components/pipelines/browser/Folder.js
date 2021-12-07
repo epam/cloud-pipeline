@@ -1848,7 +1848,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       return this.lockUnLockFolder(lock);
     };
     Modal.confirm({
-      title: `Are you sure you want to ${lock ? 'lock' : 'unlock'} folder ${this.props.folder.value.name}?`,
+      title: `Are you sure you want to ${lock ? 'lock' : 'unlock'} folder '${this.props.folder.value.name}'?`,
       style: {
         wordWrap: 'break-word'
       },
@@ -2112,7 +2112,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 this.state.folderToDelete &&
                 (!this.deletingFolderIsEmpty
                   ? `Folder '${this.state.folderToDelete.name}' contains sub-items, do you want to delete them?`
-                  : `Are you sure you want to delete folder ${this.state.folderToDelete.name}`)
+                  : `Are you sure you want to delete folder '${this.state.folderToDelete.name}'?`)
               }
             </Row>
             {(!this._folderToDeleteInfo || this._folderToDeleteInfo.pending) && <LoadingView />}
