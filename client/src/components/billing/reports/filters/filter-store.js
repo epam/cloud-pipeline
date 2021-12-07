@@ -101,8 +101,23 @@ class Filter {
     }
   };
 
-  getDescription = ({users, cloudRegionsInfo}) => {
-    const title = ReportsRouting.getTitle(this.report) || 'Report';
+  getDescription = ({users, cloudRegionsInfo, discounts}) => {
+    const {
+      computeRaw = 0,
+      storageRaw = 0
+    } = discounts || {};
+    let discountsTitle = '';
+    if (computeRaw !== 0 || storageRaw !== 0) {
+      const parts = [
+        computeRaw !== 0 ? `Computes ${-computeRaw}%` : undefined,
+        storageRaw !== 0 ? `Storages ${-storageRaw}%` : undefined
+      ].filter(Boolean).join(' and ');
+      discountsTitle = `(${parts})`;
+    }
+    let title = ReportsRouting.getTitle(this.report) || 'Report';
+    if (discountsTitle) {
+      title = title.concat(' ', discountsTitle);
+    }
     const {start, endStrict} = getPeriod(this.period, this.range);
     let dates = this.period;
     if (start && endStrict) {
@@ -144,7 +159,7 @@ class Filter {
       title,
       dates,
       runner,
-      regions,
+      regions
     ].filter(Boolean).join(' - ');
   };
 
