@@ -71,6 +71,7 @@ MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_S
 EVENT_DUMPING_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_DUMPING_TIMEOUT_SEC', 30))
 TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre')
 EVENT_FILES_LIMIT_MB = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENT_FILES_LIMIT_MB', 1024))
+EVENT_FILES_BACKUP_COUNT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENT_FILES_BACKUP_COUNT', 1))
 
 logging_format = os.getenv('CP_CAP_NFS_OBSERVER__LOGGING_FORMAT', '%(message)s')
 logging_level = os.getenv('CP_CAP_NFS_OBSERVER_LOGGING_LEVEL', 'WARNING')
@@ -211,8 +212,10 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
     def _init_events_logger(self):
         self._events_local_file = os.path.join(self._activity_logging_local_dir, 'nfs_events')
+        single_event_file_size_limit_mb = EVENT_FILES_LIMIT_MB / (EVENT_FILES_BACKUP_COUNT + 1)
         events_logging_handler = RotatingFileHandler(self._events_local_file, mode='a',
-                                                     maxBytes=EVENT_FILES_LIMIT_MB * 1024 * 1024)
+                                                     backupCount=EVENT_FILES_BACKUP_COUNT,
+                                                     maxBytes=single_event_file_size_limit_mb * 1024 * 1024)
         events_logging_handler.setFormatter(logging.Formatter('%(message)s'))
         self._events_logger = logging.getLogger('nfs_events')
         self._events_logger.addHandler(events_logging_handler)
@@ -268,15 +271,20 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
                 self._events_logger.debug(self._convert_event_to_str(event))
             logging.info(format_message('Cleaning activity list'))
             self._active_events.clear()
-        if os.stat(self._events_local_file).st_size == 0:
+        for rollover_backup in range(EVENT_FILES_BACKUP_COUNT, 0, -1):
+            self._dump_event_file('{}.{}'.format(self._events_local_file, rollover_backup))
+        self._dump_event_file(self._events_local_file)
+
+    def _dump_event_file(self, local_event_file):
+        if not os.path.exists(local_event_file) or os.stat(local_event_file).st_size == 0:
             return
         bucket_filename = 'events-' + current_utc_time_str().replace(' ', '_')
         bucket_file = os.path.join(self._activity_logging_bucket_dir, bucket_filename)
         logging.info(format_message('Dumping events to {} '.format(bucket_file)))
-        _, result = execute_command(self._transfer_template.format(self._events_local_file, bucket_file))
+        _, result = execute_command(self._transfer_template.format(local_event_file, bucket_file))
         if result:
             self.last_dump_time = current_utc_time()
-            with open(self._events_local_file, 'w'):
+            with open(local_event_file, 'w'):
                 pass
 
 
