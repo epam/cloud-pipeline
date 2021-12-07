@@ -1760,7 +1760,7 @@ export default `
   background-color: @card-service-background-color;
 }
 @THEME .cp-runs-table-icon-green {
-  color: @color-green;
+  color: @color-success;
 }
 @THEME .cp-runs-table-icon-blue {
   color: @color-info;
