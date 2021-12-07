@@ -489,9 +489,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public class UserManagementAO extends SettingsPageAO {
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(USERS_TAB, $$(byClassName("ant-tabs-tab")).findBy(text("Users"))),
-                entry(GROUPS_TAB, $$(byClassName("ant-tabs-tab")).findBy(text("Groups"))),
-                entry(ROLE_TAB, $$(byClassName("ant-tabs-tab")).findBy(text("Roles")))
+                entry(USERS_TAB, $(byClassName("section-users")).find(byText("Users"))),
+                entry(GROUPS_TAB, $(byClassName("section-groups")).find(byText("Groups"))),
+                entry(ROLE_TAB, $(byClassName("section-roles")).find(byText("Roles")))
         );
 
         public UserManagementAO(PipelinesLibraryAO pipelinesLibraryAO) {
@@ -521,8 +521,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class UsersTabAO extends SystemEventsAO {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     super.elements(),
-                    entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
-                            .find(byClassName("ant-table-content"))),
+                    entry(TABLE, context().find(byClassName("user-management-form__container"))
+                            .find(byClassName("ant-table-tbody"))),
                     entry(SEARCH, context().find(byClassName("ant-input-search"))),
                     entry(CREATE_USER, context().find(button("Create user"))),
                     entry(EXPORT_USERS, context().find(button("Export users")))
@@ -558,7 +558,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return elements().get(TABLE)
                         .find(byXpath(format(
                                 ".//td[contains(@class, 'user-management-form__user-name-column') and " +
-                                        "starts-with(., '%s')]", login)))
+                                        "starts-with(.//text(), '%s')]", login)))
                         .closest(".ant-table-row-level-0");
             }
 
