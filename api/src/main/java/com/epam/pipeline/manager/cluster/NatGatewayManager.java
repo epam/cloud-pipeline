@@ -174,8 +174,8 @@ public class NatGatewayManager {
         return updateRoutesInDatabase(request, NatRouteStatus.TERMINATION_SCHEDULED);
     }
 
-    private Set<String> tryResolveAddress(final String hostname) {
-        return tryResolveAddress(hostname, null);
+    private Set<String> tryResolveAddressUsingSystemDns(final String hostname) {
+        return tryResolveAddress(hostname, StringUtils.EMPTY);
     }
 
     private Set<String> tryResolveAddress(final String hostname, final String dnsServer) {
@@ -185,7 +185,8 @@ public class NatGatewayManager {
                    ? resolveNameUsingSystemDefaultDns(hostname)
                    : resolveNameUsingCustomDns(hostname, dnsServerIp);
         } catch (IOException e) {
-            log.error(messageHelper.getMessage(MessageConstants.NAT_ADDRESS_RESOLVING_EXCEPTION), e.getMessage());
+            log.error(messageHelper.getMessage(MessageConstants.NAT_ADDRESS_RESOLVING_EXCEPTION,
+                                               hostname, e.getMessage()));
             return Collections.emptySet();
         }
     }
@@ -208,7 +209,7 @@ public class NatGatewayManager {
             .collect(Collectors.toSet());
     }
 
-    private Set<String> resolveNameUsingSystemDefaultDns(String hostname) throws UnknownHostException {
+    private Set<String> resolveNameUsingSystemDefaultDns(final String hostname) throws UnknownHostException {
         return Stream.of(InetAddress.getAllByName(hostname))
             .map(InetAddress::getHostAddress)
             .collect(Collectors.toSet());
@@ -784,7 +785,7 @@ public class NatGatewayManager {
             log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED));
             return false;
         }
-        final Set<String> resolvedAddresses = tryResolveAddress(externalName);
+        final Set<String> resolvedAddresses = tryResolveAddressUsingSystemDns(externalName);
         return resolvedAddresses.size() == 1 && resolvedAddresses.contains(clusterIP);
     }
 
@@ -862,8 +863,8 @@ public class NatGatewayManager {
     }
 
     private boolean setStatusFailed(final String serviceName, final Integer externalPort, final String errorCause) {
-        log.error(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_FAILURE_SUMMARY),
-                  serviceName, externalPort, errorCause);
+        log.error(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_FAILURE_SUMMARY,
+                                           serviceName, externalPort, errorCause));
         updateStatusForRoutingRule(serviceName, externalPort, NatRouteStatus.TERMINATING, errorCause);
         return false;
     }
