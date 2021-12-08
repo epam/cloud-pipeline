@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean class="com.epam.pipeline.dao.datastorage.StorageQuotaTriggersDao" id="storageQuotaTriggersDao" autowire="byName">
+        <property name="createQuotaTriggerQuery">
+            <value>
+                <![CDATA[
+                    INSERT INTO pipeline.last_triggered_storage_quota (
+                       storage_id,
+                       quota_value,
+                       quota_type,
+                       actions
+                    ) VALUES (
+                        :STORAGE_ID,
+                        :QUOTA_VALUE,
+                        :QUOTA_TYPE,
+                        to_jsonb(:ACTIONS::jsonb)
+                    )
+                ]]>
+            </value>
+        </property>
+        <property name="updateQuotaTriggerQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.last_triggered_storage_quota
+                    SET quota_value = :QUOTA_VALUE,
+                       quota_type = :QUOTA_TYPE,
+                       actions = to_jsonb(:ACTIONS::jsonb)
+                    WHERE storage_id = :STORAGE_ID
+                ]]>
+            </value>
+        </property>
+        <property name="findQuotaTriggerQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                       storage_id,
+                       quota_value,
+                       quota_type,
+                       actions
+                    FROM pipeline.last_triggered_storage_quota
+                    WHERE storage_id = :STORAGE_ID
+                ]]>
+            </value>
+        </property>
+        <property name="loadAllQuotaTriggersQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                       storage_id,
+                       quota_value,
+                       quota_type,
+                       actions
+                    FROM pipeline.last_triggered_storage_quota
+                ]]>
+            </value>
+        </property>
+    </bean>
+</beans>
