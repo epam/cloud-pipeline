@@ -291,5 +291,6 @@ public enum Primitive {
     IMPERSONATE,
     MY_PROFILE,
     FILE_SYSTEM_ACCESS,
-    DISABLE
+    DISABLE,
+    CONTENT_PREVIEW
 }

@@ -542,7 +542,7 @@ public class LogAO implements AccessObject<LogAO> {
         FAILURE("cp-runs-table-icon-red"),
         STOPPED("cp-runs-table-icon-yellow"),
         WORKING("cp-runs-table-icon-blue"),
-        LOADING("anticon-download"),
+        LOADING("anticon-loading"),
         PAUSED("anticon-pause-circle-o");
 
         public final Condition reached;
@@ -551,7 +551,7 @@ public class LogAO implements AccessObject<LogAO> {
             this.reached = new Condition("status " + this.name()) {
                 @Override
                 public boolean apply(final WebElement element) {
-                    return $(element).find(byXpath(".//i[contains(@class, 'anticon-exclamation-circle')]"))
+                    return $(element).find(byXpath(".//i[contains(@class, 'anticon')]"))
                             .has(cssClass(iconClass));
                 }
 
