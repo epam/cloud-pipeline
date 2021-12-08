@@ -994,7 +994,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
         <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
           <td colSpan={6}>
             <Select
-              allowClear
               showSearch
               style={{width: '100%'}}
               filterOption={
