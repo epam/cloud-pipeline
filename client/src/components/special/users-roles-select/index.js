@@ -20,6 +20,7 @@ import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Select, Icon} from 'antd';
 import Roles from '../../../models/user/Roles';
+import GroupFind from '../../../models/user/GroupFind';
 import UserName from '../UserName';
 
 const MINIMUM_SEARCH_LENGTH = 2;
@@ -69,7 +70,8 @@ function nameSorter (a, b) {
 @observer
 class UsersRolesSelect extends React.Component {
   state = {
-    searchString: undefined
+    searchString: undefined,
+    adGroups: []
   };
 
   @computed
@@ -104,34 +106,69 @@ class UsersRolesSelect extends React.Component {
   }
 
   get items () {
-    const {searchString = ''} = this.state;
+    const {
+      searchString = '',
+      adGroups = []
+    } = this.state;
     const {value = []} = this.props;
-    const items = [
+    const uniqueRoleNames = new Set(this.roles.map(o => o.name));
+    const filteredADGroups = adGroups.filter(o => !uniqueRoleNames.has(o.name));
+    const usersAndRoles = [
       ...this.users,
-      ...this.roles
+      ...this.roles,
+      ...filteredADGroups
     ];
     const itemIsSelected = (item) => !!value
       .find(v => v.name === item.name && v.principal === item.principal);
+    const unknownItems = (value || [])
+      .filter(o => !usersAndRoles.find(i => i.name === o.name && i.principal === o.principal))
+      .map(item => ({
+        name: item.name,
+        search: [item.name.toLowerCase()],
+        displayName: item.name,
+        principal: item.principal
+      }));
+    const items = usersAndRoles.concat(unknownItems);
     if (searchString.length >= MINIMUM_SEARCH_LENGTH) {
       const lowerCasedSearchString = searchString.toLowerCase();
       return items.filter(item => itemIsSelected(item) ||
         !!item.search.find(o => o.includes(lowerCasedSearchString))
-      );
+      )
+        .sort(nameSorter);
     }
     return items
-      .filter(itemIsSelected);
+      .filter(itemIsSelected)
+      .sort(nameSorter);
   }
 
   onChangeSearchString = (e) => {
+    const {adGroups: showADGroups = true} = this.props;
     this.setState({
       searchString: e || ''
+    }, () => {
+      if (showADGroups) {
+        GroupFind.findGroups(e)
+          .then((groups = []) => {
+            if (this.state.searchString === e) {
+              this.setState({
+                adGroups: groups.map(group => ({
+                  name: group,
+                  search: [group.toLowerCase()],
+                  displayName: group,
+                  principal: false
+                }))
+              });
+            }
+          });
+      }
     });
   };
 
   onChange = (keys) => {
     const payload = (keys || []).map(getDataSourceItemFromValue);
     this.setState({
-      searchString: undefined
+      searchString: undefined,
+      adGroups: []
     }, () => {
       const {onChange} = this.props;
       onChange && onChange(payload);
@@ -162,6 +199,7 @@ class UsersRolesSelect extends React.Component {
         value={value.map(getDataSourceItemValue)}
         onChange={this.onChange}
         filterOption={false}
+        placeholder={this.props.placeholder || ''}
         getPopupContainer={o => o.parentNode}
         onSearch={this.onChangeSearchString}
         onBlur={() => this.onChangeSearchString()}
@@ -212,11 +250,17 @@ class UsersRolesSelect extends React.Component {
 }
 
 UsersRolesSelect.propTypes = {
+  adGroups: PropTypes.bool,
+  placeholder: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onChange: PropTypes.func
+};
+
+UsersRolesSelect.defaultProps = {
+  adGroups: true
 };
 
 export default UsersRolesSelect;

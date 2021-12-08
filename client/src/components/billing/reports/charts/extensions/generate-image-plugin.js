@@ -30,8 +30,6 @@ const plugin = {
       const canvasElement = document.createElement('canvas');
       canvasElement.width = width || 1;
       canvasElement.height = height || 1;
-      document.body.style.overflowY = 'hidden';
-      document.body.appendChild(canvasElement);
       const ctx = canvasElement.getContext('2d');
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, width, height);
@@ -39,14 +37,10 @@ const plugin = {
       image.onload = function () {
         ctx.drawImage(this, 0, 0);
         const data = ctx.getImageData(0, 0, width, height);
-        document.body.removeChild(canvasElement);
-        document.body.style.overflowY = 'unset';
         onImageReady(data);
       };
       image.onerror = function () {
         onImageError && onImageError('Error loading image');
-        document.body.removeChild(canvasElement);
-        document.body.style.overflowY = 'unset';
       };
       image.src = chart.toBase64Image();
     }
