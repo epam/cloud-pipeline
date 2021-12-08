@@ -154,9 +154,13 @@ public class SearchRequestBuilder {
         if (StringUtils.isNotBlank(path)) {
             sizeSumSearch.query(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
-        return new SearchRequest()
-                .indices(allowNoIndex ? INDEX_WILDCARD_PREFIX + searchIndex : searchIndex)
+        final SearchRequest request = new SearchRequest()
+                .indices(searchIndex)
                 .source(sizeSumSearch);
+        if (allowNoIndex) {
+            request.indicesOptions(IndicesOptions.LENIENT_EXPAND_OPEN);
+        }
+        return request;
     }
 
     public SearchRequest buildFacetedRequest(final FacetedSearchRequest searchRequest,
