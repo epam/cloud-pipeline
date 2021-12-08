@@ -282,7 +282,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
                         text("Finished"), text("Estimated price"))
-                .ensure(PREVIEW_TAB, text("InitializeNode"))
+                .ensure(CONTENT_PREVIEW, text("InitializeNode"))
                 .parent()
                 .moveToSearchResultItemWithText(pipelineWithRun(), LogAO::new)
                 .ensure(STATUS, text(String.format("Run #%s", testRunID)));
@@ -499,7 +499,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("Owner"), text("Scheduled"),
                         text("Started"), text("Running for"), text("Estimated price"))
                 .checkEndpointsLink(endpointLink)
-                .ensure(PREVIEW_TAB, text("InputData"), text("MountDataStorages"),
+                .ensure(CONTENT_PREVIEW, text("InputData"), text("MountDataStorages"),
                         text("InitializeEnvironment"), text("Console"))
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)

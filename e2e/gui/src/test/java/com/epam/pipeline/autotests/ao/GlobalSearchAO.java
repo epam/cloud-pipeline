@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
     public static Condition disable = new Condition("be disable type") {
         @Override
         public boolean apply(final WebElement element) {
-            return cssClass("earch__disabled").apply(element);
+            return cssClass("disabled").apply(element);
         }
     };
 
@@ -184,6 +184,7 @@ public class GlobalSearchAO implements AccessObject<GlobalSearchAO> {
                 entry(INFO_TAB, context().find(byClassName("review__run-table"))),
                 entry(TAGS, context().find(byClassName("review__tags"))),
                 entry(PREVIEW_TAB, context().find(By.xpath(".//div[@class='review__content-preview'][2]"))),
+                entry(CONTENT_PREVIEW, context().find(byClassName("cp-search-content-preview"))),
                 entry(ATTRIBUTES, context().find(byClassName("review__attribute"))),
                 entry(TITLE_FIELD, context().find(byClassName("review__sub-title"))),
                 entry(SHORT_DESCRIPTION, context().find(byClassName("review__tool-description"))),
