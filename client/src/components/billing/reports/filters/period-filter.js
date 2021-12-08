@@ -16,16 +16,21 @@
 
 import React from 'react';
 import {Button} from 'antd';
+import {observer} from 'mobx-react';
 import Divider from './divider';
 import RangeFilter from './range-filter';
-import {Period, getPeriod, Range} from '../periods';
+import {Period, getPeriod, Range} from '../../navigation/periods';
+import BillingNavigation from '../../navigation';
 import styles from './period-filter.css';
 
-export default function ({
-  onChange,
-  filter,
-  range
+function PeriodFilter ({
+  filters = {}
 }) {
+  const {
+    period: filter,
+    range,
+    periodNavigation: onChange = () => {}
+  } = filters;
   const getButtonType = (key) => key === filter ? 'primary' : 'default';
   const onClick = (key) => () => {
     if (key !== filter) {
@@ -72,3 +77,5 @@ export default function ({
     </div>
   );
 }
+
+export default BillingNavigation.attach(observer(PeriodFilter));

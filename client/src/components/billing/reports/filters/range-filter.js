@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {QuarterPicker, Quarters, RangePicker, YearPicker, MonthPicker} from './components';
-import {Period, Range, getPeriod} from '../periods';
+import {Period, Range, getPeriod} from '../../navigation/periods';
 
 function rangeFilter ({period, range, onChange}) {
   const onChangeDate = (date) => {
