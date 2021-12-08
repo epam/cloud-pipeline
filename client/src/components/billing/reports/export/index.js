@@ -65,7 +65,10 @@ class ExportReports extends React.Component {
       return null;
     }
     return (
-      <Menu onClick={({key: format}) => this.onExport(format)}>
+      <Menu
+        onClick={({key: format}) => this.onExport(format)}
+        style={{minWidth: 125}}
+      >
         {
           formats.map((format, index) => (
             format === ExportFormat.divider
