@@ -122,7 +122,7 @@ class LayoutComponent extends React.Component {
       >
         <GridLayout
           className="billing-layout"
-          draggableHandle={`.${styles.panelMove} .cp-billing-layout-panel-move`}
+          draggableHandle={`.${styles.panelMove}.cp-billing-layout-panel-move`}
           layout={panelsLayout}
           cols={gridStyles.gridCols}
           width={layoutDimensions.width - gridStyles.scrollBarSize}
