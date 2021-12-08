@@ -567,7 +567,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         }
     }
 
-    @Test
+    @Test(enabled = false)
     @TestCase(value = {"EPMCMBIBPC-2670"})
     public void issueSearch() {
         library()
@@ -603,7 +603,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close();
     }
 
-    @Test(dependsOnMethods = {"issueSearch"})
+    @Test(dependsOnMethods = {"issueSearch"}, enabled = false)
     @TestCase(value = {"EPMCMBIBPC-2671"})
     public void identicalNamesSearch() {
         library()
