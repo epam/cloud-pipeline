@@ -78,6 +78,10 @@ export default class EditToolFormParameters extends React.Component {
     return admin;
   }
 
+  get sectionName () {
+    return this.props.isSystemParameters ? 'systemParameters' : 'parameters';
+  }
+
   openBucketBrowser = (index) => {
     this.setState({
       bucketBrowserParameter: index
@@ -103,7 +107,11 @@ export default class EditToolFormParameters extends React.Component {
 
   addParameter = (parameter) => {
     const parameters = this.state.parameters;
-    parameters.push(parameter);
+    const id = Math.max(0, ...parameters.map(o => o.id)) + 1;
+    parameters.push({
+      ...parameter,
+      id
+    });
     const validation = this.validate(parameters);
     this.setState({
       parameters,
@@ -166,6 +174,7 @@ export default class EditToolFormParameters extends React.Component {
   renderStringParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Input
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={onChange}
@@ -179,6 +188,7 @@ export default class EditToolFormParameters extends React.Component {
   renderSelectParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Select
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={v => onChange({target: {value: v}})}
@@ -200,6 +210,7 @@ export default class EditToolFormParameters extends React.Component {
   renderBooleanParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Checkbox
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         checked={`${parameter.value}` === 'true'}
         style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
@@ -220,6 +231,7 @@ export default class EditToolFormParameters extends React.Component {
     }
     return (
       <Input
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         style={Object.assign(
           {width: '100%', marginLeft: 5, top: 0},
@@ -242,6 +254,7 @@ export default class EditToolFormParameters extends React.Component {
       return null;
     }
     const {
+      id,
       initial = false
     } = parameter;
     const readOnly = initial && this.isSystemParameterRestrictedByRole(parameter);
@@ -292,9 +305,19 @@ export default class EditToolFormParameters extends React.Component {
       valueError = this.state.validation[index].errorValue;
     }
     return (
-      <Row key={index} type="flex" style={{marginTop: 5, marginBottom: 5}} align="top">
-        <Col offset={3} span={3} style={{textAlign: 'right', display: 'flex', flexDirection: 'column'}}>
+      <Row
+        key={index}
+        id={`${this.sectionName}.params.param_${parameter.id}`}
+        type="flex"
+        style={{marginTop: 5, marginBottom: 5}}
+        align="top"
+      >
+        <Col
+          offset={3}
+          span={3}
+          style={{textAlign: 'right', display: 'flex', flexDirection: 'column'}}>
           <Input
+            id={`${this.sectionName}.params.param_${parameter.id}.name`}
             disabled={
               this.props.readOnly ||
               this.props.isSystemParameters ||
@@ -384,11 +407,15 @@ export default class EditToolFormParameters extends React.Component {
           onCancel={this.closeSystemParameterBrowser}
           onSave={(parameters) => {
             const p = this.state.parameters;
-            p.push(...parameters.map(param => ({
-              name: param.name,
-              type: param.type,
-              value: param.defaultValue
-            })));
+            const id = Math.max(0, ...p.map(o => o.id)) + 1;
+            p.push(...parameters.map(param => {
+              return {
+                id,
+                name: param.name,
+                type: param.type,
+                value: param.defaultValue
+              };
+            }));
             const validation = this.validate(p);
             this.setState({
               parameters: p,
@@ -414,7 +441,13 @@ export default class EditToolFormParameters extends React.Component {
   };
 
   reset = () => {
-    const mapParameter = p => ({name: p.name, value: p.value, type: p.type, initial: true});
+    const mapParameter = (p, index) => ({
+      id: index,
+      name: p.name,
+      value: p.value,
+      type: p.type,
+      initial: true
+    });
     this.setState({
       parameters: (this.props.value || [])
         .filter(this.filterPropsParameter.bind(this))
@@ -485,7 +518,9 @@ export default class EditToolFormParameters extends React.Component {
   }
 
   getValues = () => {
-    return this.state.parameters;
+    const mapParameter = ({id, ...param}) => ({...param});
+
+    return (this.state.parameters || []).map(mapParameter);
   };
 
   @computed
@@ -503,7 +538,8 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < propsValue.length; i++) {
       const propsValueItem = propsValue[i];
       const currentValueItem = currentValue[i];
-      if (propsValueItem.name !== currentValueItem.name || propsValueItem.value !== currentValueItem.value) {
+      if (propsValueItem.name !== currentValueItem.name ||
+        propsValueItem.value !== currentValueItem.value) {
         return true;
       }
     }
