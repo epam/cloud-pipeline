@@ -54,6 +54,7 @@ TUNNEL_CONFLICT_ARGS = ['-ke', '--keep-existing',
                         '-rd', '--replace-different']
 TUNNEL_FOREGROUND_ARGS = ['--foreground']
 TUNNEL_IGNORE_EXISTING_ARGS = ['--ignore-existing']
+UNKNOWN_USER = 'unknown'
 
 run_conn_info = collections.namedtuple('conn_info', 'ssh_proxy ssh_endpoint ssh_pass owner '
                                                     'sensitive platform parameters')
@@ -784,7 +785,7 @@ def create_background_tunnel(local_ports, remote_ports, remote_host, log_file, l
 
 def wait_for_background_tunnel(tunnel_proc, local_ports, timeout, polling_delay=1):
     attempts = int(timeout / polling_delay)
-    logging.debug('Waiting for tunnel process #%s to listen on all the required ports...', tunnel_proc.pid)
+    logging.info('Waiting for tunnel process #%s to listen all the required ports...', tunnel_proc.pid)
     while attempts > 0:
         time.sleep(polling_delay)
         if tunnel_proc.poll() is not None:
@@ -846,12 +847,18 @@ def get_proc_details(listening_pid):
     import psutil
     try:
         proc = psutil.Process(listening_pid)
-        proc_ppid = 0 if is_windows() else proc.ppid()
-        proc_owner = proc.username()
+        proc_ppid = proc.ppid()
+        proc_owner = UNKNOWN_USER
+        try:
+            proc_owner = proc.username()
+        except Exception:
+            logging.debug('Process #%s owner retrieval has failed.', listening_pid,
+                          exc_info=sys.exc_info())
+            return SystemProcess(pid=listening_pid, ppid=proc_ppid, owner=proc_owner)
         try:
             proc_args = proc.cmdline()
         except psutil.AccessDenied:
-            logging.debug('Process #%s details access is denied...', proc.pid)
+            logging.debug('Process #%s details access is denied.', proc.pid)
             return SystemProcess(pid=listening_pid, ppid=proc_ppid, owner=proc_owner)
         logging.info('Process #%s details were retrieved (%s).', proc.pid, ' '.join(proc_args))
         return SystemProcess(pid=listening_pid, ppid=proc_ppid, owner=proc_owner, args=proc_args)
@@ -1426,7 +1433,6 @@ def kill_tunnels(host_id, local_ports_str, timeout_stop, force, ignore_owner, lo
                           'because it has %s owner but %s owner is required...',
                           tunnel.pid, tunnel.owner, get_current_user())
             continue
-        logging.info('Killing tunnel process #%s...', tunnel.pid)
         kill_tunnel(tunnel.proc, tunnel_args.local_ports, timeout_stop, force)
 
 
@@ -1493,7 +1499,12 @@ def find_tunnels(parse_tunnel_args):
                 continue
             logging.info('Tunnel process #%s was found (%s).', proc_pid, ' '.join(proc_args))
             proc_ppid = proc.ppid()
-            proc_owner = proc.username()
+            proc_owner = UNKNOWN_USER
+            try:
+                proc_owner = proc.username()
+            except Exception:
+                logging.debug('Tunnel process #%s owner retrieval has failed. Using default user instead...', proc_pid,
+                              exc_info=sys.exc_info())
             yield TunnelProcess(pid=proc_pid, ppid=proc_ppid, owner=proc_owner, args=proc_args,
                                 proc=proc, parsed_args=proc_parsed_args)
         except Exception:
@@ -1523,6 +1534,7 @@ def parse_tunnel_proc_args(proc_args, parse_start_tunnel_arguments):
 
 
 def kill_tunnel(proc, local_ports, timeout, force=False):
+    logging.info('Killing tunnel process #%s...', proc.pid)
     kill_process(proc, timeout, force)
     wait_for_local_ports(local_ports, timeout)
 
@@ -1543,14 +1555,14 @@ def kill_process(proc, timeout, force):
 
 def wait_for_local_ports(local_ports, timeout, polling_delay=1):
     attempts = int(timeout / polling_delay)
-    logging.debug('Waiting for %s local ports to become unoccupied...', stringify_ports(local_ports))
+    logging.info('Waiting for %s local ports to become unoccupied...', stringify_ports(local_ports))
     while attempts > 0:
         time.sleep(polling_delay)
         if not list(find_local_ports_which_cannot_be_occupied(local_ports)):
             logging.info('Local ports %s are not occupied anymore.', stringify_ports(local_ports))
             return
         logging.debug('Local ports %s are still occupied. '
-                      'Only %s attempts remain left...', attempts)
+                      'Only %s attempts remain left...', stringify_ports(local_ports), attempts)
         attempts -= 1
     raise TunnelError('Local ports are still occupied after {} seconds.'.format(timeout))
 

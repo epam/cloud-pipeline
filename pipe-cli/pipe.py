@@ -1634,6 +1634,10 @@ def start_tunnel_options(decorating_func):
 
 @tunnel.command(name='start')
 @start_tunnel_options
+@click.option('-u', '--user', required=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--noclean', required=False, is_flag=True, default=False, help=NO_CLEAN_OPTION_DESCRIPTION)
+@click.option('--debug', required=False, is_flag=True, default=False, help=DEBUG_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 def return_tunnel_args(*args, **kwargs):
     return kwargs
 
