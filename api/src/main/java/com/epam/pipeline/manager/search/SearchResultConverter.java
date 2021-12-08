@@ -74,13 +74,16 @@ public class SearchResultConverter {
 
     public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
                                                   final AbstractDataStorage dataStorage, final String path) {
-        final ParsedSum sumAggResult = searchResponse.getAggregations().get(STORAGE_SIZE_AGG_NAME);
+        final Long size = Optional.ofNullable(searchResponse.getAggregations())
+                .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
+                .map(result -> new Double(result.getValue()).longValue())
+                .orElse(0L);
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
-                .size(new Double(sumAggResult.getValue()).longValue())
+                .size(size)
                 .count(searchResponse.getHits().getTotalHits())
                 .build();
     }
