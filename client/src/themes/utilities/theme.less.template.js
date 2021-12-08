@@ -1652,6 +1652,29 @@ export default `
   background-image: @taiwan-region-icon;
 }
 
+@THEME @fn: @theme-transition-function;
+@ms: @theme-transition-duration;
+
+.cp-theme-transition-background {
+  transition: background-color @fn @ms;
+}
+@THEME .cp-theme-transition-color {
+  transition: color @fn @ms;
+}
+@THEME .cp-theme-transition {
+  transition: color @fn @ms, background-color @fn @ms;
+}
+@THEME .ant-layout-sider,
+@THEME .ant-layout,
+@THEME .ant-input,
+@THEME .cp-panel,
+@THEME .cp-panel-card,
+@THEME .cp-panel-card-actions-background,
+@THEME .cp-navigation-panel,
+@THEME .cp-navigation-panel .cp-navigation-menu-item {
+  .cp-theme-transition();
+}
+
 @THEME .ant-alert {
   color: @application-color;
 }
@@ -2269,6 +2292,17 @@ export default `
 @THEME .cp-metadata-item-row td {
   padding: 2px 5px;
   border: 1px solid transparent;
+}
+@THEME .cp-metadata-item-row.key.editable td,
+@THEME .cp-metadata-item-row.key.editable td:hover,
+@THEME .cp-metadata-item-row.value.editable td,
+@THEME .cp-metadata-item-row.value.editable td:hover {
+  padding: 0;
+  border: none;
+}
+@THEME .cp-metadata-item-row.key.editable .ant-input,
+@THEME .cp-metadata-item-row.value.editable .ant-input {
+  padding: 2px 5px !important;
 }
 @THEME .cp-metadata-item-row.key td.cp-metadata-item-key:hover,
 @THEME .cp-metadata-item-row.value td:hover {

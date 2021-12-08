@@ -1023,7 +1023,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
     const dictionary = systemDictionaries.getDictionary(key);
     if (dictionary) {
       valueElement = (
-        <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
+        <tr
+          key={`${metadataItem.key}_value`}
+          className={classNames(
+            'cp-metadata-item-row',
+            'value',
+            'editable'
+          )}
+        >
           <td colSpan={6}>
             <Select
               allowClear
@@ -1049,7 +1056,14 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     } else if (isJson(metadataItem.value)) {
       valueElement = (
-        <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
+        <tr
+          key={`${metadataItem.key}_value`}
+          className={classNames(
+            'cp-metadata-item-row',
+            'value',
+            'editable'
+          )}
+        >
           <td colSpan={6}>
             <ItemsTable
               title={metadataItem.key}
@@ -1067,7 +1081,7 @@ export default class Metadata extends localization.LocalizedReactComponent {
           className={
             classNames(
               'cp-metadata-item-row',
-              'qa-metadata-item-value-row',
+              'value',
               'editable'
             )
           }

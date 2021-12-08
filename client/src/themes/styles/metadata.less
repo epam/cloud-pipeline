@@ -53,12 +53,16 @@
   border: 1px solid transparent;
 }
 
-.cp-metadata-item-row.editable td {
-  padding: 0 !important;
-  border: none !important;
+.cp-metadata-item-row.key.editable td,
+.cp-metadata-item-row.key.editable td:hover,
+.cp-metadata-item-row.value.editable td,
+.cp-metadata-item-row.value.editable td:hover {
+  padding: 0;
+  border: none;
 }
 
-.cp-metadata-item-row.editable .ant-input {
+.cp-metadata-item-row.key.editable .ant-input,
+.cp-metadata-item-row.value.editable .ant-input {
   padding: 2px 5px !important;
 }
 
