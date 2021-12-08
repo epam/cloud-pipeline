@@ -143,6 +143,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .switchToSystemLogs();
             if (impersonateMode()) {
                 systemLogsAO
+                        .filterByUser(admin.login)
                         .validateRow(format("Authentication failed! User %s is blocked!",
                                 userWithoutCompletedRuns.login), admin.login, TYPE)
                         .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",

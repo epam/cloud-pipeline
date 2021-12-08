@@ -558,6 +558,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                     .clickOnEndpointLink();
             endpointPage
                     .sleep(3, SECONDS)
+                    .refresh()
                     .assertPageTitleIs("404 Not Found");
         } finally {
             if (endpointPage != null) {
