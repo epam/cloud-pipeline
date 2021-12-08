@@ -53,7 +53,6 @@ public class ObjectMetadataToolTest extends AbstractBfxPipelineTest implements N
                                         .ensure(REMOVE_ALL_KEYS, visible)
                                         .selectKey(key1)
                                         .ensure(DELETE_ICON, visible)
-                                        .validateKeyBackgroundIsGrey()
                         )
                 );
     }

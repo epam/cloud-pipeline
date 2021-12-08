@@ -51,7 +51,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     private final String keyElementId = "key-column-%s";
     private final String valueElementId = "value-column-%s";
     private final String deleteButtonId = "delete-metadata-key-%s-button";
-    private final String keyFieldId = "metadata__key-row";
+    private final String keyFieldId = "cp-metadata-item-row";
 
     public MetadataSectionAO(AccessObject parentAO) {
         super(parentAO);
@@ -112,8 +112,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO assertNumberOfKeysIs(int expectedNumberOfKeys) {
-        $$(byClassName(keyFieldId)).filter(not(have(cssClass("metadata__special"))))
-                .shouldHaveSize(expectedNumberOfKeys);
+        $$(byClassName(keyFieldId)).filter(have(cssClass("key")))
+                .filter(not(have(cssClass("read-only")))).shouldHaveSize(expectedNumberOfKeys);
         return this;
     }
 
@@ -142,10 +142,10 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataKeyAO selectKey(final String key) {
-        final SelenideElement keyRow = $(byId(String.format(keyElementId, key))).closest(".metadata__key-row");
+        final SelenideElement keyRow = $(byId(String.format(keyElementId, key))).closest(".cp-metadata-item-row");
         return new MetadataKeyAO(
                 keyRow,
-                keyRow.find(byXpath("following-sibling::*[contains(@class, 'metadata__value-row')]")),
+                keyRow.find(byXpath("following-sibling::*[contains(@class, 'cp-metadata-item-row')]")),
                 this
         );
     }

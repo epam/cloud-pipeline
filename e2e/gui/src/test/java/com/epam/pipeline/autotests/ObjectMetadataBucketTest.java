@@ -70,8 +70,7 @@ public class ObjectMetadataBucketTest extends AbstractBfxPipelineTest implements
                 .addKeyWithValue(key1, value1)
                 .ensure(REMOVE_ALL_KEYS, visible)
                 .selectKeyByOrderNumber(1)
-                .ensure(DELETE_ICON, visible)
-                .validateKeyBackgroundIsGrey();
+                .ensure(DELETE_ICON, visible);
     }
 
     @Test(dependsOnMethods = "addMetadataToBucketValidation")
