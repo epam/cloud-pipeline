@@ -84,9 +84,27 @@ fi
 echo "[OK] Gitlab admin token is retrieved"
 
 echo "[INFO] Checking if the '$CP_GITLAB_RUNNER_NAME' runner already registered"
-_CP_GITLAB_RUNNERS_JSON=$(curl -sk \
-                        ${_CP_GITLAB_URL}/api/v4/runners/all \
-                        -H "PRIVATE-TOKEN: $_CP_GITLAB_ADMIN_TOKEN")
+# Retry a couple of times, as the gitlab may not be up yet
+CP_GITLAB_RUNNER_WAIT_API_COUNT=${CP_GITLAB_RUNNER_WAIT_API_COUNT:-30}
+CP_GITLAB_RUNNER_WAIT_API_STATUS=0
+for _CP_GITLAB_RUNNER_TRY_ATTEMPT in $(seq 1 $CP_GITLAB_RUNNER_WAIT_API_COUNT); do
+    _CP_GITLAB_RUNNERS_JSON=$(curl -sk --fail \
+                            ${_CP_GITLAB_URL}/api/v4/runners/all \
+                            -H "PRIVATE-TOKEN: $_CP_GITLAB_ADMIN_TOKEN")
+    if [ $? -ne 0 ]; then
+        echo "[INFO] Waiting for Gitlab API..."
+        sleep 10
+    else
+        echo "[INFO] Gitlab API is UP"
+        CP_GITLAB_RUNNER_WAIT_API_STATUS=1
+        break
+    fi
+done
+if [ "$CP_GITLAB_RUNNER_WAIT_API_STATUS" == 0 ]; then
+    echo "[ERROR] Timed out while waiting for the Gitlab API after $CP_GITLAB_RUNNER_WAIT_API_STATUS attempts, exiting"
+    exit 1
+fi
+
 _CP_GITLAB_RUNNER_FOUND=$(echo $_CP_GITLAB_RUNNERS_JSON | jq -r ".[] | select(.description==\"$CP_GITLAB_RUNNER_NAME\")")
 if is_jq_null "$_CP_GITLAB_RUNNER_FOUND"; then
     echo "[INFO] '$CP_GITLAB_RUNNER_NAME' runner is not registered yet, proceeding with the registration"

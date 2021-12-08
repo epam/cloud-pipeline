@@ -139,3 +139,6 @@ gitlab_rails['omniauth_providers'] = [
 
 ${SMTP_SETTINGS}
 EOF
+
+# Start the gitlab runner
+/gitlab-runner-scripts/init-gitlab-runner.sh &
