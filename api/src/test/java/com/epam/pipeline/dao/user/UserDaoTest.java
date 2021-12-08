@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import org.apache.commons.collections4.CollectionUtils;
-import org.junit.Assert;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,7 +37,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.collection.IsCollectionWithSize.hasSize;
+import static org.junit.Assert.*;
 
 @Transactional
 public class UserDaoTest extends AbstractSpringTest {
@@ -46,14 +50,14 @@ public class UserDaoTest extends AbstractSpringTest {
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_USER2 = "test_user2";
     private static final String TEST_USER3 = "test_user3";
-    private static final List<String> TEST_GROUPS_1 = new ArrayList<>();
-    private static final List<String> TEST_GROUPS_2 = new ArrayList<>();
+    public static final String USER_NAME = "userName";
     private static final String TEST_GROUP_1 = "test_group_1";
     private static final String TEST_GROUP_2 = "test_group_2";
     private static final String ATTRIBUTES_KEY = "email";
     private static final String ATTRIBUTES_VALUE = "test_email";
     private static final String ATTRIBUTES_VALUE2 = "Mail@epam.com";
     private static final int EXPECTED_DEFAULT_ROLES_NUMBER = 12;
+    private static final String TEST_ROLE = "ROLE_TEST";
 
     @Autowired
     private UserDao userDao;
@@ -75,12 +79,12 @@ public class UserDaoTest extends AbstractSpringTest {
         PipelineUser savedUser = userDao.createUser(user, Collections.emptyList());
 
         Collection<PipelineUser> userByNamePrefix = userDao.findUsers(TEST_USER1.substring(0, 2));
-        Assert.assertEquals(1, userByNamePrefix.size());
-        Assert.assertTrue(userByNamePrefix.stream().anyMatch(u -> u.getId().equals(savedUser.getId())));
+        assertEquals(1, userByNamePrefix.size());
+        assertTrue(userByNamePrefix.stream().anyMatch(u -> u.getId().equals(savedUser.getId())));
 
         Collection<PipelineUser> userByAttrPrefix = userDao.findUsers(ATTRIBUTES_VALUE2.substring(0, 2));
-        Assert.assertEquals(1, userByNamePrefix.size());
-        Assert.assertTrue(userByAttrPrefix.stream().anyMatch(u -> u.getId().equals(savedUser.getId())));
+        assertEquals(1, userByNamePrefix.size());
+        assertTrue(userByAttrPrefix.stream().anyMatch(u -> u.getId().equals(savedUser.getId())));
     }
 
     @Test
@@ -89,37 +93,37 @@ public class UserDaoTest extends AbstractSpringTest {
         user.setUserName(TEST_USER1);
         PipelineUser savedUser = userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
-        Assert.assertNotNull(savedUser);
-        Assert.assertNotNull(savedUser.getId());
+        assertNotNull(savedUser);
+        assertNotNull(savedUser.getId());
 
         Collection<PipelineUser> users = userDao.loadAllUsers();
-        Assert.assertFalse(users.isEmpty());
-        Assert.assertTrue(users.stream().anyMatch(u -> u.getId().equals(savedUser.getId())));
+        assertFalse(users.isEmpty());
+        assertTrue(users.stream().anyMatch(u -> u.getId().equals(savedUser.getId())));
 
         PipelineUser userById = userDao.loadUserById(savedUser.getId());
-        Assert.assertEquals(savedUser.getId(), userById.getId());
+        assertEquals(savedUser.getId(), userById.getId());
 
         PipelineUser userByName = userDao.loadUserByName(TEST_USER1.toUpperCase());
-        Assert.assertEquals(savedUser.getId(), userByName.getId());
+        assertEquals(savedUser.getId(), userByName.getId());
 
         savedUser.setUserName(TEST_USER2);
         userDao.updateUser(savedUser);
         PipelineUser userByChangedName = userDao.loadUserByName(TEST_USER2);
-        Assert.assertEquals(savedUser.getId(), userByChangedName.getId());
+        assertEquals(savedUser.getId(), userByChangedName.getId());
 
         List<PipelineUser> loadedUsers = userDao.loadUsersByNames(Collections.singletonList(TEST_USER2));
-        Assert.assertFalse(loadedUsers.isEmpty());
+        assertFalse(loadedUsers.isEmpty());
 
         userDao.updateUserRoles(savedUser, Collections.singletonList(DefaultRoles.ROLE_USER.getId()));
         PipelineUser userUpdatedRoles = userDao.loadUserByName(TEST_USER2);
-        Assert.assertEquals(1, userUpdatedRoles.getRoles().size());
-        Assert.assertEquals(DefaultRoles.ROLE_USER.name(),  userUpdatedRoles.getRoles().get(0).getName());
+        assertEquals(1, userUpdatedRoles.getRoles().size());
+        assertEquals(DefaultRoles.ROLE_USER.name(),  userUpdatedRoles.getRoles().get(0).getName());
 
         deleteUserAndHisRoles(savedUser);
 
-        Assert.assertNull(userDao.loadUserById(savedUser.getId()));
+        assertNull(userDao.loadUserById(savedUser.getId()));
         Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();
-        Assert.assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
+        assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
     }
 
     @Test
@@ -129,23 +133,23 @@ public class UserDaoTest extends AbstractSpringTest {
         final PipelineUser savedUser = userDao.createUser(user,
                                                     Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(),
                                                                   DefaultRoles.ROLE_USER.getId()));
-        Assert.assertFalse(savedUser.isBlocked());
+        assertFalse(savedUser.isBlocked());
 
         final PipelineUser userById = userDao.loadUserById(savedUser.getId());
-        Assert.assertEquals(savedUser.getId(), userById.getId());
-        Assert.assertFalse(userById.isBlocked());
+        assertEquals(savedUser.getId(), userById.getId());
+        assertFalse(userById.isBlocked());
 
         savedUser.setBlocked(true);
         userDao.updateUser(savedUser);
         final PipelineUser userByNameBlocked = userDao.loadUserByName(TEST_USER1.toUpperCase());
-        Assert.assertEquals(savedUser.getId(), userByNameBlocked.getId());
-        Assert.assertTrue(userByNameBlocked.isBlocked());
+        assertEquals(savedUser.getId(), userByNameBlocked.getId());
+        assertTrue(userByNameBlocked.isBlocked());
 
         deleteUserAndHisRoles(savedUser);
-        Assert.assertNull(userDao.loadUserById(savedUser.getId()));
+        assertNull(userDao.loadUserById(savedUser.getId()));
 
         final Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();
-        Assert.assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
+        assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
     }
 
     private void deleteUserAndHisRoles(final PipelineUser savedUser) {
@@ -155,62 +159,54 @@ public class UserDaoTest extends AbstractSpringTest {
 
     @Test
     public void testUserGroups() {
-        PipelineUser user1 = new PipelineUser();
-        user1.setUserName(TEST_USER1);
-        TEST_GROUPS_1.add(TEST_GROUP_1);
-        user1.setGroups(TEST_GROUPS_1);
-        PipelineUser savedUser = userDao.createUser(user1,
+        PipelineUser savedUser = createUser(TEST_USER1,
+                Collections.singletonList(TEST_GROUP_1),
                 Collections.singletonList(DefaultRoles.ROLE_USER.getId()));
-        Assert.assertNotNull(savedUser);
+        assertNotNull(savedUser);
 
-        PipelineUser user2 = new PipelineUser();
-        user2.setUserName(TEST_USER2);
-        TEST_GROUPS_1.add(TEST_GROUP_2);
-        user2.setGroups(TEST_GROUPS_1);
-        PipelineUser savedUser2 = userDao.createUser(user2,
+        final List<String> allGroups = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
+        PipelineUser savedUser2 = createUser(TEST_USER2,
+                allGroups,
                 Collections.singletonList(DefaultRoles.ROLE_USER.getId()));
-        Assert.assertNotNull(savedUser2);
+        assertNotNull(savedUser2);
 
-        PipelineUser user3 = new PipelineUser();
-        user3.setUserName(TEST_USER3);
-        TEST_GROUPS_2.add(TEST_GROUP_2);
-        user3.setGroups(TEST_GROUPS_2);
-        PipelineUser savedUser3 = userDao.createUser(user3,
+        PipelineUser savedUser3 = createUser(TEST_USER3,
+                Collections.singletonList(TEST_GROUP_2),
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
-        Assert.assertNotNull(savedUser3);
+        assertNotNull(savedUser3);
 
         Collection<PipelineUser> userByGroup = userDao.loadUsersByGroup(TEST_GROUP_1);
-        Assert.assertTrue(userByGroup.size() == 2);
-        Assert.assertTrue(userByGroup.stream().anyMatch(u ->
+        assertEquals(2, userByGroup.size());
+        assertTrue(userByGroup.stream().anyMatch(u ->
                 u.getUserName().equals(TEST_USER1)));
-        Assert.assertTrue(userByGroup.stream().noneMatch(u ->
+        assertTrue(userByGroup.stream().noneMatch(u ->
                 u.getUserName().equals(TEST_USER3)));
 
         List<String> foundGroups = userDao.findGroups("TEST_");
-        Assert.assertTrue(TEST_GROUPS_1.size() == foundGroups.size());
-        Assert.assertTrue(TEST_GROUPS_1.containsAll(foundGroups));
+        assertEquals(allGroups.size(), foundGroups.size());
+        assertTrue(allGroups.containsAll(foundGroups));
 
-        Assert.assertFalse(userDao.isUserInGroup(user1.getUserName(), "TEST_GROUP_5"));
-        Assert.assertTrue(userDao.isUserInGroup(user1.getUserName(), TEST_GROUP_1));
+        assertFalse(userDao.isUserInGroup(savedUser.getUserName(), "TEST_GROUP_5"));
+        assertTrue(userDao.isUserInGroup(savedUser.getUserName(), TEST_GROUP_1));
 
         List<String> allLoadedGroups = userDao.loadAllGroups();
         Collections.sort(allLoadedGroups);
-        Assert.assertEquals(TEST_GROUPS_1, allLoadedGroups);
+        assertEquals(allGroups, allLoadedGroups);
     }
 
     @Test
     public void testDefaultAdmin() {
         PipelineUser admin = userDao.loadUserByName(defaultAdmin);
-        Assert.assertNotNull(admin);
-        Assert.assertEquals(defaultAdmin, admin.getUserName());
-        Assert.assertTrue(admin.getId().equals(1L));
-        Assert.assertEquals(1, admin.getRoles().size());
-        Assert.assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), admin.getRoles()));
+        assertNotNull(admin);
+        assertEquals(defaultAdmin, admin.getUserName());
+        assertTrue(admin.getId().equals(1L));
+        assertEquals(1, admin.getRoles().size());
+        assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), admin.getRoles()));
 
         Collection<Role> allRoles = roleDao.loadAllRoles(false);
-        Assert.assertEquals(EXPECTED_DEFAULT_ROLES_NUMBER, allRoles.size());
-        Assert.assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), allRoles));
-        Assert.assertTrue(isRolePresent(DefaultRoles.ROLE_USER.getRole(), allRoles));
+        assertEquals(EXPECTED_DEFAULT_ROLES_NUMBER, allRoles.size());
+        assertTrue(isRolePresent(DefaultRoles.ROLE_ADMIN.getRole(), allRoles));
+        assertTrue(isRolePresent(DefaultRoles.ROLE_USER.getRole(), allRoles));
     }
 
     @Test
@@ -222,35 +218,35 @@ public class UserDaoTest extends AbstractSpringTest {
         user.setAttributes(attributes);
         PipelineUser savedUser = userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
-        Assert.assertNotNull(savedUser);
-        Assert.assertNotNull(savedUser.getId());
-        Assert.assertNotNull(savedUser.getAttributes());
+        assertNotNull(savedUser);
+        assertNotNull(savedUser.getId());
+        assertNotNull(savedUser.getAttributes());
 
         Collection<PipelineUser> users = userDao.loadAllUsers();
-        Assert.assertFalse(users.isEmpty());
-        Assert.assertTrue(users.stream()
+        assertFalse(users.isEmpty());
+        assertTrue(users.stream()
                 .anyMatch(u -> u.getId().equals(savedUser.getId())
                         && assertUserAttributes(attributes, u.getAttributes())));
 
         PipelineUser userById = userDao.loadUserById(savedUser.getId());
-        Assert.assertEquals(savedUser.getId(), userById.getId());
-        Assert.assertTrue(assertUserAttributes(attributes, userById.getAttributes()));
+        assertEquals(savedUser.getId(), userById.getId());
+        assertTrue(assertUserAttributes(attributes, userById.getAttributes()));
 
         PipelineUser userByName = userDao.loadUserByName(TEST_USER1.toUpperCase());
-        Assert.assertEquals(savedUser.getId(), userByName.getId());
-        Assert.assertTrue(assertUserAttributes(attributes, userByName.getAttributes()));
+        assertEquals(savedUser.getId(), userByName.getId());
+        assertTrue(assertUserAttributes(attributes, userByName.getAttributes()));
 
         savedUser.setUserName(TEST_USER2);
         userDao.updateUser(savedUser);
         PipelineUser userByChangedName = userDao.loadUserByName(TEST_USER2);
-        Assert.assertEquals(savedUser.getId(), userByChangedName.getId());
-        Assert.assertTrue(assertUserAttributes(attributes, userByChangedName.getAttributes()));
+        assertEquals(savedUser.getId(), userByChangedName.getId());
+        assertTrue(assertUserAttributes(attributes, userByChangedName.getAttributes()));
 
         deleteUserAndHisRoles(savedUser);
 
-        Assert.assertNull(userDao.loadUserById(savedUser.getId()));
+        assertNull(userDao.loadUserById(savedUser.getId()));
         Collection<PipelineUser> usersAfterDeletion = userDao.loadAllUsers();
-        Assert.assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
+        assertTrue(usersAfterDeletion.stream().noneMatch(u -> u.getId().equals(savedUser.getId())));
     }
 
     @Test
@@ -263,8 +259,38 @@ public class UserDaoTest extends AbstractSpringTest {
         user.setDefaultStorageId(s3bucketDataStorage.getId());
         userDao.createUser(user,
                 Arrays.asList(DefaultRoles.ROLE_ADMIN.getId(), DefaultRoles.ROLE_USER.getId()));
-        Assert.assertThat(userDao.loadUsersByStorageId(s3bucketDataStorage.getId()), hasSize(1));
+        assertThat(userDao.loadUsersByStorageId(s3bucketDataStorage.getId()), hasSize(1));
 
+    }
+
+    @Test
+    public void shouldLoadUsersByGroupOrRole() {
+        final Role testRole = roleDao.createRole(TEST_ROLE);
+        createUser(TEST_USER1,
+                Collections.singletonList(TEST_GROUP_1),
+                Collections.singletonList(testRole.getId()));
+        createUser(TEST_USER2,
+                Collections.singletonList(TEST_GROUP_1),
+                Collections.singletonList(DefaultRoles.ROLE_USER.getId()));
+        final Collection<PipelineUser> usersByRole =
+                userDao.loadUsersByGroupOrRole(TEST_ROLE);
+        assertThat(usersByRole, hasSize(1));
+        assertThat(usersByRole, contains(hasProperty(USER_NAME, equalTo(TEST_USER1))));
+
+        final Collection<PipelineUser> usersByGroup = userDao.loadUsersByGroupOrRole(TEST_GROUP_1);
+        assertThat(usersByGroup, hasSize(2));
+        assertThat(usersByGroup, hasItem(hasProperty(USER_NAME, equalTo(TEST_USER1))));
+        assertThat(usersByGroup, hasItem(hasProperty(USER_NAME, equalTo(TEST_USER2))));
+    }
+
+    private PipelineUser createUser(final String name,
+                                    final Collection<String> groups,
+                                    final Collection<Long> roleIds) {
+        final PipelineUser user = PipelineUser.builder()
+                .userName(name)
+                .groups(new ArrayList<>(groups))
+                .build();
+        return userDao.createUser(user, new ArrayList<>(roleIds));
     }
 
     private boolean isRolePresent(Role roleToFind, Collection<Role> roles) {
