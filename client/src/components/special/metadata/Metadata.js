@@ -950,12 +950,20 @@ export default class Metadata extends localization.LocalizedReactComponent {
           className={
             classNames(
               'cp-metadata-item-row',
-              'key'
+              'key',
+              'editable'
             )
           }
         >
           <td colSpan={6}>
-            <Input {...inputOptions('key')} />
+            <Input
+              {...inputOptions('key')}
+              style={{minHeight: '28px'}}
+              className={classNames(
+                'qa-metadata-item-key-input',
+                `qa-metadata-item-key-input-${metadataItem.key}`
+              )}
+            />
           </td>
         </tr>
       );
@@ -986,7 +994,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
                 : this.onMetadataEditStarted('key', metadataItem.index, metadataItem.key)
             }
           >
-            {metadataItem.key}
+            <span style={{display: 'inline-block'}}>
+              {metadataItem.key}
+            </span>
           </td>
           {
             readOnly
@@ -1052,12 +1062,26 @@ export default class Metadata extends localization.LocalizedReactComponent {
       );
     } else if (this.state.editableValueIndex === metadataItem.index) {
       valueElement = (
-        <tr key={`${metadataItem.key}_value`} className={styles.valueRowEdit}>
+        <tr
+          key={`${metadataItem.key}_value`}
+          className={
+            classNames(
+              'cp-metadata-item-row',
+              'qa-metadata-item-value-row',
+              'editable'
+            )
+          }
+        >
           <td colSpan={6}>
             <Input
               {...inputOptions('value')}
               type="textarea"
-              autosize={MetadataDisplayOptions.edit.autosize} />
+              autosize={MetadataDisplayOptions.edit.autosize}
+              className={classNames(
+                'qa-metadata-item-value-input',
+                `qa-metadata-item-value-input-${metadataItem.index}`
+              )}
+            />
           </td>
         </tr>
       );
@@ -1081,7 +1105,9 @@ export default class Metadata extends localization.LocalizedReactComponent {
                 : this.onMetadataEditStarted('value', metadataItem.index, metadataItem.value)
             }
           >
-            {MetadataDisplayOptions.preview.display(metadataItem.value)}
+            <span style={{display: 'inline-block'}}>
+              {MetadataDisplayOptions.preview.display(metadataItem.value)}
+            </span>
           </td>
         </tr>
       );
