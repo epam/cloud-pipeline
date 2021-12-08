@@ -380,6 +380,12 @@ public class UserManager {
         return userDao.loadUsersByGroup(group);
     }
 
+    public Collection<PipelineUser> loadUsersByGroupOrRole(final String name) {
+        Assert.isTrue(StringUtils.isNotBlank(name),
+                messageHelper.getMessage(MessageConstants.USER_GROUP_IS_REQUIRED));
+        return userDao.loadUsersByGroupOrRole(name);
+    }
+
     /**
      * Checks whether a specific user is a member of a specific group
      * @param userName a name of {@code UserContext}
