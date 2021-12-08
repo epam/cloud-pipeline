@@ -1033,7 +1033,6 @@ export default class Metadata extends localization.LocalizedReactComponent {
         >
           <td colSpan={6}>
             <Select
-              allowClear
               showSearch
               style={{width: '100%'}}
               filterOption={
