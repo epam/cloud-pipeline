@@ -26,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -110,23 +111,24 @@ public class SearchResultConverter {
     private SearchDocument buildDocument(final SearchHit hit,
                                          final String typeFieldName,
                                          final Set<String> aclFilterFields) {
-        final Map<String, Object> sourceFields = hit.getSourceAsMap();
+        final Map<String, DocumentField> fields = hit.getFields();
         return SearchDocument.builder()
                 .elasticId(hit.getId())
                 .score(hit.getScore())
-                .id(getFieldIfPresent(sourceFields, "id"))
-                .name(getFieldIfPresent(sourceFields, "name"))
-                .parentId(getFieldIfPresent(sourceFields, "parentId"))
-                .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(sourceFields, typeFieldName)))
-                .description(getFieldIfPresent(sourceFields, "description"))
+                .id(getFieldIfPresent(fields, "id"))
+                .name(getFieldIfPresent(fields, "name"))
+                .parentId(getFieldIfPresent(fields, "parentId"))
+                .type(EnumUtils.getEnum(SearchDocumentType.class, getFieldIfPresent(fields, typeFieldName)))
+                .description(getFieldIfPresent(fields, "description"))
                 .highlights(buildHighlights(hit.getHighlightFields(), aclFilterFields))
                 .build();
     }
 
-    private String getFieldIfPresent(final Map<String, Object> sourceFields, final String fieldName) {
-        return Optional.ofNullable(sourceFields.get(fieldName))
+    private String getFieldIfPresent(Map<String, DocumentField> fields, final String fieldName) {
+        return Optional.ofNullable(fields.get(fieldName))
+                .map(DocumentField::getValue)
                 .map(Object::toString)
-                .orElse(null);
+                        .orElse(null);
     }
 
     private List<SearchDocument.HightLight> buildHighlights(final Map<String, HighlightField> highlightFields,
