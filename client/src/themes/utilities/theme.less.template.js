@@ -894,6 +894,9 @@ export default `
   border-color: @primary-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
+@THEME .ant-select-selection:hover .ant-select-selection__clear ~ .ant-select-arrow {
+  opacity: 0;
+}
 @THEME .ant-select-dropdown,
 @THEME .ant-dropdown-menu,
 @THEME .rc-menu,
