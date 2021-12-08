@@ -42,6 +42,7 @@ import java.util.function.Function;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
@@ -619,7 +620,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .validateSearchResults(2, title)
                 .click(FOLDERS)
                 .ensureAll(enabled, FOLDERS, ISSUES)
-                .ensure(FOLDERS, GlobalSearchAO.selected)
+                .ensure(FOLDERS, not(GlobalSearchAO.disable))
                 .validateSearchResults(1, title)
                 .click(FOLDERS)
                 .ensureAll(enabled, FOLDERS, ISSUES)
@@ -627,13 +628,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close()
                 .click(ISSUES)
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
-                .ensure(ISSUES, GlobalSearchAO.selected)
+                .ensure(ISSUES, not(GlobalSearchAO.disable))
                 .search(title)
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, DATA)
                 .ensure(ISSUES, enabled)
                 .ensure(ISSUES, text("1 ISSUE"))
-                .ensure(ISSUES, GlobalSearchAO.selected)
+                .ensure(ISSUES, not(GlobalSearchAO.disable))
                 .validateSearchResults(1, title)
                 .click(ISSUES)
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)
