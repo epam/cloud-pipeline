@@ -30,7 +30,7 @@ import {
   buildColor,
   parseAmount
 } from '../../../../themes/utilities/color-utilities';
-import {VariableNames} from '../utilities/variable-descriptions';
+import {groupedColorVariables} from '../utilities/variable-sections';
 import styles from './color-variable.css';
 
 const types = {
@@ -359,7 +359,6 @@ class ColorVariable extends React.PureComponent {
       value,
       modifiedValue,
       initialValue,
-      variables = [],
       parsedValues = {},
       extended,
       error,
@@ -396,36 +395,51 @@ class ColorVariable extends React.PureComponent {
           onChange={this.onChangeType}
           filterOption={
             (input, option) => {
-              const value = VariableNames[option.key] || option.key;
+              console.log(input, option);
+              const value = option.props.title || option.props.key;
+              if (!value) {
+                return false;
+              }
               return (value.toLowerCase().indexOf(input.toLowerCase()) >= 0);
             }
           }
         >
           {
-            variables.map(variable => (
-              <Select.Option
-                key={variable}
-                value={variable}
-              >
-                <div className={styles.colorSelectOption}>
-                  <ColorPresenter
-                    color={parsedValues[variable]}
-                    borderless
-                    style={{marginRight: 5}}
-                  />
-                  <span
-                    className={
-                      classNames(
-                        styles.colorSelectOptionName,
-                        'cp-ellipsis-text'
-                      )
-                    }
-                  >
-                    {VariableNames[variable] || variable}
-                  </span>
-                </div>
-              </Select.Option>
-            ))
+            groupedColorVariables
+              .map(group => (
+                <Select.OptGroup
+                  key={group.name}
+                  label={group.name}
+                >
+                  {
+                    group.variables.map(variable => (
+                      <Select.Option
+                        key={variable.key}
+                        value={variable.key}
+                        title={variable.name}
+                      >
+                        <div className={styles.colorSelectOption}>
+                          <ColorPresenter
+                            color={parsedValues[variable.key]}
+                            borderless
+                            style={{marginRight: 5}}
+                          />
+                          <span
+                            className={
+                              classNames(
+                                styles.colorSelectOptionName,
+                                'cp-ellipsis-text'
+                              )
+                            }
+                          >
+                            {variable.name}
+                          </span>
+                        </div>
+                      </Select.Option>
+                    ))
+                  }
+                </Select.OptGroup>
+              ))
           }
         </Select>
         {
@@ -466,8 +480,7 @@ ColorVariable.propTypes = {
   extended: PropTypes.bool,
   parsedValues: PropTypes.object,
   parsedValue: PropTypes.string,
-  onChange: PropTypes.func,
-  variables: PropTypes.arrayOf(PropTypes.string)
+  onChange: PropTypes.func
 };
 
 export default ColorVariable;

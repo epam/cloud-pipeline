@@ -1443,6 +1443,9 @@ export default `
   background-color: @card-background-color;
   margin: 2px;
 }
+@THEME .cp-panel .cp-panel-card.borderless {
+  border: none;
+}
 @THEME .cp-panel .cp-panel-card.cp-launch-vs-tool {
   margin: 2px 0;
 }
@@ -1452,6 +1455,9 @@ export default `
 @THEME .cp-panel .cp-panel-card.cp-card-service {
   border: 1px solid @card-service-border-color;
   background-color: @card-service-background-color;
+}
+@THEME .cp-panel .cp-panel-card.cp-card-service.borderless {
+  border: none;
 }
 @THEME .cp-panel .cp-panel-card:hover {
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
