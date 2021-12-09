@@ -918,7 +918,8 @@ export default `
   border-color: @panel-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-divider {
   background-color: @panel-border-color;
 }
 @THEME .ant-select-selection__placeholder,

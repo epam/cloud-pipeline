@@ -88,7 +88,7 @@ const DocumentColumns = [
   {
     key: 'name',
     name: 'Name',
-    renderFn: (value, document, onClick) => (
+    renderFn: (value, document, onClick, renderCheckBox) => (
       <div
         style={{
           display: 'flex',
@@ -114,6 +114,7 @@ const DocumentColumns = [
               onClick && onClick(document);
             }}
           />
+          {renderCheckBox && renderCheckBox(document)}
           <OpenInToolAction
             file={document.path}
             storageId={document.parentId}

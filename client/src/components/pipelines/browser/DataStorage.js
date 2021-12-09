@@ -142,7 +142,6 @@ export default class DataStorage extends React.Component {
     downloadFolderUrlModal: false,
     generateFolderUrlWriteAccess: false,
     selectedItems: [],
-    itemsToShareRootFolder: undefined,
     itemsToShare: [],
     shareDialogVisible: false,
     renameItem: null,
@@ -264,7 +263,8 @@ export default class DataStorage extends React.Component {
       return info.value.type !== 'NFS' &&
         preferences &&
         preferences.loaded &&
-        preferences.sharedStoragesSystemDirectory;
+        preferences.sharedStoragesSystemDirectory &&
+        preferences.dataSharingEnabled;
     }
     return false;
   }
@@ -974,24 +974,23 @@ export default class DataStorage extends React.Component {
   };
 
   openShareItemDialog = (event) => {
-    const {selectedItems: items = []} = this.state;
+    const {selectedItems = []} = this.state;
+    const items = selectedItems
+      .filter(o => o.shareAvailable);
+    const {storageId} = this.props;
     event && event.stopPropagation();
     if (!items || items.length === 0) {
       this.setState({
-        itemsToShareRootFolder: this.props.path,
-        itemsToShare: [],
-        shareDialogVisible: true
-      });
-    } else if (items.length === 1 && /^folder$/i.test(items[0].type)) {
-      this.setState({
-        itemsToShareRootFolder: items[0].path,
-        itemsToShare: [],
+        itemsToShare: [{
+          type: 'folder',
+          path: this.props.path,
+          storageId
+        }],
         shareDialogVisible: true
       });
     } else {
       this.setState({
-        itemsToShareRootFolder: this.props.path,
-        itemsToShare: items ? items.slice() : [],
+        itemsToShare: items ? items.slice().map((o, i) => ({...o, storageId})) : [],
         shareDialogVisible: true
       });
     }
@@ -999,7 +998,6 @@ export default class DataStorage extends React.Component {
 
   closeShareItemDialog = () => {
     return this.setState({
-      itemsToShareRootFolder: undefined,
       itemsToShare: [],
       shareDialogVisible: false
     });
@@ -1184,7 +1182,7 @@ export default class DataStorage extends React.Component {
               i.labels['StorageClass'].toLowerCase() !== 'glacier'
             ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-          shareAvailable: i.type.toLowerCase() !== 'file' && !i.deleteMarker,
+          shareAvailable: i.type.toLowerCase() !== 'file' && !i.deleteMarker && this.sharingEnabled,
           deletable: roleModel.writeAllowed(this.props.info.value),
           children: getChildList(i, i.versions, sensitive),
           selectable: !i.deleteMarker,
@@ -1643,7 +1641,9 @@ export default class DataStorage extends React.Component {
 
   renderShareButton = () => {
     const {selectedItems = []} = this.state;
-    if (!this.sharingEnabled || (selectedItems.length === 0 && !this.props.path)) {
+    const itemsAvailableForShare = selectedItems
+      .filter(o => o.shareAvailable);
+    if (!this.sharingEnabled || (itemsAvailableForShare.length === 0 && !this.props.path)) {
       return undefined;
     }
     let buttonText = (
@@ -1651,17 +1651,17 @@ export default class DataStorage extends React.Component {
         Share <b>current</b> folder
       </span>
     );
-    if (selectedItems.length === 1) {
+    if (itemsAvailableForShare.length === 1) {
       buttonText = (
         <span>
-          Share <b>{selectedItems[0].name}</b> {selectedItems[0].type}
+          Share <b>{itemsAvailableForShare[0].name}</b> {itemsAvailableForShare[0].type}
         </span>
-      )
+      );
     }
-    if (selectedItems.length > 1) {
+    if (itemsAvailableForShare.length > 1) {
       buttonText = (
         <span>
-          Share <b>{selectedItems.length}</b> items
+          Share <b>{itemsAvailableForShare.length}</b> items
         </span>
       );
     }
@@ -2243,8 +2243,6 @@ export default class DataStorage extends React.Component {
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
         <SharedItemInfo
-          path={this.state.itemsToShareRootFolder}
-          storage={this.props.info.value}
           visible={this.state.shareDialogVisible}
           shareItems={this.state.itemsToShare}
           close={this.closeShareItemDialog}
