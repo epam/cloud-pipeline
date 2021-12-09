@@ -14,49 +14,45 @@
  *  limitations under the License.
  */
 
-import {Variables} from './variable-descriptions';
+import {
+  Variables,
+  VariableTypes
+} from './variable-descriptions';
 
-const VariableTypes = {
-  color: 'color',
-  image: 'image',
-  divider: 'divider'
-};
-
-const Divider = {type: VariableTypes.divider, advanced: true};
+const Divider = {variable: {type: VariableTypes.divider}, advanced: true};
 
 function mapConfiguration (item) {
-  if (typeof item === 'string') {
-    return {
-      key: item,
-      advanced: false,
-      type: VariableTypes.color
-    };
+  if (!item) {
+    return undefined;
   }
-  return item;
+  if (item.variable) {
+    return item;
+  }
+  return {variable: item, advanced: false};
 }
 
 const alerts = [
   Variables.alertErrorBackground,
   {
-    key: Variables.alertErrorBorder,
+    variable: Variables.alertErrorBorder,
     advanced: true
   },
   Variables.alertErrorIcon,
   Variables.alertInfoBackground,
   {
-    key: Variables.alertInfoBorder,
+    variable: Variables.alertInfoBorder,
     advanced: true
   },
   Variables.alertInfoIcon,
   Variables.alertWarningBackground,
   {
-    key: Variables.alertWarningBorder,
+    variable: Variables.alertWarningBorder,
     advanced: true
   },
   Variables.alertWarningIcon,
   Variables.alertSuccessBackground,
   {
-    key: Variables.alertSuccessBorder,
+    variable: Variables.alertSuccessBorder,
     advanced: true
   },
   Variables.alertSuccessIcon
@@ -65,35 +61,35 @@ const alerts = [
 const buttons = [
   Variables.primaryColor,
   {
-    key: Variables.primaryTextColor,
+    variable: Variables.primaryTextColor,
     advanced: true
   },
   {
-    key: Variables.primaryHoverColor,
+    variable: Variables.primaryHoverColor,
     advanced: true
   },
   {
-    key: Variables.primaryActiveColor,
+    variable: Variables.primaryActiveColor,
     advanced: true
   },
   Divider,
   Variables.btnDangerColor,
   {
-    key: Variables.btnDangerBackgroundColor,
+    variable: Variables.btnDangerBackgroundColor,
     advanced: true
   },
   {
-    key: Variables.btnDangerActiveColor,
+    variable: Variables.btnDangerActiveColor,
     advanced: true
   },
   {
-    key: Variables.btnDangerActiveBackground,
+    variable: Variables.btnDangerActiveBackground,
     advanced: true
   },
   Divider,
   Variables.btnDisabledColor,
   {
-    key: Variables.btnDisabledBackgroundColor,
+    variable: Variables.btnDisabledBackgroundColor,
     advanced: true
   }
 ];
@@ -104,33 +100,33 @@ const input = [
   Variables.inputBorder,
   Divider,
   {
-    key: Variables.inputPlaceholderColor,
+    variable: Variables.inputPlaceholderColor,
     advanced: true
   },
   {
-    key: Variables.inputBackgroundDisabled,
-    advanced: true
-  },
-  Divider,
-  {
-    key: Variables.inputBorderHoverColor,
-    advanced: true
-  },
-  {
-    key: Variables.inputShadowColor,
+    variable: Variables.inputBackgroundDisabled,
     advanced: true
   },
   Divider,
   {
-    key: Variables.inputAddon,
+    variable: Variables.inputBorderHoverColor,
     advanced: true
   },
   {
-    key: Variables.inputSearchIconColor,
+    variable: Variables.inputShadowColor,
+    advanced: true
+  },
+  Divider,
+  {
+    variable: Variables.inputAddon,
     advanced: true
   },
   {
-    key: Variables.inputSearchIconHoveredColor,
+    variable: Variables.inputSearchIconColor,
+    advanced: true
+  },
+  {
+    variable: Variables.inputSearchIconHoveredColor,
     advanced: true
   }
 ];
@@ -138,93 +134,93 @@ const input = [
 const main = [
   Variables.applicationBackgroundColor,
   {
-    key: Variables.backgroundImage,
+    variable: Variables.backgroundImage,
     advanced: true,
     type: VariableTypes.image
   },
   Divider,
   Variables.applicationColor,
   {
-    key: Variables.applicationColorAccent,
+    variable: Variables.applicationColorAccent,
     advanced: true
   },
   {
-    key: Variables.applicationColorFaded,
+    variable: Variables.applicationColorFaded,
     advanced: true
   },
   {
-    key: Variables.applicationColorDisabled,
+    variable: Variables.applicationColorDisabled,
     advanced: true
   },
   Divider,
   Variables.primaryColor,
   {
-    key: Variables.menuActiveColor,
+    variable: Variables.menuActiveColor,
     advanced: true
   },
   Divider,
   Variables.panelBackgroundColor,
   {
-    key: Variables.panelBorderColor,
+    variable: Variables.panelBorderColor,
     advanced: true
   },
   Divider,
   Variables.cardBackgroundColor,
   {
-    key: Variables.cardHeaderBackground,
+    variable: Variables.cardHeaderBackground,
     advanced: true
   },
   {
-    key: Variables.cardBorderColor,
+    variable: Variables.cardBorderColor,
     advanced: true
   },
   {
-    key: Variables.cardHoveredShadowColor,
+    variable: Variables.cardHoveredShadowColor,
     advanced: true
   },
   {
-    key: Variables.cardActionsActiveBackground,
+    variable: Variables.cardActionsActiveBackground,
     advanced: true
   },
   Divider,
   {
-    key: Variables.cardServiceBackgroundColor,
+    variable: Variables.cardServiceBackgroundColor,
     advanced: true
   },
   {
-    key: Variables.cardServiceHeaderBackground,
+    variable: Variables.cardServiceHeaderBackground,
     advanced: true
   },
   {
-    key: Variables.cardServiceBorderColor,
+    variable: Variables.cardServiceBorderColor,
     advanced: true
   },
   {
-    key: Variables.cardServiceHoveredShadowColor,
+    variable: Variables.cardServiceHoveredShadowColor,
     advanced: true
   },
   {
-    key: Variables.cardServiceActionsActiveBackground,
+    variable: Variables.cardServiceActionsActiveBackground,
     advanced: true
   }
 ];
 
 const navigation = [
   Variables.navigationPanelColor,
-  {key: Variables.navigationItemColor, advanced: true},
-  {key: Variables.navigationPanelHighlightedColor, advanced: true},
+  {variable: Variables.navigationItemColor, advanced: true},
+  {variable: Variables.navigationPanelHighlightedColor, advanced: true},
   Variables.navigationItemRunsColor,
   Divider,
   Variables.navigationPanelColorImpersonated,
-  {key: Variables.navigationPanelHighlightedColorImpersonated, advanced: true},
+  {variable: Variables.navigationPanelHighlightedColorImpersonated, advanced: true},
   Divider,
   {
-    key: Variables.logoImage,
+    variable: Variables.logoImage,
     advanced: true,
     type: VariableTypes.image
   },
   {
-    key: Variables.navigationBackgroundImage,
+    variable: Variables.navigationBackgroundImage,
     advanced: true,
     type: VariableTypes.image
   }
@@ -237,29 +233,101 @@ const colors = [
   Variables.colorError,
   Divider,
   {
-    key: Variables.colorSensitive,
+    variable: Variables.colorSensitive,
     advanced: true
   },
   {
-    key: Variables.nfsIconColor,
+    variable: Variables.nfsIconColor,
     advanced: true
   },
   {
-    key: Variables.spinner,
-    advanced: true
-  },
-  Divider,
-  {
-    key: Variables.searchHighlightTextColor,
-    advanced: true
-  },
-  {
-    key: Variables.searchHighlightTextBackgroundColor,
+    variable: Variables.spinner,
     advanced: true
   },
   Divider,
   {
-    key: Variables.modalMaskBackground,
+    variable: Variables.searchHighlightTextColor,
+    advanced: true
+  },
+  {
+    variable: Variables.searchHighlightTextBackgroundColor,
+    advanced: true
+  },
+  Divider,
+  {
+    variable: Variables.modalMaskBackground,
+    advanced: true
+  },
+  Divider,
+  {
+    variable: Variables.tagKeyBackgroundColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tagValueBackgroundColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tagKeyValueDividerColor,
+    advanced: true
+  }
+];
+
+const tables = [
+  Variables.elementHoverColor,
+  Variables.elementHoverBackgroundColor,
+  Variables.elementSelectedColor,
+  Variables.elementSelectedBackgroundColor,
+  {
+    variable: Variables.evenElementBackground,
+    advanced: true
+  },
+  Divider,
+  {
+    variable: Variables.tableBorderColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tableHeadColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tableElementHoverColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tableElementHoverBackgroundColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tableElementSelectedColor,
+    advanced: true
+  },
+  {
+    variable: Variables.tableElementSelectedBackgroundColor,
+    advanced: true
+  },
+  Divider,
+  {
+    variable: Variables.primaryColorSemiTransparent,
+    advanced: true
+  }
+];
+
+const other = [
+  Variables.awsIcon,
+  {
+    variable: Variables.awsIconContrast,
+    advanced: true
+  },
+  Variables.gcpIcon,
+  {
+    variable: Variables.gcpIconContrast,
+    advanced: true
+  },
+  Variables.azureIcon,
+  {
+    variable: Variables.azureIconContrast,
     advanced: true
   },
   Divider,
@@ -277,48 +345,7 @@ const colors = [
     Variables.colorPinkLight,
     Variables.colorBlueDimmed,
     Variables.colorGrey
-  ].map(key => ({key, advanced: true}))
-];
-
-const tables = [
-  Variables.elementHoverColor,
-  Variables.elementHoverBackgroundColor,
-  Variables.elementSelectedColor,
-  Variables.elementSelectedBackgroundColor,
-  {
-    key: Variables.evenElementBackground,
-    advanced: true
-  },
-  Divider,
-  {
-    key: Variables.tableBorderColor,
-    advanced: true
-  },
-  {
-    key: Variables.tableHeadColor,
-    advanced: true
-  },
-  {
-    key: Variables.tableElementHoverColor,
-    advanced: true
-  },
-  {
-    key: Variables.tableElementHoverBackgroundColor,
-    advanced: true
-  },
-  {
-    key: Variables.tableElementSelectedColor,
-    advanced: true
-  },
-  {
-    key: Variables.tableElementSelectedBackgroundColor,
-    advanced: true
-  },
-  Divider,
-  {
-    key: Variables.primaryColorSemiTransparent,
-    advanced: true
-  }
+  ].map(variable => ({variable, advanced: true}))
 ];
 
 const sections = {
@@ -328,7 +355,8 @@ const sections = {
   main: 'Main',
   navigation: 'Navigation panel',
   colors: `Colors`,
-  tables: 'Tables & Lists'
+  tables: 'Tables & Lists',
+  other: 'Other'
 };
 
 const sectionsConfiguration = {
@@ -338,7 +366,8 @@ const sectionsConfiguration = {
   [sections.main]: main.map(mapConfiguration),
   [sections.navigation]: navigation.map(mapConfiguration),
   [sections.colors]: colors.map(mapConfiguration),
-  [sections.tables]: tables.map(mapConfiguration)
+  [sections.tables]: tables.map(mapConfiguration),
+  [sections.other]: other.map(mapConfiguration)
 };
 
 const orderedSections = [
@@ -348,10 +377,41 @@ const orderedSections = [
   sections.buttons,
   sections.input,
   sections.colors,
-  sections.alerts
+  sections.alerts,
+  sections.other
 ];
 
+function variableNameSorter (a, b) {
+  const aName = a.name;
+  const bName = b.name;
+  return aName.localeCompare(bName);
+}
+
+const grouped = orderedSections
+  .map(section => ({
+    name: sections[section] || section,
+    variables: (sectionsConfiguration[section] || [])
+      .map(o => o.variable)
+      .filter(o => o && (!o.type || o.type === VariableTypes.color))
+      .sort(variableNameSorter)
+  }));
+const plain = grouped
+  .reduce((result, group) => ([...result, ...group.variables]), []);
+
+const variablesWithoutSection = Object.values(Variables)
+  .filter(o => !plain.includes(o) && (!o.type || o.type === VariableTypes.color));
+console.log('VARIABLES WITHOUT SECTIONS', variablesWithoutSection);
+grouped.push(
+  {
+    name: 'Other properties',
+    variables: variablesWithoutSection.sort(variableNameSorter)
+  }
+);
+
+const groupedColorVariables = grouped.filter(group => group.variables.length > 0);
+
 export {
+  groupedColorVariables,
   orderedSections as sections,
   sections as sectionNames,
   sectionsConfiguration,

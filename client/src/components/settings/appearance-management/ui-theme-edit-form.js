@@ -25,11 +25,6 @@ import {
   Tooltip, Modal
 } from 'antd';
 import {validateName} from './utilities/theme-validation';
-import {
-  ColorVariables,
-  VariableNames,
-  VariableDescriptions
-} from './utilities/variable-descriptions';
 import {getThemeConfiguration, parseConfiguration} from '../../../themes/themes';
 import ColorVariable from './color-variable';
 import {ParseConfigurationError} from '../../../themes/utilities/parse-configuration';
@@ -42,6 +37,7 @@ import {
 import ElementPreview from './element-preview';
 import styles from './ui-theme-edit-form.css';
 import ImageUploader from './image-uploader';
+import ProviderIcon from './provider-icon';
 
 const Title = ({className, title, required}) => (
   <span
@@ -523,59 +519,93 @@ class UIThemeEditForm extends React.PureComponent {
                 <div className={styles.properties}>
                   {
                     sectionsConfiguration[section]
-                      .map(({key: variable, advanced, type = VariableTypes.color}, index) => (
+                      .map(({variable, advanced = false}, index) => (
                         <FormItem
-                          key={variable || `${type}-${index}`}
-                          divider={type === VariableTypes.divider}
-                          title={variable ? (VariableNames[variable] || variable) : undefined}
+                          key={variable.key || `${variable.type}-${index}`}
+                          divider={variable.type === VariableTypes.divider}
+                          title={variable.name || variable.key}
                           flex
                           control
                           titleClassName={styles.extended}
                           hidden={advanced && !expandedState[section]}
-                          property={variable}
+                          property={variable.key}
                           validation={propertiesValidation}
-                          hint={variable ? VariableDescriptions[variable] : undefined}
+                          hint={variable.description}
                         >
                           {
-                            type === VariableTypes.color && (
+                            (
+                              !variable.type ||
+                              variable.type === VariableTypes.color
+                            ) && (
                               <ColorVariable
                                 className={classNames(
                                   styles.control,
                                   {
-                                    'cp-error': variable && !!propertiesValidation[variable]
+                                    'cp-error': variable.key && !!propertiesValidation[variable.key]
                                   }
                                 )}
-                                variable={variable}
-                                error={variable && !!propertiesValidation[variable]}
+                                variable={variable.key}
+                                error={variable.key && !!propertiesValidation[variable.key]}
                                 disabled={readOnly}
-                                value={themeProperties[variable] || mergedProperties[variable]}
-                                modifiedValue={themeProperties[variable]}
-                                initialValue={initialProperties[variable]}
-                                extended={!!themeProperties[variable]}
-                                parsedValue={parsedValues[variable]}
+                                value={
+                                  themeProperties[variable.key] ||
+                                  mergedProperties[variable.key]
+                                }
+                                modifiedValue={themeProperties[variable.key]}
+                                initialValue={initialProperties[variable.key]}
+                                extended={!!themeProperties[variable.key]}
+                                parsedValue={parsedValues[variable.key]}
                                 parsedValues={parsedValues}
-                                variables={ColorVariables}
                                 onChange={this.onChangeConfigurationVariable}
                               />
                             )
                           }
                           {
-                            type === VariableTypes.image && (
+                            variable.type === VariableTypes.image && (
                               <ImageUploader
                                 className={classNames(
                                   styles.control,
                                   {
-                                    'cp-error': variable && !!propertiesValidation[variable]
+                                    'cp-error': variable.key && !!propertiesValidation[variable.key]
                                   }
                                 )}
                                 disabled={readOnly}
-                                variable={variable}
+                                variable={variable.key}
                                 maxSize={null}
-                                value={themeProperties[variable] || mergedProperties[variable]}
-                                modifiedValue={themeProperties[variable]}
-                                initialValue={initialProperties[variable]}
-                                extended={!!themeProperties[variable]}
+                                value={
+                                  themeProperties[variable.key] ||
+                                  mergedProperties[variable.key]
+                                }
+                                modifiedValue={themeProperties[variable.key]}
+                                initialValue={initialProperties[variable.key]}
+                                extended={!!themeProperties[variable.key]}
                                 onChange={this.onChangeConfigurationVariable}
+                              />
+                            )
+                          }
+                          {
+                            variable.type === VariableTypes.providerIcon && (
+                              <ProviderIcon
+                                className={classNames(
+                                  styles.control,
+                                  {
+                                    'cp-error': variable.key && !!propertiesValidation[variable.key]
+                                  }
+                                )}
+                                variable={variable.key}
+                                error={variable.key && !!propertiesValidation[variable.key]}
+                                disabled={readOnly}
+                                value={
+                                  themeProperties[variable.key] ||
+                                  mergedProperties[variable.key]
+                                }
+                                modifiedValue={themeProperties[variable.key]}
+                                initialValue={initialProperties[variable.key]}
+                                extended={!!themeProperties[variable.key]}
+                                parsedValue={parsedValues[variable.key]}
+                                parsedValues={parsedValues}
+                                onChange={this.onChangeConfigurationVariable}
+                                provider={variable.provider}
                               />
                             )
                           }

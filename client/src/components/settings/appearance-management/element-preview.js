@@ -31,6 +31,7 @@ import Menu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import {sectionNames} from './utilities/variable-sections';
 import StatusIcon from '../../special/run-status-icon';
+import AWSRegionTag from '../../special/AWSRegionTag';
 import styles from './element-preview.css';
 
 const Divider = () => (
@@ -44,6 +45,27 @@ const Divider = () => (
     }
   >
     {'\u00A0'}
+  </div>
+);
+
+const KeyValueTag = ({keyName, value}) => (
+  <div
+    className={
+      classNames(
+        styles.keyValue
+      )
+    }
+  >
+    <div
+      className="cp-library-metadata-item-key"
+    >
+      {keyName}
+    </div>
+    <div
+      className="cp-library-metadata-item-value"
+    >
+      {value}
+    </div>
   </div>
 );
 
@@ -554,8 +576,59 @@ class ElementPreview extends React.Component {
         </span>
         <span className="cp-search-highlight">text...</span>
       </div>
+      <Divider />
+      <div>
+        <KeyValueTag keyName="Type" value="Project" />
+        <KeyValueTag keyName="Owner" value="User name" />
+      </div>
     </PreviewContainer>
   );
+
+  renderOther = () => (
+    <PreviewContainer>
+      <div>
+        <div>
+          Default icons:
+        </div>
+        <div
+          className={
+            classNames(
+              'cp-panel-card',
+              'borderless',
+              styles.iconsContainer
+            )
+          }
+          style={{
+            margin: 0
+          }}
+        >
+          <AWSRegionTag provider="AWS" className="cp-icon-larger" />
+          <AWSRegionTag provider="GCP" className="cp-icon-larger" />
+          <AWSRegionTag provider="AZURE" className="cp-icon-larger" />
+        </div>
+      </div>
+      <div
+        style={{marginTop: 5}}
+        className={classNames('cp-divider', 'top')}
+      >
+        <div>
+          Contrasted icons:
+        </div>
+        <div
+          className={
+            classNames(
+              'ant-tooltip-inner',
+              styles.iconsContainer
+            )
+          }
+        >
+          <AWSRegionTag provider="AWS" className="cp-icon-larger" />
+          <AWSRegionTag provider="GCP" className="cp-icon-larger" />
+          <AWSRegionTag provider="AZURE" className="cp-icon-larger" />
+        </div>
+      </div>
+    </PreviewContainer>
+  )
 
   renderPreviews () {
     const {section} = this.props;
@@ -574,6 +647,8 @@ class ElementPreview extends React.Component {
         return this.renderMain();
       case sectionNames.colors:
         return this.renderColors();
+      case sectionNames.other:
+        return this.renderOther();
       default:
         return null;
     }
