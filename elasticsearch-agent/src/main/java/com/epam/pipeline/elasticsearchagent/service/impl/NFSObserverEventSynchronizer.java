@@ -34,6 +34,7 @@ import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -96,6 +97,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
     private final String eventsBucketName;
     private final String eventsBucketFolderPath;
     private final Integer eventsFileChunkSize;
+    private final Integer eventsChunkSize;
     private final ObjectStorageFileManager eventBucketFileManager;
     private final ExecutorService executorService;
     private final Set<Long> activeIndexTasks = ConcurrentHashMap.newKeySet();
@@ -110,6 +112,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                             String eventsBucketUriStr,
                                         final @Value("${sync.nfs-file.observer.sync.files.chunk}")
                                             Integer eventsFileChunkSize,
+                                        final @Value("${sync.nfs-file.observer.sync.events.chunk}")
+                                            Integer eventsChunkSize,
                                         final @Value("${sync.nfs-file.observer.sync.pool.size:4}")
                                             Integer poolSize,
                                         final CloudPipelineAPIClient cloudPipelineAPIClient,
@@ -121,6 +125,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
               cloudPipelineAPIClient, elasticsearchServiceClient, elasticIndexService, nfsMounter);
 
         this.eventsFileChunkSize = eventsFileChunkSize;
+        this.eventsChunkSize = eventsChunkSize;
         final URI eventsBucketURI = URI.create(eventsBucketUriStr);
         final String bucketScheme = getEventsBucketScheme(eventsBucketURI);
         this.eventsBucketName = eventsBucketURI.getAuthority();
@@ -148,7 +153,7 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                                                 final AbstractDataStorage eventsStorage,
                                                 final String eventsProducer,
                                                 final List<DataStorageFile> fileList) {
-        StreamUtils.chunked(fileList.stream(), eventsFileChunkSize)
+        ListUtils.partition(fileList, eventsFileChunkSize)
             .forEach(filesChunk ->
                          processEventsFromFiles(storagePathMapping, eventsStorage, eventsProducer, filesChunk));
         log.info("Finished processing events from [{}]", eventsProducer);
@@ -162,8 +167,9 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         try (IndexRequestContainer requestContainer =
                  new IndexRequestContainer(requests -> getElasticsearchServiceClient().sendRequests(null, requests),
                                            getBulkInsertSize())) {
-            groupEventsByStorage(storagePathMapping, files, eventsStorage)
-                .forEach((dataStorage, events) -> processStorageEvents(requestContainer, dataStorage, events));
+            final TemporaryCredentials readingCredentials = getReadingCredentials(eventsStorage);
+            files.forEach(file -> processEventsFromFile(file, requestContainer, storagePathMapping,
+                                                        () -> readingCredentials));
             deleteEventFiles(eventsStorage, files);
         } catch (Exception e) {
             log.warn("Some errors occurred during NFS observer events sync from [{}]: {}",
@@ -182,10 +188,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
 
     private Map<AbstractDataStorage, Collection<NFSObserverEvent>> groupEventsByStorage(
         final Map<String, AbstractDataStorage> storagePathMapping,
-        final List<DataStorageFile> fileList,
-        final AbstractDataStorage eventsStorage) {
-        final TemporaryCredentials readingCredentials = getReadingCredentials(eventsStorage);
-        return loadAllEventsFromFiles(fileList, () -> readingCredentials)
+        final List<NFSObserverEvent> events) {
+        return events.stream()
             .filter(event -> storagePathMapping.get(event.getStorage()) != null)
             .collect(Collectors.groupingBy(NFSObserverEvent::getStorage))
             .entrySet()
@@ -477,24 +481,31 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
         return newEvent;
     }
 
-    private Stream<NFSObserverEvent> loadAllEventsFromFiles(
-        final List<DataStorageFile> fileList, final Supplier<TemporaryCredentials> readingCredentialsSupplier) {
-        return fileList.stream()
-            .map(file -> readAllEventsFromFile(file, readingCredentialsSupplier))
-            .flatMap(Collection::stream);
-    }
-
-    private List<NFSObserverEvent> readAllEventsFromFile(
-        final DataStorageFile file, final Supplier<TemporaryCredentials> readingCredentialsSupplier) {
+    private void processEventsFromFile(final DataStorageFile file,
+                                       final IndexRequestContainer requestContainer,
+                                       final Map<String, AbstractDataStorage> storagePathMapping,
+                                       final Supplier<TemporaryCredentials> readingCredentialsSupplier) {
         try (InputStream inputStream = eventBucketFileManager.readFileContent(eventsBucketName,
                                                                               file.getPath(),
                                                                               readingCredentialsSupplier)) {
-            return IOUtils.readLines(inputStream, StandardCharsets.UTF_8).stream()
-                .map(this::mapStringToEvent)
-                .collect(Collectors.toList());
+            StreamUtils.chunked(StreamUtils.from(IOUtils.lineIterator(inputStream, StandardCharsets.UTF_8)),
+                                eventsChunkSize)
+                .map(this::mapStringsToEvents)
+                .forEach(events -> processEventsChunk(storagePathMapping, requestContainer, events));
         } catch (IOException ex) {
-            return new ArrayList<>();
+            throw new IllegalStateException("An error occurred during events processing: " + ex.getMessage(), ex);
         }
+    }
+
+    private List<NFSObserverEvent> mapStringsToEvents(final List<String> eventStringList) {
+        return eventStringList.stream().map(this::mapStringToEvent).collect(Collectors.toList());
+    }
+
+    private void processEventsChunk(final Map<String, AbstractDataStorage> storagePathMapping,
+                                    final IndexRequestContainer requestContainer,
+                                    final List<NFSObserverEvent> eventsChunk) {
+        groupEventsByStorage(storagePathMapping, eventsChunk)
+            .forEach((dataStorage, events) -> processStorageEvents(requestContainer, dataStorage, events));
     }
 
     private NFSObserverEvent mapStringToEvent(final String line) {
