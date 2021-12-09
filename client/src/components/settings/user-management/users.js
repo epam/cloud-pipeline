@@ -404,13 +404,28 @@ export default class UsersManagement extends React.Component {
             const attributesString = getAttributesValues().join(', ');
             return (
               <Row type="flex" style={{flexDirection: 'column'}}>
-                <Row>{name}{blockedSpan}</Row>
-                <Row><span style={{fontSize: 'smaller'}}>{attributesString}</span></Row>
+                <Row>
+                  <span className={styles.lineBreak}>
+                    {name}{blockedSpan}
+                  </span>
+                </Row>
+                <Row>
+                  <span
+                    style={{fontSize: 'smaller'}}
+                    className={styles.lineBreak}
+                  >
+                    {attributesString}
+                  </span>
+                </Row>
               </Row>
             );
           } else {
             return (
-              <Row>{name}{blockedSpan}</Row>
+              <Row>
+                <span className={styles.lineBreak}>
+                  {name}{blockedSpan}
+                </span>
+              </Row>
             );
           }
         }
