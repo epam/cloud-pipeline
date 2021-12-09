@@ -142,7 +142,6 @@ export default class DataStorage extends React.Component {
     downloadFolderUrlModal: false,
     generateFolderUrlWriteAccess: false,
     selectedItems: [],
-    itemsToShareRootFolder: undefined,
     itemsToShare: [],
     shareDialogVisible: false,
     renameItem: null,
@@ -972,23 +971,20 @@ export default class DataStorage extends React.Component {
 
   openShareItemDialog = (event) => {
     const {selectedItems: items = []} = this.state;
+    const {storageId} = this.props;
     event && event.stopPropagation();
     if (!items || items.length === 0) {
       this.setState({
-        itemsToShareRootFolder: this.props.path,
-        itemsToShare: [],
-        shareDialogVisible: true
-      });
-    } else if (items.length === 1 && /^folder$/i.test(items[0].type)) {
-      this.setState({
-        itemsToShareRootFolder: items[0].path,
-        itemsToShare: [],
+        itemsToShare: [{
+          type: 'folder',
+          path: this.props.path,
+          storageId
+        }],
         shareDialogVisible: true
       });
     } else {
       this.setState({
-        itemsToShareRootFolder: this.props.path,
-        itemsToShare: items ? items.slice() : [],
+        itemsToShare: items ? items.slice().map((o, i) => ({...o, storageId})) : [],
         shareDialogVisible: true
       });
     }
@@ -996,7 +992,6 @@ export default class DataStorage extends React.Component {
 
   closeShareItemDialog = () => {
     return this.setState({
-      itemsToShareRootFolder: undefined,
       itemsToShare: [],
       shareDialogVisible: false
     });
@@ -2240,8 +2235,6 @@ export default class DataStorage extends React.Component {
           onCancel={() => this.closeRenameItemDialog()}
           onSubmit={this.renameItem} />
         <SharedItemInfo
-          path={this.state.itemsToShareRootFolder}
-          storage={this.props.info.value}
           visible={this.state.shareDialogVisible}
           shareItems={this.state.itemsToShare}
           close={this.closeShareItemDialog}
