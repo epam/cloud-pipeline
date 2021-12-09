@@ -324,6 +324,15 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('ui.storage.refresh.request');
   }
 
+  @computed
+  get dataSharingBaseApi () {
+    return this.getPreferenceValue('data.sharing.base.api');
+  }
+
+  get dataSharingEnabled () {
+    return !!this.dataSharingBaseApi;
+  }
+
   get requestFileSystemAccessTooltip () {
     const value = this.getPreferenceValue('ui.pipe.file.browser.request');
     if (value) {
