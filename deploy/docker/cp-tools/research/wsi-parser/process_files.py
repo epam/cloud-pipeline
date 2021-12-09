@@ -731,8 +731,13 @@ class WsiFileTagProcessor:
             if tag not in tags_dictionary or not tags_dictionary[tag]:
                 self.log_processing_info('No tag [{}] presented in tags, unable to build slide name...'.format(tag))
                 return
+            elif len(tags_dictionary[tag]) > 1:
+                self.log_processing_info(
+                    'Unable to build slide name, since tag [{}] contains more, than one value: {}'
+                        .format(tag, tags_dictionary[tag]))
+                return
             else:
-                slide_name_parts.append(tags_dictionary[tag])
+                slide_name_parts.append(next(iter(tags_dictionary[tag])))
         if slide_name_parts:
             tags_dictionary[SLIDE_NAME_CAT_ATTR_NAME] = {'_'.join(slide_name_parts)}
 
