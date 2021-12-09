@@ -55,7 +55,7 @@ function getFolderContents (storageId, folder) {
   return new Promise((resolve) => {
     const request = new DataStorageRequest(
       storageId,
-      decodeURIComponent(folder),
+      folder,
       false,
       50
     );
