@@ -78,10 +78,12 @@ if [ "$CP_NOTIFIER_SMTP_FROM" ] && \
 
     if [ "$CP_NOTIFIER_SMTP_USER" ]; then
       SMTP_SETTINGS_USERNAME="gitlab_rails['smtp_user_name'] = \"$CP_NOTIFIER_SMTP_USER\""
+      SMTP_SETTINGS_AUTH_TYPE="gitlab_rails['smtp_authentication'] = \"login\""
     fi
 
     if [ "$CP_NOTIFIER_SMTP_PASS" ]; then
       SMTP_SETTINGS_PASS="gitlab_rails['smtp_password'] = \"$CP_NOTIFIER_SMTP_PASS\""
+      SMTP_SETTINGS_AUTH_TYPE="gitlab_rails['smtp_authentication'] = \"login\""
     fi
     
 
@@ -89,11 +91,11 @@ if [ "$CP_NOTIFIER_SMTP_FROM" ] && \
 gitlab_rails['smtp_address'] = \"$CP_NOTIFIER_SMTP_SERVER_HOST\"
 gitlab_rails['smtp_port'] = $CP_NOTIFIER_SMTP_SERVER_PORT
 gitlab_rails['smtp_domain'] = \"$CP_NOTIFIER_SMTP_SERVER_HOST\"
-gitlab_rails['smtp_authentication'] = \"login\"
 gitlab_rails['smtp_enable_starttls_auto'] = ${CP_NOTIFIER_SMTP_START_TLS:-false}
 gitlab_rails['gitlab_email_from'] = \"$CP_NOTIFIER_SMTP_FROM\"
 $SMTP_SETTINGS_USERNAME
-$SMTP_SETTINGS_PASS"
+$SMTP_SETTINGS_PASS
+$SMTP_SETTINGS_AUTH_TYPE"
 fi
 
 cat > /etc/gitlab/gitlab.rb <<-EOF
