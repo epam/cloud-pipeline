@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.SearchResult;
+import com.epam.pipeline.exception.search.SearchException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -75,9 +76,11 @@ public class SearchResultConverter {
     public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
                                                   final AbstractDataStorage dataStorage, final String path) {
         final Long size = Optional.ofNullable(searchResponse.getAggregations())
-                .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
-                .map(result -> new Double(result.getValue()).longValue())
-                .orElse(0L);
+            .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
+            .map(result -> new Double(result.getValue()).longValue())
+            .orElseThrow(() -> new SearchException(
+                "Empty aggregations/value in ES response, unable to calculate storage usage for id="
+                + dataStorage.getId()));
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
