@@ -15,7 +15,7 @@
 # limitations under the License.
 
 distros_debian=(debian:8 debian:9 ubuntu:16.04 ubuntu:18.04 ubuntu:19.04)
-distros_centos=(centos:7)
+distros_centos=(centos:7 centos:8)
 
 repo_bucket=cloud-pipeline-oss-builds
 repo_bucket_prefix=tools/repos
@@ -31,8 +31,11 @@ for distro in "${distros_debian[@]}"; do
 done
 
 for distro in "${distros_centos[@]}"; do
+   IFS=':' read -ra _os_parts <<< "$distro"
+   _os_name="${_os_parts[0]}"
+   _os_version="${_os_parts[1]}"
    bash $current_dir/build-repo-rpm.sh --os "$distro" \
                                        --bucket "$repo_bucket" \
                                        --prefix "$repo_bucket_prefix" \
-                                       $current_dir/download-scripts/rpm/*
+                                       $current_dir/download-scripts/rpm${_os_version}/*
 done

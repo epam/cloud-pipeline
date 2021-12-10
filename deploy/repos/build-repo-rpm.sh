@@ -82,7 +82,7 @@ yum install curl \
 
 if ! aws --version > /dev/null 2>&1; then
     echo "INFO: awscli is not installed, proceeding with installation"
-    pip install awscli
+    pip install awscli==1.18.213
 fi
 
 CP_REPOS_LOCAL_DIR=$(mktemp -d)
