@@ -126,7 +126,8 @@ const defaultSettings = {
     role: 'ROLE_ANONYMOUS_USER',
     token: undefined,
     shareWithGroups: undefined,
-    originalUserNameParameter: undefined
+    originalUserNameParameter: undefined,
+    anonymousAccessParameter: undefined
   },
   checkDefaultUserStorageStatus: false,
   defaultUserStorageReadOnlyWarning: undefined

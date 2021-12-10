@@ -329,15 +329,27 @@ function launchTool(application, user, options) {
                                     payload.parameters,
                                     options.__parameters__ || {}
                                   )
+                                  if (appSettings?.isAnonymous) {
+                                    const parameter = appSettings?.anonymousAccess?.anonymousAccessParameter ||
+                                      'ORIGINAL_OWNER_ANONYMOUS';
+                                    console.log(
+                                      `Setting parameter "${parameter}"="true"`
+                                    )
+                                    payload.parameters[parameter] = {
+                                      value: 'true',
+                                      type: 'string'
+                                    };
+                                  }
                                   if (
                                     appSettings?.isAnonymous &&
-                                    appSettings?.originalUserName &&
-                                    appSettings?.anonymousAccess?.originalUserNameParameter
+                                    appSettings?.originalUserName
                                   ) {
+                                    const parameter = appSettings?.anonymousAccess?.originalUserNameParameter ||
+                                      'ORIGINAL_OWNER';
                                     console.log(
-                                      `Setting parameter "${appSettings?.anonymousAccess?.originalUserNameParameter}"="${appSettings?.originalUserName}"`
+                                      `Setting parameter "${parameter}"="${appSettings?.originalUserName}"`
                                     )
-                                    payload.parameters[appSettings?.anonymousAccess?.originalUserNameParameter] = {
+                                    payload.parameters[parameter] = {
                                       value: appSettings?.originalUserName,
                                       type: 'string'
                                     };
