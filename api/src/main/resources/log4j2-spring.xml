@@ -24,7 +24,7 @@
         <Console name="Console-Appender" target="SYSTEM_OUT">
             <PatternLayout>
                 <pattern>
-                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg{nolookups}%n
                 </pattern>>
             </PatternLayout>
         </Console>
@@ -44,7 +44,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg{nolookups}%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -84,7 +84,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg{nolookups}%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -107,7 +107,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg{nolookups}%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
@@ -127,7 +127,7 @@
             </Policies>
             <PatternLayout>
                 <pattern>
-                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n
+                    [${cp-api-logger-hostname}][%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg{nolookups}%n
                 </pattern>
             </PatternLayout>
         </RollingFile >
