@@ -32,6 +32,8 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_PARAMETER;
+import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -45,6 +47,8 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
     private static final String CP_FSBROWSER_ENABLED = "CP_FSBROWSER_ENABLED";
     private static final String USER_ROLE = "ROLE_PIPELINE_MANAGER";
     private static final String PARAMETER_IS_NOT_ALLOWED_FOR_USE = "This parameter is not allowed for use";
+    private static final String PARAMETER_IS_RESERVED = "Parameter name is reserved";
+    private static final String NAME_IS_RESERVED = "Name is reserved for system parameter";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
     private final String configurationDescription = "test-configuration-description";
@@ -122,6 +126,99 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                                 .setName(CP_FSBROWSER_ENABLED)
                                 .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
                 );
+    }
+
+    @Test
+    @TestCase(value = {"2342_2"})
+    public void checkSystemParametersForPipelineAndDetachConfiguration() {
+        logoutIfNeeded();
+        loginAs(userWithoutCompletedRuns);
+        library()
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .configurationTab()
+                .editConfiguration("default", profile -> {
+                    profile.addSystemParameter()
+                            .searchSystemParameter(CP_FSBROWSER_ENABLED)
+                            .validateNotFoundParameters()
+                            .cancel();
+                    profile.clickAddStringParameter()
+                            .setName(CP_FSBROWSER_ENABLED)
+                            .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                            .click(REMOVE_PARAMETER);
+                });
+        library()
+                .configurationWithin(configuration, configuration -> {
+                    configuration
+                            .expandTabs(advancedTab)
+                            .addSystemParameter()
+                            .searchSystemParameter(CP_FSBROWSER_ENABLED)
+                            .validateNotFoundParameters()
+                            .cancel();
+                    configuration
+                            .addStringParameter(CP_FSBROWSER_ENABLED, "")
+                            .messageShouldAppear(PARAMETER_IS_NOT_ALLOWED_FOR_USE)
+                            .deleteParameter(CP_FSBROWSER_ENABLED);
+                });
+    }
+
+    @Test
+    @TestCase(value = {"2342_3"})
+    public void checkAllowedSystemParametersForToolAndLaunchForm() {
+        logoutIfNeeded();
+        loginAs(user);
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.settings()
+                                .clickSystemParameter()
+                                .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                .cancel()
+                                .clickCustomParameter()
+                                .setName(CP_FSBROWSER_ENABLED)
+                                .messageShouldAppear(PARAMETER_IS_RESERVED)
+                );
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.runWithCustomSettings()
+                                .clickAddSystemParameter()
+                                .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                .cancel()
+                                .clickAddStringParameter()
+                                .setName(CP_FSBROWSER_ENABLED)
+                                .messageShouldAppear(NAME_IS_RESERVED)
+                );
+    }
+
+    @Test
+    @TestCase(value = {"2342_4"})
+    public void checkAllowedSystemParametersForPipelineAndDetachConfiguration() {
+        logoutIfNeeded();
+        loginAs(user);
+        library()
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .configurationTab()
+                .editConfiguration("default", profile -> {
+                    profile.addSystemParameter()
+                            .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                            .cancel();
+                    profile.clickAddStringParameter()
+                            .setName(CP_FSBROWSER_ENABLED)
+                            .messageShouldAppear(NAME_IS_RESERVED)
+                            .click(REMOVE_PARAMETER);
+                });
+        library()
+                .configurationWithin(configuration, configuration -> {
+                    configuration
+                            .expandTabs(advancedTab)
+                            .addSystemParameter()
+                            .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                            .cancel();
+                    configuration
+                            .addStringParameter(CP_FSBROWSER_ENABLED, "")
+                            .messageShouldAppear(NAME_IS_RESERVED)
+                            .deleteParameter(CP_FSBROWSER_ENABLED);
+                });
     }
 
     private String editLaunchSystemParameters() {
