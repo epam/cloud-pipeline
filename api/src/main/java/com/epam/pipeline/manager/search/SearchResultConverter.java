@@ -76,11 +76,11 @@ public class SearchResultConverter {
     public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
                                                   final AbstractDataStorage dataStorage, final String path) {
         final Long size = Optional.ofNullable(searchResponse.getAggregations())
-            .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
-            .map(result -> new Double(result.getValue()).longValue())
-            .orElseThrow(() -> new SearchException(
-                "Empty aggregations/value in ES response, unable to calculate storage usage for id="
-                + dataStorage.getId()));
+                .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
+                .map(result -> new Double(result.getValue()).longValue())
+                .orElseThrow(() -> new SearchException(
+                    "Empty aggregations/value in ES response, unable to calculate storage usage for id="
+                    + dataStorage.getId()));
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
