@@ -19,8 +19,10 @@ public final class BillingUtils {
     public static final char SEPARATOR = ',';
 
     public static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
-    public static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern(Constants.FMT_ISO_LOCAL_DATE, Locale.US);
+    public static final DateTimeFormatter ELASTIC_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.ELASTIC_DATE_TIME_FORMAT, Locale.US);
+    public static final DateTimeFormatter EXPORT_DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.EXPORT_DATE_TIME_FORMAT, Locale.US);
     public static final DateTimeFormatter YEAR_MONTH_FORMATTER =
             DateTimeFormatter.ofPattern(YEAR_MONTH_FORMAT, Locale.US);
     public static final int DECIMAL_SCALE = 2;
@@ -116,7 +118,7 @@ public final class BillingUtils {
     }
 
     public static String asString(final LocalDateTime value) {
-        return Optional.ofNullable(value).map(DATE_TIME_FORMATTER::format).orElse(null);
+        return Optional.ofNullable(value).map(EXPORT_DATE_TIME_FORMATTER::format).orElse(null);
     }
 
     public static String asString(final YearMonth value) {
@@ -129,7 +131,7 @@ public final class BillingUtils {
 
     public static LocalDateTime asDateTime(final String value) {
         return Optional.ofNullable(value)
-                .map(it -> DATE_TIME_FORMATTER.parse(it, LocalDateTime::from))
+                .map(it -> ELASTIC_DATE_TIME_FORMATTER.parse(it, LocalDateTime::from))
                 .orElse(null);
     }
 
