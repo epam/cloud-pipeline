@@ -16,6 +16,8 @@
  
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
+import static com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION;
+
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
@@ -47,11 +49,11 @@ import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -111,13 +113,22 @@ public class NFSQuotasMonitor {
                 .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, NFSQuotaTrigger::getQuota));
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS(activeStorages);
         final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages);
-        nfsDataStorages.forEach(storage -> {
+        nfsDataStorages.forEach(storage -> processStorageQuota(storage, activeQuotas, notificationTriggers));
+        log.info("NFS quotas are processed successfully.");
+    }
+
+    private void processStorageQuota(final NFSDataStorage storage,
+                                     final Map<Long, NFSQuota> activeQuotas,
+                                     final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
+        try {
             final NFSStorageMountStatus statusUpdate = Optional.ofNullable(activeQuotas.get(storage.getId()))
                 .map(quota -> processActiveQuota(quota, storage, notificationTriggers))
                 .orElse(NFSStorageMountStatus.ACTIVE);
             dataStorageManager.updateMountStatus(storage, statusUpdate);
-        });
-        log.info("NFS quotas are processed successfully.");
+        } catch (Exception e) {
+            log.error("An error occurred during processing quotas for storageId={}: {}",
+                      storage.getId(), e.getMessage());
+        }
     }
 
     private List<NFSDataStorage> loadAllNFS(final List<AbstractDataStorage> activeStorages) {
@@ -129,7 +140,10 @@ public class NFSQuotasMonitor {
 
     private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage,
                                                      final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
-        return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
+        final List<NFSQuotaNotificationEntry> quotaNotifications = Optional.ofNullable(quota.getNotifications())
+            .orElseGet(ArrayList::new);
+        quotaNotifications.add(NO_ACTIVE_QUOTAS_NOTIFICATION);
+        return quotaNotifications.stream()
             .filter(Objects::nonNull)
             .sorted(quotasComparator(storage).reversed())
             .filter(notification -> exceedsLimit(storage, notification))
@@ -203,7 +217,7 @@ public class NFSQuotasMonitor {
 
     private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
                                    final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
-        return Optional.ofNullable(notificationTriggers.get(storage.getId()))
+        return Optional.ofNullable(notificationTriggers.getOrDefault(storage.getId(), NO_ACTIVE_QUOTAS_NOTIFICATION))
             .filter(lastTrigger -> lastTrigger.getValue().equals(notification.getValue()))
             .filter(lastTrigger -> lastTrigger.getType().equals(notification.getType()))
             .isPresent();
