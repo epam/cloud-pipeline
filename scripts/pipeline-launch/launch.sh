@@ -433,6 +433,11 @@ function get_install_command_by_current_distr {
             check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
+      if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
+         [ "$CP_OS" == "centos" ] && \
+         [ "$CP_VER" == "8" ]; then
+            _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
 
       local _TOOL_TO_CHECK=
       local _TOOLS_TO_INSTALL_VERIFIED=
@@ -447,9 +452,12 @@ function get_install_command_by_current_distr {
             _INSTALL_COMMAND_TEXT=
       else
             check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
-                  check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
-                  if [ "$CP_REPO_ENABLED" == "true" ] && [ -f /etc/yum.repos.d/cloud-pipeline.repo ]; then
+                  # Centos 8 throws "No available modular metadata for modular package" if all the other repos are disabled
+                  if [ "$CP_REPO_ENABLED" == "true" ] && \
+                     [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
+                     [ "$CP_VER" != "8" ]; then
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
