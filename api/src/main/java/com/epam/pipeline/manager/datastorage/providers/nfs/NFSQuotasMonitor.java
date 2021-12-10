@@ -33,11 +33,13 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuota;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
+import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
@@ -56,7 +58,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,7 +76,7 @@ public class NFSQuotasMonitor {
     private final NotificationManager notificationManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
-    private final Map<Long, NFSQuotaNotificationEntry> notificationTriggers;
+    private final StorageQuotaTriggersManager triggersManager;
 
     public NFSQuotasMonitor(final DataStorageManager dataStorageManager,
                             final SearchManager searchManager,
@@ -84,6 +85,7 @@ public class NFSQuotasMonitor {
                             final LustreFSManager lustreManager,
                             final MessageHelper messageHelper,
                             final NotificationManager notificationManager,
+                            final StorageQuotaTriggersManager triggersManager,
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
@@ -95,9 +97,9 @@ public class NFSQuotasMonitor {
         this.lustreManager = lustreManager;
         this.messageHelper = messageHelper;
         this.notificationManager = notificationManager;
+        this.triggersManager = triggersManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
-        this.notificationTriggers = new ConcurrentHashMap<>();
     }
 
     @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
@@ -105,28 +107,17 @@ public class NFSQuotasMonitor {
     public void controlQuotas() {
         log.info("Start NFS quotas processing...");
         final List<AbstractDataStorage> activeStorages = dataStorageManager.getDataStorages();
-        clearTriggersForRemovedStorages(activeStorages);
+        final Map<Long, NFSQuotaNotificationEntry> notificationTriggers = triggersManager.loadAll().stream()
+                .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, NFSQuotaTrigger::getQuota));
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS(activeStorages);
         final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages);
         nfsDataStorages.forEach(storage -> {
             final NFSStorageMountStatus statusUpdate = Optional.ofNullable(activeQuotas.get(storage.getId()))
-                .map(quota -> processActiveQuota(quota, storage))
+                .map(quota -> processActiveQuota(quota, storage, notificationTriggers))
                 .orElse(NFSStorageMountStatus.ACTIVE);
             dataStorageManager.updateMountStatus(storage, statusUpdate);
         });
         log.info("NFS quotas are processed successfully.");
-    }
-
-    @Scheduled(cron = "${data.storage.nfs.quota.triggers.evict.cron:0 0 9 ? * *}")
-    public void clearAllTriggers() {
-        notificationTriggers.clear();
-    }
-
-    private void clearTriggersForRemovedStorages(final List<AbstractDataStorage> activeStorages) {
-        final Set<Long> activeStorageIds = activeStorages.stream()
-            .map(BaseEntity::getId)
-            .collect(Collectors.toSet());
-        notificationTriggers.keySet().removeIf(storageId -> !activeStorageIds.contains(storageId));
     }
 
     private List<NFSDataStorage> loadAllNFS(final List<AbstractDataStorage> activeStorages) {
@@ -136,13 +127,15 @@ public class NFSQuotasMonitor {
             .collect(Collectors.toList());
     }
 
-    private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage) {
+    private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage,
+                                                     final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
         return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
             .sorted(quotasComparator(storage).reversed())
             .filter(notification -> exceedsLimit(storage, notification))
             .findFirst()
-            .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients()))
+            .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients(),
+                                                         notificationTriggers))
             .orElse(NFSStorageMountStatus.ACTIVE);
     }
 
@@ -188,23 +181,28 @@ public class NFSQuotasMonitor {
 
     private NFSStorageMountStatus mapNotificationToStatus(final NFSDataStorage storage,
                                                           final NFSQuotaNotificationEntry notification,
-                                                          final List<NFSQuotaNotificationRecipient> recipients) {
+                                                          final List<NFSQuotaNotificationRecipient> recipients,
+                                                          final Map<Long, NFSQuotaNotificationEntry>
+                                                              notificationTriggers) {
         final Set<StorageQuotaAction> actions = notification.getActions();
         final NFSStorageMountStatus mountStatus = resolveMountStatus(storage, actions);
-        if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus, notification)) {
+        if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus, notification,
+                                                                              notificationTriggers)) {
             notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
-            notificationTriggers.put(storage.getId(), notification);
+            triggersManager.insert(new NFSQuotaTrigger(storage.getId(), notification));
         }
         return mountStatus;
     }
 
     private boolean requireNotification(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus,
-                                        final NFSQuotaNotificationEntry notification) {
+                                        final NFSQuotaNotificationEntry notification,
+                                        final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
         return !(newMountStatus.equals(storage.getMountStatus())
-                 && hasSameTrigger(storage, notification));
+                 && hasSameTrigger(storage, notification, notificationTriggers));
     }
 
-    private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
+    private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
+                                   final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
         return Optional.ofNullable(notificationTriggers.get(storage.getId()))
             .filter(lastTrigger -> lastTrigger.getValue().equals(notification.getValue()))
             .filter(lastTrigger -> lastTrigger.getType().equals(notification.getType()))
