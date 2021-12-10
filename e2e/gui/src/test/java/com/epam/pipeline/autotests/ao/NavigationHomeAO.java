@@ -85,7 +85,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     private SelenideElement serviceCardByRunId(String runId) {
-        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@type='card-content']");
+        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@class='ant-card-body']");
     }
 
     public ToolPageAO openEndpointLink(String endpoint, String runId) {
