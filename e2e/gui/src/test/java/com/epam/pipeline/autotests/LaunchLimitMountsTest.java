@@ -323,6 +323,7 @@ public class LaunchLimitMountsTest
             countObjectStorages = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
+                    .doNotMountStoragesSelect(false)
                     .selectDataStoragesToLimitMounts()
                     .countObjectStorages();
             minRAM = tools()
