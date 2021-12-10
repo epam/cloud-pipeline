@@ -85,7 +85,6 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
                 .addKeyWithValue(key1, value1)
                 .selectKey(key1)
                 .ensure(DELETE_ICON, visible)
-                .validateKeyBackgroundIsGrey()
                 .ensureVisible(REMOVE_ALL);
     }
 

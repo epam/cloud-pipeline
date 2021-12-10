@@ -118,7 +118,8 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
     }
 
     public SelectLimitMountsPopupAO<PARENT_TYPE> storagesCountShouldBeGreaterThan(int size) {
-        $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(sizeGreaterThan(size));
+        $(byClassName("ant-modal-body")).find(byClassName("ant-table-tbody")).findAll("tr")
+                .shouldHave(sizeGreaterThan(size));
         return this;
     }
 

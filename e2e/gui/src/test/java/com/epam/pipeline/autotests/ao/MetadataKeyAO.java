@@ -53,19 +53,21 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
         this.elements = initialiseElements(
                 entry(ADD, $(byId("add-metadata-item-button"))),
                 entry(KEY_FIELD, keyFieldElement),
-                entry(KEY_FIELD_INPUT, $(By.className("metadata__key-row-edit")).find(By.tagName("input"))),
+                entry(KEY_FIELD_INPUT, $(By.className("qa-metadata-item-key-input"))),
                 entry(VALUE_FIELD, valueFieldElement),
                 entry(VALUE_FIELD_INPUT, keyFieldElement.parent().find(By.className("ant-input"))),
-                entry(DELETE_ICON, keyFieldElement.parent().find(buttonByIconClass("anticon-delete"))),
+                entry(DELETE_ICON, keyFieldElement.find(buttonByIconClass("anticon-delete"))),
                 entry(REMOVE_ALL, $(byId("remove-all-keys-button")))
         );
     }
 
     public MetadataKeyAO(int numberOfKey, MetadataSectionAO parentAO) {
-        this($$(By.className("metadata__key-row"))
-                        .filter(not(have(cssClass("metadata__special")))).get(numberOfKey),
-                $$(By.className("metadata__value-row")).get(numberOfKey),
-                parentAO);
+        this($$(By.className("cp-metadata-item-row"))
+                        .filter(have(cssClass("key"))).get(numberOfKey),
+             $$(By.className("cp-metadata-item-row"))
+                        .filter(have(cssClass("key"))).get(numberOfKey)
+                        .$(By.xpath("following-sibling::*[contains(@class, 'cp-metadata-item-row')]")),
+             parentAO);
     }
 
     public MetadataKeyAO validateKeyBackgroundIsGrey() {

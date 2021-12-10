@@ -39,7 +39,6 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
 import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
@@ -56,7 +55,7 @@ public class SystemManagementAO extends SettingsPageAO {
     }
 
     public final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(SYSTEM_LOGS_TAB, $$(byClassName("ystem-management__item-row")).findBy(text("LOGS")))
+            entry(SYSTEM_LOGS_TAB, $(byClassName("section-logs")).find(byText("LOGS")))
     );
 
     public SystemLogsAO switchToSystemLogs() {
