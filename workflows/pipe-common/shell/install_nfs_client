@@ -50,7 +50,7 @@ then
       tar -xzvf lustre-client.tar.gz -C lustre-client/ &&
       rpm -i --justdb --quiet --nodeps --force lustre-client/dependencies/*.rpm &&
       yum install -y -q lustre-client/*.rpm &&
-      package-cleanup --cleandupes -y &&
+      (package-cleanup --cleandupes -y || true) &&
       rm -rf lustre-client*
 EOM
 else
