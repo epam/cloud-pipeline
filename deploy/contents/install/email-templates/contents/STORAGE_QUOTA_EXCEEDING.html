@@ -16,7 +16,12 @@
 <body>
 <p>Dear user,</p>
 <p>*** This is a system generated email, do not reply to this email ***</p>
-<p>Please be informed, that a data storage <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/storage/${CP_DOLLAR}templateParameters.get("storageId")">${CP_DOLLAR}templateParameters.get("storageName")</a> has reached a ${CP_DOLLAR}templateParameters.get("threshold") volume consumption threshold.</p>
+<p>Please be informed, that a data storage <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/storage/${CP_DOLLAR}templateParameters.get("storageId")">${CP_DOLLAR}templateParameters.get("storageName")</a></p>
+#if( ${CP_DOLLAR}templateParameters.get("threshold") == "no_active_quotas" )
+<p>has no more quotas applied.</p>
+#else
+<p>has reached a ${CP_DOLLAR}templateParameters.get("threshold") volume consumption threshold.</p>
+#end
 <p>Previous data storage state is <b>${CP_DOLLAR}templateParameters.get("previousMountStatus")</b></p>
 <p>New data storage state is <b>${CP_DOLLAR}templateParameters.get("newMountStatus")</b></p>
 <br/>

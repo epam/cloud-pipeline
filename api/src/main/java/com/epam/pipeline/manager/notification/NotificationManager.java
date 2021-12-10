@@ -533,7 +533,9 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final Map<String, Object> templateParameters = new HashMap<>();
         templateParameters.put("storageId", storage.getId());
         templateParameters.put("storageName", storage.getName());
-        templateParameters.put("threshold", quota.toThreshold());
+        templateParameters.put("threshold", NFSQuotaNotificationEntry.NO_ACTIVE_QUOTAS_NOTIFICATION.equals(quota)
+                                            ? "no_active_quotas"
+                                            : quota.toThreshold());
         templateParameters.put("previousMountStatus", storage.getMountStatus());
         templateParameters.put("newMountStatus", newStatus);
         return templateParameters;
