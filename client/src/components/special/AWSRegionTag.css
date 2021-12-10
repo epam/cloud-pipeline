@@ -17,7 +17,7 @@
 .container {
   vertical-align: middle;
   white-space: nowrap;
-  display: inline;
+  display: inline-flex;
   align-items: center;
 }
 
@@ -38,11 +38,11 @@
   position: relative;
   display: inline-block;
   width: 1.33333333em;
-  line-height: 1em;
+  height: 1.33333333em;
+  line-height: 1.33333333em;
 }
 
 .provider {
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 100% auto;
 }

@@ -18,10 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
-  Button,
+  Button, Checkbox,
   Icon,
   Select
 } from 'antd';
+import styles from '../color-variable/color-variable.css';
 
 const IconSet = {
   AWS: [
@@ -29,6 +30,7 @@ const IconSet = {
     {name: 'Default', value: 'aws.svg'}
   ],
   GCP: [
+    {name: 'Transparent', value: 'gcp-light.svg'},
     {name: 'Default', value: 'gcp.svg'}
   ],
   AZURE: [
@@ -51,6 +53,9 @@ function ProviderIcon (
     className,
     disabled,
     error,
+    extended,
+    initialValue,
+    modifiedValue,
     onChange,
     provider,
     value,
@@ -66,6 +71,16 @@ function ProviderIcon (
   const handleChange = (e) => {
     if (onChange) {
       onChange(variable, `@static_resource('icons/providers/${e}')`);
+    }
+  };
+  const onClear = () => {
+    if (onChange) {
+      onChange(variable, undefined);
+    }
+  };
+  const onRevert = () => {
+    if (onChange) {
+      onChange(variable, initialValue);
     }
   };
   return (
@@ -104,6 +119,25 @@ function ProviderIcon (
           ))
         }
       </Select>
+      {
+        initialValue !== modifiedValue && (
+          <Button
+            disabled={disabled}
+            onClick={onRevert}
+            className={classNames(styles.button, styles.small)}
+          >
+            <Icon type="rollback" />
+          </Button>
+        )
+      }
+      <Checkbox
+        disabled={!extended || disabled}
+        checked={!extended}
+        className={styles.button}
+        onChange={e => e.target.checked ? onClear() : undefined}
+      >
+        Inherited
+      </Checkbox>
     </div>
   );
 }

@@ -23,10 +23,14 @@
 }
 
 .region-row .region {
+  display: flex;
+  align-items: center;
   margin-left: 20px;
 }
 
 .region-row .provider {
+  display: flex;
+  align-items: center;
   font-size: larger;
   font-weight: bold;
 }

@@ -217,7 +217,7 @@ export default class AWSRegionsForm extends React.Component {
         render: (name, region) => {
           if (region.isProvider) {
             return (
-              <span className={styles.provider}>
+              <div className={styles.provider}>
                 <AWSRegionTag
                   provider={region.name}
                   displayFlag={false}
@@ -225,21 +225,21 @@ export default class AWSRegionsForm extends React.Component {
                   showProvider
                 />
                 {name}
-              </span>
+              </div>
             );
           }
           if (region.isNew) {
             return <i className={styles.region}>{name} ({this.state.newRegion})</i>;
           }
           return (
-            <span className={styles.region}>
+            <div className={styles.region}>
               <AWSRegionTag
                 showProvider={false}
                 regionUID={region.regionId}
                 style={{fontSize: 'larger'}}
               />
               {highlightText(name, this.state.search)}
-            </span>
+            </div>
           );
         }
       }

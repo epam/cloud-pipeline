@@ -81,6 +81,7 @@
 .tree-item-title .region-flags {
   flex: 1;
   text-align: right;
+  justify-content: flex-end;
 }
 
 .readonly {
