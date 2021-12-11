@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">5m35.42s</div>
+<div class="counter">4m21.61s</div>
 <p>duration</p>
 </div>
 </td>
@@ -78,13 +78,13 @@
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'ea612d5d8095', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'c211183e6b0a', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 selenide.url: http://localhost:8080nullUSER2
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
 selenide.baseUrl: http://localhost:8080
-Session ID: 9054647014400446d25f6161d9cd182b
-	at sun.reflect.GeneratedConstructorAccessor15.newInstance(Unknown Source)
+Session ID: dcba7c0e89f06dd9a9953e50002d54c5
+	at sun.reflect.GeneratedConstructorAccessor24.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -103,7 +103,7 @@ Session ID: 9054647014400446d25f6161d9cd182b
 	at com.codeborne.selenide.Selenide.open(Selenide.java:53)
 	at com.epam.pipeline.autotests.DavMountStorageLimitTest.checkWebDavPage(DavMountStorageLimitTest.java:323)
 	at com.epam.pipeline.autotests.DavMountStorageLimitTest.lambda$checkDisableLink$8(DavMountStorageLimitTest.java:229)
-	at com.epam.pipeline.autotests.ao.AccessObject.inAnotherTab(AccessObject.java:457)
+	at com.epam.pipeline.autotests.ao.AccessObject.inAnotherTab(AccessObject.java:461)
 	at com.epam.pipeline.autotests.DavMountStorageLimitTest.checkDisableLink(DavMountStorageLimitTest.java:228)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
@@ -125,21 +125,38 @@ Session ID: 9054647014400446d25f6161d9cd182b
 <a name="checkWebdavAccessDurationPreference - 2233_1"></a>
 <h3 class="failures">checkWebdavAccessDurationPreference - 2233_1</h3>
 <span class="code">
-<pre>Element should text 'File system access enabled till 05 Dec 2021, 01:22.' {By.xpath: .//span}
-Element: '&lt;span&gt;File system access enabled till 5 Dec 2021, 01:22.&lt;/span&gt;'
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1638667355086.136.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1638667355086.136.html
-Timeout: 80 s.
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
-	at com.epam.pipeline.autotests.DavMountStorageLimitTest.checkWebdavAccessDurationPreference(DavMountStorageLimitTest.java:118)
+<pre>org.openqa.selenium.WebDriverException: unknown error: unhandled inspector error: {&quot;code&quot;:-32000,&quot;message&quot;:&quot;Cannot navigate to invalid URL&quot;}
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'c211183e6b0a', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+selenide.url: http://localhost:8080nullUSER2
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+selenide.baseUrl: http://localhost:8080
+Session ID: dcba7c0e89f06dd9a9953e50002d54c5
+	at sun.reflect.GeneratedConstructorAccessor24.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebDriver.get(RemoteWebDriver.java:325)
+	at org.openqa.selenium.remote.RemoteWebDriver$RemoteNavigation.to(RemoteWebDriver.java:912)
+	at com.codeborne.selenide.impl.Navigator.navigateToAbsoluteUrl(Navigator.java:67)
+	at com.codeborne.selenide.impl.Navigator.open(Navigator.java:32)
+	at com.codeborne.selenide.Selenide.open(Selenide.java:79)
+	at com.codeborne.selenide.Selenide.open(Selenide.java:53)
+	at com.epam.pipeline.autotests.DavMountStorageLimitTest.checkWebDavPage(DavMountStorageLimitTest.java:323)
+	at com.epam.pipeline.autotests.DavMountStorageLimitTest.lambda$checkWebdavAccessDurationPreference$2(DavMountStorageLimitTest.java:122)
+	at com.epam.pipeline.autotests.ao.AccessObject.inAnotherTab(AccessObject.java:461)
+	at com.epam.pipeline.autotests.DavMountStorageLimitTest.checkWebdavAccessDurationPreference(DavMountStorageLimitTest.java:121)
 	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
 	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
 	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
@@ -169,27 +186,27 @@ Timeout: 80 s.
 </thead>
 <tr>
 <td class="failures">checkDisableLink - 2233_3</td>
-<td>51.713s</td>
+<td>52.729s</td>
 <td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">checkHelpTooltip - 2233_5</td>
-<td>1m45.63s</td>
+<td>1m38.46s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkMaxNumberOfStoragesWithWebdavAccess - 2233_2</td>
-<td>38.504s</td>
+<td>38.358s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkRemoveAllButton - 2233_4</td>
-<td>9.560s</td>
+<td>9.222s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">checkWebdavAccessDurationPreference - 2233_1</td>
-<td>2m10.02s</td>
+<td>1m2.85s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -202,7 +219,7 @@ Timeout: 80 s.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 5, 2021 1:48:19 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 11, 2021 3:14:59 PM</p>
 </div>
 </div>
 </body>
