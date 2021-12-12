@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">4</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">13m35.54s</div>
+<div class="counter">5m57.44s</div>
 <p>duration</p>
 </div>
 </td>
@@ -51,7 +51,7 @@
 </td>
 <td>
 <div class="infoBox failures" id="successRate">
-<div class="percent">80%</div>
+<div class="percent">0%</div>
 <p>successful</p>
 </div>
 </td>
@@ -66,9 +66,6 @@
 <li>
 <a href="#tab1">Tests</a>
 </li>
-<li>
-<a href="#tab2">Standard output</a>
-</li>
 </ul>
 <div id="tab0" class="tab">
 <h2>Failed tests</h2>
@@ -76,12 +73,12 @@
 <a name="deleteTestEntities"></a>
 <h3 class="failures">deleteTestEntities</h3>
 <span class="code">
-<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'limitMountsStorage4588926468355808624')]]}
+<pre>Element not found {title of a By.xpath: .//li[contains(@class, 'pipelines-library-tree-node') and ./span[contains(., 'limitMountsStorage4603996479526514990')]]}
 Expected: exist
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1639233666657.140.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1639233666657.140.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1639303225729.147.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1639303225729.147.html
 Timeout: 80 s.
-Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_9087-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 924). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_9156-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
 	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
 	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
@@ -109,16 +106,16 @@ Caused by: WebDriverException: unknown error: Element &lt;span id=&quot;pipeline
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_9087-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 924). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;span id=&quot;pipelines-library-tree-node-storage_9156-name&quot; class=&quot;pipelines-library__tree-item-title&quot;&gt;...&lt;/span&gt; is not clickable at point (171, 953). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle1&quot;&gt;...&lt;/div&gt;
   (Session info: chrome=63.0.3239.132)
   (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
 Command duration or timeout: 0 milliseconds
 Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: 'c211183e6b0a', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+System info: host: 'b0b397b69535', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
 Driver info: org.openqa.selenium.chrome.ChromeDriver
 Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
-Session ID: 8c292acc383b43d15826ebcd9b5772a3
-	at sun.reflect.GeneratedConstructorAccessor24.newInstance(Unknown Source)
+Session ID: e77db5fb569e41207e4fe03e4bad7748
+	at sun.reflect.GeneratedConstructorAccessor21.newInstance(Unknown Source)
 	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
 	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
 	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
@@ -140,6 +137,168 @@ Session ID: 8c292acc383b43d15826ebcd9b5772a3
 </pre>
 </span>
 </div>
+<div class="test">
+<a name="validateDoNotMountStoragesOptionInUserProfile - 2210_2"></a>
+<h3 class="failures">validateDoNotMountStoragesOptionInUserProfile - 2210_2</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1639303043095.145.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1639303043095.145.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.LimitMountsTest.validateDoNotMountStoragesOptionInUserProfile(LimitMountsTest.java:123)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'b0b397b69535', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e77db5fb569e41207e4fe03e4bad7748
+	at sun.reflect.GeneratedConstructorAccessor21.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 17 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validateLimitMountsValuesFromUserProfile - 2210_3"></a>
+<h3 class="failures">validateLimitMountsValuesFromUserProfile - 2210_3</h3>
+<span class="code">
+<pre>Element not found {By.id: navigation-button-library}
+Expected: exist
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1639303123869.146.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1639303123869.146.html
+Timeout: 80 s.
+Caused by: WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
+	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
+	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:116)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.click(Unknown Source)
+	at com.epam.pipeline.autotests.mixins.Navigation.navigationMenu(Navigation.java:38)
+	at com.epam.pipeline.autotests.LimitMountsTest.validateLimitMountsValuesFromUserProfile(LimitMountsTest.java:148)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+Caused by: org.openqa.selenium.WebDriverException: unknown error: Element &lt;a id=&quot;navigation-button-library&quot; class=&quot;cp-navigation-menu-item&quot; href=&quot;#/library&quot;&gt;...&lt;/a&gt; is not clickable at point (32, 110). Other element would receive the click: &lt;div tabindex=&quot;-1&quot; class=&quot;ant-modal-wrap &quot; role=&quot;dialog&quot; aria-labelledby=&quot;rcDialogTitle0&quot;&gt;...&lt;/div&gt;
+  (Session info: chrome=63.0.3239.132)
+  (Driver info: chromedriver=2.36.540471 (9c759b81a907e70363c6312294d30b6ccccc2752),platform=Linux 3.10.0-1127.8.2.el7.x86_64 x86_64) (WARNING: The server did not provide any stacktrace information)
+Command duration or timeout: 0 milliseconds
+Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
+System info: host: 'b0b397b69535', ip: '172.17.0.4', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1127.8.2.el7.x86_64', java.version: '1.8.0_262'
+Driver info: org.openqa.selenium.chrome.ChromeDriver
+Capabilities {acceptInsecureCerts: false, acceptSslCerts: false, applicationCacheEnabled: false, browserConnectionEnabled: false, browserName: chrome, chrome: {chromedriverVersion: 2.36.540471 (9c759b81a907e7..., userDataDir: /tmp/.org.chromium.Chromium...}, cssSelectorsEnabled: true, databaseEnabled: false, handlesAlerts: true, hasTouchScreen: false, javascriptEnabled: true, locationContextEnabled: true, mobileEmulationEnabled: false, nativeEvents: true, networkConnectionEnabled: false, pageLoadStrategy: normal, platform: LINUX, platformName: LINUX, rotatable: false, setWindowRect: true, takesHeapSnapshot: true, takesScreenshot: true, unexpectedAlertBehaviour: , unhandledPromptBehavior: , version: 63.0.3239.132, webStorageEnabled: true}
+Session ID: e77db5fb569e41207e4fe03e4bad7748
+	at sun.reflect.GeneratedConstructorAccessor21.newInstance(Unknown Source)
+	at sun.reflect.DelegatingConstructorAccessorImpl.newInstance(DelegatingConstructorAccessorImpl.java:45)
+	at java.lang.reflect.Constructor.newInstance(Constructor.java:423)
+	at org.openqa.selenium.remote.ErrorHandler.createThrowable(ErrorHandler.java:214)
+	at org.openqa.selenium.remote.ErrorHandler.throwIfResponseFailed(ErrorHandler.java:166)
+	at org.openqa.selenium.remote.http.JsonHttpResponseCodec.reconstructValue(JsonHttpResponseCodec.java:40)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:80)
+	at org.openqa.selenium.remote.http.AbstractHttpResponseCodec.decode(AbstractHttpResponseCodec.java:44)
+	at org.openqa.selenium.remote.HttpCommandExecutor.execute(HttpCommandExecutor.java:164)
+	at org.openqa.selenium.remote.service.DriverCommandExecutor.execute(DriverCommandExecutor.java:83)
+	at org.openqa.selenium.remote.RemoteWebDriver.execute(RemoteWebDriver.java:601)
+	at org.openqa.selenium.remote.RemoteWebElement.execute(RemoteWebElement.java:279)
+	at org.openqa.selenium.remote.RemoteWebElement.click(RemoteWebElement.java:83)
+	at com.codeborne.selenide.commands.Click.click(Click.java:29)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:16)
+	at com.codeborne.selenide.commands.Click.execute(Click.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	... 17 more
+</pre>
+</span>
+</div>
+<div class="test">
+<a name="validateSelectDataStoragesToLimitMountsForm - 2210_1"></a>
+<h3 class="failures">validateSelectDataStoragesToLimitMountsForm - 2210_1</h3>
+<span class="code">
+<pre>Element should disabled {By.xpath: ancestor::button[1]}
+Element: '&lt;button class=&quot;ant-btn&quot; type=&quot;button&quot;&gt;Select all&lt;/button&gt;'
+Actual value: enabled
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1639302962242.144.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1639302962242.144.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
+	at com.epam.pipeline.autotests.ao.AccessObject.lambda$ensureAll$6(AccessObject.java:248)
+	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
+	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:647)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensureAll(AccessObject.java:248)
+	at com.epam.pipeline.autotests.LimitMountsTest.validateSelectDataStoragesToLimitMountsForm(LimitMountsTest.java:107)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
 </div>
 <div id="tab1" class="tab">
 <h2>Tests</h2>
@@ -157,36 +316,26 @@ Session ID: 8c292acc383b43d15826ebcd9b5772a3
 <td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validateDoNotMountStoragesOptionInUserProfile - 2210_2</td>
-<td>5m7.34s</td>
-<td class="success">passed</td>
+<td class="failures">validateDoNotMountStoragesOptionInUserProfile - 2210_2</td>
+<td>1m20.82s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validateLimitMountsPriorityOrderApplying - 2210_4</td>
-<td>54.317s</td>
-<td class="success">passed</td>
+<td class="skipped">validateLimitMountsPriorityOrderApplying</td>
+<td>-</td>
+<td class="skipped">ignored</td>
 </tr>
 <tr>
-<td class="success">validateLimitMountsValuesFromUserProfile - 2210_3</td>
-<td>5m35.90s</td>
-<td class="success">passed</td>
+<td class="failures">validateLimitMountsValuesFromUserProfile - 2210_3</td>
+<td>1m20.82s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
-<td class="success">validateSelectDataStoragesToLimitMountsForm - 2210_1</td>
-<td>16.224s</td>
-<td class="success">passed</td>
+<td class="failures">validateSelectDataStoragesToLimitMountsForm - 2210_1</td>
+<td>1m34.04s</td>
+<td class="failures">failed</td>
 </tr>
 </table>
-</div>
-<div id="tab2" class="tab">
-<h2>Standard output</h2>
-<span class="code">
-<pre>Returns latest run with runId 14534 from [14534]
-Returns latest run with runId 14535 from [14534, 14535]
-Returns latest run with runId 14535 from [14534, 14535]
-Returns latest run with runId 14536 from [14534, 14535, 14536]
-</pre>
-</span>
 </div>
 </div>
 <div id="footer">
@@ -196,7 +345,7 @@ Returns latest run with runId 14536 from [14534, 14535, 14536]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 11, 2021 3:14:59 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Dec 12, 2021 10:34:47 AM</p>
 </div>
 </div>
 </body>
