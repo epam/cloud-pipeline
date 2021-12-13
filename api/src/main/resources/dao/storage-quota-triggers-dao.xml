@@ -26,12 +26,16 @@
                        storage_id,
                        quota_value,
                        quota_type,
-                       actions
+                       actions,
+                       recipients,
+                       update_date
                     ) VALUES (
                         :STORAGE_ID,
                         :QUOTA_VALUE,
                         :QUOTA_TYPE,
-                        to_jsonb(:ACTIONS::jsonb)
+                        to_jsonb(:ACTIONS::jsonb),
+                        to_jsonb(:RECIPIENTS::jsonb),
+                        :UPDATE_DATE
                     )
                 ]]>
             </value>
@@ -42,7 +46,9 @@
                     UPDATE pipeline.last_triggered_storage_quota
                     SET quota_value = :QUOTA_VALUE,
                        quota_type = :QUOTA_TYPE,
-                       actions = to_jsonb(:ACTIONS::jsonb)
+                       actions = to_jsonb(:ACTIONS::jsonb),
+                       recipients = to_jsonb(:RECIPIENTS::jsonb),
+                       update_date = :UPDATE_DATE
                     WHERE storage_id = :STORAGE_ID
                 ]]>
             </value>
@@ -54,7 +60,8 @@
                        storage_id,
                        quota_value,
                        quota_type,
-                       actions
+                       actions,
+                       recipients
                     FROM pipeline.last_triggered_storage_quota
                     WHERE storage_id = :STORAGE_ID
                 ]]>
@@ -67,7 +74,8 @@
                        storage_id,
                        quota_value,
                        quota_type,
-                       actions
+                       actions,
+                       recipients
                     FROM pipeline.last_triggered_storage_quota
                 ]]>
             </value>

@@ -20,7 +20,9 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
+import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
@@ -71,7 +73,9 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
         STORAGE_ID,
         QUOTA_VALUE,
         QUOTA_TYPE,
-        ACTIONS;
+        ACTIONS,
+        RECIPIENTS,
+        UPDATE_DATE;
 
         static MapSqlParameterSource getParameters(final NFSQuotaTrigger triggerEntry) {
             final NFSQuotaNotificationEntry quota = triggerEntry.getQuota();
@@ -80,6 +84,8 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
             params.addValue(QUOTA_VALUE.name(), quota.getValue());
             params.addValue(QUOTA_TYPE.name(), quota.getType().name());
             params.addValue(ACTIONS.name(), JsonMapper.convertDataToJsonStringForQuery(quota.getActions()));
+            params.addValue(RECIPIENTS.name(), JsonMapper.convertDataToJsonStringForQuery(triggerEntry.getRecipients()));
+            params.addValue(UPDATE_DATE.name(), DateUtils.nowUTC());
             return params;
         }
 
@@ -90,7 +96,11 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
                 final StorageQuotaType quotaType = StorageQuotaType.valueOf(rs.getString(QUOTA_TYPE.name()));
                 final Set<StorageQuotaAction> actions = JsonMapper.parseData(
                     rs.getString(ACTIONS.name()), new TypeReference<Set<StorageQuotaAction>>() {});
-                return new NFSQuotaTrigger(storageId, new NFSQuotaNotificationEntry(quotaValue, quotaType, actions));
+                final List<NFSQuotaNotificationRecipient> recipients = JsonMapper.parseData(
+                    rs.getString(RECIPIENTS.name()), new TypeReference<List<NFSQuotaNotificationRecipient>>() {});
+                return new NFSQuotaTrigger(storageId,
+                                           new NFSQuotaNotificationEntry(quotaValue, quotaType, actions),
+                                           recipients);
             };
         }
     }
