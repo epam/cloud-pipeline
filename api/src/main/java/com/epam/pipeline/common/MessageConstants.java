@@ -713,6 +713,16 @@ public final class MessageConstants {
     public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING =
             "error.search.scrolling.parameter.doc.sort.fields.missing";
 
+    // Quota
+    public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
+    public static final String ERROR_QUOTA_VALUE_EMPTY = "error.quota.value.empty";
+    public static final String ERROR_QUOTA_NOT_FOUND_BY_ID = "error.quota.not.found.by.id";
+    public static final String ERROR_QUOTA_ACTIONS_EMPTY = "error.quota.actions.empty";
+    public static final String ERROR_QUOTA_GLOBAL_ALREADY_EXISTS = "error.quota.global.already.exists";
+    public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
+    public static final String ERROR_QUOTA_NAME_EMPTY = "error.quota.name.empty";
+    public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
+
     private MessageConstants() {
         // no-op
     }

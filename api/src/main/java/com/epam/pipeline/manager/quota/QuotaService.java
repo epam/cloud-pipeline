@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.quota;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
@@ -43,11 +45,12 @@ public class QuotaService {
     private final QuotaRepository quotaRepository;
     private final QuotaActionRepository quotaActionRepository;
     private final QuotaMapper quotaMapper;
+    private final MessageHelper messageHelper;
 
     @Transactional
     public Quota create(final Quota quota) {
-        Assert.notNull(quota.getQuotaGroup(), "Quota group cannot be empty");
-        Assert.notNull(quota.getValue(), "Quota cannot be empty");
+        Assert.notNull(quota.getQuotaGroup(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GROUP_EMPTY));
+        Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
         validateQuotaType(quota);
         validateQuotaName(quota);
         validateUniqueness(quota);
@@ -67,8 +70,8 @@ public class QuotaService {
     @Transactional
     public Quota update(final Long id, final Quota quota) {
         final QuotaEntity loaded = quotaRepository.findOne(id);
-        Assert.notNull(loaded, String.format("No quota with ID '%d' found for update", id));
-        Assert.notNull(quota.getValue(), "Quota cannot be empty");
+        Assert.notNull(loaded, messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
+        Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
         validateQuotaName(quota);
         final QuotaEntity entity = quotaMapper.quotaToEntity(quota);
 
@@ -108,7 +111,7 @@ public class QuotaService {
 
     private void prepareQuotaAction(final QuotaEntity quotaEntity, final QuotaActionEntity quotaActionEntity) {
         Assert.state(CollectionUtils.isNotEmpty(quotaActionEntity.getActions()),
-                "At least one quota action shall be specified");
+                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ACTIONS_EMPTY));
         if (Objects.isNull(quotaActionEntity.getThreshold())) {
             quotaActionEntity.setThreshold(0);
         }
@@ -131,17 +134,19 @@ public class QuotaService {
 
     private void validateUniqueness(final Quota quota) {
         if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
-            Assert.isNull(quotaRepository.findByQuotaGroup(QuotaGroup.GLOBAL), "Global quota already exists");
+            Assert.isNull(quotaRepository.findByQuotaGroup(QuotaGroup.GLOBAL),
+                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GLOBAL_ALREADY_EXISTS));
             return;
         }
         Assert.isNull(quotaRepository.findByTypeAndNameAndQuotaGroup(quota.getType(), quota.getName(),
-                quota.getQuotaGroup()), String.format("'%s' quota with type '%s' and name '%s' already exists",
+                quota.getQuotaGroup()), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ALREADY_EXISTS,
                 quota.getQuotaGroup().name(), quota.getType().name(), quota.getName()));
     }
 
     private void validateQuotaName(final Quota quota) {
         if (!QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
-            Assert.state(StringUtils.isNotBlank(quota.getName()), "Quota entity name cannot be empty");
+            Assert.state(StringUtils.isNotBlank(quota.getName()),
+                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NAME_EMPTY));
             return;
         }
         quota.setName(null);
@@ -152,6 +157,6 @@ public class QuotaService {
             quota.setType(null);
             return;
         }
-        Assert.notNull(quota.getType(), "Quota type cannot be empty");
+        Assert.notNull(quota.getType(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_TYPE_EMPTY));
     }
 }
