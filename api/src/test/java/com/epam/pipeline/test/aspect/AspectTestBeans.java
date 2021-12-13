@@ -30,6 +30,7 @@ import com.epam.pipeline.dao.configuration.RunConfigurationDao;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
+import com.epam.pipeline.dao.datastorage.StorageQuotaTriggersDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
@@ -69,6 +70,7 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
@@ -393,4 +395,10 @@ public class AspectTestBeans {
 
     @MockBean
     protected LdapTemplate ldapTemplate;
+
+    @MockBean
+    protected StorageQuotaTriggersDao storageQuotaTriggersDao;
+
+    @MockBean
+    protected StorageQuotaTriggersManager storageQuotaTriggersManager;
 }
