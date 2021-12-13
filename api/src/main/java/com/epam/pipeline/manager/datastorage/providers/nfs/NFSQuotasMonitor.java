@@ -247,7 +247,7 @@ public class NFSQuotasMonitor {
 
     private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
         final Double originalLimit = notification.getValue();
-        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, true);
+        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, false);
         final StorageQuotaType notificationType = notification.getType();
         switch (notificationType) {
             case GIGABYTES:
