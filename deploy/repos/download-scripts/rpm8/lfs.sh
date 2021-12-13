@@ -8,6 +8,6 @@ set -e
 curl -s https://dev.lizardfs.com/packages/centos.lizardfs.repo > /etc/yum.repos.d/lizardfs.repo && \
 yum --disablerepo="*" --enablerepo="lizardfs" -q update && \
 yum install -y --downloadonly --downloaddir=/rpmcache --installroot=/tmp/installroot --releasever=/ \
-    lizardfs-chunkserver \
-    lizardfs-master \
-    lizardfs-client
+    lizardfs-chunkserver-3.12.0-0el8.x86_64 \
+    lizardfs-master-3.12.0-0el8.x86_64 \
+    lizardfs-client-3.12.0-0el8.x86_64
