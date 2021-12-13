@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.quota;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.quota.Quota;
+import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
@@ -109,6 +110,15 @@ public class QuotaService {
                 .forEach(quotaActionRepository::delete);
     }
 
+    private void validateQuotaAction(final List<QuotaActionType> allowedActions,
+                                     final QuotaActionType action, final QuotaGroup quotaGroup) {
+        Assert.state(allowedActions.contains(action),
+                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ACTION_NOT_ALLOWED,
+                        action.name(), quotaGroup.name(), allowedActions.stream()
+                                .map(QuotaActionType::name)
+                                .collect(Collectors.joining(", "))));
+    }
+
     private void prepareQuotaAction(final QuotaEntity quotaEntity, final QuotaActionEntity quotaActionEntity) {
         Assert.state(CollectionUtils.isNotEmpty(quotaActionEntity.getActions()),
                 messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ACTIONS_EMPTY));
@@ -116,6 +126,9 @@ public class QuotaService {
             quotaActionEntity.setThreshold(0);
         }
         quotaActionEntity.setQuota(quotaEntity);
+        final List<QuotaActionType> allowedActions = quotaEntity.getQuotaGroup().getAllowedActions();
+        quotaActionEntity.getActions()
+                .forEach(action -> validateQuotaAction(allowedActions, action, quotaEntity.getQuotaGroup()));
     }
 
     private void prepareQuotaActions(final QuotaEntity entity) {
@@ -126,10 +139,7 @@ public class QuotaService {
     }
 
     private QuotaPeriod prepareQuotaPeriod(final QuotaEntity entity) {
-        if (QuotaGroup.GLOBAL.equals(entity.getQuotaGroup()) && Objects.isNull(entity.getPeriod())) {
-            return QuotaPeriod.MONTH;
-        }
-        return QuotaGroup.GLOBAL.equals(entity.getQuotaGroup()) ? entity.getPeriod() : null;
+        return Objects.isNull(entity.getPeriod()) ? entity.getPeriod() : QuotaPeriod.MONTH;
     }
 
     private void validateUniqueness(final Quota quota) {

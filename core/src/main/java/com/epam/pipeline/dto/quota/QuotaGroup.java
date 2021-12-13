@@ -16,6 +16,27 @@
 
 package com.epam.pipeline.dto.quota;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static com.epam.pipeline.dto.quota.QuotaActionType.BLOCK;
+import static com.epam.pipeline.dto.quota.QuotaActionType.NOTIFY;
+import static com.epam.pipeline.dto.quota.QuotaActionType.READ_MODE;
+import static com.epam.pipeline.dto.quota.QuotaActionType.READ_MODE_AND_DISABLE_NEW_JOBS;
+import static com.epam.pipeline.dto.quota.QuotaActionType.READ_MODE_AND_STOP_ALL_JOBS;
+
 public enum QuotaGroup {
-    GLOBAL, COMPUTE_INSTANCE, STORAGE
+    GLOBAL, COMPUTE_INSTANCE, STORAGE;
+
+    public List<QuotaActionType> getAllowedActions() {
+        switch (this) {
+            case COMPUTE_INSTANCE:
+                return Arrays.asList(NOTIFY, READ_MODE_AND_DISABLE_NEW_JOBS, READ_MODE_AND_STOP_ALL_JOBS, BLOCK);
+            case STORAGE:
+                return Arrays.asList(NOTIFY, READ_MODE, BLOCK);
+            default:
+                return Collections.emptyList();
+        }
+    }
 }

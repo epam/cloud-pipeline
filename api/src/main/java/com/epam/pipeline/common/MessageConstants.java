@@ -722,6 +722,7 @@ public final class MessageConstants {
     public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
     public static final String ERROR_QUOTA_NAME_EMPTY = "error.quota.name.empty";
     public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
+    public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
 
     private MessageConstants() {
         // no-op
