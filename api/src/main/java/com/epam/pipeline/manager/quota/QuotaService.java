@@ -139,7 +139,7 @@ public class QuotaService {
     }
 
     private QuotaPeriod prepareQuotaPeriod(final QuotaEntity entity) {
-        return Objects.isNull(entity.getPeriod()) ? entity.getPeriod() : QuotaPeriod.MONTH;
+        return Objects.isNull(entity.getPeriod()) ? QuotaPeriod.MONTH : entity.getPeriod();
     }
 
     private void validateUniqueness(final Quota quota) {
@@ -154,12 +154,12 @@ public class QuotaService {
     }
 
     private void validateQuotaName(final Quota quota) {
-        if (!QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
-            Assert.state(StringUtils.isNotBlank(quota.getName()),
-                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NAME_EMPTY));
+        if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
+            quota.setName(null);
             return;
         }
-        quota.setName(null);
+        Assert.state(StringUtils.isNotBlank(quota.getName()),
+                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NAME_EMPTY));
     }
 
     private void validateQuotaType(final Quota quota) {

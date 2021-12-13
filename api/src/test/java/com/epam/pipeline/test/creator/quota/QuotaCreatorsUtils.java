@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -69,7 +70,9 @@ public interface QuotaCreatorsUtils {
         quotaActionEntity.setId(ID);
         quotaActionEntity.setQuota(quotaEntity);
         quotaActionEntity.setThreshold(THRESHOLD);
-        quotaActionEntity.setActions(Collections.singletonList(QuotaActionType.NOTIFY));
+        final List<QuotaActionType> actions = new ArrayList<>();
+        actions.add(QuotaActionType.NOTIFY);
+        quotaActionEntity.setActions(actions);
         return quotaActionEntity;
     }
 }
