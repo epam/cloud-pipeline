@@ -86,6 +86,29 @@
   border: 1px solid @color-red;
 }
 
+.cp-runs-autocomplete-menu.ant-menu {
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid @panel-border-color;
+}
+
+.cp-runs-autocomplete-menu-item-description {
+  color: @color-grey;
+}
+
+.cp-runs-autocomplete-menu-item {
+  border-bottom: 1px solid @input-border;
+}
+
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item:hover,
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-active,
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-open,
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
+.cp-runs-autocomplete-menu.ant-menu-item:active {
+  background-color: @element-hover-background-color;
+  border: @menu-active-color;
+  color: @application-color;
+}
+
 .cp-run-instance-tag {
   background-color: @card-header-background;
   border: 1px solid @card-border-color;

@@ -269,7 +269,7 @@ class RunsFilter extends React.Component {
       return (
         <Menu
           onClick={onClick}
-          className={styles.autocompleteMenu}>
+          className={classNames(styles.autocompleteMenu, 'cp-runs-autocomplete-menu')}>
           {this.state.autocomplete.filter.map((f, index) => {
             let fieldDescription;
             if (f.fieldDescription) {
@@ -277,8 +277,8 @@ class RunsFilter extends React.Component {
                 <span style={{marginLeft: 5}}>
                   -
                   <i
+                    className="cp-runs-autocomplete-menu-item-description"
                     style={{
-                      color: '#777',
                       fontSize: 'smaller',
                       marginLeft: 2
                     }}
@@ -290,10 +290,7 @@ class RunsFilter extends React.Component {
             }
             return (
               <Menu.Item
-                className={
-                  this.state.autocomplete.hovered === index
-                    ? styles.autocompleteHoveredItem : styles.autocompleteItem
-                }
+                className={classNames(styles.autocompleteItem, 'cp-runs-autocomplete-menu-item')}
                 key={index}>
                 <div onMouseOver={() => onHover(index)}>
                   <span>{f.fieldName} - {fieldDescription}</span>
