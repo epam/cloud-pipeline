@@ -1570,7 +1570,9 @@ export default `
   width: 26px;
   display: block;
   background-image: @logo-image;
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 @THEME .cp-dashboard-sticky-panel {
