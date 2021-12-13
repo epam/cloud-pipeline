@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @AllArgsConstructor
@@ -30,4 +31,5 @@ public class NFSQuotaTrigger {
     private final Long storageId;
     private final NFSQuotaNotificationEntry quota;
     private final List<NFSQuotaNotificationRecipient> recipients;
+    private final LocalDateTime executionTime;
 }

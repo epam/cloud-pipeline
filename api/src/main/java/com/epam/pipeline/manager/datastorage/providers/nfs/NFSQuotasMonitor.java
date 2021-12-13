@@ -39,6 +39,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
@@ -54,6 +55,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -80,6 +83,7 @@ public class NFSQuotasMonitor {
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
     private final StorageQuotaTriggersManager triggersManager;
+    private final Integer notificationResendTimeout;
 
     public NFSQuotasMonitor(final DataStorageManager dataStorageManager,
                             final SearchManager searchManager,
@@ -92,7 +96,9 @@ public class NFSQuotasMonitor {
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
-                                NFSStorageMountStatus defaultRestrictiveStatus) {
+                                NFSStorageMountStatus defaultRestrictiveStatus,
+                            final @Value("${data.storage.nfs.quota.triggers.resend.timeout.minutes:1440}")
+                                Integer notificationResendTimeout) {
         this.dataStorageManager = dataStorageManager;
         this.searchManager = searchManager;
         this.metadataManager = metadataManager;
@@ -103,6 +109,7 @@ public class NFSQuotasMonitor {
         this.triggersManager = triggersManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
+        this.notificationResendTimeout = notificationResendTimeout;
     }
 
     @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
@@ -110,15 +117,15 @@ public class NFSQuotasMonitor {
     public void controlQuotas() {
         log.info("Start NFS quotas processing...");
         final List<AbstractDataStorage> activeStorages = dataStorageManager.getDataStorages();
-        final List<NFSQuotaTrigger> nfsQuotaTriggers = triggersManager.loadAll();
-        final Map<Long, NFSQuotaNotificationEntry> notificationTriggers = nfsQuotaTriggers.stream()
-                .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, NFSQuotaTrigger::getQuota));
+        final List<NFSQuotaTrigger> triggersList = triggersManager.loadAll();
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS(activeStorages);
-        final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages, nfsQuotaTriggers);
+        final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages, triggersList);
+        final Map<Long, NFSQuotaNotificationEntry> notificationTriggers = buildTriggersMapping(triggersList);
         nfsDataStorages.forEach(storage -> processStorageQuota(storage, activeQuotas, notificationTriggers));
         log.info("NFS quotas are processed successfully.");
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void processStorageQuota(final NFSDataStorage storage,
                                      final Map<Long, NFSQuota> activeQuotas,
                                      final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
@@ -202,7 +209,7 @@ public class NFSQuotasMonitor {
         if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus, notification,
                                                                               notificationTriggers)) {
             notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
-            triggersManager.insert(new NFSQuotaTrigger(storage.getId(), notification, recipients));
+            triggersManager.insert(new NFSQuotaTrigger(storage.getId(), notification, recipients, DateUtils.nowUTC()));
         }
         return mountStatus;
     }
@@ -285,8 +292,17 @@ public class NFSQuotasMonitor {
         return capacityGb * percentage / PERCENTS_MULTIPLIER;
     }
 
+    private Map<Long, NFSQuotaNotificationEntry> buildTriggersMapping(final List<NFSQuotaTrigger> triggersList) {
+        final LocalDateTime now = DateUtils.nowUTC();
+        return triggersList.stream()
+            .filter(trigger -> trigger.getExecutionTime()
+                .plus(notificationResendTimeout, ChronoUnit.MINUTES)
+                .isAfter(now))
+            .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, NFSQuotaTrigger::getQuota));
+    }
+
     private Map<Long, NFSQuota> loadStorageQuotas(final List<NFSDataStorage> storages,
-                                                  final List<NFSQuotaTrigger> nfsQuotaTriggers) {
+                                                  final List<NFSQuotaTrigger> notificationTriggers) {
         final Map<Long, NFSQuota> activeQuotas = storages.stream()
             .map(BaseEntity::getId)
             .map(storageId -> metadataManager.loadMetadataItem(storageId, AclClass.DATA_STORAGE))
@@ -295,10 +311,10 @@ public class NFSQuotasMonitor {
             .collect(Collectors.toMap(metadataEntry -> metadataEntry.getEntity().getEntityId(),
                                       this::mapPreferenceToQuota));
         activeQuotas.values().removeIf(quota -> CollectionUtils.isEmpty(quota.getNotifications()));
-        final Map<Long, NFSQuota> removedQuotas = nfsQuotaTriggers.stream()
+        final Map<Long, NFSQuota> removedQuotas = notificationTriggers.stream()
             .filter(trigger -> !activeQuotas.containsKey(trigger.getStorageId()))
             .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId,
-                                      trigger -> new NFSQuota(new ArrayList<>(), trigger.getRecipients())));
+                trigger -> new NFSQuota(new ArrayList<>(), trigger.getRecipients())));
         activeQuotas.putAll(removedQuotas);
         activeQuotas.values().forEach(quota -> quota.getNotifications().add(NO_ACTIVE_QUOTAS_NOTIFICATION));
         return activeQuotas;

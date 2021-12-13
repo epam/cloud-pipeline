@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.test.creator.datastorage.DatastorageCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Test;
@@ -84,6 +85,7 @@ public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
         final NFSQuotaNotificationEntry quota =
             new NFSQuotaNotificationEntry(value, type, Stream.of(actions).collect(Collectors.toSet()));
         return new NFSQuotaTrigger(storageId, quota,
-                                   Collections.singletonList(new NFSQuotaNotificationRecipient(true, OWNER)));
+                                   Collections.singletonList(new NFSQuotaNotificationRecipient(true, OWNER)),
+                                   DateUtils.nowUTC());
     }
 }

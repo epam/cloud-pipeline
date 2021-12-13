@@ -61,7 +61,8 @@
                        quota_value,
                        quota_type,
                        actions,
-                       recipients
+                       recipients,
+                       update_date
                     FROM pipeline.last_triggered_storage_quota
                     WHERE storage_id = :STORAGE_ID
                 ]]>
@@ -75,7 +76,8 @@
                        quota_value,
                        quota_type,
                        actions,
-                       recipients
+                       recipients,
+                       update_date
                     FROM pipeline.last_triggered_storage_quota
                 ]]>
             </value>

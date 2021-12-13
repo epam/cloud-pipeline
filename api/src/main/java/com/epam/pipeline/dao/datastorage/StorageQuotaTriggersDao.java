@@ -17,12 +17,12 @@
 package com.epam.pipeline.dao.datastorage;
 
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationRecipient;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaTrigger;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.jdbc.core.RowMapper;
@@ -84,8 +84,9 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
             params.addValue(QUOTA_VALUE.name(), quota.getValue());
             params.addValue(QUOTA_TYPE.name(), quota.getType().name());
             params.addValue(ACTIONS.name(), JsonMapper.convertDataToJsonStringForQuery(quota.getActions()));
-            params.addValue(RECIPIENTS.name(), JsonMapper.convertDataToJsonStringForQuery(triggerEntry.getRecipients()));
-            params.addValue(UPDATE_DATE.name(), DateUtils.nowUTC());
+            params.addValue(RECIPIENTS.name(),
+                            JsonMapper.convertDataToJsonStringForQuery(triggerEntry.getRecipients()));
+            params.addValue(UPDATE_DATE.name(), triggerEntry.getExecutionTime());
             return params;
         }
 
@@ -100,7 +101,8 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
                     rs.getString(RECIPIENTS.name()), new TypeReference<List<NFSQuotaNotificationRecipient>>() {});
                 return new NFSQuotaTrigger(storageId,
                                            new NFSQuotaNotificationEntry(quotaValue, quotaType, actions),
-                                           recipients);
+                                           recipients,
+                                           DaoHelper.parseTimestamp(rs, UPDATE_DATE.name()));
             };
         }
     }
