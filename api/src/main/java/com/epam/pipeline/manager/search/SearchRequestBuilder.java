@@ -164,13 +164,13 @@ public class SearchRequestBuilder {
         final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
                 .field(SIZE_FIELD);
         final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAggregator);
-        final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
+        final BoolQueryBuilder fileMatchersQuery = QueryBuilders.boolQuery();
         CollectionUtils.emptyIfNull(storageSizeMasks)
-            .forEach(mask -> boolQuery.mustNot(QueryBuilders.wildcardQuery(NAME_FIELD, mask)));
+            .forEach(mask -> fileMatchersQuery.mustNot(QueryBuilders.wildcardQuery(NAME_FIELD, mask)));
         if (StringUtils.isNotBlank(path)) {
-            boolQuery.must(QueryBuilders.prefixQuery(NAME_FIELD, path));
+            fileMatchersQuery.must(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
-        sizeSumSearch.query(boolQuery);
+        sizeSumSearch.query(fileMatchersQuery);
         final SearchRequest request = new SearchRequest()
                 .indices(searchIndex)
                 .source(sizeSumSearch);

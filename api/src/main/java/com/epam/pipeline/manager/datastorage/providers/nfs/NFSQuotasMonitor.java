@@ -41,7 +41,6 @@ import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +74,6 @@ public class NFSQuotasMonitor {
     private final LustreFSManager lustreManager;
     private final MessageHelper messageHelper;
     private final NotificationManager notificationManager;
-    private final PreferenceManager preferenceManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
     private final Map<Long, NFSQuotaNotificationEntry> notificationTriggers;
@@ -87,7 +85,6 @@ public class NFSQuotasMonitor {
                             final LustreFSManager lustreManager,
                             final MessageHelper messageHelper,
                             final NotificationManager notificationManager,
-                            final PreferenceManager preferenceManager,
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
@@ -99,7 +96,6 @@ public class NFSQuotasMonitor {
         this.lustreManager = lustreManager;
         this.messageHelper = messageHelper;
         this.notificationManager = notificationManager;
-        this.preferenceManager = preferenceManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
         this.notificationTriggers = new ConcurrentHashMap<>();
