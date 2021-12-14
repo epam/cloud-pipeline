@@ -62,7 +62,6 @@ function ProviderIcon (
     variable
   }
 ) {
-  console.log(value, getIcon(value));
   const iconSet = provider ? IconSet[provider] : [];
   if (!iconSet || !iconSet.length) {
     return null;
