@@ -1174,16 +1174,24 @@ export default `
   background: @primary-color;
   color: @primary-text-color;
 }
-@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow {
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow {
   border-right-color: @card-border-color;
 }
-@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after {
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-right-color: @card-background-color;
 }
-@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow {
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow {
   border-left-color: @card-border-color;
 }
-@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after {
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-left-color: @card-background-color;
 }
 @THEME .ant-popover-placement-top > .ant-popover-content > .ant-popover-arrow,
