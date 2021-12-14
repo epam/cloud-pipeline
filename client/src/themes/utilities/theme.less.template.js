@@ -900,6 +900,7 @@ export default `
 @THEME .ant-select-selection:hover .ant-select-selection__clear ~ .ant-select-arrow {
   opacity: 0;
 }
+@THEME .ant-dropdown,
 @THEME .ant-select-dropdown,
 @THEME .ant-dropdown-menu,
 @THEME .rc-menu,
@@ -1979,7 +1980,14 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .cp-billing-calendar-row-item {
-  border: 1px solid @card-border-color;
+  border-right: 1px solid @card-border-color;
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-billing-calendar-row-item:last-child {
+  border-right: none;
+}
+@THEME .cp-billing-calendar-row:last-child .cp-billing-calendar-row-item {
+  border-bottom: none;
 }
 @THEME .cp-billing-calendar-row-item.selected {
   color: @primary-color;
@@ -2012,8 +2020,6 @@ export default `
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
-
-
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
