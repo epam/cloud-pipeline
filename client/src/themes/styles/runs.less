@@ -153,3 +153,23 @@
   border: none;
   background-color: transparent;
 }
+
+.cp-runs-autocomplete-menu.ant-menu {
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid @panel-border-color;
+}
+
+.cp-runs-autocomplete-menu-item {
+  border-bottom: 1px solid @input-border;
+}
+
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item:hover,
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-active,
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-open,
+.cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
+.cp-runs-autocomplete-menu.ant-menu-item:active {
+  background-color: @element-hover-background-color;
+  border: @menu-active-color;
+  color: @application-color;
+}
+

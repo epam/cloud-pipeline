@@ -1897,6 +1897,23 @@ export default `
   border: none;
   background-color: transparent;
 }
+@THEME .cp-runs-autocomplete-menu.ant-menu {
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-runs-autocomplete-menu-item {
+  border-bottom: 1px solid @input-border;
+}
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item:hover,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-active,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-open,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
+@THEME .cp-runs-autocomplete-menu.ant-menu-item:active {
+  background-color: @element-hover-background-color;
+  border: @menu-active-color;
+  color: @application-color;
+}
+
 
 @THEME .cp-billing-menu {
   width: fit-content;
