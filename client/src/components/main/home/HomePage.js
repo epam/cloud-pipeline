@@ -196,9 +196,12 @@ export default class HomePage extends React.Component {
     );
   }
 
-  updateInterval;
+  delayedUpdateCall;
 
   refresh = async () => {
+    if (this.delayedUpdateCall) {
+      clearTimeout(this.delayedUpdateCall);
+    }
     let updateActiveRuns = false;
     let updateCompletedRuns = false;
     for (let key in this.panels) {
@@ -209,11 +212,18 @@ export default class HomePage extends React.Component {
           this.panels[key].contentPanel.usesCompletedRuns;
       }
     }
-    updateActiveRuns && await this.props.activeRuns.filter();
-    updateCompletedRuns && await this.props.completedRuns.filter();
-    await this.props.services.filter();
-    await this.props.myIssues.fetch();
-    this.forceUpdatePanels();
+    try {
+      await Promise.all([
+        updateActiveRuns ? this.props.activeRuns.filter() : undefined,
+        updateCompletedRuns ? this.props.completedRuns.filter() : undefined,
+        this.props.services.filter(),
+        this.props.myIssues.fetch()
+      ].filter(Boolean));
+    } catch (_) {
+    } finally {
+      this.delayedUpdateCall = setTimeout(() => this.refresh(), UPDATE_TIMEOUT);
+      this.forceUpdatePanels();
+    }
   };
 
   forceUpdatePanels = () => {
@@ -241,14 +251,15 @@ export default class HomePage extends React.Component {
   };
 
   componentDidMount () {
-    this.updateInterval = setInterval(() => {
-      this.refresh();
-    }, UPDATE_TIMEOUT);
+    if (this.delayedUpdateCall) {
+      clearTimeout(this.delayedUpdateCall);
+    }
+    this.delayedUpdateCall = setTimeout(() => this.refresh(), UPDATE_TIMEOUT);
     window.addEventListener('resize', this.onWindowResized);
   }
 
   componentWillUnmount () {
-    clearInterval(this.updateInterval);
+    clearTimeout(this.delayedUpdateCall);
     localStorage.setItem('LAST_VISITED', moment.utc().format('YYYY-MM-DD HH:mm:ss'));
     window.removeEventListener('resize', this.onWindowResized);
   }

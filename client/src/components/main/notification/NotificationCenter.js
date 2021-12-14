@@ -30,7 +30,6 @@ import Markdown from '../../special/markdown';
 }))
 @observer
 export default class NotificationCenter extends React.Component {
-
   static propTypes = {
     delaySeconds: PropTypes.number
   };
@@ -285,22 +284,26 @@ export default class NotificationCenter extends React.Component {
   }
 
   onFetched = (notifications) => {
-    const activeNotifications = (notifications.value || []).map(n => n);
-    const hiddenNotificationsInStorageStr = localStorage.getItem('hidden_notifications');
-    if (hiddenNotificationsInStorageStr) {
-      let hiddenNotifications = [];
-      try {
-        hiddenNotifications = JSON.parse(hiddenNotificationsInStorageStr);
-        if (!Array.isArray(hiddenNotifications)) {
-          hiddenNotifications = [];
-        }
-      } catch (___) {}
-      const activeHiddenNotifications = hiddenNotifications
-        .filter(n => activeNotifications.filter(a => a.notificationId === n.id).length > 0);
-      if (hiddenNotifications.length !== activeHiddenNotifications.length) {
+    if (notifications && notifications.value && notifications.loaded) {
+      const activeNotifications = (notifications.value || []).map(n => n);
+      const hiddenNotificationsInStorageStr = localStorage.getItem('hidden_notifications');
+      if (hiddenNotificationsInStorageStr) {
+        let hiddenNotifications = [];
         try {
-          localStorage.setItem('hidden_notifications', JSON.stringify(activeHiddenNotifications));
-        } catch (___) {}
+          hiddenNotifications = JSON.parse(hiddenNotificationsInStorageStr);
+          if (!Array.isArray(hiddenNotifications)) {
+            hiddenNotifications = [];
+          }
+        } catch (___) {
+        }
+        const activeHiddenNotifications = hiddenNotifications
+          .filter(n => activeNotifications.filter(a => a.notificationId === n.id).length > 0);
+        if (hiddenNotifications.length !== activeHiddenNotifications.length) {
+          try {
+            localStorage.setItem('hidden_notifications', JSON.stringify(activeHiddenNotifications));
+          } catch (___) {
+          }
+        }
       }
     }
   };

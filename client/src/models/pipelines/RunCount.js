@@ -41,10 +41,11 @@ export default class RunCount extends Remote {
 
   constructor () {
     super();
-    const fetch = ::this.silentFetch;
-    (function tick () {
-      fetch();
-      setTimeout(tick, 5000);
-    })();
+    const fetch = () => {
+      this.silentFetch()
+        .catch(() => {})
+        .then(() => setTimeout(fetch, 5000));
+    };
+    fetch();
   }
 }

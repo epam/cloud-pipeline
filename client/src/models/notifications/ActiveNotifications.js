@@ -21,12 +21,17 @@ class ActiveNotifications extends Remote {
   constructor () {
     super();
     this.url = '/notification/active';
-    setInterval(async () => {
-      await this.fetch();
-      if (this.onFetched) {
-        this.onFetched(this);
-      }
-    }, FETCH_INTERVAL_SECONDS * 1000);
+    const fetch = () => {
+      this.fetch()
+        .then(() => {
+          if (this.onFetched) {
+            this.onFetched(this);
+          }
+        })
+        .catch(() => {})
+        .then(() => setTimeout(fetch, FETCH_INTERVAL_SECONDS * 1000));
+    };
+    fetch();
   }
 
   onFetched;

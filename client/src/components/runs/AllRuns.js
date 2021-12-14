@@ -90,14 +90,23 @@ const refreshInterval = 10000;
 })
 @observer
 class AllRuns extends Component {
-
   initializeRunFilter = (filterParams) => {
     this._runFilter = this.props.pipelineRun.runFilter(filterParams, true);
     this._initialRunParams = filterParams;
   };
   reloadTable = () => {
-    this.runFilter && this.runFilter.fetch();
-    this.props.counter && this.props.counter.fetch();
+    const promises = [
+      this.runFilter ? this.runFilter.fetch() : undefined,
+      this.props.counter ? this.props.counter.fetch() : undefined
+    ].filter(Boolean);
+    Promise
+      .all(promises)
+      .catch(() => {})
+      .then(() => {
+        if (this.props.status.toLowerCase() === 'active') {
+          this.startTimer();
+        }
+      });
   };
 
   handleTableChange (pagination, filter) {
@@ -208,13 +217,12 @@ class AllRuns extends Component {
   };
   refreshTimer;
   startTimer = () => {
-    if (!this.refreshTimer) {
-      this.refreshTimer = setInterval(this.reloadTable, refreshInterval);
-    }
+    this.endTimer();
+    this.refreshTimer = setTimeout(this.reloadTable, refreshInterval);
   };
   endTimer = () => {
     if (this.refreshTimer) {
-      clearInterval(this.refreshTimer);
+      clearTimeout(this.refreshTimer);
       this.refreshTimer = null;
     }
   };
