@@ -395,7 +395,6 @@ class ColorVariable extends React.PureComponent {
           onChange={this.onChangeType}
           filterOption={
             (input, option) => {
-              console.log(input, option);
               const value = option.props.title || option.props.key;
               if (!value) {
                 return false;
