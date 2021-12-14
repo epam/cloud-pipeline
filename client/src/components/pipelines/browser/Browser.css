@@ -427,14 +427,8 @@ tr.table-row-selected {
 }
 
 .metadata-preview-btn {
-  color: #108ee9;
   padding: 0 5px;
-  transition: color 0.2s ease;
   cursor: pointer;
-}
-
-.metadata-preview-btn:hover {
-  color: #49a9ee;
 }
 
 .run-table {
