@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.scheduling;
 
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.scheduling.SchedulingException;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
@@ -54,9 +55,17 @@ public class RunScheduler {
     public void init() {
         try {
             quartzScheduler.start();
-            log.debug("Scheduler is running.");
+            log.debug("Quartz scheduler is running.");
         } catch (SchedulerException e) {
-            log.error("SchedulerException while scheduling process: " + e.getMessage());
+            throw new SchedulingException("Error while initiating quartz scheduler", e);
+        }
+    }
+
+    public void scheduleRunScheduleIfPossible(final RunSchedule schedule) {
+        try {
+            scheduleRunSchedule(schedule);
+        } catch (SchedulingException e) {
+            log.error("Error while scheduling job for run {}: {}", schedule.getSchedulableId(), e.getMessage());
         }
     }
 
@@ -73,8 +82,7 @@ public class RunScheduler {
             log.debug("Job for: " + schedule.getType() + ID
                     + schedule.getSchedulableId() + " scheduled successfully for date: " + scheduledDate);
         } catch (SchedulerException | ParseException e) {
-            log.error("SchedulerException while scheduling job for run " + schedule.getSchedulableId() + " : " +
-                      e.getMessage());
+            throw new SchedulingException(e.getMessage(), e);
         }
     }
 
@@ -90,8 +98,7 @@ public class RunScheduler {
             log.debug("Schedule " + schedule.getCronExpression() + " for "  + schedule.getType()
                     + ID + schedule.getSchedulableId() + " was revoked successfully.");
         } catch (SchedulerException e) {
-            log.error("SchedulerException while unscheduling trigger for "  + schedule.getType()
-                    + ID + schedule.getSchedulableId() + " : " + e.getMessage());
+            throw new SchedulingException(e.getMessage(), e);
         }
     }
 

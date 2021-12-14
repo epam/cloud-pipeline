@@ -61,7 +61,7 @@ public class RunScheduleManager {
 
     @PostConstruct
     public void init() {
-        loadAllSchedules().forEach(scheduler::scheduleRunSchedule);
+        loadAllSchedules().forEach(scheduler::scheduleRunScheduleIfPossible);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
