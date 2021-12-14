@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.repository.quota;
+package com.epam.pipeline.entity.user;
 
-import com.epam.pipeline.dto.quota.QuotaGroup;
-import com.epam.pipeline.dto.quota.QuotaType;
-import com.epam.pipeline.entity.quota.QuotaEntity;
-import org.springframework.data.repository.CrudRepository;
+import lombok.Data;
 
-public interface QuotaRepository extends CrudRepository<QuotaEntity, Long> {
-
-    QuotaEntity findByQuotaGroup(QuotaGroup quotaGroup);
-
-    QuotaEntity findByTypeAndSubjectAndQuotaGroup(QuotaType type, String subject, QuotaGroup quotaGroup);
+@Data
+public class Sid {
+    private String name;
+    private boolean principal = true;
 }

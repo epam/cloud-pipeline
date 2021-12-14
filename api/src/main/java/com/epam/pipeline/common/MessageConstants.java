@@ -719,7 +719,7 @@ public final class MessageConstants {
     public static final String ERROR_QUOTA_NOT_FOUND_BY_ID = "error.quota.not.found.by.id";
     public static final String ERROR_QUOTA_GLOBAL_ALREADY_EXISTS = "error.quota.global.already.exists";
     public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
-    public static final String ERROR_QUOTA_NAME_EMPTY = "error.quota.name.empty";
+    public static final String ERROR_QUOTA_SUBJECT_EMPTY = "error.quota.subject.empty";
     public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
     public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
 

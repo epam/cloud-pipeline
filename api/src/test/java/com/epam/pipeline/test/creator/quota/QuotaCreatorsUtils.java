@@ -23,26 +23,28 @@ import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
-import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.quota.QuotaSidEntity;
+import com.epam.pipeline.entity.user.Sid;
+import com.epam.pipeline.test.creator.CommonCreatorConstants;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public interface QuotaCreatorsUtils {
-    String NAME = "user";
-    Long VALUE = 100L;
-    Integer THRESHOLD = 80;
+    String SUBJECT = "user";
+    Double VALUE = 100.0;
+    Double THRESHOLD = 80.8;
     Long ID = 1L;
 
-    static Quota quota(final List<Long> userIds) {
+    static Quota quota(final List<Sid> recipients) {
         return Quota.builder()
                 .id(ID)
-                .name(NAME)
+                .subject(SUBJECT)
                 .type(QuotaType.USER)
                 .quotaGroup(QuotaGroup.STORAGE)
                 .value(VALUE)
-                .informedUsers(userIds)
+                .recipients(recipients)
                 .build();
     }
 
@@ -54,14 +56,14 @@ public interface QuotaCreatorsUtils {
                 .build();
     }
 
-    static QuotaEntity quotaEntity(final List<PipelineUser> users) {
+    static QuotaEntity quotaEntity(final List<QuotaSidEntity> recipients) {
         final QuotaEntity quotaEntity = new QuotaEntity();
         quotaEntity.setId(ID);
-        quotaEntity.setName(NAME);
+        quotaEntity.setSubject(SUBJECT);
         quotaEntity.setType(QuotaType.USER);
         quotaEntity.setQuotaGroup(QuotaGroup.STORAGE);
         quotaEntity.setValue(VALUE);
-        quotaEntity.setInformedUsers(users);
+        quotaEntity.setRecipients(recipients);
         return quotaEntity;
     }
 
@@ -74,5 +76,19 @@ public interface QuotaCreatorsUtils {
         actions.add(QuotaActionType.NOTIFY);
         quotaActionEntity.setActions(actions);
         return quotaActionEntity;
+    }
+
+    static QuotaSidEntity quotaSidEntity() {
+        final QuotaSidEntity quotaSidEntity = new QuotaSidEntity();
+        quotaSidEntity.setName(CommonCreatorConstants.TEST_NAME);
+        quotaSidEntity.setPrincipal(true);
+        return quotaSidEntity;
+    }
+
+    static Sid quotaSid() {
+        final Sid quotaSid = new Sid();
+        quotaSid.setName(CommonCreatorConstants.TEST_NAME);
+        quotaSid.setPrincipal(true);
+        return quotaSid;
     }
 }

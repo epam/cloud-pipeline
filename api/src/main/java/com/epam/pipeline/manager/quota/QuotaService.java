@@ -31,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -90,6 +91,8 @@ public class QuotaService {
 
     @Transactional
     public void delete(final Long id) {
+        Assert.state(quotaRepository.exists(id),
+                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
         quotaRepository.delete(id);
     }
 
@@ -125,7 +128,7 @@ public class QuotaService {
             quotaActionEntity.setActions(Collections.singletonList(QuotaActionType.NOTIFY));
         }
         if (Objects.isNull(quotaActionEntity.getThreshold())) {
-            quotaActionEntity.setThreshold(0);
+            quotaActionEntity.setThreshold(NumberUtils.DOUBLE_ZERO);
         }
         quotaActionEntity.setQuota(quotaEntity);
         final List<QuotaActionType> allowedActions = quotaEntity.getQuotaGroup().getAllowedActions();
@@ -150,18 +153,18 @@ public class QuotaService {
                     messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GLOBAL_ALREADY_EXISTS));
             return;
         }
-        Assert.isNull(quotaRepository.findByTypeAndNameAndQuotaGroup(quota.getType(), quota.getName(),
+        Assert.isNull(quotaRepository.findByTypeAndSubjectAndQuotaGroup(quota.getType(), quota.getSubject(),
                 quota.getQuotaGroup()), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ALREADY_EXISTS,
-                quota.getQuotaGroup().name(), quota.getType().name(), quota.getName()));
+                quota.getQuotaGroup().name(), quota.getType().name(), quota.getSubject()));
     }
 
     private void validateQuotaName(final Quota quota) {
         if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
-            quota.setName(null);
+            quota.setSubject(null);
             return;
         }
-        Assert.state(StringUtils.isNotBlank(quota.getName()),
-                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NAME_EMPTY));
+        Assert.state(StringUtils.isNotBlank(quota.getSubject()),
+                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_SUBJECT_EMPTY));
     }
 
     private void validateQuotaType(final Quota quota) {

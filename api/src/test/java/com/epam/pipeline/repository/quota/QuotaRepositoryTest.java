@@ -17,12 +17,9 @@
 package com.epam.pipeline.repository.quota;
 
 import com.epam.pipeline.assertions.quota.QuotaAssertions;
-import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
 import org.junit.Test;
@@ -32,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 
+import static com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils.quotaSidEntity;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.CoreMatchers.is;
@@ -43,20 +41,11 @@ public class QuotaRepositoryTest extends AbstractJpaTest {
     private QuotaRepository quotaRepository;
     @Autowired
     private TestEntityManager entityManager;
-    @Autowired
-    private UserDao userDao;
 
     @Test
     @Transactional
     public void crudTest() {
-        final PipelineUser pipelineUser = new PipelineUser();
-        pipelineUser.setUserName(CommonCreatorConstants.TEST_NAME);
-        userDao.createUser(pipelineUser, null);
-
-        final PipelineUser userForEntity = new PipelineUser();
-        userForEntity.setId(pipelineUser.getId());
-
-        final QuotaEntity quota = QuotaCreatorsUtils.quotaEntity(Collections.singletonList(userForEntity));
+        final QuotaEntity quota = QuotaCreatorsUtils.quotaEntity(Collections.singletonList(quotaSidEntity()));
         final QuotaActionEntity quotaAction = QuotaCreatorsUtils.quotaActionEntity(quota);
         quotaAction.setId(null);
         quota.setActions(Collections.singletonList(quotaAction));

@@ -20,24 +20,22 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.test.creator.CommonCreatorConstants;
 import com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils;
-import com.epam.pipeline.test.creator.user.UserCreatorUtils;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
 
 import java.util.Collections;
 
 import static com.epam.pipeline.assertions.quota.QuotaAssertions.assertEquals;
+import static com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils.quotaSid;
+import static com.epam.pipeline.test.creator.quota.QuotaCreatorsUtils.quotaSidEntity;
 
 public class QuotaMapperTest {
     private final QuotaMapper mapper = Mappers.getMapper(QuotaMapper.class);
 
     @Test
     public void shouldMapEntityToDto() {
-        final PipelineUser pipelineUser = UserCreatorUtils.getPipelineUser(CommonCreatorConstants.TEST_NAME);
-        final QuotaEntity quotaEntity = QuotaCreatorsUtils.quotaEntity(Collections.singletonList(pipelineUser));
+        final QuotaEntity quotaEntity = QuotaCreatorsUtils.quotaEntity(Collections.singletonList(quotaSidEntity()));
         final QuotaActionEntity quotaActionEntity = QuotaCreatorsUtils.quotaActionEntity(quotaEntity);
         quotaEntity.setActions(Collections.singletonList(quotaActionEntity));
 
@@ -47,7 +45,7 @@ public class QuotaMapperTest {
 
     @Test
     public void shouldMapDtoToEntity() {
-        final Quota quotaDto = QuotaCreatorsUtils.quota(Collections.singletonList(CommonCreatorConstants.ID));
+        final Quota quotaDto = QuotaCreatorsUtils.quota(Collections.singletonList(quotaSid()));
         final QuotaAction quotaActionDto = QuotaCreatorsUtils.quotaAction();
         quotaDto.setActions(Collections.singletonList(quotaActionDto));
 

@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.repository.quota;
+package com.epam.pipeline.entity.quota;
 
-import com.epam.pipeline.dto.quota.QuotaGroup;
-import com.epam.pipeline.dto.quota.QuotaType;
-import com.epam.pipeline.entity.quota.QuotaEntity;
-import org.springframework.data.repository.CrudRepository;
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-public interface QuotaRepository extends CrudRepository<QuotaEntity, Long> {
+import javax.persistence.Embeddable;
 
-    QuotaEntity findByQuotaGroup(QuotaGroup quotaGroup);
-
-    QuotaEntity findByTypeAndSubjectAndQuotaGroup(QuotaType type, String subject, QuotaGroup quotaGroup);
+@Embeddable
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode
+public class QuotaSidEntity {
+    private String name;
+    private boolean principal = true;
 }

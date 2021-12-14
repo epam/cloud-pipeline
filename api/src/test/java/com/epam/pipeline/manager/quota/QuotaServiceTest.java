@@ -77,9 +77,9 @@ public class QuotaServiceTest {
     }
 
     @Test
-    public void shouldFailCreateIfQuotaNameNotSpecifiedForNonGlobalGroup() {
+    public void shouldFailCreateIfQuotaSubjectNotSpecifiedForNonGlobalGroup() {
         final Quota quota = quota(null);
-        quota.setName(null);
+        quota.setSubject(null);
         assertThrows(IllegalStateException.class, () -> quotaService.create(quota));
     }
 
@@ -95,7 +95,7 @@ public class QuotaServiceTest {
     public void shouldFailCreateIfSuchQuotaAlreadyExists() {
         final Quota quota = quota(null);
         doReturn(quotaEntity(null)).when(quotaRepository)
-                .findByTypeAndNameAndQuotaGroup(quota.getType(), quota.getName(), quota.getQuotaGroup());
+                .findByTypeAndSubjectAndQuotaGroup(quota.getType(), quota.getSubject(), quota.getQuotaGroup());
         assertThrows(IllegalArgumentException.class, () -> quotaService.create(quota));
     }
 
@@ -141,7 +141,7 @@ public class QuotaServiceTest {
         final Quota mapperResult = mapperCaptor.getValue();
         assertThat(mapperResult.getType(), notNullValue());
         assertThat(mapperResult.getQuotaGroup(), is(QuotaGroup.STORAGE));
-        assertThat(mapperResult.getName(), notNullValue());
+        assertThat(mapperResult.getSubject(), notNullValue());
         assertThat(mapperResult.getValue(), notNullValue());
 
         final ArgumentCaptor<QuotaEntity> repoCaptor = ArgumentCaptor.forClass(QuotaEntity.class);
@@ -173,7 +173,7 @@ public class QuotaServiceTest {
         final Quota mapperResult = mapperCaptor.getValue();
         assertThat(mapperResult.getType(), nullValue());
         assertThat(mapperResult.getQuotaGroup(), is(QuotaGroup.GLOBAL));
-        assertThat(mapperResult.getName(), nullValue());
+        assertThat(mapperResult.getSubject(), nullValue());
         assertThat(mapperResult.getValue(), notNullValue());
 
         final ArgumentCaptor<QuotaEntity> repoCaptor = ArgumentCaptor.forClass(QuotaEntity.class);
@@ -200,9 +200,9 @@ public class QuotaServiceTest {
     }
 
     @Test
-    public void shouldFailUpdateIfQuotaNameNotSpecifiedForNonGlobal() {
+    public void shouldFailUpdateIfQuotaSubjectNotSpecifiedForNonGlobal() {
         final Quota dto = quota(null);
-        dto.setName(null);
+        dto.setSubject(null);
         doReturn(quotaEntity(null)).when(quotaRepository).findOne(ID);
 
         assertThrows(IllegalStateException.class, () -> quotaService.update(ID, dto));

@@ -29,6 +29,6 @@ import java.util.List;
 @Builder
 public class QuotaAction {
     private Long id;
-    private Integer threshold;
+    private Double threshold;
     private List<QuotaActionType> actions;
 }

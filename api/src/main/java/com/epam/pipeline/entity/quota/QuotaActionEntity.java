@@ -49,7 +49,7 @@ public class QuotaActionEntity {
     @JoinColumn(name = "quota_id", referencedColumnName = "id")
     private QuotaEntity quota;
 
-    private Integer threshold;
+    private Double threshold;
 
     @Convert(converter = QuotaActionTypeListConverter.class)
     private List<QuotaActionType> actions;

@@ -19,22 +19,19 @@ package com.epam.pipeline.entity.quota;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
 import com.epam.pipeline.dto.quota.QuotaType;
-import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.CascadeType;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.util.List;
@@ -60,18 +57,12 @@ public class QuotaEntity {
     @Enumerated(EnumType.STRING)
     private QuotaPeriod period;
 
-    private String name;
+    private String subject;
 
-    private Long value;
+    private Double value;
 
-    @ManyToMany
-    @JoinTable(
-            name = "quotas_users",
-            schema = "pipeline",
-            inverseJoinColumns = { @JoinColumn(name = "user_id") },
-            joinColumns = { @JoinColumn(name = "quota_id") }
-    )
-    private List<PipelineUser> informedUsers;
+    @ElementCollection
+    private List<QuotaSidEntity> recipients;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "quota")
     private List<QuotaActionEntity> actions;

@@ -21,9 +21,11 @@ import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
-import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.quota.QuotaSidEntity;
+import com.epam.pipeline.entity.user.Sid;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -39,21 +41,21 @@ public interface QuotaAssertions {
     static void assertEquals(final QuotaEntity entity, final Quota dto) {
         assertNulls(entity, dto);
         assertThat(entity.getId(), is(dto.getId()));
-        assertThat(entity.getName(), is(dto.getName()));
+        assertThat(entity.getSubject(), is(dto.getSubject()));
         assertThat(entity.getQuotaGroup(), is(dto.getQuotaGroup()));
         assertThat(entity.getType(), is(dto.getType()));
         assertActionEntitiesAndDtos(entity.getActions(), dto.getActions());
-        assertUserEntitiesAndListIds(entity.getInformedUsers(), dto.getInformedUsers());
+        assertQuotaSidEntitiesAndSids(entity.getRecipients(), dto.getRecipients());
     }
 
     static void assertEquals(final QuotaEntity first, final QuotaEntity second) {
         assertNulls(first, second);
         assertThat(first.getId(), is(second.getId()));
-        assertThat(first.getName(), is(second.getName()));
+        assertThat(first.getSubject(), is(second.getSubject()));
         assertThat(first.getQuotaGroup(), is(second.getQuotaGroup()));
         assertThat(first.getType(), is(second.getType()));
         assertActions(first.getActions(), second.getActions());
-        assertUsers(first.getInformedUsers(), second.getInformedUsers());
+        assertRecipients(first.getRecipients(), second.getRecipients());
     }
 
     static void assertActionEntitiesAndDtos(final List<QuotaActionEntity> entities, final List<QuotaAction> dtos) {
@@ -101,26 +103,26 @@ public interface QuotaAssertions {
                         .toArray()));
     }
 
-    static void assertUsers(final List<PipelineUser> first, final List<PipelineUser> second) {
+    static void assertRecipients(final List<QuotaSidEntity> first, final List<QuotaSidEntity> second) {
         assertEmptyCollections(first, second);
         assertThat(first.size(), is(second.size()));
-        assertThat(
-                first.stream()
-                        .map(PipelineUser::getId)
-                        .collect(Collectors.toList()),
-                hasItems(second.stream()
-                        .map(PipelineUser::getId)
-                        .toArray()));
+        assertThat(new ArrayList<>(first), hasItems(second.toArray()));
     }
 
-    static void assertUserEntitiesAndListIds(final List<PipelineUser> entities, final List<Long> ids) {
-        assertEmptyCollections(entities, ids);
-        assertThat(entities.size(), is(ids.size()));
+    static void assertQuotaSidEntitiesAndSids(final List<QuotaSidEntity> entities, final List<Sid> sids) {
+        assertEmptyCollections(entities, sids);
+        assertThat(entities.size(), is(sids.size()));
+
         assertThat(
                 entities.stream()
-                        .map(PipelineUser::getId)
+                        .map(entity -> {
+                            final Sid sid = new Sid();
+                            sid.setName(entity.getName());
+                            sid.setPrincipal(entity.isPrincipal());
+                            return sid;
+                        })
                         .collect(Collectors.toList()),
-                hasItems(ids.toArray()));
+                hasItems(sids.toArray()));
     }
 
     static void assertNulls(final Object first, final Object second) {

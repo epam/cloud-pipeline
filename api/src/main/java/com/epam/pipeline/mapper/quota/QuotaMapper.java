@@ -20,53 +20,24 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
-import com.epam.pipeline.entity.user.PipelineUser;
-import org.apache.commons.collections4.CollectionUtils;
-import org.mapstruct.AfterMapping;
+import com.epam.pipeline.entity.quota.QuotaSidEntity;
+import com.epam.pipeline.entity.user.Sid;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
-
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface QuotaMapper {
+
+    Sid recipientToDto(QuotaSidEntity entity);
+
+    QuotaSidEntity recipientToEntity(Sid dto);
 
     QuotaAction actionToEntity(QuotaActionEntity entity);
 
     @Mapping(target = "quota", ignore = true)
     QuotaActionEntity actionToDto(QuotaAction dto);
 
-    @Mapping(target = "informedUsers", ignore = true)
     QuotaEntity quotaToEntity(Quota dto);
 
-    @Mapping(target = "informedUsers", ignore = true)
     Quota quotaToDto(QuotaEntity entity);
-
-    @AfterMapping
-    default void finishEntityUsers(final Quota dto, final @MappingTarget QuotaEntity entity) {
-        if (Objects.isNull(dto) || CollectionUtils.isEmpty(dto.getInformedUsers())) {
-            return;
-        }
-        entity.setInformedUsers(dto.getInformedUsers().stream()
-                .map(this::buildUser)
-                .collect(Collectors.toList()));
-    }
-
-    @AfterMapping
-    default void finishDtoUsers(final QuotaEntity entity, final @MappingTarget Quota dto) {
-        if (Objects.isNull(entity) || CollectionUtils.isEmpty(entity.getInformedUsers())) {
-            return;
-        }
-        dto.setInformedUsers(entity.getInformedUsers().stream()
-                .map(PipelineUser::getId)
-                .collect(Collectors.toList()));
-    }
-
-    default PipelineUser buildUser(final Long id) {
-        final PipelineUser user = new PipelineUser();
-        user.setId(id);
-        return user;
-    }
 }
