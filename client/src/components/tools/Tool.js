@@ -387,7 +387,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       image = (
         <Row type="flex" align="middle" justify="center" className={styles.noImageContainer}>
           <Icon
-            className={styles.noImage}
+            className={classNames(styles.noImage, 'cp-text-not-important')}
             type="camera-o" />
         </Row>
       );
@@ -538,7 +538,14 @@ export default class Tool extends localization.LocalizedReactComponent {
             />
           );
         } else {
-          return <span id="description-text" className={styles.noDescription}>No description</span>;
+          return (
+            <span
+              id="description-text"
+              className={classNames(styles.noDescription, 'cp-tool-no-description')}
+            >
+              No description
+            </span>
+          );
         }
       }
     };
@@ -759,10 +766,10 @@ export default class Tool extends localization.LocalizedReactComponent {
           if (item.successScanDate) {
             scanningInfo = <span>
               Scanning <span
-                className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
+                className={classNames(styles.scanningError, 'cp-error')}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
           } else {
             scanningInfo = <span>Scanning <span
-              className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}</span>;
+              className={classNames(styles.scanningError, 'cp-error')}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}</span>;
           }
           break;
         case ScanStatuses.notScanned:
@@ -950,7 +957,10 @@ export default class Tool extends localization.LocalizedReactComponent {
                 <td className={styles.versionScanningInfoEmptyCell}>{'\u00A0'}</td>
               </tr>
               <tr>
-                <td colSpan={3} className={styles.versionScanningInfo}>
+                <td
+                  colSpan={3}
+                  className={classNames(styles.versionScanningInfo, 'cp-text-not-important')}
+                >
                   {this.getVersionScanningInfo(item)}
                 </td>
               </tr>
@@ -1092,10 +1102,15 @@ export default class Tool extends localization.LocalizedReactComponent {
           className={styles.table}
           loading={this.props.versions.pending}
           showHeader
-          rowClassName={(item) => item.fromWhiteList && this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
-            ? `${styles.versionTableRow} ${styles.whiteListedVersionRow}`
-            : styles.versionTableRow
-          }
+          rowClassName={(item) => classNames(
+            styles.versionTableRow,
+            {
+              [styles.whiteListedVersionRow]: item.fromWhiteList &&
+              this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry),
+              'cp-tool-white-listed-version': item.fromWhiteList &&
+                this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
+            }
+          )}
           columns={columns}
           dataSource={data}
           pagination={{pageSize: 20}}

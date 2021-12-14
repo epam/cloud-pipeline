@@ -136,7 +136,7 @@ export default {
     '@btn-disabled-background-color': '#f7f7f7',
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@color-warning',
+    '@search-highlight-text-background-color': 'yellow',
     '@background-image': 'none',
     '@navigation-background-image': 'none',
     '@logo-image': "@static_resource('logo.png')"

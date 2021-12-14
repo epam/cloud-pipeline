@@ -184,6 +184,9 @@ export default `
   height: 100%;
   background-color: transparent;
 }
+@THEME .cp-divider.inline {
+  background: @panel-border-color;
+}
 @THEME .cp-primary {
   color: @primary-color;
 }
@@ -217,7 +220,7 @@ export default `
 @THEME .cp-sensitive-tag.bordered {
   background-color: transparent;
   color: @color-sensitive;
-  border-color: currentColor;
+  border: 1px solid currentColor;
 }
 @THEME .cp-tag {
   background-color: transparent;
@@ -1776,6 +1779,14 @@ export default `
 }
 @THEME .cp-edit-permissions-selected-row {
   background-color: @element-selected-background-color;
+}
+@THEME .cp-tool-white-listed-version > td,
+@THEME .cp-tool-white-listed-version:hover > td {
+  background-color: fade(@color-success, 15%);
+}
+@THEME .cp-tool-select-option-divider::before,
+@THEME .cp-divider.tool-settings {
+  background: @panel-border-color;
 }
 
 @THEME .cp-runs-table-service-url-run {
