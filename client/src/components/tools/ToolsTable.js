@@ -125,7 +125,7 @@ export default class ToolsTable extends React.Component {
             className={styles.toolRowLabels}
             align="middle">
             {
-              (tool.labels || ['some label']).map(renderLabel)
+              (tool.labels || []).map(renderLabel)
             }
           </Row>
         </Row>
@@ -138,6 +138,7 @@ export default class ToolsTable extends React.Component {
                 this.openIssuesPanel(tool);
               }}
               key="issues"
+              style={{lineHeight: 1}}
               size="small">
               <Icon type="message" />{tool.issuesCount > 0 ? ` ${tool.issuesCount}` : undefined}
             </Button>
