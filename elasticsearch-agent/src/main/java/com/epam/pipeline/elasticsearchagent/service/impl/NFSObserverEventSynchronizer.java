@@ -34,7 +34,6 @@ import com.epam.pipeline.utils.StreamUtils;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -143,20 +142,21 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .collect(Collectors.toMap(AbstractDataStorage::getPath, Function.identity()));
         final AbstractDataStorage eventsStorage = storagePathMapping.get(eventsBucketName);
         storagePathMapping.values().removeIf(dataStorage -> dataStorage.getType() != DataStorageType.NFS);
-        loadEventsFilesGroupedByProducer(getListingCredentials(eventsStorage))
-            .forEach((producer, fileList) ->
-                         processEventsFromFilesInChunks(storagePathMapping, eventsStorage, producer, fileList));
+        processEventsFromFilesInChunks(storagePathMapping, eventsStorage);
         log.info("Finished NFS events synchronization");
     }
 
     private void processEventsFromFilesInChunks(final Map<String, AbstractDataStorage> storagePathMapping,
-                                                final AbstractDataStorage eventsStorage,
-                                                final String eventsProducer,
-                                                final List<DataStorageFile> fileList) {
-        ListUtils.partition(fileList, eventsFileChunkSize)
-            .forEach(filesChunk ->
-                         processEventsFromFiles(storagePathMapping, eventsStorage, eventsProducer, filesChunk));
-        log.info("Finished processing events from [{}]", eventsProducer);
+                                                final AbstractDataStorage eventsStorage) {
+        final TemporaryCredentials listingCredentials = getListingCredentials(eventsStorage);
+        final Stream<DataStorageFile> eventFilesStream =
+            eventBucketFileManager.files(eventsBucketName, eventsBucketFolderPath, () -> listingCredentials);
+        StreamUtils.chunked(eventFilesStream, eventsFileChunkSize)
+            .map(this::groupEventFilesByProducer)
+            .map(Map::entrySet)
+            .flatMap(Collection::stream)
+            .forEach(groupingEntry -> processEventsFromFiles(storagePathMapping, eventsStorage,
+                                                             groupingEntry.getKey(), groupingEntry.getValue()));
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -168,9 +168,10 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
                  new IndexRequestContainer(requests -> getElasticsearchServiceClient().sendRequests(null, requests),
                                            getBulkInsertSize())) {
             final TemporaryCredentials readingCredentials = getReadingCredentials(eventsStorage);
-            files.forEach(file -> processEventsFromFile(file, requestContainer, storagePathMapping,
-                                                        () -> readingCredentials));
+            files.forEach(
+                file -> processEventsFromFile(file, requestContainer, storagePathMapping, () -> readingCredentials));
             deleteEventFiles(eventsStorage, files);
+            log.info("Processed `[{}]` events from [{}] files", eventsProducer, files.size());
         } catch (Exception e) {
             log.warn("Some errors occurred during NFS observer events sync from [{}]: {}",
                      eventsProducer, e.getMessage());
@@ -199,10 +200,8 @@ public class NFSObserverEventSynchronizer extends NFSSynchronizer {
             .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
     }
 
-    private Map<String, List<DataStorageFile>> loadEventsFilesGroupedByProducer(
-        final TemporaryCredentials listingCredentials) {
-        return eventBucketFileManager.files(eventsBucketName, eventsBucketFolderPath, () -> listingCredentials)
-            .collect(Collectors.groupingBy(this::getProducerName));
+    private Map<String, List<DataStorageFile>> groupEventFilesByProducer(final List<DataStorageFile> files) {
+        return files.stream().collect(Collectors.groupingBy(this::getProducerName));
     }
 
     private void processStorageEvents(final IndexRequestContainer requestContainer,
