@@ -41,6 +41,7 @@ import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +75,7 @@ public class NFSQuotasMonitor {
     private final LustreFSManager lustreManager;
     private final MessageHelper messageHelper;
     private final NotificationManager notificationManager;
+    private final PreferenceManager preferenceManager;
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
     private final Map<Long, NFSQuotaNotificationEntry> notificationTriggers;
@@ -84,6 +87,7 @@ public class NFSQuotasMonitor {
                             final LustreFSManager lustreManager,
                             final MessageHelper messageHelper,
                             final NotificationManager notificationManager,
+                            final PreferenceManager preferenceManager,
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
@@ -95,6 +99,7 @@ public class NFSQuotasMonitor {
         this.lustreManager = lustreManager;
         this.messageHelper = messageHelper;
         this.notificationManager = notificationManager;
+        this.preferenceManager = preferenceManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
         this.notificationTriggers = new ConcurrentHashMap<>();
@@ -108,9 +113,11 @@ public class NFSQuotasMonitor {
         clearTriggersForRemovedStorages(activeStorages);
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS(activeStorages);
         final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages);
+        final Map<String, Set<String>> storageSizeMasksMapping = dataStorageManager.loadSizeCalculationMasksMapping();
         nfsDataStorages.forEach(storage -> {
             final NFSStorageMountStatus statusUpdate = Optional.ofNullable(activeQuotas.get(storage.getId()))
-                .map(quota -> processActiveQuota(quota, storage))
+                .map(quota -> processActiveQuota(quota, storage, storageSizeMasksMapping
+                    .getOrDefault(storage.getName(), Collections.emptySet())))
                 .orElse(NFSStorageMountStatus.ACTIVE);
             dataStorageManager.updateMountStatus(storage, statusUpdate);
         });
@@ -136,11 +143,13 @@ public class NFSQuotasMonitor {
             .collect(Collectors.toList());
     }
 
-    private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage) {
+
+    private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage,
+                                                     final Set<String> storageSizeMasks) {
         return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
             .sorted(quotasComparator(storage).reversed())
-            .filter(notification -> exceedsLimit(storage, notification))
+            .filter(notification -> exceedsLimit(storage, notification, storageSizeMasks))
             .findFirst()
             .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients()))
             .orElse(NFSStorageMountStatus.ACTIVE);
@@ -227,9 +236,10 @@ public class NFSQuotasMonitor {
         return mountStatus;
     }
 
-    private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
+    private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
+                                 final Set<String> storageSizeMasks) {
         final Double originalLimit = notification.getValue();
-        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, true);
+        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, true, storageSizeMasks);
         final StorageQuotaType notificationType = notification.getType();
         switch (notificationType) {
             case GIGABYTES:

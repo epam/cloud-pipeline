@@ -59,6 +59,7 @@ import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -800,7 +801,17 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
-        return searchManager.getStorageUsage(dataStorage, path);
+        final Set<String> storageSizeMasks = loadSizeCalculationMasksMapping()
+            .getOrDefault(dataStorage.getName(), Collections.emptySet());
+        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks);
+    }
+
+    public Map<String, Set<String>> loadSizeCalculationMasksMapping() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_SIZE_MASK_RULES))
+            .orElse(Collections.emptyList())
+            .stream()
+            .collect(Collectors.toMap(StorageFileSearchMask::getStorageName,
+                                      StorageFileSearchMask::getHiddenFilePathGlobs));
     }
 
     public void requestDataStorageDavMount(final Long id, final Long time) {

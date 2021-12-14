@@ -823,6 +823,13 @@ public class SystemPreferences {
         SEARCH_GROUP,
         isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
 
+    public static final ObjectPreference<List<StorageFileSearchMask>> STORAGE_SIZE_MASK_RULES = new ObjectPreference<>(
+        "storage.size.calculation.mask",
+        Collections.emptyList(),
+        new TypeReference<List<StorageFileSearchMask>>() {},
+        SEARCH_GROUP,
+        isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
+
     // Grid engine autoscaling
     public static final IntPreference GE_AUTOSCALING_SCALE_UP_TIMEOUT =
             new IntPreference("ge.autoscaling.scale.up.timeout", 30,

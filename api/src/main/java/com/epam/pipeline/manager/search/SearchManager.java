@@ -30,6 +30,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -71,16 +73,17 @@ public class SearchManager {
         }
     }
 
-    public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path) {
-        return getStorageUsage(dataStorage, path, false);
+    public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
+                                        final Set<String> storageSizeMasks) {
+        return getStorageUsage(dataStorage, path, false, storageSizeMasks);
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
-                                        final boolean allowNoIndex) {
+                                        final boolean allowNoIndex, final Set<String> storageSizeMasks) {
         try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
-            final SearchRequest request = requestBuilder.buildSumAggregationForStorage(
-                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex);
-            final SearchResponse searchResponse = client.search(request, RequestOptions.DEFAULT);
+            final MultiSearchRequest request = requestBuilder.buildStorageSumRequest(
+                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks);
+            final MultiSearchResponse searchResponse = client.msearch(request, RequestOptions.DEFAULT);
             return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
         } catch (IOException e) {
             log.error(e.getMessage(), e);

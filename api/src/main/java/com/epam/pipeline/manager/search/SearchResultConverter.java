@@ -29,6 +29,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.text.Text;
 import org.elasticsearch.search.SearchHit;
@@ -72,19 +73,27 @@ public class SearchResultConverter {
                 .build();
     }
 
-    public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
+    public StorageUsage buildStorageUsageResponse(final MultiSearchResponse searchResponse,
                                                   final AbstractDataStorage dataStorage, final String path) {
-        final Long size = Optional.ofNullable(searchResponse.getAggregations())
-                .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
-                .map(result -> new Double(result.getValue()).longValue())
-                .orElse(0L);
+        final MultiSearchResponse.Item[] responses = searchResponse.getResponses();
+        final SearchResponse allDocsResponse = responses[0].getResponse();
+        final Long totalSize = extractSizeAggregationFromResponse(allDocsResponse);
+        final Long effectiveSize;
+        if (responses.length > 1) {
+            final SearchResponse effectiveDocsResponse = responses[1].getResponse();
+            effectiveSize = extractSizeAggregationFromResponse(effectiveDocsResponse);
+        } else {
+            effectiveSize = totalSize;
+        }
+
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
-                .size(size)
-                .count(searchResponse.getHits().getTotalHits())
+                .size(totalSize)
+                .effectiveSize(effectiveSize)
+                .count(allDocsResponse.getHits().getTotalHits())
                 .build();
     }
 
@@ -220,5 +229,12 @@ public class SearchResultConverter {
         }
         return ListUtils.emptyIfNull(fieldAggregation.getBuckets()).stream()
                 .collect(Collectors.toMap(Terms.Bucket::getKeyAsString, Terms.Bucket::getDocCount));
+    }
+
+    private Long extractSizeAggregationFromResponse(final SearchResponse searchResponse) {
+        return Optional.ofNullable(searchResponse.getAggregations())
+            .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
+            .map(result -> new Double(result.getValue()).longValue())
+            .orElse(0L);
     }
 }
