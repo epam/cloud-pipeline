@@ -121,7 +121,6 @@ export default {
     '@btn-disabled-background-color': 'lighten(@panel-background-color, 4%)',
     '@code-background-color': 'lighten(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
-    '@logo-url': "url('logo.png')"
+    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated'
   }
 };

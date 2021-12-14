@@ -21,6 +21,7 @@ import {computed} from 'mobx';
 import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
+import classNames from 'classnames';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
@@ -178,10 +179,15 @@ export default class EditToolFormParameters extends React.Component {
         disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={onChange}
-        style={Object.assign(
-          {width: '100%', marginLeft: 5},
-          isError ? {borderColor: 'red'} : {}
-        )} />
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{width: '100%', marginLeft: 5}}
+      />
     );
   };
 
@@ -192,10 +198,15 @@ export default class EditToolFormParameters extends React.Component {
         disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={v => onChange({target: {value: v}})}
-        style={Object.assign(
-          {width: '100%', marginLeft: 5},
-          isError ? {borderColor: 'red'} : {}
-        )}>
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{width: '100%', marginLeft: 5}}
+      >
         {
           (parameter.enum || []).map(e => {
             return (
@@ -213,7 +224,14 @@ export default class EditToolFormParameters extends React.Component {
         id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
         checked={`${parameter.value}` === 'true'}
-        style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{marginLeft: 5, marginTop: 4}}
         onChange={onChange}
       >
         Enabled
@@ -233,10 +251,14 @@ export default class EditToolFormParameters extends React.Component {
       <Input
         id={`${this.sectionName}.params.param_${parameter.id}.value`}
         disabled={this.props.readOnly || readOnly}
-        style={Object.assign(
-          {width: '100%', marginLeft: 5, top: 0},
-          isError ? {borderColor: 'red'} : {}
-        )}
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{width: '100%', marginLeft: 5, top: 0}}
         value={parameter.value}
         onChange={onChange}
         addonBefore={
@@ -323,15 +345,29 @@ export default class EditToolFormParameters extends React.Component {
               this.props.isSystemParameters ||
               readOnly
             }
-            className={`${styles.parameter} ${styles.parameterName} ${nameError ? styles.wrong : ''}`}
+            className={
+              classNames(
+                styles.parameter,
+                styles.parameterName,
+                {
+                  [styles.wrong]: nameError,
+                  'cp-error': nameError,
+                  'cp-text-not-important': this.props.isSystemParameters
+                }
+              )
+            }
             value={parameter.name}
             onChange={onChange('name')}
-            style={Object.assign(
-              {width: '100%', marginRight: 5},
-              this.props.isSystemParameters ? {color: '#666'} : {}
-            )} />
+            style={{width: '100%', marginRight: 5}}
+          />
           {
-            nameError && <span className={styles.error}>{nameError}</span>
+            nameError && (
+              <span
+                className={classNames(styles.error, 'cp-error')}
+              >
+                {nameError}
+              </span>
+            )
           }
         </Col>
         <Col span={12} style={{display: 'flex', flexDirection: 'column'}}>
@@ -346,7 +382,14 @@ export default class EditToolFormParameters extends React.Component {
             )
           }
           {
-            valueError && <span className={styles.error} style={{marginLeft: 5}}>{valueError}</span>
+            valueError && (
+              <span
+                className={classNames(styles.error, 'cp-error')}
+                style={{marginLeft: 5}}
+              >
+                {valueError}
+              </span>
+            )
           }
         </Col>
         <Col>

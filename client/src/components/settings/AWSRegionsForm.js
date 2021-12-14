@@ -2298,10 +2298,12 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         <Row type="flex" align="top">
           <span style={{width: 50}}>Host:</span>
           <Input
-            style={
-              Object.assign(
-                {flex: 1, marginTop: 1},
-                !this.state.mountRootError ? {} : {borderColor: 'red'}
+            style={{flex: 1, marginTop: 1}}
+            className={
+              classNames(
+                {
+                  'cp-error': this.state.mountRootError
+                }
               )
             }
             disabled={this.props.disabled || !!this.state.id}
@@ -2314,11 +2316,13 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             onChange={this.onChangeMountRoot} />
           <span style={{marginLeft: 5, marginRight: 5}}>Type:</span>
           <Select
-            style={
-              Object.assign(
-                {width: 200, marginTop: 1},
-                this.state.mountTypeValid ? {} : {borderColor: 'red'}
-                )
+            style={{width: 200, marginTop: 1}}
+            className={
+              classNames(
+                {
+                  'cp-error': !this.state.mountTypeValid
+                }
+              )
             }
             disabled={this.props.disabled || !!this.state.id}
             value={this.state.mountType}
@@ -2347,8 +2351,8 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         {
           this.state.mountRootError &&
           <Row
+            className="cp-error"
             style={{
-              color: 'red',
               lineHeight: '12px',
               paddingLeft: 50
             }}

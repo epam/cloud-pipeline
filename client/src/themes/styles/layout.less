@@ -103,6 +103,10 @@ a.cp-danger:focus,
   background-color: transparent;
 }
 
+.cp-divider.inline {
+  background: @panel-border-color;
+}
+
 .cp-primary {
   color: @primary-color;
 }
@@ -145,7 +149,7 @@ a.cp-danger:focus,
 .cp-sensitive-tag.bordered {
   background-color: transparent;
   color: @color-sensitive;
-  border-color: currentColor;
+  border: 1px solid currentColor;
 }
 
 .cp-tag {
@@ -968,6 +972,7 @@ li.ant-calendar-time-picker-select-option-selected {
   opacity: 0;
 }
 
+.ant-dropdown,
 .ant-select-dropdown,
 .ant-dropdown-menu,
 .rc-menu,

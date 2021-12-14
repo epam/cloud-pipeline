@@ -204,7 +204,12 @@ class JobNotification extends React.Component {
     }
     return (
       <div
-        className={styles.notification}
+        className={
+          classNames(
+            styles.notification,
+            'cp-even-odd-element'
+          )
+        }
       >
         <div className={styles.row}>
           {
@@ -212,22 +217,31 @@ class JobNotification extends React.Component {
               filteredTemplates.length > 1 ||
               !!validationErrors.type
             ) && (
-              <div
-                className={
-                  classNames(
-                    styles.labeledGroup,
-                    {
-                      [styles.error]: validationErrors.type
-                    }
-                  )
-                }
-              >
-                <span className={styles.label}>Type:</span>
+              <div className={styles.labeledGroup}>
+                <span
+                  className={
+                    classNames(
+                      styles.label,
+                      {
+                        'cp-error': validationErrors.type
+                      }
+                    )
+                  }
+                >
+                  Type:
+                </span>
                 <Select
                   disabled={!templatesRequest.loaded}
                   value={type}
                   onChange={this.onChangeType}
-                  className={styles.value}
+                  className={
+                    classNames(
+                      styles.value,
+                      {
+                        'cp-error': validationErrors.type
+                      }
+                    )
+                  }
                 >
                   {
                     filteredTemplates
@@ -242,22 +256,33 @@ class JobNotification extends React.Component {
             )
           }
           <div
-            className={
-              classNames(
-                styles.labeledGroup,
-                {
-                  [styles.error]: validationErrors.triggerStatuses
-                }
-              )
-            }
+            className={styles.labeledGroup}
             style={{flex: 1}}
           >
-            <span className={styles.label}>Statuses:</span>
+            <span
+              className={
+                classNames(
+                  styles.label,
+                  {
+                    'cp-error': validationErrors.triggerStatuses
+                  }
+                )
+              }
+            >
+              Statuses:
+            </span>
             <Select
               mode="multiple"
               value={triggerStatuses}
               onChange={this.onChangeTriggerStatuses}
-              className={styles.value}
+              className={
+                classNames(
+                  styles.value,
+                  {
+                    'cp-error': validationErrors.triggerStatuses
+                  }
+                )
+              }
               filterOption={
                 (input, option) =>
                   option.props.value.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -277,23 +302,34 @@ class JobNotification extends React.Component {
             </Select>
           </div>
           <div
-            className={
-              classNames(
-                styles.labeledGroup,
-                {
-                  [styles.error]: validationErrors.recipients
-                }
-              )
-            }
+            className={styles.labeledGroup}
             style={{flex: 1}}
           >
-            <span className={styles.label}>Recipients:</span>
+            <span
+              className={
+                classNames(
+                  styles.label,
+                  {
+                    'cp-error': validationErrors.recipients
+                  }
+                )
+              }
+            >
+              Recipients:
+            </span>
             <Select
               disabled={!usersInfo.loaded}
               mode="multiple"
               value={recipients}
               onChange={this.onChangeRecipients}
-              className={styles.value}
+              className={
+                classNames(
+                  styles.value,
+                  {
+                    'cp-error': validationErrors.recipients
+                  }
+                )
+              }
               filterOption={
                 (input, option) => (option.props.attributes.split('|').map(o => o.toLowerCase()))
                   .find(o => o.includes((input || '').toLowerCase()))
@@ -322,19 +358,30 @@ class JobNotification extends React.Component {
         </div>
         <div className={styles.row}>
           <div
-            className={
-              classNames(
-                styles.labeledGroup,
-                {
-                  [styles.error]: validationErrors.subject
-                }
-              )
-            }
+            className={styles.labeledGroup}
             style={{flex: 1}}
           >
-            <span className={styles.label}>Subject:</span>
+            <span
+              className={
+                classNames(
+                  styles.label,
+                  {
+                    'cp-error': validationErrors.subject
+                  }
+                )
+              }
+            >
+              Subject:
+            </span>
             <Input
-              className={styles.value}
+              className={
+                classNames(
+                  styles.value,
+                  {
+                    'cp-error': validationErrors.subject
+                  }
+                )
+              }
               value={subject}
               onChange={this.onChangeSubject}
             />
@@ -342,20 +389,31 @@ class JobNotification extends React.Component {
         </div>
         <div className={styles.row}>
           <div
-            className={
-              classNames(
-                styles.labeledGroup,
-                {
-                  [styles.error]: validationErrors.body
-                }
-              )
-            }
+            className={styles.labeledGroup}
             style={{alignItems: 'flex-start', flex: 1}}
           >
-            <span className={styles.label}>Body:</span>
+            <span
+              className={
+                classNames(
+                  styles.label,
+                  {
+                    'cp-error': validationErrors.body
+                  }
+                )
+              }
+            >
+              Body:
+            </span>
             <CodeEditor
               ref={this.initializeEditor}
-              className={styles.value}
+              className={
+                classNames(
+                  styles.value,
+                  {
+                    'cp-error': validationErrors.body
+                  }
+                )
+              }
               language="application/x-jsp"
               onChange={this.onChangeBody}
               lineWrapping

@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+.path-input-container {
+  border: 1px solid transparent;
+}
+
 .path-input input,
 .path-input > div {
   border-radius: 0 4px 4px 0 !important;
@@ -21,7 +25,4 @@
 
 .navigation-dropdown-container {
   width: 300px;
-  background-color: white;
-  border: 1px solid #ccc;
-  box-shadow: 2px 2px 1em #666;
 }

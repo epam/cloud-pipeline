@@ -350,7 +350,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       name = (
         <span>
           <span>{item.name.substring(0, item.searchResult.index)}</span>
-          <span className={styles.searchResult}>
+          <span className={classNames(styles.searchResult, 'cp-search-highlight-text')}>
             {
               item.name.substring(
                 item.searchResult.index,

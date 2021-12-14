@@ -614,7 +614,16 @@ class UploadButton extends React.Component {
                   <Row type="flex" style={{width: '100%'}} >
                     <span>
                       {title}
-                      {f.error && <span style={{color: 'red', fontSize: 'small'}}> - {f.error}</span>}
+                      {
+                        f.error && (
+                          <span
+                            className="cp-error"
+                            style={{fontSize: 'small', marginLeft: 5}}
+                          >
+                            - {f.error}
+                          </span>
+                        )
+                      }
                     </span>
                   </Row>
                   <Row type="flex" style={{width: '100%'}}>
