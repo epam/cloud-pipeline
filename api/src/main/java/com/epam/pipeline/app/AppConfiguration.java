@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.app;
 
-import static org.quartz.impl.StdSchedulerFactory.PROP_JOB_STORE_PREFIX;
-
 import com.epam.pipeline.common.MessageHelper;
 import net.javacrumbs.shedlock.core.LockProvider;
 import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
@@ -59,10 +57,19 @@ import javax.sql.DataSource;
 public class AppConfiguration implements SchedulingConfigurer {
 
     private static final int MAX_LOG_PAYLOAD_LENGTH = 1000;
-    private static final String JOB_STORE_IS_CLUSTERED = ".isClustered";
-    private static final String JOB_STORE_CLUSTER_CHECKIN_INTERVAL = ".clusterCheckinInterval";
-    private static final String JOB_STORE_CLUSTER_MISFIRE_THRESHOLD = ".misfireThreshold";
-    private static final String JOB_STORE_DRIVER_DELEGATE_CLASS = ".driverDelegateClass";
+    private static final String TRUE = "true";
+    private static final String FALSE = "false";
+    private static final String DOT = ".";
+    private static final String QUARTZ_JOB_STORE_IS_CLUSTERED =
+            StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "isClustered";
+    private static final String QUARTZ_JOB_STORE_ACQUIRE_TRIGGERS_WITHIN_LOCK =
+            StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "acquireTriggersWithinLock";
+    private static final String QUARTZ_JOB_STORE_CLUSTER_CHECKIN_INTERVAL =
+            StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "clusterCheckinInterval";
+    private static final String QUARTZ_JOB_STORE_MISFIRE_THRESHOLD =
+            StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "misfireThreshold";
+    private static final String QUARTZ_JOB_STORE_DRIVER_DELEGATE_CLASS =
+            StdSchedulerFactory.PROP_JOB_STORE_PREFIX + DOT + "driverDelegateClass";
 
     @Value("${scheduled.pool.size:5}")
     private int scheduledPoolSize;
@@ -72,6 +79,21 @@ public class AppConfiguration implements SchedulingConfigurer {
 
     @Value("${run.as.pool.size:5}")
     private int runAsPoolSize;
+
+    @Value("${scheduled.quartz.pool.size:5}")
+    private String quartzPoolSize;
+
+    @Value("${scheduled.quartz.batch.size:2}")
+    private String quartzBatchSize;
+
+    @Value("${scheduled.quartz.misfire.threshold.ms:300000}")
+    private String quartzMisfireThreshold;
+
+    @Value("${scheduled.quartz.cluster.checkin.interval.ms:60000}")
+    private String quartzCheckInInterval;
+
+    @Value("${scheduled.quartz.db.driverDelegateClass:org.quartz.impl.jdbcjobstore.PostgreSQLDelegate}")
+    private String quartzDriverDelegateClass;
 
     @Bean
     public MessageHelper messageHelper() {
@@ -95,38 +117,39 @@ public class AppConfiguration implements SchedulingConfigurer {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "ha.deploy.enabled", havingValue = "false", matchIfMissing = true)
-    public SchedulerFactoryBean schedulerFactoryBeanInMemory(final ApplicationContext applicationContext) {
+    @ConditionalOnProperty(name = "ha.deploy.enabled", havingValue = FALSE, matchIfMissing = true)
+    public SchedulerFactoryBean inMemorySchedulerFactoryBean(final ApplicationContext applicationContext) {
         final SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
         final AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
         jobFactory.setApplicationContext(applicationContext);
         schedulerFactory.setJobFactory(jobFactory);
+        final Properties properties = new Properties();
+        properties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, quartzPoolSize);
+        properties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, quartzBatchSize);
+        schedulerFactory.setQuartzProperties(properties);
         return schedulerFactory;
     }
 
     @Bean
-    @ConditionalOnProperty(name = "ha.deploy.enabled", havingValue = "true")
-    public SchedulerFactoryBean schedulerFactoryBeanPersistent(final ApplicationContext applicationContext,
-                                                               final DataSource dataSource,
-                                                               @Value("${scheduled.ha.checkin.interval:25000}")
-                                                                   final String checkInInterval,
-                                                               @Value("${scheduled.ha.misfire.threshold:60000}")
-                                                                   final String misfireThreshold,
-                                                               @Value("${scheduled.ha.db.driverDelegateClass}")
-                                                                   final String driverDelegateClass) {
+    @ConditionalOnProperty(name = "ha.deploy.enabled", havingValue = TRUE)
+    public SchedulerFactoryBean persistentSchedulerFactoryBean(final ApplicationContext applicationContext,
+                                                               final DataSource dataSource) {
         final SchedulerFactoryBean schedulerFactory = new SchedulerFactoryBean();
         final AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
         jobFactory.setApplicationContext(applicationContext);
         schedulerFactory.setJobFactory(jobFactory);
         schedulerFactory.setDataSource(dataSource);
-        final Properties quartzProperties = new Properties();
-        quartzProperties.setProperty(PROP_JOB_STORE_PREFIX + JOB_STORE_IS_CLUSTERED, "true");
-        quartzProperties.setProperty(PROP_JOB_STORE_PREFIX + JOB_STORE_CLUSTER_CHECKIN_INTERVAL, checkInInterval);
-        quartzProperties.setProperty(PROP_JOB_STORE_PREFIX + JOB_STORE_DRIVER_DELEGATE_CLASS, driverDelegateClass);
-        quartzProperties.setProperty(PROP_JOB_STORE_PREFIX + JOB_STORE_CLUSTER_MISFIRE_THRESHOLD, misfireThreshold);
-        quartzProperties.setProperty(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID,
-                                     StdSchedulerFactory.AUTO_GENERATE_INSTANCE_ID);
-        schedulerFactory.setQuartzProperties(quartzProperties);
+        final Properties properties = new Properties();
+        properties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, quartzPoolSize);
+        properties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, quartzBatchSize);
+        properties.setProperty(QUARTZ_JOB_STORE_IS_CLUSTERED, TRUE);
+        properties.setProperty(QUARTZ_JOB_STORE_ACQUIRE_TRIGGERS_WITHIN_LOCK, TRUE);
+        properties.setProperty(QUARTZ_JOB_STORE_MISFIRE_THRESHOLD, quartzMisfireThreshold);
+        properties.setProperty(QUARTZ_JOB_STORE_CLUSTER_CHECKIN_INTERVAL, quartzCheckInInterval);
+        properties.setProperty(QUARTZ_JOB_STORE_DRIVER_DELEGATE_CLASS, quartzDriverDelegateClass);
+        properties.setProperty(StdSchedulerFactory.PROP_SCHED_INSTANCE_ID,
+                               StdSchedulerFactory.AUTO_GENERATE_INSTANCE_ID);
+        schedulerFactory.setQuartzProperties(properties);
         return schedulerFactory;
     }
 

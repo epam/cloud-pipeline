@@ -21,42 +21,33 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
+import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
-import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.text.ParseException;
 import java.util.Date;
-import java.util.Properties;
-
-import org.quartz.Scheduler;
-
-import javax.annotation.PostConstruct;
 
 @Slf4j
 @Component
 public class RunScheduler {
 
-    private static final String JOB_EXECUTION_THREADS = "5";
-    private static final String MAX_CONCURRENT_JOB_FIRING_AT_ONCE = "2";
     private static final String ID = " id: ";
+
     private final Scheduler quartzScheduler;
+    private final ScheduleProviderManager scheduleProviderManager;
 
     @Autowired
-    private ScheduleProviderManager scheduleProviderManager;
-
-    @Autowired
-    RunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
-        final Properties quartzProperties = new Properties();
-        quartzProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, JOB_EXECUTION_THREADS);
-        quartzProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, MAX_CONCURRENT_JOB_FIRING_AT_ONCE);
-        schedulerFactoryBean.setQuartzProperties(quartzProperties);
+    public RunScheduler(final SchedulerFactoryBean schedulerFactoryBean,
+                        final ScheduleProviderManager scheduleProviderManager) {
         this.quartzScheduler = schedulerFactoryBean.getScheduler();
+        this.scheduleProviderManager = scheduleProviderManager;
     }
 
     @PostConstruct
