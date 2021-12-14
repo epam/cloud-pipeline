@@ -380,12 +380,14 @@ export default class ToolsNew extends React.Component {
       return null;
     };
     return (
-      <Row type="flex" className={styles.container}>
+      <Row type="flex" className={classNames(styles.container, 'cp-panel', 'cp-panel-transparent')}>
         <Row
           type="flex"
           align="middle"
           justify="center"
-          className={styles.privateToolNotFoundContainer}>
+          className={classNames(styles.privateToolNotFoundContainer, 'cp-panel-card')}
+          style={{borderStyle: 'dashed'}}
+        >
           <Row style={{fontSize: 'large', margin: 10}}>
             <Icon
               type="info-circle-o"
@@ -398,10 +400,11 @@ export default class ToolsNew extends React.Component {
           {navigateToDefaultGroupMessage()}
           {
             this.state.createPrivateGroupError
-              ? <Row
-                style={{fontSize: 'larger', marginBottom: 10, color: 'red'}}>
-                {this.state.createPrivateGroupError}
-              </Row>
+              ? (
+                <Row className="cp-error" style={{fontSize: 'larger', marginBottom: 10}}>
+                  {this.state.createPrivateGroupError}
+                </Row>
+              )
               : undefined
           }
           {

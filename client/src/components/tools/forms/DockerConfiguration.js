@@ -20,6 +20,7 @@ import {SERVER, API_PATH} from '../../../config';
 import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import {Modal, Row, Button, Collapse} from 'antd';
+import classNames from 'classnames';
 import styles from '../Tools.css';
 import BashCode from '../../special/bash-code';
 import roleModel from '../../../utils/roleModel';
@@ -193,7 +194,18 @@ export default class DockerConfiguration extends React.Component {
                     className={styles.troubleshootingPanel}
                     id={`scenario_${index}`}
                     key={`scenario_${index}`}
-                    header={<span className={styles.troubleshootingPanelHeader}>{scenario.header}</span>}>
+                    header={(
+                      <span
+                        className={
+                          classNames(
+                            styles.troubleshootingPanelHeader,
+                            'cp-primary'
+                          )
+                        }
+                      >
+                        {scenario.header}
+                      </span>
+                    )}>
                     {scenario.body}
                   </Collapse.Panel>
                 );

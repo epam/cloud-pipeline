@@ -16,7 +16,11 @@
 
 import React from 'react';
 
-export default function highlightText (text, searchString, highlightStyle = {backgroundColor: 'yellow', margin: 0}) {
+export default function highlightText (
+  text,
+  searchString,
+  highlightStyle = {margin: 0}
+) {
   text = text || '';
   searchString = searchString || '';
   if (!searchString.length) {
@@ -25,9 +29,31 @@ export default function highlightText (text, searchString, highlightStyle = {bac
   const start = text.toLowerCase().indexOf(searchString.toLowerCase());
   if (start >= 0) {
     return [
-      <span key="before" style={{margin: 0}}>{text.substring(0, start)}</span>,
-      <span key="found" style={highlightStyle}>{text.substring(start, start + searchString.length)}</span>,
-      <span key="after" style={{margin: 0}}>{text.substring(start + searchString.length)}</span>
+      (
+        <span
+          key="before"
+          style={{margin: 0}}
+        >
+          {text.substring(0, start)}
+        </span>
+      ),
+      (
+        <span
+          key="found"
+          style={highlightStyle}
+          className="cp-search-highlight-text"
+        >
+          {text.substring(start, start + searchString.length)}
+        </span>
+      ),
+      (
+        <span
+          key="after"
+          style={{margin: 0}}
+        >
+          {text.substring(start + searchString.length)}
+        </span>
+      )
     ];
   } else {
     return text;
