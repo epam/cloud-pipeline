@@ -123,6 +123,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
@@ -810,8 +811,13 @@ public class DataStorageManager implements SecuredEntityManager {
         return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_SIZE_MASK_RULES))
             .orElse(Collections.emptyList())
             .stream()
-            .collect(Collectors.toMap(StorageFileSearchMask::getStorageName,
-                                      StorageFileSearchMask::getHiddenFilePathGlobs));
+            .collect(Collectors.groupingBy(StorageFileSearchMask::getStorageName,
+                                           Collector.of(HashSet::new,
+                                                        (set, mask) -> set.addAll(mask.getHiddenFilePathGlobs()),
+                                                        (left, right) -> {
+                                                            left.addAll(right);
+                                                            return left;
+                                                        })));
     }
 
     public void requestDataStorageDavMount(final Long id, final Long time) {
