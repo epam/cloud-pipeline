@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -120,8 +121,9 @@ public class QuotaService {
     }
 
     private void prepareQuotaAction(final QuotaEntity quotaEntity, final QuotaActionEntity quotaActionEntity) {
-        Assert.state(CollectionUtils.isNotEmpty(quotaActionEntity.getActions()),
-                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ACTIONS_EMPTY));
+        if (CollectionUtils.isEmpty(quotaActionEntity.getActions())) {
+            quotaActionEntity.setActions(Collections.singletonList(QuotaActionType.NOTIFY));
+        }
         if (Objects.isNull(quotaActionEntity.getThreshold())) {
             quotaActionEntity.setThreshold(0);
         }
