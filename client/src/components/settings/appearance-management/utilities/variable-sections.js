@@ -400,7 +400,6 @@ const plain = grouped
 
 const variablesWithoutSection = Object.values(Variables)
   .filter(o => !plain.includes(o) && (!o.type || o.type === VariableTypes.color));
-console.log('VARIABLES WITHOUT SECTIONS', variablesWithoutSection);
 grouped.push(
   {
     name: 'Other properties',

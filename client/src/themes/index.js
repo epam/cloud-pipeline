@@ -63,7 +63,6 @@ function removeClassNameFromBody (className) {
 
 function applyClassNameToBody (className, themes = []) {
   for (const anotherTheme of themes) {
-    console.log('remove class name from body', anotherTheme.identifier);
     removeClassNameFromBody(anotherTheme.identifier);
   }
   (className || '')
