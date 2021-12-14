@@ -15,15 +15,18 @@
  */
 
 import React from 'react';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
+  Badge,
   Button,
   Icon,
   Input,
   Dropdown,
   Menu
 } from 'antd';
+import RcMenu, {MenuItem} from 'rc-menu';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
@@ -49,6 +52,7 @@ import {
   removeSortingByField
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
+import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import styles from './FacetedSearch.css';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
@@ -82,7 +86,10 @@ class FacetedSearch extends React.Component {
     presentationMode: FacetModeStorage.load() || PresentationModes.list,
     showResults: false,
     searchToken: undefined,
-    facetsToken: undefined
+    facetsToken: undefined,
+    itemsToShare: [],
+    selectedItems: [],
+    shareDialogVisible: false
   }
 
   abortController;
@@ -99,6 +106,13 @@ class FacetedSearch extends React.Component {
     } else {
       this.doSearch();
     }
+  }
+
+  @computed
+  get dataStorageSharingEnabled () {
+    const {preferences} = this.props;
+    return preferences && preferences.loaded &&
+        preferences.sharedStoragesSystemDirectory && preferences.dataSharingEnabled;
   }
 
   get documentTypeFilter () {
@@ -625,6 +639,76 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  openShareStorageItemsDialog = () => {
+    this.setState({
+      shareDialogVisible: true
+    });
+  };
+
+  closeShareItemDialog = () => {
+    return this.setState({
+      itemsToShare: [],
+      selectedItems: [],
+      shareDialogVisible: false
+    });
+  };
+
+  onSelectItem = (item) => {
+    const selectedItems = [...new Set([...this.state.selectedItems, item])];
+
+    this.setState({selectedItems});
+  };
+
+  onDeselectItem = (item) => {
+    const selectedItems = this.state.selectedItems
+      .filter(i => {
+        return i.storageId !== item.storageId && i.path !== item.path &&
+          i.name !== item.name && i.type !== item.type;
+      });
+
+    this.setState({selectedItems});
+  };
+
+  renderDataStorageSharingControl = () => {
+    const {itemsToShare, selectedItems} = this.state;
+    if (!this.dataStorageSharingEnabled || !selectedItems || !selectedItems.length) {
+      return null;
+    }
+    const handleMenuClick = ({key}) => {
+      if (key === 'clear') {
+        this.setState({
+          itemsToShare: [],
+          selectedItems: []
+        });
+      }
+      if (key === 'share') {
+        this.openShareStorageItemsDialog();
+      }
+    };
+    const addToSharedItems = () => {
+      const {itemsToShare, selectedItems} = this.state;
+      itemsToShare.push(...selectedItems);
+      this.setState({itemsToShare: [...new Set(itemsToShare)]});
+    };
+    const overlay = (
+      <RcMenu onClick={handleMenuClick}>
+        <MenuItem key="share" disabled={!itemsToShare || !itemsToShare.length}>
+          Share selected items
+        </MenuItem>
+        <MenuItem key="clear" className="cp-danger">Clear selection</MenuItem>
+      </RcMenu>
+    );
+    return (
+      <div style={{marginLeft: 5}}>
+        <Badge count={(itemsToShare || []).length} style={{zIndex: 999}}>
+          <Dropdown.Button overlay={overlay} onClick={addToSharedItems}>
+            Add to shared items
+          </Dropdown.Button>
+        </Badge>
+      </div>
+    );
+  };
+
   renderSortingControls = () => {
     const {
       sortingOrder,
@@ -725,6 +809,10 @@ class FacetedSearch extends React.Component {
         onLoadData={this.onLoadNextPage}
         onPageSizeChanged={this.onPageSizeChanged}
         onNavigate={this.onNavigate}
+        onSelectItem={this.onSelectItem}
+        onDeselectItem={this.onDeselectItem}
+        selectedItems={this.state.selectedItems}
+        selectionAvailable={this.dataStorageSharingEnabled}
         showResults={showResults}
         onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
         mode={presentationMode}
@@ -815,6 +903,12 @@ class FacetedSearch extends React.Component {
                 mode={presentationMode}
               />
               {this.renderSortingControls()}
+              {this.renderDataStorageSharingControl()}
+              <SharedItemInfo
+                visible={this.state.shareDialogVisible}
+                shareItems={this.state.itemsToShare}
+                close={this.closeShareItemDialog}
+              />
             </div>
           )
         }
@@ -824,6 +918,7 @@ class FacetedSearch extends React.Component {
               className={styles.actions}
             >
               {this.renderSortingControls()}
+              {this.renderDataStorageSharingControl()}
             </div>
           )
         }

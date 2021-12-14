@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Icon, Spin} from 'antd';
+import {Alert, Checkbox, Icon, Spin} from 'antd';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
@@ -27,6 +27,7 @@ import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import compareArrays from '../../../utils/compareArrays';
+import SearchItemTypes from '../../../models/search/search-item-types';
 
 const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
@@ -67,6 +68,11 @@ class SearchResults extends React.Component {
       prevState.resizingColumn !== this.state.resizingColumn ||
       !compareArrays(getColumnNames(this.props.columns), getColumnNames(prevProps.columns))
     ) {
+      if (this.infiniteScroll) {
+        this.infiniteScroll.forceUpdate();
+      }
+    }
+    if (prevProps.selectedItems !== this.props.selectedItems) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
       }
@@ -116,6 +122,7 @@ class SearchResults extends React.Component {
             }
           }}
         />
+        {this.renderRowSelectionCheckbox(resultItem)}
         <OpenInToolAction
           file={resultItem.path}
           storageId={resultItem.parentId}
@@ -344,6 +351,57 @@ class SearchResults extends React.Component {
     }
   };
 
+  itemSelected = (item) => {
+    const {selectedItems = []} = this.props;
+    return item.type === SearchItemTypes.s3File && selectedItems.length > 0 && selectedItems
+      .some(i => i.name === item.name && i.path === item.path && i.storageId === item.parentId);
+  }
+
+  itemSelectionAvailable = (item) => {
+    const {selectionAvailable, selectedItems = []} = this.props;
+
+    return selectionAvailable && item.type === SearchItemTypes.s3File && (
+      (!selectedItems.length) ||
+      (selectedItems.length > 0 && !selectedItems.some(i => i.storageId !== item.parentId))
+    );
+  };
+
+  onRowSelectionChange = (item, event) => {
+    const {onSelectItem, onDeselectItem} = this.props;
+    const shareItem = {
+      storageId: item.parentId,
+      path: item.path,
+      name: item.name,
+      type: item.type
+    };
+    const itemSelected = this.itemSelected(item);
+    if (event.target.checked && !itemSelected && onSelectItem) {
+      onSelectItem(shareItem);
+    } else if (!event.target.checked && itemSelected && onDeselectItem) {
+      onDeselectItem(shareItem);
+    }
+    if (this.infiniteScroll) {
+      this.infiniteScroll.forceUpdate();
+    }
+  };
+
+  renderRowSelectionCheckbox = (item) => {
+    if (!this.itemSelectionAvailable(item)) {
+      return null;
+    }
+    return (
+      <div
+        style={{padding: '0 5px'}}
+        onClick={(e) => { e.stopPropagation(); }}
+      >
+        <Checkbox
+          checked={this.itemSelected(item)}
+          onChange={(e) => this.onRowSelectionChange(item, e)}
+        />
+      </div>
+    );
+  };
+
   renderTableRow = (resultItem, rowIndex) => {
     const {disabled, columns = []} = this.props;
     const {columnWidths, resizingColumn} = this.state;
@@ -374,7 +432,12 @@ class SearchResults extends React.Component {
               style={{width: columnWidths[key], minWidth: '0px'}}
             >
               {renderFn
-                ? renderFn(resultItem[key], resultItem, this.setPreview)
+                ? renderFn(
+                  resultItem[key],
+                  resultItem,
+                  this.setPreview,
+                  this.renderRowSelectionCheckbox
+                )
                 : (
                   <span
                     className={classNames('cp-ellipsis-text', className)}
@@ -586,6 +649,10 @@ SearchResults.propTypes = {
   disabled: PropTypes.bool,
   onPageSizeChanged: PropTypes.func,
   onNavigate: PropTypes.func,
+  onSelectItem: PropTypes.func,
+  onDeselectItem: PropTypes.func,
+  selectedItems: PropTypes.array,
+  selectionAvailable: PropTypes.bool,
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,
