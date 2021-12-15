@@ -44,18 +44,28 @@ add_worker() {
 
 create_hostlist() {
         echo -e "group_name @allhosts\nhostlist NONE" > ./grid
-         qconf -Ahgrp ./grid
+        qconf -Ahgrp ./grid
         rm -f ./grid
 }
 
 configure_global() {
     _MAX_PROCS_LIMIT="${MAX_PROCS_LIMIT:-65536}"
     _MAX_NOPEN_LIMIT="${MAX_NOPEN_LIMIT:-65536}"
+    _SHELL_START_MODE="${CP_CAP_SGE_SHELL_START_MODE:-unix_behavior}"
+    _SGE_REPORTING_PARAMS="${CP_CAP_SGE_REPORTING_PARAMS:-"accounting=true reporting=true flush_time=00:01:00 joblog=true sharelog=00:00:00"}"
 
     qconf -sconf global > ./global
+    # Some of the long values (reporting_params, execd_params, etc.) are split into several line with a backslash. E.g.:
+    # reporting_params accounting=true reporting=false \
+    #                  flush_time=00:00:15 joblog=false sharelog=00:00:00
+    # To replace the value - we need to merge all these line into one
+    # The next "magic" line reads a file line-by-line and removes all "backslash + newline" (\\n)
+    sed -i ':a;N;$!ba;s/\\\n//g' ./global
     sed -i '/min_uid/c\min_uid 0' ./global
     sed -i '/min_gid/c\min_gid 0' ./global
     sed -i "/execd_params/c\execd_params S_DESCRIPTORS=${_MAX_PROCS_LIMIT},H_DESCRIPTORS=${_MAX_PROCS_LIMIT},S_MAXPROC=${_MAX_NOPEN_LIMIT},H_MAXPROC=${_MAX_NOPEN_LIMIT}" ./global
+    sed -i "/shell_start_mode/c\shell_start_mode $_SHELL_START_MODE" ./global
+    sed -i "/reporting_params/c\reporting_params $_SGE_REPORTING_PARAMS" ./global
 
     qconf -Mconf ./global
     rm -f ./global
@@ -179,6 +189,28 @@ delete_pe() {
     for _pe_name in $current_pe_list; do 
         qconf -dp "$_pe_name"
     done
+}
+
+create_pe_from_file() {
+    local pe_spec_file="$1"
+    local pe_queue_name="${2:-$CP_CAP_SGE_QUEUE_NAME}"
+    if [ -z "$pe_spec_file" ]; then
+        echo "PE spec file is not provided"
+        return 1
+    fi
+    if [ ! -f "$pe_spec_file" ]; then
+        echo "PE spec file is not found at ${pe_spec_file}"
+        return 1
+    fi
+
+    local pe_name=$(echo $(cat "$pe_spec_file" | grep pe_name) | cut -f2 -d' ')
+    if [ -z "$pe_name" ]; then
+        echo "Cannot get PE name from $pe_spec_file"
+        return 1
+    fi
+
+    qconf -Ap "$pe_spec_file"
+    qconf -mattr queue pe_list "$pe_name" "$pe_queue_name"
 }
 
 configure_pe() {
@@ -485,10 +517,20 @@ delete_pe all
 configure_pe "$CP_CAP_SGE_PE_NAME" \
              "\$pe_slots" \
              "TRUE"
-# Add an "mpi" PE, which allows to spread processes across nodes
+# - Add an "mpi" PE, which allows to spread processes across nodes
 configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "\$fill_up" \
              "FALSE"
+# - Add any other user-provided PEs
+if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
+    pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up"
+    for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
+        pipe_log_info "-> Configuring PE from $_pe_spec_file"
+        create_pe_from_file "$_pe_spec_file"
+    done
+else
+    pipe_log_info "No extra PEs are provided, skipping setup"
+fi
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
