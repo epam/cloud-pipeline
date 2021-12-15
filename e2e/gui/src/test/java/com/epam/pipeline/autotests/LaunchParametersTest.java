@@ -55,6 +55,7 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
     private static final String PARAMETER_IS_NOT_ALLOWED_FOR_USE = "This parameter is not allowed for use";
     private static final String PARAMETER_IS_RESERVED = "Parameter name is reserved";
     private static final String NAME_IS_RESERVED = "Name is reserved for system parameter";
+    private static final String PROFILE_NAME = "default";
     private final String pipeline = resourceName(LAUNCH_PARAMETER_RESOURCE);
     private final String configuration = resourceName(format("%s-configuration", LAUNCH_PARAMETER_RESOURCE));
     private final String configurationDescription = "test-configuration-description";
@@ -143,7 +144,7 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .configurationTab()
-                .editConfiguration("default", profile -> {
+                .editConfiguration(PROFILE_NAME, profile -> {
                     profile.addSystemParameter()
                             .searchSystemParameter(CP_FSBROWSER_ENABLED)
                             .validateNotFoundParameters()
@@ -204,7 +205,7 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                 .clickOnPipeline(pipeline)
                 .firstVersion()
                 .configurationTab()
-                .editConfiguration("default", profile -> {
+                .editConfiguration(PROFILE_NAME, profile -> {
                     profile.addSystemParameter()
                             .selectSystemParameters(CP_FSBROWSER_ENABLED)
                             .cancel();
@@ -245,14 +246,14 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                     .clickOnPipeline(pipeline)
                     .firstVersion()
                     .configurationTab()
-                    .editConfiguration("default", profile ->
-                            profile.addSystemParameter()
-                                    .selectSystemParameters(CP_FSBROWSER_ENABLED)
-                                    .ok()
-                                    .doNotMountStoragesSelect(true)
-                                    .click(SAVE)
-                                    .sleep(2, SECONDS)
-                    );
+                    .editConfiguration(PROFILE_NAME, profile -> {
+                        profile.addSystemParameter()
+                                .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                .ok()
+                                .doNotMountStoragesSelect(true)
+                                .click(SAVE);
+                        profile.waitUntilSaveEnding(PROFILE_NAME);
+                    });
             library()
                     .configurationWithin(configuration, configuration ->
                             configuration
