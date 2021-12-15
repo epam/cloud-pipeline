@@ -130,7 +130,8 @@ const defaultSettings = {
     anonymousAccessParameter: undefined
   },
   checkDefaultUserStorageStatus: false,
-  defaultUserStorageReadOnlyWarning: undefined
+  defaultUserStorageReadOnlyWarning: undefined,
+  persistSessionStateParameterName: 'CP_CAP_PERSIST_SESSION_STATE'
 };
 
 function parseUrl(url, verbose = false) {

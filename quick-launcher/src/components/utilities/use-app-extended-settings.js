@@ -106,9 +106,13 @@ export default function useAppExtendedSettings (application) {
       }
     }
   }, [appendOptionsValue, options, setOptions, save]);
-  const getSettingValue = useCallback((setting) => {
+  const getSettingValue = useCallback((setting, useDefault = false) => {
     if (setting) {
-      return readOptionsValue(options, setting.optionsField);
+      const value = readOptionsValue(options, setting.optionsField);
+      if (value === undefined && useDefault) {
+        return setting.default;
+      }
+      return value;
     }
     return undefined;
   }, [options, readOptionsValue]);

@@ -9,6 +9,7 @@ import ContextMenu, {Placement} from '../context-menu';
 import Gear from '../gear';
 import './application-settings.css';
 import Arrow from "../arrow";
+import Check from "../check";
 
 export default function ApplicationSettings (
   {
@@ -76,7 +77,8 @@ export default function ApplicationSettings (
   const appExtendedSettings = useContext(ExtendedSettingsContext);
   const appExtendedSettingsFiltered = (appExtendedSettings || [])
     .filter(setting => !setting.availableForApp || setting.availableForApp(application));
-  const hasExtendedSettings = Object.keys(appExtendedSettingsFiltered).length > 0;
+  const hasExtendedSettings = appExtendedSettingsFiltered
+    .filter(o => !/^divider$/i.test(o.type)).length > 0;
   const hasSessionInfoSettings = appSettings?.sessionInfoStorage &&
     appSettings?.sessionInfoPath;
   const [clearingSessionInfo, setClearingSessionInfo] = useState(false);
@@ -111,6 +113,9 @@ export default function ApplicationSettings (
   const extendedOptionsPresentation = [];
   for (let setting of appExtendedSettingsFiltered) {
     const value = getSettingValue(setting);
+    if (/^(divider|boolean)$/i.test(setting.type)) {
+      continue;
+    }
     if (/^multi-selection$/i.test(setting.type) && (value || []).length === 0) {
       continue;
     }
@@ -155,7 +160,10 @@ export default function ApplicationSettings (
   const multiSelectionSubMenuVisible = !!multiSelectionSubMenu &&
     !!multiSelectionSubMenuSetting;
 
-  if (!hasExtendedSettings && !hasSessionInfoSettings) {
+  if (
+    !hasExtendedSettings &&
+    !hasSessionInfoSettings
+  ) {
     return null;
   }
   return (
@@ -191,6 +199,22 @@ export default function ApplicationSettings (
                   </div>
                 </div>
               ),
+              /^boolean$/i.test(setting.type) && (
+                <div
+                  key={setting.key}
+                  className="application-setting boolean-setting"
+                  onClick={() => onChange(setting, !getSettingValue(setting, true), true)}
+                >
+                  <div className="application-setting-title">
+                    {setting.title}
+                  </div>
+                  {
+                    getSettingValue(setting, true)
+                      ? (<Check className="boolean-setting-value" />)
+                      : (<span>{'\u00A0'}</span>)
+                  }
+                </div>
+              ),
               /^multi-selection$/i.test(setting.type) && (
                 <div
                   key={setting.key}
@@ -212,9 +236,9 @@ export default function ApplicationSettings (
                   </div>
                 </div>
               ),
-              (
+              /^divider$/i.test(setting.type) && (
                 <div
-                  key={`${setting.key}-divider`}
+                  key={setting.key}
                   className="application-setting-divider"
                 >
                   {'\u00A0'}

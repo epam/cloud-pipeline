@@ -1,7 +1,7 @@
 import appendOptionsValue from './append-options-value';
 
 export default function appendOptionsDefaultValue(result, setting, value = undefined) {
-  const appendValue = value || setting.default;
+  const appendValue = value === undefined ? setting.default : value;
   appendOptionsValue(result, setting.optionsField, appendValue);
   if (setting.valueHasSubOptions(appendValue) && setting.itemSubOptions) {
     const subOptions = setting.itemSubOptions(appendValue);

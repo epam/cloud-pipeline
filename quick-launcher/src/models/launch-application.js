@@ -354,6 +354,17 @@ function launchTool(application, user, options) {
                                       type: 'string'
                                     };
                                   }
+                                  // Appending CP_CAP_PERSIST_SESSION_STATE parameter
+                                  const persistSessionStateParameterName = appSettings?.persistSessionStateParameterName ||
+                                    'CP_CAP_PERSIST_SESSION_STATE';
+                                  console.log(
+                                    `Setting parameter "${persistSessionStateParameterName}"=${options.persistSessionState}`
+                                  )
+                                  payload.parameters[persistSessionStateParameterName] = {
+                                    value: options.persistSessionState,
+                                    type: 'boolean'
+                                  };
+                                  // ----
                                   if (joinedLaunchOptions.instance_size) {
                                     console.log(`${joinedLaunchOptions.instance_size} instance will be used`);
                                     payload.instance_size = joinedLaunchOptions.instance_size;

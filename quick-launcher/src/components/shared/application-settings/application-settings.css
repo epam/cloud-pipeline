@@ -7,11 +7,16 @@
   margin: 2px 0;
 }
 
-.application-setting.multi-selection-setting {
+.application-setting.multi-selection-setting,
+.application-setting.boolean-setting {
   cursor: pointer;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+}
+
+.application-setting.boolean-setting .boolean-setting-value {
+  display: inline-flex;
 }
 
 .application-setting.multi-selection-setting .multi-selection-value {
@@ -26,6 +31,11 @@
 .application-setting-divider {
   background-color: rgba(255, 255, 255, 0.2);
   height: 1px;
+}
+
+.application-setting-divider:first-child,
+.application-setting-divider + .application-setting-divider {
+  display: none;
 }
 
 .application-setting-title,

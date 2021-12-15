@@ -65,6 +65,11 @@ export default function useExtendedSettings () {
   }, [settings, placeholdersMounts, setDependencies]);
   return useMemo(() => {
     const extendedSettings = [];
+    const appendDivider = divider => {
+      if (extendedSettings.length > 0) {
+        extendedSettings.push(divider);
+      }
+    };
     if (settings?.appConfigNodeSizes) {
       const nodeSizes = Object.keys(settings?.appConfigNodeSizes || {});
       if (nodeSizes.length > 0) {
@@ -90,6 +95,10 @@ export default function useExtendedSettings () {
       if (mounts.length > 0) {
         const title = config.title || name;
         const key = `limit-mounts-placeholder-${name}`;
+        appendDivider({
+          key: `${key}-divider`,
+          type: 'divider',
+        });
         extendedSettings.push({
           key,
           title,
@@ -123,6 +132,10 @@ export default function useExtendedSettings () {
       }
     });
     if (sensitiveStorages.length > 0) {
+      appendDivider({
+        key: 'sensitive-storages-divider',
+        type: 'divider',
+      });
       extendedSettings.push({
         key: 'sensitive-storages',
         title: 'Mount sensitive data',
@@ -151,6 +164,22 @@ export default function useExtendedSettings () {
         availableForApp: app => app && app.allowSensitive
       });
     }
+    appendDivider({
+      key: 'persist-session-state-divider',
+      type: 'divider',
+    });
+    extendedSettings.push({
+      key: 'persist-session-state',
+      title: 'Persist session state',
+      type: 'boolean',
+      values: [],
+      default: true,
+      required: false,
+      optionsField: 'persistSessionState',
+      itemSubOptions: () => [],
+      valueHasSubOptions: () => false,
+      availableForApp: () => true
+    });
     return {
       appExtendedSettings: extendedSettings,
       dependencies
