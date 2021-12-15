@@ -523,13 +523,13 @@ configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "FALSE"
 # - Add any other user-provided PEs
 if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
-    pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up"
+    pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up" "$SGE_MASTER_SETUP_TASK"
     for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
-        pipe_log_info "-> Configuring PE from $_pe_spec_file"
+        pipe_log_info "-> Configuring PE from $_pe_spec_file" "$SGE_MASTER_SETUP_TASK"
         create_pe_from_file "$_pe_spec_file"
     done
 else
-    pipe_log_info "No extra PEs are provided, skipping setup"
+    pipe_log_info "No extra PEs are provided, skipping setup" "$SGE_MASTER_SETUP_TASK"
 fi
 
 # Setup any additional SGE consumable resources if available
