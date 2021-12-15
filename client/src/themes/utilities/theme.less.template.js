@@ -104,7 +104,7 @@ export default `
   border: 1px solid @application-color;
 }
 @THEME .color-presenter {
-  border-color: @application-color;
+  stroke: @application-color;
 }
 @THEME .image-uploader {
   border-color: @application-color;
