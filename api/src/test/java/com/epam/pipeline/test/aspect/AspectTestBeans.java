@@ -89,10 +89,13 @@ import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
+import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
+import com.epam.pipeline.repository.quota.QuotaActionRepository;
+import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
@@ -393,4 +396,13 @@ public class AspectTestBeans {
 
     @MockBean
     protected LdapTemplate ldapTemplate;
+
+    @MockBean
+    protected QuotaRepository quotaRepository;
+
+    @MockBean
+    protected QuotaActionRepository quotaActionRepository;
+
+    @MockBean
+    protected QuotaMapper quotaMapper;
 }
