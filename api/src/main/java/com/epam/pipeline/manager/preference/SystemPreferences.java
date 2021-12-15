@@ -641,6 +641,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
+    /**
+     * Controls the period of schedule monitoring task
+     */
+    public static final IntPreference SYSTEM_SCHEDULE_MONITORING_PERIOD = new IntPreference(
+        "system.schedule.monitoring.period.seconds",
+            (int) TimeUnit.HOURS.toSeconds(1), SYSTEM_GROUP, isGreaterThan(10));
 
     /**
      * Controls the amount of pod logs to be loaded

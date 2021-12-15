@@ -31,7 +31,6 @@ import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.text.ParseException;
 import java.util.Date;
 
@@ -51,9 +50,9 @@ public class RunScheduler {
         this.scheduleProviderManager = scheduleProviderManager;
     }
 
-    @PostConstruct
     public void init() {
         try {
+            log.debug("Starting quartz scheduler...");
             quartzScheduler.start();
             log.debug("Quartz scheduler is running.");
         } catch (SchedulerException e) {
