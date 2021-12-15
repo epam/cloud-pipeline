@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -24,6 +26,7 @@ import com.epam.pipeline.autotests.utils.Json;
 import com.epam.pipeline.autotests.utils.PipelinePermission;
 import com.epam.pipeline.autotests.utils.SystemParameter;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -33,12 +36,15 @@ import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_PARAMETER;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
+import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.resourceName;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTest implements Navigation, Authorization {
 
@@ -219,6 +225,97 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                             .messageShouldAppear(NAME_IS_RESERVED)
                             .deleteParameter(CP_FSBROWSER_ENABLED);
                 });
+    }
+
+    @Test(priority = 1)
+    @TestCase(value = {"2342_5"})
+    public void checkChangesSystemParameters() {
+        try {
+            logoutIfNeeded();
+            loginAs(user);
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.settings()
+                                    .clickSystemParameter()
+                                    .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                    .ok()
+                                    .save()
+                    );
+            library()
+                    .clickOnPipeline(pipeline)
+                    .firstVersion()
+                    .configurationTab()
+                    .editConfiguration("default", profile ->
+                            profile.addSystemParameter()
+                                    .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                    .ok()
+                                    .doNotMountStoragesSelect(true)
+                                    .click(SAVE)
+                                    .sleep(2, SECONDS)
+                    );
+            library()
+                    .configurationWithin(configuration, configuration ->
+                            configuration
+                                    .expandTabs(advancedTab)
+                                    .addSystemParameter()
+                                    .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                    .ok()
+                                    .click(SAVE)
+                    );
+            logoutIfNeeded();
+            loginAs(userWithoutCompletedRuns);
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.settings()
+                                    .expandTabs(execEnvironmentTab)
+                                    .validateDisabledParameter(CP_FSBROWSER_ENABLED)
+                                    .runWithCustomSettings()
+                                    .expandTab(advancedTab)
+                                    .validateDisabledParameter(CP_FSBROWSER_ENABLED)
+                    );
+            library()
+                    .clickOnPipeline(pipeline)
+                    .firstVersion()
+                    .configurationTab()
+                    .runPipeline()
+                    .validateDisabledParameter(CP_FSBROWSER_ENABLED);
+            library()
+                    .configurationWithin(configuration, configuration -> {
+                        configuration
+                                .expandTabs(advancedTab);
+                        new PipelineRunFormAO()
+                                .validateDisabledParameter(CP_FSBROWSER_ENABLED);
+                    });
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.settings()
+                                    .deleteParameter(CP_FSBROWSER_ENABLED)
+                                    .save()
+                    );
+        }
+    }
+
+    @Test(priority = 1)
+    @TestCase(value = {"2342_6"})
+    public void checkRestrictedSystemParametersViaCLI() {
+        logoutIfNeeded();
+        loginAs(userWithoutCompletedRuns);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setDefaultLaunchOptions()
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .showLog(getRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(format("pipe run -di %s --CP_FSBROWSER_ENABLED true", tool))
+                        .assertPageContainsString("An error has occurred while starting a job: " +
+                                "\"CP_FSBROWSER_ENABLED\" parameter is not permitted for overriding")
+                        .close()
+                );
     }
 
     private String editLaunchSystemParameters() {

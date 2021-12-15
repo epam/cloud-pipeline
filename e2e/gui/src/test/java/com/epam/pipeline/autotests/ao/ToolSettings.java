@@ -234,6 +234,20 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public SelectLimitMountsPopupAO<ToolSettings> selectDataStoragesToLimitMounts() {
         click(LIMIT_MOUNTS);
-        return  new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
+        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
+    }
+
+    public ToolSettings validateDisabledParameter(final String parameter) {
+        ensure(byValue(parameter), cssClass("disabled"));
+        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
+                .shouldHave(Condition.not(visible));
+        return this;
+    }
+
+    public ToolSettings deleteParameter(final String parameter) {
+        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
+                .shouldBe(visible)
+                .click();
+        return this;
     }
 }
