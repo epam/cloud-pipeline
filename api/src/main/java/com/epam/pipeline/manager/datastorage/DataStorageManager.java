@@ -808,7 +808,7 @@ public class DataStorageManager implements SecuredEntityManager {
     }
 
     public Map<String, Set<String>> loadSizeCalculationMasksMapping() {
-        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_SIZE_MASK_RULES))
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_QUOTAS_SKIPPED_PATHS))
             .orElse(Collections.emptyList())
             .stream()
             .collect(Collectors.groupingBy(StorageFileSearchMask::getStorageName,
