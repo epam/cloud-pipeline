@@ -196,6 +196,9 @@ class AppearanceManagement extends React.Component {
         identifier,
         name
       } = editableTheme;
+      const {
+        themes: themesStore
+      } = this.props;
       const themesPayload = this.themes
         .filter(o => !o.predefined && o.identifier !== identifier);
       const hide = message.loading(
@@ -207,6 +210,7 @@ class AppearanceManagement extends React.Component {
         5
       );
       this.save(themesPayload)
+        .then(() => themesStore.ejectTheme(editableTheme))
         .then(hide);
     }
   };

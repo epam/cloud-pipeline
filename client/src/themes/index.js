@@ -248,6 +248,28 @@ class CloudPipelineThemes {
     }
   }
 
+  ejectTheme (theme) {
+    if (theme && theme.identifier) {
+      const save = this.singleTheme === theme.identifier ||
+        this.systemDarkTheme === theme.identifier ||
+        this.systemLightTheme === theme.identifier;
+      if (save) {
+        if (this.singleTheme === theme.identifier) {
+          this.singleTheme = DefaultThemeIdentifier;
+        }
+        if (this.systemDarkTheme === theme.identifier) {
+          this.systemDarkTheme = DefaultDarkThemeIdentifier;
+        }
+        if (this.systemLightTheme === theme.identifier) {
+          this.systemLightTheme = DefaultLightThemeIdentifier;
+        }
+        this.save();
+      }
+      ejectTheme(theme);
+      this.applyTheme();
+    }
+  }
+
   save () {
     try {
       const safeWriteToPreference = (key, value) => {
@@ -281,14 +303,18 @@ class CloudPipelineThemes {
     this.isSystemDarkMode = window.matchMedia &&
       window.matchMedia('(prefers-color-scheme: dark)').matches;
     let theme;
+    let defaultTheme = DefaultThemeIdentifier;
     if (this.synchronizeWithSystem) {
       theme = this.isSystemDarkMode
         ? this.systemDarkTheme
         : this.systemLightTheme;
+      defaultTheme = this.isSystemDarkMode
+        ? DefaultDarkThemeIdentifier
+        : DefaultLightThemeIdentifier;
     } else {
       theme = this.singleTheme;
     }
-    this.setTheme(theme || this.currentTheme || DefaultLightThemeIdentifier);
+    this.setTheme(theme || this.currentTheme || defaultTheme, defaultTheme);
   }
 
   startTestingTheme (theme, liveUpdate = false) {
@@ -355,9 +381,12 @@ class CloudPipelineThemes {
     this.testingThemeIdentifier = undefined;
   }
 
-  setTheme (themeIdentifier) {
-    this.currentTheme = themeIdentifier;
-    applyClassNameToBody(themeIdentifier, this.themes);
+  setTheme (themeIdentifier, defaultTheme = DefaultThemeIdentifier) {
+    const existingTheme = this.themes.find(o => o.identifier === themeIdentifier);
+    this.currentTheme = existingTheme
+      ? existingTheme.identifier
+      : defaultTheme;
+    applyClassNameToBody(this.currentTheme, this.themes);
     this.reportThemeChanged();
   }
 }
