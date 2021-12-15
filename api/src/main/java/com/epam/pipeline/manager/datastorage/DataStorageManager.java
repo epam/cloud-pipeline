@@ -813,11 +813,11 @@ public class DataStorageManager implements SecuredEntityManager {
             .stream()
             .collect(Collectors.groupingBy(StorageFileSearchMask::getStorageName,
                                            Collector.of(HashSet::new,
-                                                        (set, mask) -> set.addAll(mask.getHiddenFilePathGlobs()),
-                                                        (left, right) -> {
-                                                            left.addAll(right);
-                                                            return left;
-                                                        })));
+                                               (set, mask) -> set.addAll(mask.getHiddenFilePathGlobs()),
+                                               (left, right) -> {
+                                                   left.addAll(right);
+                                                   return left;
+                                               })));
     }
 
     public void requestDataStorageDavMount(final Long id, final Long time) {
