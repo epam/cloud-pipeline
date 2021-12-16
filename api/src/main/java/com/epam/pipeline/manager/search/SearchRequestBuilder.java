@@ -43,6 +43,7 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.elasticsearch.action.search.MultiSearchRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.common.Strings;
@@ -144,16 +145,34 @@ public class SearchRequestBuilder {
                 .source(searchSource);
     }
 
-    public SearchRequest buildSumAggregationForStorage(final Long storageId, final DataStorageType storageType,
-                                                       final String path, final boolean allowNoIndex) {
+    public MultiSearchRequest buildStorageSumRequest(final Long storageId, final DataStorageType storageType,
+                                                     final String path, final boolean allowNoIndex,
+                                                     final Set<String> storageSizeMasks) {
+        final MultiSearchRequest multiSearchRequest = new MultiSearchRequest();
+        multiSearchRequest.add(buildSumAggRequest(storageId, storageType, path, allowNoIndex, null));
+        if (CollectionUtils.isNotEmpty(storageSizeMasks)) {
+            multiSearchRequest.add(buildSumAggRequest(storageId, storageType, path, allowNoIndex, storageSizeMasks));
+        }
+        return multiSearchRequest;
+    }
+
+    private SearchRequest buildSumAggRequest(final Long storageId, final DataStorageType storageType,
+                                             final String path, final boolean allowNoIndex,
+                                             final Set<String> storageSizeMasks) {
         final String searchIndex =
             String.format(ES_FILE_INDEX_PATTERN, storageType.toString().toLowerCase(), storageId);
         final SumAggregationBuilder sizeSumAggregator = AggregationBuilders.sum(STORAGE_SIZE_AGG_NAME)
                 .field(SIZE_FIELD);
-        final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder().aggregation(sizeSumAggregator);
+        final BoolQueryBuilder fileFilteringQuery = QueryBuilders.boolQuery();
+        CollectionUtils.emptyIfNull(storageSizeMasks)
+            .forEach(mask -> fileFilteringQuery.mustNot(QueryBuilders.wildcardQuery(NAME_FIELD, mask)));
         if (StringUtils.isNotBlank(path)) {
-            sizeSumSearch.query(QueryBuilders.prefixQuery(NAME_FIELD, path));
+            fileFilteringQuery.must(QueryBuilders.prefixQuery(NAME_FIELD, path));
         }
+        final SearchSourceBuilder sizeSumSearch = new SearchSourceBuilder()
+            .aggregation(sizeSumAggregator)
+            .query(fileFilteringQuery)
+            .size(0);
         final SearchRequest request = new SearchRequest()
                 .indices(searchIndex)
                 .source(sizeSumSearch);
