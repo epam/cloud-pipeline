@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.LaunchCapability;
 import com.epam.pipeline.entity.cluster.PriceType;
 import com.epam.pipeline.entity.cluster.container.ContainerMemoryResourcePolicy;
 import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
+import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
@@ -231,6 +232,17 @@ public class SystemPreferences {
             new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_FSBROWSER_BLACK_LIST = new StringPreference(
             "storage.fsbrowser.black.list", STORAGE_FSBROWSER_BLACK_LIST_DEFAULT, DATA_STORAGE_GROUP, pass);
+
+    /**
+     * Storage quotas configuration
+     */
+    public static final ObjectPreference<Map<StorageQuotaAction, Integer>> STORAGE_QUOTAS_ACTIONS_GRACE =
+        new ObjectPreference<>(
+            "storage.quotas.actions.grace.period",
+            Collections.emptyMap(),
+            new TypeReference<Map<StorageQuotaAction, Integer>>() {},
+            DATA_STORAGE_GROUP,
+           PreferenceValidators.isValidGraceConfiguration);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
