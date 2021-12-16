@@ -26,7 +26,7 @@ import {
   Dropdown,
   Menu
 } from 'antd';
-import RcMenu, {MenuItem} from 'rc-menu';
+import RcMenu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
@@ -53,6 +53,7 @@ import {
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
 import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
+import {SearchItemTypes} from '../../models/search';
 import styles from './FacetedSearch.css';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
@@ -640,7 +641,20 @@ class FacetedSearch extends React.Component {
   };
 
   openShareStorageItemsDialog = () => {
+    const {selectedItems = []} = this.state;
+    const getItemType = (item) => {
+      if (item.type === SearchItemTypes.s3File) {
+        return 'file';
+      }
+      return item.type;
+    };
     this.setState({
+      itemsToShare: selectedItems.map(i => ({
+        storageId: i.parentId,
+        path: i.path,
+        name: i.name,
+        type: getItemType(i)
+      })),
       shareDialogVisible: true
     });
   };
@@ -660,17 +674,13 @@ class FacetedSearch extends React.Component {
   };
 
   onDeselectItem = (item) => {
-    const selectedItems = this.state.selectedItems
-      .filter(i => {
-        return i.storageId !== item.storageId && i.path !== item.path &&
-          i.name !== item.name && i.type !== item.type;
-      });
+    const selectedItems = this.state.selectedItems.filter(i => i.elasticId !== item.elasticId);
 
     this.setState({selectedItems});
   };
 
   renderDataStorageSharingControl = () => {
-    const {itemsToShare, selectedItems} = this.state;
+    const {selectedItems} = this.state;
     if (!this.dataStorageSharingEnabled || !selectedItems || !selectedItems.length) {
       return null;
     }
@@ -681,28 +691,24 @@ class FacetedSearch extends React.Component {
           selectedItems: []
         });
       }
-      if (key === 'share') {
-        this.openShareStorageItemsDialog();
+      if (key === 'show') {
+        // todo;
       }
-    };
-    const addToSharedItems = () => {
-      const {itemsToShare, selectedItems} = this.state;
-      itemsToShare.push(...selectedItems);
-      this.setState({itemsToShare: [...new Set(itemsToShare)]});
     };
     const overlay = (
       <RcMenu onClick={handleMenuClick}>
-        <MenuItem key="share" disabled={!itemsToShare || !itemsToShare.length}>
-          Share selected items
+        <MenuItem key="show" disabled={!selectedItems || !selectedItems.length}>
+          Show selected items
         </MenuItem>
+        <MenuDivider />
         <MenuItem key="clear" className="cp-danger">Clear selection</MenuItem>
       </RcMenu>
     );
     return (
       <div style={{marginLeft: 5}}>
-        <Badge count={(itemsToShare || []).length} style={{zIndex: 999}}>
-          <Dropdown.Button overlay={overlay} onClick={addToSharedItems}>
-            Add to shared items
+        <Badge count={(selectedItems || []).length} style={{zIndex: 999}}>
+          <Dropdown.Button overlay={overlay} onClick={this.openShareStorageItemsDialog}>
+            Share selected items
           </Dropdown.Button>
         </Badge>
       </div>

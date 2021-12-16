@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Checkbox, Icon, Spin} from 'antd';
+import {Alert, Checkbox, Icon, Spin, Tooltip} from 'antd';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
@@ -74,6 +74,7 @@ class SearchResults extends React.Component {
     }
     if (prevProps.selectedItems !== this.props.selectedItems) {
       if (this.infiniteScroll) {
+        console.log('search-results did update');
         this.infiniteScroll.forceUpdate();
       }
     }
@@ -353,32 +354,29 @@ class SearchResults extends React.Component {
 
   itemSelected = (item) => {
     const {selectedItems = []} = this.props;
-    return item.type === SearchItemTypes.s3File && selectedItems.length > 0 && selectedItems
-      .some(i => i.name === item.name && i.path === item.path && i.storageId === item.parentId);
+
+    return this.itemSelectionAvailable(item) && selectedItems.length > 0 && selectedItems
+      .some(i => i.elasticId === item.elasticId);
   }
 
   itemSelectionAvailable = (item) => {
-    const {selectionAvailable, selectedItems = []} = this.props;
+    const {selectionAvailable} = this.props;
 
-    return selectionAvailable && item.type === SearchItemTypes.s3File && (
-      (!selectedItems.length) ||
-      (selectedItems.length > 0 && !selectedItems.some(i => i.storageId !== item.parentId))
-    );
+    return selectionAvailable && item.type === SearchItemTypes.s3File;
+  };
+
+  itemSelectionDisabled = (item) => {
+    const {selectedItems = []} = this.props;
+
+    return selectedItems.length > 0 && !selectedItems.some(i => i.parentId === item.parentId);
   };
 
   onRowSelectionChange = (item, event) => {
     const {onSelectItem, onDeselectItem} = this.props;
-    const shareItem = {
-      storageId: item.parentId,
-      path: item.path,
-      name: item.name,
-      type: item.type
-    };
-    const itemSelected = this.itemSelected(item);
-    if (event.target.checked && !itemSelected && onSelectItem) {
-      onSelectItem(shareItem);
-    } else if (!event.target.checked && itemSelected && onDeselectItem) {
-      onDeselectItem(shareItem);
+    if (event.target.checked) {
+      onSelectItem && onSelectItem(item);
+    } else if (!event.target.checked) {
+      onDeselectItem && onDeselectItem(item);
     }
     if (this.infiniteScroll) {
       this.infiniteScroll.forceUpdate();
@@ -389,15 +387,28 @@ class SearchResults extends React.Component {
     if (!this.itemSelectionAvailable(item)) {
       return null;
     }
+    const disabled = this.itemSelectionDisabled(item);
+    const checkbox = (
+      <Checkbox
+        checked={this.itemSelected(item)}
+        disabled={disabled}
+        onChange={(e) => this.onRowSelectionChange(item, e)}
+      />
+    );
     return (
       <div
         style={{padding: '0 5px'}}
         onClick={(e) => { e.stopPropagation(); }}
       >
-        <Checkbox
-          checked={this.itemSelected(item)}
-          onChange={(e) => this.onRowSelectionChange(item, e)}
-        />
+        {
+          disabled
+            ? (
+              <Tooltip title="Only files from single storage could be selected at a time">
+                {checkbox}
+              </Tooltip>
+            )
+            : checkbox
+        }
       </div>
     );
   };
