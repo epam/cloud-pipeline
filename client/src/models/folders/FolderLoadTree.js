@@ -18,12 +18,22 @@ import {SERVER} from '../../config';
 import Remote from '../basic/Remote';
 import MetadataFolder from '../metadata/MetadataFolder';
 import defer from '../../utils/defer';
-import {action} from 'mobx';
+import {action, observable} from 'mobx';
 import {authorization} from '../basic/Authorization';
 import mapFolderChildrenMetadata from './mapFolderChildrenMetadata';
 
-class FolderLoadTree extends Remote {
+function getPlainFolders (root = {}) {
+  const {childFolders = []} = root;
+  return childFolders
+    .concat(
+      childFolders
+        .map(child => getPlainFolders(child))
+        .reduce((r, c) => ([...r, ...c]), [])
+    );
+}
 
+class FolderLoadTree extends Remote {
+  @observable folders = [];
   constructor () {
     super();
     this.url = '/folder/loadTree';
@@ -84,6 +94,7 @@ class FolderLoadTree extends Remote {
       }
     } else if (value.status && value.status === 'OK') {
       this._value = this.postprocess(value);
+      this.folders = getPlainFolders(this._value);
       mapFolderChildrenMetadata(metadataRequest, this._value);
       this._loaded = true;
       this.error = undefined;
