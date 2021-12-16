@@ -29,7 +29,7 @@ import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'hiddenObjects')
+@inject('dataStorages', 'hiddenObjects', 'pipelinesLibrary')
 @observer
 export default class MyDataPanel extends React.Component {
   static propTypes = {
@@ -52,11 +52,14 @@ export default class MyDataPanel extends React.Component {
     if (
       this.props.dataStorages.loaded &&
       this.props.authenticatedUserInfo.loaded &&
-      this.props.hiddenObjects.loaded
+      this.props.hiddenObjects.loaded &&
+      this.props.pipelinesLibrary.loaded
     ) {
+      const folders = this.props.pipelinesLibrary.folders;
       const result = (this.props.dataStorages.value || [])
         .map(s => s)
         .filter(s => !this.props.hiddenObjects.isStorageHidden(s.id))
+        .filter(s => !this.props.hiddenObjects.isParentHidden(s, folders))
         .filter(s => roleModel.writeAllowed(s) || roleModel.readAllowed(s) || roleModel.isOwner(s));
       result.sort((sA, sB) => {
         const sAisOwner = sA.owner && sA.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();
