@@ -59,6 +59,7 @@ import com.epam.pipeline.entity.pipeline.ToolFingerprint;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -119,6 +120,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 
@@ -752,7 +754,22 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
-        return searchManager.getStorageUsage(dataStorage, path);
+        final Set<String> storageSizeMasks = loadSizeCalculationMasksMapping()
+            .getOrDefault(dataStorage.getName(), Collections.emptySet());
+        return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks);
+    }
+
+    public Map<String, Set<String>> loadSizeCalculationMasksMapping() {
+        return Optional.ofNullable(preferenceManager.getPreference(SystemPreferences.STORAGE_QUOTAS_SKIPPED_PATHS))
+            .orElse(Collections.emptyList())
+            .stream()
+            .collect(Collectors.groupingBy(StorageFileSearchMask::getStorageName,
+                                           Collector.of(HashSet::new,
+                                               (set, mask) -> set.addAll(mask.getHiddenFilePathGlobs()),
+                                               (left, right) -> {
+                                                   left.addAll(right);
+                                                   return left;
+                                               })));
     }
 
     public void requestDataStorageDavMount(final Long id, final Long time) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,13 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.search.SearchDocument;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.search.SearchResult;
+import com.epam.pipeline.exception.search.SearchException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.EnumUtils;
+import org.elasticsearch.action.search.MultiSearchResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.common.document.DocumentField;
 import org.elasticsearch.common.text.Text;
@@ -64,19 +67,28 @@ public class SearchResultConverter {
                 .build();
     }
 
-    public StorageUsage buildStorageUsageResponse(final SearchResponse searchResponse,
-                                                  final AbstractDataStorage dataStorage, final String path) {
-        final Long size = Optional.ofNullable(searchResponse.getAggregations())
-                .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
-                .map(result -> new Double(result.getValue()).longValue())
-                .orElse(0L);
+    public StorageUsage buildStorageUsageResponse(final MultiSearchResponse searchResponse,
+                                                  final AbstractDataStorage dataStorage, final String path,
+                                                  final int responsesExpected) {
+        final MultiSearchResponse.Item[] responses = tryExtractAllResponses(searchResponse, responsesExpected);
+        final SearchResponse allDocsResponse = tryExtractResponse(responses, 0);
+        final Long totalSize = extractSizeAggregationFromResponse(allDocsResponse);
+        final Long effectiveSize;
+        if (responses.length != 1) {
+            final SearchResponse effectiveDocsResponse = tryExtractResponse(responses, 1);
+            effectiveSize = extractSizeAggregationFromResponse(effectiveDocsResponse);
+        } else {
+            effectiveSize = totalSize;
+        }
+
         return StorageUsage.builder()
                 .id(dataStorage.getId())
                 .name(dataStorage.getName())
                 .type(dataStorage.getType())
                 .path(path)
-                .size(size)
-                .count(searchResponse.getHits().getTotalHits())
+                .size(totalSize)
+                .effectiveSize(effectiveSize)
+                .count(allDocsResponse.getHits().getTotalHits())
                 .build();
     }
 
@@ -145,5 +157,42 @@ public class SearchResultConverter {
                                 .collect(Collectors.toList()))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    private MultiSearchResponse.Item[] tryExtractAllResponses(final MultiSearchResponse searchResponse,
+                                                              final int responsesExpected) {
+        final MultiSearchResponse.Item[] items = Optional.ofNullable(searchResponse)
+            .map(MultiSearchResponse::getResponses)
+            .filter(searchResponses -> ArrayUtils.getLength(searchResponses) > 0)
+            .orElseThrow(() -> new SearchException(
+                "Empty multi-search response from ES, unable to calculate storage consumption."));
+        final int responsesCount = items.length;
+        if (responsesExpected != items.length) {
+            throw new SearchException(String.format(
+                "Unexpected number of responses during storage size calculation: %d expected, but %d found.",
+                responsesExpected, responsesCount));
+        }
+        return items;
+    }
+
+    private SearchResponse tryExtractResponse(final MultiSearchResponse.Item[] responses, final int index) {
+        final MultiSearchResponse.Item responseItem = responses[index];
+        if (responseItem == null) {
+            throw new SearchException(
+                String.format("Empty response item with id=[%d], unable to return storage usage.", index));
+        }
+        if (responseItem.isFailure()) {
+            throw new SearchException(
+                String.format("Error in response item with id=[%d], unable to return storage usage: %s",
+                              index, responseItem.getFailureMessage()));
+        }
+        return responseItem.getResponse();
+    }
+
+    private Long extractSizeAggregationFromResponse(final SearchResponse searchResponse) {
+        return Optional.ofNullable(searchResponse.getAggregations())
+            .map(aggregations -> aggregations.<ParsedSum>get(STORAGE_SIZE_AGG_NAME))
+            .map(result -> new Double(result.getValue()).longValue())
+            .orElse(0L);
     }
 }

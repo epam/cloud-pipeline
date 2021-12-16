@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage;
+package com.epam.pipeline.entity.search;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
+
+import java.util.Set;
 
 @AllArgsConstructor
-@Builder
-@Data
-public class StorageUsage {
-    private Long id;
-    private String name;
-    private DataStorageType type;
-    private String path;
-    private Long size;
-    private Long effectiveSize;
-    private Long count;
+@Getter
+public class StorageFileSearchMask {
+
+    private final String storageName;
+    private final Set<String> hiddenFilePathGlobs;
 }

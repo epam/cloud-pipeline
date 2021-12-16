@@ -34,6 +34,7 @@ import com.epam.pipeline.entity.notification.filter.NotificationFilter;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.search.SearchDocumentType;
+import com.epam.pipeline.entity.search.StorageFileSearchMask;
 import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.utils.ControlEntry;
 import com.epam.pipeline.entity.utils.DefaultSystemParameter;
@@ -211,6 +212,17 @@ public class SystemPreferences {
             new StringPreference("storage.fsbrowser.transfer", null, DATA_STORAGE_GROUP, pass);
     public static final StringPreference STORAGE_FSBROWSER_BLACK_LIST = new StringPreference(
             "storage.fsbrowser.black.list", STORAGE_FSBROWSER_BLACK_LIST_DEFAULT, DATA_STORAGE_GROUP, pass);
+
+    /**
+     * Storage quotas configuration
+     */
+    public static final ObjectPreference<List<StorageFileSearchMask>> STORAGE_QUOTAS_SKIPPED_PATHS =
+        new ObjectPreference<>(
+            "storage.quotas.skipped.paths",
+            Collections.emptyList(),
+            new TypeReference<List<StorageFileSearchMask>>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
