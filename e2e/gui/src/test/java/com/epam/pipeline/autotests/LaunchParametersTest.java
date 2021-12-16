@@ -41,7 +41,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
-import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
 import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
@@ -286,7 +285,6 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
             tools()
                     .perform(registry, group, tool, tool ->
                             tool.settings()
-                                    .expandTabs(execEnvironmentTab)
                                     .validateDisabledParameter(CP_FSBROWSER_ENABLED)
                                     .runWithCustomSettings()
                                     .expandTab(advancedTab)

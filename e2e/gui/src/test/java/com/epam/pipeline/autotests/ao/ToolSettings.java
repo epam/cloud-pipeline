@@ -238,7 +238,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings validateDisabledParameter(final String parameter) {
-        ensure(byValue(parameter), cssClass("disabled"));
+        ensure(byValue(parameter), cssClass("ant-input-disabled"));
         $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
                 .shouldHave(Condition.not(visible));
         return this;
