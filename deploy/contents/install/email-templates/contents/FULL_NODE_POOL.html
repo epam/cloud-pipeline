@@ -1,0 +1,39 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        table,
+        td {
+            border: 1px solid black;
+            border-collapse: collapse;
+            padding: 5px;
+        }
+    </style>
+</head>
+
+<body>
+<p>Dear user,</p>
+<p>*** This is a system generated email, do not reply to this email ***</p>
+<p>Looks like all nodes in the following pools are already in use.</p>
+<table>
+    <tr>
+        <th>Pool name</th>
+        <th>Instance type</th>
+        <th>Max nodes count</th>
+    </tr>
+    #foreach( ${CP_DOLLAR}pool in ${CP_DOLLAR}templateParameters["pools"] )
+    <tr>
+        <td>${CP_DOLLAR}pool.name</td>
+        <td>${CP_DOLLAR}pool.instanceType</td>
+        <td>${CP_DOLLAR}pool.maxSize</td>
+    </tr>
+    #end
+</table>
+
+<p>Best regards,</p>
+<p>$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME Platform</p>
+</body>
+
+</html>

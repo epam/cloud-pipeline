@@ -17,7 +17,6 @@ package com.epam.pipeline.manager.cluster.autoscale;
 
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
-import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -28,15 +27,12 @@ import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+
+import static com.epam.pipeline.manager.cluster.pool.NodePoolUtils.determineActiveNodesCount;
 
 @Component
 @RequiredArgsConstructor
@@ -69,18 +65,7 @@ public class PoolAutoscaler {
         if (!pool.isAutoscaled()) {
             return;
         }
-        final long activePoolNodes = ListUtils.emptyIfNull(availableNodes)
-                .stream()
-                .filter(currentNode -> {
-                    final Map<String, String> labels = MapUtils.emptyIfNull(currentNode.getMetadata().getLabels());
-                    final String nodeIdLabel = labels.get(KubernetesConstants.NODE_POOL_ID_LABEL);
-                    if (StringUtils.isBlank(nodeIdLabel) && !NumberUtils.isDigits(nodeIdLabel)) {
-                        return false;
-                    }
-                    return pool.getId().equals(Long.parseLong(nodeIdLabel)) &&
-                            activePodIds.contains(labels.get(KubernetesConstants.RUN_ID_LABEL));
-                })
-                .count();
+        final long activePoolNodes = determineActiveNodesCount(availableNodes, activePodIds, pool.getId());
         final double occupiedPercent = pool.getCount() == 0 ? PERCENT_MULTIPLIER :
                 (double)activePoolNodes / pool.getCount() * PERCENT_MULTIPLIER;
         log.debug("{} occupied node(s) match pool[{}] with total size {}, {}% is occupied",
