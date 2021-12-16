@@ -35,6 +35,9 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Profile.advancedTab;
@@ -262,6 +265,16 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
             library()
                     .configurationWithin(configuration, configuration ->
                             configuration
+                                    .selectDockerImage(dockerImage ->
+                                            dockerImage
+                                                    .selectRegistry(registry)
+                                                    .selectGroup(group)
+                                                    .selectTool(tool, "test")
+                                                    .click(OK)
+                                    )
+                                    .setValue(DISK, "17")
+                                    .sleep(1, SECONDS)
+                                    .selectValue(INSTANCE_TYPE, C.DEFAULT_INSTANCE)
                                     .expandTabs(advancedTab)
                                     .addSystemParameter()
                                     .selectSystemParameters(CP_FSBROWSER_ENABLED)
