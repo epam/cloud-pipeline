@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class RunScheduleMonitoringManager extends AbstractSchedulingManager {
 
     private final RunScheduleMonitoringManager.RunScheduleMonitoringManagerCore core;
