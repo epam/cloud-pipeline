@@ -173,11 +173,12 @@ public class Profile implements AccessObject<Profile> {
     }
 
     public Profile waitUntilSaveEnding(final String name) {
-        for (int i = 0; i < 3; i++) {
-            if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
-                sleep(3, SECONDS);
-                break;
-            }
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
         }
         return this;
     }

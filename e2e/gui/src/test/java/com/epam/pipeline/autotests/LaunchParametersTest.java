@@ -145,7 +145,9 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                 .firstVersion()
                 .configurationTab()
                 .editConfiguration(PROFILE_NAME, profile -> {
-                    profile.addSystemParameter()
+                    profile.sleep(1, SECONDS)
+                            .addSystemParameter()
+                            .sleep(1, SECONDS)
                             .searchSystemParameter(CP_FSBROWSER_ENABLED)
                             .validateNotFoundParameters()
                             .cancel();
@@ -247,8 +249,11 @@ public class LaunchParametersTest extends AbstractAutoRemovingPipelineRunningTes
                     .firstVersion()
                     .configurationTab()
                     .editConfiguration(PROFILE_NAME, profile -> {
-                        profile.addSystemParameter()
+                        profile.sleep(1, SECONDS)
+                                .addSystemParameter()
+                                .sleep(1, SECONDS)
                                 .selectSystemParameters(CP_FSBROWSER_ENABLED)
+                                .sleep(1, SECONDS)
                                 .ok()
                                 .doNotMountStoragesSelect(true)
                                 .click(SAVE);
