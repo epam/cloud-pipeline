@@ -46,11 +46,14 @@ import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.notification.NotificationManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -59,11 +62,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -83,7 +88,12 @@ public class NFSQuotasMonitor {
     private final String notificationsKey;
     private final NFSStorageMountStatus defaultRestrictiveStatus;
     private final StorageQuotaTriggersManager triggersManager;
+    private final PreferenceManager preferenceManager;
     private final Integer notificationResendTimeout;
+    private final Map<StorageQuotaAction, Integer> graceConfiguration;
+    private final Map<Long, NFSQuotaTrigger> latestTriggers;
+    private final Map<Long, NFSQuotaNotificationEntry> notificationTriggers;
+    private final Map<Long, NFSQuota> activeQuotas;
 
     public NFSQuotasMonitor(final DataStorageManager dataStorageManager,
                             final SearchManager searchManager,
@@ -93,6 +103,7 @@ public class NFSQuotasMonitor {
                             final MessageHelper messageHelper,
                             final NotificationManager notificationManager,
                             final StorageQuotaTriggersManager triggersManager,
+                            final PreferenceManager preferenceManager,
                             final @Value("${data.storage.nfs.quota.metadata.key:fs_notifications}")
                                         String notificationsKey,
                             final @Value("${data.storage.nfs.quota.default.restrictive.status:READ_ONLY}")
@@ -107,33 +118,37 @@ public class NFSQuotasMonitor {
         this.messageHelper = messageHelper;
         this.notificationManager = notificationManager;
         this.triggersManager = triggersManager;
+        this.preferenceManager = preferenceManager;
         this.notificationsKey = notificationsKey;
         this.defaultRestrictiveStatus = defaultRestrictiveStatus;
         this.notificationResendTimeout = notificationResendTimeout;
+        this.graceConfiguration = new HashMap<>();
+        this.latestTriggers = new HashMap<>();
+        this.notificationTriggers = new HashMap<>();
+        this.activeQuotas = new HashMap<>();
     }
 
     @Scheduled(fixedDelayString = "${data.storage.nfs.quota.poll:60000}")
     @SchedulerLock(name = "NFSQuotasMonitor_controlQuotas", lockAtMostForString = "PT10M")
     public void controlQuotas() {
         log.info("Start NFS quotas processing...");
-        final List<AbstractDataStorage> activeStorages = dataStorageManager.getDataStorages();
         final List<NFSQuotaTrigger> triggersList = triggersManager.loadAll();
-        final List<NFSDataStorage> nfsDataStorages = loadAllNFS(activeStorages);
-        final Map<Long, NFSQuota> activeQuotas = loadStorageQuotas(nfsDataStorages, triggersList);
-        final Map<Long, NFSQuotaNotificationEntry> notificationTriggers = buildTriggersMapping(triggersList);
-        nfsDataStorages.forEach(storage -> processStorageQuota(storage, activeQuotas, notificationTriggers));
+        final List<NFSDataStorage> nfsDataStorages = loadAllNFS(dataStorageManager.getDataStorages());
+        updateMapsState(triggersList, nfsDataStorages);
+        nfsDataStorages.forEach(this::processStorageQuota);
+        final Map<Long, NFSDataStorage> nfsMapping = nfsDataStorages.stream()
+            .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        final LocalDateTime checkTime = DateUtils.nowUTC();
+        controlStatus(nfsMapping, checkTime);
+        controlNotifications(nfsMapping, checkTime);
         log.info("NFS quotas are processed successfully.");
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void processStorageQuota(final NFSDataStorage storage,
-                                     final Map<Long, NFSQuota> activeQuotas,
-                                     final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
+    private void processStorageQuota(final NFSDataStorage storage) {
         try {
-            final NFSStorageMountStatus statusUpdate = Optional.ofNullable(activeQuotas.get(storage.getId()))
-                .map(quota -> processActiveQuota(quota, storage, notificationTriggers))
-                .orElse(NFSStorageMountStatus.ACTIVE);
-            dataStorageManager.updateMountStatus(storage, statusUpdate);
+            Optional.ofNullable(activeQuotas.get(storage.getId()))
+                .ifPresent(quota -> processActiveQuota(quota, storage));
         } catch (Exception e) {
             log.error("An error occurred during processing quotas for storageId={}: {}",
                       storage.getId(), e.getMessage());
@@ -147,16 +162,13 @@ public class NFSQuotasMonitor {
             .collect(Collectors.toList());
     }
 
-    private NFSStorageMountStatus processActiveQuota(final NFSQuota quota, final NFSDataStorage storage,
-                                                     final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
-        return CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
+    private void processActiveQuota(final NFSQuota quota, final NFSDataStorage storage) {
+        CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
             .sorted(quotasComparator(storage).reversed())
             .filter(notification -> exceedsLimit(storage, notification))
             .findFirst()
-            .map(notification -> mapNotificationToStatus(storage, notification, quota.getRecipients(),
-                                                         notificationTriggers))
-            .orElse(NFSStorageMountStatus.ACTIVE);
+            .ifPresent(notification -> checkMatchingNotification(storage, notification, quota.getRecipients()));
     }
 
     private Comparator<NFSQuotaNotificationEntry> quotasComparator(final NFSDataStorage storage) {
@@ -199,37 +211,80 @@ public class NFSQuotasMonitor {
         return absoluteQuota1.compareTo(absoluteQuota2);
     }
 
-    private NFSStorageMountStatus mapNotificationToStatus(final NFSDataStorage storage,
-                                                          final NFSQuotaNotificationEntry notification,
-                                                          final List<NFSQuotaNotificationRecipient> recipients,
-                                                          final Map<Long, NFSQuotaNotificationEntry>
-                                                              notificationTriggers) {
+    private void checkMatchingNotification(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
+                                           final List<NFSQuotaNotificationRecipient> recipients) {
         final Set<StorageQuotaAction> actions = notification.getActions();
-        final NFSStorageMountStatus mountStatus = resolveMountStatus(storage, actions);
-        if (actions.contains(StorageQuotaAction.EMAIL) && requireNotification(storage, mountStatus, notification,
-                                                                              notificationTriggers)) {
-            notificationManager.notifyOnStorageQuotaExceeding(storage, mountStatus, notification, recipients);
-            triggersManager.insert(new NFSQuotaTrigger(storage.getId(), notification, recipients, DateUtils.nowUTC()));
+        final NFSStorageMountStatus newStatus = resolveMountStatus(storage, actions);
+        if (requireStatusChange(storage, newStatus, notification)) {
+            final LocalDateTime executionTime = DateUtils.nowUTC();
+            final Long storageId = storage.getId();
+            final LocalDateTime activationTime = resolveActivationTime(storage, newStatus, executionTime);
+            final boolean isNotificationRequired = actions.contains(StorageQuotaAction.EMAIL);
+            final NFSQuotaTrigger newTrigger = new NFSQuotaTrigger(storageId, notification, recipients,
+                                                                   executionTime, newStatus, activationTime,
+                                                                   isNotificationRequired);
+            updateTrigger(newTrigger);
+            if (isNotificationRequired && !activationTime.equals(executionTime)) {
+                notificationManager.notifyOnStorageQuotaExceeding(storage, newStatus, notification, recipients,
+                                                                  executionTime.equals(activationTime)
+                                                                  ? null
+                                                                  : activationTime);
+            }
         }
-        return mountStatus;
     }
 
-    private boolean requireNotification(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus,
-                                        final NFSQuotaNotificationEntry notification,
-                                        final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
+    private LocalDateTime resolveActivationTime(final NFSDataStorage storage,
+                                                final NFSStorageMountStatus newMountStatus,
+                                                final LocalDateTime executionTime) {
+        final NFSStorageMountStatus currentMountStatus = storage.getMountStatus();
+        if (currentMountStatus.getPriority() >= newMountStatus.getPriority()) {
+            return executionTime;
+        } else {
+            final LocalDateTime lastRestrictiveStatusActivation =
+                Optional.ofNullable(latestTriggers.get(storage.getId()))
+                    .filter(trigger -> !trigger.getTargetStatus().equals(NFSStorageMountStatus.ACTIVE))
+                    .map(NFSQuotaTrigger::getTargetStatusActivationTime)
+                    .orElse(executionTime);
+            final int graceDelay = Optional.ofNullable(getCorrespondingAction(newMountStatus))
+                .map(graceConfiguration::get)
+                .orElse(0);
+            final LocalDateTime activationFromNow = executionTime.plus(graceDelay, ChronoUnit.MINUTES);
+            final LocalDateTime activationFromLastTrigger =
+                lastRestrictiveStatusActivation.plus(graceDelay, ChronoUnit.MINUTES);
+            if (activationFromLastTrigger.isBefore(executionTime)) {
+                return executionTime;
+            }
+            return activationFromLastTrigger.compareTo(activationFromNow) > 0
+                   ? activationFromNow
+                   : activationFromLastTrigger;
+        }
+    }
+
+    private StorageQuotaAction getCorrespondingAction(final NFSStorageMountStatus mountStatus) {
+        if (mountStatus.equals(NFSStorageMountStatus.READ_ONLY)) {
+            return StorageQuotaAction.READ_ONLY;
+        } else if (mountStatus.equals(NFSStorageMountStatus.MOUNT_DISABLED)) {
+            return StorageQuotaAction.DISABLE;
+        } else {
+            return null;
+        }
+    }
+
+    private boolean requireStatusChange(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus,
+                                        final NFSQuotaNotificationEntry notification) {
         return !(newMountStatus.equals(storage.getMountStatus())
-                 && hasSameTrigger(storage, notification, notificationTriggers));
+                 && hasSameTrigger(storage, notification));
     }
 
-    private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
-                                   final Map<Long, NFSQuotaNotificationEntry> notificationTriggers) {
+    private boolean hasSameTrigger(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
         return Optional.ofNullable(notificationTriggers.getOrDefault(storage.getId(), NO_ACTIVE_QUOTAS_NOTIFICATION))
             .filter(lastTrigger -> lastTrigger.getValue().equals(notification.getValue()))
             .filter(lastTrigger -> lastTrigger.getType().equals(notification.getType()))
             .isPresent();
     }
 
-    private NFSStorageMountStatus resolveMountStatus(NFSDataStorage storage, Set<StorageQuotaAction> actions) {
+    private NFSStorageMountStatus resolveMountStatus(final NFSDataStorage storage,
+                                                     final Set<StorageQuotaAction> actions) {
         final NFSStorageMountStatus mountStatus;
         if (actions.contains(StorageQuotaAction.READ_ONLY)) {
             mountStatus = NFSStorageMountStatus.READ_ONLY;
@@ -292,36 +347,99 @@ public class NFSQuotasMonitor {
         return capacityGb * percentage / PERCENTS_MULTIPLIER;
     }
 
-    private Map<Long, NFSQuotaNotificationEntry> buildTriggersMapping(final List<NFSQuotaTrigger> triggersList) {
-        final LocalDateTime now = DateUtils.nowUTC();
-        return triggersList.stream()
-            .filter(trigger -> trigger.getExecutionTime()
-                .plus(notificationResendTimeout, ChronoUnit.MINUTES)
-                .isAfter(now))
-            .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, NFSQuotaTrigger::getQuota));
-    }
-
     private Map<Long, NFSQuota> loadStorageQuotas(final List<NFSDataStorage> storages,
                                                   final List<NFSQuotaTrigger> notificationTriggers) {
-        final Map<Long, NFSQuota> activeQuotas = storages.stream()
+        final Map<Long, NFSQuota> activeQuotasMap = storages.stream()
             .map(BaseEntity::getId)
             .map(storageId -> metadataManager.loadMetadataItem(storageId, AclClass.DATA_STORAGE))
             .filter(Objects::nonNull)
             .filter(metadataEntry -> metadataEntry.getData().containsKey(notificationsKey))
             .collect(Collectors.toMap(metadataEntry -> metadataEntry.getEntity().getEntityId(),
                                       this::mapPreferenceToQuota));
-        activeQuotas.values().removeIf(quota -> CollectionUtils.isEmpty(quota.getNotifications()));
+        activeQuotasMap.values().removeIf(quota -> CollectionUtils.isEmpty(quota.getNotifications()));
         final Map<Long, NFSQuota> removedQuotas = notificationTriggers.stream()
-            .filter(trigger -> !activeQuotas.containsKey(trigger.getStorageId()))
+            .filter(trigger -> !activeQuotasMap.containsKey(trigger.getStorageId()))
             .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId,
                 trigger -> new NFSQuota(new ArrayList<>(), trigger.getRecipients())));
-        activeQuotas.putAll(removedQuotas);
-        activeQuotas.values().forEach(quota -> quota.getNotifications().add(NO_ACTIVE_QUOTAS_NOTIFICATION));
-        return activeQuotas;
+        activeQuotasMap.putAll(removedQuotas);
+        activeQuotasMap.values().forEach(quota -> quota.getNotifications().add(NO_ACTIVE_QUOTAS_NOTIFICATION));
+        return activeQuotasMap;
     }
 
     private NFSQuota mapPreferenceToQuota(final MetadataEntry metadata) {
         final PipeConfValue value = metadata.getData().get(notificationsKey);
         return JsonMapper.parseData(value.getValue(), new TypeReference<NFSQuota>() {});
+    }
+
+    private void updateMapsState(final List<NFSQuotaTrigger> triggersList, final List<NFSDataStorage> nfsDataStorages) {
+        replaceValuesInMap(graceConfiguration,
+                           preferenceManager.getPreference(SystemPreferences.STORAGE_QUOTAS_ACTIONS_GRACE));
+        replaceValuesInMap(latestTriggers,
+                           triggersList.stream()
+                               .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, Function.identity())));
+        replaceValuesInMap(notificationTriggers,
+                           triggersList.stream()
+                               .collect(Collectors.toMap(NFSQuotaTrigger::getStorageId, NFSQuotaTrigger::getQuota)));
+        replaceValuesInMap(activeQuotas, loadStorageQuotas(nfsDataStorages, triggersList));
+    }
+
+    private <K, V> void replaceValuesInMap(final Map<K,V> map, final Map<K,V> update) {
+        map.clear();
+        map.putAll(update);
+    }
+
+    private void controlStatus(final Map<Long, NFSDataStorage> nfsMapping, final LocalDateTime checkTime) {
+        latestTriggers.values().stream()
+            .filter(trigger -> trigger.getTargetStatusActivationTime().isBefore(checkTime))
+            .map(trigger -> Pair.of(nfsMapping.get(trigger.getStorageId()), trigger))
+            .filter(pair -> pair.getKey() != null)
+            .filter(pair -> pair.getKey().getMountStatus() != pair.getValue().getTargetStatus())
+            .forEach(pair -> {
+                final NFSDataStorage storage = pair.getKey();
+                final NFSQuotaTrigger trigger = pair.getValue();
+                updateStorageStatus(storage, trigger, checkTime);
+            });
+    }
+
+    private void updateStorageStatus(final NFSDataStorage storage, final NFSQuotaTrigger trigger,
+                                     final LocalDateTime checkTime) {
+        final NFSStorageMountStatus newStatus = trigger.getTargetStatus();
+        final NFSQuotaNotificationEntry notification = trigger.getQuota();
+        final List<NFSQuotaNotificationRecipient> recipients = trigger.getRecipients();
+        dataStorageManager.updateMountStatus(storage, newStatus);
+        storage.setMountStatus(newStatus);
+        if (trigger.isNotificationRequired()) {
+            notificationManager.notifyOnStorageQuotaExceeding(storage, newStatus, notification, recipients, null);
+        }
+        updateTrigger(trigger.toBuilder().executionTime(checkTime).build());
+    }
+
+    private void controlNotifications(final Map<Long, NFSDataStorage> nfsMapping, final LocalDateTime checkTime) {
+        latestTriggers.values().stream()
+            .filter(NFSQuotaTrigger::isNotificationRequired)
+            .filter(trigger -> trigger.getExecutionTime()
+                .plus(notificationResendTimeout, ChronoUnit.MINUTES)
+                .isBefore(checkTime))
+            .forEach(expiredTrigger ->
+                         resendNotification(expiredTrigger, nfsMapping.get(expiredTrigger.getStorageId()), checkTime));
+    }
+
+    private void resendNotification(final NFSQuotaTrigger expiredTrigger, final NFSDataStorage storage,
+                                    final LocalDateTime checkTime) {
+        final NFSStorageMountStatus newStatus = expiredTrigger.getTargetStatus();
+        final NFSQuotaNotificationEntry notification = expiredTrigger.getQuota();
+        final List<NFSQuotaNotificationRecipient> recipients = expiredTrigger.getRecipients();
+        final LocalDateTime executionTime = expiredTrigger.getExecutionTime();
+        final LocalDateTime activationTime = expiredTrigger.getTargetStatusActivationTime();
+        notificationManager.notifyOnStorageQuotaExceeding(storage, newStatus, notification, recipients,
+                                                          executionTime.equals(activationTime)
+                                                          ? null
+                                                          : activationTime);
+        updateTrigger(expiredTrigger.toBuilder().executionTime(checkTime).build());
+    }
+
+    private void updateTrigger(final NFSQuotaTrigger triggerUpdate) {
+        triggersManager.insert(triggerUpdate);
+        latestTriggers.put(triggerUpdate.getStorageId(), triggerUpdate);
     }
 }

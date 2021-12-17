@@ -448,13 +448,15 @@ public class NotificationManager implements NotificationService { // TODO: rewri
      * @param storage the NFS storage that exceeding the quota
      * @param exceededQuota the quota, that was exceeded
      * @param recipients list of users to be notified
+     * @param activationTime time of the quota activation (null if immediately)
      */
     @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public void notifyOnStorageQuotaExceeding(final NFSDataStorage storage,
                                               final NFSStorageMountStatus newStatus,
                                               final NFSQuotaNotificationEntry exceededQuota,
-                                              final List<NFSQuotaNotificationRecipient> recipients) {
+                                              final List<NFSQuotaNotificationRecipient> recipients,
+                                              final LocalDateTime activationTime) {
         final NotificationSettings notificationSettings =
             notificationSettingsManager.load(NotificationType.STORAGE_QUOTA_EXCEEDING);
         if (notificationSettings == null || !notificationSettings.isEnabled()) {
@@ -472,7 +474,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final NotificationMessage quotaNotificationMessage = new NotificationMessage();
         quotaNotificationMessage.setCopyUserIds(ccUserIds);
         quotaNotificationMessage.setTemplate(new NotificationTemplate(notificationSettings.getTemplateId()));
-        quotaNotificationMessage.setTemplateParameters(buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus));
+        quotaNotificationMessage.setTemplateParameters(
+            buildQuotasPlaceholdersDict(storage, exceededQuota, newStatus, activationTime));
         monitoringNotificationDao.createMonitoringNotification(quotaNotificationMessage);
     }
 
@@ -529,7 +532,8 @@ public class NotificationManager implements NotificationService { // TODO: rewri
 
     private Map<String, Object> buildQuotasPlaceholdersDict(final NFSDataStorage storage,
                                                             final NFSQuotaNotificationEntry quota,
-                                                            final NFSStorageMountStatus newStatus) {
+                                                            final NFSStorageMountStatus newStatus,
+                                                            final LocalDateTime activationTime) {
         final Map<String, Object> templateParameters = new HashMap<>();
         templateParameters.put("storageId", storage.getId());
         templateParameters.put("storageName", storage.getName());
@@ -538,6 +542,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
                                             : quota.toThreshold());
         templateParameters.put("previousMountStatus", storage.getMountStatus());
         templateParameters.put("newMountStatus", newStatus);
+        templateParameters.put("activationTime", activationTime);
         return templateParameters;
     }
 

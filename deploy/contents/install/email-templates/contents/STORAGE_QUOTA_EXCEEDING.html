@@ -24,6 +24,11 @@
 #end
 <p>Previous data storage state is <b>${CP_DOLLAR}templateParameters.get("previousMountStatus")</b></p>
 <p>New data storage state is <b>${CP_DOLLAR}templateParameters.get("newMountStatus")</b></p>
+#if( ${CP_DOLLAR}templateParameters.get("activationTime") )
+<p>Quota activation is delayed till <b>${CP_DOLLAR}templateParameters.get("activationTime")</b>.</p>
+<p>Storage remains in <b>${CP_DOLLAR}templateParameters.get("previousMountStatus")</b> state till this moment.</p>
+<p>Please, release storage space above the quota to avoid compute workloads blocking.</p>
+#end
 <br/>
 <hr align="left" width="300" size="2" color="#000000" />
 <p><b>Storage statuses meanings:</b></p>
