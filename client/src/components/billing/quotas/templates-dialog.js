@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Alert, Button, Icon, message, Modal, Row} from 'antd';
+import classNames from 'classnames';
 import QuotaTemplateEditDialog from './quota-template-edit-dialog';
 import QuotaDescription from './quota-description';
 import * as billing from '../../../models/billing';
@@ -88,7 +89,14 @@ class TemplatesDialog extends React.Component {
 
   renderTemplate = (template, index) => {
     return (
-      <div key={index} className={styles.quota} onClick={e => this.onEditTemplateClicked(template)}>
+      <div
+        key={index}
+        className={classNames(
+          styles.quota,
+          'cp-billing-quotas-quota'
+        )}
+        onClick={e => this.onEditTemplateClicked(template)}
+      >
         <b className={styles.target}>{template.name}</b>
         <QuotaDescription quota={template} />
       </div>

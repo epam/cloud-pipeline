@@ -144,3 +144,63 @@
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
+
+.cp-billing-quotas-section {
+  background-color: @input-background;
+  border: 1px solid @input-border;
+}
+
+.cp-billing-quotas-quota {
+  border-bottom: 1px solid @input-addon;
+}
+
+.cp-billing-quotas-quota:nth-child(even) {
+  background-color: @card-background-color;
+}
+
+.cp-billing-quotas-quota:hover {
+  background-color: @input-addon;
+}
+
+.cp-billing-quotas-quota .main .cp-billing-quotas-input {
+  border: 1px solid @card-border-color;
+}
+
+.cp-billing-quotas-quota .display {
+  border-color: transparent;
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-billing-quotas-quota .display.not-set {
+  color: @color-grey;
+  border-color: transparent;
+}
+
+.cp-billing-quotas-quota .display:hover {
+  background-color: @card-background-color;
+  border-color: @card-border-color;
+}
+
+.cp-billing-quotas-threshold-container.error .select-container > div > div {
+  border-color: @color-error;
+  outline-color: @color-red;
+}
+
+.cp-billing-quotas-threshold-container .input {
+  border: 1px solid @card-border-color;
+}
+
+.cp-billing-quotas-threshold-container.error .input {
+  border-color: @color-error;
+  outline-color: @color-red;
+}
+
+.cp-billing-quotas-target-select.error > div,
+.cp-billing-quotas-quota-input.error {
+  border-color: @color-error;
+  outline-color: @color-red;
+}
+
+.cp-billing-quotas-actions-error {
+  color: @color-error;
+}

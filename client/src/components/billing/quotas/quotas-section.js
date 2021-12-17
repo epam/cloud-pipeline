@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Alert, Button, Icon, message} from 'antd';
+import classNames from 'classnames';
 import QuotaDescription from './quota-description';
 import EditQuotaDialog from './quota-edit-dialog';
 import QuotaTemplatesDialog from './templates-dialog';
@@ -192,7 +193,14 @@ class QuotasSection extends React.Component {
       }
     }
     return (
-      <div key={index} className={styles.quota} onClick={e => this.onQuotaClick(quota)}>
+      <div
+        key={index}
+        className={classNames(
+          styles.quota,
+          'cp-billing-quotas-quota'
+        )}
+        onClick={e => this.onQuotaClick(quota)}
+      >
         {renderTarget()}
         <QuotaDescription quota={quotaDescription} />
       </div>
@@ -214,7 +222,7 @@ class QuotasSection extends React.Component {
     const global = quotaType === billing.quotas.keys.global;
     return (
       <div className={styles.sectionContainer}>
-        <div className={styles.section}>
+        <div className={classNames(styles.section, 'cp-billing-quotas-section')}>
           <div className={styles.header}>
             <div className={styles.title}>
               {title || ''}

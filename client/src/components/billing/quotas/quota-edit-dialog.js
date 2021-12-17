@@ -28,6 +28,7 @@ import {inject, observer} from 'mobx-react';
 import QuotaThreshold from './quotas-threshold';
 import * as billing from '../../../models/billing';
 import styles from './quotas.css';
+import classNames from 'classnames';
 
 const ValidationFields = {
   actions: 'actions',
@@ -177,7 +178,11 @@ class EditQuotaDialog extends React.Component {
         </span>
         <Select
           disabled={disabled || !!initialTarget}
-          className={`${styles.targetSelect} ${error ? styles.error : ''}`}
+          className={classNames(
+            styles.targetSelect,
+            'cp-billing-quotas-target-select',
+            {error: error}
+          )}
           value={target}
           onChange={t => this.setState({target: t, modified: true}, this.validate)}
           placeholder={`Select ${billing.quotas.getQuotaTypeTargetName(type).toLowerCase()}`}
@@ -216,7 +221,10 @@ class EditQuotaDialog extends React.Component {
         </span>
         <Select
           disabled={disabled}
-          className={styles.targetSelect}
+          className={classNames(
+            styles.targetSelect,
+            'cp-billing-quotas-target-select'
+          )}
           value={template ? `${template}` : null}
           onChange={onSelect}
           placeholder="Select template"
@@ -258,7 +266,11 @@ class EditQuotaDialog extends React.Component {
         </span>
         <InputNumber
           disabled={disabled}
-          className={`${styles.quotaInput} ${error ? styles.error : ''}`}
+          className={classNames(
+            styles.quotaInput,
+            'cp-billing-quotas-quota-input',
+            {error: error}
+          )}
           value={value}
           onChange={e => this.setState({value: e, template: null, modified: true}, this.validate)}
           min={0}
@@ -316,7 +328,15 @@ class EditQuotaDialog extends React.Component {
             </Button>
           </div>
           {
-            error && !Array.isArray(error) && (<span className={styles.actionsError}>{error}</span>)
+            error &&
+            !Array.isArray(error) && (
+              <span className={classNames(
+                styles.actionsError,
+                'cp-billing-quotas-actions-error'
+              )}>
+                {error}
+              </span>
+            )
           }
         </div>
       </div>

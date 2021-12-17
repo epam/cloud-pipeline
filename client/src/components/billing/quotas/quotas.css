@@ -32,7 +32,6 @@
   min-width: 50vw;
   padding: 10px 20px;
   border-radius: 5px;
-  background-color: #fafafa;
 }
 
 .section .header {
@@ -62,7 +61,6 @@
 
 .quota {
   padding: 2px;
-  border-bottom: 1px solid #eee;
   display: flex;
   flex-direction: row;
   cursor: pointer;
@@ -70,14 +68,6 @@
 
 .quota:last-child {
   border-bottom: none;
-}
-
-.quota:nth-child(even) {
-  background-color: white;
-}
-
-.quota:hover {
-  background-color: #eee;
 }
 
 .quota .main {
@@ -107,7 +97,6 @@
   border-radius: 4px;
   box-shadow: none;
   outline: none;
-  border: 1px solid #ddd;
   text-align: right;
 }
 
@@ -125,32 +114,21 @@
 .quota .display {
   display: block;
   cursor: pointer;
-  border-color: transparent;
-  border-bottom: 1px solid #ddd;
   border-radius: 0;
 }
 
 .quota .display.not-set {
   text-align: left;
   font-size: small;
-  color: #777;
   font-weight: normal;
-  border-color: transparent;
 }
 
 .quota .display:hover {
-  background-color: white;
-  border-color: #ddd;
   border-radius: 4px;
 }
 
 .select-container {
   flex: 1;
-}
-
-.threshold-container.error .select-container > div > div {
-  border-color: red;
-  outline-color: rgba(255, 0, 0, 0.5);
 }
 
 .threshold-container {
@@ -165,14 +143,8 @@
   border-radius: 4px;
   box-shadow: none;
   outline: none;
-  border: 1px solid #ddd;
   text-align: right;
   margin-right: 5px;
-}
-
-.threshold-container.error .input {
-  border-color: red;
-  outline-color: rgba(255, 0, 0, 0.5);
 }
 
 .threshold-container .spans {
@@ -293,14 +265,7 @@
   box-shadow: none;
 }
 
-.target-select.error > div,
-.quota-input.error {
-  border-color: red;
-  outline-color: rgba(255, 0, 0, 0.5);
-}
-
 .actions-error {
   font-size: smaller;
   line-height: 12px;
-  color: red;
 }
