@@ -18,8 +18,9 @@
   max-height: 400px;
   overflow-y: auto;
   overflow-x: hidden;
-  flex-direction: column;
-}
+  display: flex;
+  justify-content: center;
+} 
 
 .rule-row {
   flex-direction: column;
