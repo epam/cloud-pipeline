@@ -70,6 +70,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -940,7 +942,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void shoudlFindRunByNodeName() {
+    public void shouldFindRunByNodeName() {
         final PipelineRun run = buildPipelineRun(null);
         run.getInstance().setNodeName(NODE_NAME);
         pipelineRunDao.createPipelineRun(run);
@@ -1005,6 +1007,23 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertThat(actualRuns.size(), equalTo(3));
         assertThat(actualRuns.stream().map(PipelineRun::getId).collect(Collectors.toSet()),
                 hasItems(worker1.getId(), worker2.getId(), anotherWorker.getId()));
+    }
+
+    @Test
+    public void shouldLoadRunsByPoolId() {
+        final PipelineRun run1 = runningRun();
+        final PipelineRun run2 = runningRun();
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+
+        run1.getInstance().setPoolId(ID);
+        run2.getInstance().setPoolId(ID_2);
+        pipelineRunDao.updateRunInstance(run1);
+        pipelineRunDao.updateRunInstance(run2);
+
+        final List<PipelineRun> loaded = pipelineRunDao.loadRunsByPoolId(ID);
+        assertThat(loaded.size(), is(1));
+        assertThat(loaded.get(0).getId(), is(run1.getId()));
     }
 
     private PipelineRun createTestPipelineRun() {

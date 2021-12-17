@@ -342,4 +342,9 @@ public class RunApiService {
     public List<ServiceDescription> loadEdgeServices() {
         return edgeServiceManager.getEdgeServices();
     }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
+        return runManager.loadRunsByPoolId(poolId);
+    }
 }
