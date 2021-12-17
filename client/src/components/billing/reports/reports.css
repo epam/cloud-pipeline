@@ -15,10 +15,16 @@
  */
 
 .container {
-  margin-top: 5px;
-  flex: 1;
-  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
   display: flex;
+  flex-direction: column;
+}
+
+.data-container {
+  flex: 1;
+  overflow: auto;
 }
 
 .billing-container {
@@ -29,12 +35,7 @@
 }
 
 .charts-layout {
-  flex: 1;
   overflow: auto;
-  width: 100%;
-}
-
-.charts-container {
   width: 100%;
   height: 100%;
 }
@@ -47,32 +48,31 @@
   padding: 10px 20px;
 }
 
-.period-filters {
+.filters-container {
   display: flex;
   justify-content: space-around;
   flex-wrap: wrap;
   min-height: 30px;
   margin: 0;
-  padding: 0 6px;
+  padding: 0;
   position: relative;
   width: 100%;
 }
 
-.period-filters .filters {
+.filters-container .filters {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
   flex-wrap: wrap;
   min-height: 30px;
   margin: 0;
-  padding: 0 6px;
   position: relative;
 }
 
 .report-filter {}
 
-.period-filters .actions-block {
-  right: 10px;
+.filters-container .actions-block {
+  margin-right: 5px;
   display: flex;
   flex-grow: 1;
   flex-direction: row;
