@@ -27,7 +27,7 @@ import * as StorageReportLayout from './storage-report';
 import RestoreButton, {restoreLayoutConsumer, RestoreLayoutProvider} from './restore-button';
 import styles from './layout.css';
 
-const UPDATE_SIZE_TIMER_MS = 250;
+const UPDATE_SIZE_TIMER_MS = 500;
 
 class GridLayoutContainerStore {
   @observable width;
@@ -111,30 +111,20 @@ class LayoutComponent extends React.Component {
     const {layoutDimensions, layout, gridStyles, staticPanels = []} = this.props;
     const panelsLayout = layout.getPanelsLayout(true, staticPanels);
     return (
-      <div
-        style={{
-          position: 'relative',
-          width: '100%',
-          height: '100%',
-          overflow: 'auto'
-        }}
+      <GridLayout
         className="cp-billing-layout"
+        draggableHandle={`.${styles.panelMove}.cp-billing-layout-panel-move`}
+        layout={panelsLayout}
+        cols={gridStyles.gridCols}
+        width={layoutDimensions.width - gridStyles.scrollBarSize}
+        margin={[gridStyles.panelMargin, gridStyles.panelMargin]}
+        containerPadding={[0, 0]}
+        rowHeight={gridStyles.rowHeight(layoutDimensions.height)}
+        onDragStop={(layout) => this.onLayoutChanged(layout, true)}
+        onLayoutChange={(layout) => this.onLayoutChanged(layout, false)}
       >
-        <GridLayout
-          className="billing-layout"
-          draggableHandle={`.${styles.panelMove}.cp-billing-layout-panel-move`}
-          layout={panelsLayout}
-          cols={gridStyles.gridCols}
-          width={layoutDimensions.width - gridStyles.scrollBarSize}
-          margin={[gridStyles.panelMargin, gridStyles.panelMargin]}
-          containerPadding={[5, 0]}
-          rowHeight={gridStyles.rowHeight(layoutDimensions.height)}
-          onDragStop={(layout) => this.onLayoutChanged(layout, true)}
-          onLayoutChange={(layout) => this.onLayoutChanged(layout, false)}
-        >
-          {this.props.children}
-        </GridLayout>
-      </div>
+        {this.props.children}
+      </GridLayout>
     );
   }
 }
@@ -157,29 +147,50 @@ class Container extends React.Component {
   };
 
   store = new GridLayoutContainerStore(0, 0);
+  current = {width: 0, height: 0};
 
   componentDidMount () {
-    this.updateTimer = setInterval(() => this.updateContainerSize(), UPDATE_SIZE_TIMER_MS);
+    this.sizeChecker();
   }
 
   componentWillUnmount () {
-    clearInterval(this.updateTimer);
+    cancelAnimationFrame(this.sizeCheckerFrame);
+    clearTimeout(this.sizeUpdateTimer);
   }
 
-  initializeContainer = (container) => {
-    this.setState({container}, this.updateContainerSize);
+  sizeChecker = () => {
+    this.updateContainerSize();
+    this.sizeCheckerFrame = requestAnimationFrame(() => this.sizeChecker());
   };
 
-  updateContainerSize = () => {
+  initializeContainer = (container) => {
+    this.setState({container}, () => this.updateContainerSize(true));
+  };
+
+  updateContainerSize = (immediate = false) => {
     const {container} = this.state;
-    if (container) {
-      const containerWidth = container.clientWidth || window.innerWidth;
-      const containerHeight = container.clientHeight || window.innerHeight;
-      if (containerWidth !== this.store.width || containerHeight !== this.store.height) {
-        this.store.setSize(
-          containerWidth,
-          containerHeight
-        );
+    if (container && container.clientWidth && container.clientHeight) {
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      if (containerWidth !== this.current.width || containerHeight !== this.current.height) {
+        clearTimeout(this.sizeUpdateTimer);
+        this.current = {
+          width: containerWidth,
+          height: containerHeight
+        };
+        if (!immediate) {
+          this.sizeUpdateTimer = setTimeout(() => {
+            this.store.setSize(
+              this.current.width,
+              this.current.height
+            );
+          }, UPDATE_SIZE_TIMER_MS);
+        } else {
+          this.store.setSize(
+            this.current.width,
+            this.current.height
+          );
+        }
       }
     }
   };

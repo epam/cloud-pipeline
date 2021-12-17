@@ -19,11 +19,8 @@ import {observer, inject} from 'mobx-react';
 import {computed, isObservableArray} from 'mobx';
 import {Row, Select} from 'antd';
 import styles from './runner-filter.css';
-
-const RunnerType = {
-  user: 'user',
-  group: 'group'
-};
+import roleModel from '../../../../utils/roleModel';
+import BillingNavigation, {RunnerTypes} from '../../navigation';
 
 function runnersEqual (runnersA, runnersB) {
   if (!runnersA && !runnersB) {
@@ -115,6 +112,7 @@ function RenderUserName ({user, myUserName}) {
 class RunnerFilter extends React.Component {
   state = {
     filter: undefined,
+    initialFilter: undefined,
     focused: false,
     searchCriteria: undefined,
     searching: false,
@@ -127,14 +125,25 @@ class RunnerFilter extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (!runnersEqual(this.props.filter, prevProps.filter)) {
+    const {
+      filters = {}
+    } = this.props;
+    const {
+      runner: filter
+    } = filters;
+    if (!runnersEqual(this.state.initialFilter, filter)) {
       this.updateFilter();
     }
   }
 
   updateFilter = () => {
+    const {filters = {}} = this.props;
+    const {
+      runner: filter
+    } = filters;
     this.setState({
-      filter: this.props.filter,
+      filter,
+      initialFilter: filter,
       searchCriteria: undefined,
       searching: false,
       filteredUsers: [],
@@ -170,7 +179,7 @@ class RunnerFilter extends React.Component {
     }
     const items = this.users.map((user) => ({
       item: user,
-      key: `${RunnerType.user}_${user.name}`,
+      key: `${RunnerTypes.user}_${user.name}`,
       label: user.name === this.myUserName
         ? `${user.name} (you)`
         : user.name
@@ -178,7 +187,7 @@ class RunnerFilter extends React.Component {
     items.push(
       ...this.centers.map((center) => ({
         item: center,
-        key: `${RunnerType.group}_${center}`,
+        key: `${RunnerTypes.group}_${center}`,
         label: center
       }))
     );
@@ -337,8 +346,10 @@ class RunnerFilter extends React.Component {
 
   onBlur = () => {
     const {filter} = this.state;
-    if (!runnersEqual(filter, this.props.filter)) {
-      const {onChange} = this.props;
+    const {filters = {}} = this.props;
+    const {runner, buildNavigationFn = () => {}} = filters;
+    if (!runnersEqual(filter, runner)) {
+      const onChange = buildNavigationFn('runner');
       onChange && onChange(filter);
     }
     this.setState({focused: false, searchCriteria: undefined});
@@ -382,8 +393,8 @@ class RunnerFilter extends React.Component {
           {
             (filteredCenters || this.centers).map((center) => (
               <Select.Option
-                key={`${RunnerType.group}_${center}`}
-                value={`${RunnerType.group}_${center}`}
+                key={`${RunnerTypes.group}_${center}`}
+                value={`${RunnerTypes.group}_${center}`}
               >
                 {center}
               </Select.Option>
@@ -394,8 +405,8 @@ class RunnerFilter extends React.Component {
           {
             filteredUsers.map((user) => (
               <Select.Option
-                key={`${RunnerType.user}_${user.name}`}
-                value={`${RunnerType.user}_${user.name}`}
+                key={`${RunnerTypes.user}_${user.name}`}
+                value={`${RunnerTypes.user}_${user.name}`}
               >
                 <RenderUserName myUserName={this.myUserName} user={user} />
               </Select.Option>
@@ -407,5 +418,10 @@ class RunnerFilter extends React.Component {
   }
 }
 
-export default inject('authenticatedUserInfo', 'billingCenters', 'usersInfo')(observer(RunnerFilter));
-export {RunnerType};
+export default inject('billingCenters', 'usersInfo')(
+  roleModel.authenticationInfo(
+    BillingNavigation.attach(
+      observer(RunnerFilter)
+    )
+  )
+);

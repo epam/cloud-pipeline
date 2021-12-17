@@ -151,7 +151,7 @@ export default class AppRouter extends React.Component {
           <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
           <Redirect from="/billing" to="/billing/reports" />
           <Route path="/billing" component={Billing}>
-            <Route path="quotas" component={BillingQuotas} />
+            <Route path="quotas(/:type)" component={BillingQuotas} />
             <Route path="reports" component={BillingReports.default}>
               <IndexRoute component={BillingReports.GeneralReport} />
               <Route path="instance(/:type)" component={BillingReports.InstanceReport} />

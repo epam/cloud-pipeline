@@ -449,6 +449,9 @@ export default `
   color: @application-color;
   border-color: @panel-border-color;
 }
+@THEME .ant-menu > .ant-menu-item-divider {
+  background-color: @panel-border-color;
+}
 @THEME .ant-menu > .ant-menu-item > a,
 @THEME .ant-menu > .ant-menu-submenu > a {
   color: currentColor;
@@ -2066,6 +2069,9 @@ export default `
 }
 @THEME .cp-billing-quotas-actions-error {
   color: @color-error;
+}
+@THEME .cp-billing-layout .react-grid-item {
+  transition: none;
 }
 
 @THEME .cp-search-clear-filters-button {

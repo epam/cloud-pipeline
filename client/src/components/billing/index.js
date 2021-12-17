@@ -17,11 +17,10 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import {Menu} from 'antd';
+import BillingNavigation from './navigation';
 import Quotas from './quotas';
 import * as Reports from './reports';
 import roleModel from '../../utils/roleModel';
-import styles from './billing.css';
 
 function billing ({children, location, router, preferences, authenticatedUserInfo}) {
   const isBillingPrivilegedUser = authenticatedUserInfo && authenticatedUserInfo.loaded &&
@@ -40,43 +39,20 @@ function billing ({children, location, router, preferences, authenticatedUserInf
   ) {
     return null;
   }
-  const {pathname = ''} = location;
-  const [, active] = pathname.toLowerCase().split('/').filter(Boolean);
-  const onClick = ({key}) => {
-    if (key !== active) {
-      router.push(`/billing/${key}`);
-    }
-  };
   return (
-    <div
+    <BillingNavigation
       className={
         classNames(
-          styles.container,
           'cp-panel',
           'cp-panel-no-hover',
           'cp-panel-borderless'
         )
       }
+      location={location}
+      router={router}
     >
-      <div className={styles.menuContainer}>
-        <Menu
-          className={styles.menu}
-          mode="horizontal"
-          selectedKeys={[active]}
-          onClick={onClick}
-        >
-          <Menu.Item key="reports">
-            REPORTS
-          </Menu.Item>
-          <Menu.Item key="quotas">
-            QUOTAS
-          </Menu.Item>
-        </Menu>
-      </div>
-      <div className={styles.children}>
-        {children}
-      </div>
-    </div>
+      {children}
+    </BillingNavigation>
   );
 }
 

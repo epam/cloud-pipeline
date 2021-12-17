@@ -16,11 +16,39 @@
 
 import React from 'react';
 import QuotasSection from './quotas-section';
+import {observer} from 'mobx-react';
+import {Alert} from 'antd';
+import roleModel from '../../../utils/roleModel';
 import * as billing from '../../../models/billing';
+import LoadingView from '../../special/LoadingView';
 import styles from './quotas.css';
 
+@roleModel.authenticationInfo
+@observer
 class Quotas extends React.Component {
   render () {
+    const {authenticatedUserInfo} = this.props;
+    if (
+      !authenticatedUserInfo.loaded && authenticatedUserInfo.pending
+    ) {
+      return (<LoadingView />);
+    }
+    if (authenticatedUserInfo.error) {
+      return (
+        <Alert
+          message={authenticatedUserInfo.error}
+          type="error"
+        />
+      );
+    }
+    if (!roleModel.isManager.billing(this)) {
+      return (
+        <Alert
+          message="Access denied"
+          type="error"
+        />
+      );
+    }
     return (
       <div className={styles.container}>
         <QuotasSection quotaType={billing.quotas.keys.global} title="Global" />
