@@ -24,6 +24,7 @@ import {
   Modal,
   Row
 } from 'antd';
+import classNames from 'classnames';
 import QuotaThreshold from './quotas-threshold';
 import styles from './quotas.css';
 
@@ -127,7 +128,11 @@ class QuotaTemplateEditDialog extends React.Component {
         </span>
         <Input
           disabled={disabled}
-          className={`${styles.quotaInput} ${error ? styles.error : ''}`}
+          className={classNames(
+            styles.quotaInput,
+            'cp-billing-quotas-quota-input',
+            {error: error}
+          )}
           value={name}
           onChange={e => this.setState({name: e.target.value, modified: true}, this.validate)}
         />
@@ -145,7 +150,11 @@ class QuotaTemplateEditDialog extends React.Component {
         </span>
         <InputNumber
           disabled={disabled}
-          className={`${styles.quotaInput} ${error ? styles.error : ''}`}
+          className={classNames(
+            styles.quotaInput,
+            'cp-billing-quotas-quota-input',
+            {error: error}
+          )}
           value={value}
           onChange={e => this.setState({value: e, modified: true}, this.validate)}
           min={0}
@@ -200,7 +209,15 @@ class QuotaTemplateEditDialog extends React.Component {
             </Button>
           </div>
           {
-            error && !Array.isArray(error) && (<span className={styles.actionsError}>{error}</span>)
+            error &&
+            !Array.isArray(error) && (
+              <span className={classNames(
+                styles.actionsError,
+                'cp-billing-quotas-actions-error'
+              )}>
+                {error}
+              </span>
+            )
           }
         </div>
       </div>

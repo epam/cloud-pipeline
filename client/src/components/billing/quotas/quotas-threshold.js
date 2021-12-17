@@ -22,6 +22,7 @@ import {
   InputNumber,
   Select
 } from 'antd';
+import classNames from 'classnames';
 import * as billing from '../../../models/billing';
 import styles from './quotas.css';
 
@@ -67,13 +68,17 @@ class Threshold extends React.Component {
     const {action, disabled, value, error, onRemove, quota} = this.props;
     return (
       <div
-        className={`${styles.thresholdContainer} ${error ? styles.error : ''}`}
+        className={classNames(
+          styles.thresholdContainer,
+          'cp-billing-quotas-threshold-container',
+          {error: error}
+        )}
       >
         <InputNumber
           disabled={disabled}
           key="threshold input"
           placeholder="Threshold"
-          className={styles.input}
+          className={classNames(styles.input, 'cp-billing-quotas-input')}
           value={value}
           onChange={this.onChangeValue}
           min={0}

@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observable} from 'mobx';
 import {inject, observer, Provider as MobxProvider} from 'mobx-react';
 import {InputNumber, Modal, Slider} from 'antd';
+import classNames from 'classnames';
 import * as discounts from './apply';
 import styles from './discounts.css';
 
@@ -88,7 +89,7 @@ function SingleDiscountsSliderComponent ({value, onChange, title}) {
         style={{flex: 1}}
       />
       <InputNumber
-        className={styles.input}
+        className={classNames(styles.input, 'cp-billing-quotas-input')}
         value={value}
         onChange={onChange}
         min={-100}
