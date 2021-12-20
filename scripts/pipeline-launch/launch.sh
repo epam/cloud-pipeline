@@ -389,11 +389,26 @@ function configure_package_manager {
             if [ "$CP_OS" == "centos" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
-                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                        
+                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
+
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                               rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                        else
+                              # If the CP repo was configured correctly - allow others fail
+                              if ! check_installed "yum-config-manager"; then
+                                    yum --disablerepo=* --enablerepo=cloud-pipeline install yum-utils -y -q >> /var/log/yum.cp.log 2>&1
+                              fi
+                              yum-config-manager --save --setopt=\*.skip_if_unavailable=true >> /var/log/yum.cp.log 2>&1
+                              # Disable "fastermirror" as it slows down the installtion and is not needed during the CP repo usage
+                              if [ -f "/etc/yum/pluginconf.d/fastestmirror.conf" ]; then
+                                    sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
+                              fi
+                              # Use the "base" url for the other repos, as the mirrors may cause issues
+                              sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+                              break
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
