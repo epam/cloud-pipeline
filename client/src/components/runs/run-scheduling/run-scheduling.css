@@ -19,11 +19,11 @@
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
-  justify-content: center;
+  justify-content: stretch;
 } 
 
 .rule-row {
-  flex-direction: column;
+  width: 100%;
 }
 
 .error-row {
@@ -33,6 +33,7 @@
 
 .scheduling {
   padding: 5px;
+  width: 100%;
 }
 
 .scheduling-with-timezone {
