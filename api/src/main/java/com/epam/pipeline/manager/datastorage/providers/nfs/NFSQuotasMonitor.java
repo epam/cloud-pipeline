@@ -272,7 +272,10 @@ public class NFSQuotasMonitor {
 
     private boolean requireStatusChange(final NFSDataStorage storage, final NFSStorageMountStatus newMountStatus,
                                         final NFSQuotaNotificationEntry notification) {
-        return !(newMountStatus.equals(storage.getMountStatus())
+        final NFSStorageMountStatus currentMountStatus = Optional.ofNullable(latestTriggers.get(storage.getId()))
+            .map(NFSQuotaTrigger::getTargetStatus)
+            .orElse(storage.getMountStatus());
+        return !(newMountStatus.equals(currentMountStatus)
                  && hasSameTrigger(storage, notification));
     }
 
@@ -429,12 +432,10 @@ public class NFSQuotasMonitor {
         final NFSStorageMountStatus newStatus = expiredTrigger.getTargetStatus();
         final NFSQuotaNotificationEntry notification = expiredTrigger.getQuota();
         final List<NFSQuotaNotificationRecipient> recipients = expiredTrigger.getRecipients();
-        final LocalDateTime executionTime = expiredTrigger.getExecutionTime();
-        final LocalDateTime activationTime = expiredTrigger.getTargetStatusActivationTime();
         notificationManager.notifyOnStorageQuotaExceeding(storage, newStatus, notification, recipients,
-                                                          executionTime.equals(activationTime)
+                                                          storage.getMountStatus().equals(newStatus)
                                                           ? null
-                                                          : activationTime);
+                                                          : expiredTrigger.getTargetStatusActivationTime());
         updateTrigger(expiredTrigger.toBuilder().executionTime(checkTime).build());
     }
 
