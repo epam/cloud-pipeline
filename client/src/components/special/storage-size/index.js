@@ -19,7 +19,6 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {message, Tooltip, Icon} from 'antd';
 import {inject, observer} from 'mobx-react';
-import Markdown from '../markdown';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
 import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStoragePathUsageUpdate';
 import displaySize from '../../../utils/displaySize';
@@ -35,12 +34,16 @@ function InfoTooltip ({size}) {
     return null;
   }
 
-  const tooltip = `Effective size: ${displaySize(effectiveSize, effectiveSize > 1024)}  
-    Real size: ${displaySize(realSize, realSize > 1024)}`;
+  const tooltip = (
+    <div>
+      <div>Effective size: {displaySize(effectiveSize, effectiveSize > 1024)}</div>
+      <div>Real size: {displaySize(realSize, realSize > 1024)}</div>
+    </div>
+  );
 
   return (
     <Tooltip
-      title={(<Markdown md={tooltip} />)}
+      title={tooltip}
       placement="top"
     >
       <Icon
