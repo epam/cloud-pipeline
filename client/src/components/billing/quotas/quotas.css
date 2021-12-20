@@ -15,23 +15,21 @@
  */
 
 .container {
-  padding: 10px;
+  padding: 5px 10px;
 }
 
 .section-container {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-around;
-  margin: 10px;
+  justify-content: flex-start;
+  margin: 0 0 10px;
+  padding-bottom: 10px;
 }
 
 .section {
   display: block;
-  flex: 0.75;
-  min-width: 50vw;
-  padding: 10px 20px;
-  border-radius: 5px;
+  width: 100%;
 }
 
 .section .header {
@@ -39,12 +37,12 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 5px;
 }
 
 .section .header .title {
   font-weight: bold;
-  font-size: large;
-  text-transform: uppercase;
+  font-size: larger;
 }
 
 .section .header .actions {
@@ -66,69 +64,13 @@
   cursor: pointer;
 }
 
-.quota:last-child {
-  border-bottom: none;
-}
-
-.quota .main {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  line-height: 36px;
-}
-
-.quota .main > * {
-  margin-right: 5px;
-}
-
 .quota .actions {
   margin-top: 10px;
   margin-left: 50px;
 }
 
-.quota .display,
-.quota .main .input {
+.input {
   width: 200px;
-  line-height: 30px;
-  height: 32px;
-  font-size: 20px;
-  font-weight: bold;
-  padding: 0 10px !important;
-  border-radius: 4px;
-  box-shadow: none;
-  outline: none;
-  text-align: right;
-}
-
-.quota .main .input input {
-  padding: 0;
-  height: 30px;
-  font-weight: bold;
-  text-align: right;
-}
-
-.quota .main .input input {
-  padding-right: 17px !important;
-}
-
-.quota .display {
-  display: block;
-  cursor: pointer;
-  border-radius: 0;
-}
-
-.quota .display.not-set {
-  text-align: left;
-  font-size: small;
-  font-weight: normal;
-}
-
-.quota .display:hover {
-  border-radius: 4px;
-}
-
-.select-container {
-  flex: 1;
 }
 
 .threshold-container {
@@ -136,87 +78,7 @@
   flex-direction: row;
   align-items: center;
   margin-bottom: 5px;
-}
-
-.threshold-container .input {
-  width: 100px;
-  border-radius: 4px;
-  box-shadow: none;
-  outline: none;
-  text-align: right;
-  margin-right: 5px;
-}
-
-.threshold-container .spans {
-  min-width: 100px;
-  white-space: nowrap;
-}
-
-.threshold-container .spans > span {
-  font-weight: bold;
-  margin-right: 5px;
-}
-
-.quota .target {
-  line-height: 36px;
-  font-size: larger;
-  width: 25%;
-}
-
-.quota .target > i {
-  margin-right: 2px;
-  font-weight: bold;
-}
-
-.quota .quota-description-container {
-  flex: 1;
-  line-height: 36px;
-}
-
-.quota-description {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.quota-description .value-container {
-  display: block;
-}
-
-.quota-description .value-container .value {
-  font-weight: bold;
-  font-size: larger;
-}
-
-.quota-description .value-container .period {
-  margin-left: 5px;
-  font-size: smaller;
-}
-
-.quota-description .actions-container {
-  padding-left: 5px;
-}
-
-.tooltip {
-  display: flex;
-  flex-direction: column;
-}
-
-.tooltip .action {
-  display: inline-block;
-  margin-right: 5px;
-}
-
-.tooltip .action > span {
-  margin-right: 2px;
-}
-
-.tooltip .action .action-name {
-  font-weight: bold;
-}
-
-.tooltip .action .threshold {
-  font-weight: bold;
+  padding-right: 12px;
 }
 
 .target-select-container,
@@ -268,4 +130,8 @@
 .actions-error {
   font-size: smaller;
   line-height: 12px;
+}
+
+.message > *:not(:last-child)::after {
+  content: ' ';
 }

@@ -89,7 +89,7 @@ function SingleDiscountsSliderComponent ({value, onChange, title}) {
         style={{flex: 1}}
       />
       <InputNumber
-        className={classNames(styles.input, 'cp-billing-quotas-input')}
+        className={styles.input}
         value={value}
         onChange={onChange}
         min={-100}

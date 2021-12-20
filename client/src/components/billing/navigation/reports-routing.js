@@ -74,11 +74,11 @@ const reportsRouting = {
     title: 'Quotas',
     compute: {
       path: '/billing/quotas/compute',
-      title: 'Compute'
+      title: 'Compute instances'
     },
     storage: {
       path: '/billing/quotas/storage',
-      title: 'Storage'
+      title: 'Storages'
     }
   },
   configurations: [],

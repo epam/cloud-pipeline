@@ -2023,53 +2023,6 @@ export default `
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
-@THEME .cp-billing-quotas-section {
-  background-color: @input-background;
-  border: 1px solid @input-border;
-}
-@THEME .cp-billing-quotas-quota {
-  border-bottom: 1px solid @input-addon;
-}
-@THEME .cp-billing-quotas-quota:nth-child(even) {
-  background-color: @card-background-color;
-}
-@THEME .cp-billing-quotas-quota:hover {
-  background-color: @input-addon;
-}
-@THEME .cp-billing-quotas-quota .main .cp-billing-quotas-input {
-  border: 1px solid @card-border-color;
-}
-@THEME .cp-billing-quotas-quota .display {
-  border-color: transparent;
-  border-bottom: 1px solid @card-border-color;
-}
-@THEME .cp-billing-quotas-quota .display.not-set {
-  color: @color-grey;
-  border-color: transparent;
-}
-@THEME .cp-billing-quotas-quota .display:hover {
-  background-color: @card-background-color;
-  border-color: @card-border-color;
-}
-@THEME .cp-billing-quotas-threshold-container.error .select-container > div > div {
-  border-color: @color-error;
-  outline-color: @color-red;
-}
-@THEME .cp-billing-quotas-threshold-container .input {
-  border: 1px solid @card-border-color;
-}
-@THEME .cp-billing-quotas-threshold-container.error .input {
-  border-color: @color-error;
-  outline-color: @color-red;
-}
-@THEME .cp-billing-quotas-target-select.error > div,
-@THEME .cp-billing-quotas-quota-input.error {
-  border-color: @color-error;
-  outline-color: @color-red;
-}
-@THEME .cp-billing-quotas-actions-error {
-  color: @color-error;
-}
 @THEME .cp-billing-layout .react-grid-item {
   transition: none;
 }

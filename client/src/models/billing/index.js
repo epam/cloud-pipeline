@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import * as quotas from './quotas';
 import FetchBillingCenters from './billing-centers';
 import GetBillingData from './get-billing-data';
 import {
@@ -37,7 +36,6 @@ import {GetGroupedTools, GetGroupedToolsWithPrevious} from './get-grouped-tools-
 import {GetGroupedUsers} from './get-grouped-users';
 
 export {
-  quotas,
   FetchBillingCenters,
   GetBillingData,
   GetGroupedUsers,
