@@ -229,7 +229,11 @@ class CloudPipelineThemes {
           return defaultValue;
         }
       };
-      this.synchronizeWithSystem = safeReadPreference(_TEMPORARY_SYNC_WITH_SYSTEM_KEY, true, false);
+      this.synchronizeWithSystem = safeReadPreference(
+        _TEMPORARY_SYNC_WITH_SYSTEM_KEY,
+        false,
+        false
+      );
       this.singleTheme = safeReadPreference(
         _TEMPORARY_SINGLE_THEME_KEY,
         DefaultLightThemeIdentifier
