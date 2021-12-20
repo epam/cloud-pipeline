@@ -224,11 +224,9 @@ public class NFSQuotasMonitor {
                                                                    executionTime, newStatus, activationTime,
                                                                    isNotificationRequired);
             updateTrigger(newTrigger);
-            if (isNotificationRequired && !activationTime.equals(executionTime)) {
+            if (isNotificationRequired && activationTime.isAfter(executionTime)) {
                 notificationManager.notifyOnStorageQuotaExceeding(storage, newStatus, notification, recipients,
-                                                                  executionTime.equals(activationTime)
-                                                                  ? null
-                                                                  : activationTime);
+                                                                  activationTime);
             }
         }
     }
@@ -245,28 +243,28 @@ public class NFSQuotasMonitor {
                     .filter(trigger -> !trigger.getTargetStatus().equals(NFSStorageMountStatus.ACTIVE))
                     .map(NFSQuotaTrigger::getTargetStatusActivationTime)
                     .orElse(executionTime);
-            final int graceDelay = Optional.ofNullable(getCorrespondingAction(newMountStatus))
+            final int graceDelay = searchCorrespondingAction(newMountStatus)
                 .map(graceConfiguration::get)
                 .orElse(0);
-            final LocalDateTime activationFromNow = executionTime.plus(graceDelay, ChronoUnit.MINUTES);
             final LocalDateTime activationFromLastTrigger =
                 lastRestrictiveStatusActivation.plus(graceDelay, ChronoUnit.MINUTES);
             if (activationFromLastTrigger.isBefore(executionTime)) {
                 return executionTime;
             }
+            final LocalDateTime activationFromNow = executionTime.plus(graceDelay, ChronoUnit.MINUTES);
             return activationFromLastTrigger.compareTo(activationFromNow) > 0
                    ? activationFromNow
                    : activationFromLastTrigger;
         }
     }
 
-    private StorageQuotaAction getCorrespondingAction(final NFSStorageMountStatus mountStatus) {
+    private Optional<StorageQuotaAction> searchCorrespondingAction(final NFSStorageMountStatus mountStatus) {
         if (mountStatus.equals(NFSStorageMountStatus.READ_ONLY)) {
-            return StorageQuotaAction.READ_ONLY;
+            return Optional.of(StorageQuotaAction.READ_ONLY);
         } else if (mountStatus.equals(NFSStorageMountStatus.MOUNT_DISABLED)) {
-            return StorageQuotaAction.DISABLE;
+            return Optional.of(StorageQuotaAction.DISABLE);
         } else {
-            return null;
+            return Optional.empty();
         }
     }
 
@@ -386,7 +384,7 @@ public class NFSQuotasMonitor {
         replaceValuesInMap(activeQuotas, loadStorageQuotas(nfsDataStorages, triggersList));
     }
 
-    private <K, V> void replaceValuesInMap(final Map<K,V> map, final Map<K,V> update) {
+    private <K, V> void replaceValuesInMap(final Map<K, V> map, final Map<K, V> update) {
         map.clear();
         map.putAll(update);
     }
