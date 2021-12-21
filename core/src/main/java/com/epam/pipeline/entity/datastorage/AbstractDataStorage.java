@@ -72,6 +72,11 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * */
     private List<ToolFingerprint> toolsToMount;
 
+    /**
+     * Defines if storage disabled to be mounted to any location
+     */
+    private boolean mountDisabled;
+
     private Set<String> linkingMasks;
     private Long sourceStorageId;
 

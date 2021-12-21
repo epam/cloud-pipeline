@@ -43,7 +43,7 @@ class TooltipRenderer extends React.PureComponent {
   get backgroundColor () {
     const {themes} = this.props;
     if (themes && themes.currentThemeConfiguration) {
-      return themes.currentThemeConfiguration['@card-background-color'] || 'white';
+      return themes.currentThemeConfiguration['@card-background-color-not-faded'] || 'white';
     }
     return 'white';
   }
@@ -178,7 +178,6 @@ class TooltipRenderer extends React.PureComponent {
           d={tooltipBorderPoints}
           stroke={'none'}
           fill={this.backgroundColor}
-          opacity={0.85}
         />
         <path
           d={tooltipBorderPoints}

@@ -36,29 +36,21 @@
 .color-presenter {
   display: inline-block;
   margin: 0 2px;
-  border: 1px solid black;
+  stroke: black;
+  stroke-width: 1;
   width: 1em;
   height: 1em;
-  padding: 1px;
-  border-radius: 0.5em;
 }
 
 .color-presenter.borderless {
-  border: none;
+  stroke-width: 0;
   padding: 0;
 }
 
 .color-picker.color-presenter {
-  margin: 0 5px;
-  width: 35px;
-  height: 22px;
-  padding: 2px;
+  width: 26px;
+  height: 26px;
   cursor: pointer;
-}
-
-.color-picker.color-presenter,
-.color-picker.color-presenter {
-  border-radius: 4px;
 }
 
 .button {

@@ -776,9 +776,9 @@ export default class RunTable extends localization.LocalizedReactComponent {
                     >
                       <Icon
                         type="exclamation-circle-o"
+                        className="cp-danger"
                         style={{
-                          marginRight: 5,
-                          color: 'orange'
+                          marginRight: 5
                         }}
                       />
                     </Popover>
@@ -800,7 +800,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         if (roleModel.executeAllowed(record) && roleModel.isOwner(record)) {
           return <a
             id={`run-${record.id}-terminate-button`}
-            style={{color: 'red'}}
+            className="cp-danger"
             onClick={(e) => this.showTerminateConfirmDialog(e, record)}>TERMINATE</a>;
         }
         break;
@@ -820,7 +820,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
         ) {
           return <a
             id={`run-${record.id}-stop-button`}
-            style={{color: 'red'}}
+            className="cp-danger"
             onClick={(e) => this.showStopConfirmDialog(e, record)}>STOP</a>;
         } else if (record.commitStatus && record.commitStatus.toLowerCase() === 'committing') {
           return <span style={{fontStyle: 'italic'}}>COMMITTING</span>;

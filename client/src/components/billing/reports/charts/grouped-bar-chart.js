@@ -62,8 +62,6 @@ class GroupedBarChart extends React.Component {
       const canvasElement = document.createElement('canvas');
       canvasElement.width = totalWidth;
       canvasElement.height = totalHeight;
-      document.body.style.overflowY = 'hidden';
-      document.body.appendChild(canvasElement);
       const ctx = canvasElement.getContext('2d');
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, totalWidth, totalHeight);
@@ -81,8 +79,6 @@ class GroupedBarChart extends React.Component {
         ctx.putImageData(canvasData, x, titleHeight);
         x += canvasData.width;
       });
-      document.body.removeChild(canvasElement);
-      document.body.style.overflowY = 'unset';
       resolve(ctx.getImageData(0, 0, totalWidth, totalHeight));
     });
   };

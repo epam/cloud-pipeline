@@ -104,7 +104,7 @@ export default `
   border: 1px solid @application-color;
 }
 @THEME .color-presenter {
-  border-color: @application-color;
+  stroke: @application-color;
 }
 @THEME .image-uploader {
   border-color: @application-color;
@@ -184,6 +184,9 @@ export default `
   height: 100%;
   background-color: transparent;
 }
+@THEME .cp-divider.inline {
+  background: @panel-border-color;
+}
 @THEME .cp-primary {
   color: @primary-color;
 }
@@ -217,7 +220,7 @@ export default `
 @THEME .cp-sensitive-tag.bordered {
   background-color: transparent;
   color: @color-sensitive;
-  border-color: currentColor;
+  border: 1px solid currentColor;
 }
 @THEME .cp-tag {
   background-color: transparent;
@@ -445,6 +448,9 @@ export default `
   background-color: transparent;
   color: @application-color;
   border-color: @panel-border-color;
+}
+@THEME .ant-menu > .ant-menu-item-divider {
+  background-color: @panel-border-color;
 }
 @THEME .ant-menu > .ant-menu-item > a,
 @THEME .ant-menu > .ant-menu-submenu > a {
@@ -894,6 +900,10 @@ export default `
   border-color: @primary-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
+@THEME .ant-select-selection:hover .ant-select-selection__clear ~ .ant-select-arrow {
+  opacity: 0;
+}
+@THEME .ant-dropdown,
 @THEME .ant-select-dropdown,
 @THEME .ant-dropdown-menu,
 @THEME .rc-menu,
@@ -1167,16 +1177,24 @@ export default `
   background: @primary-color;
   color: @primary-text-color;
 }
-@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow {
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow {
   border-right-color: @card-border-color;
 }
-@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after {
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-right-color: @card-background-color;
 }
-@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow {
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow {
   border-left-color: @card-border-color;
 }
-@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after {
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-left-color: @card-background-color;
 }
 @THEME .ant-popover-placement-top > .ant-popover-content > .ant-popover-arrow,
@@ -1440,6 +1458,9 @@ export default `
   background-color: @card-background-color;
   margin: 2px;
 }
+@THEME .cp-panel .cp-panel-card.borderless {
+  border: none;
+}
 @THEME .cp-panel .cp-panel-card.cp-launch-vs-tool {
   margin: 2px 0;
 }
@@ -1449,6 +1470,9 @@ export default `
 @THEME .cp-panel .cp-panel-card.cp-card-service {
   border: 1px solid @card-service-border-color;
   background-color: @card-service-background-color;
+}
+@THEME .cp-panel .cp-panel-card.cp-card-service.borderless {
+  border: none;
 }
 @THEME .cp-panel .cp-panel-card:hover {
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
@@ -1557,7 +1581,9 @@ export default `
   width: 26px;
   display: block;
   background-image: @logo-image;
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 @THEME .cp-dashboard-sticky-panel {
@@ -1715,6 +1741,9 @@ export default `
   background-color: @card-background-color;
   border-radius: 0 0 5px 5px;
 }
+@THEME .cp-tool-panel .cp-tool-panel-body.no-padding {
+  padding: 0;
+}
 @THEME .cp-tool-no-description {
   color: @application-color-faded;
 }
@@ -1755,12 +1784,20 @@ export default `
 @THEME .cp-edit-permissions-selected-row {
   background-color: @element-selected-background-color;
 }
+@THEME .cp-tool-white-listed-version > td,
+@THEME .cp-tool-white-listed-version:hover > td {
+  background-color: fade(@color-success, 15%);
+}
+@THEME .cp-tool-select-option-divider::before,
+@THEME .cp-divider.tool-settings {
+  background: @panel-border-color;
+}
 
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
 }
 @THEME .cp-runs-table-icon-green {
-  color: @color-green;
+  color: @color-success;
 }
 @THEME .cp-runs-table-icon-blue {
   color: @color-info;
@@ -1864,6 +1901,23 @@ export default `
   border: none;
   background-color: transparent;
 }
+@THEME .cp-runs-autocomplete-menu.ant-menu {
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-runs-autocomplete-menu-item {
+  border-bottom: 1px solid @input-border;
+}
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item:hover,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-active,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-open,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
+@THEME .cp-runs-autocomplete-menu.ant-menu-item:active {
+  background-color: @element-hover-background-color;
+  border: @menu-active-color;
+  color: @application-color;
+}
+
 
 @THEME .cp-billing-menu {
   width: fit-content;
@@ -1929,7 +1983,14 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .cp-billing-calendar-row-item {
-  border: 1px solid @card-border-color;
+  border-right: 1px solid @card-border-color;
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-billing-calendar-row-item:last-child {
+  border-right: none;
+}
+@THEME .cp-billing-calendar-row:last-child .cp-billing-calendar-row-item {
+  border-bottom: none;
 }
 @THEME .cp-billing-calendar-row-item.selected {
   color: @primary-color;
@@ -1962,8 +2023,9 @@ export default `
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
-
-
+@THEME .cp-billing-layout .react-grid-item {
+  transition: none;
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
@@ -2266,6 +2328,17 @@ export default `
 @THEME .cp-metadata-item-row td {
   padding: 2px 5px;
   border: 1px solid transparent;
+}
+@THEME .cp-metadata-item-row.key.editable td,
+@THEME .cp-metadata-item-row.key.editable td:hover,
+@THEME .cp-metadata-item-row.value.editable td,
+@THEME .cp-metadata-item-row.value.editable td:hover {
+  padding: 0;
+  border: none;
+}
+@THEME .cp-metadata-item-row.key.editable .ant-input,
+@THEME .cp-metadata-item-row.value.editable .ant-input {
+  padding: 2px 5px !important;
 }
 @THEME .cp-metadata-item-row.key td.cp-metadata-item-key:hover,
 @THEME .cp-metadata-item-row.value td:hover {

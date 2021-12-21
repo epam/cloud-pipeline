@@ -75,7 +75,6 @@ export function ejectTheme (theme) {
 export default function injectTheme (theme) {
   return new Promise((resolve) => {
     try {
-      console.log('injecting theme', theme.identifier);
       const cssContent = generateTheme(theme);
       injectCss(theme.identifier, cssContent);
     } catch (e) {

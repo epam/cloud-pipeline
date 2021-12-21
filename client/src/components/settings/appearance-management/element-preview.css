@@ -174,3 +174,23 @@
   border-radius: 2px;
   border: 1px solid currentColor;
 }
+
+.icons-container {
+  min-width: 100px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.key-value {
+  display: inline-flex;
+  flex-direction: column;
+  margin: 0 5px 5px 0;
+}
+
+.key-value > * {
+  padding: 2px 4px;
+}

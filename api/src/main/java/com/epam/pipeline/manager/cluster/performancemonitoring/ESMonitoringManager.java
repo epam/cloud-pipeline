@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.dao.monitoring.metricrequester.AbstractMetricRequester;
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
@@ -31,7 +32,6 @@ import com.epam.pipeline.manager.cluster.writer.AbstractMonitoringStatsWriter;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.CommonUtils;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -58,14 +58,14 @@ public class ESMonitoringManager implements UsageMonitoringManager {
     private static final int TWO = 2;
     private static final String SWAP_FILESYSTEM = "tmpfs";
 
-    private final RestHighLevelClient client;
+    private final HeapsterElasticRestHighLevelClient client;
     private final MonitoringESDao monitoringDao;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
     private final NodesManager nodesManager;
     private final Map<MonitoringReportType, AbstractMonitoringStatsWriter> statsWriters;
 
-    public ESMonitoringManager(final RestHighLevelClient client,
+    public ESMonitoringManager(final HeapsterElasticRestHighLevelClient client,
                                final MonitoringESDao monitoringDao,
                                final MessageHelper messageHelper,
                                final PreferenceManager preferenceManager,

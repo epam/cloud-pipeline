@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.collections4.MapUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -46,7 +45,7 @@ public class PodFSRequester extends FSRequester {
 
     public static final String FILESYSTEM = "filesystem";
 
-    PodFSRequester(final RestHighLevelClient client) {
+    PodFSRequester(final HeapsterElasticRestHighLevelClient client) {
         super(client);
     }
 
@@ -75,7 +74,7 @@ public class PodFSRequester extends FSRequester {
         return request(from, to,
                 statsQuery(nodeName, POD_CONTAINER, from, to)
                         .sort(ELKUsageMetric.POD_FS.getTimestamp())
-                        .aggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
+                        .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                                 .subAggregation(dateHistogram(DISKS_HISTOGRAM, interval)
                                         .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))

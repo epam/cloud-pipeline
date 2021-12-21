@@ -292,10 +292,10 @@ class AWSRegionTag extends React.Component {
     }
     if (parts.length > 0) {
       if (this.props.plainMode) {
-        return <span>{parts.join('/')}</span>;
+        return <div className={styles.container}>{parts.join('/')}</div>;
       } else {
         return (
-          <span
+          <div
             style={this.props.style}
             className={
               classNames(
@@ -304,7 +304,7 @@ class AWSRegionTag extends React.Component {
               )
             }>
             {parts}
-          </span>
+          </div>
         );
       }
     }

@@ -115,6 +115,7 @@ public class AWSMonitorService implements VMMonitorService<AwsRegion> {
                 .instanceName(instance.getPrivateDnsName())
                 .tags(mapTags(instance.getTags()))
                 .privateIp(mapPrivateIp(instance.getNetworkInterfaces()))
+                .created(convertDateToLocalDateTime(instance.getLaunchTime()))
                 .build();
     }
 

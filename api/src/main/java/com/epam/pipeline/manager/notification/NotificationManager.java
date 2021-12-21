@@ -518,7 +518,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         final Stream<PipelineUser> usersFromGroupsStream = recipients.stream()
             .filter(recipient -> !recipient.isPrincipal())
             .map(NFSQuotaNotificationRecipient::getName)
-            .map(userManager::loadUsersByGroup)
+            .map(userManager::loadUsersByGroupOrRole)
             .flatMap(Collection::stream);
         return Stream.concat(plainUsersStream, usersFromGroupsStream)
             .filter(Objects::nonNull)

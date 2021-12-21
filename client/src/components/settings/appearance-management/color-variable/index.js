@@ -28,9 +28,10 @@ import {
 } from 'antd';
 import {
   buildColor,
-  parseAmount
+  parseAmount,
+  parseColor
 } from '../../../../themes/utilities/color-utilities';
-import {VariableNames} from '../utilities/variable-descriptions';
+import {groupedColorVariables} from '../utilities/variable-sections';
 import styles from './color-variable.css';
 
 const types = {
@@ -74,6 +75,36 @@ const parse = (value) => {
   return {type: types.color, value, key: types.color};
 };
 
+const COLOR_PRESENTER_RADIUS = 14;
+const COLOR_PRESENTER_CENTER = COLOR_PRESENTER_RADIUS + 1;
+const COLOR_PRESENTER_OPAQUE_MASK_STROKE = 2;
+
+const maskPoints = [];
+const width = 2 * COLOR_PRESENTER_RADIUS;
+const step = COLOR_PRESENTER_OPAQUE_MASK_STROKE * 3;
+for (let o = 0; o < width; o += step) {
+  maskPoints.push([0, width - o, width - o, 0]);
+  maskPoints.push([width, o, o, width]);
+}
+const MASK_PATH = [
+  ...(new Set(maskPoints.map(point => `M${point[0]},${point[1]} L${point[2]},${point[3]}`)))
+].join(' ');
+
+const SVG_DEFS = (
+  <defs key="defs">
+    <mask id="mask" key="mask">
+      <path
+        key="mask-path"
+        d={MASK_PATH}
+        strokeWidth={COLOR_PRESENTER_OPAQUE_MASK_STROKE}
+        stroke="white"
+      />
+    </mask>
+  </defs>
+);
+
+const COLOR_PRESENTER_VIEW_BOX = `0 0 ${2 * COLOR_PRESENTER_CENTER} ${2 * COLOR_PRESENTER_CENTER}`;
+
 function ColorPresenter (
   {
     className,
@@ -86,8 +117,23 @@ function ColorPresenter (
   if (!color) {
     return null;
   }
+  const parsed = parseColor(color) || {r: 0, g: 0, b: 0};
+  const {a = 1} = parsed;
+  const opaqueColor = a === 1 ? undefined : {...parsed, a: 1};
+  let opaqueGraphics;
+  if (opaqueColor) {
+    opaqueGraphics = (
+      <circle
+        cx={COLOR_PRESENTER_CENTER}
+        cy={COLOR_PRESENTER_CENTER}
+        r={COLOR_PRESENTER_RADIUS}
+        fill={buildColor(opaqueColor)}
+        mask="url(#mask)"
+      />
+    );
+  }
   return (
-    <div
+    <svg
       className={
         classNames(
           className,
@@ -99,17 +145,19 @@ function ColorPresenter (
           }
         )
       }
-      style={
-        Object.assign(
-          {},
-          style || {},
-          {backgroundColor: color}
-        )
-      }
+      viewBox={COLOR_PRESENTER_VIEW_BOX}
       onClick={onClick}
+      style={style}
     >
-      {'\u00A0'}
-    </div>
+      {SVG_DEFS}
+      <circle
+        cx={COLOR_PRESENTER_CENTER}
+        cy={COLOR_PRESENTER_CENTER}
+        r={COLOR_PRESENTER_RADIUS}
+        fill={color}
+      />
+      {opaqueGraphics}
+    </svg>
   );
 }
 
@@ -138,6 +186,7 @@ class ColorPicker extends React.Component {
 
   render () {
     const {color, disabled} = this.props;
+    const {visible} = this.state;
     if (disabled) {
       return (
         <ColorPresenter
@@ -151,12 +200,15 @@ class ColorPicker extends React.Component {
       <Popover
         onVisibleChange={this.onVisibilityChange}
         trigger={['click']}
-        content={(
-          <ChromePicker
-            color={color}
-            onChangeComplete={this.onChange}
-          />
-        )}
+        content={
+          visible &&
+            (
+              <ChromePicker
+                color={parseColor(color)}
+                onChangeComplete={this.onChange}
+              />
+            )
+        }
       >
         <ColorPresenter
           className={styles.colorPicker}
@@ -359,7 +411,6 @@ class ColorVariable extends React.PureComponent {
       value,
       modifiedValue,
       initialValue,
-      variables = [],
       parsedValues = {},
       extended,
       error,
@@ -396,36 +447,50 @@ class ColorVariable extends React.PureComponent {
           onChange={this.onChangeType}
           filterOption={
             (input, option) => {
-              const value = VariableNames[option.key] || option.key;
+              const value = option.props.title || option.props.key;
+              if (!value) {
+                return false;
+              }
               return (value.toLowerCase().indexOf(input.toLowerCase()) >= 0);
             }
           }
         >
           {
-            variables.map(variable => (
-              <Select.Option
-                key={variable}
-                value={variable}
-              >
-                <div className={styles.colorSelectOption}>
-                  <ColorPresenter
-                    color={parsedValues[variable]}
-                    borderless
-                    style={{marginRight: 5}}
-                  />
-                  <span
-                    className={
-                      classNames(
-                        styles.colorSelectOptionName,
-                        'cp-ellipsis-text'
-                      )
-                    }
-                  >
-                    {VariableNames[variable] || variable}
-                  </span>
-                </div>
-              </Select.Option>
-            ))
+            groupedColorVariables
+              .map(group => (
+                <Select.OptGroup
+                  key={group.name}
+                  label={group.name}
+                >
+                  {
+                    group.variables.map(variable => (
+                      <Select.Option
+                        key={variable.key}
+                        value={variable.key}
+                        title={variable.name}
+                      >
+                        <div className={styles.colorSelectOption}>
+                          <ColorPresenter
+                            color={parsedValues[variable.key]}
+                            borderless
+                            style={{marginRight: 5}}
+                          />
+                          <span
+                            className={
+                              classNames(
+                                styles.colorSelectOptionName,
+                                'cp-ellipsis-text'
+                              )
+                            }
+                          >
+                            {variable.name}
+                          </span>
+                        </div>
+                      </Select.Option>
+                    ))
+                  }
+                </Select.OptGroup>
+              ))
           }
         </Select>
         {
@@ -466,8 +531,7 @@ ColorVariable.propTypes = {
   extended: PropTypes.bool,
   parsedValues: PropTypes.object,
   parsedValue: PropTypes.string,
-  onChange: PropTypes.func,
-  variables: PropTypes.arrayOf(PropTypes.string)
+  onChange: PropTypes.func
 };
 
 export default ColorVariable;

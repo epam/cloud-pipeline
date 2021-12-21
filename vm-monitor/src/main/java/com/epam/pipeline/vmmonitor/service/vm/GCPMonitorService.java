@@ -43,6 +43,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -134,6 +136,9 @@ public class GCPMonitorService implements VMMonitorService<GCPRegion> {
                              .instanceId(instance.getId().toString())
                              .privateIp(getInternalIP(instance))
                              .tags(instance.getLabels())
+                             .created(Instant.parse(instance.getCreationTimestamp())
+                                     .atZone(ZoneOffset.UTC)
+                                     .toLocalDateTime())
                              .build();
     }
 

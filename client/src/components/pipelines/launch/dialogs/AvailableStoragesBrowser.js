@@ -22,6 +22,7 @@ import {Button, Checkbox, Input, Modal, Row, Table} from 'antd';
 import {SensitiveBucketsWarning} from '../../../runs/actions';
 import styles from './Browser.css';
 import {CP_CAP_LIMIT_MOUNTS} from '../form/utilities/parameters';
+import classNames from "classnames";
 
 function sensitiveSorter (a, b) {
   return a.sensitive - b.sensitive;
@@ -257,16 +258,29 @@ export default class AvailableStoragesBrowser extends Component {
         render: (name, storage) => {
           return (
             <Row>
-              <Row style={storage.sensitive ? {color: 'red'} : {}}>
+              <Row
+                className={
+                  classNames(
+                    {
+                      'cp-danger': storage.sensitive
+                    }
+                  )
+                }
+              >
                 {name}
                 {
                   storage.sensitive && (
                     <span
+                      className={
+                        classNames(
+                          'cp-sensitive-tag',
+                          'bordered'
+                        )
+                      }
                       style={{
                         fontSize: 'smaller',
                         marginLeft: 5,
                         padding: '0 2px',
-                        border: '1px solid #ae1726',
                         borderRadius: 2
                       }}
                     >

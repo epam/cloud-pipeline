@@ -260,7 +260,7 @@ public final class DatastorageCreatorUtils {
     }
 
     public static StorageUsage getStorageUsage() {
-        return new StorageUsage(ID, TEST_STRING, DataStorageType.S3, TEST_PATH, ID, ID);
+        return new StorageUsage(ID, TEST_STRING, DataStorageType.S3, TEST_PATH, ID, ID, ID);
     }
 
     public static StorageMountPath getDefaultStorageMountPath() {

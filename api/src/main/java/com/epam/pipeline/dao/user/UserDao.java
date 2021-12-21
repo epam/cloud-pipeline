@@ -63,6 +63,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     private String deleteUserRolesQuery;
     private String userSequence;
     private String loadUsersByGroupQuery;
+    private String loadUsersByGroupOrRoleQuery;
     private String loadUserByGroupQuery;
     private String findGroupsByPrefixQuery;
     private String loadAllGroupsQuery;
@@ -144,6 +145,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
      */
     public Collection<PipelineUser> loadUsersByGroup(String group) {
         return getJdbcTemplate().query(loadUsersByGroupQuery, UserParameters.getUserExtractor(), group);
+    }
+
+    public Collection<PipelineUser> loadUsersByGroupOrRole(final String name) {
+        return getJdbcTemplate().query(loadUsersByGroupOrRoleQuery, UserParameters.getUserExtractor(), name, name);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -470,5 +475,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     public void setLoadAllUsersWithDefaultDataStoragePathQuery(
             final String loadAllUsersWithDefaultDataStoragePathQuery) {
         this.loadAllUsersWithDefaultDataStoragePathQuery = loadAllUsersWithDefaultDataStoragePathQuery;
+    }
+
+    @Required
+    public void setLoadUsersByGroupOrRoleQuery(final String loadUsersByGroupOrRoleQuery) {
+        this.loadUsersByGroupOrRoleQuery = loadUsersByGroupOrRoleQuery;
     }
 }

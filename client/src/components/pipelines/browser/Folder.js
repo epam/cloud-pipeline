@@ -730,14 +730,15 @@ export default class Folder extends localization.LocalizedReactComponent {
         versioningEnabled: storage.versioningEnabled
       },
       serviceType: storage.serviceType || ServiceTypes.objectStorage,
-      mountPoint: storage.mountPoint,
-      mountOptions: storage.mountOptions,
+      mountDisabled: storage.mountDisabled,
+      mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
+      mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
       fileShareMountId: storage.fileShareMountId,
       regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
         ? storage.regionId
         : undefined,
       sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
     });
     hide();
     if (request.error) {
@@ -768,14 +769,17 @@ export default class Folder extends localization.LocalizedReactComponent {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      mountDisabled: storage.mountDisabled,
+      sensitive: storage.sensitive
     };
-    if (storage.mountPoint) {
-      payload.mountPoint = storage.mountPoint;
-    }
-    if (storage.mountOptions) {
-      payload.mountOptions = storage.mountOptions;
+    if (!storage.mountDisabled) {
+      payload.toolsToMount = storage.toolsToMount;
+      if (storage.mountPoint) {
+        payload.mountPoint = storage.mountPoint;
+      }
+      if (storage.mountOptions) {
+        payload.mountOptions = storage.mountOptions;
+      }
     }
     await request.send(payload);
     if (request.error) {
@@ -1848,7 +1852,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       return this.lockUnLockFolder(lock);
     };
     Modal.confirm({
-      title: `Are you sure you want to ${lock ? 'lock' : 'unlock'} folder ${this.props.folder.value.name}?`,
+      title: `Are you sure you want to ${lock ? 'lock' : 'unlock'} folder '${this.props.folder.value.name}'?`,
       style: {
         wordWrap: 'break-word'
       },
@@ -2112,7 +2116,7 @@ export default class Folder extends localization.LocalizedReactComponent {
                 this.state.folderToDelete &&
                 (!this.deletingFolderIsEmpty
                   ? `Folder '${this.state.folderToDelete.name}' contains sub-items, do you want to delete them?`
-                  : `Are you sure you want to delete folder ${this.state.folderToDelete.name}`)
+                  : `Are you sure you want to delete folder '${this.state.folderToDelete.name}'?`)
               }
             </Row>
             {(!this._folderToDeleteInfo || this._folderToDeleteInfo.pending) && <LoadingView />}

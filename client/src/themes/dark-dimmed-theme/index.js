@@ -88,8 +88,8 @@ export default {
     '@nfs-icon-color': '@color-green',
     '@aws-icon': "@static_resource('icons/providers/aws-light.svg')",
     '@aws-icon-contrast': "@static_resource('icons/providers/aws-light.svg')",
-    '@gcp-icon': "@static_resource('icons/providers/gcp.svg')",
-    '@gcp-icon-contrast': "@static_resource('icons/providers/gcp.svg')",
+    '@gcp-icon': "@static_resource('icons/providers/gcp-light.svg')",
+    '@gcp-icon-contrast': "@static_resource('icons/providers/gcp-light.svg')",
     '@azure-icon': "@static_resource('icons/providers/azure.svg')",
     '@azure-icon-contrast': "@static_resource('icons/providers/azure.svg')",
     '@modal-mask-background': 'rgba(0, 0, 0, 0.6)',
@@ -121,7 +121,6 @@ export default {
     '@btn-disabled-background-color': 'lighten(@panel-background-color, 4%)',
     '@code-background-color': 'lighten(@card-background-color, 5%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
-    '@logo-url': "url('logo.png')"
+    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated'
   }
 };

@@ -40,7 +40,25 @@ import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
+import static com.epam.pipeline.autotests.ao.Primitive.ALLOW_COMMIT;
+import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
+import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
+import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.DO_NOT_MOUNT_STORAGES;
+import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
+import static com.epam.pipeline.autotests.ao.Primitive.PORT;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.LABELS;
+import static com.epam.pipeline.autotests.ao.Primitive.LABEL_INPUT_FIELD;
+import static com.epam.pipeline.autotests.ao.Primitive.NEW_ENDPOINT;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
+import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
+import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -73,6 +91,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                         .parent().find(By.xpath("following-sibling::div//span"))),
                 entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
                 entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
+                entry(ALLOW_COMMIT, context().$(byText("Allow commit of the tool"))
+                        .parent().find(By.xpath("following-sibling::div//span"))),
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
         );
@@ -167,6 +187,14 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     public ToolSettings save() {
         return sleep(1, SECONDS)
                 .performIf(SAVE, enabled, settings -> settings.click(SAVE).sleep(1, SECONDS));
+    }
+
+    public ToolSettings allowCommit(final boolean allow) {
+        if ((allow && !get(ALLOW_COMMIT).has(cssClass("ant-checkbox-checked")))
+                || (!allow && get(ALLOW_COMMIT).has(cssClass("ant-checkbox-checked")))) {
+            click(ALLOW_COMMIT);
+        }
+        return this;
     }
 
     private ToolSettings validateEndpoints(final Condition condition) {

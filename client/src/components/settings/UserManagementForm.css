@@ -65,3 +65,8 @@
 .role-actions button {
   margin-left: 5px;
 }
+
+.line-break {
+  white-space: pre-wrap;
+  word-break: break-word;
+}

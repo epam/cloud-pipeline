@@ -236,10 +236,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   text-align: center;
 }
 
-.selected-cell {
-  background-color: red;
-}
-
 .labels-cell span,
 .labels-cell a {
   vertical-align: middle;
@@ -427,14 +423,8 @@ tr.table-row-selected {
 }
 
 .metadata-preview-btn {
-  color: #108ee9;
   padding: 0 5px;
-  transition: color 0.2s ease;
   cursor: pointer;
-}
-
-.metadata-preview-btn:hover {
-  color: #49a9ee;
 }
 
 .run-table {
@@ -478,8 +468,6 @@ tr.table-row-selected {
 .storage-region {
   margin-left: 2px;
   border-radius: 4px;
-  padding: 1px 5px 2px;
-  vertical-align: text-top;
 }
 
 .data-sharing-disclaimer {

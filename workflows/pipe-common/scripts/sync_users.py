@@ -125,6 +125,10 @@ def sync_users():
         except KeyboardInterrupt:
             logging.warning('Interrupted.')
             break
+        except Exception as e:
+            traceback.print_exc()
+            stacktrace = traceback.format_exc()
+            logger.warning('Users synchronization has failed: {} {}'.format(e, stacktrace))
         except BaseException as e:
             traceback.print_exc()
             stacktrace = traceback.format_exc()

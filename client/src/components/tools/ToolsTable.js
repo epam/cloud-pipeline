@@ -43,21 +43,21 @@ export default class ToolsTable extends React.Component {
               <tr>
                 <td style={{width: '50%'}}>
                   <div
+                    className={classNames('cp-divider', 'inline')}
                     style={{
                       margin: '0 5px',
                       verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
+                      height: 1
                     }}>{'\u00A0'}</div>
                 </td>
                 <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
                 <td style={{width: '50%'}}>
                   <div
+                    className={classNames('cp-divider', 'inline')}
                     style={{
                       margin: '0 5px',
                       verticalAlign: 'middle',
-                      height: 1,
-                      backgroundColor: '#ccc'
+                      height: 1
                     }}>{'\u00A0'}</div>
                 </td>
               </tr>
@@ -71,7 +71,14 @@ export default class ToolsTable extends React.Component {
 
   renderTool = (tool, index, arr, isGlobalSearch = false) => {
     const renderLabel = (label, index) => {
-      return <span key={index} className={styles.toolLabel}>{highlightText(label, this.props.searchString)}</span>;
+      return (
+        <span
+          key={index}
+          className={classNames(styles.toolLabel, 'cp-tag')}
+        >
+          {highlightText(label, this.props.searchString)}
+        </span>
+      );
     };
     return (
       <Row
@@ -136,6 +143,7 @@ export default class ToolsTable extends React.Component {
                 this.openIssuesPanel(tool);
               }}
               key="issues"
+              style={{lineHeight: 1}}
               size="small">
               <Icon type="message" />{tool.issuesCount > 0 ? ` ${tool.issuesCount}` : undefined}
             </Button>

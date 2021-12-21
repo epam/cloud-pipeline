@@ -164,7 +164,7 @@ export default class GroupsManagement extends React.Component {
       }
     };
     Modal.confirm({
-      title: `Are you sure you want to delete ${getRoleType(role)} ${splitRoleName(role)}?`,
+      title: `Are you sure you want to delete ${getRoleType(role)} '${splitRoleName(role)}'?`,
       content: 'This operation cannot be undone.',
       style: {
         wordWrap: 'break-word'

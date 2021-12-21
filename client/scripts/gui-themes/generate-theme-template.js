@@ -18,7 +18,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ignores = [
-  /(^|\/)animation.less$/
+  /(^|\/|\\)animation.less$/
 ];
 
 const copyright = `/*

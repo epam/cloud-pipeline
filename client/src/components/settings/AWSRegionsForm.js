@@ -217,7 +217,7 @@ export default class AWSRegionsForm extends React.Component {
         render: (name, region) => {
           if (region.isProvider) {
             return (
-              <span className={styles.provider}>
+              <div className={styles.provider}>
                 <AWSRegionTag
                   provider={region.name}
                   displayFlag={false}
@@ -225,21 +225,21 @@ export default class AWSRegionsForm extends React.Component {
                   showProvider
                 />
                 {name}
-              </span>
+              </div>
             );
           }
           if (region.isNew) {
             return <i className={styles.region}>{name} ({this.state.newRegion})</i>;
           }
           return (
-            <span className={styles.region}>
+            <div className={styles.region}>
               <AWSRegionTag
                 showProvider={false}
                 regionUID={region.regionId}
                 style={{fontSize: 'larger'}}
               />
               {highlightText(name, this.state.search)}
-            </span>
+            </div>
           );
         }
       }
@@ -2312,10 +2312,12 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         <Row type="flex" align="top">
           <span style={{width: 50}}>Host:</span>
           <Input
-            style={
-              Object.assign(
-                {flex: 1, marginTop: 1},
-                !this.state.mountRootError ? {} : {borderColor: 'red'}
+            style={{flex: 1, marginTop: 1}}
+            className={
+              classNames(
+                {
+                  'cp-error': this.state.mountRootError
+                }
               )
             }
             disabled={this.props.disabled || !!this.state.id}
@@ -2328,11 +2330,13 @@ class CloudRegionFileShareMountFormItem extends React.Component {
             onChange={this.onChangeMountRoot} />
           <span style={{marginLeft: 5, marginRight: 5}}>Type:</span>
           <Select
-            style={
-              Object.assign(
-                {width: 200, marginTop: 1},
-                this.state.mountTypeValid ? {} : {borderColor: 'red'}
-                )
+            style={{width: 200, marginTop: 1}}
+            className={
+              classNames(
+                {
+                  'cp-error': !this.state.mountTypeValid
+                }
+              )
             }
             disabled={this.props.disabled || !!this.state.id}
             value={this.state.mountType}
@@ -2361,8 +2365,8 @@ class CloudRegionFileShareMountFormItem extends React.Component {
         {
           this.state.mountRootError &&
           <Row
+            className="cp-error"
             style={{
-              color: 'red',
               lineHeight: '12px',
               paddingLeft: 50
             }}

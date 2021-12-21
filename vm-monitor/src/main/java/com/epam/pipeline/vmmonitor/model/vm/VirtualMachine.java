@@ -20,6 +20,7 @@ import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Data
@@ -31,5 +32,6 @@ public class VirtualMachine {
     private String privateIp;
     private CloudProvider cloudProvider;
     private Map<String, String> tags;
+    private LocalDateTime created;
 
 }

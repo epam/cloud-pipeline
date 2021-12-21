@@ -276,10 +276,11 @@ export default class DataStorage extends React.Component {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      mountPoint: storage.mountPoint,
-      mountOptions: storage.mountOptions,
+      mountDisabled: storage.mountDisabled,
+      mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
+      mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
       sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
@@ -315,6 +316,7 @@ export default class DataStorage extends React.Component {
           hide();
           this.closeEditDialog();
           this.props.info.fetch();
+          this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!this.props.info.value.parentFolderId);
           }
@@ -323,6 +325,7 @@ export default class DataStorage extends React.Component {
         hide();
         this.closeEditDialog();
         this.props.info.fetch();
+        this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.info.value.parentFolderId);
         }
@@ -1051,7 +1054,7 @@ export default class DataStorage extends React.Component {
         >
           <span
             onClick={() => this.openPreviewModal(selectedFile)}
-            className={styles.metadataPreviewBtn}
+            className={classNames('cp-link', styles.metadataPreviewBtn)}
           >
             Click
           </span>

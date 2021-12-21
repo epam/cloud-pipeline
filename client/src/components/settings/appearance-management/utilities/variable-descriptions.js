@@ -14,347 +14,600 @@
  *  limitations under the License.
  */
 
+const VariableTypes = {
+  color: 'color',
+  image: 'image',
+  icon: 'icon',
+  divider: 'divider',
+  providerIcon: 'provider-icon',
+  regionIcon: 'region-icon'
+};
+
 const Variables = {
-  applicationBackgroundColor: '@application-background-color',
-  applicationColor: '@application-color',
-  applicationColorFaded: '@application-color-faded',
-  applicationColorDisabled: '@application-color-disabled',
-  applicationColorAccent: '@application-color-accent',
-  primaryColor: '@primary-color',
-  primaryHoverColor: '@primary-hover-color',
-  primaryActiveColor: '@primary-active-color',
-  primaryTextColor: '@primary-text-color',
-  primaryColorSemiTransparent: '@primary-color-semi-transparent',
-  colorSuccess: '@color-success',
-  colorError: '@color-error',
-  colorWarning: '@color-warning',
-  colorInfo: '@color-info',
-  colorGreen: '@color-green',
-  colorRed: '@color-red',
-  colorYellow: '@color-yellow',
-  colorBlue: '@color-blue',
-  colorViolet: '@color-violet',
-  colorSensitive: '@color-sensitive',
-  colorAqua: '@color-aqua',
-  colorAquaLight: '@color-aqua-light',
-  colorPink: '@color-pink',
-  colorPinkDusty: '@color-pink-dusty',
-  colorPinkLight: '@color-pink-light',
-  colorBlueDimmed: '@color-blue-dimmed',
-  colorGrey: '@color-grey',
-  spinner: '@spinner',
-  elementHoverColor: '@element-hover-color',
-  elementHoverBackgroundColor: '@element-hover-background-color',
-  elementSelectedColor: '@element-selected-color',
-  elementSelectedBackgroundColor: '@element-selected-background-color',
-  inputBackground: '@input-background',
-  inputBackgroundDisabled: '@input-background-disabled',
-  inputAddon: '@input-addon',
-  inputBorder: '@input-border',
-  inputColor: '@input-color',
-  inputPlaceholderColor: '@input-placeholder-color',
-  inputBorderHoverColor: '@input-border-hover-color',
-  inputShadowColor: '@input-shadow-color',
-  inputSearchIconColor: '@input-search-icon-color',
-  inputSearchIconHoveredColor: '@input-search-icon-hovered-color',
-  panelBackgroundColor: '@panel-background-color',
-  panelBorderColor: '@panel-border-color',
-  cardBackgroundColor: '@card-background-color',
-  cardBorderColor: '@card-border-color',
-  cardHoveredShadowColor: '@card-hovered-shadow-color',
-  cardActionsActiveBackground: '@card-actions-active-background',
-  cardHeaderBackground: '@card-header-background',
-  cardServiceBackgroundColor: '@card-service-background-color',
-  cardServiceBorderColor: '@card-service-border-color',
-  cardServiceHoveredShadowColor: '@card-service-hovered-shadow-color',
-  cardServiceActionsActiveBackground: '@card-service-actions-active-background',
-  cardServiceHeaderBackground: '@card-service-header-background',
-  navigationPanelColor: '@navigation-panel-color',
-  navigationPanelColorImpersonated: '@navigation-panel-color-impersonated',
-  navigationPanelHighlightedColor: '@navigation-panel-highlighted-color',
-  navigationPanelHighlightedColorImpersonated: '@navigation-panel-highlighted-color-impersonated',
-  navigationItemColor: '@navigation-item-color',
-  navigationItemRunsColor: '@navigation-item-runs-color',
-  tagKeyBackgroundColor: '@tag-key-background-color',// todo
-  tagKeyValueDividerColor: '@tag-key-value-divider-color',// todo
-  tagValueBackgroundColor: '@tag-value-background-color',// todo
-  nfsIconColor: '@nfs-icon-color',
-  iconsRoot: '@icons-root',
-  awsIcon: '@aws-icon',// todo
-  awsIconContrast: '@aws-icon-contrast',// todo
-  gcpIcon: '@gcp-icon',// todo
-  gcpIconContrast: '@gcp-icon-contrast',// todo
-  azureIcon: '@azure-icon',// todo
-  azureIconContrast: '@azure-icon-contrast',// todo
-  euRegionIcon: '@eu-region-icon',
-  usRegionIcon: '@us-region-icon',
-  saRegionIcon: '@sa-region-icon',
-  cnRegionIcon: '@cn-region-icon',
-  caRegionIcon: '@ca-region-icon',
-  apNortheast1RegionIcon: '@ap-northeast-1-region-icon',
-  apNortheast2RegionIcon: '@ap-northeast-2-region-icon',
-  apNortheast3RegionIcon: '@ap-northeast-3-region-icon',
-  apSouth1RegionIcon: '@ap-south-1-region-icon',
-  apSoutheast1RegionIcon: '@ap-southeast-1-region-icon',
-  apSoutheast2RegionIcon: '@ap-southeast-2-region-icon',
-  taiwanRegionIcon: '@taiwan-region-icon',
-  themeTransitionDuration: '@theme-transition-duration',
-  themeTransitionFunction: '@theme-transition-function',
-  modalMaskBackground: '@modal-mask-background',// todo
-  evenElementBackground: '@even-element-background',
-  alertSuccessBackground: '@alert-success-background',
-  alertSuccessBorder: '@alert-success-border',
-  alertSuccessIcon: '@alert-success-icon',
-  alertWarningBackground: '@alert-warning-background',
-  alertWarningBorder: '@alert-warning-border',
-  alertWarningIcon: '@alert-warning-icon',
-  alertErrorBackground: '@alert-error-background',
-  alertErrorBorder: '@alert-error-border',
-  alertErrorIcon: '@alert-error-icon',
-  alertInfoBackground: '@alert-info-background',
-  alertInfoBorder: '@alert-info-border',
-  alertInfoIcon: '@alert-info-icon',
-  tableElementSelectedBackgroundColor: '@table-element-selected-background-color',
-  tableElementSelectedColor: '@table-element-selected-color',
-  tableElementHoverBackgroundColor: '@table-element-hover-background-color',
-  tableElementHoverColor: '@table-element-hover-color',
-  tableBorderColor: '@table-border-color',
-  tableHeadColor: '@table-head-color',
-  menuActiveColor: '@menu-active-color',
-  btnDangerColor: '@btn-danger-color',
-  btnDangerBackgroundColor: '@btn-danger-background-color',
-  btnDangerActiveColor: '@btn-danger-active-color',
-  btnDangerActiveBackground: '@btn-danger-active-background',
-  btnDisabledColor: '@btn-disabled-color',
-  btnDisabledBackgroundColor: '@btn-disabled-background-color',
-  codeBackgroundColor: '@code-background-color',
-  searchHighlightTextColor: '@search-highlight-text-color',
-  searchHighlightTextBackgroundColor: '@search-highlight-text-background-color',
-  backgroundImage: '@background-image',
-  logoImage: '@logo-image',
-  navigationBackgroundImage: '@navigation-background-image'
-};
-
-const ColorVariables = [
-  Variables.applicationBackgroundColor,
-  Variables.applicationColor,
-  Variables.applicationColorFaded,
-  Variables.applicationColorDisabled,
-  Variables.applicationColorAccent,
-  Variables.primaryColor,
-  Variables.primaryHoverColor,
-  Variables.primaryActiveColor,
-  Variables.primaryTextColor,
-  Variables.primaryColorSemiTransparent,
-  Variables.colorSuccess,
-  Variables.colorError,
-  Variables.colorWarning,
-  Variables.colorInfo,
-  Variables.colorViolet,
-  Variables.colorSensitive,
-  Variables.colorAqua,
-  Variables.colorAquaLight,
-  Variables.colorPink,
-  Variables.colorPinkDusty,
-  Variables.colorPinkLight,
-  Variables.colorBlueDimmed,
-  Variables.colorGrey,
-  Variables.spinner,
-  Variables.elementHoverColor,
-  Variables.elementHoverBackgroundColor,
-  Variables.elementSelectedColor,
-  Variables.elementSelectedBackgroundColor,
-  Variables.inputBackground,
-  Variables.inputBackgroundDisabled,
-  Variables.inputBorder,
-  Variables.inputColor,
-  Variables.inputPlaceholderColor,
-  Variables.inputBorderHoverColor,
-  Variables.inputShadowColor,
-  Variables.inputSearchIconColor,
-  Variables.inputSearchIconHoveredColor,
-  Variables.inputAddon,
-  Variables.panelBackgroundColor,
-  Variables.panelBorderColor,
-  Variables.cardBackgroundColor,
-  Variables.cardBorderColor,
-  Variables.cardHoveredShadowColor,
-  Variables.cardActionsActiveBackground,
-  Variables.cardHeaderBackground,
-  Variables.cardServiceBackgroundColor,
-  Variables.cardServiceBorderColor,
-  Variables.cardServiceHoveredShadowColor,
-  Variables.cardServiceActionsActiveBackground,
-  Variables.cardServiceHeaderBackground,
-  Variables.navigationPanelColor,
-  Variables.navigationPanelColorImpersonated,
-  Variables.navigationPanelHighlightedColor,
-  Variables.navigationPanelHighlightedColorImpersonated,
-  Variables.navigationItemColor,
-  Variables.navigationItemRunsColor,
-  Variables.tagKeyBackgroundColor,
-  Variables.tagKeyValueDividerColor,
-  Variables.tagValueBackgroundColor,
-  Variables.nfsIconColor,
-  Variables.modalMaskBackground,
-  Variables.evenElementBackground,
-  Variables.alertSuccessBackground,
-  Variables.alertSuccessBorder,
-  Variables.alertSuccessIcon,
-  Variables.alertWarningBackground,
-  Variables.alertWarningBorder,
-  Variables.alertWarningIcon,
-  Variables.alertErrorBackground,
-  Variables.alertErrorBorder,
-  Variables.alertErrorIcon,
-  Variables.alertInfoBackground,
-  Variables.alertInfoBorder,
-  Variables.alertInfoIcon,
-  Variables.tableElementSelectedBackgroundColor,
-  Variables.tableElementSelectedColor,
-  Variables.tableElementHoverBackgroundColor,
-  Variables.tableElementHoverColor,
-  Variables.tableBorderColor,
-  Variables.tableHeadColor,
-  Variables.menuActiveColor,
-  Variables.btnDangerActiveColor,
-  Variables.btnDangerColor,
-  Variables.btnDangerActiveBackground,
-  Variables.btnDisabledColor,
-  Variables.btnDisabledBackgroundColor,
-  Variables.btnDangerBackgroundColor,
-  Variables.codeBackgroundColor,
-  Variables.searchHighlightTextColor,
-  Variables.searchHighlightTextBackgroundColor
-];
-
-const VariableNames = {
-  [Variables.applicationBackgroundColor]: 'Application background color',
-  [Variables.applicationColor]: 'Text color',
-  [Variables.applicationColorFaded]: 'Text color faded',
-  [Variables.applicationColorDisabled]: 'Disabled text color',
-  [Variables.applicationColorAccent]: 'Accented text color',
-  [Variables.primaryColor]: 'Primary action color',
-  [Variables.primaryHoverColor]: 'Primary action hovered color',
-  [Variables.primaryActiveColor]: 'Primary action active color',
-  [Variables.primaryTextColor]: 'Primary action text color',
-  [Variables.primaryColorSemiTransparent]: 'Metadata table selection background',
-  [Variables.colorSuccess]: 'Success status color',
-  [Variables.colorError]: 'Error status color',
-  [Variables.colorWarning]: 'Warning status color',
-  [Variables.colorInfo]: 'Info color',
-  [Variables.colorGreen]: 'Green color',
-  [Variables.colorRed]: 'Red color',
-  [Variables.colorYellow]: 'Yellow color',
-  [Variables.colorBlue]: 'Blue color',
-  [Variables.colorViolet]: 'Violet color',
-  [Variables.colorSensitive]: 'Sensitive object color',
-  [Variables.colorAqua]: 'Aqua color',
-  [Variables.colorAquaLight]: 'Aqua light color',
-  [Variables.colorPink]: 'Pink color',
-  [Variables.colorPinkDusty]: 'Dusty pink color',
-  [Variables.colorPinkLight]: 'Light pink color',
-  [Variables.colorBlueDimmed]: 'Blue dimmed color',
-  [Variables.colorGrey]: 'Grey color',
-  [Variables.spinner]: 'Loading indicator color',
-  [Variables.elementHoverColor]: 'Lists: hovered element text color',
-  [Variables.elementHoverBackgroundColor]: 'Lists: hovered element background',
-  [Variables.elementSelectedColor]: 'Lists: selected element text color',
-  [Variables.elementSelectedBackgroundColor]: 'Lists: selected element background',
-  [Variables.inputBackground]: 'Input control background',
-  [Variables.inputBackgroundDisabled]: 'Disabled input control background',
-  [Variables.inputAddon]: 'Input control addon background',
-  [Variables.inputBorder]: 'Input control border',
-  [Variables.inputColor]: 'Input control text color',
-  [Variables.inputPlaceholderColor]: 'Input control placeholder color',
-  [Variables.inputBorderHoverColor]: 'Hovered input control border',
-  [Variables.inputShadowColor]: 'Hovered input control shadow',
-  [Variables.inputSearchIconColor]: 'Input control search icon',
-  [Variables.inputSearchIconHoveredColor]: 'Input control search icon hovered',
-  [Variables.panelBackgroundColor]: 'Panels background color',
-  [Variables.panelBorderColor]: 'Panels border color',
-  [Variables.cardBackgroundColor]: 'Cards background color',
-  [Variables.cardBorderColor]: 'Cards border color',
-  [Variables.cardHoveredShadowColor]: 'Hovered card shadow',
-  [Variables.cardActionsActiveBackground]: 'Card actions background color',
-  [Variables.cardHeaderBackground]: 'Card header background color',
-  [Variables.cardServiceBackgroundColor]: 'Service cards background color',
-  [Variables.cardServiceBorderColor]: 'Service cards border color',
-  [Variables.cardServiceHoveredShadowColor]: 'Service card shadow',
-  [Variables.cardServiceActionsActiveBackground]: 'Service card actions background color',
-  [Variables.cardServiceHeaderBackground]: 'Service card header background color',
-  [Variables.navigationPanelColor]: 'Navigation panel color',
-  [Variables.navigationPanelColorImpersonated]: 'Impersonated navigation panel color',
-  [Variables.navigationPanelHighlightedColor]: 'Navigation panel active item background',
-  [Variables.navigationPanelHighlightedColorImpersonated]: 'Impersonated active item background',
-  [Variables.navigationItemColor]: 'Navigation panel icon color',
-  [Variables.navigationItemRunsColor]: 'Navigation panel jobs icon color',
-  [Variables.tagKeyBackgroundColor]: 'Key-value attribute: key background',
-  [Variables.tagKeyValueDividerColor]: 'Key-value attribute: divider',
-  [Variables.tagValueBackgroundColor]: 'Key-value attribute: value background',
-  [Variables.nfsIconColor]: 'NFS Storage icon',
-  [Variables.awsIcon]: 'AWS icon',
-  [Variables.awsIconContrast]: 'AWS icon (contrasted)',
-  [Variables.gcpIcon]: 'GCP icon',
-  [Variables.gcpIconContrast]: 'GCP icon (contrasted)',
-  [Variables.azureIcon]: 'AZURE icon',
-  [Variables.azureIconContrast]: 'AZURE icon (contrasted)',
-  [Variables.euRegionIcon]: 'EU region icon',
-  [Variables.usRegionIcon]: 'US region icon',
-  [Variables.saRegionIcon]: 'SA region icon',
-  [Variables.cnRegionIcon]: 'CN region icon',
-  [Variables.caRegionIcon]: 'CA region icon',
-  [Variables.apNortheast1RegionIcon]: 'AP North-East 1 region icon',
-  [Variables.apNortheast2RegionIcon]: 'AP North-East 2 region icon',
-  [Variables.apNortheast3RegionIcon]: 'AP North-East 3 region icon',
-  [Variables.apSouth1RegionIcon]: 'AP South 1 region icon',
-  [Variables.apSoutheast1RegionIcon]: 'AP South-East 1 region icon',
-  [Variables.apSoutheast2RegionIcon]: 'AP South-East 2 region icon',
-  [Variables.taiwanRegionIcon]: 'Taiwan region icon',
-  [Variables.themeTransitionDuration]: 'Theme transition duration',
-  [Variables.themeTransitionFunction]: 'Theme transition function',
-  [Variables.modalMaskBackground]: 'Dialogs overlay background',
-  [Variables.evenElementBackground]: 'Even elements background',
-  [Variables.alertSuccessBackground]: 'Success alert background',
-  [Variables.alertSuccessBorder]: 'Success alert border',
-  [Variables.alertSuccessIcon]: 'Success alert icon',
-  [Variables.alertWarningBackground]: 'Warning alert background',
-  [Variables.alertWarningBorder]: 'Warning alert border',
-  [Variables.alertWarningIcon]: 'Warning alert icon',
-  [Variables.alertErrorBackground]: 'Error alert background',
-  [Variables.alertErrorBorder]: 'Error alert border',
-  [Variables.alertErrorIcon]: 'Error alert icon',
-  [Variables.alertInfoBackground]: 'Info alert background',
-  [Variables.alertInfoBorder]: 'Info alert border',
-  [Variables.alertInfoIcon]: 'Info alert icon',
-  [Variables.tableElementSelectedBackgroundColor]: 'Tables: selected element background',
-  [Variables.tableElementSelectedColor]: 'Tables: selected element text color',
-  [Variables.tableElementHoverBackgroundColor]: 'Tables: hovered element background',
-  [Variables.tableElementHoverColor]: 'Tables: hovered element text color',
-  [Variables.tableBorderColor]: 'Tables: border',
-  [Variables.tableHeadColor]: 'Tables: header text color',
-  [Variables.menuActiveColor]: 'Active/hovered menu item color',
-  [Variables.btnDangerColor]: 'Danger button: text color',
-  [Variables.btnDangerBackgroundColor]: 'Danger button: background color',
-  [Variables.btnDangerActiveColor]: 'Danger button: active text color',
-  [Variables.btnDangerActiveBackground]: 'Danger button: active background color',
-  [Variables.btnDisabledColor]: 'Disabled button: text color',
-  [Variables.btnDisabledBackgroundColor]: 'Disabled button: background color',
-  [Variables.codeBackgroundColor]: 'Code editor background color',
-  [Variables.searchHighlightTextColor]: 'Search results: highlighted text color',
-  [Variables.searchHighlightTextBackgroundColor]: 'Search results: highlighted background',
-  [Variables.backgroundImage]: 'Application background image',
-  [Variables.logoImage]: 'Application logo',
-  [Variables.navigationBackgroundImage]: 'Navigation panel background image'
-};
-
-const VariableDescriptions = {
-
+  applicationBackgroundColor: {
+    key: '@application-background-color',
+    name: 'Application background color',
+    type: VariableTypes.color
+  },
+  applicationColor: {
+    key: '@application-color',
+    name: 'Text color',
+    type: VariableTypes.color
+  },
+  applicationColorFaded: {
+    key: '@application-color-faded',
+    name: 'Text color faded',
+    type: VariableTypes.color
+  },
+  applicationColorDisabled: {
+    key: '@application-color-disabled',
+    name: 'Disabled text color',
+    type: VariableTypes.color
+  },
+  applicationColorAccent: {
+    key: '@application-color-accent',
+    name: 'Accented text color',
+    type: VariableTypes.color
+  },
+  primaryColor: {
+    key: '@primary-color',
+    name: 'Primary action color',
+    type: VariableTypes.color
+  },
+  primaryHoverColor: {
+    key: '@primary-hover-color',
+    name: 'Primary action hovered color',
+    type: VariableTypes.color
+  },
+  primaryActiveColor: {
+    key: '@primary-active-color',
+    name: 'Primary action active color',
+    type: VariableTypes.color
+  },
+  primaryTextColor: {
+    key: '@primary-text-color',
+    name: 'Primary action text color',
+    type: VariableTypes.color
+  },
+  primaryColorSemiTransparent: {
+    key: '@primary-color-semi-transparent',
+    name: 'Metadata table selection background',
+    type: VariableTypes.color
+  },
+  colorSuccess: {
+    key: '@color-success',
+    name: 'Success status color',
+    type: VariableTypes.color
+  },
+  colorError: {
+    key: '@color-error',
+    name: 'Error status color',
+    type: VariableTypes.color
+  },
+  colorWarning: {
+    key: '@color-warning',
+    name: 'Warning status color',
+    type: VariableTypes.color
+  },
+  colorInfo: {
+    key: '@color-info',
+    name: 'Info color',
+    type: VariableTypes.color
+  },
+  colorGreen: {
+    key: '@color-green',
+    name: 'Green color',
+    type: VariableTypes.color
+  },
+  colorRed: {
+    key: '@color-red',
+    name: 'Red color',
+    type: VariableTypes.color
+  },
+  colorYellow: {
+    key: '@color-yellow',
+    name: 'Yellow color',
+    type: VariableTypes.color
+  },
+  colorBlue: {
+    key: '@color-blue',
+    name: 'Blue color',
+    type: VariableTypes.color
+  },
+  colorViolet: {
+    key: '@color-violet',
+    name: 'Violet color',
+    type: VariableTypes.color
+  },
+  colorSensitive: {
+    key: '@color-sensitive',
+    name: 'Sensitive object color',
+    type: VariableTypes.color
+  },
+  colorAqua: {
+    key: '@color-aqua',
+    name: 'Aqua color',
+    type: VariableTypes.color
+  },
+  colorAquaLight: {
+    key: '@color-aqua-light',
+    name: 'Aqua light color',
+    type: VariableTypes.color
+  },
+  colorPink: {
+    key: '@color-pink',
+    name: 'Pink color',
+    type: VariableTypes.color
+  },
+  colorPinkDusty: {
+    key: '@color-pink-dusty',
+    name: 'Dusty pink color',
+    type: VariableTypes.color
+  },
+  colorPinkLight: {
+    key: '@color-pink-light',
+    name: 'Light pink color',
+    type: VariableTypes.color
+  },
+  colorBlueDimmed: {
+    key: '@color-blue-dimmed',
+    name: 'Blue dimmed color',
+    type: VariableTypes.color
+  },
+  colorGrey: {
+    key: '@color-grey',
+    name: 'Grey color',
+    type: VariableTypes.color
+  },
+  spinner: {
+    key: '@spinner',
+    name: 'Loading indicator color',
+    type: VariableTypes.color
+  },
+  elementHoverColor: {
+    key: '@element-hover-color',
+    name: 'Lists: hovered element text color',
+    type: VariableTypes.color
+  },
+  elementHoverBackgroundColor: {
+    key: '@element-hover-background-color',
+    name: 'Lists: hovered element background',
+    type: VariableTypes.color
+  },
+  elementSelectedColor: {
+    key: '@element-selected-color',
+    name: 'Lists: selected element text color',
+    type: VariableTypes.color
+  },
+  elementSelectedBackgroundColor: {
+    key: '@element-selected-background-color',
+    name: 'Lists: selected element background',
+    type: VariableTypes.color
+  },
+  inputBackground: {
+    key: '@input-background',
+    name: 'Input control background',
+    type: VariableTypes.color
+  },
+  inputBackgroundDisabled: {
+    key: '@input-background-disabled',
+    name: 'Disabled input control background',
+    type: VariableTypes.color
+  },
+  inputAddon: {
+    key: '@input-addon',
+    name: 'Input control addon background',
+    type: VariableTypes.color
+  },
+  inputBorder: {
+    key: '@input-border',
+    name: 'Input control border',
+    type: VariableTypes.color
+  },
+  inputColor: {
+    key: '@input-color',
+    name: 'Input control text color',
+    type: VariableTypes.color
+  },
+  inputPlaceholderColor: {
+    key: '@input-placeholder-color',
+    name: 'Input control placeholder color',
+    type: VariableTypes.color
+  },
+  inputBorderHoverColor: {
+    key: '@input-border-hover-color',
+    name: 'Hovered input control border',
+    type: VariableTypes.color
+  },
+  inputShadowColor: {
+    key: '@input-shadow-color',
+    name: 'Hovered input control shadow',
+    type: VariableTypes.color
+  },
+  inputSearchIconColor: {
+    key: '@input-search-icon-color',
+    name: 'Input control search icon',
+    type: VariableTypes.color
+  },
+  inputSearchIconHoveredColor: {
+    key: '@input-search-icon-hovered-color',
+    name: 'Input control search icon hovered',
+    type: VariableTypes.color
+  },
+  panelBackgroundColor: {
+    key: '@panel-background-color',
+    name: 'Panels background color',
+    type: VariableTypes.color
+  },
+  panelBorderColor: {
+    key: '@panel-border-color',
+    name: 'Panels border color',
+    type: VariableTypes.color
+  },
+  cardBackgroundColor: {
+    key: '@card-background-color',
+    name: 'Cards background color',
+    type: VariableTypes.color
+  },
+  cardBorderColor: {
+    key: '@card-border-color',
+    name: 'Cards border color',
+    type: VariableTypes.color
+  },
+  cardHoveredShadowColor: {
+    key: '@card-hovered-shadow-color',
+    name: 'Hovered card shadow',
+    type: VariableTypes.color
+  },
+  cardActionsActiveBackground: {
+    key: '@card-actions-active-background',
+    name: 'Card actions background color',
+    type: VariableTypes.color
+  },
+  cardHeaderBackground: {
+    key: '@card-header-background',
+    name: 'Card header background color',
+    type: VariableTypes.color
+  },
+  cardServiceBackgroundColor: {
+    key: '@card-service-background-color',
+    name: 'Service cards background color',
+    type: VariableTypes.color
+  },
+  cardServiceBorderColor: {
+    key: '@card-service-border-color',
+    name: 'Service cards border color',
+    type: VariableTypes.color
+  },
+  cardServiceHoveredShadowColor: {
+    key: '@card-service-hovered-shadow-color',
+    name: 'Service card shadow',
+    type: VariableTypes.color
+  },
+  cardServiceActionsActiveBackground: {
+    key: '@card-service-actions-active-background',
+    name: 'Service card actions background color',
+    type: VariableTypes.color
+  },
+  cardServiceHeaderBackground: {
+    key: '@card-service-header-background',
+    name: 'Service card header background color',
+    type: VariableTypes.color
+  },
+  navigationPanelColor: {
+    key: '@navigation-panel-color',
+    name: 'Navigation panel color',
+    type: VariableTypes.color
+  },
+  navigationPanelColorImpersonated: {
+    key: '@navigation-panel-color-impersonated',
+    name: 'Impersonated navigation panel color',
+    type: VariableTypes.color
+  },
+  navigationPanelHighlightedColor: {
+    key: '@navigation-panel-highlighted-color',
+    name: 'Navigation panel active item background',
+    type: VariableTypes.color
+  },
+  navigationPanelHighlightedColorImpersonated: {
+    key: '@navigation-panel-highlighted-color-impersonated',
+    name: 'Impersonated active item background',
+    type: VariableTypes.color
+  },
+  navigationItemColor: {
+    key: '@navigation-item-color',
+    name: 'Navigation panel icon color',
+    type: VariableTypes.color
+  },
+  navigationItemRunsColor: {
+    key: '@navigation-item-runs-color',
+    name: 'Navigation panel jobs icon color',
+    type: VariableTypes.color
+  },
+  tagKeyBackgroundColor: {
+    key: '@tag-key-background-color',
+    name: 'Key-value attribute: key background',
+    type: VariableTypes.color
+  },
+  tagKeyValueDividerColor: {
+    key: '@tag-key-value-divider-color',
+    name: 'Key-value attribute: divider',
+    type: VariableTypes.color
+  },
+  tagValueBackgroundColor: {
+    key: '@tag-value-background-color',
+    name: 'Key-value attribute: value background',
+    type: VariableTypes.color
+  },
+  nfsIconColor: {
+    key: '@nfs-icon-color',
+    name: 'NFS Storage icon',
+    type: VariableTypes.color
+  },
+  awsIcon: {
+    key: '@aws-icon',
+    name: 'AWS icon',
+    type: VariableTypes.providerIcon,
+    provider: 'AWS'
+  },
+  awsIconContrast: {
+    key: '@aws-icon-contrast',
+    name: 'AWS icon (contrasted)',
+    type: VariableTypes.providerIcon,
+    provider: 'AWS'
+  },
+  gcpIcon: {
+    key: '@gcp-icon',
+    name: 'GCP icon',
+    type: VariableTypes.providerIcon,
+    provider: 'GCP'
+  },
+  gcpIconContrast: {
+    key: '@gcp-icon-contrast',
+    name: 'GCP icon (contrasted)',
+    type: VariableTypes.providerIcon,
+    provider: 'GCP'
+  },
+  azureIcon: {
+    key: '@azure-icon',
+    name: 'AZURE icon',
+    type: VariableTypes.providerIcon,
+    provider: 'AZURE'
+  },
+  azureIconContrast: {
+    key: '@azure-icon-contrast',
+    name: 'AZURE icon (contrasted)',
+    type: VariableTypes.providerIcon,
+    provider: 'AZURE'
+  },
+  euRegionIcon: {
+    key: '@eu-region-icon',
+    name: 'EU region icon',
+    type: VariableTypes.regionIcon
+  },
+  usRegionIcon: {
+    key: '@us-region-icon',
+    name: 'US region icon',
+    type: VariableTypes.regionIcon
+  },
+  saRegionIcon: {
+    key: '@sa-region-icon',
+    name: 'SA region icon',
+    type: VariableTypes.regionIcon
+  },
+  cnRegionIcon: {
+    key: '@cn-region-icon',
+    name: 'CN region icon',
+    type: VariableTypes.regionIcon
+  },
+  caRegionIcon: {
+    key: '@ca-region-icon',
+    name: 'CA region icon',
+    type: VariableTypes.regionIcon
+  },
+  apNortheast1RegionIcon: {
+    key: '@ap-northeast-1-region-icon',
+    name: 'AP North-East 1 region icon',
+    type: VariableTypes.regionIcon
+  },
+  apNortheast2RegionIcon: {
+    key: '@ap-northeast-2-region-icon',
+    name: 'AP North-East 2 region icon',
+    type: VariableTypes.regionIcon
+  },
+  apNortheast3RegionIcon: {
+    key: '@ap-northeast-3-region-icon',
+    name: 'AP North-East 3 region icon',
+    type: VariableTypes.regionIcon
+  },
+  apSouth1RegionIcon: {
+    key: '@ap-south-1-region-icon',
+    name: 'AP South 1 region icon',
+    type: VariableTypes.regionIcon
+  },
+  apSoutheast1RegionIcon: {
+    key: '@ap-southeast-1-region-icon',
+    name: 'AP South-East 1 region icon',
+    type: VariableTypes.regionIcon
+  },
+  apSoutheast2RegionIcon: {
+    key: '@ap-southeast-2-region-icon',
+    name: 'AP South-East 2 region icon',
+    type: VariableTypes.regionIcon
+  },
+  taiwanRegionIcon: {
+    key: '@taiwan-region-icon',
+    name: 'Taiwan region icon',
+    type: VariableTypes.regionIcon
+  },
+  modalMaskBackground: {
+    key: '@modal-mask-background',
+    name: 'Dialogs overlay background',
+    type: VariableTypes.color
+  },
+  evenElementBackground: {
+    key: '@even-element-background',
+    name: 'Even elements background',
+    type: VariableTypes.color
+  },
+  alertSuccessBackground: {
+    key: '@alert-success-background',
+    name: 'Success alert background',
+    type: VariableTypes.color
+  },
+  alertSuccessBorder: {
+    key: '@alert-success-border',
+    name: 'Success alert border',
+    type: VariableTypes.color
+  },
+  alertSuccessIcon: {
+    key: '@alert-success-icon',
+    name: 'Success alert icon',
+    type: VariableTypes.color
+  },
+  alertWarningBackground: {
+    key: '@alert-warning-background',
+    name: 'Warning alert background',
+    type: VariableTypes.color
+  },
+  alertWarningBorder: {
+    key: '@alert-warning-border',
+    name: 'Warning alert border',
+    type: VariableTypes.color
+  },
+  alertWarningIcon: {
+    key: '@alert-warning-icon',
+    name: 'Warning alert icon',
+    type: VariableTypes.color
+  },
+  alertErrorBackground: {
+    key: '@alert-error-background',
+    name: 'Error alert background',
+    type: VariableTypes.color
+  },
+  alertErrorBorder: {
+    key: '@alert-error-border',
+    name: 'Error alert border',
+    type: VariableTypes.color
+  },
+  alertErrorIcon: {
+    key: '@alert-error-icon',
+    name: 'Error alert icon',
+    type: VariableTypes.color
+  },
+  alertInfoBackground: {
+    key: '@alert-info-background',
+    name: 'Info alert background',
+    type: VariableTypes.color
+  },
+  alertInfoBorder: {
+    key: '@alert-info-border',
+    name: 'Info alert border',
+    type: VariableTypes.color
+  },
+  alertInfoIcon: {
+    key: '@alert-info-icon',
+    name: 'Info alert icon',
+    type: VariableTypes.color
+  },
+  tableElementSelectedBackgroundColor: {
+    key: '@table-element-selected-background-color',
+    name: 'Tables: selected element background',
+    type: VariableTypes.color
+  },
+  tableElementSelectedColor: {
+    key: '@table-element-selected-color',
+    name: 'Tables: selected element text color',
+    type: VariableTypes.color
+  },
+  tableElementHoverBackgroundColor: {
+    key: '@table-element-hover-background-color',
+    name: 'Tables: hovered element background',
+    type: VariableTypes.color
+  },
+  tableElementHoverColor: {
+    key: '@table-element-hover-color',
+    name: 'Tables: hovered element text color',
+    type: VariableTypes.color
+  },
+  tableBorderColor: {
+    key: '@table-border-color',
+    name: 'Tables: border',
+    type: VariableTypes.color
+  },
+  tableHeadColor: {
+    key: '@table-head-color',
+    name: 'Tables: header text color',
+    type: VariableTypes.color
+  },
+  menuActiveColor: {
+    key: '@menu-active-color',
+    name: 'Active/hovered menu item color',
+    type: VariableTypes.color
+  },
+  btnDangerColor: {
+    key: '@btn-danger-color',
+    name: 'Danger button: text color',
+    type: VariableTypes.color
+  },
+  btnDangerBackgroundColor: {
+    key: '@btn-danger-background-color',
+    name: 'Danger button: background color',
+    type: VariableTypes.color
+  },
+  btnDangerActiveColor: {
+    key: '@btn-danger-active-color',
+    name: 'Danger button: active text color',
+    type: VariableTypes.color
+  },
+  btnDangerActiveBackground: {
+    key: '@btn-danger-active-background',
+    name: 'Danger button: active background color',
+    type: VariableTypes.color
+  },
+  btnDisabledColor: {
+    key: '@btn-disabled-color',
+    name: 'Disabled button: text color',
+    type: VariableTypes.color
+  },
+  btnDisabledBackgroundColor: {
+    key: '@btn-disabled-background-color',
+    name: 'Disabled button: background color',
+    type: VariableTypes.color
+  },
+  codeBackgroundColor: {
+    key: '@code-background-color',
+    name: 'Code editor background color',
+    type: VariableTypes.color
+  },
+  searchHighlightTextColor: {
+    key: '@search-highlight-text-color',
+    name: 'Search results: highlighted text color',
+    type: VariableTypes.color
+  },
+  searchHighlightTextBackgroundColor: {
+    key: '@search-highlight-text-background-color',
+    name: 'Search results: highlighted background',
+    type: VariableTypes.color
+  },
+  backgroundImage: {
+    key: '@background-image',
+    name: 'Application background image',
+    type: VariableTypes.image
+  },
+  logoImage: {
+    key: '@logo-image',
+    name: 'Application logo',
+    type: VariableTypes.image
+  },
+  navigationBackgroundImage: {
+    key: '@navigation-background-image',
+    name: 'Navigation panel background image',
+    type: VariableTypes.image
+  }
 };
 
 export {
-  ColorVariables,
   Variables,
-  VariableNames,
-  VariableDescriptions
+  VariableTypes
 };
