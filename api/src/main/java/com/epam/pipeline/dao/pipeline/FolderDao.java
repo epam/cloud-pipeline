@@ -184,6 +184,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
         DATASTORAGE_SENSITIVE,
+        DATASTORAGE_MOUNT_DISABLED,
         DATASTORAGE_S3_KMS_KEY_ARN,
         DATASTORAGE_S3_USE_ASSUMED_CREDS,
         DATASTORAGE_S3_TEMP_CREDS_ROLE,
@@ -310,6 +311,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
+                        dataStorage.setMountDisabled(rs.getBoolean(DATASTORAGE_MOUNT_DISABLED.name()));
                         dataStorage.setOwner(rs.getString(OWNER.name()));
                         folder.getStorages().add(dataStorage);
                     }

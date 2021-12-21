@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
+import classNames from 'classnames';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import AdaptedLink from '../special/AdaptedLink';
 import styles from './styles.css';
@@ -129,7 +130,16 @@ export default class extends React.Component {
     const {children} = this.props;
 
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+      >
         {this.renderSettingsNavigation()}
         {children}
       </div>

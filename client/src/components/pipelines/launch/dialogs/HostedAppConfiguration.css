@@ -14,10 +14,7 @@
  *  limitations under the License.
  */
 
-.link,
-.link:hover,
-.link:visited {
-  color: #777;
+.link {
   text-decoration: none;
 }
 
@@ -58,17 +55,11 @@
   line-height: 12px;
   font-size: smaller;
   height: 12px;
-  color: red;
 }
 
 .row.error,
 .row.add-port {
   padding-left: 105px;
-}
-
-.row.has-error .input,
-.row .input.error {
-  border: 1px solid red;
 }
 
 .modal-actions {

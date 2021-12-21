@@ -55,7 +55,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CONFIGURATION, $(button("Configure"))),
-            entry(SERVICES, $(byText("Services")).closest("div[@class='home-page__panel']"))
+            entry(SERVICES, $(byText("Services")).closest(".cp-panel"))
     );
 
     public GlobalSearchAO globalSearch() {
@@ -85,7 +85,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     private SelenideElement serviceCardByRunId(String runId) {
-        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@type='card-content']");
+        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@class='ant-card-body']");
     }
 
     public ToolPageAO openEndpointLink(String endpoint, String runId) {

@@ -81,7 +81,7 @@ repositories {
 ext {
     versionSpringBoot = "1.5.2.RELEASE"
     versionSpringSession = "1.3.1.RELEASE"
-    versionElasticsearch = "5.6.10"
+    versionElasticsearch = "6.8.3"
 }
 
 ext["elasticsearch.version"] = project.ext.versionElasticsearch
@@ -138,10 +138,10 @@ dependencies {
 
     // Logging
     compile group: "org.slf4j", name: "slf4j-api", version: "1.7.24"
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "2.11.2"
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: "2.11.2"
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: "2.11.2"
-    compile group: "org.apache.logging.log4j", name: "log4j-jcl", version: "2.11.2"
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
+    compile group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
+    compile group: "org.apache.logging.log4j", name: "log4j-core", version: log4jVersion
+    compile group: "org.apache.logging.log4j", name: "log4j-jcl", version: log4jVersion
 
     // Core library
     compile project(":core")
@@ -240,6 +240,8 @@ dependencies {
     compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: '3.0.0'
 
     compile('io.reflectoring.diffparser:diffparser:1.4')
+
+    compile 'dnsjava:dnsjava:3.4.3'
 }
 
 // >>>>> processes profiles

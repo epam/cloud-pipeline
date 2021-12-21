@@ -51,6 +51,7 @@ public class LdapBlockedUsersManager {
     private static final String TODAY = "${TODAY}";
     private static final LocalDateTime LDAP_MIN_DATE_TIME = LocalDateTime.of(1601, 1, 1,
             0, 0, 0, 0);
+    private static final int MILLS_TO_100_NANOS = 10000;
 
     private final LdapManager ldapManager;
     private final PreferenceManager preferenceManager;
@@ -82,11 +83,13 @@ public class LdapBlockedUsersManager {
         }
 
         final Map<String, PipelineUser> usersByName = patch.stream()
-                .collect(Collectors.toMap(PipelineUser::getUserName, Function.identity()));
+                .collect(Collectors.toMap(user -> StringUtils.upperCase(user.getUserName()),
+                        Function.identity()));
         return ldapUsers.stream()
                 .filter(Objects::nonNull)
                 .map(LdapEntity::getName)
                 .filter(StringUtils::isNotBlank)
+                .map(StringUtils::upperCase)
                 .filter(usersByName::containsKey)
                 .map(usersByName::get)
                 .collect(Collectors.toList());
@@ -96,9 +99,13 @@ public class LdapBlockedUsersManager {
         return String.valueOf(ldapTimestamp());
     }
 
+    /**
+     * The LDAP timestamp is the number of 100-nanosecond intervals since Jan 1, 1601 UTC.
+     * @return 18 digit LDAP timestamp
+     */
     private long ldapTimestamp() {
         final Duration duration = Duration.between(LDAP_MIN_DATE_TIME, DateUtils.nowUTC());
-        return duration.toMillis() * 1000 * 10;
+        return duration.toMillis() * MILLS_TO_100_NANOS;
     }
 
     private String buildUserListFilter(final List<PipelineUser> patch, final String nameAttribute) {

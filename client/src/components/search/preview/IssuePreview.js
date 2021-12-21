@@ -28,16 +28,13 @@ import IssueLoad from '../../../models/issues/IssueLoad';
 import moment from 'moment-timezone';
 import displayDate from '../../../utils/displayDate';
 import roleModel from '../../../utils/roleModel';
+import Markdown from '../../special/markdown';
 
 @roleModel.authenticationInfo
 @inject((stores, params) => {
-  const {issuesRenderer} = stores;
   const issueInfo = new IssueLoad(params.item.id);
-
   issueInfo.fetch();
-
   return {
-    issuesRenderer,
     issueInfo
   };
 })
@@ -49,8 +46,7 @@ export default class IssuePreview extends React.Component {
       parentId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
       name: PropTypes.string,
       description: PropTypes.string
-    }),
-    lightMode: PropTypes.bool
+    })
   };
 
   @computed
@@ -124,7 +120,9 @@ export default class IssuePreview extends React.Component {
     if (this.props.issueInfo.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.folder.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.folder.error}
+          </span>
         </div>
       );
     }
@@ -146,10 +144,13 @@ export default class IssuePreview extends React.Component {
   };
 
   commentTextPreview = (text, style = {}) => {
-    return <div
-      className={styles.mdPreview}
-      style={style}
-      dangerouslySetInnerHTML={{__html: this.props.issuesRenderer.render(text)}} />;
+    return (
+      <Markdown
+        md={text}
+        cloudPipelineLinks
+        style={style}
+      />
+    );
   };
 
   renderIssue = () => {
@@ -166,7 +167,9 @@ export default class IssuePreview extends React.Component {
     if (this.props.issueInfo.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.folder.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.folder.error}
+          </span>
         </div>
       );
     }
@@ -191,23 +194,22 @@ export default class IssuePreview extends React.Component {
     if (this.props.issueInfo.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.props.folder.error}</span>
+          <span className={'cp-search-preview-error'}>
+            {this.props.folder.error}
+          </span>
         </div>
       );
     }
     if (!this.comments || !this.comments.length) {
       return null;
     }
-    const firstRowStyle = {
-      color: '#999'
-    };
 
     return this.comments.map(comment => ([
       renderSeparator(`${comment.id}_separator`),
       <div key={`${comment.id}_issue_comment`} className={styles.contentPreview}>
         <table>
           <tbody>
-            <tr style={firstRowStyle}>
+            <tr className={'cp-search-comment-header'}>
               <td>
                 {this.renderAuthorName(comment.author)} commented {this.renderDate(comment.createdDate)}:
               </td>
@@ -241,25 +243,23 @@ export default class IssuePreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title} type="flex" align="middle">
+          <Row className={classNames(styles.title, 'cp-search-header-title')} type="flex" align="middle">
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
           {
             this.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {labels && renderSeparator()}

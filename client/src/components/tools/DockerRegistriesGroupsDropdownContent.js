@@ -15,8 +15,9 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react/index';
+import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import DockerRegistriesGroupsSearch from './DockerRegistriesGroupsSearch';
 import DockerRegistryGroupsList from './DockerRegistriesGroupsList';
 import styles from './Tools.css';
@@ -37,7 +38,7 @@ export default class DockerRegistriesGroupsDropdownContent extends React.Compone
     return (
       <div
         id="groups-dropdown"
-        className={styles.navigationDropdownContainer}
+        className={classNames(styles.navigationDropdownContainer, 'rc-dropdown-menu')}
         style={{
           display: 'flex',
           flexDirection: 'column'

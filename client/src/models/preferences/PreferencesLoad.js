@@ -278,17 +278,7 @@ class PreferencesLoad extends Remote {
         };
         const parseOS = o => parseOSValue(o)
           .map(mask => mask.trim())
-          .filter(mask => mask.length)
-          .map(mask => {
-            if (/^all$/i.test(mask)) {
-              return /.*/;
-            }
-            const regExpValue = mask
-              .trim()
-              .replace(/\./g, '\\.')
-              .replace(/\*/g, '.*');
-            return new RegExp(`^${regExpValue}$`, 'i');
-          });
+          .filter(mask => mask.length);
         const parseCloudProviders = o => {
           if (o && /^all$/i.test(o.trim())) {
             return [];

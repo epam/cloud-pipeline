@@ -49,9 +49,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
 
-    private static final String PROVIDER = "provider";
-    private static final String REGION = "region";
-    private static final String CREATED = "created";
+    public static final String PROVIDER = "provider";
+    public static final String REGION = "region";
+    public static final String CREATED = "created";
 
     @Value("${billing.empty.report.value:unknown}")
     private String emptyValue;

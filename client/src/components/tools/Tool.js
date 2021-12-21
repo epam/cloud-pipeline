@@ -35,6 +35,7 @@ import {
 } from 'antd';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
+import classNames from 'classnames';
 import LoadTool from '../../models/tools/LoadTool';
 import ToolImage from '../../models/tools/ToolImage';
 import ToolUpdate from '../../models/tools/ToolUpdate';
@@ -56,15 +57,12 @@ import {
   METADATA_PANEL_KEY,
   ISSUES_PANEL_KEY,
   SplitPanel
-} from '../special/splitPanel/SplitPanel';
+} from '../special/splitPanel';
 import Owner from '../special/owner';
 import styles from './Tools.css';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
 import PermissionsForm from '../roleModel/PermissionsForm';
 import roleModel from '../../utils/roleModel';
 import localization from '../../utils/localization';
-import 'highlight.js/styles/github.css';
 import displayDate from '../../utils/displayDate';
 import displaySize from '../../utils/displaySize';
 import LoadToolAttributes from '../../models/tools/LoadToolInfo';
@@ -73,37 +71,21 @@ import UpdateToolVersionWhiteList from '../../models/tools/UpdateToolVersionWhit
 import ToolScan from '../../models/tools/ToolScan';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import VersionScanResult from './elements/VersionScanResult';
-import {submitsRun, modifyPayloadForAllowedInstanceTypes, run, runPipelineActions} from '../runs/actions';
+import {
+  submitsRun,
+  modifyPayloadForAllowedInstanceTypes,
+  run,
+  runPipelineActions
+} from '../runs/actions';
 import InstanceTypesManagementForm
-  from '../settings/forms/InstanceTypesManagementForm';
+from '../settings/forms/InstanceTypesManagementForm';
 import deleteToolConfirmModal from './tool-deletion-warning';
 import ToolLink from './elements/ToolLink';
 import CreateLinkForm from './forms/CreateLinkForm';
 import PlatformIcon from './platform-icon';
 import HiddenObjects from '../../utils/hidden-objects';
-import {withCurrentUserAttributes} from "../../utils/current-user-attributes";
-
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import {withCurrentUserAttributes} from '../../utils/current-user-attributes';
+import Markdown from '../special/markdown';
 
 const INSTANCE_MANAGEMENT_PANEL_KEY = 'INSTANCE_MANAGEMENT';
 const MAX_INLINE_VERSION_ALIASES = 7;
@@ -395,14 +377,17 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (this.props.tool.value.iconId) {
       image = (
         <img
-          className={roleModel.writeAllowed(this.props.tool.value) ? styles.toolImage : styles.toolImageReadOnly}
+          className={classNames({
+            [styles.toolImage]: roleModel.writeAllowed(this.props.tool.value),
+            [styles.toolImageReadOnly]: !roleModel.writeAllowed(this.props.tool.value)
+          })}
           src={ToolImage.url(this.props.tool.value.id, this.props.tool.value.iconId)} />
       );
     } else {
       image = (
         <Row type="flex" align="middle" justify="center" className={styles.noImageContainer}>
           <Icon
-            className={styles.noImage}
+            className={classNames(styles.noImage, 'cp-text-not-important')}
             type="camera-o" />
         </Row>
       );
@@ -448,7 +433,15 @@ export default class Tool extends localization.LocalizedReactComponent {
       return false;
     };
     return (
-      <div className={styles.toolImageContainer} style={{marginRight: 10}}>
+      <div
+        className={
+          classNames(
+            styles.toolImageContainer,
+            'cp-tool-icon-container'
+          )
+        }
+        style={{marginRight: 10}}
+      >
         {image}
         {
           roleModel.writeAllowed(this.props.tool.value) &&
@@ -504,36 +497,55 @@ export default class Tool extends localization.LocalizedReactComponent {
         } else {
           return <span
             id="short-description-text"
-            className={styles.noDescription}>No description</span>;
+            className={
+              classNames(styles.noDescription, 'cp-tool-no-description')
+            }
+          >
+            No description
+          </span>;
         }
       }
     };
     const renderDescription = () => {
       if (this.state.editDescriptionMode) {
         return (
-          <Input
+          <Input.TextArea
+            autosize
+            autoFocus
             id="description-input"
             value={this.state.description}
             onChange={(e) => this.setState({description: e.target.value})}
-            type="textarea"
             onKeyDown={(e) => {
               if (e.key && e.key === 'Escape') {
                 this.toggleEditDescriptionMode(false);
               }
             }}
-            style={{width: '100%', height: '100%', resize: 'none'}} />
+            style={{
+              width: '100%',
+              height: '100%',
+              resize: 'none',
+              borderRadius: 0,
+              minHeight: '20vh'
+            }} />
         );
       } else {
         const description = this.props.tool.value.description;
         if (description && description.trim().length) {
           return (
-            <div
+            <Markdown
               id="description-text-container"
-              className={styles.mdPreview}
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(description)}} />
+              md={description}
+            />
           );
         } else {
-          return <span id="description-text" className={styles.noDescription}>No description</span>;
+          return (
+            <span
+              id="description-text"
+              className={classNames(styles.noDescription, 'cp-tool-no-description')}
+            >
+              No description
+            </span>
+          );
         }
       }
     };
@@ -552,7 +564,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             id={`${isShortDescription ? 'short-description' : 'description'}-edit-cancel-button`}
             key="cancel"
             size="small"
-            onClick={() => method(false)}>
+            onClick={() => method(false)}
+            style={{lineHeight: 1}}
+          >
             CANCEL
           </Button>
         );
@@ -562,7 +576,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             key="save"
             size="small"
             type="primary"
-            onClick={this.onSave(isShortDescription)}>
+            onClick={this.onSave(isShortDescription)}
+            style={{lineHeight: 1}}
+          >
             SAVE
           </Button>
         );
@@ -572,7 +588,9 @@ export default class Tool extends localization.LocalizedReactComponent {
             id={`${isShortDescription ? 'short-description' : 'description'}-edit-button`}
             key="edit"
             size="small"
-            onClick={() => method(true)}>
+            onClick={() => method(true)}
+            style={{lineHeight: 1}}
+          >
             EDIT
           </Button>
         );
@@ -595,34 +613,33 @@ export default class Tool extends localization.LocalizedReactComponent {
       };
       shortDescriptionAndPullCommand = (
         <Row type="flex">
-          <Col span={16}>
+          <Col className="cp-tool-panel" style={{flex: 2}}>
             <Row
               type="flex"
               align="middle"
               justify="space-between"
-              className={styles.descriptionTableHeader}>
+              className={classNames(styles.descriptionTableHeader, 'cp-tool-panel-header')}
+            >
               <span className={styles.descriptionTitle}>Short description</span>
               {renderActions(true)}
             </Row>
             <Row
               type="flex"
-              style={{marginBottom: 0}}
-              className={styles.descriptionTableBody}>
+              className={classNames(styles.descriptionTableBody, 'cp-tool-panel-body')}>
               {renderShortDescription()}
             </Row>
           </Col>
-          <Col span={8} style={{paddingLeft: 10}}>
+          <Col className="cp-tool-panel" style={{flex: 1}}>
             <Row
               type="flex"
               align="middle"
               justify="space-between"
-              className={styles.descriptionTableHeader}>
+              className={classNames(styles.descriptionTableHeader, 'cp-tool-panel-header')}>
               <span className={styles.descriptionTitle}>Default pull command</span>
             </Row>
             <Row
               type="flex"
-              style={{marginBottom: 0}}
-              className={styles.descriptionTableBody}>
+              className={classNames(styles.descriptionTableBody, 'cp-tool-panel-body')}>
               <span className={styles.description}>
                 <code>{renderPullCommand()}</code>
               </span>
@@ -631,24 +648,25 @@ export default class Tool extends localization.LocalizedReactComponent {
         </Row>
       );
     } else {
-      shortDescriptionAndPullCommand = [
-        <Row
-          key="header"
-          type="flex"
-          align="middle"
-          justify="space-between"
-          className={styles.descriptionTableHeader}>
-          <span className={styles.descriptionTitle}>Short description</span>
-          {renderActions(true)}
-        </Row>,
-        <Row
-          key="body"
-          type="flex"
-          style={{marginBottom: 0}}
-          className={styles.descriptionTableBody}>
-          {renderShortDescription()}
-        </Row>
-      ];
+      shortDescriptionAndPullCommand = (
+        <div className="cp-tool-panel">
+          <Row
+            key="header"
+            type="flex"
+            align="middle"
+            justify="space-between"
+            className={classNames(styles.descriptionTableHeader, 'cp-tool-panel-header')}>
+            <span className={styles.descriptionTitle}>Short description</span>
+            {renderActions(true)}
+          </Row>
+          <Row
+            key="body"
+            type="flex"
+            className={classNames(styles.descriptionTableBody, 'cp-tool-panel-body')}>
+            {renderShortDescription()}
+          </Row>
+        </div>
+      );
     }
 
     const warningForLatestVersion = this.getWarningForLatestVersion();
@@ -668,20 +686,31 @@ export default class Tool extends localization.LocalizedReactComponent {
             {shortDescriptionAndPullCommand}
           </div>
         </Row>
-        <Row
-          type="flex"
-          align="middle"
-          justify="space-between"
-          className={styles.descriptionTableHeader}>
-          <span className={styles.descriptionTitle}>Full description</span>
-          {renderActions(false)}
-        </Row>
-        <Row
-          type="flex"
-          className={styles.descriptionTableBody}
-          style={{flex: 1, overflowY: 'auto'}}>
-          {renderDescription()}
-        </Row>
+        <div className="cp-tool-panel">
+          <Row
+            type="flex"
+            align="middle"
+            justify="space-between"
+            className={classNames(styles.descriptionTableHeader, 'cp-tool-panel-header')}
+          >
+            <span className={styles.descriptionTitle}>Full description</span>
+            {renderActions(false)}
+          </Row>
+          <Row
+            type="flex"
+            className={
+              classNames(
+                styles.descriptionTableBody,
+                'cp-tool-panel-body',
+                {
+                  'no-padding': this.state.editDescriptionMode
+                }
+              )
+            }
+            style={{flex: 1, overflowY: 'auto'}}>
+            {renderDescription()}
+          </Row>
+        </div>
       </div>
     );
   };
@@ -737,10 +766,10 @@ export default class Tool extends localization.LocalizedReactComponent {
           if (item.successScanDate) {
             scanningInfo = <span>
               Scanning <span
-                className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
+                className={classNames(styles.scanningError, 'cp-error')}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}. Last successful scan: {displayDate(item.successScanDate)}</span>;
           } else {
             scanningInfo = <span>Scanning <span
-              className={styles.scanningError}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}</span>;
+              className={classNames(styles.scanningError, 'cp-error')}>failed</span>{item.scanDate ? ` at ${displayDate(item.scanDate)}` : ''}</span>;
           }
           break;
         case ScanStatuses.notScanned:
@@ -853,7 +882,7 @@ export default class Tool extends localization.LocalizedReactComponent {
       return (
         <span
           key={alias}
-          className={styles.versionAliasItem}>
+          className={classNames(styles.versionAliasItem, 'cp-tag')}>
           {alias}
         </span>
       );
@@ -928,7 +957,10 @@ export default class Tool extends localization.LocalizedReactComponent {
                 <td className={styles.versionScanningInfoEmptyCell}>{'\u00A0'}</td>
               </tr>
               <tr>
-                <td colSpan={3} className={styles.versionScanningInfo}>
+                <td
+                  colSpan={3}
+                  className={classNames(styles.versionScanningInfo, 'cp-text-not-important')}
+                >
                   {this.getVersionScanningInfo(item)}
                 </td>
               </tr>
@@ -997,7 +1029,9 @@ export default class Tool extends localization.LocalizedReactComponent {
               (
                 <Button
                   size="small"
-                  onClick={(e) => this.toggleVersionWhiteList(e, version)}>
+                  onClick={(e) => this.toggleVersionWhiteList(e, version)}
+                  style={{lineHeight: 1}}
+                >
                   {version.fromWhiteList ? 'Remove from ' : 'Add to '}white list
                 </Button>
               )
@@ -1012,7 +1046,9 @@ export default class Tool extends localization.LocalizedReactComponent {
                   type="primary"
                   loading={version.status === ScanStatuses.pending}
                   size="small"
-                  onClick={(e) => this.toolScan(e, version.name)}>
+                  onClick={(e) => this.toolScan(e, version.name)}
+                  style={{lineHeight: 1}}
+                >
                   {version.status === ScanStatuses.pending ? 'SCANNING' : 'SCAN'}
                 </Button>
               )
@@ -1036,7 +1072,9 @@ export default class Tool extends localization.LocalizedReactComponent {
                     e.preventDefault();
                     e.stopPropagation();
                     this.deleteToolVersionConfirm(version.name);
-                  }}>
+                  }}
+                  style={{lineHeight: 1}}
+                >
                   <Icon type="delete" />
                 </Button>
               )
@@ -1064,10 +1102,15 @@ export default class Tool extends localization.LocalizedReactComponent {
           className={styles.table}
           loading={this.props.versions.pending}
           showHeader
-          rowClassName={(item) => item.fromWhiteList && this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
-            ? `${styles.versionTableRow} ${styles.whiteListedVersionRow}`
-            : styles.versionTableRow
-          }
+          rowClassName={(item) => classNames(
+            styles.versionTableRow,
+            {
+              [styles.whiteListedVersionRow]: item.fromWhiteList &&
+              this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry),
+              'cp-tool-white-listed-version': item.fromWhiteList &&
+                this.props.preferences.toolScanningEnabledForRegistry(this.dockerRegistry)
+            }
+          )}
           columns={columns}
           dataSource={data}
           pagination={{pageSize: 20}}
@@ -1084,14 +1127,19 @@ export default class Tool extends localization.LocalizedReactComponent {
           isContainsUnscannedVersion &&
           <Row className={styles.viewUnscannedVersion}>
             <Button
-              style={{marginTop: 10}}
+              style={{marginTop: 10, lineHeight: 1}}
               key="view_unscanned_version"
               size="large"
               type="primary"
               ghost
               disabled={!isContainsUnscannedVersion}
-              onClick={this.onChangeViewUnscannedVersion}>
-              {this.state.isShowUnscannedVersion ? 'HIDE UNSCANNED VERSIONS' : 'VIEW UNSCANNED VERSIONS'}
+              onClick={this.onChangeViewUnscannedVersion}
+            >
+              {
+                this.state.isShowUnscannedVersion
+                  ? 'HIDE UNSCANNED VERSIONS'
+                  : 'VIEW UNSCANNED VERSIONS'
+              }
             </Button>
           </Row>
         }
@@ -1315,23 +1363,21 @@ export default class Tool extends localization.LocalizedReactComponent {
       this.props.router.push(`/tool/${this.props.toolId}/${key}`);
     };
     return (
-      <Row type="flex" justify="center">
-        <MenuHorizontal
-          className={styles.toolMenu}
-          onClick={onChangeSection}
-          mode="horizontal"
-          selectedKeys={[this.props.section]}>
-          <MenuHorizontal.Item key="description">
-            DESCRIPTION
-          </MenuHorizontal.Item>
-          <MenuHorizontal.Item key="versions">
-            VERSIONS
-          </MenuHorizontal.Item>
-          <MenuHorizontal.Item key="settings">
-            SETTINGS
-          </MenuHorizontal.Item>
-        </MenuHorizontal>
-      </Row>
+      <MenuHorizontal
+        className={styles.toolMenu}
+        onClick={onChangeSection}
+        mode="horizontal"
+        selectedKeys={[this.props.section]}>
+        <MenuHorizontal.Item key="description">
+          DESCRIPTION
+        </MenuHorizontal.Item>
+        <MenuHorizontal.Item key="versions">
+          VERSIONS
+        </MenuHorizontal.Item>
+        <MenuHorizontal.Item key="settings">
+          SETTINGS
+        </MenuHorizontal.Item>
+      </MenuHorizontal>
     );
   };
 
@@ -1593,12 +1639,15 @@ export default class Tool extends localization.LocalizedReactComponent {
             key="run-custom-button"
             size="small"
             type="primary"
+            className={styles.runButton}
             disabled={!allowedToExecute && !this.isAdmin()}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
               this.runTool(version || this.anyTag);
-            }}>
+            }}
+            style={{lineHeight: 1}}
+          >
             {
               tooltip && !notLoaded
                 ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
@@ -1619,6 +1668,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           trigger="hover">
           <Button
             id={`run-${version}-button`}
+            className={styles.runButton}
             type="primary"
             size="small"
             disabled={!allowedToExecute && !this.isAdmin()}
@@ -1626,7 +1676,9 @@ export default class Tool extends localization.LocalizedReactComponent {
               e.preventDefault();
               e.stopPropagation();
               return this.runToolDefault(version);
-            }}>
+            }}
+            style={{lineHeight: 1}}
+          >
             {
               tooltip && !notLoaded
                 ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
@@ -1682,47 +1734,49 @@ export default class Tool extends localization.LocalizedReactComponent {
         </Menu>
       );
       return (
-        <span style={{position: 'relative', display: 'inline-block'}}>
-          <Button.Group>
-            <Tooltip
-              placement="left"
-              title={tooltip}
-              trigger="hover">
-              <Button
-                id={`run-${version}-button`}
-                type="primary"
-                size="small"
-                disabled={!allowedToExecute && !this.isAdmin()}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  return this.runToolDefault(version);
-                }}>
-                {
-                  tooltip && !notLoaded
-                    ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
-                    : undefined
-                }
-                <span style={{verticalAlign: 'middle', lineHeight: 'inherit'}}>Run</span>
-              </Button>
-            </Tooltip>
-            <Dropdown
+        <Button.Group className={styles.runButton}>
+          <Tooltip
+            placement="left"
+            title={tooltip}
+            trigger="hover">
+            <Button
+              id={`run-${version}-button`}
+              type="primary"
+              size="small"
               disabled={!allowedToExecute && !this.isAdmin()}
-              overlay={runMenu}
-              placement="bottomRight">
-              <Button
-                id={`run-${version}-menu-button`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                size="small"
-                type="primary">
-                <Icon type="down" style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
-              </Button>
-            </Dropdown>
-          </Button.Group>
-        </span>
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                return this.runToolDefault(version);
+              }}
+              style={{lineHeight: 1}}
+            >
+              {
+                tooltip && !notLoaded
+                  ? <Icon type="exclamation-circle" style={{marginRight: 5}} />
+                  : undefined
+              }
+              <span style={{lineHeight: 'inherit'}}>Run</span>
+            </Button>
+          </Tooltip>
+          <Dropdown
+            disabled={!allowedToExecute && !this.isAdmin()}
+            overlay={runMenu}
+            placement="bottomRight">
+            <Button
+              id={`run-${version}-menu-button`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+              size="small"
+              type="primary"
+              style={{lineHeight: 1}}
+            >
+              <Icon type="down" style={{lineHeight: 'inherit'}} />
+            </Button>
+          </Dropdown>
+        </Button.Group>
       );
     }
   };
@@ -1790,8 +1844,10 @@ export default class Tool extends localization.LocalizedReactComponent {
         overlay={displayOptionsMenu}>
         <Button
           id="display-attributes"
-          size="small">
-          <Icon type="appstore" style={{verticalAlign: 'middle', lineHeight: 'inherit'}} />
+          size="small"
+          style={{lineHeight: 1}}
+        >
+          <Icon type="appstore" style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -1859,6 +1915,7 @@ export default class Tool extends localization.LocalizedReactComponent {
           disabled={!this.props.tool.loaded}
           size="small"
           onClick={this.openCreateLinkForm}
+          style={{lineHeight: 1}}
         >
           <Icon type="link" />
         </Button>
@@ -1886,15 +1943,15 @@ export default class Tool extends localization.LocalizedReactComponent {
           <Icon type="setting" /> Permissions
         </MenuItem>
         <Divider />
-        <MenuItem key={deleteKey} style={{color: 'red'}}>
+        <MenuItem key={deleteKey} className="cp-danger">
           <Icon type="delete" /> Delete tool {this.link ? 'link' : false}
         </MenuItem>
       </Menu>
     );
     return (
       <Dropdown overlay={menu} placement="bottomRight">
-        <Button id="setting-button" size="small">
-          <Icon type="setting" style={{lineHeight: 'inherit', verticalAlign: 'middle'}} />
+        <Button id="setting-button" size="small" style={{lineHeight: 1}}>
+          <Icon type="setting" style={{lineHeight: 'inherit'}} />
         </Button>
       </Dropdown>
     );
@@ -1918,7 +1975,14 @@ export default class Tool extends localization.LocalizedReactComponent {
     if (!roleModel.readAllowed(this.props.tool.value)) {
       return (
         <Card
-          className={styles.toolsCard}
+          className={
+            classNames(
+              styles.toolsCard,
+              'cp-panel',
+              'cp-panel-no-hover',
+              'cp-panel-borderless'
+            )
+          }
           bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
           <Alert type="error" message="You have no permissions to view tool details" />
         </Card>
@@ -1926,46 +1990,49 @@ export default class Tool extends localization.LocalizedReactComponent {
     }
     return (
       <Card
-        className={styles.toolsCard}
+        className={
+          classNames(
+            styles.toolsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 15, height: '100%', display: 'flex', flexDirection: 'column'}}>
-        <table className={styles.toolsHeader}>
-          <tbody>
-            <tr>
-              <td className={styles.title} style={{width: '33%'}}>
-                <Button
-                  onClick={this.navigateBack}
-                  size="small"
-                  style={{marginBottom: 3, verticalAlign: 'middle', lineHeight: 'inherit'}}>
-                  <Icon type="arrow-left" />
-                </Button>
-                <ToolLink link={this.link} style={{marginLeft: 5}} />
-                <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
-                <PlatformIcon
-                  platform={this.defaultVersionPlatform}
-                  style={{verticalAlign: 'middle', marginLeft: 5}}
-                />
-                <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
-              </td>
-              <td style={{width: '33%', verticalAlign: 'bottom'}}>
-                {this.renderMenu()}
-              </td>
-              <td className={styles.toolActions} style={{textAlign: 'right', width: '33%'}}>
-                {
-                  this.renderDisplayOptionsMenu()
-                }
-                {
-                  this.renderCreateLinkButton()
-                }
-                {
-                  roleModel.isOwner(this.props.tool.value) && this.renderActionsMenu()
-                }
-                {
-                  roleModel.executeAllowed(this.props.tool.value) && this.renderRunButton()
-                }
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div className={classNames(styles.toolsHeader, 'cp-tool-header')}>
+          <div className={styles.title} style={{flex: 1}}>
+            <Button
+              onClick={this.navigateBack}
+              size="small"
+              style={{lineHeight: 1}}>
+              <Icon type="arrow-left" />
+            </Button>
+            <ToolLink link={this.link} style={{marginLeft: 5}} />
+            <span style={{marginLeft: 5}}>{this.props.tool.value.image}</span>
+            <PlatformIcon
+              platform={this.defaultVersionPlatform}
+              style={{marginLeft: 5}}
+            />
+            <Owner subject={this.props.tool.value} style={{marginLeft: 5}} />
+          </div>
+          <div style={{flex: 1}}>
+            {this.renderMenu()}
+          </div>
+          <div className={styles.toolActions} style={{textAlign: 'right', flex: 1}}>
+            {
+              this.renderDisplayOptionsMenu()
+            }
+            {
+              this.renderCreateLinkButton()
+            }
+            {
+              roleModel.isOwner(this.props.tool.value) && this.renderActionsMenu()
+            }
+            {
+              roleModel.executeAllowed(this.props.tool.value) && this.renderRunButton()
+            }
+          </div>
+        </div>
         {
           this.renderContent()
         }

@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon} from 'antd';
 import styles from './pickers.css';
+import '../../../../../staticStyles/billing-calendar.css';
 
 class PickerButton extends React.Component {
   static propTypes = {
@@ -68,7 +69,7 @@ class PickerButton extends React.Component {
     const {hovered} = this.state;
     const onRemoveIsSet = !!onRemove;
     const classNames = [
-      valueIsSet ? styles.valueIsSet : undefined,
+      valueIsSet ? 'cp-billing-calendar-set-value' : undefined,
       hovered ? styles.hovered : undefined
     ].filter(Boolean).join(' ');
     return (
@@ -100,13 +101,16 @@ class PickerButton extends React.Component {
               onRemoveIsSet &&
               hovered && (
                 <Icon
-                  className={styles.close}
+                  className={'cp-billing-calendar-set-value-close cp-billing-calendar-icon'}
                   type="close-circle"
                   onClick={this.onRemove}
                 />
               )
             }
-            {(!valueIsSet || !hovered || !onRemoveIsSet) && <Icon type="calendar" />}
+            {
+              (!valueIsSet || !hovered || !onRemoveIsSet) &&
+              <Icon type="calendar" className={'cp-billing-calendar-icon'} />
+            }
           </div>
         </Button>
         {

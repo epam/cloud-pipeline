@@ -143,6 +143,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                     .switchToSystemLogs();
             if (impersonateMode()) {
                 systemLogsAO
+                        .filterByUser(admin.login)
                         .validateRow(format("Authentication failed! User %s is blocked!",
                                 userWithoutCompletedRuns.login), admin.login, TYPE)
                         .validateRow(format("Failed impersonation action: START, message: User: %s is blocked!",
@@ -188,6 +189,7 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(admin.login)
                 .pressEnter()
                 .filterByMessage("Blocking status=false");
+
         final SelenideElement blockingInfoRow = systemLogsAO
                 .getInfoRow("Blocking status=false", admin.login, TYPE);
         final String userId = systemLogsAO.getUserId(blockingInfoRow);
@@ -242,10 +244,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(admin.login)
                 .filterByMessage("Granting permissions")
                 .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
-                                "\\(mask: 0\\). Sid: name=%s isPrincipal=true", pipeline, userWithoutCompletedRuns.login),
+                                "\\(mask: 0\\). Sid: name=%s isPrincipal=true.*", pipeline, userWithoutCompletedRuns.login),
                         admin.login, TYPE)
                 .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
-                                "READ,NO_WRITE,EXECUTE \\(mask: 25\\). Sid: name=%s isPrincipal=true", pipeline,
+                                "READ,NO_WRITE,EXECUTE \\(mask: 25\\). Sid: name=%s isPrincipal=true.*", pipeline,
                         userWithoutCompletedRuns.login),
                         admin.login, TYPE);
     }

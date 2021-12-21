@@ -49,12 +49,15 @@ const PAGE_SIZE = 40;
 @inject('dataStorages', 'S3Storage', 'preferences')
 @inject(({routing, dataStorages}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
+  const decodedPath = queryParameters.path
+    ? decodeURIComponent(queryParameters.path)
+    : undefined;
   return {
     wsi: queryParameters.wsi,
     storageId: queryParameters.id,
-    path: queryParameters.path,
+    path: decodedPath,
     storage: queryParameters.id
-      ? new DataStorageRequest(queryParameters.id, queryParameters.path, false, PAGE_SIZE)
+      ? new DataStorageRequest(queryParameters.id, decodedPath, false, PAGE_SIZE)
       : null,
     info: queryParameters.id ? dataStorages.load(queryParameters.id) : null
   };
@@ -96,7 +99,7 @@ export default class Browser extends React.Component {
       path = path.substring(0, path.length - 1);
     }
     if (path) {
-      this.props.router.push(`${process.env.PUBLIC_URL}?id=${id}&path=${path}`);
+      this.props.router.push(`${process.env.PUBLIC_URL}?id=${id}&path=${encodeURIComponent(path)}`);
     } else {
       this.props.router.push(`${process.env.PUBLIC_URL}?id=${id}`);
     }
@@ -124,7 +127,7 @@ export default class Browser extends React.Component {
             relativePath = path.substring(0, relativePath.length - 1);
           }
           if (relativePath) {
-            this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${relativePath}`);
+            this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${encodeURIComponent(relativePath)}`);
           } else {
             this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}`);
           }
@@ -234,7 +237,7 @@ export default class Browser extends React.Component {
     }
     const payload = [{
       oldPath: this.state.renameItem.path,
-      path: decodeURIComponent(`${path}${name}`),
+      path: `${path}${name}`,
       type: this.state.renameItem.type,
       action: 'Move'
     }];
@@ -264,7 +267,7 @@ export default class Browser extends React.Component {
       path += '/';
     }
     const payload = [{
-      path: decodeURIComponent(`${path}${name}`),
+      path: `${path}${name}`,
       type: 'Folder',
       action: 'Create'
     }];
@@ -638,7 +641,7 @@ export default class Browser extends React.Component {
         path = path.substring(0, path.length - 1);
       }
       if (path) {
-        this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${path}`);
+        this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${encodeURIComponent(path)}`);
       } else {
         this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}`);
       }

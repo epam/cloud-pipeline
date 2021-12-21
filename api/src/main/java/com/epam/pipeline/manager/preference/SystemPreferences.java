@@ -232,6 +232,17 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_FSBROWSER_BLACK_LIST = new StringPreference(
             "storage.fsbrowser.black.list", STORAGE_FSBROWSER_BLACK_LIST_DEFAULT, DATA_STORAGE_GROUP, pass);
 
+    /**
+     * Storage quotas configuration
+     */
+    public static final ObjectPreference<List<StorageFileSearchMask>> STORAGE_QUOTAS_SKIPPED_PATHS =
+        new ObjectPreference<>(
+            "storage.quotas.skipped.paths",
+            Collections.emptyList(),
+            new TypeReference<List<StorageFileSearchMask>>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
+
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
     public static final StringPreference GIT_READER_HOST =
@@ -857,6 +868,10 @@ public class SystemPreferences {
             "billing.reports.enabled", true, BILLING_GROUP, pass);
     public static final BooleanPreference BILLING_REPORTS_ENABLED_ADMINS = new BooleanPreference(
             "billing.reports.enabled.admins", true, BILLING_GROUP, pass);
+    public static final IntPreference BILLING_EXPORT_AGGREGATION_PAGE_SIZE = new IntPreference(
+            "billing.export.aggregation.page.size", 5000, BILLING_GROUP, pass);
+    public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = new IntPreference(
+            "billing.export.period.aggregation.page.size", 1000, BILLING_GROUP, pass);
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(

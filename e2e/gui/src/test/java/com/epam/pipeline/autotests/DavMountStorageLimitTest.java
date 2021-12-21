@@ -327,7 +327,7 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
     private String accessEnabledMessage() {
         return format("%s %s.", fileSystemaccessEnabled,
                 LocalDateTime.now().plusSeconds(durationSeconds)
-                        .format(ofPattern("dd MMM yyyy, HH:mm")));
+                        .format(ofPattern("d MMM yyyy, HH:mm")));
     }
 
     private void setUiPipeFileBrowserRequest(String json) {

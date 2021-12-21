@@ -17,16 +17,31 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Select} from 'antd';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './provider-filter.css';
+import BillingNavigation from '../../navigation';
 
 const RegionType = {
   region: 'region',
   provider: 'provider'
 };
+
+function mapRegion (region) {
+  const [type, ...rest] = region.split('-');
+  const id = rest.join('-');
+  return {
+    type,
+    id
+  };
+}
+
+function filterToString (filter) {
+  const str = (filter || []).map(f => Number(f));
+  str.sort((a, b) => a - b);
+  return str.join('|');
+}
 
 class ProviderFilter extends React.Component {
   state = {
@@ -36,34 +51,33 @@ class ProviderFilter extends React.Component {
 
   get selectedProviders () {
     const {value} = this.state;
-    return (value || []).map(this.mapRegion)
+    return (value || []).map(mapRegion)
       .filter(r => r.type === RegionType.provider)
       .map(r => r.id);
   }
 
   componentDidMount () {
-    this.updateValue(this.props.filter);
+    this.updateValue();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (this.filterToString(prevProps.filter) !== this.filterToString(this.props.filter)) {
-      this.updateValue(this.props.filter);
+    const {filters = {}} = this.props;
+    const {region: filter} = filters;
+    if (filterToString(this.state.filter) !== filterToString(filter)) {
+      this.updateValue();
     } else {
       this.correct();
     }
   }
 
-  filterToString = (filter) => {
-    const str = (filter || []).map(f => Number(f));
-    str.sort((a, b) => a - b);
-    return str.join('|');
-  };
-
-  updateValue = (value) => {
+  updateValue = () => {
+    const {filters = {}} = this.props;
+    const {region: value} = filters;
     const newValue = (value || []).map(r => `${RegionType.region}-${r}`);
     this.correctValue(newValue)
       .then(corrected => {
         this.setState({
+          filter: value,
           value: corrected || newValue
         });
       });
@@ -83,7 +97,7 @@ class ProviderFilter extends React.Component {
     await cloudRegionsInfo.fetchIfNeededOrWait();
     if (cloudRegionsInfo.loaded) {
       const regions = (cloudRegionsInfo.value || []);
-      const currentValue = (value || []).map(this.mapRegion);
+      const currentValue = (value || []).map(mapRegion);
       const newValue = [];
       let modified = false;
       [...(new Set((cloudRegionsInfo.value || []).map(o => o.provider)))]
@@ -95,7 +109,7 @@ class ProviderFilter extends React.Component {
             regions.filter(r => r.provider === provider).map(r => +r.id)
           );
           const currentIds = new Set(
-            (value || []).map(this.mapRegion)
+            (value || []).map(mapRegion)
               .filter(r => r.type === RegionType.region && existingIds.has(+r.id))
               .map(r => +r.id)
           );
@@ -117,22 +131,15 @@ class ProviderFilter extends React.Component {
     this.setState({focused: true});
   };
 
-  mapRegion = (region) => {
-    const [type, ...rest] = region.split('-');
-    const id = rest.join('-');
-    return {
-      type,
-      id
-    };
-  };
-
   onBlur = () => {
     this.setState({focused: false}, async () => {
       const {value} = this.state;
-      const {cloudRegionsInfo, onChange} = this.props;
+      const {cloudRegionsInfo, filters = {}} = this.props;
+      const {region, buildNavigationFn = () => {}} = filters;
+      const onChange = buildNavigationFn('region')
       await cloudRegionsInfo.fetchIfNeededOrWait();
       if (cloudRegionsInfo.loaded) {
-        const payload = value.map(this.mapRegion);
+        const payload = value.map(mapRegion);
         const providers = payload.filter(p => p.type === RegionType.provider);
         providers.forEach(provider => {
           const index = payload.indexOf(provider);
@@ -144,7 +151,7 @@ class ProviderFilter extends React.Component {
         const correctedPayload = payload.map(o => o.id);
         if (
           onChange &&
-          this.filterToString(correctedPayload) !== this.filterToString(this.props.filter)
+          filterToString(correctedPayload) !== filterToString(region)
         ) {
           onChange(correctedPayload);
         }
@@ -159,7 +166,7 @@ class ProviderFilter extends React.Component {
       const old = new Set(value);
       const newSelection = opts.find(o => !old.has(o));
       if (newSelection) {
-        const {type, id} = this.mapRegion(newSelection);
+        const {type, id} = mapRegion(newSelection);
         if (type === RegionType.provider) {
           const providerRegions = new Set(
             (cloudRegionsInfo.value || [])
@@ -167,7 +174,7 @@ class ProviderFilter extends React.Component {
               .map(r => `${r.id}`)
           );
           const filtered = opts
-            .map(this.mapRegion)
+            .map(mapRegion)
             .filter(o => o.type === RegionType.provider || !providerRegions.has(`${o.id}`))
             .map(o => `${o.type}-${o.id}`);
           this.setState({
@@ -252,9 +259,8 @@ class ProviderFilter extends React.Component {
   }
 }
 
-ProviderFilter.propTypes = {
-  filter: PropTypes.array,
-  onChange: PropTypes.func
-};
-
-export default inject('cloudRegionsInfo')(observer(ProviderFilter));
+export default inject('cloudRegionsInfo')(
+  BillingNavigation.attach(
+    observer(ProviderFilter)
+  )
+);

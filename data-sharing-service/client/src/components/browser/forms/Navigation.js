@@ -140,7 +140,7 @@ export default class DataStorageNavigation extends React.Component {
                 return (
                   <Breadcrumb.Item
                     className={styles.breadcrumbItem}
-                    key={part.key}>{decodeURIComponent(part.title)}</Breadcrumb.Item>
+                    key={part.key}>{part.title}</Breadcrumb.Item>
                 );
               }
             })}

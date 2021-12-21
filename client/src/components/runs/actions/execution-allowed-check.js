@@ -297,7 +297,11 @@ export async function performAsyncCheck (props, state = undefined) {
 export function PermissionErrorsTitle () {
   return (
     <Row style={{fontWeight: 'bold'}}>
-      <Icon type="exclamation-circle-o" style={{marginRight: 5, color: 'orange'}} />
+      <Icon
+        type="exclamation-circle-o"
+        style={{marginRight: 5}}
+        className="cp-error"
+      />
       <span>Permission issues</span>
     </Row>
   );

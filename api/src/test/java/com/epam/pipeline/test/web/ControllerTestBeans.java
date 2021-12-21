@@ -23,6 +23,7 @@ import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.acl.quota.QuotaApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
@@ -242,4 +243,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected LdapApiService ldapApiService;
+
+    @MockBean
+    protected QuotaApiService quotaApiService;
 }

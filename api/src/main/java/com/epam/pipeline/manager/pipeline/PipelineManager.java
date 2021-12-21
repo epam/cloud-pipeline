@@ -297,6 +297,14 @@ public class PipelineManager implements SecuredEntityManager {
     }
 
     public Pipeline loadByNameOrId(String identifier) {
+        return loadByNameOrId(identifier, true);
+    }
+
+    public Pipeline loadByNameOrIdWithoutVersion(String identifier) {
+        return loadByNameOrId(identifier, false);
+    }
+
+    private Pipeline loadByNameOrId(final String identifier, final boolean loadVersion) {
         Pipeline pipeline = null;
         try {
             pipeline = pipelineDao.loadPipeline(Long.parseLong(identifier));
@@ -307,7 +315,9 @@ public class PipelineManager implements SecuredEntityManager {
             pipeline = pipelineDao.loadPipelineByName(identifier);
         }
         Assert.notNull(pipeline, messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, identifier));
-        setCurrentVersion(pipeline);
+        if (loadVersion) {
+            setCurrentVersion(pipeline);
+        }
         pipeline.setHasMetadata(this.metadataManager.hasMetadata(new EntityVO(pipeline.getId(), AclClass.PIPELINE)));
         return pipeline;
     }

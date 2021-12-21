@@ -65,25 +65,6 @@ function nameSorter (a, b) {
   return 0;
 }
 
-function findGroups (prefix) {
-  if (!prefix) {
-    return Promise.resolve([]);
-  }
-  return new Promise((resolve) => {
-    const request = new GroupFind(prefix);
-    request
-      .fetch()
-      .then(() => {
-        if (request.loaded) {
-          resolve((request.value || []).slice());
-        } else {
-          resolve([]);
-        }
-      })
-      .catch(() => resolve([]));
-  });
-}
-
 @inject('usersInfo')
 @inject(({usersInfo}) => ({roles, users: usersInfo}))
 @observer
@@ -130,10 +111,12 @@ class UsersRolesSelect extends React.Component {
       adGroups = []
     } = this.state;
     const {value = []} = this.props;
+    const uniqueRoleNames = new Set(this.roles.map(o => o.name));
+    const filteredADGroups = adGroups.filter(o => !uniqueRoleNames.has(o.name));
     const usersAndRoles = [
       ...this.users,
       ...this.roles,
-      ...adGroups
+      ...filteredADGroups
     ];
     const itemIsSelected = (item) => !!value
       .find(v => v.name === item.name && v.principal === item.principal);
@@ -162,7 +145,7 @@ class UsersRolesSelect extends React.Component {
     this.setState({
       searchString: e || ''
     }, () => {
-      findGroups(e)
+      GroupFind.findGroups(e)
         .then((groups = []) => {
           if (this.state.searchString === e) {
             this.setState({

@@ -56,7 +56,6 @@ class PreviewModal extends React.Component {
   render () {
     const {
       preview,
-      lightMode,
       onClose
     } = this.props;
     if (!preview) {
@@ -71,15 +70,14 @@ class PreviewModal extends React.Component {
     };
     return (
       <div
-        className={styles.previewWrapper}
+        className={classNames(styles.previewWrapper, 'cp-search-preview-wrapper')}
         onClick={handleClosePreview}
       >
         <div
-          className={styles.preview}
+          className={classNames(styles.preview, 'cp-search-preview')}
         >
           <Preview
             item={preview}
-            lightMode={lightMode}
             onPreviewLoaded={this.onPreviewLoaded}
             fullscreen={maximized}
             onFullScreenChange={this.handleMaximizePreview}
@@ -89,14 +87,22 @@ class PreviewModal extends React.Component {
             maximizedAvailable && (
               <Icon
                 type="arrows-alt"
-                className={classNames(styles.previewButton, styles.maximize)}
+                className={classNames(
+                  styles.previewButton,
+                  styles.maximize,
+                  'cp-search-preview-button'
+                )}
                 onClick={() => this.handleMaximizePreview(true)}
               />
             )
           }
           <Icon
             type="close"
-            className={classNames(styles.previewButton, styles.close)}
+            className={classNames(
+              styles.previewButton,
+              styles.close,
+              'cp-search-preview-button'
+            )}
             onClick={handleClosePreview}
           />
         </div>
@@ -107,8 +113,7 @@ class PreviewModal extends React.Component {
 
 PreviewModal.propTypes = {
   preview: PropTypes.object,
-  onClose: PropTypes.func,
-  lightMode: PropTypes.bool
+  onClose: PropTypes.func
 };
 
 export default PreviewModal;

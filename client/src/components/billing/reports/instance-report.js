@@ -22,11 +22,11 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
-import {Period, getPeriod} from './periods';
+import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
+import {Period, getPeriod} from '../navigation/periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import Discounts, {discounts} from './discounts';
-import Export, {ExportComposers} from './export';
+import Export from './export';
 import {
   GetBillingData,
   GetGroupedInstances,
@@ -34,13 +34,13 @@ import {
   GetGroupedTools,
   GetGroupedToolsWithPrevious,
   GetGroupedPipelines,
-  GetGroupedPipelinesWithPrevious, GetGroupedFileStorages
+  GetGroupedPipelinesWithPrevious
 } from '../../../models/billing';
 import {
   numberFormatter,
   costTickFormatter,
   DisplayUser,
-  ResizableContainer, getPeriodMonths
+  ResizableContainer
 } from './utilities';
 import {InstanceReportLayout, Layout} from './layout';
 import styles from './reports.css';
@@ -72,30 +72,6 @@ function injection (stores, props) {
     pageSize: tablePageSize,
     pageNum: 0
   };
-  const periods = getPeriodMonths(periodInfo);
-  const exportInstances = [];
-  const exportPipelines = [];
-  const exportTools = [];
-  if (periods && periods.length > 0) {
-    exportInstances.push(...periods.map(p => (
-      new GetGroupedInstances(
-        {...filters, ...p, name: Period.month},
-        pagination
-      )
-    )));
-    exportPipelines.push(...periods.map(p => (
-      new GetGroupedPipelines(
-        {...filters, ...p, name: Period.month},
-        pagination
-      )
-    )));
-    exportTools.push(...periods.map(p => (
-      new GetGroupedTools(
-        {...filters, ...p, name: Period.month},
-        pagination
-      )
-    )));
-  }
   const instances = new GetGroupedInstancesWithPrevious(filters, pagination);
   instances.fetch();
   const instancesTable = new GetGroupedInstances(filters, pagination);
@@ -108,9 +84,6 @@ function injection (stores, props) {
   pipelines.fetch();
   const pipelinesTable = new GetGroupedPipelines(filters, pagination);
   pipelinesTable.fetch();
-  exportInstances.push(instances);
-  exportPipelines.push(pipelines);
-  exportTools.push(tools);
   let filterBy = GetBillingData.FILTER_BY.compute;
   if (/^cpu$/i.test(type)) {
     filterBy = GetBillingData.FILTER_BY.cpu;
@@ -122,6 +95,8 @@ function injection (stores, props) {
   const summary = new GetBillingData({...filters, filterBy});
   summary.fetch();
   return {
+    user,
+    group,
     type,
     summary,
     instances,
@@ -129,10 +104,7 @@ function injection (stores, props) {
     tools,
     toolsTable,
     pipelines,
-    pipelinesTable,
-    exportInstances,
-    exportPipelines,
-    exportTools
+    pipelinesTable
   };
 }
 
@@ -321,120 +293,36 @@ class InstanceReport extends React.Component {
       instancesTable,
       toolsTable,
       pipelinesTable,
-      exportInstances,
-      exportPipelines,
-      exportTools
+      user,
+      group,
+      filters = {},
+      type: computeType
     } = this.props;
+    const {period, range, region: cloudRegionId} = filters;
     const {dataSample, previousDataSample} = this.state;
-    const composers = [
-      {
-        composer: ExportComposers.discountsComposer,
-      },
-      {
-        composer: ExportComposers.tableComposer,
-        options: [
-          exportInstances,
-          `Instances (TOP ${tablePageSize})`,
-          [],
-          [
-            {
-              key: 'usage',
-              title: 'Usage (hours)'
-            },
-            {
-              key: 'runsCount',
-              title: 'Runs count'
-            },
-            {
-              key: 'value',
-              title: 'Cost',
-              formatter: costTickFormatter,
-              applyDiscounts: ({compute}) => compute
-            }
-          ],
-          'Instance',
-          {
-            key: 'value',
-            top: tablePageSize
-          }
-        ]
-      },
-      {
-        composer: ExportComposers.tableComposer,
-        options: [
-          exportPipelines,
-          `Pipelines (TOP ${tablePageSize})`,
-          [
-            {
-              key: 'owner',
-              title: 'Owner'
-            }
-          ],
-          [
-            {
-              key: 'usage',
-              title: 'Usage (hours)'
-            },
-            {
-              key: 'runsCount',
-              title: 'Runs count'
-            },
-            {
-              key: 'value',
-              title: 'Cost',
-              formatter: costTickFormatter,
-              applyDiscounts: ({compute}) => compute
-            }
-          ],
-          'Pipeline',
-          {
-            key: 'value',
-            top: tablePageSize
-          }
-        ]
-      },
-      {
-        composer: ExportComposers.tableComposer,
-        options: [
-          exportTools,
-          `Tools (TOP ${tablePageSize})`,
-          [
-            {
-              key: 'owner',
-              title: 'Owner'
-            }
-          ],
-          [
-            {
-              key: 'usage',
-              title: 'Usage (hours)'
-            },
-            {
-              key: 'runsCount',
-              title: 'Runs count'
-            },
-            {
-              key: 'value',
-              title: 'Cost',
-              formatter: costTickFormatter,
-              applyDiscounts: ({compute}) => compute
-            }
-          ],
-          'Tool',
-          {
-            key: 'value',
-            top: tablePageSize
-          }
-        ]
-      }
-    ];
     return (
       <Discounts.Consumer>
         {
           (computeDiscounts) => (
             <Export.Consumer
-              className={styles.chartsContainer}
-              composers={composers}
+              exportConfiguration={{
+                types: [
+                  'INSTANCE',
+                  'PIPELINE',
+                  'TOOL'
+                ],
+                user,
+                group,
+                period,
+                range,
+                filters: {
+                  compute_type: computeType ? [computeType.toUpperCase()] : undefined,
+                  cloudRegionId: cloudRegionId &&
+                  cloudRegionId.length > 0
+                    ? cloudRegionId
+                    : undefined
+                }
+              }}
             >
               <Layout
                 layout={InstanceReportLayout.Layout}
@@ -561,9 +449,9 @@ class InstanceReport extends React.Component {
   }
 }
 
-export default inject('awsRegions')(
+export default inject('awsRegions', 'reportThemes')(
   inject(injection)(
-    Filters.attach(
+    BillingNavigation.attach(
       observer(InstanceReport)
     )
   )

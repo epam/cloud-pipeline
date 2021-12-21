@@ -17,8 +17,6 @@
 .filter {
   margin-bottom: 4px;
   padding: 0;
-  background-color: #fafafa;
-  border: 1px solid #ddd;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
@@ -35,26 +33,13 @@
   transition: background 0.2s ease;
 }
 
-.filter .header.expanded {
-  border-bottom: 1px dashed #dfdfdf;
-}
-
-.filter .header:hover {
-  background: #e6f7ff;
-}
-
 .header .header-caret {
-  color: #595959;
   transition: all 0.2s ease-in-out;
   transform-origin: 50% 50%;
   margin-right: 5px;
   font-size: 12px;
   display: flex;
   align-items: center;
-}
-
-.header .header-caret.expanded {
-  transform: rotate(90deg);
 }
 
 .filter .title {

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import moment from 'moment-timezone';
+import classNames from 'classnames';
 import {
   Alert,
   Button,
@@ -388,32 +389,28 @@ export default class Cluster extends localization.LocalizedReactComponent {
       });
     };
 
-    const validationStyle = () => {
-      if (this.state.filter[parameter].validationError) {
-        return {
-          border: '1px solid red'
-        };
-      } else {
-        return {};
-      }
-    };
+    const isError = !!this.state.filter[parameter].validationError;
 
     const filterDropdown = (
-      <div className={styles.filterPopoverContainer}>
+      <div className={classNames(
+        styles.filterPopoverContainer,
+        'cp-filter-popover-container',
+        {
+          'cp-error': isError
+        }
+      )}>
         <Input
-          style={validationStyle()}
           placeholder={placeholder}
           value={this.state.filter[parameter].value}
           onChange={this.onInputChange(parameter)}
           onPressEnter={validateAndSubmit}
         />
         {
-          this.state.filter[parameter].validationError !== undefined
-            ? (
-              <Row style={{color: '#f00'}}>
-                {this.state.filter[parameter].validationError}
-              </Row>
-            ) : undefined
+          isError && (
+            <Row className="cp-error">
+              {this.state.filter[parameter].validationError}
+            </Row>
+          )
         }
         <Row type="flex" justify="space-between" className={styles.filterActionsButtonsContainer}>
           <a onClick={validateAndSubmit}>OK</a>

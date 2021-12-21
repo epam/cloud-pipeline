@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import GridLayout from 'react-grid-layout';
+import classNames from 'classnames';
 import HomePagePanel from './HomePagePanel';
 import ConfigureHomePage from './ConfigureHomePage';
 import {AsyncLayout, GridStyles, userLayout} from './layout';
@@ -25,12 +26,12 @@ import PipelineRunFilter from '../../../models/pipelines/PipelineRunSingleFilter
 import PipelineRunServices from '../../../models/pipelines/PipelineRunServices';
 import roleModel from '../../../utils/roleModel';
 import LoadingView from '../../special/LoadingView';
-import styles from './HomePage.css';
 import 'react-resizable/css/styles.css';
 import 'react-grid-layout/css/styles.css';
 import '../../../staticStyles/HomePage.css';
 import getStyle from '../../../utils/browserDependentStyle';
 import moment from 'moment-timezone';
+import styles from './HomePage.css';
 
 const PAGE_SIZE = 50;
 const UPDATE_TIMEOUT = 15000;
@@ -138,7 +139,16 @@ export default class HomePage extends React.Component {
           align="middle"
           justify="space-between">
           <h1>{this.props.preferences.deploymentName || ''} Dashboard</h1>
-          <div className={styles.stickyHeaderBackground}>{'\u00A0'}</div>
+          <div
+            className={
+              classNames(
+                styles.stickyHeaderBackground,
+                'cp-dashboard-sticky-panel'
+              )
+            }
+          >
+            {'\u00A0'}
+          </div>
           <Button onClick={this.openConfigureModal}>
             <Icon type="setting" />Configure
           </Button>

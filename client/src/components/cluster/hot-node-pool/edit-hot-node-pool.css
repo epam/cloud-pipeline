@@ -57,10 +57,9 @@
 .form-row.error {
   line-height: 12px;
   font-size: 12px;
-  color: red;
 }
 
 .section-header {
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid transparent;
   padding: 5px 0;
 }

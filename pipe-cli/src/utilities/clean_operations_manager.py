@@ -58,15 +58,17 @@ class CleanOperationsManager:
                 continue
             self._remove_dir(tmp_dir_path)
         if any_tmp_dir_without_lock and not quiet:
-            pipe_command = sys.argv[0] if is_frozen() else (sys.executable + ' ' + sys.argv[0])
             click.echo(click.style('Outdated pipe temporary resources have been detected.\n'
                                    'To free up disk space in temporary directory and get rid of this warning please: \n'
                                    '- stop all running pipe cli processes if there are any \n'
                                    '- and execute the following command once. \n\n'
                                    '{pipe_command} clean --force\n'
-                                   .format(pipe_command=pipe_command),
+                                   .format(pipe_command=self._get_current_pipe_command()),
                                    fg='yellow'),
                        err=True)
+
+    def _get_current_pipe_command(self):
+        return sys.argv[0] if is_frozen() else (sys.executable + ' ' + sys.argv[0])
 
     def _clean_pipe_fuse_tmp_dirs(self, config_dir_path):
         logging.debug('Cleaning pipe fuse temporary directories...')

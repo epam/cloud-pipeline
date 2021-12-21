@@ -41,34 +41,26 @@ function TogglePresentationMode (
     <div
       style={style}
       className={classNames(
-        styles.viewTogglerContainer,
+        styles.viewToggler,
         className
       )}
     >
-      <div className={styles.viewToggler}>
-        <Button.Group>
-          <Button
-            onClick={(e) => onButtonClick(e, Modes.list)}
-            className={classNames(
-              styles.toggleBtn,
-              {[styles.toggleBtnActive]: mode === Modes.list}
-            )}
-          >
-            <Icon type="bars" />
-            List
-          </Button>
-          <Button
-            onClick={(e) => onButtonClick(e, Modes.table)}
-            className={classNames(
-              styles.toggleBtn,
-              {[styles.toggleBtnActive]: mode === Modes.table}
-            )}
-          >
-            <Icon type="layout" />
-            Table
-          </Button>
-        </Button.Group>
-      </div>
+      <Button.Group size="large">
+        <Button
+          type={mode === Modes.list ? 'primary' : 'default'}
+          style={{width: 80}}
+          onClick={(e) => onButtonClick(e, Modes.list)}>
+          <Icon type="bars" />
+          List
+        </Button>
+        <Button
+          type={mode === Modes.table ? 'primary' : 'default'}
+          style={{width: 80}}
+          onClick={(e) => onButtonClick(e, Modes.table)}>
+          <Icon type="layout" />
+          Table
+        </Button>
+      </Button.Group>
     </div>
   );
 }

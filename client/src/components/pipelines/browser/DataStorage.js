@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import connect from '../../../utils/connect';
 import {Link} from 'react-router';
+import classNames from 'classnames';
 import {computed, observable} from 'mobx';
 import {
   Alert,
@@ -79,8 +80,6 @@ import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
 from '../../../models/dataStorage/DataStorageGenerateSharedLink';
 import {ItemTypes} from '../model/treeStructureFunctions';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import HiddenObjects from '../../../utils/hidden-objects';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import {
@@ -90,6 +89,7 @@ import {
   METADATA_KEY as REQUEST_DAV_ACCESS_ATTRIBUTE
 } from '../../special/metadata/special/request-dav-access';
 import StorageSize from '../../special/storage-size';
+import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 
@@ -276,10 +276,11 @@ export default class DataStorage extends React.Component {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      mountPoint: storage.mountPoint,
-      mountOptions: storage.mountOptions,
+      mountDisabled: storage.mountDisabled,
+      mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
+      mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
       sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
     };
     const hide = message.loading('Updating data storage...');
     const request = new DataStorageUpdate();
@@ -315,6 +316,7 @@ export default class DataStorage extends React.Component {
           hide();
           this.closeEditDialog();
           this.props.info.fetch();
+          this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
           if (this.props.onReloadTree) {
             this.props.onReloadTree(!this.props.info.value.parentFolderId);
           }
@@ -323,6 +325,7 @@ export default class DataStorage extends React.Component {
         hide();
         this.closeEditDialog();
         this.props.info.fetch();
+        this.props.folders.invalidateFolder(this.props.info.value.parentFolderId);
         if (this.props.onReloadTree) {
           this.props.onReloadTree(!this.props.info.value.parentFolderId);
         }
@@ -885,7 +888,7 @@ export default class DataStorage extends React.Component {
           key="open-in-tool"
           file={item.path}
           storageId={this.props.storageId}
-          className={styles.downloadButton}
+          className="cp-button"
           style={{
             display: 'flex',
             textDecoration: 'none',
@@ -897,7 +900,7 @@ export default class DataStorage extends React.Component {
         <a
           key="download"
           id={`download ${item.name}`}
-          className={styles.downloadButton}
+          className="cp-button"
           href={GenerateDownloadUrlRequest.getRedirectUrl(this.props.storageId, item.path, item.version)}
           target="_blank"
           download={item.name}
@@ -1026,7 +1029,6 @@ export default class DataStorage extends React.Component {
       <PreviewModal
         preview={previewModal}
         onClose={this.closePreviewModal}
-        lightMode
       />
     );
   };
@@ -1052,7 +1054,7 @@ export default class DataStorage extends React.Component {
         >
           <span
             onClick={() => this.openPreviewModal(selectedFile)}
-            className={styles.metadataPreviewBtn}
+            className={classNames('cp-link', styles.metadataPreviewBtn)}
           >
             Click
           </span>
@@ -1602,7 +1604,7 @@ export default class DataStorage extends React.Component {
                 className="convert-storage-action-button"
                 key="convert"
               >
-                <Icon type="inbox" style={{color: '#2696dd'}} /> Convert to Versioned Storage
+                <Icon type="inbox" className="cp-versioned-storage" /> Convert to Versioned Storage
               </MenuItem>
             </Menu>
           }
@@ -1931,8 +1933,9 @@ export default class DataStorage extends React.Component {
                 <span>
                   {this.props.info.value.name}
                   <AWSRegionTag
-                    className={styles.storageRegion}
-                    darkMode
+                    className={classNames(
+                      styles.storageRegion
+                    )}
                     displayName
                     flagStyle={{fontSize: 'smaller'}}
                     providerStyle={{fontSize: 'smaller'}}
@@ -2202,16 +2205,13 @@ export default class DataStorage extends React.Component {
                 : <Alert message={this._shareStorageLink.error} type="error" />)
             }
             {
-              this.dataStorageShareLinkDisclaimer &&
-              <Row type="flex" className={styles.mdPreview}>
-                <pre style={{width: '100%', fontSize: 'smaller'}}>
-                  <code
-                    id="data-sharing-disclaimer"
-                    dangerouslySetInnerHTML={{
-                      __html: hljs.highlight('bash', this.dataStorageShareLinkDisclaimer).value
-                    }} />
-                </pre>
-              </Row>
+              this.dataStorageShareLinkDisclaimer && (
+                <BashCode
+                  id="data-sharing-disclaimer"
+                  className={styles.dataSharingDisclaimer}
+                  code={this.dataStorageShareLinkDisclaimer}
+                />
+              )
             }
           </div>
         </Modal>

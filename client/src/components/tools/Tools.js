@@ -18,6 +18,7 @@ import React from 'react';
 import {observer, inject} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
+import classNames from 'classnames';
 import ToolsGroupPrivateCreate from '../../models/tools/ToolsGroupPrivateCreate';
 import LoadingView from '../special/LoadingView';
 import DockerRegistriesActionsButton from './DockerRegistriesActionsButton';
@@ -379,12 +380,14 @@ export default class ToolsNew extends React.Component {
       return null;
     };
     return (
-      <Row type="flex" className={styles.container}>
+      <Row type="flex" className={classNames(styles.container, 'cp-panel', 'cp-panel-transparent')}>
         <Row
           type="flex"
           align="middle"
           justify="center"
-          className={styles.privateToolNotFoundContainer}>
+          className={classNames(styles.privateToolNotFoundContainer, 'cp-panel-card')}
+          style={{borderStyle: 'dashed'}}
+        >
           <Row style={{fontSize: 'large', margin: 10}}>
             <Icon
               type="info-circle-o"
@@ -397,10 +400,11 @@ export default class ToolsNew extends React.Component {
           {navigateToDefaultGroupMessage()}
           {
             this.state.createPrivateGroupError
-              ? <Row
-                style={{fontSize: 'larger', marginBottom: 10, color: 'red'}}>
-                {this.state.createPrivateGroupError}
-              </Row>
+              ? (
+                <Row className="cp-error" style={{fontSize: 'larger', marginBottom: 10}}>
+                  {this.state.createPrivateGroupError}
+                </Row>
+              )
               : undefined
           }
           {
@@ -474,7 +478,14 @@ export default class ToolsNew extends React.Component {
     }
     return (
       <Card
-        className={styles.toolsCard}
+        className={
+          classNames(
+            styles.toolsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 5, height: '100%', display: 'flex', flexDirection: 'column'}}>
         {this.renderHeader()}
         {this.renderContent(content, isError)}

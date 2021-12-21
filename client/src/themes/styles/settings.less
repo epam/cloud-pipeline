@@ -1,0 +1,99 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+@import "variables";
+
+.cp-settings-sidebar-element:not(.cp-table-element-disabled) {
+  cursor: pointer;
+}
+
+.cp-settings-sidebar-element td {
+  padding: 6px;
+}
+
+.cp-setting-info {
+  color: @color-green;
+}
+
+.cp-setting-warning {
+  color: @color-yellow;
+}
+
+.cp-setting-critical {
+  color: @color-red;
+}
+
+.cp-settings-table thead,
+.cp-settings-table thead th {
+  color: @table-head-color;
+  background-color: @card-header-background;
+  border-color: @table-border-color;
+}
+
+.cp-settings-table tbody tr,
+.cp-settings-table tbody th {
+  color: @application-color;
+  background-color: @card-background-color;
+}
+
+.cp-settings-table tbody tr:nth-child(even),
+.cp-settings-table tbody tr:nth-child(even) th {
+  color: @application-color;
+  background-color: @even-element-background;
+}
+
+.cp-settings-users-integrity-check.modified:not(.new),
+.cp-settings-users-integrity-check.modified:not(.new) > div {
+  background-color: @alert-warning-background;
+}
+
+.cp-settings-users-integrity-check.new > div {
+  background-color: @alert-info-background;
+}
+
+.cp-even-row {
+  background-color: @even-element-background;
+}
+
+.cp-settings-form-item-label {
+  color: @application-color-accent;
+}
+
+.cp-settings-form-item-label.required::before {
+  color: @color-red;
+  content: '*';
+}
+
+.cp-settings-nat-table thead tr:first-child,
+.cp-settings-nat-table thead tr:first-child th:first-child,
+.cp-settings-nat-table thead tr th.external-column:nth-child(3),
+.cp-settings-nat-table tbody tr td.external-column:nth-child(3),
+.cp-settings-nat-table thead tr th.internal-column:nth-child(6),
+.cp-settings-nat-table tbody tr td.internal-column:nth-child(6) {
+  border-right: 2px solid @card-border-color;
+}
+
+.cp-settings-nat-table thead tr:first-child th {
+  background: @card-header-background;
+}
+
+.cp-settings-nat-table .ant-table-thead > tr > th {
+  border-bottom: 1px solid @table-border-color;
+}
+
+.cp-nat-route-removed .cp-nat-route-status {
+  color: currentColor;
+}

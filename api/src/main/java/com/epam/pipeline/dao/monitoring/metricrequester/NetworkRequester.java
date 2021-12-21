@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.lang.NotImplementedException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -38,7 +37,7 @@ import java.util.stream.Stream;
 
 public class NetworkRequester extends AbstractMetricRequester {
 
-    NetworkRequester(final RestHighLevelClient client) {
+    NetworkRequester(final HeapsterElasticRestHighLevelClient client) {
         super(client);
     }
 

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import Chart from './base';
 import {
   SummaryChart,
@@ -23,11 +23,10 @@ import {
   PointDataLabelPlugin,
   VerticalLinePlugin
 } from './extensions';
-import {colors} from './colors';
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {discounts} from '../discounts';
-import {getTickFormat, getCurrentDate} from '../periods';
+import {getTickFormat, getCurrentDate} from '../../navigation/periods';
 import moment from 'moment-timezone';
 
 const Display = {
@@ -195,7 +194,8 @@ function Summary (
     computeDiscounts,
     storagesDiscounts,
     quota: showQuota = true,
-    display = Display.accumulative
+    display = Display.accumulative,
+    reportThemes
   }
 ) {
   const pending = compute?.pending || storages?.pending;
@@ -227,16 +227,16 @@ function Summary (
         currentAccumulativeData,
         'Current period',
         SummaryChart.current,
-        colors.current,
+        reportThemes.current,
         {currentDateIndex, borderWidth: 3}
       ) : false,
       display === Display.fact ? extractDataSet(
         currentData,
         'Current period (cost)',
         'bar',
-        colors.current,
+        reportThemes.current,
         {
-          backgroundColor: colors.current,
+          backgroundColor: reportThemes.current,
           currentDateIndex,
           borderWidth: 1
         }
@@ -245,16 +245,16 @@ function Summary (
         previousAccumulativeData,
         'Previous period',
         SummaryChart.previous,
-        colors.previous,
+        reportThemes.previous,
         {currentDateIndex}
       ) : false,
       display === Display.fact ? extractDataSet(
         previousData,
         'Previous period (cost)',
         'bar',
-        colors.previous,
+        reportThemes.previous,
         {
-          backgroundColor: colors.previous,
+          backgroundColor: reportThemes.previous,
           currentDateIndex,
           borderWidth: 1,
           isPrevious: true
@@ -264,7 +264,7 @@ function Summary (
         quota,
         'Quota',
         SummaryChart.quota,
-        colors.quota,
+        reportThemes.quota,
         {
           showPoints: false,
           currentDateIndex,
@@ -277,27 +277,34 @@ function Summary (
     animation: {duration: 0},
     title: {
       display: !!title,
-      text: title
+      text: title,
+      fontColor: reportThemes.textColor
     },
     scales: {
       xAxes: [{
         gridLines: {
-          drawOnChartArea: false
+          drawOnChartArea: false,
+          color: reportThemes.lineColor,
+          zeroLineColor: reportThemes.lineColor
         },
         ticks: {
           display: true,
           maxRotation: 45,
-          callback: (date) => date || ''
+          callback: (date) => date || '',
+          fontColor: reportThemes.textColor
         },
         offset: true
       }],
       yAxes: [{
         gridLines: {
-          display: !disabled
+          display: !disabled,
+          color: reportThemes.lineColor,
+          zeroLineColor: reportThemes.lineColor
         },
         ticks: {
           display: !disabled,
-          callback: o => costTickFormatter(o)
+          callback: o => costTickFormatter(o),
+          fontColor: reportThemes.textColor
         }
       }]
     },
@@ -336,10 +343,13 @@ function Summary (
     },
     plugins: {
       [VerticalLinePlugin.id]: {
-        index: currentDateIndex
+        index: currentDateIndex,
+        color: reportThemes.previous
       },
       [PointDataLabelPlugin.id]: {
-        index: currentDateIndex
+        index: currentDateIndex,
+        textColor: reportThemes.textColor,
+        background: reportThemes.backgroundColor
       }
     }
   };
@@ -363,5 +373,5 @@ function Summary (
   );
 }
 
-export default observer(Summary);
+export default inject('reportThemes')(observer(Summary));
 export {Display};

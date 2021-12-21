@@ -81,6 +81,7 @@
 .tree-item-title .region-flags {
   flex: 1;
   text-align: right;
+  justify-content: flex-end;
 }
 
 .readonly {
@@ -98,15 +99,4 @@
 
 .search-result {
   font-weight: bold;
-  background-color: yellow;
-}
-
-.storage-region {
-  margin-left: 2px;
-  font-size: xx-small;
-  border-radius: 4px;
-  padding: 1px 3px;
-  vertical-align: middle;
-  background-color: #555;
-  color: white;
 }

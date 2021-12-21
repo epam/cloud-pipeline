@@ -17,8 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {CSV, buildCascadeComposers} from './composers';
+import ExportFormats from './export-formats';
 import Discounts from '../discounts';
+import {getPeriod} from '../../navigation/periods';
+import exportBillingURL from '../../../../models/billing/export';
 
 class ExportConsumer extends React.Component {
   componentDidMount () {
@@ -32,68 +34,129 @@ class ExportConsumer extends React.Component {
   }
 
   getExportData = (...options) => {
-    const {composers, discounts} = this.props;
-    const compose = buildCascadeComposers(composers, discounts, ...options);
-    const csv = new CSV();
+    const {
+      discounts: discountsConfiguration,
+      exportConfiguration
+    } = this.props;
+    const [defaultOptions = {}] = options;
+    const {format} = defaultOptions;
+    const {
+      computeValue: computes = 0,
+      storageValue: storages = 0
+    } = discountsConfiguration || {};
+    const discount = {
+      computes: -computes,
+      storages: -storages
+    };
+    const {
+      period = 'month',
+      range,
+      user,
+      group,
+      types: typesPayload = [],
+      filters: extraFilters = {}
+    } = exportConfiguration;
+    const {
+      start,
+      endStrict: end
+    } = getPeriod(period, range);
+    const filters = {
+      owner: user,
+      billing_center: group,
+      ...extraFilters
+    };
+    const types = [];
+    switch (format) {
+      case ExportFormats.csvUsers:
+        types.push('USER');
+        break;
+      case ExportFormats.csvCostCenters:
+        types.push('BILLING_CENTER');
+        break;
+      case ExportFormats.rawCsv:
+        types.push('RUN');
+        break;
+      case ExportFormats.csv:
+      default:
+        types.push(
+          ...typesPayload
+        );
+        break;
+    }
+    const payload = {
+      discount,
+      types,
+      from: start.format('YYYY-MM-DD'),
+      to: end.format('YYYY-MM-DD'),
+      filters
+    };
     return new Promise((resolve, reject) => {
-      compose(csv)
-        .then(() => {
-          const content = csv.getData()
-            .map(line => line.join(csv.SEPARATOR))
-            .join('\n');
-          const blob = new Blob([content], {type: 'text/csv;charset=utf-8'});
-          resolve(blob);
-        })
-        .catch(reject);
+      const request = new XMLHttpRequest();
+      request.withCredentials = true;
+      request.onreadystatechange = function () {
+        if (request.readyState !== 4) return;
+        if (request.status !== 200) {
+          const error = request.statusText
+            ? `Export error: ${request.statusText}`
+            : 'Export error';
+          reject(new Error(error));
+        } else {
+          const response = request.responseText;
+          try {
+            const {status, message} = JSON.parse(response);
+            if (status && !/^OK$/i.test(status)) {
+              reject(new Error(message));
+              return;
+            }
+          } catch (_) {}
+          try {
+            const blob = new Blob([response], {type: 'text/csv;charset=utf-8'});
+            resolve(blob);
+          } catch (e) {
+            reject(e);
+          }
+        }
+      };
+      request.open('POST', exportBillingURL());
+      request.timeout = 1000 * 60 * 5; // 5 minutes;
+      request.setRequestHeader('Content-Type', 'application/json');
+      request.send(JSON.stringify(payload));
     });
   };
 
   render () {
-    const {className, children} = this.props;
-    return (
-      <div className={className}>
-        {children}
-      </div>
-    );
+    const {children} = this.props;
+    return children;
   }
 }
 
 ExportConsumer.propTypes = {
-  className: PropTypes.string,
-  composers: PropTypes.arrayOf(PropTypes.shape({
-    composer: PropTypes.func,
-    options: PropTypes.array
-  })),
   discounts: PropTypes.shape({
     compute: PropTypes.func,
     storage: PropTypes.func,
     computeValue: PropTypes.number,
     storageValue: PropTypes.number
-  })
-};
-
-ExportConsumer.defaultProps = {
-  composers: []
+  }),
+  exportConfiguration: PropTypes.object
 };
 
 const ExportConsumerInjected = inject('export')(
   observer(ExportConsumer)
 );
 
-function ExportConsumerWithDiscounts ({className, composers, children}) {
+function ExportConsumerWithDiscounts ({children, exportConfiguration}) {
   return (
     <Discounts.Consumer>
       {
         (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <ExportConsumerInjected
-            className={className}
-            composers={composers}
             discounts={{
               compute: computeDiscounts,
               storage: storageDiscounts,
               computeValue: computeDiscountValue,
               storageValue: storageDiscountValue
             }}
+            exportConfiguration={exportConfiguration}
           >
             {children}
           </ExportConsumerInjected>
@@ -104,21 +167,13 @@ function ExportConsumerWithDiscounts ({className, composers, children}) {
 }
 
 ExportConsumerWithDiscounts.propTypes = {
-  className: PropTypes.string,
-  composers: PropTypes.arrayOf(PropTypes.shape({
-    composer: PropTypes.func,
-    options: PropTypes.array
-  })),
   discounts: PropTypes.shape({
     compute: PropTypes.func,
     storage: PropTypes.func,
     computeValue: PropTypes.number,
     storageValue: PropTypes.number
-  })
-};
-
-ExportConsumerWithDiscounts.defaultProps = {
-  composers: []
+  }),
+  exportConfiguration: PropTypes.object
 };
 
 export default ExportConsumerWithDiscounts;

@@ -146,6 +146,9 @@ public final class AclExpressions {
     public static final String ADMIN_OR_HAS_READ_ACCESS_ON_RETURN_OBJECT =
         ADMIN_ONLY + OR + "hasPermission(returnObject, 'READ')";
 
+    public static final String ADMIN_OR_BILLING_MANAGER = ADMIN_ONLY + OR
+            + "hasRole('ROLE_BILLING_MANAGER')";
+
     private AclExpressions() {
         // no op
     }

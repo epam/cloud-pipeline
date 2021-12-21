@@ -132,7 +132,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     public int index() {
         final String key = context().find(inputByIdSuffix("key")).val();
         final String index = key.replace("param_", "");
-        return Integer.valueOf(index);
+        return Integer.parseInt(index);
     }
 
     @Override

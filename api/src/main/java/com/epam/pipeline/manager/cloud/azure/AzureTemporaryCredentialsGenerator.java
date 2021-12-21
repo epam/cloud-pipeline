@@ -33,9 +33,9 @@ import com.microsoft.azure.storage.blob.SASProtocol;
 import com.microsoft.azure.storage.blob.SASQueryParameters;
 import com.microsoft.azure.storage.blob.ServiceSASSignatureValues;
 import com.microsoft.azure.storage.blob.SharedKeyCredentials;
-import com.vividsolutions.jts.util.Assert;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.time.OffsetDateTime;
 import java.util.Date;

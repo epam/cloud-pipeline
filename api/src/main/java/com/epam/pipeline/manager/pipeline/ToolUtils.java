@@ -16,6 +16,10 @@
 
 package com.epam.pipeline.manager.pipeline;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public interface ToolUtils {
@@ -28,5 +32,13 @@ public interface ToolUtils {
 
     static String getImageTag(final String imageWithTag) {
         return imageWithTag.split(TAG_DELIMITER)[1];
+    }
+
+    static Optional<String> getImageWithoutRepository(final String image) {
+        return Optional.ofNullable(image)
+                .filter(StringUtils::isNotBlank)
+                .map(REPOSITORY_AND_IMAGE::matcher)
+                .filter(Matcher::find)
+                .map(matcher -> matcher.group(2));
     }
 }

@@ -161,27 +161,36 @@ export default class CardsPanel extends React.Component {
         }
         return action.icon;
       };
+      const hovered = this.state.popovers.indexOf(index) >= 0 ||
+        this.props.hovered === child;
       return (
         <div
           className={
             classNames(
               styles.actionsContainer,
+              'cp-panel-card-actions',
               {
-                [styles.hovered]: this.state.popovers.indexOf(index) >= 0 ||
-                this.props.hovered === child
+                [styles.hovered]: hovered,
+                hovered
               }
             )
           }
         >
           <div
-            type="actions-container-background"
-            className={styles.actionsContainerBackground} />
+            className={
+              classNames(
+                styles.actionsContainerBackground,
+                'cp-panel-card-actions-background'
+              )
+            }
+          />
           {
             actions.map((action, index, array) => {
               const {
                 title,
                 icon,
                 style,
+                className,
                 overlay,
                 target,
                 multiZoneUrl,
@@ -202,7 +211,13 @@ export default class CardsPanel extends React.Component {
                     key={index}
                     runId={runId}
                     visibilityChanged={onVisibleChange}
-                    className={styles.actionButton}
+                    className={
+                      classNames(
+                        styles.actionButton,
+                        'cp-card-action-button',
+                        className
+                      )
+                    }
                     style={containerStyle}
                     icon={icon}
                   />
@@ -212,7 +227,13 @@ export default class CardsPanel extends React.Component {
                 return (
                   <MultizoneUrl
                     key={index}
-                    className={styles.actionButton}
+                    className={
+                      classNames(
+                        styles.actionButton,
+                        'cp-card-action-button',
+                        className
+                      )
+                    }
                     visibilityChanged={onVisibleChange}
                     style={containerStyle}
                     target={target}
@@ -229,6 +250,7 @@ export default class CardsPanel extends React.Component {
                           ? (
                             <Icon
                               style={style}
+                              className={className}
                               type={getIconType(action)}
                             />
                           )
@@ -245,7 +267,13 @@ export default class CardsPanel extends React.Component {
                   type="flex"
                   justify="start"
                   align="middle"
-                  className={styles.actionButton}
+                  className={
+                    classNames(
+                      styles.actionButton,
+                      'cp-card-action-button',
+                      className
+                    )
+                  }
                   onClick={e => this.onActionClicked(e, action, child)}
                   style={{
                     flex: 1.0 / array.length,
@@ -299,17 +327,21 @@ export default class CardsPanel extends React.Component {
       favouriteEnabled = favouriteEnabled(child);
     }
     const childIsFavourite = this.childIsFavourite(child);
-    let cardClass = favouriteEnabled ? `${styles.card} ${styles.favouriteEnabled}` : styles.card;
-    if (cardClassName) {
-      cardClass = `${cardClassName} ${cardClass}`;
-    }
-    cardClass = childIsFavourite
-      ? `${cardClass} ${styles.favouriteItem}`
-      : `${cardClass} ${styles.notFavouriteItem}`;
     return (
       <Card
         key={child.id || index}
-        className={cardClass}
+        className={
+          classNames(
+            'cp-panel-card',
+            cardClassName,
+            styles.card,
+            {
+              [styles.favouriteEnabled]: favouriteEnabled,
+              [styles.favouriteItem]: childIsFavourite,
+              [styles.notFavouriteItem]: !childIsFavourite
+            }
+          )
+        }
         bodyStyle={{padding: 10, height: '100%'}}
         style={Object.assign({
           width: 'initial',
@@ -324,7 +356,6 @@ export default class CardsPanel extends React.Component {
           this.renderFavouriteSelector(child, childIsFavourite)
         }
         <div
-          type="card-content"
           style={favouriteEnabled ? {paddingRight: 30} : {}}
           className={styles.cardContent}>
           {this.props.childRenderer(child, this.state.search)}

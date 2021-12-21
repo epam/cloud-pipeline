@@ -261,20 +261,29 @@ class CloudCredentialsProfileForm extends React.Component {
     return (
       <div>
         <div
-          className={
-            classNames(
-              styles.row,
-              {
-                [styles.error]: !!this.profileNameError
-              }
-            )
-          }
+          className={styles.row}
         >
-          <span className={styles.label}>
+          <span
+            className={
+              classNames(
+                styles.label,
+                {
+                  'cp-error': !!this.profileNameError
+                }
+              )
+            }
+          >
             Name:
           </span>
           <Input
-            className={styles.content}
+            className={
+              classNames(
+                styles.content,
+                {
+                  'cp-error': !!this.profileNameError
+                }
+              )
+            }
             value={profileName}
             onChange={onChangeName}
             disabled={loading}
@@ -282,27 +291,43 @@ class CloudCredentialsProfileForm extends React.Component {
         </div>
         {
           this.profileNameError && (
-            <div className={styles.errorDescription}>
+            <div
+              className={
+                classNames(
+                  styles.errorDescription,
+                  'cp-error'
+                )
+              }
+            >
               {this.profileNameError}
             </div>
           )
         }
         <div
-          className={
-            classNames(
-              styles.row,
-              {
-                [styles.error]: !!this.providerError
-              }
-            )
-          }
+          className={styles.row}
         >
-          <span className={styles.label}>
+          <span
+            className={
+              classNames(
+                styles.label,
+                {
+                  'cp-error': !!this.providerError
+                }
+              )
+            }
+          >
             Provider:
           </span>
           <Select
             showSearch
-            className={styles.content}
+            className={
+              classNames(
+                styles.content,
+                {
+                  'cp-error': !!this.providerError
+                }
+              )
+            }
             value={cloudProvider}
             onChange={onChangeProvider}
             disabled={loading || !!provider}
@@ -316,26 +341,42 @@ class CloudCredentialsProfileForm extends React.Component {
         </div>
         {
           this.providerError && (
-            <div className={styles.errorDescription}>
+            <div
+              className={
+                classNames(
+                  styles.errorDescription,
+                  'cp-error'
+                )
+              }
+            >
               {this.providerError}
             </div>
           )
         }
         <div
-          className={
-            classNames(
-              styles.row,
-              {
-                [styles.error]: !!this.assumedRoleError
-              }
-            )
-          }
+          className={styles.row}
         >
-          <span className={styles.label}>
+          <span
+            className={
+              classNames(
+                styles.label,
+                {
+                  'cp-error': !!this.assumedRoleError
+                }
+              )
+            }
+          >
             Assumed role:
           </span>
           <Input
-            className={styles.content}
+            className={
+              classNames(
+                styles.content,
+                {
+                  'cp-error': !!this.assumedRoleError
+                }
+              )
+            }
             value={assumedRole}
             onChange={onChangeAssumedRole}
             disabled={loading}
@@ -343,7 +384,14 @@ class CloudCredentialsProfileForm extends React.Component {
         </div>
         {
           this.assumedRoleError && (
-            <div className={styles.errorDescription}>
+            <div
+              className={
+                classNames(
+                  styles.errorDescription,
+                  'cp-error'
+                )
+              }
+            >
               {this.assumedRoleError}
             </div>
           )
@@ -354,12 +402,20 @@ class CloudCredentialsProfileForm extends React.Component {
               className={
                 classNames(
                   styles.row,
-                  styles.policy,
-                  {[styles.error]: !!this.policyError}
+                  styles.policy
                 )
               }
             >
-              <span className={styles.label}>
+              <span
+                className={
+                  classNames(
+                    styles.label,
+                    {
+                      'cp-error': !!this.policyError
+                    }
+                  )
+                }
+              >
                 Policy:
               </span>
               <div
@@ -373,7 +429,14 @@ class CloudCredentialsProfileForm extends React.Component {
                 <CodeEditor
                   readOnly={loading}
                   ref={initializeEditor}
-                  className={styles.codeEditor}
+                  className={
+                    classNames(
+                      styles.codeEditor,
+                      {
+                        'cp-error': !!this.policyError
+                      }
+                    )
+                  }
                   language="application/json"
                   onChange={onChangePolicy}
                   lineWrapping
@@ -386,7 +449,14 @@ class CloudCredentialsProfileForm extends React.Component {
         }
         {
           this.policyError && (
-            <div className={styles.errorDescription}>
+            <div
+              className={
+                classNames(
+                  styles.errorDescription,
+                  'cp-error'
+                )
+              }
+            >
               {this.policyError}
             </div>
           )

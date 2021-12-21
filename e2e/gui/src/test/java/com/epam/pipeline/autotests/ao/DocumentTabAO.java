@@ -41,7 +41,7 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
             entry(DOWNLOAD, $(button("Download"))),
             entry(EDIT, $(button("EDIT"))),
             entry(SAVE, $(button("SAVE"))),
-            entry(FILE_PREVIEW, $(byClassName("pipeline-documents__md-preview")))
+            entry(FILE_PREVIEW, $(byClassName("pipeline-documents__md-body")))
     );
 
     public DocumentTabAO(String pipelineName) {

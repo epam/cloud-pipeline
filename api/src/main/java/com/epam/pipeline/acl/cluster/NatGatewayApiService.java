@@ -35,8 +35,8 @@ public class NatGatewayApiService {
     private final NatGatewayManager natGatewayManager;
 
     @PreAuthorize(ADMIN_ONLY)
-    public Set<String> resolveAddress(final String hostname) {
-        return natGatewayManager.resolveAddress(hostname);
+    public Set<String> resolveAddress(final String hostname, final String dnsServer) {
+        return natGatewayManager.resolveAddress(hostname, dnsServer);
     }
 
     @PreAuthorize(ADMIN_ONLY)

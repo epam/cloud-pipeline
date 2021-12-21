@@ -23,16 +23,18 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.PipelineAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
+import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.ParsedSingleValueNumericMetricsAggregation;
 import org.elasticsearch.search.aggregations.metrics.avg.AvgAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.max.MaxAggregationBuilder;
@@ -40,6 +42,7 @@ import org.elasticsearch.search.aggregations.pipeline.bucketscript.BucketScriptP
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -61,11 +64,9 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     private static final String INDEX_NAME_PATTERN = "heapster-%s";
 
-    private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.fromOptions(true,
-            SearchRequest.DEFAULT_INDICES_OPTIONS.allowNoIndices(),
-            SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsOpen(),
-            SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsClosed(),
-            SearchRequest.DEFAULT_INDICES_OPTIONS);
+    private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.STRICT_EXPAND_OPEN_CLOSED;
+
+    private static final String ORDER_FIELD = "order";
 
     protected static final String FIELD_METRICS = "Metrics";
     protected static final String FIELD_METRICS_TAGS = "MetricsTags";
@@ -110,9 +111,9 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
     protected static final String SYNTHETIC_NETWORK_INTERFACE = "summary";
     protected static final String SWAP_FILESYSTEM = "tmpfs";
 
-    private RestHighLevelClient client;
+    private final HeapsterElasticRestHighLevelClient client;
 
-    AbstractMetricRequester(final RestHighLevelClient client) {
+    AbstractMetricRequester(final HeapsterElasticRestHighLevelClient client) {
         this.client = client;
     }
 
@@ -123,7 +124,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     protected abstract List<MonitoringStats> parseStatsResponse(SearchResponse response);
 
-    public static MetricRequester getRequester(final ELKUsageMetric metric, final RestHighLevelClient client) {
+    public static MetricRequester getRequester(final ELKUsageMetric metric,
+                                               final HeapsterElasticRestHighLevelClient client) {
         switch (metric) {
             case CPU:
                 return new CPURequester(client);
@@ -136,7 +138,8 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         }
     }
 
-    public static MonitoringRequester getStatsRequester(final ELKUsageMetric metric, final RestHighLevelClient client) {
+    public static MonitoringRequester getStatsRequester(final ELKUsageMetric metric,
+                                                        final HeapsterElasticRestHighLevelClient client) {
         switch (metric) {
             case CPU:
                 return new CPURequester(client);
@@ -176,7 +179,7 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
 
     protected SearchResponse executeRequest(final SearchRequest searchRequest) {
         try {
-            return client.search(searchRequest);
+            return client.searchHeapsterElastic(searchRequest, RequestOptions.DEFAULT);
         } catch (IOException e) {
             throw new PipelineException(e);
         }
@@ -269,5 +272,16 @@ public abstract class AbstractMetricRequester implements MetricRequester, Monito
         return Optional.ofNullable(bucket.getAggregations())
                                 .map(Aggregations::asList)
                                 .orElseGet(Collections::emptyList);
+    }
+
+    protected TermsAggregationBuilder ordered(final TermsAggregationBuilder terms) {
+        try {
+            final Field field = terms.getClass().getDeclaredField(ORDER_FIELD);
+            field.setAccessible(true);
+            field.set(terms, BucketOrder.count(false));
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new PipelineException(e);
+        }
+        return terms;
     }
 }

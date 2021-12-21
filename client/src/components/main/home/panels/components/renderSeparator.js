@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {Col, Row} from 'antd';
+import classNames from 'classnames';
 
 export default function renderSeparator (text, marginInCols, key, style) {
   return (
@@ -27,21 +28,21 @@ export default function renderSeparator (text, marginInCols, key, style) {
           <tr>
             <td style={{width: '50%'}}>
               <div
+                className={classNames('cp-divider', 'inline')}
                 style={{
                   margin: '0 5px',
                   verticalAlign: 'middle',
-                  height: 1,
-                  backgroundColor: '#ccc'
+                  height: 1
                 }}>{'\u00A0'}</div>
             </td>
             <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
             <td style={{width: '50%'}}>
               <div
+                className={classNames('cp-divider', 'inline')}
                 style={{
                   margin: '0 5px',
                   verticalAlign: 'middle',
-                  height: 1,
-                  backgroundColor: '#ccc'
+                  height: 1
                 }}>{'\u00A0'}</div>
             </td>
           </tr>

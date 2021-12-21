@@ -272,7 +272,7 @@ class VersionedStorageTable extends React.Component {
     } = this.props;
     if (roleModel.writeAllowed(versionedStorage)) {
       return (
-        <div className={styles.tableControlsContainer}>
+        <div className={classNames(styles.tableControlsContainer, 'cp-versioned-storage-table-header')}>
           <VSTableNavigation
             path={path}
             onNavigate={onNavigate}

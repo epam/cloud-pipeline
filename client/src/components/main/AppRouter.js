@@ -56,13 +56,14 @@ import AWSRegionsForm from '../settings/AWSRegionsForm';
 import SystemManagement from '../settings/system-management/system-management';
 import SystemEvents from '../settings/SystemEvents';
 import SystemDictionaries from '../settings/SystemDictionaries';
-import UserProfile from '../user-profile';
+import UserProfile from '../settings/user-profile';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
 import Billing, {
-  // BillingQuotas,
-  BillingReports} from '../billing';
+  BillingQuotas,
+  BillingReports
+} from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
 import VSIPreviewPage from '../applications/vsi-preview';
 import Log from '../runs/logs/Log';
@@ -108,15 +109,15 @@ export default class AppRouter extends React.Component {
           <Route path="search" component={RunsSearch} />
           <Redirect from="/settings" to="/settings/cli" />
           <Route path="/settings" component={SettingsForm}>
-            <Route path="cli" component={CLIForm} />
+            <Route path="cli(/:section)" component={CLIForm} />
             <Route path="events" component={SystemEvents} />
-            <Route path="user" component={UserManagementForm} />
-            <Route path="email" component={EmailNotificationSettings} />
+            <Route path="user(/:section)" component={UserManagementForm} />
+            <Route path="email(/:section)" component={EmailNotificationSettings} />
             <Route path="preferences" component={Preferences} />
             <Route path="regions" component={AWSRegionsForm} />
-            <Route path="system" component={SystemManagement} />
+            <Route path="system(/:section)" component={SystemManagement} />
             <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
-            <Route path="profile" component={UserProfile} />
+            <Route path="profile(/:section(/:sub))" component={UserProfile} />
           </Route>
           <Route path="/cluster" component={ClusterRoot}>
             <IndexRoute component={Cluster} />
@@ -150,7 +151,7 @@ export default class AppRouter extends React.Component {
           <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
           <Redirect from="/billing" to="/billing/reports" />
           <Route path="/billing" component={Billing}>
-            {/* <Route path="quotas" component={BillingQuotas} /> */}
+            <Route path="quotas(/:type)" component={BillingQuotas} />
             <Route path="reports" component={BillingReports.default}>
               <IndexRoute component={BillingReports.GeneralReport} />
               <Route path="instance(/:type)" component={BillingReports.InstanceReport} />

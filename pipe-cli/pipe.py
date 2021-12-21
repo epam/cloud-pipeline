@@ -44,7 +44,7 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels
+from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
@@ -1529,17 +1529,19 @@ def tunnel():
 
 
 @tunnel.command(name='stop')
-@click.argument('run-id', required=False, type=int)
+@click.argument('host-id', required=False)
 @click.option('-lp', '--local-port', required=False, type=str,
               help='A single local port (4567) or a range of ports (4567-4569) '
                    'to stop corresponding tunnel processes for.')
-@click.option('-t', '--timeout', required=False, type=int, default=60 * 1000,
-              help='Tunnels stopping timeout in ms.')
+@click.option('-ts', '--timeout-stop', required=False, type=int, default=60,
+              help='Maximum timeout for background tunnel process stopping in seconds.')
 @click.option('-f', '--force', required=False, is_flag=True, default=False,
-              help='Killing tunnels rather than stopping them.')
+              help='Stops existing tunnel processes non gracefully.')
+@click.option('--ignore-owner', required=False, is_flag=True, default=False,
+              help='Stops existing tunnel processes owned by other users.')
 @click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
 @common_options
-def stop_tunnel(run_id, local_port, timeout, force, log_level):
+def stop_tunnel(host_id, local_port, timeout_stop, force, ignore_owner, log_level):
     """
     Stops background tunnel processes.
 
@@ -1570,7 +1572,7 @@ def stop_tunnel(run_id, local_port, timeout, force, log_level):
         pipe tunnel stop -lp 4567 12345
 
     """
-    kill_tunnels(run_id=run_id, local_ports_str=local_port, timeout=timeout, force=force, log_level=log_level)
+    kill_tunnels(host_id, local_port, timeout_stop, force, ignore_owner, log_level, parse_tunnel_args)
 
 
 def start_tunnel_options(decorating_func):
@@ -1618,6 +1620,10 @@ def start_tunnel_options(decorating_func):
                   help='Replaces existing tunnel on the same local port.')
     @click.option('-rd', '--replace-different', required=False, is_flag=True, default=False,
                   help='Replaces existing tunnel on the same local port if it has different configuration.')
+    @click.option('--ignore-existing', required=False, is_flag=True, default=False,
+                  help='Establishes tunnel ignoring any existing tunnels or occupied local ports.')
+    @click.option('--ignore-owner', required=False, is_flag=True, default=False,
+                  help='Replaces existing tunnel processes owned by other users.')
     @click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
     @click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
     @functools.wraps(decorating_func)
@@ -1628,8 +1634,20 @@ def start_tunnel_options(decorating_func):
 
 @tunnel.command(name='start')
 @start_tunnel_options
+@click.option('-u', '--user', required=False, help=USER_OPTION_DESCRIPTION)
+@click.option('--noclean', required=False, is_flag=True, default=False, help=NO_CLEAN_OPTION_DESCRIPTION)
+@click.option('--debug', required=False, is_flag=True, default=False, help=DEBUG_OPTION_DESCRIPTION)
+@click.option('--trace', required=False, is_flag=True, default=False, help=TRACE_OPTION_DESCRIPTION)
 def return_tunnel_args(*args, **kwargs):
     return kwargs
+
+
+def parse_tunnel_args(args):
+    with return_tunnel_args.make_context('start', args,
+                                         ignore_unknown_options=True,
+                                         allow_extra_args=True,
+                                         resilient_parsing=True) as ctx:
+        return return_tunnel_args.invoke(ctx)
 
 
 @tunnel.command(name='start')
@@ -1638,7 +1656,7 @@ def return_tunnel_args(*args, **kwargs):
 def start_tunnel(host_id, local_port, remote_port, connection_timeout,
                  ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                  timeout, timeout_stop, foreground,
-                 keep_existing, keep_same, replace_existing, replace_different,
+                 keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
                  retries, region):
     """
     Establishes tunnel connection to specified run instance port and serves it as a local port.
@@ -1718,14 +1736,28 @@ def start_tunnel(host_id, local_port, remote_port, connection_timeout,
         CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
         CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
-    def _parse_tunnel_args(args):
-        with return_tunnel_args.make_context('start', args) as ctx:
-            return return_tunnel_args.invoke(ctx)
     create_tunnel(host_id, local_port, remote_port, connection_timeout,
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
-                  keep_existing, keep_same, replace_existing, replace_different,
-                  retries, region, _parse_tunnel_args)
+                  keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
+                  retries, region, parse_tunnel_args)
+
+
+@tunnel.command(name='list')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@common_options
+def view_tunnels(log_level):
+    """
+    Lists all pipe tunnels.
+
+    Examples:
+
+    I.   List all pipe tunnels.
+
+        pipe tunnel list
+
+    """
+    list_tunnels(log_level, parse_tunnel_args)
 
 
 @cli.command(name='update')

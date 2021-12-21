@@ -106,6 +106,21 @@ class HiddenObjects {
   isFolderHidden (identifier) {
     return this.isHidden(ObjectTypes.folder, identifier);
   }
+
+  isParentHidden (object, folders = []) {
+    if (!object) {
+      return false;
+    }
+    const {parentId, parentFolderId} = object;
+    const parentFolder = (folders || []).find(o => +(o.id) === (parentFolderId || parentId));
+    if (parentFolder) {
+      if (this.isFolderHidden(parentFolder.id)) {
+        return true;
+      }
+      return this.isParentHidden(parentFolder, folders);
+    }
+    return false;
+  }
 }
 
 HiddenObjects.checkPipelines = checkObjectsHOC(ObjectTypes.pipeline);

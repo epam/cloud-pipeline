@@ -586,6 +586,8 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
+    public static final String ERROR_BILLING_EXPORT_TYPE_NOT_SUPPORTED = "error.billing.export.type.not.supported";
+    public static final String ERROR_BILLING_EXPORT_TYPES_MISSING = "error.billing.export.types.missing";
 
     //Disks
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
@@ -659,6 +661,7 @@ public final class MessageConstants {
         "storage.quota.unknown.share.type.for.percentage";
 
     // NAT configuration
+    public static final String NAT_ADDRESS_RESOLVING_EXCEPTION = "nat.gateway.address.resolving.exception";
     public static final String NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE = "nat.gateway.routes.transfer.to.kube";
     public static final String NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT = "nat.gateway.route.creation.route.service.port";
     public static final String NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY = "nat.gateway.route.transfer.summary";
@@ -673,6 +676,7 @@ public final class MessageConstants {
         "nat.gateway.route.creation.existing.service.add.port";
     public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
     public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
+    public static final String NAT_ROUTE_CONFIG_FAILURE_SUMMARY = "nat.gateway.route.creation.failure.summary";
     public static final String NAT_ROUTE_CONFIG_INVALID_MANDATORY_FIELD = "nat.gateway.route.creation.invalid.field";
     public static final String NAT_ROUTE_CONFIG_INVALID_DESCRIPTION = "nat.gateway.route.creation.invalid.description";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
@@ -689,8 +693,8 @@ public final class MessageConstants {
         "nat.gateway.route.creation.port.forwarding.missing.port.error";
     public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
         "nat.gateway.route.creation.kube.dns.restart.error";
-    public static final String NAT_ROUTE_CONFIG_EXTERNAL_IP_POINTS_TO_PROXY_SERVICE =
-        "nat.gateway.route.creation.invalid.external.ip";
+    public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
+        "nat.gateway.route.extending.invalid.external.ip";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
@@ -708,6 +712,17 @@ public final class MessageConstants {
             "error.search.scrolling.parameter.doc.id.missing";
     public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING =
             "error.search.scrolling.parameter.doc.sort.fields.missing";
+
+    // Quota
+    public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
+    public static final String ERROR_QUOTA_VALUE_EMPTY = "error.quota.value.empty";
+    public static final String ERROR_QUOTA_NOT_FOUND_BY_ID = "error.quota.not.found.by.id";
+    public static final String ERROR_QUOTA_GLOBAL_ALREADY_EXISTS = "error.quota.global.already.exists";
+    public static final String ERROR_QUOTA_OVERALL_ALREADY_EXISTS = "error.quota.overall.already.exists";
+    public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
+    public static final String ERROR_QUOTA_SUBJECT_EMPTY = "error.quota.subject.empty";
+    public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
+    public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
 
     private MessageConstants() {
         // no-op

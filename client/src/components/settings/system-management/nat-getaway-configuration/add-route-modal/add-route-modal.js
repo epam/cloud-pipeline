@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Modal, Input, Button, Form, message, Spin} from 'antd';
+import {Checkbox, Modal, Input, Button, Form, message, Spin} from 'antd';
 import classNames from 'classnames';
 
 import {ResolveIp} from '../../../../../models/nat';
@@ -50,7 +50,8 @@ export default class AddRouteForm extends React.Component {
     errors: {},
     pending: false,
     ipManualInput: false,
-    ipResolveForServer: undefined
+    ipResolveForServer: undefined,
+    useIP: false
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -95,7 +96,8 @@ export default class AddRouteForm extends React.Component {
     const {
       ports = {},
       serverName,
-      ip
+      ip,
+      useIP
     } = this.state;
     const {
       routes = []
@@ -108,7 +110,7 @@ export default class AddRouteForm extends React.Component {
       .concat(currentIpRoutes.map(o => Number(o.externalPort)));
     const errors = {
       serverName: validateServerName(serverName),
-      ip: validateIP(ip),
+      ip: validateIP(ip, !useIP),
       ...(
         Object
           .entries(ports)
@@ -135,6 +137,16 @@ export default class AddRouteForm extends React.Component {
       state[name] = value;
     }
     this.setState(state, () => this.validate());
+  }
+
+  handleUseIP = (event) => {
+    const {checked} = event.target;
+    this.setState({
+      useIP: checked
+    }, () => {
+      this.onAutoResolveIp()
+        .then(() => this.validate());
+    });
   }
 
   addPortInput = () => {
@@ -165,7 +177,8 @@ export default class AddRouteForm extends React.Component {
       description: undefined,
       errors: {},
       ipManualInput: false,
-      ipResolveForServer: undefined
+      ipResolveForServer: undefined,
+      useIP: false
     });
   }
 
@@ -190,10 +203,11 @@ export default class AddRouteForm extends React.Component {
         ports = {},
         serverName,
         description,
-        ip
+        ip,
+        useIP
       } = this.state;
       this.props.onAdd({
-        ip,
+        ip: useIP ? ip : serverName,
         serverName,
         description,
         ports: Object.values(ports)
@@ -207,9 +221,10 @@ export default class AddRouteForm extends React.Component {
     const {
       ipManualInput,
       ipResolveForServer,
-      serverName
+      serverName,
+      useIP
     } = this.state;
-    if (!ipManualInput && ipResolveForServer !== serverName) {
+    if (useIP && !ipManualInput && ipResolveForServer !== serverName) {
       return this.onResolveIP();
     }
     return Promise.resolve();
@@ -265,12 +280,19 @@ export default class AddRouteForm extends React.Component {
 
   render () {
     const {onCancel, visible} = this.props;
-    const {serverName, ip, description, pending} = this.state;
+    const {
+      serverName,
+      ip,
+      description,
+      pending,
+      useIP
+    } = this.state;
     const FormItemError = ({identifier}) => (
       <div
         className={
           classNames(
             styles.formItemValidation,
+            'cp-error',
             {
               [styles.invalid]: !!this.getValidationMessage(identifier)
             }
@@ -306,29 +328,48 @@ export default class AddRouteForm extends React.Component {
               </div>
               <FormItemError identifier="serverName" />
               <div className={styles.formItemContainer}>
-                <span className={styles.title}>IP:</span>
-                <FormItem
-                  className={styles.formItem}
-                  validateStatus={this.getValidationStatus('ip')}
+                <span
+                  className={styles.title}
                 >
-                  <Input
-                    placeholder="127.0.0.1"
-                    value={ip}
-                    onChange={this.handleChange('ip')}
-                  />
+                  {'\u00A0'}
+                </span>
+                <FormItem className={styles.formItem}>
+                  <Checkbox
+                    checked={useIP}
+                    onChange={this.handleUseIP}
+                  >
+                    Specify IP address
+                  </Checkbox>
                 </FormItem>
-                <Button
-                  disabled={
-                    !serverName ||
-                    (this.getValidationStatus('serverName') === 'error') ||
-                    pending
-                  }
-                  style={{marginLeft: 5}}
-                  onClick={this.onResolveIP}
-                >
-                  Resolve
-                </Button>
               </div>
+              {
+                useIP && (
+                  <div className={styles.formItemContainer}>
+                    <span className={styles.title}>IP:</span>
+                    <FormItem
+                      className={styles.formItem}
+                      validateStatus={this.getValidationStatus('ip')}
+                    >
+                      <Input
+                        placeholder="127.0.0.1"
+                        value={ip}
+                        onChange={this.handleChange('ip')}
+                      />
+                    </FormItem>
+                    <Button
+                      disabled={
+                        !serverName ||
+                        (this.getValidationStatus('serverName') === 'error') ||
+                        pending
+                      }
+                      style={{marginLeft: 5}}
+                      onClick={this.onResolveIP}
+                    >
+                      Resolve
+                    </Button>
+                  </div>
+                )
+              }
               <FormItemError identifier="ip" />
               {
                 this.ports.map(([portIdentifier, port], index, ports) => ([

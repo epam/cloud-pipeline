@@ -95,7 +95,8 @@ export default class NATGetaway extends React.Component {
           throw new Error(natRules.error);
         } else if (natRules.loaded && natRules.value) {
           state.routes = natRules.value.map(v => ({...v})) || [];
-          state.rules = natRules.value.map(v => ({...v})) || [];
+        } else {
+          state.routes = [];
         }
       } catch (e) {
         message.error(e.message, 5);
@@ -111,7 +112,13 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.activeStatus)}
+              className={
+                classNames(
+                  styles.routeStatus,
+                  'cp-nat-route-status',
+                  'cp-primary'
+                )
+              }
               type="play-circle-o"
             />
           </Tooltip>
@@ -121,7 +128,7 @@ export default class NATGetaway extends React.Component {
           <Tooltip title={status}>
             <Icon
               type="hourglass"
-              className={classNames(styles.routeStatus, styles.activeStatus)}
+              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
             />
           </Tooltip>
         );
@@ -132,7 +139,7 @@ export default class NATGetaway extends React.Component {
           <Tooltip title={status}>
             <Icon
               type="loading"
-              className={classNames(styles.routeStatus, styles.activeStatus)}
+              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
             />
           </Tooltip>
         );
@@ -143,7 +150,14 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.scheduledStatus, styles.blink)}
+              className={
+                classNames(
+                  styles.routeStatus,
+                  'cp-nat-route-status',
+                  'cp-warning',
+                  styles.blink
+                )
+              }
               type="clock-circle-o"
             />
           </Tooltip>
@@ -152,7 +166,7 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.failedStatus)}
+              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')}
               type="exclamation-circle-o" />
           </Tooltip>
         );
@@ -160,14 +174,26 @@ export default class NATGetaway extends React.Component {
         return (
           <Tooltip title={status}>
             <Icon
-              className={classNames(styles.routeStatus, styles.unknownStatus)}
+              className={
+                classNames(
+                  styles.routeStatus,
+                  'cp-nat-route-status',
+                  'cp-text-not-important'
+                )
+              }
               type="question-circle-o" />
           </Tooltip>
         );
       default:
         return (
           <Icon
-            className={classNames(styles.routeStatus, styles.unknownStatus)}
+            className={
+              classNames(
+                styles.routeStatus,
+                'cp-nat-route-status',
+                'cp-text-not-important'
+              )
+            }
             style={{visibility: 'hidden'}}
             type="question-circle-o"
           />
@@ -317,13 +343,15 @@ export default class NATGetaway extends React.Component {
         </div>
         <Spin spinning={pending}>
           <Table
-            className={styles.table}
+            className={classNames(styles.table, 'cp-settings-nat-table')}
             dataSource={this.sortedContent}
             pagination={false}
             rowKey={getRouteIdentifier}
             rowClassName={record => classNames({
               [styles.removed]: this.routeIsRemoved(record),
-              [styles.new]: record.isNew
+              'cp-nat-route-removed': this.routeIsRemoved(record),
+              'cp-disabled': this.routeIsRemoved(record),
+              'cp-primary': !this.routeIsRemoved(record) && record.isNew
             })}
           >
             <ColumnGroup title="External resources">
@@ -333,7 +361,7 @@ export default class NATGetaway extends React.Component {
                     title={col.prettyName || col.name}
                     dataIndex={col.name}
                     key={col.name}
-                    className={classNames(styles.externalColumn, styles.column)}
+                    className={classNames('external-column', styles.column)}
                     render={(text, record) => (
                       <div>
                         {col.name === 'externalName' && this.renderStatusIcon(record.status)}
@@ -350,7 +378,7 @@ export default class NATGetaway extends React.Component {
                   title={col.prettyName || col.name}
                   dataIndex={col.name}
                   key={col.name}
-                  className={classNames(styles.internalColumn, styles.column)}
+                  className={classNames('internal-column', styles.column)}
                 />))
               }
             </ColumnGroup>
@@ -358,7 +386,7 @@ export default class NATGetaway extends React.Component {
               <Column
                 key="comment"
                 title="Comment"
-                className={styles.commentColumn}
+                className={classNames('nat-column', styles.commentColumn)}
                 dataIndex="description"
                 render={description => (
                   <Tooltip title={description}>
@@ -368,7 +396,7 @@ export default class NATGetaway extends React.Component {
               />
               <Column
                 key="remover"
-                className={styles.actionsColumn}
+                className={classNames('nat-column', styles.actionsColumn)}
                 render={(record) => !this.routeIsRemoved(record) ? (
                   <Button
                     type="danger"

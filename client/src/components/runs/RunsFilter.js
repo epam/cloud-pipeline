@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {Alert, Button, Card, Dropdown, Icon, Menu, Modal, Row, Table} from 'antd';
 import RunTable from './RunTable';
@@ -268,7 +269,8 @@ class RunsFilter extends React.Component {
       return (
         <Menu
           onClick={onClick}
-          className={styles.autocompleteMenu}>
+          className={classNames(styles.autocompleteMenu, 'cp-runs-autocomplete-menu')}
+        >
           {this.state.autocomplete.filter.map((f, index) => {
             let fieldDescription;
             if (f.fieldDescription) {
@@ -276,8 +278,8 @@ class RunsFilter extends React.Component {
                 <span style={{marginLeft: 5}}>
                   -
                   <i
+                    className="cp-text-not-important"
                     style={{
-                      color: '#777',
                       fontSize: 'smaller',
                       marginLeft: 2
                     }}
@@ -289,11 +291,9 @@ class RunsFilter extends React.Component {
             }
             return (
               <Menu.Item
-                className={
-                  this.state.autocomplete.hovered === index
-                    ? styles.autocompleteHoveredItem : styles.autocompleteItem
-                }
-                key={index}>
+                className={classNames(styles.autocompleteItem, 'cp-runs-autocomplete-menu-item')}
+                key={index}
+              >
                 <div onMouseOver={() => onHover(index)}>
                   <span>{f.fieldName} - {fieldDescription}</span>
                 </div>
@@ -470,7 +470,17 @@ class RunsFilter extends React.Component {
       return <LoadingView />;
     }
     return (
-      <Card className={styles.runsCard} bodyStyle={{padding: 15}}>
+      <Card
+        className={
+          classNames(
+            styles.runsCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+        bodyStyle={{padding: 15}}
+      >
         <Row type="flex" align="middle">
           <table style={{width: '100%', marginBottom: 10}}>
             <tbody>
