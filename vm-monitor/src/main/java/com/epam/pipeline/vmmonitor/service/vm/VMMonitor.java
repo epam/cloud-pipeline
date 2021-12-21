@@ -37,7 +37,6 @@ import org.springframework.stereotype.Service;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +51,9 @@ import java.util.stream.Collectors;
 @Service
 public class VMMonitor {
 
-    public static final String POOL_RUN_ID_PREFIX = "p-";
+    private static final String POOL_RUN_ID_PREFIX = "p-";
+    private static final int SECONDS_IN_MINUTES = 60;
+
     private final CloudPipelineAPIClient apiClient;
     private final VMNotifier notifier;
     private final Map<CloudProvider, VMMonitorService> services;
@@ -163,10 +164,10 @@ public class VMMonitor {
                 return false;
             }
             final long minutesAlive = Duration.between(created, LocalDateTime.now(Clock.systemUTC()))
-                    .get(ChronoUnit.MINUTES);
+                    .getSeconds() / SECONDS_IN_MINUTES;
             log.debug("VM {} was launched at {} and is alive for {} minutes",
                     vm.getInstanceId(), created, minutesAlive);
-            return minutesAlive > vmMaxLiveMinutes;
+            return minutesAlive <= vmMaxLiveMinutes;
         }
         return false;
     }
