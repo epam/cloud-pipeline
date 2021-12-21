@@ -21,6 +21,9 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -31,4 +34,8 @@ public interface VMMonitorService<T extends AbstractCloudRegion> {
 
     List<VirtualMachine> fetchRunningVms(T region);
     CloudProvider provider();
+
+    default LocalDateTime convertDateToLocalDateTime(final Date date) {
+        return date.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime();
+    }
 }

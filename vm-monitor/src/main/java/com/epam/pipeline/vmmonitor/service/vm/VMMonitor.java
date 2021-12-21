@@ -34,6 +34,10 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -48,19 +52,22 @@ import java.util.stream.Collectors;
 @Service
 public class VMMonitor {
 
+    public static final String POOL_RUN_ID_PREFIX = "p-";
     private final CloudPipelineAPIClient apiClient;
     private final VMNotifier notifier;
     private final Map<CloudProvider, VMMonitorService> services;
     private final List<String> requiredLabels;
     private final String runIdLabel;
     private final String poolIdLabel;
+    private final long vmMaxLiveMinutes;
 
     public VMMonitor(final CloudPipelineAPIClient apiClient,
                      final VMNotifier notifier,
                      final List<VMMonitorService> services,
                      @Value("${monitor.required.labels:}") final String requiredLabels,
                      @Value("${monitor.runid.label:}") final String runIdLabel,
-                     @Value("${monitor.poolid.label:}") final String poolIdLabel) {
+                     @Value("${monitor.poolid.label:}") final String poolIdLabel,
+                     @Value("${monitor.vm.max.live.minutes:60}") final long vmMaxLiveMinutes) {
         this.apiClient = apiClient;
         this.notifier = notifier;
         this.services = ListUtils.emptyIfNull(services).stream()
@@ -68,6 +75,7 @@ public class VMMonitor {
         this.requiredLabels = Arrays.asList(requiredLabels.split(","));
         this.runIdLabel = runIdLabel;
         this.poolIdLabel = poolIdLabel;
+        this.vmMaxLiveMinutes = vmMaxLiveMinutes;
     }
 
     public void monitor() {
@@ -110,7 +118,7 @@ public class VMMonitor {
                 checkMatchingNodes(nodes, vm);
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
-                if (!matchingRunExists(vm)) {
+                if (!matchingRunExists(vm) && !checkVMPoolNode(vm)) {
                     notifier.queueMissingNodeNotification(vm);
                 }
             }
@@ -132,7 +140,7 @@ public class VMMonitor {
         return false;
     }
 
-    private boolean poolIdExists(final NodeInstance node) {
+    private boolean poolIdExists(final VirtualMachine vm, final NodeInstance node) {
         log.debug("Checking whether a node pool with corresponding pool id exists.");
         final String poolIdValue = MapUtils.emptyIfNull(node.getLabels()).get(poolIdLabel);
         if (StringUtils.isNotBlank(poolIdValue) && NumberUtils.isDigits(poolIdValue)) {
@@ -140,6 +148,25 @@ public class VMMonitor {
             log.debug("NodeInstance {} {} is associated with pool id {}. Checking node pool existence.",
                     node.getUid(), node.getClusterName(), poolId);
             return isNodePoolExists(poolId);
+        }
+        return checkVMPoolNode(vm);
+    }
+
+    private boolean checkVMPoolNode(final VirtualMachine vm) {
+        log.debug("Checking whether VM {} is created for some node pool.", vm.getInstanceId());
+        final String runIdValue = MapUtils.emptyIfNull(vm.getTags()).get(runIdLabel);
+        if (StringUtils.isNotBlank(runIdValue) && runIdValue.startsWith(POOL_RUN_ID_PREFIX)) {
+            log.debug("VM {} is labeled with {} and it possibly matches a node pool.",
+                    vm.getInstanceId(), runIdValue);
+            final LocalDateTime created = vm.getCreated();
+            if (created == null) {
+                return false;
+            }
+            final long minutesAlive = Duration.between(created, LocalDateTime.now(Clock.systemUTC()))
+                    .get(ChronoUnit.MINUTES);
+            log.debug("VM {} was launched at {} and is alive for {} minutes",
+                    vm.getInstanceId(), created, minutesAlive);
+            return minutesAlive > vmMaxLiveMinutes;
         }
         return false;
     }
@@ -170,7 +197,7 @@ public class VMMonitor {
 
     private void checkLabels(final NodeInstance node, final VirtualMachine vm) {
         log.debug("Checking status of node {} for VM {} {}", node.getName(), vm.getInstanceId(), vm.getCloudProvider());
-        if (matchingRunExists(vm) || poolIdExists(node)) {
+        if (matchingRunExists(vm) || poolIdExists(vm, node)) {
             return;
         }
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());

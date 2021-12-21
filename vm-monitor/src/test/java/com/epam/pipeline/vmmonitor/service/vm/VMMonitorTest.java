@@ -43,6 +43,7 @@ public class VMMonitorTest {
     private static final String RUN_ID_VALUE = "p-123";
     private static final String POOL_ID_VALUE = "123";
     private static final Long POOL_ID = 123L;
+    private static final int VM_MAX_LIVE_MINUTES = 60;
     private final Map<String, String> vmTags = Collections.singletonMap(RUN_ID_LABEL, RUN_ID_VALUE);
     private final Map<String, String> nodeLabels = Collections.singletonMap(POOL_ID_LABEL, POOL_ID_VALUE);
     private final AwsRegion region = new AwsRegion(CloudProvider.AWS, TEST_STRING, TEST_STRING, TEST_STRING,
@@ -59,7 +60,7 @@ public class VMMonitorTest {
         doReturn(CloudProvider.AWS).when(mockService).provider();
         vm = VirtualMachine.builder().tags(vmTags).build();
         monitor = new VMMonitor(mockApiClient, notifier, Collections.singletonList(mockService),
-                RUN_ID_LABEL, RUN_ID_LABEL, POOL_ID_LABEL);
+                RUN_ID_LABEL, RUN_ID_LABEL, POOL_ID_LABEL, VM_MAX_LIVE_MINUTES);
 
     }
 
