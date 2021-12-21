@@ -139,10 +139,10 @@ dependencies {
 
     // Logging
     compile group: "org.slf4j", name: "slf4j-api", version: "1.7.24"
-    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: "project.ext.versionLog4j2"
-    compile group: "org.apache.logging.log4j", name: "log4j-api", version: "project.ext.versionLog4j2"
-    compile group: "org.apache.logging.log4j", name: "log4j-core", version: "project.ext.versionLog4j2"
-    compile group: "org.apache.logging.log4j", name: "log4j-jcl", version: "project.ext.versionLog4j2"
+    compile group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: project.ext.versionLog4j2
+    compile group: "org.apache.logging.log4j", name: "log4j-api", version: project.ext.versionLog4j2
+    compile group: "org.apache.logging.log4j", name: "log4j-core", version: project.ext.versionLog4j2
+    compile group: "org.apache.logging.log4j", name: "log4j-jcl", version: project.ext.versionLog4j2
 
     // Core library
     compile project(":core")

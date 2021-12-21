@@ -13,6 +13,10 @@ repositories  {
     mavenCentral()
 }
 
+ext {
+    versionLog4j2 = "2.17.0"
+}
+
 dependencies {
 
     //CLI parsing
@@ -23,9 +27,9 @@ dependencies {
 
     //Logging
     compile group: "org.slf4j", name: "slf4j-api", version: "1.7.21"
-    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.16.0'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.16.0'
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.16.0'
+    compile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: project.ext.versionLog4j2
+    compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: project.ext.versionLog4j2
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: project.ext.versionLog4j2
 
     //commons
     compile group: 'commons-io', name: 'commons-io', version: '2.5'
