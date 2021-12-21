@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -84,6 +85,19 @@ public interface Json {
         mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(systemParameters);
+        } catch (IOException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    static SupportButton stringToSupportButtons(final String json) {
+        final ObjectMapper mapper = new ObjectMapper();
+        final SimpleModule module = new SimpleModule();
+        module.addDeserializer(SupportButton.class, new SupportButtonDeserialization());
+        mapper.registerModule(module);
+        mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
+        try {
+            return mapper.readValue(json, SupportButton.class);
         } catch (IOException exception) {
             throw new RuntimeException(exception);
         }

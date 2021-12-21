@@ -1557,6 +1557,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 ensure(supportTemplateState, cssClass("anticon-eye"));
                 return this;
             }
+
+            public String getSupportTemplate() {
+                return $(supportTemplateValue).getValue();
+            }
         }
 
         public class LustreFSAO extends PreferencesAO {
