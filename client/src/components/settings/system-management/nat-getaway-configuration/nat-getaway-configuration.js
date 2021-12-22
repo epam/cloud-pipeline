@@ -83,6 +83,14 @@ export default class NATGetaway extends React.Component {
     this.loadRoutes();
   }
 
+  componentDidUpdate () {
+    this.props.handleModified(this.tableContentChanged);
+  }
+
+  componentWillUnmount () {
+    this.props.handleModified(false);
+  }
+
   loadRoutes = () => {
     this.setState({pending: true}, async () => {
       const state = {
