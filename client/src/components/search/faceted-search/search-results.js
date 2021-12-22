@@ -403,7 +403,10 @@ class SearchResults extends React.Component {
         {
           disabled
             ? (
-              <Tooltip title="Only files from single storage could be selected at a time">
+              <Tooltip
+                mouseEnterDelay={0.4}
+                title="Only files from single storage could be selected at a time"
+              >
                 {checkbox}
               </Tooltip>
             )
