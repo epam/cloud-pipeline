@@ -695,6 +695,12 @@ public final class MessageConstants {
         "nat.gateway.route.creation.kube.dns.restart.error";
     public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
         "nat.gateway.route.extending.invalid.external.ip";
+    public static final String NAT_SERVICE_CONFIG_ERROR_NO_CLUSTER_IP = "nat.gateway.service.config.no.cluster.ip";
+    public static final String NAT_SERVICE_CONFIG_GENERAL_ERROR = "nat.gateway.service.config.general.error";
+    public static final String NAT_SERVICE_CONFIG_EMPTY_ANNOTATIONS_WITH_PORTS =
+        "nat.gateway.service.config.empty.annotations.with.ports.warn";
+    public static final String NAT_ROUTE_CONFIG_WARN_UNKNOWN_STATUS_PORT =
+        "nat.gateway.route.config.port.unknown.status";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";

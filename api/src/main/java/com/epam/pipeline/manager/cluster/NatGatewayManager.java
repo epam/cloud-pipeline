@@ -37,6 +37,7 @@ import io.fabric8.kubernetes.api.model.ServiceSpec;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.collections4.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -231,15 +232,21 @@ public class NatGatewayManager {
             try {
                 processKubeService(service);
             } catch (Exception e) {
-                log.error("An error occurred during {} configuration: {}", getServiceName(service), e.getMessage());
+                log.error(messageHelper.getMessage(MessageConstants.NAT_SERVICE_CONFIG_GENERAL_ERROR,
+                                                   getServiceName(service), e.getMessage()));
             }
         });
     }
 
-    private void processKubeService(Service service) {
+    private void processKubeService(final Service service) {
         final Map<String, String> annotations = getServiceAnnotations(service);
         final List<Integer> allExternalPorts = getExternalPortsSpecifiedInAnnotations(annotations);
         if (CollectionUtils.isEmpty(allExternalPorts)) {
+            if (MapUtils.isNotEmpty(loadServiceActivePortsFromKube(service))) {
+                log.warn(messageHelper.getMessage(MessageConstants.NAT_SERVICE_CONFIG_EMPTY_ANNOTATIONS_WITH_PORTS,
+                                                  getServiceName(service)));
+                return;
+            }
             final String serviceName = getServiceName(service);
             log.warn(messageHelper.getMessage(
                 MessageConstants.NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS, serviceName));
@@ -250,9 +257,14 @@ public class NatGatewayManager {
     }
 
     private void processExternalPort(final Service service, final Map<String, String> annotations, final Integer port) {
-        final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
+        final Map<Integer, ServicePort> activePorts = loadServiceActivePortsFromKube(service);
         final String targetStatus = extractStringFromAnnotations(annotations, getTargetStatusLabelName(port));
         final String currentStatus = extractStringFromAnnotations(annotations, getCurrentStatusLabelName(port));
+        if (currentStatus.equals(UNKNOWN) || targetStatus.equals(UNKNOWN)) {
+            log.warn(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_WARN_UNKNOWN_STATUS_PORT,
+                                              getServiceName(service), port, currentStatus, targetStatus));
+            return;
+        }
         if (!targetStatus.equals(currentStatus)) {
             if (targetStatus.equals(NatRouteStatus.ACTIVE.name())) {
                 processScheduledStartup(service, activePorts, port);
@@ -262,7 +274,7 @@ public class NatGatewayManager {
         }
     }
 
-    private Map<Integer, ServicePort> getServiceActivePorts(final Service service) {
+    private Map<Integer, ServicePort> loadServiceActivePortsFromKube(final Service service) {
         return kubernetesManager.findServiceByName(getServiceName(service))
             .map(Service::getSpec)
             .map(ServiceSpec::getPorts)
@@ -525,7 +537,7 @@ public class NatGatewayManager {
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
         if (NatRouteStatus.CREATION_SCHEDULED.equals(route.getStatus())) {
-            final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
+            final Map<Integer, ServicePort> activePorts = loadServiceActivePortsFromKube(service);
             if (!activePorts.containsKey(externalPort)) {
                 final boolean portCreationResult = kubernetesManager.generateFreeTargetPort()
                     .map(newPort -> kubernetesManager.addPortToExistingService(
@@ -793,7 +805,9 @@ public class NatGatewayManager {
         return Optional.of(service)
             .map(Service::getSpec)
             .map(ServiceSpec::getClusterIP)
-            .orElseThrow(() -> new IllegalStateException("No cluster IP"));
+            .orElseThrow(() -> new IllegalStateException(
+                messageHelper.getMessage(MessageConstants.NAT_SERVICE_CONFIG_ERROR_NO_CLUSTER_IP,
+                                         getServiceName(service))));
     }
 
     private Set<String> getExistingDnsRecords(final Optional<ConfigMap> dnsMap) {
