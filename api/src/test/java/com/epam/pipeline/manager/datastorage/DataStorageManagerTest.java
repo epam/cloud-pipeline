@@ -621,6 +621,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     }
 
     @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testResolveSizeMasks() {
         final String firstStorageName = "storage1";
         final String secondStorageName = "storage2";
