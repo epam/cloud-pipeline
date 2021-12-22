@@ -383,26 +383,33 @@ class SearchResults extends React.Component {
       return null;
     }
     const disabled = this.itemSelectionDisabled(item);
+    const handleClick = e => e.stopPropagation();
     const checkbox = (
       <Checkbox
         checked={this.itemSelected(item)}
         disabled={disabled}
-        onChange={(e) => this.onRowSelectionChange(item, e)}
+        onChange={e => this.onRowSelectionChange(item, e)}
+        onClick={handleClick}
+        style={disabled ? {pointerEvents: 'none'} : {}}
       />
     );
     return (
       <div
-        style={{padding: '0 5px'}}
-        onClick={(e) => { e.stopPropagation(); }}
+        style={{padding: '10px 5px'}}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
       >
         {
           disabled
             ? (
               <Tooltip
-                mouseEnterDelay={0.4}
                 title="Only files from single storage could be selected at a time"
               >
-                {checkbox}
+                <span style={{cursor: 'not-allowed'}}>
+                  {checkbox}
+                </span>
               </Tooltip>
             )
             : checkbox

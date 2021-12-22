@@ -33,6 +33,7 @@ import {SearchGroupTypes} from './searchGroupTypes';
 import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
 import {
   PresentationModes,
+  SelectionPreview,
   TogglePresentationMode
 } from './faceted-search/controls';
 import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results';
@@ -91,8 +92,7 @@ class FacetedSearch extends React.Component {
     itemsToShare: [],
     selectedItems: [],
     shareDialogVisible: false,
-    currentSelection: [],
-    showSelectionMode: false
+    showSelectionPreview: false
   }
 
   abortController;
@@ -364,9 +364,7 @@ class FacetedSearch extends React.Component {
             query,
             pageSize,
             searchToken: currentSearchToken,
-            facetsToken: currentFacetsToken,
-            currentSelection = [],
-            showSelectionMode
+            facetsToken: currentFacetsToken
           } = this.state;
           if (facets.length === 0) {
             // eslint-disable-next-line
@@ -391,58 +389,6 @@ class FacetedSearch extends React.Component {
             scrollingParameters: continuousOptions
           });
           if (currentSearchToken === searchToken) {
-            return;
-          }
-          if (showSelectionMode) {
-            const state = {};
-
-            let documents;
-            if (!continuousOptions) {
-              state.isFirstPage = true;
-              state.isLastPage = currentSelection.length < pageSize;
-              documents = currentSelection.slice(0, pageSize);
-            } else {
-              const lastElIndex = currentSelection.indexOf(
-                currentSelection.find(d => d.elasticId === continuousOptions.docId)
-              );
-              const receivedDocuments = continuousOptions.scrollingBackward
-                ? currentSelection.slice(Math.max(0, lastElIndex - pageSize), pageSize)
-                : currentSelection.slice(lastElIndex, lastElIndex + pageSize);
-              const lastPage = receivedDocuments.length < pageSize;
-              if (lastPage) {
-                const ids = new Set(receivedDocuments.map(doc => doc.elasticId));
-                if (continuousOptions.scrollingBackward) {
-                  documents = [
-                    ...receivedDocuments,
-                    ...currentDocuments.filter(doc => !ids.has(doc.elasticId))
-                  ];
-                } else {
-                  documents = [
-                    ...currentDocuments.filter(doc => !ids.has(doc.elasticId)),
-                    ...receivedDocuments
-                  ];
-                }
-              } else {
-                documents = receivedDocuments.slice();
-              }
-              if (continuousOptions.scrollingBackward) {
-                state.isFirstPage = lastPage;
-                if (!lastPage) {
-                  state.isLastPage = false;
-                }
-              } else {
-                state.isLastPage = lastPage;
-                if (!lastPage) {
-                  state.isFirstPage = false;
-                }
-              }
-            }
-            this.setState({
-              documents,
-              pending: false,
-              showResults: true,
-              ...state
-            });
             return;
           }
           this.setState({searchToken}, () => {
@@ -626,14 +572,7 @@ class FacetedSearch extends React.Component {
   };
 
   onChangeQuery = () => {
-    const {showSelectionMode} = this.state;
-    if (showSelectionMode) {
-      this.setState({
-        showSelectionMode: false
-      }, () => this.doSearch());
-    } else {
-      this.doSearch();
-    }
+    this.doSearch();
   };
 
   onLoadNextPage = (document, forward = true) => {
@@ -703,8 +642,7 @@ class FacetedSearch extends React.Component {
     });
   };
 
-  openShareStorageItemsDialog = () => {
-    const {selectedItems = []} = this.state;
+  openShareStorageItemsDialog = (itemsToShare = []) => {
     const getItemType = (item) => {
       if (item.type === SearchItemTypes.s3File) {
         return 'file';
@@ -712,13 +650,14 @@ class FacetedSearch extends React.Component {
       return item.type;
     };
     this.setState({
-      itemsToShare: selectedItems.map(i => ({
+      itemsToShare: itemsToShare.map(i => ({
         storageId: i.parentId,
         path: i.path,
         name: i.name,
         type: getItemType(i)
       })),
-      shareDialogVisible: true
+      shareDialogVisible: true,
+      showSelectionPreview: false
     });
   };
 
@@ -741,76 +680,77 @@ class FacetedSearch extends React.Component {
     this.setState({selectedItems});
   };
 
-  toggleSelectionViewMode = () => {
-    const {showSelectionMode, selectedItems = []} = this.state;
+  openSelectionPreview = () => {
+    const {selectedItems = []} = this.state;
+    if (selectedItems && selectedItems.length > 0) {
+      this.setState({showSelectionPreview: true});
+    }
+  };
 
+  closeSelectionPreview = () => {
+    this.setState({showSelectionPreview: false});
+  };
+
+  clearSelection = () => {
     this.setState({
-      currentSelection: !showSelectionMode ? selectedItems.slice() : [],
-      showSelectionMode: !showSelectionMode
-    }, () => {
-      if (!showSelectionMode) {
-        this.doSearch(undefined, true);
-      } else {
-        this.doSearch();
-      }
+      showSelectionPreview: false,
+      itemsToShare: [],
+      selectedItems: []
     });
   };
 
   renderDataStorageSharingControl = () => {
-    const {
-      selectedItems,
-      showSelectionMode
-    } = this.state;
+    const {selectedItems} = this.state;
     if (!this.dataStorageSharingEnabled || !selectedItems || !selectedItems.length) {
-      if (showSelectionMode) {
-        return (
-          <Button
-            size="large"
-            onClick={this.toggleSelectionViewMode}
-            style={{marginLeft: 5}}
-          >
-            Show all items
-          </Button>
-        );
-      }
       return null;
     }
     const handleMenuClick = ({key}) => {
-      if (key === 'clear') {
-        this.setState({
-          itemsToShare: [],
-          selectedItems: [],
-          currentSelection: [],
-          showSelectionMode: false
-        }, () => {
-          if (showSelectionMode) {
-            this.doSearch();
-          }
-        });
-      }
-      if (key === 'show selection') {
-        this.toggleSelectionViewMode();
+      if (key === 'share') {
+        this.openShareStorageItemsDialog(selectedItems);
+      } else if (key === 'clear') {
+        this.clearSelection();
+      } else if (key === 'show selection') {
+        this.openSelectionPreview();
       }
     };
     const overlay = (
-      <RcMenu onClick={handleMenuClick}>
-        <MenuItem key="show selection" disabled={!selectedItems || !selectedItems.length}>
-          {showSelectionMode ? 'Show all items' : 'Show selected items'}
+      <RcMenu
+        onClick={handleMenuClick}
+        selectedKeys={[]}
+      >
+        <MenuItem
+          key="share"
+        >
+          Share selected items
+        </MenuItem>
+        <MenuItem
+          key="show selection"
+        >
+          Show selected items
         </MenuItem>
         <MenuDivider />
-        <MenuItem key="clear" className="cp-danger">Clear selection</MenuItem>
+        <MenuItem
+          key="clear"
+          className="cp-danger"
+        >
+          Clear selection
+        </MenuItem>
       </RcMenu>
     );
     return (
-      <div style={{marginLeft: 5}}>
+      <div style={{margin: '0 5px'}}>
         <Badge count={(selectedItems || []).length} style={{zIndex: 999}}>
-          <Dropdown.Button
+          <Dropdown
             overlay={overlay}
-            onClick={this.openShareStorageItemsDialog}
-            size="large"
+            trigger={['click']}
           >
-            Share selected items
-          </Dropdown.Button>
+            <Button
+              size="large"
+              style={{width: 35, padding: 0}}
+            >
+              <Icon type="export" />
+            </Button>
+          </Dropdown>
         </Badge>
       </div>
     );
@@ -935,7 +875,8 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       presentationMode,
       query,
-      showSelectionMode,
+      showSelectionPreview,
+      selectedItems = [],
       userDocumentTypes = []
     } = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
@@ -1003,7 +944,6 @@ class FacetedSearch extends React.Component {
               className={classNames(styles.actions, 'cp-search-actions')}
             >
               <DocumentTypeFilter
-                disabled={showSelectionMode}
                 values={this.documentTypeFilter.values}
                 selection={(activeFilters || {})[DocumentTypeFilterName]}
                 onChange={this.onChangeFilter(DocumentTypeFilterName)}
@@ -1033,7 +973,7 @@ class FacetedSearch extends React.Component {
           )
         }
         <div className={styles.content}>
-          {!noFilters && !showSelectionMode ? (
+          {!noFilters ? (
             <SplitPanel
               contentInfo={[{
                 key: 'faceted-filter',
@@ -1084,6 +1024,15 @@ class FacetedSearch extends React.Component {
           )
           }
         </div>
+        <SelectionPreview
+          title="Selected files"
+          visible={showSelectionPreview}
+          extraColumns={this.extraColumns}
+          items={selectedItems}
+          onClose={this.closeSelectionPreview}
+          onClear={this.clearSelection}
+          onShare={this.openShareStorageItemsDialog}
+        />
       </div>
     );
   }
