@@ -750,6 +750,12 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
 
+    public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
+            "system.maintenance.mode", true, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
+            "system.maintenance.mode.banner",
+            "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
+
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
         "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,
