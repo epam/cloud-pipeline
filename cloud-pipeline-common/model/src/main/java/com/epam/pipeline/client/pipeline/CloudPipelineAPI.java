@@ -222,7 +222,7 @@ public interface CloudPipelineAPI {
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
 
-    @GET("/cluster/pool")
+    @GET("cluster/pool")
     Call<Result<List<NodePool>>> loadNodePools();
 
     @GET("filesharemount/{id}")
