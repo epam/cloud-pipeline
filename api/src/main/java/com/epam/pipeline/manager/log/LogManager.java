@@ -23,13 +23,16 @@ import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogPaginationRequest;
 import com.epam.pipeline.entity.log.PageMarker;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.BooleanUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.ShardSearchFailure;
@@ -50,16 +53,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -70,6 +74,8 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class LogManager {
 
+    private static final String ES_WILDCARD = "*";
+    private static final DateTimeFormatter ELASTIC_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.fromOptions(true,
             SearchRequest.DEFAULT_INDICES_OPTIONS.allowNoIndices(),
             SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsOpen(),
@@ -87,15 +93,16 @@ public class LogManager {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
-    public static final String ID = "event_id";
-    public static final String SERVICE_ACCOUNT = "service_account";
-    public static final String KEYWORD = ".keyword";
+    private static final String ID = "event_id";
+    private static final String SERVICE_ACCOUNT = "service_account";
+    private static final String KEYWORD = ".keyword";
+    private static final Period FILEBEAT_TRANSITION_PERIOD = Period.ofDays(1);
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
 
-    @Value("${log.security.elastic.index.prefix}")
-    private String indexTemplate;
+    @Value("${log.security.elastic.index.prefix:security_log}")
+    private String indexPrefix;
 
     /**
      * Searches log according to specified log filter.
@@ -112,7 +119,7 @@ public class LogManager {
         final SortOrder sortOrder = logFilter.getSortOrder() != null
                 ? SortOrder.fromString(logFilter.getSortOrder())
                 : SortOrder.DESC;
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+        final SearchSourceBuilder source = new SearchSourceBuilder()
                 .query(constructQueryFilter(logFilter))
                 .sort(MESSAGE_TIMESTAMP, sortOrder)
                 .sort(ID, sortOrder)
@@ -122,7 +129,7 @@ public class LogManager {
         if (pageMarker != null) {
             Assert.isTrue(pageMarker.getId() != null && pageMarker.getMessageTimestamp() != null,
                     "Token should contain id and messageTimestamp values");
-            searchSourceBuilder.searchAfter(
+            source.searchAfter(
                     new Object[]{
                             pageMarker.getMessageTimestamp()
                                     .toInstant(ZoneOffset.UTC).toEpochMilli(),
@@ -131,11 +138,14 @@ public class LogManager {
             );
         }
 
-        final SearchHits hits = verifyResponse(
-                                    executeRequest(new SearchRequest(indexTemplate)
-                                            .source(searchSourceBuilder)
-                                            .indicesOptions(INDICES_OPTIONS))
-                                ).getHits();
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getLogIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = verifyResponse(executeRequest(request));
+        final SearchHits hits = response.getHits();
 
         final List<LogEntry> entries = Arrays.stream(hits.getHits())
                 .map(this::mapHitToLogEntry)
@@ -147,6 +157,39 @@ public class LogManager {
                 .token(getToken(entries, pagination.getPageSize()))
                 .totalHits(hits.totalHits)
                 .build();
+    }
+
+    private String[] getLogIndices(final LocalDateTime from, final LocalDateTime to) {
+        final LocalDate toDate = Optional.ofNullable(to)
+                .orElseGet(DateUtils::nowUTC)
+                .toLocalDate();
+        return Optional.ofNullable(from)
+                .map(LocalDateTime::toLocalDate)
+                .map(fromDate -> getLogDayIndices(fromDate, toDate))
+                .orElseGet(this::getLogIndices);
+    }
+
+    private String[] getLogIndices() {
+        return new String[]{getIndexName(indexPrefix, ES_WILDCARD)};
+    }
+
+    /**
+     * Returns system logs day indices taking into consideration filebeat transition period.
+     *
+     * The transition period includes adjacent indices which may contain required documents.
+     */
+    private String[] getLogDayIndices(final LocalDate from, final LocalDate to) {
+        final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
+        final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
+        return Stream.iterate(actualFrom, date -> date.plusDays(1))
+                .limit(Period.between(actualFrom, actualTo).getDays() + 1)
+                .map(date -> date.format(ELASTIC_DATE_FORMATTER))
+                .map(dateString -> getIndexName(indexPrefix, dateString, ES_WILDCARD))
+                .toArray(String[]::new);
+    }
+
+    private String getIndexName(final String... args) {
+        return String.join("-", args);
     }
 
     private PageMarker getToken(final List<LogEntry> items, final int pageSize) {
@@ -164,43 +207,43 @@ public class LogManager {
             boolQuery.filter(QueryBuilders.termQuery(SERVICE_ACCOUNT, false));
         }
 
-        if (!CollectionUtils.isEmpty(logFilter.getUsers())) {
+        if (CollectionUtils.isNotEmpty(logFilter.getUsers())) {
             List<String> formattedUsers = logFilter.getUsers().stream()
                     .flatMap(user -> Stream.of(user.toLowerCase(), user.toUpperCase()))
                     .collect(Collectors.toList());
             boolQuery.filter(QueryBuilders.termsQuery(USER, formattedUsers));
         }
-        if (!CollectionUtils.isEmpty(logFilter.getHostnames())) {
+        if (CollectionUtils.isNotEmpty(logFilter.getHostnames())) {
             boolQuery.filter(QueryBuilders.termsQuery(HOSTNAME + KEYWORD, logFilter.getHostnames()));
         }
-        if (!CollectionUtils.isEmpty(logFilter.getServiceNames())) {
+        if (CollectionUtils.isNotEmpty(logFilter.getServiceNames())) {
             boolQuery.filter(QueryBuilders.termsQuery(SERVICE_NAME + KEYWORD, logFilter.getServiceNames()));
         }
-        if (!CollectionUtils.isEmpty(logFilter.getTypes())) {
+        if (CollectionUtils.isNotEmpty(logFilter.getTypes())) {
             boolQuery.filter(QueryBuilders.termsQuery(TYPE + KEYWORD, logFilter.getTypes()));
         }
-        if (!StringUtils.isEmpty(logFilter.getMessage())) {
+        if (StringUtils.isNotEmpty(logFilter.getMessage())) {
             boolQuery.filter(QueryBuilders.matchQuery(MESSAGE, logFilter.getMessage()));
         }
 
-        addRageFilter(boolQuery, logFilter.getMessageTimestampFrom(),
+        addRangeFilter(boolQuery, logFilter.getMessageTimestampFrom(),
                 logFilter.getMessageTimestampTo());
         return boolQuery;
     }
 
-    private void addRageFilter(final BoolQueryBuilder boolQuery,
-                               final LocalDateTime timestampFrom, final LocalDateTime timestampTo) {
-        if (timestampFrom == null && timestampTo == null) {
+    private void addRangeFilter(final BoolQueryBuilder boolQuery,
+                                final LocalDateTime from, final LocalDateTime to) {
+        if (from == null && to == null) {
             return;
         }
 
         final RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(MESSAGE_TIMESTAMP);
 
-        if (timestampFrom != null) {
-            rangeQueryBuilder.from(timestampFrom.toInstant(ZoneOffset.UTC));
+        if (from != null) {
+            rangeQueryBuilder.from(from.toInstant(ZoneOffset.UTC));
         }
-        if (timestampTo != null) {
-            rangeQueryBuilder.to(timestampTo.toInstant(ZoneOffset.UTC));
+        if (to != null) {
+            rangeQueryBuilder.to(to.toInstant(ZoneOffset.UTC));
         }
 
         boolQuery.filter(rangeQueryBuilder);
@@ -208,16 +251,24 @@ public class LogManager {
 
     private SearchResponse verifyResponse(final SearchResponse logsResponse) {
         if (logsResponse.status().getStatus() != HttpStatus.OK.value()) {
-            throw new IllegalStateException(
-                    "Illegal Rest status: "  + logsResponse.status().name()
-                            + " code: " + logsResponse.status().getStatus());
+            throw new IllegalStateException(String.format("Search request has failed with HTTP status %s (%s).",
+                    logsResponse.status().name(), logsResponse.status().getStatus()));
         }
 
-        if (logsResponse.getTotalShards() > logsResponse.getSuccessfulShards()) {
-            final String shardsFailCause = Arrays.stream(logsResponse.getShardFailures())
+        log.debug("Search request has finished with {} successful, {} skipped and {} failed shards of {} total.",
+                logsResponse.getSuccessfulShards(), logsResponse.getSkippedShards(),
+                logsResponse.getFailedShards(), logsResponse.getTotalShards());
+        final ShardSearchFailure[] failures = logsResponse.getShardFailures();
+        if (failures.length > 0) {
+            final List<Throwable> errors = Arrays.stream(failures)
                     .map(ShardSearchFailure::getCause)
-                    .map(Throwable::getMessage).collect(Collectors.joining("\n"));
-            throw new IllegalStateException(shardsFailCause);
+                    .collect(Collectors.toList());
+            final String errorMessages = errors.stream()
+                    .map(Throwable::getMessage)
+                    .collect(Collectors.joining("\n"));
+            log.error("Search request has finished with the following shard failures: {}", errorMessages);
+            throw new IllegalStateException("Search request has failed because some shards failed. ",
+                    failures[0].getCause());
         }
 
         return logsResponse;
@@ -247,19 +298,21 @@ public class LogManager {
 
     public LogFilter getFilters() {
         final LogFilter result = new LogFilter();
-        verifyResponse(
-                executeRequest(new SearchRequest(indexTemplate)
-                        .source(
-                                new SearchSourceBuilder()
-                                        .query(QueryBuilders.boolQuery())
-                                        .size(0)
-                                        .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
-                                        .aggregation(AggregationBuilders.terms(SERVICE_NAME)
-                                                .field(SERVICE_NAME + KEYWORD))
-                                        .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD))
-                        ).indicesOptions(INDICES_OPTIONS)
-                )
-        ).getAggregations()
+        final SearchSourceBuilder source = new SearchSourceBuilder()
+                .query(QueryBuilders.boolQuery())
+                .size(0)
+                .aggregation(AggregationBuilders.terms(TYPE).field(TYPE + KEYWORD))
+                .aggregation(AggregationBuilders.terms(SERVICE_NAME)
+                        .field(SERVICE_NAME + KEYWORD))
+                .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
+        final SearchRequest request = new SearchRequest()
+                .source(source)
+                .indices(getLogIndices())
+                .indicesOptions(INDICES_OPTIONS);
+        log.debug("Logs request: {} ", request);
+
+        final SearchResponse response = verifyResponse(executeRequest(request));
+        response.getAggregations()
                 .asList()
                 .stream()
                 .map(Terms.class::cast)
@@ -277,7 +330,6 @@ public class LogManager {
                         result.setTypes(values);
                     }
                 });
-
 
         return result;
     }
