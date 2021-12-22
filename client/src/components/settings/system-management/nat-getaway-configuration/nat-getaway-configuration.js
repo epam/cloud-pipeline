@@ -325,96 +325,106 @@ export default class NATGetaway extends React.Component {
   render () {
     const {pending} = this.state;
     return (
-      <div style={{position: 'relative'}}>
+      <div
+        className={styles.container}
+      >
         <div
-          className={
-            classNames(
-              styles.refreshButtonContainer
-            )
-          }
+          style={{
+            position: 'relative',
+            flex: '0 1 auto',
+            overflow: 'auto'
+          }}
         >
-          <Button
-            onClick={this.onRefreshTable}
-            disabled={pending}
-            size="small"
+          <div
+            className={
+              classNames(
+                styles.refreshButtonContainer
+              )
+            }
           >
-            REFRESH
-          </Button>
-        </div>
-        <Spin spinning={pending}>
-          <Table
-            className={classNames(styles.table, 'cp-settings-nat-table')}
-            dataSource={this.sortedContent}
-            pagination={false}
-            rowKey={getRouteIdentifier}
-            rowClassName={record => classNames({
-              [styles.removed]: this.routeIsRemoved(record),
-              'cp-nat-route-removed': this.routeIsRemoved(record),
-              'cp-disabled': this.routeIsRemoved(record),
-              'cp-primary': !this.routeIsRemoved(record) && record.isNew
-            })}
-          >
-            <ColumnGroup title="External resources">
-              {columns.external.map((col) => {
-                return (
+            <Button
+              onClick={this.onRefreshTable}
+              disabled={pending}
+              size="small"
+            >
+              REFRESH
+            </Button>
+          </div>
+          <Spin spinning={pending}>
+            <Table
+              className={classNames(styles.table, 'cp-settings-nat-table')}
+              dataSource={this.sortedContent}
+              pagination={false}
+              rowKey={getRouteIdentifier}
+              rowClassName={record => classNames({
+                [styles.removed]: this.routeIsRemoved(record),
+                'cp-nat-route-removed': this.routeIsRemoved(record),
+                'cp-disabled': this.routeIsRemoved(record),
+                'cp-primary': !this.routeIsRemoved(record) && record.isNew
+              })}
+            >
+              <ColumnGroup title="External resources">
+                {columns.external.map((col) => {
+                  return (
+                    <Column
+                      title={col.prettyName || col.name}
+                      dataIndex={col.name}
+                      key={col.name}
+                      className={classNames('external-column', styles.column)}
+                      render={(text, record) => (
+                        <div>
+                          {col.name === 'externalName' && this.renderStatusIcon(record.status)}
+                          {text}
+                        </div>)
+                      }
+                    />);
+                })
+                }
+              </ColumnGroup>
+              <ColumnGroup title="Internal config">
+                {columns.internal.map((col) => (
                   <Column
                     title={col.prettyName || col.name}
                     dataIndex={col.name}
                     key={col.name}
-                    className={classNames('external-column', styles.column)}
-                    render={(text, record) => (
-                      <div>
-                        {col.name === 'externalName' && this.renderStatusIcon(record.status)}
-                        {text}
-                      </div>)
-                    }
-                  />);
-              })
-              }
-            </ColumnGroup>
-            <ColumnGroup title="Internal config">
-              {columns.internal.map((col) => (
+                    className={classNames('internal-column', styles.column)}
+                  />))
+                }
+              </ColumnGroup>
+              <ColumnGroup>
                 <Column
-                  title={col.prettyName || col.name}
-                  dataIndex={col.name}
-                  key={col.name}
-                  className={classNames('internal-column', styles.column)}
-                />))
-              }
-            </ColumnGroup>
-            <ColumnGroup>
-              <Column
-                key="comment"
-                title="Comment"
-                className={classNames('nat-column', styles.commentColumn)}
-                dataIndex="description"
-                render={description => (
-                  <Tooltip title={description}>
-                    {description}
-                  </Tooltip>
-                )}
-              />
-              <Column
-                key="remover"
-                className={classNames('nat-column', styles.actionsColumn)}
-                render={(record) => !this.routeIsRemoved(record) ? (
-                  <Button
-                    type="danger"
-                    icon="delete"
-                    onClick={() => this.removeRoute(record)}
-                    size="small"
-                  />
-                ) : (
-                  <Button
-                    icon="rollback"
-                    size="small"
-                    onClick={() => this.revertRoute(record)}
-                  />
-                )}
-              />
-            </ColumnGroup>
-          </Table>
-        </Spin>
+                  key="comment"
+                  title="Comment"
+                  className={classNames('nat-column', styles.commentColumn)}
+                  dataIndex="description"
+                  render={description => (
+                    <Tooltip title={description}>
+                      {description}
+                    </Tooltip>
+                  )}
+                />
+                <Column
+                  key="remover"
+                  className={classNames('nat-column', styles.actionsColumn)}
+                  render={(record) => !this.routeIsRemoved(record) ? (
+                    <Button
+                      type="danger"
+                      icon="delete"
+                      onClick={() => this.removeRoute(record)}
+                      size="small"
+                    />
+                  ) : (
+                    <Button
+                      icon="rollback"
+                      size="small"
+                      onClick={() => this.revertRoute(record)}
+                    />
+                  )}
+                />
+              </ColumnGroup>
+            </Table>
+          </Spin>
+        </div>
         <div className={styles.tableContentActions}>
           <div className={styles.tableActions}>
             <Button

@@ -69,13 +69,17 @@ export default class AddRouteForm extends React.Component {
       ports = {},
       ip,
       serverName,
-      errors = {}
+      errors = {},
+      useIP
     } = this.state;
     const flattenForm = {
       ip: ip,
       serverName: serverName,
       ...ports
     };
+    if (!useIP) {
+      delete flattenForm.ip;
+    }
     return !!Object.values(errors)
       .map((status) => (status && status.error) || false)
       .filter(error => error)
