@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.log.LogFilter;
 import com.epam.pipeline.entity.log.LogPagination;
 import com.epam.pipeline.entity.log.LogPaginationRequest;
 import com.epam.pipeline.entity.log.PageMarker;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.PipelineException;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.Getter;
@@ -54,12 +55,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,6 +75,7 @@ import java.util.stream.Stream;
 public class LogManager {
 
     private static final String ES_WILDCARD = "*";
+    private static final DateTimeFormatter ELASTIC_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy.MM.dd");
     private static final IndicesOptions INDICES_OPTIONS = IndicesOptions.fromOptions(true,
             SearchRequest.DEFAULT_INDICES_OPTIONS.allowNoIndices(),
             SearchRequest.DEFAULT_INDICES_OPTIONS.expandWildcardsOpen(),
@@ -88,14 +93,15 @@ public class LogManager {
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     private static final String DEFAULT_SEVERITY = "INFO";
-    public static final String ID = "event_id";
-    public static final String SERVICE_ACCOUNT = "service_account";
-    public static final String KEYWORD = ".keyword";
+    private static final String ID = "event_id";
+    private static final String SERVICE_ACCOUNT = "service_account";
+    private static final String KEYWORD = ".keyword";
+    private static final Period FILEBEAT_TRANSITION_PERIOD = Period.ofDays(1);
 
     private final GlobalSearchElasticHelper elasticHelper;
     private final MessageHelper messageHelper;
 
-    @Value("${log.security.elastic.index.prefix}")
+    @Value("${log.security.elastic.index.prefix:security_log}")
     private String indexPrefix;
 
     /**
@@ -134,7 +140,7 @@ public class LogManager {
 
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(indexPrefix)
+                .indices(getLogIndices(logFilter.getMessageTimestampFrom(), logFilter.getMessageTimestampTo()))
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
@@ -151,6 +157,39 @@ public class LogManager {
                 .token(getToken(entries, pagination.getPageSize()))
                 .totalHits(hits.totalHits)
                 .build();
+    }
+
+    private String[] getLogIndices(final LocalDateTime from, final LocalDateTime to) {
+        final LocalDate toDate = Optional.ofNullable(to)
+                .orElseGet(DateUtils::nowUTC)
+                .toLocalDate();
+        return Optional.ofNullable(from)
+                .map(LocalDateTime::toLocalDate)
+                .map(fromDate -> getLogDayIndices(fromDate, toDate))
+                .orElseGet(this::getLogIndices);
+    }
+
+    private String[] getLogIndices() {
+        return new String[]{getIndexName(indexPrefix, ES_WILDCARD)};
+    }
+
+    /**
+     * Returns system logs day indices taking into consideration filebeat transition period.
+     *
+     * The transition period includes adjacent indices which may contain required documents.
+     */
+    private String[] getLogDayIndices(final LocalDate from, final LocalDate to) {
+        final LocalDate actualFrom = from.minus(FILEBEAT_TRANSITION_PERIOD);
+        final LocalDate actualTo = to.plus(FILEBEAT_TRANSITION_PERIOD);
+        return Stream.iterate(actualFrom, date -> date.plusDays(1))
+                .limit(Period.between(actualFrom, actualTo).getDays() + 1)
+                .map(date -> date.format(ELASTIC_DATE_FORMATTER))
+                .map(dateString -> getIndexName(indexPrefix, dateString, ES_WILDCARD))
+                .toArray(String[]::new);
+    }
+
+    private String getIndexName(final String... args) {
+        return String.join("-", args);
     }
 
     private PageMarker getToken(final List<LogEntry> items, final int pageSize) {
@@ -268,7 +307,7 @@ public class LogManager {
                 .aggregation(AggregationBuilders.terms(HOSTNAME).field(HOSTNAME + KEYWORD));
         final SearchRequest request = new SearchRequest()
                 .source(source)
-                .indices(indexPrefix)
+                .indices(getLogIndices())
                 .indicesOptions(INDICES_OPTIONS);
         log.debug("Logs request: {} ", request);
 
