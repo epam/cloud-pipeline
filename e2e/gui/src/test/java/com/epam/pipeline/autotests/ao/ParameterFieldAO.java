@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -132,7 +132,7 @@ public class ParameterFieldAO extends By implements AccessObject<ParameterFieldA
     public int index() {
         final String key = context().find(inputByIdSuffix("key")).val();
         final String index = key.replace("param_", "");
-        return Integer.valueOf(index);
+        return Integer.parseInt(index);
     }
 
     @Override

@@ -45,8 +45,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CREATE, context().find(byId("create-button"))),
             entry(CREATE_PIPELINE, $(byClassName("create-pipeline-sub-menu-button"))),
-            entry(CREATE_FOLDER, $(byClassName("rc-dropdown-placement-bottomRight"))
-                    .find(byText("Folder"))),
+            entry(CREATE_FOLDER, $(byClassName("create-folder-button"))),
             entry(CREATE_STORAGE, $(byClassName("create-storage-sub-menu"))),
             entry(CREATE_CONFIGURATION, $(byClassName("create-configuration-button"))),
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),

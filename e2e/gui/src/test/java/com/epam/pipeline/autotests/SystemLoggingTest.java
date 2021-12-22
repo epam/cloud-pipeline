@@ -244,10 +244,10 @@ public class SystemLoggingTest extends AbstractSeveralPipelineRunningTest implem
                 .filterByUser(admin.login)
                 .filterByMessage("Granting permissions")
                 .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
-                                "\\(mask: 0\\). Sid: name=%s isPrincipal=true", pipeline, userWithoutCompletedRuns.login),
+                                "\\(mask: 0\\). Sid: name=%s isPrincipal=true.*", pipeline, userWithoutCompletedRuns.login),
                         admin.login, TYPE)
                 .validateRow(format(".*Granting permissions. Entity: class=PIPELINE id=[0-9]+, name=%s, permission: " +
-                                "READ,NO_WRITE,EXECUTE \\(mask: 25\\). Sid: name=%s isPrincipal=true", pipeline,
+                                "READ,NO_WRITE,EXECUTE \\(mask: 25\\). Sid: name=%s isPrincipal=true.*", pipeline,
                         userWithoutCompletedRuns.login),
                         admin.login, TYPE);
     }

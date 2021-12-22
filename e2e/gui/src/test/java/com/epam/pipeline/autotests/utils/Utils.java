@@ -46,6 +46,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -101,7 +102,7 @@ public class Utils {
 
     public static BufferedReader getResourcesReader(String resourceName) {
         return new BufferedReader(new InputStreamReader(
-                RunPipelineTest.class.getResourceAsStream(resourceName)));
+                Objects.requireNonNull(RunPipelineTest.class.getResourceAsStream(resourceName))));
     }
 
     public static void scrollElementToPosition(String elementCssSelector, int scrollPosition) {
@@ -119,6 +120,14 @@ public class Utils {
         for (int i = 0; i < 1000; i++) {
             action.sendKeys("\b").sendKeys(Keys.DELETE);
         }
+        action.perform();
+    }
+
+    public static void selectAllAndClearTextField(final SelenideElement field) {
+        sleep(500, MILLISECONDS);
+        String selectAll = Keys.chord(Keys.CONTROL, "a");
+        final Actions action = actions().moveToElement(field).click().sendKeys(selectAll)
+                .sendKeys(Keys.DELETE);
         action.perform();
     }
 
