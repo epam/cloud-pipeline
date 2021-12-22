@@ -725,7 +725,6 @@ class FacetedSearch extends React.Component {
   closeShareItemDialog = () => {
     return this.setState({
       itemsToShare: [],
-      selectedItems: [],
       shareDialogVisible: false
     });
   };
@@ -758,8 +757,22 @@ class FacetedSearch extends React.Component {
   };
 
   renderDataStorageSharingControl = () => {
-    const {selectedItems, showSelectionMode} = this.state;
+    const {
+      selectedItems,
+      showSelectionMode
+    } = this.state;
     if (!this.dataStorageSharingEnabled || !selectedItems || !selectedItems.length) {
+      if (showSelectionMode) {
+        return (
+          <Button
+            size="large"
+            onClick={this.toggleSelectionViewMode}
+            style={{marginLeft: 5}}
+          >
+            Show all items
+          </Button>
+        );
+      }
       return null;
     }
     const handleMenuClick = ({key}) => {
@@ -990,6 +1003,7 @@ class FacetedSearch extends React.Component {
               className={classNames(styles.actions, 'cp-search-actions')}
             >
               <DocumentTypeFilter
+                disabled={showSelectionMode}
                 values={this.documentTypeFilter.values}
                 selection={(activeFilters || {})[DocumentTypeFilterName]}
                 onChange={this.onChangeFilter(DocumentTypeFilterName)}

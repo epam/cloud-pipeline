@@ -66,15 +66,10 @@ class SearchResults extends React.Component {
     if (
       prevState.columnWidths !== this.state.columnWidths ||
       prevState.resizingColumn !== this.state.resizingColumn ||
-      !compareArrays(getColumnNames(this.props.columns), getColumnNames(prevProps.columns))
+      !compareArrays(getColumnNames(this.props.columns), getColumnNames(prevProps.columns)) ||
+      prevProps.selectedItems !== this.props.selectedItems
     ) {
       if (this.infiniteScroll) {
-        this.infiniteScroll.forceUpdate();
-      }
-    }
-    if (prevProps.selectedItems !== this.props.selectedItems) {
-      if (this.infiniteScroll) {
-        console.log('search-results did update');
         this.infiniteScroll.forceUpdate();
       }
     }
