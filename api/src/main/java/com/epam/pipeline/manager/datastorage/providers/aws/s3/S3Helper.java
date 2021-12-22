@@ -1183,6 +1183,25 @@ public class S3Helper {
         }
     }
 
+    public static Set<String> resolveFolderPathListingMasks(final S3bucketDataStorage dataStorage, final String path) {
+        final Set<String> linkingMasks = dataStorage.getLinkingMasks();
+        if (CollectionUtils.isEmpty(linkingMasks)) {
+            return Collections.emptySet();
+        }
+        final String normalizedPath = StringUtils.isNullOrEmpty(path)
+                                      ? EMPTY_STRING
+                                      : ProviderUtils.withTrailingDelimiter(path);
+        if (!normalizedPath.equals(EMPTY_STRING)
+            && ProviderUtils.matchingMasks(normalizedPath, linkingMasks)) {
+            return Collections.emptySet();
+        }
+        final Set<String> resolvedMasks = resolveMasksRelatedToPath(normalizedPath, linkingMasks);
+        if (CollectionUtils.isNotEmpty(resolvedMasks)) {
+            return resolvedMasks;
+        }
+        throw new IllegalArgumentException("Requested operation violates masking rules!");
+    }
+
     public static void validateFolderPathMatchingMasks(final S3bucketDataStorage dataStorage, final String path) {
         Assert.state(StringUtils.hasValue(path), "Path for normalization shall be specified");
         final String folderPath = path.endsWith(ProviderUtils.DELIMITER) ? path : path + ProviderUtils.DELIMITER;
@@ -1211,6 +1230,20 @@ public class S3Helper {
         resolvedMaskList.sort(this::compareStrings);
         firstTokenConsumer.accept(getFirstTokenFromMasks(resolvedMaskList));
         return getLastTokenFromMasks(resolvedMaskList);
+    }
+
+    private static Set<String> resolveMasksRelatedToPath(final String path, final Set<String> masks) {
+        return masks.stream()
+            .filter(mask -> mask.startsWith(path))
+            .map(mask ->  mask.substring(path.length()))
+            .filter(StringUtils::hasValue)
+            .map(relativeMask -> {
+                final String[] relativeMaskParts = relativeMask.split(ProviderUtils.DELIMITER);
+                final boolean isFullFileMask = !relativeMask.endsWith(FOLDER_GLOB_SUFFIX)
+                                               && relativeMaskParts.length == 1;
+                return isFullFileMask ? relativeMaskParts[0] : relativeMaskParts[0] + FOLDER_GLOB_SUFFIX;
+            })
+            .collect(Collectors.toSet());
     }
 
     private String getMaskWithoutGlob(final String mask) {
