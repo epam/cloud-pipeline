@@ -754,8 +754,7 @@ public class DataStorageManager implements SecuredEntityManager {
 
     public StorageUsage getStorageUsage(final String id, final String path) {
         final AbstractDataStorage dataStorage = loadByNameOrId(id);
-        final Set<String> storageSizeMasks = loadSizeCalculationMasksMapping()
-            .getOrDefault(dataStorage.getName(), Collections.emptySet());
+        final Set<String> storageSizeMasks = resolveSizeMasks(loadSizeCalculationMasksMapping(), dataStorage);
         return searchManager.getStorageUsage(dataStorage, path, storageSizeMasks);
     }
 
@@ -770,6 +769,18 @@ public class DataStorageManager implements SecuredEntityManager {
                                                    left.addAll(right);
                                                    return left;
                                                })));
+    }
+
+    public Set<String> resolveSizeMasks(final Map<String, Set<String>> masksMapping,
+                                        final AbstractDataStorage storage) {
+        final String storageName = storage.getName();
+        final AntPathMatcher matcher = new AntPathMatcher();
+        return MapUtils.emptyIfNull(masksMapping).entrySet()
+            .stream()
+            .filter(e -> matcher.match(e.getKey(), storageName))
+            .map(Map.Entry::getValue)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toSet());
     }
 
     public void requestDataStorageDavMount(final Long id, final Long time) {

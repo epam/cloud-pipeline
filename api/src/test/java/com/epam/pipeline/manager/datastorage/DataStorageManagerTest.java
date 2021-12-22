@@ -51,6 +51,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
+import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
@@ -67,11 +68,15 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -612,6 +617,42 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                                                             TEST_MOUNT_OPTIONS);
         storageManager.create(storageVO, false, false, false);
         Assert.assertFalse(storageManager.createDefaultStorageForUser(NAME).isPresent());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void testResolveSizeMasks() {
+        final String firstStorageName = "storage1";
+        final String secondStorageName = "storage2";
+        final String thirdStorageName = "anotherStorage";
+
+        final String mask1 = "mask1";
+        final String mask2 = "mask2";
+        final String mask3 = "mask3";
+        final String mask4 = "mask4";
+        final String mask5 = "mask5";
+
+        final Map<String, Set<String>> sizeMasks = new HashMap<>();
+        final String wildcardRegex = "*";
+        final String firstAndSecondPrefixRegex = "storage*";
+        sizeMasks.put(wildcardRegex, Sets.newHashSet(mask1, mask2));
+        sizeMasks.put(firstStorageName, Sets.newHashSet(mask3, mask4));
+        sizeMasks.put(firstAndSecondPrefixRegex, Sets.newHashSet(mask4, mask5));
+
+        assertResolvedSizeMasks(sizeMasks, firstStorageName, mask1, mask2, mask3, mask4, mask5);
+        assertResolvedSizeMasks(sizeMasks, secondStorageName, mask1, mask2, mask4, mask5);
+        assertResolvedSizeMasks(sizeMasks, thirdStorageName, mask1, mask2);
+    }
+
+    private void assertResolvedSizeMasks(final Map<String, Set<String>> masksMapping, final String storageName,
+                                         final String... expectedMasks) {
+        final AbstractDataStorage storage = new NFSDataStorage();
+        storage.setName(storageName);
+        final int initialMappingSize = masksMapping.size();
+        assertThat(storageManager.resolveSizeMasks(masksMapping, storage))
+            .hasSize(expectedMasks.length)
+            .containsOnly(expectedMasks);
+        assertThat(masksMapping).hasSize(initialMappingSize);
     }
 
     private void assertDataStorageAccordingToUpdateStorageVO(DataStorageVO updateStorageVO,
