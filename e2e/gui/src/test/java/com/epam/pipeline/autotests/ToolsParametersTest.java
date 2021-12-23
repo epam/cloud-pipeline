@@ -35,7 +35,6 @@ import static com.codeborne.selenide.Selectors.byTitle;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
-import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -139,7 +138,7 @@ public class ToolsParametersTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .selectValue(RUN_CAPABILITIES, custCapability1)
-                .click(DISK)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
                 .checkTooltipText(custCapability2, CUSTOM_TEST_CAPABILITY_2)
@@ -179,7 +178,7 @@ public class ToolsParametersTest
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
                 .selectValue(RUN_CAPABILITIES, custCapability1)
-                .click(DISK)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectValue(RUN_CAPABILITIES, custCapability2)
                 .launch(this)
                 .showLog(getLastRunId())
@@ -219,7 +218,7 @@ public class ToolsParametersTest
                                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
                                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
                                 .selectValue(RUN_CAPABILITIES, custCapability1)
-                                .click(DISK)
+                                .click(byTitle(RUN_CAPABILITIES_TITLE))
                                 .selectValue(RUN_CAPABILITIES, custCapability3));
         final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO()
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
@@ -238,7 +237,7 @@ public class ToolsParametersTest
                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
                 .selectValue(RUN_CAPABILITIES, custCapability1);
         pipelineRunFormAO
-                .click(DISK)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectValue(RUN_CAPABILITIES, custCapability3)
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
                 .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3);
