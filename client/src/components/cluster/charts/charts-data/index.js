@@ -72,7 +72,8 @@ class ChartsData extends ChartData {
         (creationTimestamp ? moment.utc(creationTimestamp).unix() : undefined);
     }
     this.instanceTo = this.instanceTo || moment.utc().unix();
-    this.from = this.instanceFrom || moment.utc().add(-1, 'week').unix();
+    const lastHour = moment.unix(this.instanceTo).add(-1, 'hour').unix();
+    this.from = Math.max(this.instanceFrom || lastHour, lastHour);
     this.cpuUsage = new CPUUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.memoryUsage = new MemoryUsageData(this.nodeName, this.instanceFrom, this.instanceTo);
     this.networkUsage = new NetworkUsageData(this.nodeName, this.instanceFrom, this.instanceTo);

@@ -35,35 +35,35 @@ function makePromise (node, from, to) {
   });
 }
 
-function joinArrays (arrays) {
-  const result = (arrays || []).reduce((result, array) => ([...result, ...(array || [])]), []);
-  result.sort((a, b) => {
-    const {startTime: startA} = a;
-    const {startTime: startB} = b;
-    return moment(startA).unix() - moment(startB).unix();
-  });
-  return result;
+function sortData (a, b) {
+  const {startTime: startA} = a;
+  const {startTime: startB} = b;
+  return moment(startA).unix() - moment(startB).unix();
 }
 
-async function loadData (node, from, to) {
+async function loadData (node, from, to, instanceFrom, instanceTo) {
   const now = moment().unix();
-  const toCorrected = to || now;
-  const promises = [
-    makePromise(node, from, toCorrected)
-  ];
+  let toCorrected = to || now;
+  let fromCorrected = from;
   if (from && toCorrected - from > 0) {
-    promises.push(makePromise(node, from - (toCorrected - from), from));
+    fromCorrected = from - (toCorrected - from);
   }
   if (toCorrected && toCorrected < now) {
     let range = now - toCorrected;
     if (from && toCorrected - from < range) {
       range = toCorrected - from;
     }
-    promises.push(makePromise(node, toCorrected, toCorrected + range));
+    toCorrected = toCorrected + range;
   }
-  const results = await Promise.all(promises);
-  const [error] = results.map(r => r.error).filter(Boolean);
-  const values = results.map(r => r.value);
+  if (instanceFrom) {
+    toCorrected = Math.max(instanceFrom, toCorrected);
+    fromCorrected = Math.max(instanceFrom, fromCorrected);
+  }
+  if (instanceTo) {
+    toCorrected = Math.min(instanceTo, toCorrected);
+    fromCorrected = Math.min(instanceTo, fromCorrected);
+  }
+  const {value = [], error} = await makePromise(node, fromCorrected, toCorrected);
   if (error) {
     return {
       error: error,
@@ -72,7 +72,7 @@ async function loadData (node, from, to) {
     };
   }
   return {
-    value: joinArrays(values),
+    value: value.sort(sortData),
     from,
     to
   };
@@ -135,7 +135,7 @@ class ChartData {
   @action
   loadData = () => {
     this.pending = true;
-    loadData(this.nodeName, this.from, this.to)
+    loadData(this.nodeName, this.from, this.to, this.instanceFrom, this.instanceTo)
       .then(({error, from, to, value}) => {
         if (from !== this.from || to !== this.to) {
           return;
