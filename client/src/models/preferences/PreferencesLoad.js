@@ -324,6 +324,18 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('ui.storage.refresh.request');
   }
 
+  @computed
+  get systemMaintenanceMode () {
+    return true;
+    // return this.getPreferenceValue('system.maintenance.mode');
+  }
+
+  @computed
+  get systemMaintenanceModeBanner () {
+    return 'Platform is in a maintenance mode, operation is temporary unavailable';
+    // return this.getPreferenceValue('system.maintenance.mode.banner');
+  }
+
   get requestFileSystemAccessTooltip () {
     const value = this.getPreferenceValue('ui.pipe.file.browser.request');
     if (value) {
