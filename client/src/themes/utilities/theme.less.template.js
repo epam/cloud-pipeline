@@ -2452,7 +2452,11 @@ export default `
 @THEME .cp-cluster-node-even-row {
   background-color: @even-element-background;
 }
-
+@THEME .cp-filter-popover-item:hover {
+  background-color: @element-hover-background-color;
+  border: @menu-active-color;
+  color: @application-color;
+}
 @THEME .cp-settings-sidebar-element:not(.cp-table-element-disabled) {
   cursor: pointer;
 }
