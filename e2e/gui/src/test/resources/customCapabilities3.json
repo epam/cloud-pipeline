@@ -1,0 +1,23 @@
+{
+  "testCapability1": {
+    "description": "Custom test capability 1",
+    "commands": [
+      "echo 'testLine1' > ~/testFile1.txt"
+    ],
+    "os": "debian 9,centos*,ubuntu*"
+  },
+  "testCapability2": {
+    "description": "Custom test capability 2",
+    "commands": [
+      "echo 'testLine2' >> ~/testFile1.txt"
+    ],
+    "os": "debian 10,centos*"
+  },
+  "testCapability3": {
+    "description": "Custom test capability 3",
+    "commands": [
+      "echo 'testLine3' >> ~/testFile1.txt"
+    ],
+    "os": "debian *,centos*"
+  }
+}

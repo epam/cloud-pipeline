@@ -42,7 +42,6 @@ import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
-import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
@@ -161,7 +160,6 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(RUN, context().find(byId("run-configuration-button"))),
                 entry(ADD, context().find(byId("add-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
-                entry(DOCKER_IMAGE, context().find(inputOf(fieldWithLabel("Docker image")))),
                 entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
         );
     }

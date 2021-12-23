@@ -213,7 +213,6 @@ public enum Primitive {
     TOOL_SETTINGS,
     INSTANCE_TYPE,
     NEW_ENDPOINT,
-    DOCKER_IMAGE,
     SEVERITY,
     STATE,
     STATE_CHECKBOX,

@@ -31,6 +31,7 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
@@ -40,25 +41,7 @@ import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
-import static com.epam.pipeline.autotests.ao.Primitive.ALLOW_COMMIT;
-import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
-import static com.epam.pipeline.autotests.ao.Primitive.DESCRIPTION;
-import static com.epam.pipeline.autotests.ao.Primitive.DISK;
-import static com.epam.pipeline.autotests.ao.Primitive.DO_NOT_MOUNT_STORAGES;
-import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
-import static com.epam.pipeline.autotests.ao.Primitive.PORT;
-import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
-import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
-import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
-import static com.epam.pipeline.autotests.ao.Primitive.LABELS;
-import static com.epam.pipeline.autotests.ao.Primitive.LABEL_INPUT_FIELD;
-import static com.epam.pipeline.autotests.ao.Primitive.NEW_ENDPOINT;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
-import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
-import static com.epam.pipeline.autotests.ao.Primitive.SETTINGS;
-import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -94,7 +77,9 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(ALLOW_COMMIT, context().$(byText("Allow commit of the tool"))
                         .parent().find(By.xpath("following-sibling::div//span"))),
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
-                entry(ADD_PARAMETER, context().find(byId("add-parameter-button")))
+                entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
+                entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
+                        .closest(".ant-row").find(by("role", "combobox")))
         );
     }
 
@@ -276,6 +261,31 @@ public class ToolSettings extends ToolTab<ToolSettings> {
         $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
                 .shouldBe(visible)
                 .click();
+        return this;
+    }
+
+    public ToolSettings checkCustomCapability(final String capability, final boolean disable) {
+        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(withText(capability));
+        capabilityElement
+                .shouldBe(visible, enabled);
+        if (disable) {
+            capabilityElement
+                    .closest("li")
+                    .shouldHave(Condition.attribute("aria-disabled", "true"))
+                    .find("i")
+                    .shouldHave(Condition.cssClass("anticon-question-circle-o"));
+        }
+        return this;
+    }
+
+    public ToolSettings checkCapabilityTooltip(final String capability, final String text) {
+        $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(withText(capability))
+                .shouldBe(visible).hover();
+        $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+                        .find(byClassName("ant-tooltip-content"))
+                .shouldHave(Condition.text(text));
         return this;
     }
 }
