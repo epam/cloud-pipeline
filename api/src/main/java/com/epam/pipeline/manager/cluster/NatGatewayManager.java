@@ -347,7 +347,9 @@ public class NatGatewayManager {
     private boolean removeStatusAnnotations(final Service service, final Integer port) {
         final Set<String> annotationsToRemove = Stream.of(getCurrentStatusLabelName(port),
                                                           getTargetStatusLabelName(port),
-                                                          getLastUpdateTimeLabelName(port))
+                                                          getLastUpdateTimeLabelName(port),
+                                                          getDescriptionLabelName(port),
+                                                          getErrorDetailsLabelName(port))
             .collect(Collectors.toSet());
         return kubernetesManager.removeAnnotationsFromExistingService(getServiceName(service), annotationsToRemove);
     }
@@ -361,20 +363,17 @@ public class NatGatewayManager {
                                    messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED));
         }
         if (!addDnsMask(service, port)) {
-            removePortFromService(service, activePorts, port);
             return setStatusFailed(serviceName, port,
                                    messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_DNS_CREATION_FAILED));
         }
         if (!addPortForwardingRule(service, activePorts, port)) {
             removeDnsMaks(service, activePorts, port);
-            removePortFromService(service, activePorts, port);
             return setStatusFailed(serviceName, port,
                                    messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED));
         }
         if (!tryRefreshDeployment(serviceName, port)) {
             removePortForwardingRule(service, activePorts, port);
             removeDnsMaks(service, activePorts, port);
-            removePortFromService(service, activePorts, port);
             return refreshTinyProxy();
         }
         return true;
@@ -666,6 +665,7 @@ public class NatGatewayManager {
             .internalPort(getInternalPort(portInfo))
             .status(NatRouteStatus.valueOf(extractStringFromAnnotations(annotations, statusLabelName)))
             .lastUpdateTime(tryExtractTimeFromLabels(annotations, lastUpdateTimeLabelName))
+            .lastErrorMessage(extractStringFromAnnotations(annotations, getErrorDetailsLabelName(externalPort), null))
             .build();
     }
 
