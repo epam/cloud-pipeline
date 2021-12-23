@@ -45,6 +45,7 @@ import org.springframework.util.Assert;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -78,6 +79,10 @@ public class RunConfigurationManager implements SecuredEntityManager {
         Assert.notNull(configuration,
                 messageHelper.getMessage(MessageConstants.ERROR_RUN_CONFIG_NOT_FOUND, id));
         return configuration;
+    }
+
+    public Optional<RunConfiguration> find(Long id) {
+        return Optional.ofNullable(runConfigurationDao.load(id));
     }
 
     @Override
