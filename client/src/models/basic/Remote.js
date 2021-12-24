@@ -34,6 +34,7 @@ class Remote {
 
   @observable failed = false;
   @observable error = undefined;
+  @observable networkError = undefined;
 
   constructor () {
     if (this.constructor.auto) {
@@ -130,6 +131,7 @@ class Remote {
         } catch (e) {
           this.failed = true;
           this.error = e.toString();
+          this.networkError = e.toString();
         }
 
         this._pending = false;
@@ -156,6 +158,7 @@ class Remote {
     } catch (e) {
       this.failed = true;
       this.error = e;
+      this.networkError = e.toString();
     }
   }
 
@@ -168,6 +171,7 @@ class Remote {
     this._response = value;
     if (value.status && value.status === 401) {
       this.error = value.message;
+      this.networkError = undefined;
       this.failed = true;
       if (authorization.isAuthorized()) {
         authorization.setAuthorized(false);
@@ -178,6 +182,7 @@ class Remote {
       this._value = this.postprocess(value);
       this._loaded = true;
       this.error = undefined;
+      this.networkError = undefined;
       this.failed = false;
       if (!authorization.isAuthorized()) {
         authorization.setAuthorized(true);
@@ -185,6 +190,7 @@ class Remote {
       }
     } else {
       this.error = value.message;
+      this.networkError = undefined;
       this.failed = true;
       this._loaded = false;
     }

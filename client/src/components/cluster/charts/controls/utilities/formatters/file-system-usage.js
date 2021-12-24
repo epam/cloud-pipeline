@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import defaultFormatter from './default-formatter';
 
 const postfixes = ['bytes',
   'KiB',
@@ -24,13 +25,5 @@ const postfixes = ['bytes',
 ];
 
 export default function (value) {
-  if (value <= 0) {
-    return '';
-  }
-  let index = 0;
-  while (value >= 1024 && index < postfixes.length - 2) {
-    value /= 1024;
-    index += 1;
-  }
-  return `${value.toFixed(index === 0 ? 0 : 2)} ${postfixes[index]}`;
+  return defaultFormatter(value, postfixes);
 }
