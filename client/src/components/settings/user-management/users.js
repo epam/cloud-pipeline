@@ -28,7 +28,8 @@ import {
   Button,
   message,
   Alert,
-  Select
+  Select,
+  Tooltip
 } from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
@@ -41,6 +42,7 @@ import ImportUsersButton from './../components/import-users';
 import roleModel from '../../../utils/roleModel';
 import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
+import UserStatus from './user-status-indicator';
 
 const PAGE_SIZE = 20;
 
@@ -57,7 +59,9 @@ function usersFilter (criteria) {
 const USERS_FILTERS = {
   all: 'all',
   blocked: 'blocked',
-  notBlocked: 'notBlocked'
+  notBlocked: 'notBlocked',
+  online: 'online',
+  offline: 'offline'
 };
 
 @roleModel.authenticationInfo
@@ -194,10 +198,27 @@ export default class UsersManagement extends React.Component {
       userSearchText,
       filterUsers
     } = this.state;
-    const showBlocked = filterUsers === USERS_FILTERS.blocked;
     return this.users
       .filter(usersFilter(userSearchText))
-      .filter(user => filterUsers === USERS_FILTERS.all || showBlocked === user.blocked);
+      .filter(user => {
+        switch (filterUsers) {
+          case USERS_FILTERS.all: {
+            return true;
+          }
+          case USERS_FILTERS.blocked: {
+            return user.blocked;
+          }
+          case USERS_FILTERS.notBlocked: {
+            return !user.blocked;
+          }
+          case USERS_FILTERS.online: {
+            return user.online;
+          }
+          case USERS_FILTERS.offline: {
+            return !user.online;
+          }
+        }
+      });
   }
 
   onUserSearchChanged = (e) => {
@@ -275,6 +296,18 @@ export default class UsersManagement extends React.Component {
             value={USERS_FILTERS.blocked}
           >
             Show blocked users
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.online}
+            value={USERS_FILTERS.online}
+          >
+            Show online users
+          </Select.Option>
+          <Select.Option
+            key={USERS_FILTERS.offline}
+            value={USERS_FILTERS.offline}
+          >
+            Show offline users
           </Select.Option>
         </Select>
         {
@@ -382,6 +415,16 @@ export default class UsersManagement extends React.Component {
         className: styles.userNameColumn,
         render: (name, user) => {
           let blockedSpan;
+          const offlineInfo = (
+            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start'}}>
+              <h4 style={{alignSelf: 'flex-end', justifySelf: 'flex-start'}}>Offline</h4>
+              <p style={{alignSelf: 'flex-start', justifySelf: 'flex-end'}}>Last visited:</p>
+            </div>);
+          const onlineInfo = (
+            <div style={{display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end'}}>
+              <h4>Online</h4>
+            </div>);
+
           if (user.blocked) {
             blockedSpan = (
               <span
@@ -406,7 +449,15 @@ export default class UsersManagement extends React.Component {
               <Row type="flex" style={{flexDirection: 'column'}}>
                 <Row>
                   <span className={styles.lineBreak}>
-                    {name}{blockedSpan}
+                    <Tooltip placement="left" title={user.online ? onlineInfo : offlineInfo} trigger="hover">
+                      <div style={{marginRight: 5}}>
+                        <UserStatus online={user.online} />
+                      </div>
+                    </Tooltip>
+                    <span>
+                      {name}
+                      {blockedSpan}
+                    </span>
                   </span>
                 </Row>
                 <Row>
@@ -423,7 +474,15 @@ export default class UsersManagement extends React.Component {
             return (
               <Row>
                 <span className={styles.lineBreak}>
-                  {name}{blockedSpan}
+                  <Tooltip placement="left" title={user.online ? onlineInfo : offlineInfo}>
+                    <div style={{marginRight: 5}}>
+                      <UserStatus online={user.online} />
+                    </div>
+                  </Tooltip>
+                  <span className={styles.userName}>
+                    {name}
+                    {blockedSpan}
+                  </span>
                 </span>
               </Row>
             );
