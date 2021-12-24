@@ -751,7 +751,7 @@ public class SystemPreferences {
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
 
     public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
-            "system.maintenance.mode", true, SYSTEM_GROUP, pass);
+            "system.maintenance.mode", false, SYSTEM_GROUP, pass);
     public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
             "system.maintenance.mode.banner",
             "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
