@@ -18,8 +18,8 @@ package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.service.ElasticsearchDailySynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class StorageSynchronizer implements ElasticsearchSynchronizer {
+public class StorageSynchronizer implements ElasticsearchDailySynchronizer {
 
     private final String storageIndexMappingFile;
     private final String indexPrefix;

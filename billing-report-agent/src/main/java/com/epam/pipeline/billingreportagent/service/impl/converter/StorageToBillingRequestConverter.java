@@ -315,7 +315,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                             final SearchResponse searchResponse,
                                                             final LocalDateTime date) {
         final LocalDate reportDate = date.toLocalDate().minusDays(1);
-        final String fullIndex = indexPrefix + parseDateToString(reportDate);
+        final String fullIndex = indexPrefix + "-" + parseDateToString(reportDate);
         return buildRequestFromAggregation(storageContainer, date, searchResponse, fullIndex);
     }
 }

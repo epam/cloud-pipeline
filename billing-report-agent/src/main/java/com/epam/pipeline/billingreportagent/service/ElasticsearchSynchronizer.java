@@ -22,5 +22,9 @@ public interface ElasticsearchSynchronizer {
 
     String DOC_TYPE_FIELD = "doc_type";
 
+    default String name() {
+        return getClass().getSimpleName();
+    }
+
     void synchronize(LocalDateTime lastSyncTime, LocalDateTime syncStart);
 }

@@ -17,6 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteRequest;
@@ -31,27 +32,38 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClient {
 
-    private RestHighLevelClient client;
+    private final RestHighLevelClient client;
 
-    @Autowired
-    public ElasticsearchServiceClientImpl(final RestHighLevelClient client) {
-        this.client = client;
+    @Override
+    public Stream<String> indices() {
+        try {
+            final GetIndexRequest request = new GetIndexRequest()
+                    .indices("*")
+                    .indicesOptions(IndicesOptions.strictExpandOpen());
+            final GetIndexResponse response = client.indices().get(request, RequestOptions.DEFAULT);
+            return Arrays.stream(response.getIndices());
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to list indices.", e);
+        }
     }
 
     @Override

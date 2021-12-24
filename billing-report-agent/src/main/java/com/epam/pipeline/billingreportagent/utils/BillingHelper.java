@@ -1,11 +1,7 @@
-package com.epam.pipeline.manager.billing;
+package com.epam.pipeline.billingreportagent.utils;
 
+import com.epam.pipeline.billingreportagent.exception.BillingException;
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
-import com.epam.pipeline.exception.search.SearchException;
-import com.epam.pipeline.manager.security.AuthManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -53,7 +49,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +59,6 @@ import java.util.stream.Stream;
 @Service
 public class BillingHelper {
 
-    private final AuthManager authManager;
     private final String billingIndicesMonthlyPattern;
     private final String billingRunIndicesMonthlyPattern;
     private final String billingStorageIndicesMonthlyPattern;
@@ -76,9 +70,7 @@ public class BillingHelper {
     private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
 
-    public BillingHelper(final AuthManager authManager,
-                         final @Value("${billing.index.common.prefix}") String commonPrefix) {
-        this.authManager = authManager;
+    public BillingHelper(final @Value("${sync.index.common.prefix}") String commonPrefix) {
         this.billingIndicesMonthlyPattern = String.join("-",
                 commonPrefix,
                 BillingUtils.ES_WILDCARD,
@@ -112,22 +104,6 @@ public class BillingHelper {
         this.lastByDateDocAggregation = AggregationBuilders.topHits(BillingUtils.LAST_BY_DATE_DOC_AGG)
                 .size(1)
                 .sort(BillingUtils.BILLING_DATE_FIELD, SortOrder.DESC);
-    }
-
-    public Map<String, List<String>> getFilters(final Map<String, List<String>> requestedFilters) {
-        final Map<String, List<String>> filters = new HashMap<>(MapUtils.emptyIfNull(requestedFilters));
-        final PipelineUser authorizedUser = authManager.getCurrentUser();
-        if (!hasFullBillingAccess(authorizedUser)) {
-            filters.put(BillingUtils.OWNER_FIELD, Collections.singletonList(authorizedUser.getUserName()));
-        }
-        return filters;
-    }
-
-    private boolean hasFullBillingAccess(final PipelineUser authorizedUser) {
-        return authorizedUser.isAdmin()
-                || authorizedUser.getRoles().stream()
-                .map(Role::getName)
-                .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
     }
 
     public String[] indicesByDate(final LocalDate from, final LocalDate to) {
@@ -409,7 +385,7 @@ public class BillingHelper {
                 return elasticSearchClient.search(request, RequestOptions.DEFAULT);
             } catch (IOException e) {
                 log.error(e.getMessage(), e);
-                throw new SearchException(e.getMessage(), e);
+                throw new BillingException(e.getMessage(), e);
             }
         };
     }

@@ -22,20 +22,16 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface ElasticsearchServiceClient {
 
+    Stream<String> indices();
     void createIndex(String indexName, String source);
-
     BulkResponse sendRequests(List<? extends DocWriteRequest> docWriteRequests);
-
     void deleteIndex(String indexName);
-
     boolean isIndexExists(String indexName);
-
     void createIndexAlias(String indexName, String indexAlias);
-
     String getIndexNameByAlias(String alias);
-
     SearchResponse search(SearchRequest request);
 }
