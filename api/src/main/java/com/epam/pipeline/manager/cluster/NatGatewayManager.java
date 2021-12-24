@@ -564,6 +564,7 @@ public class NatGatewayManager {
         final Map<String, String> requiredProxyServiceLabels = new HashMap<>();
         requiredProxyServiceLabels.put(getCurrentStatusLabelName(externalPort), statusInQueue.name());
         requiredProxyServiceLabels.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
+        requiredProxyServiceLabels.put(getErrorDetailsLabelName(externalPort), null);
         final NatRouteStatus targetStatus = statusInQueue.isTerminationState()
                                             ? NatRouteStatus.TERMINATED
                                             : NatRouteStatus.ACTIVE;
@@ -921,6 +922,7 @@ public class NatGatewayManager {
         final Map<String, String> annotations = new HashMap<>();
         annotations.put(getCurrentStatusLabelName(externalPort), status.name());
         annotations.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
+        annotations.put(getErrorDetailsLabelName(externalPort), null);
         if (errorMessage != null) {
             annotations.put(getErrorDetailsLabelName(externalPort), errorMessage);
             annotations.put(getTargetStatusLabelName(externalPort), NatRouteStatus.TERMINATED.name());
@@ -936,6 +938,7 @@ public class NatGatewayManager {
                                                 final String defaultValue) {
         return Optional.ofNullable(serviceAnnotations)
             .map(annotations -> annotations.get(labelName))
+            .map(StringUtils::trimToNull)
             .orElse(defaultValue);
     }
 
