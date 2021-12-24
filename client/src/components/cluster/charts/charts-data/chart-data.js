@@ -30,6 +30,7 @@ function makePromise (node, from, to) {
     await request.fetchIfNeededOrWait();
     resolve({
       error: request.error,
+      networkError: request.networkError,
       value: request.value
     });
   });
@@ -63,10 +64,11 @@ async function loadData (node, from, to, instanceFrom, instanceTo) {
     toCorrected = Math.min(instanceTo, toCorrected);
     fromCorrected = Math.min(instanceTo, fromCorrected);
   }
-  const {value = [], error} = await makePromise(node, fromCorrected, toCorrected);
+  const {value = [], error, networkError} = await makePromise(node, fromCorrected, toCorrected);
   if (error) {
     return {
-      error: error,
+      error,
+      networkError,
       from,
       to
     };
@@ -89,6 +91,7 @@ class ChartData {
 
   @observable _pending = true;
   @observable error;
+  @observable networkError;
   @observable instanceFrom;
   @observable instanceTo;
   @observable from;
@@ -135,17 +138,21 @@ class ChartData {
   @action
   loadData = () => {
     this.pending = true;
-    loadData(this.nodeName, this.from, this.to, this.instanceFrom, this.instanceTo)
-      .then(({error, from, to, value}) => {
-        if (from !== this.from || to !== this.to) {
-          return;
-        }
-        this.error = error;
-        if (!error) {
-          this.processValues(value || []);
-        }
-        this.pending = false;
-      });
+    return new Promise((resolve) => {
+      loadData(this.nodeName, this.from, this.to, this.instanceFrom, this.instanceTo)
+        .then(({error, networkError, from, to, value}) => {
+          if (from !== this.from || to !== this.to) {
+            return;
+          }
+          this.error = error;
+          this.networkError = error;
+          if (!error) {
+            this.processValues(value || []);
+          }
+          this.pending = false;
+        })
+        .then(() => resolve());
+    });
   };
 
   @action
