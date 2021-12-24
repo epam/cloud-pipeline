@@ -1,0 +1,16 @@
+An error occurred during \[.*\] parsing
+An error occurred during tags processing
+Some errors occurred during file tagging
+Some errors occurred during copying files from the bucket
+Unable to determine target series
+Unable to determine DZ depth calculation
+mapping rule declaration should contain a delimiter
+No dictionary \[.*\] is registered
+Empty or multiple metadata values
+Unable to determine study name in the file path
+
+Errors during conversion to tiff
+Unable to retrieve .tiff image
+Errors during deep zoom generation
+An error occurred during cleanup
+Errors during deep zoom finalization

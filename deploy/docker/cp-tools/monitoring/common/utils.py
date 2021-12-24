@@ -56,5 +56,9 @@ class PipelineUtils(object):
 
     @staticmethod
     def extract_notification_cc_users_list():
-        notification_users_copy = os.getenv('CP_SERVICE_MONITOR_NOTIFICATION_COPY_USERS', None)
-        return [cc_user.strip() for cc_user in notification_users_copy.split(",")] if notification_users_copy else []
+        return PipelineUtils.extract_list_from_parameter('CP_SERVICE_MONITOR_NOTIFICATION_COPY_USERS')
+
+    @staticmethod
+    def extract_list_from_parameter(parameter_name):
+        parameter_value = os.getenv(parameter_name, None)
+        return [value.strip() for value in parameter_value.split(",")] if parameter_value else []

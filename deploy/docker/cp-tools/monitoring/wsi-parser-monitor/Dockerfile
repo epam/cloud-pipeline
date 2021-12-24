@@ -24,5 +24,6 @@ ENV WSI_MONITOR_HOME=/wsi-parser-monitor
 COPY common $WSI_MONITOR_HOME/common
 COPY wsi-parser-monitor/monitor_wsi_parser_logs.py $WSI_MONITOR_HOME/monitor_wsi_parser_logs.py
 COPY wsi-parser-monitor/template.html $WSI_MONITOR_HOME/template.html
+COPY wsi-parser-monitor/log_search_patterns.txt $WSI_MONITOR_HOME/log_search_patterns.txt
 
 CMD [ "python", "/wsi-parser-monitor/monitor_wsi_parser_logs.py" ]

@@ -14,38 +14,51 @@
 
 import json
 import os
+import re
 
 from common.utils import PipelineUtils
 from common.notification_sender import NotificationSender
 from datetime import datetime, timedelta
 
-DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
-
 
 class WsiParserRunsMonitor(object):
 
-    def __init__(self, api, logger, target_image, last_sync_file_path):
+    _DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+    _LOAD_RUN_LOG_ENTRIES = 'run/{}/logs'
+
+    def __init__(self, api, logger, target_image, last_sync_file_path, target_task_names, target_search_entries):
         self.api = api
         self.logger = logger
         self.target_image = target_image
         self.checkup_time = datetime.now()
         self.last_sync_file_path = last_sync_file_path
+        self.target_task_names = target_task_names
+        self.target_search_patterns = [re.compile(entry) for entry in target_search_entries]
         self.last_sync_timestamp = self._get_last_sync_time()
 
     @staticmethod
     def convert_str_to_date(date_str):
-        return datetime.strptime(date_str, DATE_FORMAT)
+        return datetime.strptime(date_str, WsiParserRunsMonitor._DATE_FORMAT)
 
     @staticmethod
     def convert_date_to_str(date):
-        return date.strftime(DATE_FORMAT)
+        return date.strftime(WsiParserRunsMonitor._DATE_FORMAT)
 
     def generate_errors_table(self):
         self.logger.info('Checking WSI parsing runs')
-        matching_runs = self.keep_runs_with_errors(self.load_runs_since_last_sync())
-        self.logger.info('Analyzing {} matching runs'.format(len(matching_runs)))
-        errors_mapping = self.build_error_summary(matching_runs)
-        return self._build_table(errors_mapping) if errors_mapping else None
+        matching_runs = self.load_runs_since_last_sync()
+        if not matching_runs:
+            self.logger.info('No matching runs with activity since the last sync at {}'
+                             .format(self.last_sync_timestamp))
+            return None
+        self.logger.info('Analyzing {} matching runs with activity since the last sync at {}'
+                         .format(len(matching_runs), self.last_sync_timestamp))
+        errors_mapping = self._build_error_summary(matching_runs)
+        if not errors_mapping:
+            self.logger.info('No errors found in the runs')
+            return None
+        self.logger.info('Found {} errors in runs'.format(len(errors_mapping)))
+        return self._build_table(errors_mapping)
 
     def load_runs_since_last_sync(self):
         filter = {
@@ -78,7 +91,7 @@ class WsiParserRunsMonitor(object):
                 ]
             },
             'page': 1,
-            'pageSize': 100
+            'pageSize': int(os.getenv('CP_WSI_MONITOR_RUN_SEARCH_PAGE_SIZE', '100'))
         }
         response = self.api.execute_request(self.api.api_url + self.api.SEARCH_RUNS_URL, method='post',
                                             data=json.dumps(filter))
@@ -87,8 +100,9 @@ class WsiParserRunsMonitor(object):
         all_runs = []
         for run in response.get('elements', []):
             end_date_str = run.get('endDate')
-            if not 'endDate':
+            if not end_date_str:
                 all_runs.append(run)
+                continue
             if self.convert_str_to_date(end_date_str) > self.last_sync_timestamp:
                 all_runs.append(run)
         return all_runs
@@ -100,7 +114,7 @@ class WsiParserRunsMonitor(object):
         # read from configurable file or return 'now - 2 days) as the default
         return datetime.now() - timedelta(days=2)
 
-    def save_sync_time(self):
+    def _save_sync_time(self):
         with open(self.last_sync_file_path, 'w') as last_sync_file:
             last_sync_file.write(self.convert_date_to_str(self.last_sync_timestamp))
 
@@ -123,16 +137,50 @@ class WsiParserRunsMonitor(object):
             </tr>'''.format(run_id, summary_message)
         return table.format(summary_rows)
 
-    def build_error_summary(self, matching_runs):
+    def _build_error_summary(self, matching_runs):
         summary_mapping = {}
         for run in matching_runs:
-            # add summary_mapping[run_id] = summary message
-            pass
+            run_id = run['id']
+            if run['status'] == 'FAILURE':
+                summary_mapping[run_id] = 'Run has status FAILED!'
+                continue
+            error_summary = self._analyze_run_logs(run_id)
+            if error_summary:
+                summary_mapping[run_id] = error_summary
         return summary_mapping
 
-    def keep_runs_with_errors(self, run_list):
-        # analyze run status and its logs - keep the ones with errors
-        return run_list
+    def _load_run_log_entries(self, run_id):
+        return self.api.execute_request(self.api.api_url + self._LOAD_RUN_LOG_ENTRIES.format(run_id))
+
+    def _analyze_run_logs(self, run_id):
+        log_entries = self._load_run_log_entries(run_id)
+        for entry in log_entries:
+            if entry['task']['name'] in self.target_task_names:
+                log_text = entry['logText']
+                for search_pattern in self.target_search_patterns:
+                    if search_pattern.match(log_text):
+                        return 'Found a match with ''{}'''.format(search_pattern.pattern)
+        return None
+
+
+def read_search_patterns_from_file():
+    pattern_file_path = os.getenv('CP_WSI_MONITOR_PATTERNS_FILE_PATH', '/wsi-parser-monitor/log_search_patterns.txt')
+    if not os.path.exists(pattern_file_path):
+        raise RuntimeError('No file ''{}'' exist'.format(pattern_file_path))
+    patterns = set()
+    with open(pattern_file_path) as pattern_file:
+        for line in pattern_file:
+            pattern = line.rstrip()
+            if pattern:
+                patterns.add(pattern)
+    return patterns
+
+
+def get_target_task_names():
+    target_task_names = set(PipelineUtils.extract_list_from_parameter('CP_WSI_MONITOR_TARGET_TASKS'))
+    if not target_task_names:
+        target_task_names = {'WSI processing'}
+    return target_task_names
 
 
 if __name__ == '__main__':
@@ -146,10 +194,13 @@ if __name__ == '__main__':
 
     notification_subject = os.getenv('CP_SERVICE_MONITOR_NOTIFICATION_SUBJECT', 'WSI parser errors')
     run_id = os.getenv('RUN_ID', '0')
+    target_task_names = get_target_task_names()
+    target_search_entries = read_search_patterns_from_file()
 
     api = PipelineUtils.initialize_api(run_id)
     logger = PipelineUtils.initialize_logger(api, run_id)
-    errors_summary = WsiParserRunsMonitor(api, logger, target_image, last_sync_file_path).generate_errors_table()
+    errors_summary = WsiParserRunsMonitor(api, logger, target_image, last_sync_file_path,
+                                          target_task_names, target_search_entries).generate_errors_table()
     if errors_summary:
         NotificationSender(api, logger, email_template_path, notification_user,
                            notification_users_copy_list, notification_subject).queue_notification(errors_summary)
