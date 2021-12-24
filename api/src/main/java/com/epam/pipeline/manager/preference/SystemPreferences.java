@@ -686,6 +686,12 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
 
+    public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
+            "system.maintenance.mode", false, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
+            "system.maintenance.mode.banner",
+            "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
+
     public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
             "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(
