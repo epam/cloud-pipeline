@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.datastorage.providers.nfs.NFSHelper;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -30,6 +31,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@NoArgsConstructor
 public class NFSDataStorage extends AbstractDataStorage {
 
     private NFSStorageMountStatus mountStatus = NFSStorageMountStatus.ACTIVE;
