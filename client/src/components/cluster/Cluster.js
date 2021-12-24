@@ -272,8 +272,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const {selection} = this.state;
     event.stopPropagation();
     const terminateNodes = this.terminateNodes;
+    const count = selection.length;
     Modal.confirm({
-      title: `Are you sure you want to terminate ${selection.length} node${selection.length > 1 ? 's' : ''}?`,
+      title:
+        `Are you sure you want to terminate ${count} node${count > 1 ? 's' : ''}?`,
       style: {
         wordWrap: 'break-word'
       },
@@ -299,21 +301,37 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   renderJobsAssociationFilter = () => {
     const options = [
-      {title: 'Without associated job', prop: 'noRunId'},
-      {title: 'With associated job', prop: 'haveRunId'}
+      {title: 'Has run id', prop: 'haveRunId'},
+      {title: 'No run id', prop: 'noRunId'}
     ];
-    return (<div>
-      {options.map(({title, prop}) => (
-        <div key={prop} className={classNames('cp-divider', 'bottom', 'cp-filter-popover-item')}>
-          <li className={styles.popoverListItem}>
-            <Checkbox
-              checked={this.state.filter.runId[prop]}
-              onChange={(e) => this.onJobsAssociationFilterChaged(e.target.checked, prop)}
-            >{title}</Checkbox>
-          </li>
-        </div>
-      ))}
-    </div>);
+    return (
+      <div
+        className={
+          classNames(
+            'cp-divider',
+            'bottom'
+          )
+        }
+      >
+        {
+          options.map(({title, prop}) => (
+            <div
+              key={prop}
+              className="cp-filter-popover-item"
+            >
+              <li className={styles.popoverListItem}>
+                <Checkbox
+                  checked={this.state.filter.runId[prop]}
+                  onChange={(e) => this.onJobsAssociationFilterChanged(e.target.checked, prop)}
+                >
+                  {title}
+                </Checkbox>
+              </li>
+            </div>
+          ))
+        }
+      </div>
+    );
   };
 
   canTerminateNode = (node) => {
@@ -408,7 +426,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     this.onFilterValueChange(filterParameterName)(e.target.value);
   };
 
-  onJobsAssociationFilterChaged = (value, param) => {
+  onJobsAssociationFilterChanged = (value, param) => {
     const params = {
       noRunId: 'noRunId',
       haveRunId: 'haveRunId'
@@ -654,6 +672,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         mask: node.mask
       });
     }
+    console.log(dataSource);
     return (
       <Table
         className={styles.table}
@@ -709,6 +728,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   render () {
     let description = this.getDescription();
     const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
+    const selectionLength = (this.state.selection || []).length;
     return (
       <div>
         <Row type="flex" align="middle">
@@ -724,7 +744,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
           </Col>
           <Col span={5} className={styles.refreshButtonContainer}>
             {
-              this.state.selection.length > 0 && (
+              selectionLength > 0 && (
                 <Button
                   id="cluster-batch-terminate-button"
                   type="danger"
@@ -732,7 +752,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}
                 >
-                  Terminate {this.state.selection.length} node{this.state.selection.length > 1 ? 's' : ''}
+                  Terminate {selectionLength} node{selectionLength > 1 ? 's' : ''}
                 </Button>
               )
             }

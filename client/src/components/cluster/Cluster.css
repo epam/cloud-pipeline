@@ -133,6 +133,6 @@ thead[class*="ant-table-thead"] .cluster-node-row-pipeline {
 }
 
 .popover-list-item {
-  padding: 10px 5px;
+  padding: 10px;
   cursor: pointer;
 }
