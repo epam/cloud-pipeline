@@ -307,9 +307,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         <div key={prop} className={classNames('cp-divider', 'bottom', 'cp-filter-popover-item')}>
           <li className={styles.popoverListItem}>
             <Checkbox
-              value={prop}
               checked={this.state.filter.runId[prop]}
-              onChange={(e) => this.onJobsAssociationFilterChaged(e.target)}
+              onChange={(e) => this.onJobsAssociationFilterChaged(e.target.checked, prop)}
             >{title}</Checkbox>
           </li>
         </div>
@@ -398,6 +397,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
   onFilterValueChange = (filterParameterName) => (value) => {
     const filter = this.state.filter;
     filter[filterParameterName].value = value && value.length > 0 ? value : null;
+    if (value && filterParameterName === 'runId') {
+      filter[filterParameterName].noRunId = null;
+      filter[filterParameterName].haveRunId = null;
+    }
     this.setState({filter});
   };
 
@@ -405,19 +408,19 @@ export default class Cluster extends localization.LocalizedReactComponent {
     this.onFilterValueChange(filterParameterName)(e.target.value);
   };
 
-  onJobsAssociationFilterChaged = ({value, checked}) => {
-    const values = {
+  onJobsAssociationFilterChaged = (value, param) => {
+    const params = {
       noRunId: 'noRunId',
       haveRunId: 'haveRunId'
     };
-    let oppositeValue;
-    oppositeValue = (value === values.noRunId)
-      ? values.haveRunId
-      : values.noRunId;
+    let oppositeParam;
+    oppositeParam = (param === params.noRunId)
+      ? params.haveRunId
+      : params.noRunId;
 
     const filter = {...this.state.filter};
-    filter.runId[value] = checked;
-    filter.runId[oppositeValue] = checked ? !checked : checked;
+    filter.runId[param] = value;
+    filter.runId[oppositeParam] = value ? !value : value;
     this.setState({filter});
   }
 
