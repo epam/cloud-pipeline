@@ -326,14 +326,12 @@ class PreferencesLoad extends Remote {
 
   @computed
   get systemMaintenanceMode () {
-    return true;
-    // return this.getPreferenceValue('system.maintenance.mode');
+    return this.getPreferenceValue('system.maintenance.mode');
   }
 
   @computed
   get systemMaintenanceModeBanner () {
-    return 'Platform is in a maintenance mode, operation is temporary unavailable';
-    // return this.getPreferenceValue('system.maintenance.mode.banner');
+    return this.getPreferenceValue('system.maintenance.mode.banner');
   }
 
   get requestFileSystemAccessTooltip () {

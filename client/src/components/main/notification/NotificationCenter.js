@@ -25,6 +25,10 @@ import ConfirmNotification from '../../../models/notifications/ConfirmNotificati
 import styles from './SystemNotification.css';
 import Markdown from '../../special/markdown';
 
+const PredefinedNotifications = {
+  MaintenanceMode: -1
+};
+
 @inject(({notifications}) => ({
   notifications
 }))
@@ -63,7 +67,7 @@ export default class NotificationCenter extends React.Component {
         blocking: false,
         body: systemMaintenanceModeBanner,
         createdDate: '',
-        notificationId: -1,
+        notificationId: PredefinedNotifications.MaintenanceMode,
         severity: 'INFO',
         state: 'ACTIVE',
         title: 'Maintenance mode'
