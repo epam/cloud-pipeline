@@ -115,6 +115,9 @@ public class PipelineUser implements StorageContainer {
 
     private LocalDateTime blockDate;
 
+    @Transient
+    private Boolean online;
+
     public PipelineUser() {
         this.admin = false;
         this.blocked = false;
