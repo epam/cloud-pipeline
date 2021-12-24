@@ -20,6 +20,8 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.test.creator.cluster.pool.NodePoolCreatorUtils;
 import io.fabric8.kubernetes.api.model.Node;
@@ -37,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.mockito.Matchers.any;
@@ -59,11 +62,14 @@ public class PoolAutoscalerTest {
     private NodePoolManager poolManager;
     private NodePoolMapper poolMapper = Mappers.getMapper(NodePoolMapper.class);
     private PoolAutoscaler poolAutoscaler;
+    @Mock
+    private PreferenceManager preferenceManager;
 
     @Before
     public void setUp() {
         MockitoAnnotations.initMocks(this);
-        poolAutoscaler = new PoolAutoscaler(poolManager, poolMapper, kubernetesManager);
+        poolAutoscaler = new PoolAutoscaler(poolManager, poolMapper, kubernetesManager, preferenceManager);
+        doReturn(Optional.empty()).when(preferenceManager).findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE);
     }
 
     @Test

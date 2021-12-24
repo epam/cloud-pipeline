@@ -67,6 +67,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -447,6 +448,7 @@ public class ResourceMonitoringManagerTest {
     public void testPauseOnDemand() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
             .thenReturn(IdleRunAction.PAUSE.name());
+        when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
 
@@ -497,6 +499,7 @@ public class ResourceMonitoringManagerTest {
     public void testPauseOrStop() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
             .thenReturn(IdleRunAction.PAUSE_OR_STOP.name());
+        when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         mockAlreadyNotifiedRuns();
 

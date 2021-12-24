@@ -415,6 +415,10 @@ public class ResourceMonitoringManager extends AbstractSchedulingManager {
                 log.debug(messageHelper.getMessage(MessageConstants.DEBUG_RUN_IDLE_SKIP_CHECK, run.getPodId()));
                 return;
             }
+            if (preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE).orElse(false)) {
+                log.debug(messageHelper.getMessage(MessageConstants.ERROR_RUN_OPERATION_FORBIDDEN));
+                return;
+            }
             run.setLastIdleNotificationTime(null);
             pipelineRunDockerOperationManager.pauseRun(run.getId(), true);
             notificationManager.notifyIdleRuns(Collections.singletonList(new ImmutablePair<>(run, cpuUsageRate)),
