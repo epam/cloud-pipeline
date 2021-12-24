@@ -108,6 +108,7 @@ public class C {
         ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
         ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
         WEBDAV_ADDRESS = conf.getProperty("e2e.ui.webdav.address");
+        NAT_PROXY_SERVICE_PREFIX = conf.getProperty("e2e.ui.nat.proxy.service.prefix");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -197,4 +198,6 @@ public class C {
     public static final String INVALID_EXTENSION_PATH;
     public static final String ANONYM_EXTENSION_PATH;
     public static final String ADMIN_TOKEN_IS_SERVICE;
+
+    public static final String NAT_PROXY_SERVICE_PREFIX;
 }

@@ -70,6 +70,7 @@ public class ToolsParametersTest
     private final String custCapability1 = "testCapability1";
     private final String custCapability2 = "testCapability2";
     private final String custCapability3 = "testCapability3";
+    private final String custCapability4 = "testCapability4";
     private final String capabilityParam = "CP_CAP_CUSTOM_%s";
     private final String logMessage = "Running '%s' commands:";
     private final String pipeline2323 = "tool-parameters-2323-" + Utils.randomSuffix();
@@ -213,6 +214,7 @@ public class ToolsParametersTest
                                 .sleep(2, SECONDS)
                                 .checkCustomCapability(custCapability1, false)
                                 .checkCustomCapability(custCapability3, false)
+                                .checkCustomCapability(custCapability4, false)
                                 .checkCustomCapability(custCapability2, true)
                                 .checkCustomCapability(SYSTEM_D, true)
                                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)

@@ -19,5 +19,12 @@
       "echo 'testLine3' >> ~/testFile1.txt"
     ],
     "os": "debian *,centos*"
+  },
+  "testCapability4": {
+    "description": "Custom test capability 4",
+    "commands": [
+      "echo 'testLine4' >> ~/testFile1.txt"
+    ],
+    "os": "all"
   }
 }
