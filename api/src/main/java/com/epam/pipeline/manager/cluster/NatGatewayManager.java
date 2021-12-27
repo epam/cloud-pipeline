@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.manager.cluster;
 
-import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
-
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
@@ -477,7 +475,8 @@ public class NatGatewayManager {
             return false;
         }
         final String routeExternalName = route.getExternalName();
-        final String correspondingServiceName = buildProxyServiceName(routeExternalName);
+        final String correspondingServiceName = kubernetesManager.buildProxyServiceName(tinyproxyNatServiceName,
+                                                                                        routeExternalName);
         final NatRouteStatus statusInQueue = route.getStatus();
         final Integer externalPort = route.getExternalPort();
         final String targetStatusLabelName = getTargetStatusLabelName(externalPort);
@@ -898,10 +897,6 @@ public class NatGatewayManager {
 
     private String extractStringFromAnnotations(final Service service, final String labelName) {
         return Optional.ofNullable(getServiceAnnotations(service).get(labelName)).orElse(UNKNOWN);
-    }
-
-    public String buildProxyServiceName(final String externalName) {
-        return tinyproxyNatServiceName + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
     }
 
     private String getCurrentStatusLabelName(final Integer port) {
