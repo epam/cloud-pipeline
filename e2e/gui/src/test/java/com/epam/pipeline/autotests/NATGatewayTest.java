@@ -46,10 +46,11 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
 
     private static final String FIELD_IS_REQUIRED_WARNING = "Field is required";
     private static final String GOOGLE_COM_SERVER_NAME = "google.com";
+    private static final String YAHOO_COM_SERVER_NAME = "yahoo.com";
     private static final String PORT_80 = "80";
     private static final String COMMENT_1 = "port1";
     private static final String COMMAND_1 = "unset http_proxy https_proxy";
-    private static final String COMMAND_2 = "curl google.com -v -ipv4";
+    private static final String COMMAND_2 = "curl %s -v -ipv4";
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
@@ -120,7 +121,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
 
     @Test
     @TestCase(value = {"2232_2"})
-    public void checkNewRouteCreation() {
+    public void checkNewRouteCreationWithSpecifiedIPAddress() {
         final NATGatewayAO.NATAddRouteAO natAddRouteAO = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
@@ -146,18 +147,51 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .waitRouteRecord(externalIPAddress)
                 .checkActiveRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME, COMMENT_1)
                 .getInternalIP(externalIPAddress);
-        String runId;
         tools().perform(registry, group, tool, tool -> tool.run(this))
-                .showLog(runId = getRunId())
+                .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(COMMAND_2)
+                        .execute(format(COMMAND_2, GOOGLE_COM_SERVER_NAME))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format("Trying %s...", internalIP),
                                 format("Connected to %s (%s) port %s", GOOGLE_COM_SERVER_NAME, internalIP, PORT_80))
+                        .close());
+    }
+
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
+    @TestCase(value = {"2232_3"})
+    public void checkNewRouteCreationWithoutSpecifiedIPAddress() {
+        final String internalIP = navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .sleep(1, SECONDS)
+                .addRoute()
+                .setServerName(YAHOO_COM_SERVER_NAME)
+                .setValue(PORT, PORT_80)
+                .setValue(COMMENT, COMMENT_1)
+                .addRoute()
+                .checkRouteRecordByServerName(YAHOO_COM_SERVER_NAME)
+                .click(SAVE)
+                .ensure(SAVE, visible, disabled)
+                .ensure(REVERT, visible, disabled)
+                .checkCreationScheduled(YAHOO_COM_SERVER_NAME)
+                .waitRouteRecord(YAHOO_COM_SERVER_NAME)
+                .checkActiveRouteRecord(StringUtils.EMPTY, YAHOO_COM_SERVER_NAME, COMMENT_1)
+                .getInternalIP(YAHOO_COM_SERVER_NAME);
+        runsMenu()
+                .showLog(getRunId())
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(COMMAND_1)
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, YAHOO_COM_SERVER_NAME))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format("Trying %s...", internalIP),
+                                format("Connected to %s (%s) port %s", YAHOO_COM_SERVER_NAME, internalIP, PORT_80))
                         .close());
     }
 }

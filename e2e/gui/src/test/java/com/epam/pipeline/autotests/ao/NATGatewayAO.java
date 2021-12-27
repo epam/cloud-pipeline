@@ -19,6 +19,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -87,6 +88,18 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         };
     }
 
+    public By routeByName(final String serverName) {
+        return new By() {
+            @Override
+            public List<WebElement> findElements(final SearchContext context) {
+                return context()
+                        .findAll(byClassName("ant-table-row")).stream()
+                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(0)))
+                        .collect(toList());
+            }
+        };
+    }
+
     public NATAddRouteAO addRoute() {
         click(ADD_ROUTE);
         return new NATAddRouteAO(this);
@@ -100,13 +113,24 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
+    public NATGatewayAO checkRouteRecordByServerName(final String serverName) {
+        $(routeByName(serverName))
+                .shouldBe(exist)
+                .findAll(".external-column").get(1)
+                .shouldHave(text(serverName));
+        return this;
+    }
+
     public NATGatewayAO checkNoRouteRecord(final String ipAddress) {
         $(route(ipAddress)).shouldBe(disappear);
         return this;
     }
 
-    public NATGatewayAO checkCreationScheduled(final String ipAddress) {
-        $(route(ipAddress))
+    public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName) {
+        final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
+                ? $(route(ipAddressOrServerName))
+                : $(routeByName(ipAddressOrServerName));
+        route
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
                 .shouldHave(cssClass("anticon-hourglass"));
@@ -114,7 +138,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO checkActiveRouteRecord(final String ipAddress, final String serverName, final String comment) {
-        final SelenideElement routeRecord = $(route(ipAddress));
+        final SelenideElement routeRecord = StringUtils.isBlank(ipAddress)
+                ? $(routeByName(serverName))
+                : $(route(ipAddress));
         routeRecord
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
@@ -130,8 +156,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
-    public String getInternalIP(final String externalIPAddress) {
-        return $(route(externalIPAddress)).findAll(".internal-column").get(1).text();
+    public String getInternalIP(final String externalIPAddressOrServerName) {
+        final SelenideElement route = externalIPAddressOrServerName.matches(IPV4_PATTERN)
+                ? $(route(externalIPAddressOrServerName))
+                : $(routeByName(externalIPAddressOrServerName));
+        return route.findAll(".internal-column").get(1).text();
     }
 
     public NATGatewayAO deleteRoute(final String externalIPAddress) {
@@ -142,11 +171,14 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
-    public NATGatewayAO waitRouteRecord(final String externalIPAddress) {
+    public NATGatewayAO waitRouteRecord(final String ipAddressOrServerName) {
         sleep(1, MINUTES);
         int attempt = 0;
         int maxAttempts = 60;
-        while ($(route(externalIPAddress)).findAll(".external-column").get(0).find(tagName("i"))
+        final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
+                ? $(route(ipAddressOrServerName))
+                : $(routeByName(ipAddressOrServerName));
+        while (route.findAll(".external-column").get(0).find(tagName("i"))
                 .has(cssClass("anticon-hourglass"))
                 && attempt < maxAttempts) {
             click(REFRESH);
