@@ -48,6 +48,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     private static final String GOOGLE_COM_SERVER_NAME = "google.com";
     private static final String YAHOO_COM_SERVER_NAME = "yahoo.com";
     private static final String PORT_80 = "80";
+    private static final String PORT_443 = "443";
     private static final String COMMENT_1 = "port1";
     private static final String COMMAND_1 = "unset http_proxy https_proxy";
     private static final String COMMAND_2 = "curl %s -v -ipv4";
@@ -63,12 +64,8 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         }
         logoutIfNeeded();
         loginAs(admin);
-        navigationMenu()
-                .settings()
-                .switchToSystemManagement()
-                .switchToNATGateway()
-                .deleteRoute(externalIPAddress)
-                .click(SAVE);
+        deleteRoute(GOOGLE_COM_SERVER_NAME, PORT_80);
+        deleteRoute(YAHOO_COM_SERVER_NAME, PORT_80);
     }
 
     @Test
@@ -111,12 +108,12 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         natAddRouteAO
                 .addRoute()
                 .ensure(SAVE, visible, enabled)
-                .checkRouteRecord(ipAddress, GOOGLE_COM_SERVER_NAME)
+                .checkRouteRecord(ipAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
                 .ensure(REVERT, visible, enabled)
                 .click(REVERT)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
-                .checkNoRouteRecord(ipAddress);
+                .checkNoRouteRecord(ipAddress, PORT_80);
     }
 
     @Test
@@ -139,14 +136,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         externalIPAddress = natAddRouteAO.getIPAddress();
         final String internalIP = natAddRouteAO
                 .addRoute()
-                .checkRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME)
+                .checkRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
                 .click(SAVE)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
-                .checkCreationScheduled(externalIPAddress)
-                .waitRouteRecord(externalIPAddress)
-                .checkActiveRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME, COMMENT_1)
-                .getInternalIP(externalIPAddress);
+                .checkCreationScheduled(externalIPAddress, PORT_80)
+                .waitRouteRecordCreationScheduled(externalIPAddress, PORT_80)
+                .checkActiveRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME, COMMENT_1, PORT_80)
+                .getInternalIP(externalIPAddress, PORT_80);
         tools().perform(registry, group, tool, tool -> tool.run(this))
                 .showLog(getRunId())
                 .waitForSshLink()
@@ -174,14 +171,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .setValue(PORT, PORT_80)
                 .setValue(COMMENT, COMMENT_1)
                 .addRoute()
-                .checkRouteRecordByServerName(YAHOO_COM_SERVER_NAME)
+                .checkRouteRecordByServerName(YAHOO_COM_SERVER_NAME, PORT_80)
                 .click(SAVE)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
-                .checkCreationScheduled(YAHOO_COM_SERVER_NAME)
-                .waitRouteRecord(YAHOO_COM_SERVER_NAME)
-                .checkActiveRouteRecord(StringUtils.EMPTY, YAHOO_COM_SERVER_NAME, COMMENT_1)
-                .getInternalIP(YAHOO_COM_SERVER_NAME);
+                .checkCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_80)
+                .waitRouteRecordCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_80)
+                .checkActiveRouteRecord(StringUtils.EMPTY, YAHOO_COM_SERVER_NAME, COMMENT_1, PORT_80)
+                .getInternalIP(YAHOO_COM_SERVER_NAME, PORT_80);
         runsMenu()
                 .showLog(getRunId())
                 .ssh(shell -> shell
@@ -193,5 +190,43 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .assertOutputContains(format("Trying %s...", internalIP),
                                 format("Connected to %s (%s) port %s", YAHOO_COM_SERVER_NAME, internalIP, PORT_80))
                         .close());
+    }
+
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
+    @TestCase(value = {"2232_4"})
+    public void checkRouteWithExistingNameAndDifferentIP() {
+        final String[] eightBitNumbers = externalIPAddress.split("\\.");
+        final String invalidExternalIP = format("%s.%s.%s.%s", eightBitNumbers[3], eightBitNumbers[2],
+                eightBitNumbers[1], eightBitNumbers[0]);
+        navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .sleep(1, SECONDS)
+                .addRoute()
+                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .click(SPECIFY_IP)
+                .clear(IP)
+                .setValue(IP, invalidExternalIP)
+                .setValue(PORT, PORT_443)
+                .addRoute()
+                .checkRouteRecord(invalidExternalIP, GOOGLE_COM_SERVER_NAME, PORT_443)
+                .click(SAVE)
+                .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkFailedRouteRecord(invalidExternalIP, GOOGLE_COM_SERVER_NAME, "", PORT_443)
+                .deleteRoute(invalidExternalIP, PORT_443)
+                .click(SAVE)
+                .waitRouteRecordTerminationScheduled(invalidExternalIP, PORT_443)
+                .checkNoRouteRecord(invalidExternalIP, PORT_443);
+    }
+
+    private void deleteRoute(final String externalIPAddress, final String port) {
+        navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .deleteRoute(externalIPAddress, port)
+                .click(SAVE);
     }
 }

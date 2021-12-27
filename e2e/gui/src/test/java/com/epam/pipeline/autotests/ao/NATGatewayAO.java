@@ -76,25 +76,27 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             entry(ROUTE_TABLE, context().$(byClassName("ant-table-content")))
     );
 
-    public By route(final String ipAddress) {
+    public By route(final String ipAddress, final String port) {
         return new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
-                        .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(1)))
+                        .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(1))
+                                && text(port).apply(element.findAll(".external-column").get(2)))
                         .collect(toList());
             }
         };
     }
 
-    public By routeByName(final String serverName) {
+    public By routeByName(final String serverName, final String port) {
         return new By() {
             @Override
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
-                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(0)))
+                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(0))
+                                && text(port).apply(element.findAll(".external-column").get(2)))
                         .collect(toList());
             }
         };
@@ -105,31 +107,31 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return new NATAddRouteAO(this);
     }
 
-    public NATGatewayAO checkRouteRecord(final String ipAddress, final String serverName) {
-        $(route(ipAddress))
+    public NATGatewayAO checkRouteRecord(final String ipAddress, final String serverName, final String port) {
+        $(route(ipAddress, port))
                 .shouldBe(exist)
                 .findAll(".external-column").get(0)
                 .shouldHave(text(serverName));
         return this;
     }
 
-    public NATGatewayAO checkRouteRecordByServerName(final String serverName) {
-        $(routeByName(serverName))
+    public NATGatewayAO checkRouteRecordByServerName(final String serverName, final String port) {
+        $(routeByName(serverName, port))
                 .shouldBe(exist)
                 .findAll(".external-column").get(1)
                 .shouldHave(text(serverName));
         return this;
     }
 
-    public NATGatewayAO checkNoRouteRecord(final String ipAddress) {
-        $(route(ipAddress)).shouldBe(disappear);
+    public NATGatewayAO checkNoRouteRecord(final String ipAddress, final String port) {
+        $(route(ipAddress, port)).shouldBe(disappear);
         return this;
     }
 
-    public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName) {
+    public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName, final String port) {
         final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(ipAddressOrServerName))
-                : $(routeByName(ipAddressOrServerName));
+                ? $(route(ipAddressOrServerName, port))
+                : $(routeByName(ipAddressOrServerName, port));
         route
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
@@ -137,10 +139,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
-    public NATGatewayAO checkActiveRouteRecord(final String ipAddress, final String serverName, final String comment) {
+    public NATGatewayAO checkActiveRouteRecord(final String ipAddress, final String serverName, final String comment,
+                                               final String port) {
         final SelenideElement routeRecord = StringUtils.isBlank(ipAddress)
-                ? $(routeByName(serverName))
-                : $(route(ipAddress));
+                ? $(routeByName(serverName, port))
+                : $(route(ipAddress, port));
         routeRecord
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
@@ -156,30 +159,56 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
-    public String getInternalIP(final String externalIPAddressOrServerName) {
+    public NATGatewayAO checkFailedRouteRecord(final String ipAddress, final String serverName, final String comment,
+                                               final String port) {
+        final SelenideElement routeRecord = StringUtils.isBlank(ipAddress)
+                ? $(routeByName(serverName, port))
+                : $(route(ipAddress, port));
+        routeRecord
+                .findAll(".external-column").get(0)
+                .find(tagName("i"))
+                .shouldHave(cssClass("anticon-exclamation-circle-o"), cssClass("cp-error"));
+        final ElementsCollection internalConfigElements = routeRecord
+                .findAll(".internal-column")
+                .shouldHaveSize(3);
+        internalConfigElements.get(1).shouldHave(text(StringUtils.EMPTY));
+        return this;
+    }
+
+    public String getInternalIP(final String externalIPAddressOrServerName, final String port) {
         final SelenideElement route = externalIPAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(externalIPAddressOrServerName))
-                : $(routeByName(externalIPAddressOrServerName));
+                ? $(route(externalIPAddressOrServerName, port))
+                : $(routeByName(externalIPAddressOrServerName, port));
         return route.findAll(".internal-column").get(1).text();
     }
 
-    public NATGatewayAO deleteRoute(final String externalIPAddress) {
-        $(route(externalIPAddress)).find(".at-getaway-configuration__actions-column")
+    public NATGatewayAO deleteRoute(final String externalIPAddress, final String port) {
+        $(route(externalIPAddress, port)).find(".at-getaway-configuration__actions-column")
                 .find(byClassName("ant-btn-danger"))
                 .shouldBe(visible)
                 .click();
         return this;
     }
 
-    public NATGatewayAO waitRouteRecord(final String ipAddressOrServerName) {
+    public NATGatewayAO waitRouteRecordCreationScheduled(final String ipAddressOrServerName, final String port) {
+        return waitForRouteStatus(ipAddressOrServerName, port, "anticon-hourglass");
+    }
+
+    public NATGatewayAO waitRouteRecordTerminationScheduled(final String ipAddressOrServerName, final String port) {
+        return waitForRouteStatus(ipAddressOrServerName, port, "anticon-clock-circle-o");
+    }
+
+    private NATGatewayAO waitForRouteStatus(final String ipAddressOrServerName,
+                                            final String port,
+                                            final String status) {
         sleep(1, MINUTES);
         int attempt = 0;
         int maxAttempts = 60;
         final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(ipAddressOrServerName))
-                : $(routeByName(ipAddressOrServerName));
+                ? $(route(ipAddressOrServerName, port))
+                : $(routeByName(ipAddressOrServerName, port));
         while (route.findAll(".external-column").get(0).find(tagName("i"))
-                .has(cssClass("anticon-hourglass"))
+                .has(cssClass(status))
                 && attempt < maxAttempts) {
             click(REFRESH);
             sleep(1, SECONDS);
