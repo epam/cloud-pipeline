@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
+
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
@@ -54,6 +56,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,6 +141,15 @@ public class KubernetesManager {
 
     @Value("${kube.annotation.value.length.limit:254}")
     private Integer kubeAnnotationLengthLimit;
+
+    @Value("${kube.label.value.length.limit:63}")
+    private Integer kubeLabelValueSizeLimit;
+
+    @Value("${kube.label.long.value.suffix.length:5}")
+    private Integer kubeLabelLongValueRandomSuffixSize;
+
+    @Value("${kube.label.long.value.reducing.length:12}")
+    private Integer kubeLabelLongValueReducingSize;
 
     public ServiceDescription getServiceByLabel(final String label) {
         try (KubernetesClient client = getKubernetesClient()) {
@@ -457,8 +469,23 @@ public class KubernetesManager {
         }
     }
 
+    public String buildProxyServiceName(final String prefix, final String externalName) {
+        final String fullName = prefix + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
+        if (fullName.length() < kubeLabelValueSizeLimit) {
+            return fullName;
+        }
+        final String randomSuffix = RandomStringUtils.randomAlphanumeric(kubeLabelLongValueRandomSuffixSize)
+            .toLowerCase();
+        return fullName.substring(0, kubeLabelValueSizeLimit - kubeLabelLongValueReducingSize) + HYPHEN + randomSuffix;
+    }
+
     public String getServicePortName(final String serviceName, final Integer externalPort) {
-        return serviceName + KubernetesConstants.HYPHEN + externalPort.toString();
+        final String portSuffix = externalPort.toString();
+        final String fullName = serviceName + HYPHEN + portSuffix;
+        if (fullName.length() < kubeLabelValueSizeLimit) {
+            return fullName;
+        }
+        return fullName.substring(0, kubeLabelValueSizeLimit - portSuffix.length() - 1) + HYPHEN + portSuffix;
     }
 
     public boolean setPortsToService(final String serviceName, final List<ServicePort> portsUpdate) {
