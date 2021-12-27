@@ -129,13 +129,15 @@ class WsiParserRunsMonitor(object):
             {}
         </table>
         '''
+        distribution_url = os.getenv('DISTRIBUTION_URL', '')
         summary_rows = ''''''
         for run_id, summary_message in summary_map.iteritems():
+            link_to_run = os.path.join(distribution_url, '#/run/{}'.format(run_id))
             summary_rows += '''
             <tr>
+                <td><a href="{}">{}</a></td>
                 <td>{}</td>
-                <td>{}</td>
-            </tr>'''.format(run_id, summary_message)
+            </tr>'''.format(link_to_run, run_id, summary_message)
         return table.format(summary_rows)
 
     def _build_error_summary(self, matching_runs):
