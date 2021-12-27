@@ -123,8 +123,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
-    public NATGatewayAO checkNoRouteRecord(final String ipAddress, final String port) {
-        $(route(ipAddress, port)).shouldBe(disappear);
+    public NATGatewayAO checkNoRouteRecord(final String ipAddressOrServerName, final String port) {
+        final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
+                ? $(route(ipAddressOrServerName, port))
+                : $(routeByName(ipAddressOrServerName, port));
+        route.shouldBe(disappear);
         return this;
     }
 
@@ -159,8 +162,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
-    public NATGatewayAO checkFailedRouteRecord(final String ipAddress, final String serverName, final String comment,
-                                               final String port) {
+    public NATGatewayAO checkFailedRouteRecord(final String ipAddress, final String serverName, final String port) {
         final SelenideElement routeRecord = StringUtils.isBlank(ipAddress)
                 ? $(routeByName(serverName, port))
                 : $(route(ipAddress, port));
@@ -182,8 +184,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return route.findAll(".internal-column").get(1).text();
     }
 
-    public NATGatewayAO deleteRoute(final String externalIPAddress, final String port) {
-        $(route(externalIPAddress, port)).find(".at-getaway-configuration__actions-column")
+    public NATGatewayAO deleteRoute(final String externalIPAddressOrServerName, final String port) {
+        final SelenideElement route = externalIPAddressOrServerName.matches(IPV4_PATTERN)
+                ? $(route(externalIPAddressOrServerName, port))
+                : $(routeByName(externalIPAddressOrServerName, port));
+        route.find(".at-getaway-configuration__actions-column")
                 .find(byClassName("ant-btn-danger"))
                 .shouldBe(visible)
                 .click();

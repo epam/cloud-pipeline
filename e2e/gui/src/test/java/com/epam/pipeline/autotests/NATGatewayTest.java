@@ -64,7 +64,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         }
         logoutIfNeeded();
         loginAs(admin);
-        deleteRoute(GOOGLE_COM_SERVER_NAME, PORT_80);
+        deleteRoute(externalIPAddress, PORT_80);
         deleteRoute(YAHOO_COM_SERVER_NAME, PORT_80);
     }
 
@@ -214,11 +214,58 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .click(SAVE)
                 .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
                 .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .checkFailedRouteRecord(invalidExternalIP, GOOGLE_COM_SERVER_NAME, "", PORT_443)
+                .checkFailedRouteRecord(invalidExternalIP, GOOGLE_COM_SERVER_NAME, PORT_443)
                 .deleteRoute(invalidExternalIP, PORT_443)
                 .click(SAVE)
                 .waitRouteRecordTerminationScheduled(invalidExternalIP, PORT_443)
                 .checkNoRouteRecord(invalidExternalIP, PORT_443);
+    }
+
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
+    @TestCase(value = {"2232_5"})
+    public void checkAddingRouteWithoutResolvedIPToExistingRouteWithResolvedIP() {
+        navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .addRoute()
+                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .setValue(PORT, PORT_443)
+                .addRoute()
+                .checkRouteRecordByServerName(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .click(SAVE)
+                .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkFailedRouteRecord("", GOOGLE_COM_SERVER_NAME, PORT_443)
+                .deleteRoute(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .click(SAVE)
+                .waitRouteRecordTerminationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkNoRouteRecord(GOOGLE_COM_SERVER_NAME, PORT_443);
+    }
+
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress",
+            "checkNewRouteCreationWithoutSpecifiedIPAddress"})
+    @TestCase(value = {"2232_6"})
+    public void checkAddingRouteWithResolvedIPToExistingRouteWithoutResolvedIP() {
+        final NATGatewayAO.NATAddRouteAO natAddRouteAO = navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .addRoute()
+                .setServerName(YAHOO_COM_SERVER_NAME)
+                .click(SPECIFY_IP)
+                .setValue(PORT, PORT_443);
+        final String externalIPAddress = natAddRouteAO.getIPAddress();
+        natAddRouteAO
+                .addRoute()
+                .click(SAVE)
+                .checkCreationScheduled(externalIPAddress, PORT_443)
+                .waitRouteRecordCreationScheduled(externalIPAddress, PORT_443)
+                .checkFailedRouteRecord(externalIPAddress, YAHOO_COM_SERVER_NAME, PORT_443)
+                .deleteRoute(externalIPAddress, PORT_443)
+                .click(SAVE)
+                .waitRouteRecordTerminationScheduled(externalIPAddress, PORT_443)
+                .checkNoRouteRecord(externalIPAddress, PORT_443);
     }
 
     private void deleteRoute(final String externalIPAddress, final String port) {
