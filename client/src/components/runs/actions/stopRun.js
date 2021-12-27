@@ -20,13 +20,14 @@ import {computed, observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
+import moment from 'moment-timezone';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
-import moment from 'moment-timezone';
-import getCommitAllowedForTool from "./get-commit-allowed-for-tool";
+import getCommitAllowedForTool from './get-commit-allowed-for-tool';
+import {MAINTENANCE_MODE_DISCLAIMER} from '../../../models/preferences/PreferencesLoad';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -103,10 +104,11 @@ export function stopRun (parent, callback) {
   const {
     localization,
     dockerRegistries,
-    hiddenObjects
+    hiddenObjects,
+    preferences
   } = parent.props;
   return function (run) {
-    return stopRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
+    return stopRunFn(run, callback, {preferences, localization, dockerRegistries, hiddenObjects});
   };
 }
 
@@ -164,6 +166,13 @@ async function commitRunAndStop (run, payload) {
 
 function stopRunFn (run, callback, stores) {
   let content;
+  const {
+    preferences
+  } = stores || {};
+  let maintenanceMode = false;
+  if (preferences && preferences.loaded) {
+    maintenanceMode = preferences.systemMaintenanceMode;
+  }
   const canCommitRunResult = canCommitRun(run);
   const onOkClicked = async (close, resolve) => {
     let validationResult = true;
@@ -201,6 +210,7 @@ function stopRunFn (run, callback, stores) {
             canCommitRun={canCommitRunResult}
             dockerImage={run.dockerImage}
             dockerRegistries={stores.dockerRegistries}
+            maintenanceMode={maintenanceMode}
           />
         </Provider>
       ),
@@ -337,7 +347,8 @@ class StopRunConfirmation extends React.Component {
     canCommitRun: PropTypes.bool,
     dockerImage: PropTypes.string,
     isTermination: PropTypes.bool,
-    dockerRegistries: PropTypes.object
+    dockerRegistries: PropTypes.object,
+    maintenanceMode: PropTypes.bool
   };
 
   state = {
@@ -408,6 +419,7 @@ class StopRunConfirmation extends React.Component {
 
   render () {
     const {commitAllowed} = this.state;
+    const {maintenanceMode} = this.props;
     return (
       <div>
         <Row type="flex" style={{marginBottom: 5}}>
@@ -417,13 +429,21 @@ class StopRunConfirmation extends React.Component {
             message={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
         </Row>
         {
-          this.props.canCommitRun && commitAllowed &&
+          this.props.canCommitRun && commitAllowed && !maintenanceMode &&
           <Row type="flex" style={{marginBottom: 5, fontWeight: 'bold'}}>
             Do you want to persist current docker image state?
           </Row>
         }
         {
-          this.props.canCommitRun && commitAllowed &&
+          this.props.canCommitRun && commitAllowed && maintenanceMode &&
+          <Alert
+            type="info"
+            showIcon
+            message={MAINTENANCE_MODE_DISCLAIMER}
+          />
+        }
+        {
+          this.props.canCommitRun && commitAllowed && !maintenanceMode &&
           <Row type="flex" style={{marginBottom: 5}}>
             <Checkbox
               checked={this.state.persistState}
@@ -433,7 +453,7 @@ class StopRunConfirmation extends React.Component {
           </Row>
         }
         {
-          this.state.persistState && this.props.canCommitRun && commitAllowed &&
+          this.state.persistState && this.props.canCommitRun && commitAllowed && !maintenanceMode &&
           <CommitRunForm
             onInitialized={this.onInitializeForm}
             visible={this.state.persistState}
