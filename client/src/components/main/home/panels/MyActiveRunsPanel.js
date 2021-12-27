@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
@@ -41,7 +42,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
-@inject('pipelines', 'multiZoneManager')
+@inject('pipelines', 'multiZoneManager', 'preferences')
 @VSActions.check
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
@@ -55,6 +56,15 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
   state = {
     hovered: undefined
   };
+
+  @computed
+  get maintenanceMode () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.maintenanceMode;
+    }
+    return false;
+  }
 
   get usesActiveRuns () {
     return true;
@@ -191,7 +201,9 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
                       hovered: visible ? run : undefined
                     });
                   }
-                })
+                },
+                this.maintenanceMode
+              )
             }
             cardClassName={run => classNames({
               'cp-card-service': run.initialized && run.serviceUrl

@@ -20,8 +20,9 @@ import {canPauseRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
+import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 
-export default function ({multiZoneManager, vsActions}, callbacks) {
+export default function ({multiZoneManager, vsActions}, callbacks, maintenanceMode = false) {
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -120,6 +121,8 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
+            disabled: maintenanceMode,
+            overlay: maintenanceMode ? MAINTENANCE_MODE_DISCLAIMER : undefined,
             action: callbacks ? callbacks.pause : undefined
           });
         }
@@ -139,13 +142,16 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         ) {
           actions.push({
             title: 'RESUME',
+            disabled: maintenanceMode,
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
             action: callbacks ? callbacks.resume : undefined,
-            overlay: run.resumeFailureReason ? (
-              <div style={{maxWidth: '40vw'}}>
-                {run.resumeFailureReason}
-              </div>
-            ) : undefined
+            overlay: maintenanceMode
+              ? MAINTENANCE_MODE_DISCLAIMER
+              : run.resumeFailureReason ? (
+                <div style={{maxWidth: '40vw'}}>
+                  {run.resumeFailureReason}
+                </div>
+              ) : undefined
           });
         }
         actions.push({

@@ -96,6 +96,7 @@ import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/paramet
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
+import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -109,7 +110,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries')
+@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
 @VSActions.check
 @inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -236,6 +237,15 @@ class Logs extends localization.LocalizedReactComponent {
       return payload;
     }
     return null;
+  }
+
+  @computed
+  get maintenanceMode () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.maintenanceMode;
+    }
+    return false;
   }
 
   get showActiveWorkersOnly () {
@@ -1809,11 +1819,15 @@ class Logs extends localization.LocalizedReactComponent {
         switch (status.toLowerCase()) {
           case 'running':
             if (canPauseRun(this.props.run.value)) {
-              PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
+              PauseResumeButton = this.maintenanceMode
+                ? getMaintenanceDisabledButton('PAUSE')
+                : <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
             }
             break;
           case 'paused':
-            PauseResumeButton = <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
+            PauseResumeButton = this.maintenanceMode
+              ? getMaintenanceDisabledButton('RESUME')
+              : <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
             break;
           case 'pausing':
             PauseResumeButton = <span>PAUSING</span>;
@@ -1871,11 +1885,17 @@ class Logs extends localization.LocalizedReactComponent {
           if (previousStatus) {
             CommitStatusButton = (
               <Row>
-                {previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a>
+                {previousStatus}. {
+                  this.maintenanceMode
+                    ? getMaintenanceDisabledButton('COMMIT')
+                    : <a onClick={this.openCommitRunForm}>COMMIT</a>
+                }
               </Row>
             );
           } else {
-            CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
+            CommitStatusButton = this.maintenanceMode
+              ? getMaintenanceDisabledButton('COMMIT')
+              : (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
         } else {
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);

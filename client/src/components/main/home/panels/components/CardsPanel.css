@@ -101,6 +101,10 @@
   text-decoration: underline;
 }
 
+.action-button.disabled:hover span {
+  text-decoration: none;
+}
+
 .card .card-content {
   height: 100%;
   position: relative;

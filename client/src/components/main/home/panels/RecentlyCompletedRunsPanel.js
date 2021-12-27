@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
@@ -35,7 +36,7 @@ import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('pipelines', 'multiZoneManager')
+@inject('pipelines', 'multiZoneManager', 'preferences')
 @VSActions.check
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
@@ -44,6 +45,15 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
     completedRuns: PropTypes.object,
     onInitialize: PropTypes.func
   };
+
+  @computed
+  get maintenanceMode () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.maintenanceMode;
+    }
+    return false;
+  }
 
   get usesCompletedRuns () {
     return true;
@@ -146,7 +156,9 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
                     () => this.stopRun(run)
                   ),
                   run: this.reRun
-                })
+                },
+                this.maintenanceMode
+              )
             }
             childRenderer={renderRunCard}>
             {
