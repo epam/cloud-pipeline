@@ -30,8 +30,8 @@ class NotificationSender(object):
         email_body = email_template.format(message)
         self.logger.info('Registering notification...')
         new_notification = self.api.create_notification(self.subject, email_body, self.user, self.cc_users_list)
-        if new_notification and '' in new_notification:
-            self.logger.info('Notification with id={} is registered successfully!')
+        if new_notification and 'id' in new_notification:
+            self.logger.info('Notification with id={} is registered successfully!'.format(new_notification['id']))
         else:
             self.logger.warn('Unable to retrieve id of the queued notification!')
 

@@ -37,7 +37,7 @@ class PipelineUtils(object):
 
     @staticmethod
     def extract_email_template_path(default_path):
-        email_template_path = os.path.join('CP_SERVICE_MONITOR_NOTIFICATION_TEMPLATE_PATH', default_path)
+        email_template_path = os.getenv('CP_SERVICE_MONITOR_NOTIFICATION_TEMPLATE_PATH', default_path)
         if not os.path.exists(email_template_path):
             raise RuntimeError('No template file found at ''{}'' '.format(email_template_path))
         return email_template_path

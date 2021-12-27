@@ -114,9 +114,10 @@ class WsiParserRunsMonitor(object):
         # read from configurable file or return 'now - 2 days) as the default
         return datetime.now() - timedelta(days=2)
 
-    def _save_sync_time(self):
+    def update_sync_time(self):
+        self.logger.info('Updating last sync timestamp')
         with open(self.last_sync_file_path, 'w') as last_sync_file:
-            last_sync_file.write(self.convert_date_to_str(self.last_sync_timestamp))
+            last_sync_file.write(self.convert_date_to_str(self.checkup_time))
 
     def _build_table(self, summary_map):
         table = '''
@@ -159,7 +160,7 @@ class WsiParserRunsMonitor(object):
                 log_text = entry['logText']
                 for search_pattern in self.target_search_patterns:
                     if search_pattern.match(log_text):
-                        return 'Found a match with ''{}'''.format(search_pattern.pattern)
+                        return 'Found a match with pattern: ''{}'''.format(search_pattern.pattern)
         return None
 
 
@@ -199,8 +200,10 @@ if __name__ == '__main__':
 
     api = PipelineUtils.initialize_api(run_id)
     logger = PipelineUtils.initialize_logger(api, run_id)
-    errors_summary = WsiParserRunsMonitor(api, logger, target_image, last_sync_file_path,
-                                          target_task_names, target_search_entries).generate_errors_table()
+    parser_monitor = WsiParserRunsMonitor(api, logger, target_image, last_sync_file_path, target_task_names,
+                                          target_search_entries)
+    errors_summary = parser_monitor.generate_errors_table()
     if errors_summary:
         NotificationSender(api, logger, email_template_path, notification_user,
                            notification_users_copy_list, notification_subject).queue_notification(errors_summary)
+    parser_monitor.update_sync_time()
