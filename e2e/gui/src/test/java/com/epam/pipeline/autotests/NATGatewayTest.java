@@ -274,7 +274,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .checkNoRouteRecord(externalIPAddress, PORT_443);
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"})
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"}, priority = 1)
     @TestCase(value = {"2232_7"})
     public void checkAddingRouteWithResolvedIPToExistingRoute() {
         navigationMenu()
@@ -308,7 +308,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .close());
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithoutSpecifiedIPAddress"})
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithoutSpecifiedIPAddress"}, priority = 1)
     @TestCase(value = {"2232_8"})
     public void checkAddingRouteWithoutResolvedIPToExistingRoute() {
         navigationMenu()

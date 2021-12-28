@@ -124,17 +124,13 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO checkNoRouteRecord(final String ipAddressOrServerName, final String port) {
-        final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(ipAddressOrServerName, port))
-                : $(routeByName(ipAddressOrServerName, port));
+        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         route.shouldBe(disappear);
         return this;
     }
 
     public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName, final String port) {
-        final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(ipAddressOrServerName, port))
-                : $(routeByName(ipAddressOrServerName, port));
+        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         route
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
@@ -178,16 +174,18 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public String getInternalIP(final String externalIPAddressOrServerName, final String port) {
-        final SelenideElement route = externalIPAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(externalIPAddressOrServerName, port))
-                : $(routeByName(externalIPAddressOrServerName, port));
+        final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, port);
         return route.findAll(".internal-column").get(1).text();
     }
 
+    private SelenideElement getRouteRecord(final String externalIPAddressOrServerName, final String port) {
+        return externalIPAddressOrServerName.matches(IPV4_PATTERN)
+                    ? $(route(externalIPAddressOrServerName, port))
+                    : $(routeByName(externalIPAddressOrServerName, port));
+    }
+
     public NATGatewayAO deleteRoute(final String externalIPAddressOrServerName, final String port) {
-        final SelenideElement route = externalIPAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(externalIPAddressOrServerName, port))
-                : $(routeByName(externalIPAddressOrServerName, port));
+        final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, port);
         route.find(".at-getaway-configuration__actions-column")
                 .find(byClassName("ant-btn-danger"))
                 .shouldBe(visible)
@@ -209,9 +207,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         sleep(1, MINUTES);
         int attempt = 0;
         int maxAttempts = 60;
-        final SelenideElement route = ipAddressOrServerName.matches(IPV4_PATTERN)
-                ? $(route(ipAddressOrServerName, port))
-                : $(routeByName(ipAddressOrServerName, port));
+        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         while (route.findAll(".external-column").get(0).find(tagName("i"))
                 .has(cssClass(status))
                 && attempt < maxAttempts) {
