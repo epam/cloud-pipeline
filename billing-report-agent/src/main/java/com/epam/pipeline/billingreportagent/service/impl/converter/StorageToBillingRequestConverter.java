@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.datastorage.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -54,6 +55,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -167,7 +169,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                 : (String) MapUtils.emptyIfNull(hits.getAt(0).getSourceAsMap()).get(REGION_FIELD);
             return createBilling(container, storageSize, regionLocation, syncStart.toLocalDate().minusDays(1));
         })
-            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), billing))
+            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), billing, container.getMetadata()))
             .map(Collections::singletonList)
             .orElse(Collections.emptyList());
     }
@@ -189,10 +191,11 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,
                                                final EntityWithMetadata<PipelineUser> owner,
-                                               final StorageBillingInfo billing) {
+                                               final StorageBillingInfo billing, Map<String, PipeConfValue> metadata) {
         final EntityContainer<StorageBillingInfo> entity = EntityContainer.<StorageBillingInfo>builder()
             .owner(owner)
             .entity(billing)
+            .metadata(metadata)
             .build();
         final String docId = billing.getEntity().getId().toString();
         return new IndexRequest(fullIndex, INDEX_TYPE).id(docId).source(mapper.map(entity));

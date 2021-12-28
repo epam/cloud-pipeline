@@ -16,11 +16,14 @@
 
 package com.epam.pipeline.billingreportagent.model;
 
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -29,5 +32,6 @@ import lombok.NoArgsConstructor;
 public class EntityContainer<T> {
 
     private T entity;
+    private Map<String, PipeConfValue> metadata;
     private EntityWithMetadata<PipelineUser> owner;
 }

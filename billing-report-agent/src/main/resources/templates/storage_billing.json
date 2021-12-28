@@ -1,5 +1,6 @@
 {
   "mappings": {
+    "dynamic":"runtime",
     "_doc": {
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
