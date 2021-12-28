@@ -25,4 +25,5 @@ public class NatRoutingRuleDescription {
     private final String externalIp;
     private final Integer port;
     private final String description;
+    private final String protocol;
 }

@@ -40,6 +40,7 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
     private static final String EXTERNAL_IP = "87.1.1.1";
     private static final Integer EXTERNAL_PORT = 1;
     private static final String DESCRIPTION = "test";
+    private static final String TCP = "TCP";
 
     @Autowired
     private NatGatewayManager natGatewayManager;
@@ -59,7 +60,7 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
     @Test
     public void testRulesRegistration() {
         final NatRoutingRuleDescription newRoutingRule = new NatRoutingRuleDescription(
-            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION);
+            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION, TCP);
         final List<NatRoutingRuleDescription> newRules = Collections.singletonList(newRoutingRule);
         final NatRoutingRulesRequest natRoutingRulesRequest = new NatRoutingRulesRequest(newRules);
 
@@ -73,7 +74,7 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
     @Test
     public void testRulesRemoval() {
         final NatRoutingRuleDescription newRoutingRule = new NatRoutingRuleDescription(
-            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION);
+            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION, TCP);
         final List<NatRoutingRuleDescription> newRules = Collections.singletonList(newRoutingRule);
         final NatRoutingRulesRequest natRoutingRulesRequest = new NatRoutingRulesRequest(newRules);
 
@@ -87,7 +88,7 @@ public class NatGatewayManagerTest extends AbstractManagerTest {
     @Test
     public void testRulesQueuedRuleStatusChange() {
         final NatRoutingRuleDescription newRoutingRule = new NatRoutingRuleDescription(
-            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION);
+            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION, TCP);
         final List<NatRoutingRuleDescription> newRules = Collections.singletonList(newRoutingRule);
         final NatRoutingRulesRequest natRoutingRulesRequest = new NatRoutingRulesRequest(newRules);
         assertThat(natGatewayManager.registerRoutingRulesCreation(natRoutingRulesRequest)).hasSize(1);
