@@ -52,20 +52,26 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     private static final String COMMENT_1 = "port1";
     private static final String COMMAND_1 = "unset http_proxy https_proxy";
     private static final String COMMAND_2 = "curl %s -v -ipv4";
+    private static final String CONNECTED_FORMAT = "Connected to %s (%s) port %s";
+    private static final String TRYING_FORMAT = "Trying %s...";
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
-    private String externalIPAddress;
+    private String google80ExternalIPAddress;
+    private String google80InternalIPAddress;
+    private String yahoo80InternalIPAddress;
 
     @AfterClass(alwaysRun = true)
     public void cleanup() {
-        if (StringUtils.isBlank(externalIPAddress)) {
+        if (StringUtils.isBlank(google80ExternalIPAddress)) {
             return;
         }
         logoutIfNeeded();
         loginAs(admin);
-        deleteRoute(externalIPAddress, PORT_80);
-        deleteRoute(YAHOO_COM_SERVER_NAME, PORT_80);
+        deleteRoute(google80ExternalIPAddress, PORT_80);
+        deleteRoute(yahoo80InternalIPAddress, PORT_80);
+        deleteRoute(google80ExternalIPAddress, PORT_443);
+        deleteRoute(yahoo80InternalIPAddress, PORT_443);
     }
 
     @Test
@@ -133,17 +139,17 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .setValue(PORT, PORT_80)
                 .ensure(ADD, enabled)
                 .setValue(COMMENT, COMMENT_1);
-        externalIPAddress = natAddRouteAO.getIPAddress();
-        final String internalIP = natAddRouteAO
+        google80ExternalIPAddress = natAddRouteAO.getIPAddress();
+        google80InternalIPAddress = natAddRouteAO
                 .addRoute()
-                .checkRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
+                .checkRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
                 .click(SAVE)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
-                .checkCreationScheduled(externalIPAddress, PORT_80)
-                .waitRouteRecordCreationScheduled(externalIPAddress, PORT_80)
-                .checkActiveRouteRecord(externalIPAddress, GOOGLE_COM_SERVER_NAME, COMMENT_1, PORT_80)
-                .getInternalIP(externalIPAddress, PORT_80);
+                .checkCreationScheduled(google80ExternalIPAddress, PORT_80)
+                .waitRouteRecordCreationScheduled(google80ExternalIPAddress, PORT_80)
+                .checkActiveRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, COMMENT_1, PORT_80)
+                .getInternalIP(google80ExternalIPAddress, PORT_80);
         tools().perform(registry, group, tool, tool -> tool.run(this))
                 .showLog(getRunId())
                 .waitForSshLink()
@@ -153,15 +159,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .sleep(3, SECONDS)
                         .execute(format(COMMAND_2, GOOGLE_COM_SERVER_NAME))
                         .sleep(3, SECONDS)
-                        .assertOutputContains(format("Trying %s...", internalIP),
-                                format("Connected to %s (%s) port %s", GOOGLE_COM_SERVER_NAME, internalIP, PORT_80))
+                        .assertOutputContains(format(TRYING_FORMAT, google80InternalIPAddress),
+                                format(CONNECTED_FORMAT, GOOGLE_COM_SERVER_NAME, google80InternalIPAddress, PORT_80))
                         .close());
     }
 
     @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
     @TestCase(value = {"2232_3"})
     public void checkNewRouteCreationWithoutSpecifiedIPAddress() {
-        final String internalIP = navigationMenu()
+        yahoo80InternalIPAddress = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
                 .switchToNATGateway()
@@ -187,15 +193,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .sleep(3, SECONDS)
                         .execute(format(COMMAND_2, YAHOO_COM_SERVER_NAME))
                         .sleep(3, SECONDS)
-                        .assertOutputContains(format("Trying %s...", internalIP),
-                                format("Connected to %s (%s) port %s", YAHOO_COM_SERVER_NAME, internalIP, PORT_80))
+                        .assertOutputContains(format(TRYING_FORMAT, yahoo80InternalIPAddress),
+                                format(CONNECTED_FORMAT, YAHOO_COM_SERVER_NAME, yahoo80InternalIPAddress, PORT_80))
                         .close());
     }
 
     @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
     @TestCase(value = {"2232_4"})
     public void checkRouteWithExistingNameAndDifferentIP() {
-        final String[] eightBitNumbers = externalIPAddress.split("\\.");
+        final String[] eightBitNumbers = google80ExternalIPAddress.split("\\.");
         final String invalidExternalIP = format("%s.%s.%s.%s", eightBitNumbers[3], eightBitNumbers[2],
                 eightBitNumbers[1], eightBitNumbers[0]);
         navigationMenu()
@@ -268,7 +274,75 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .checkNoRouteRecord(externalIPAddress, PORT_443);
     }
 
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"})
+    @TestCase(value = {"2232_7"})
+    public void checkAddingRouteWithResolvedIPToExistingRoute() {
+        navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .addRoute()
+                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .click(SPECIFY_IP)
+                .clear(IP)
+                .setValue(IP, google80ExternalIPAddress)
+                .setValue(PORT, PORT_80)
+                .checkFieldWarning(PORT, "Value should be unique")
+                .clear(PORT)
+                .setValue(PORT, PORT_443)
+                .addRoute()
+                .click(SAVE)
+                .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkActiveRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, "", PORT_443);
+        runsMenu()
+                .showLog(getRunId())
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(COMMAND_1)
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", GOOGLE_COM_SERVER_NAME, PORT_443)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, google80InternalIPAddress),
+                                format(CONNECTED_FORMAT, GOOGLE_COM_SERVER_NAME, google80InternalIPAddress, PORT_443))
+                        .close());
+    }
+
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithoutSpecifiedIPAddress"})
+    @TestCase(value = {"2232_8"})
+    public void checkAddingRouteWithoutResolvedIPToExistingRoute() {
+        navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .addRoute()
+                .setServerName(YAHOO_COM_SERVER_NAME)
+                .setValue(PORT, PORT_80)
+                .checkFieldWarning(PORT, "Value should be unique")
+                .clear(PORT)
+                .setValue(PORT, PORT_443)
+                .addRoute()
+                .click(SAVE)
+                .checkCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_443)
+                .waitRouteRecordCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_443)
+                .checkActiveRouteRecord(yahoo80InternalIPAddress, YAHOO_COM_SERVER_NAME, "", PORT_443);
+        runsMenu()
+                .showLog(getRunId())
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(COMMAND_1)
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", YAHOO_COM_SERVER_NAME, PORT_443)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, yahoo80InternalIPAddress),
+                                format(CONNECTED_FORMAT, YAHOO_COM_SERVER_NAME, yahoo80InternalIPAddress, PORT_443))
+                        .close());
+    }
+
     private void deleteRoute(final String externalIPAddress, final String port) {
+        if (StringUtils.isBlank(externalIPAddress)) {
+            return;
+        }
         navigationMenu()
                 .settings()
                 .switchToSystemManagement()
