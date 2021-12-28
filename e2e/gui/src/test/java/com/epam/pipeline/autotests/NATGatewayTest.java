@@ -82,7 +82,6 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 Pair.of(google80ExternalIPAddress, PORT_80),
                 Pair.of(google80ExternalIPAddress, PORT_443),
                 Pair.of(YAHOO_COM_SERVER_NAME, PORT_80),
-                Pair.of(YAHOO_COM_SERVER_NAME, PORT_443),
                 Pair.of(DUCKDUCKGO_COM_SERVER_NAME, PORT_80),
                 Pair.of(DUCKDUCKGO_COM_SERVER_NAME, PORT_443),
                 Pair.of(BING_COM_SERVER_NAME, PORT_80),
@@ -159,6 +158,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         google80InternalIPAddress = natAddRouteAO
                 .addRoute()
                 .checkRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
+                .sleep(2, SECONDS)
                 .click(SAVE)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
@@ -371,6 +371,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .addMorePorts(PORT_443)
                 .ensure(ADD, enabled)
                 .addRoute()
+                .sleep(2, SECONDS)
                 .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
                 .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
         systemManagementAO
@@ -430,6 +431,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .setValue(PORT, PORT_443)
                 .setValue(COMMENT, COMMENT_2)
                 .addRoute()
+                .sleep(2, SECONDS)
                 .click(SAVE)
                 .checkCreationScheduled(BING_COM_SERVER_NAME, PORT_80)
                 .checkCreationScheduled(BING_COM_SERVER_NAME, PORT_443)
@@ -472,6 +474,8 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToSystemManagement()
                 .switchToNATGateway()
                 .deleteRoute(externalIPAddress, port)
-                .click(SAVE);
+                .sleep(1, SECONDS)
+                .click(SAVE)
+                .sleep(1, SECONDS);
     }
 }
