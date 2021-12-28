@@ -15,17 +15,23 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.NATGatewayAO;
+import com.epam.pipeline.autotests.ao.SystemManagementAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
+import org.testng.internal.collections.Pair;
+
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PORT;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ROUTE;
@@ -39,17 +45,23 @@ import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
+import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements Authorization {
 
     private static final String FIELD_IS_REQUIRED_WARNING = "Field is required";
     private static final String GOOGLE_COM_SERVER_NAME = "google.com";
     private static final String YAHOO_COM_SERVER_NAME = "yahoo.com";
+    private static final String DUCKDUCKGO_COM_SERVER_NAME = "duckduckgo.com";
+    private static final String BING_COM_SERVER_NAME = "bing.com";
     private static final String PORT_80 = "80";
     private static final String PORT_443 = "443";
     private static final String COMMENT_1 = "port1";
+    private static final String COMMENT_2 = "port2";
     private static final String COMMAND_1 = "unset http_proxy https_proxy";
     private static final String COMMAND_2 = "curl %s -v -ipv4";
     private static final String CONNECTED_FORMAT = "Connected to %s (%s) port %s";
@@ -63,15 +75,19 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
 
     @AfterClass(alwaysRun = true)
     public void cleanup() {
-        if (StringUtils.isBlank(google80ExternalIPAddress)) {
-            return;
-        }
+        refresh();
         logoutIfNeeded();
         loginAs(admin);
-        deleteRoute(google80ExternalIPAddress, PORT_80);
-        deleteRoute(yahoo80InternalIPAddress, PORT_80);
-        deleteRoute(google80ExternalIPAddress, PORT_443);
-        deleteRoute(yahoo80InternalIPAddress, PORT_443);
+        Stream.of(
+                Pair.of(google80ExternalIPAddress, PORT_80),
+                Pair.of(google80ExternalIPAddress, PORT_443),
+                Pair.of(YAHOO_COM_SERVER_NAME, PORT_80),
+                Pair.of(YAHOO_COM_SERVER_NAME, PORT_443),
+                Pair.of(DUCKDUCKGO_COM_SERVER_NAME, PORT_80),
+                Pair.of(DUCKDUCKGO_COM_SERVER_NAME, PORT_443),
+                Pair.of(BING_COM_SERVER_NAME, PORT_80),
+                Pair.of(BING_COM_SERVER_NAME, PORT_443)
+        ).forEach(p -> deleteRoute(p.first(), p.second()));
     }
 
     @Test
@@ -308,7 +324,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .close());
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithoutSpecifiedIPAddress"}, priority = 1)
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithoutSpecifiedIPAddress"}, priority = 2)
     @TestCase(value = {"2232_8"})
     public void checkAddingRouteWithoutResolvedIPToExistingRoute() {
         navigationMenu()
@@ -336,6 +352,114 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, yahoo80InternalIPAddress),
                                 format(CONNECTED_FORMAT, YAHOO_COM_SERVER_NAME, yahoo80InternalIPAddress, PORT_443))
+                        .close());
+    }
+
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"}, priority = 1)
+    @TestCase(value = {"2232_9"})
+    public void checkAddingRouteWithSeveralPorts() {
+        final SystemManagementAO systemManagementAO = navigationMenu()
+                .settings()
+                .switchToSystemManagement();
+        final NATGatewayAO natGatewayAO = systemManagementAO
+                .switchToNATGateway()
+                .addRoute()
+                .setServerName(DUCKDUCKGO_COM_SERVER_NAME)
+                .setValue(PORT, PORT_80)
+                .click(ADD_PORT)
+                .ensure(ADD, disabled)
+                .addMorePorts(PORT_443)
+                .ensure(ADD, enabled)
+                .addRoute()
+                .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
+                .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
+        systemManagementAO
+                .click(SYSTEM_LOGS_TAB)
+                .also(() -> new ConfirmationPopupAO<>(this)
+                        .ensureTitleIs("You have unsaved changes. Continue?")
+                        .cancel());
+        final String internalIPPort80 = natGatewayAO
+                .click(SAVE)
+                .checkCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
+                .checkCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_443)
+                .waitRouteRecordCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
+                .waitRouteRecordCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_443)
+                .getInternalIP(DUCKDUCKGO_COM_SERVER_NAME, PORT_80);
+        final String internalIPPort443 = natGatewayAO.getInternalIP(DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
+        final String internalPortPort80 = natGatewayAO.getInternalPort(DUCKDUCKGO_COM_SERVER_NAME, PORT_80);
+        final String internalPortPort443 = natGatewayAO.getInternalPort(DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
+        assertEquals(internalIPPort80, internalIPPort443);
+        assertNotEquals(internalPortPort80, internalPortPort443);
+        runsMenu()
+                .showLog(getRunId())
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(COMMAND_1)
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", DUCKDUCKGO_COM_SERVER_NAME, PORT_80)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
+                                format(CONNECTED_FORMAT, DUCKDUCKGO_COM_SERVER_NAME, internalIPPort80, PORT_80))
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", DUCKDUCKGO_COM_SERVER_NAME, PORT_443)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
+                                format(CONNECTED_FORMAT, DUCKDUCKGO_COM_SERVER_NAME, internalIPPort80, PORT_443))
+                        .close());
+    }
+
+    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"}, priority = 1)
+    @TestCase(value = {"2232_10"})
+    public void checkAddingSeveralRoutesWithSameServerNameButDiffPorts() {
+        final NATGatewayAO natGatewayAO = navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .sleep(1, SECONDS)
+                .addRoute()
+                .setServerName(BING_COM_SERVER_NAME)
+                .click(SPECIFY_IP)
+                .setValue(PORT, PORT_80)
+                .setValue(COMMENT, COMMENT_1)
+                .addRoute()
+                .sleep(1, SECONDS)
+                .addRoute()
+                .setServerName(BING_COM_SERVER_NAME)
+                .click(SPECIFY_IP)
+                .sleep(1, SECONDS)
+                .setValue(PORT, PORT_443)
+                .setValue(COMMENT, COMMENT_2)
+                .addRoute()
+                .click(SAVE)
+                .checkCreationScheduled(BING_COM_SERVER_NAME, PORT_80)
+                .checkCreationScheduled(BING_COM_SERVER_NAME, PORT_443)
+                .waitRouteRecordCreationScheduled(BING_COM_SERVER_NAME, PORT_80)
+                .waitRouteRecordCreationScheduled(BING_COM_SERVER_NAME, PORT_443);
+        final String internalIPPort80 = natGatewayAO.getInternalIP(BING_COM_SERVER_NAME, PORT_80);
+        final String internalIPPort443 = natGatewayAO.getInternalIP(BING_COM_SERVER_NAME, PORT_443);
+        final String internalPortPort80 = natGatewayAO.getInternalPort(BING_COM_SERVER_NAME, PORT_80);
+        final String internalPortPort443 = natGatewayAO.getInternalPort(BING_COM_SERVER_NAME, PORT_443);
+        final String commentPort80 = natGatewayAO.getComment(BING_COM_SERVER_NAME, PORT_80);
+        final String commentPort443 = natGatewayAO.getComment(BING_COM_SERVER_NAME, PORT_443);
+        assertEquals(internalIPPort80, internalIPPort443);
+        assertNotEquals(internalPortPort80, internalPortPort443);
+        assertNotEquals(commentPort80, commentPort443);
+        runsMenu()
+                .showLog(getRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(COMMAND_1)
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", BING_COM_SERVER_NAME, PORT_80)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
+                                format(CONNECTED_FORMAT, BING_COM_SERVER_NAME, internalIPPort80, PORT_80))
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", BING_COM_SERVER_NAME, PORT_443)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
+                                format(CONNECTED_FORMAT, BING_COM_SERVER_NAME, internalIPPort80, PORT_443))
                         .close());
     }
 

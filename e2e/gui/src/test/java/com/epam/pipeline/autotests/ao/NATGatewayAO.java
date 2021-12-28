@@ -30,6 +30,7 @@ import java.util.Map;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.exist;
+import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -108,7 +109,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO checkRouteRecord(final String ipAddress, final String serverName, final String port) {
-        $(route(ipAddress, port))
+        getRouteRecord(ipAddress, port)
                 .shouldBe(exist)
                 .findAll(".external-column").get(0)
                 .shouldHave(text(serverName));
@@ -176,6 +177,16 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     public String getInternalIP(final String externalIPAddressOrServerName, final String port) {
         final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, port);
         return route.findAll(".internal-column").get(1).text();
+    }
+
+    public String getInternalPort(final String externalIPAddressOrServerName, final String externalPort) {
+        final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, externalPort);
+        return route.findAll(".internal-column").get(2).text();
+    }
+
+    public String getComment(final String externalIPAddressOrServerName, final String externalPort) {
+        final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, externalPort);
+        return route.find(".nat-column").text();
     }
 
     private SelenideElement getRouteRecord(final String externalIPAddressOrServerName, final String port) {
@@ -275,6 +286,16 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
          public NATGatewayAO addRoute() {
              click(ADD);
              return parent();
+         }
+
+         public NATAddRouteAO addMorePorts(final String port) {
+             context().findAll(byText("Port"))
+                     .filter(hidden).first()
+                     .closest(".dd-route-modal__form-item-container")
+                     .find(".dd-route-modal__form-item").find("input")
+                     .shouldBe(visible)
+                     .setValue(port);
+             return this;
          }
 
          @Override
