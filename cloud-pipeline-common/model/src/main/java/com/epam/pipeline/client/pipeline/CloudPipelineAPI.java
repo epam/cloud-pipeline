@@ -172,6 +172,9 @@ public interface CloudPipelineAPI {
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
 
+    @GET("users/online")
+    Call<Result<List<PipelineUser>>> loadAllOnlineUsers();
+
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);
 
