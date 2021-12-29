@@ -241,10 +241,11 @@ export default class NATGetaway extends React.Component {
 
   addNewDataToTable = async (formData) => {
     const {serverName, ip, ports = [], description} = formData;
-    const formattedData = ports.map(port => ({
+    const formattedData = ports.map(({value, protocol}) => ({
       externalName: serverName,
       externalIp: ip,
-      externalPort: port,
+      externalPort: value,
+      protocol: protocol.toUpperCase(),
       isNew: true,
       description
     }));
@@ -284,13 +285,15 @@ export default class NATGetaway extends React.Component {
           .map(route => ({
             externalName: route.externalName,
             externalIp: route.externalIp,
-            port: route.externalPort
+            port: route.externalPort,
+            protocol: route.protocol
           }));
         const routesToAdd = addedRoutes
           .map(route => ({
             externalName: route.externalName,
             externalIp: route.externalIp,
             port: route.externalPort,
+            protocol: route.protocol,
             description: route.description
           }));
         if (routesToRemove.length) {

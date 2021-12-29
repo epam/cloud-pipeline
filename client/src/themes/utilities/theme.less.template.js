@@ -395,6 +395,9 @@ export default `
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
+@THEME .ant-form-item-control.has-error .ant-input {
+  border-color: @color-red;
+}
 @THEME .cp-text-not-important {
   color: @application-color-faded;
 }
@@ -2503,11 +2506,11 @@ export default `
 }
 @THEME .cp-settings-nat-table thead tr:first-child,
 @THEME .cp-settings-nat-table thead tr:first-child th:first-child,
-@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(3),
-@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(3),
-@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(6),
-@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(6) {
-  border-right: 2px solid @card-border-color;
+@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(4),
+@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(4),
+@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(7),
+@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(7) {
+  border-right: 2px solid @table-border-color;
 }
 @THEME .cp-settings-nat-table thead tr:first-child th {
   background: @card-header-background;
@@ -2517,6 +2520,9 @@ export default `
 }
 @THEME .cp-nat-route-removed .cp-nat-route-status {
   color: currentColor;
+}
+@THEME .cp-nat-route-port-control {
+  border-color: @table-border-color;
 }
 
 @THEME .code-highlight {
