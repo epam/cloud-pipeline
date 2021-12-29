@@ -101,6 +101,7 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
             library()
                     .removeStorage(storage)
                     .removeStorage(storageMount2)
+                    .removeStorageIfExists(storageMount)
                     .removePipeline(pipeline2354)
                     .removeConfiguration(configuration2354);
             if ("false".equals(C.AUTH_TOKEN)) {
@@ -137,35 +138,30 @@ public class DataStoragesFeaturesTest extends AbstractBfxPipelineTest implements
     @Test
     @TestCase(value = {"2354_1"})
     public void checkDisableMountingStorageForToolAndLaunchForm() {
-        try {
-            library()
-                    .clickOnCreateStorageButton()
-                    .clickEnableVersioningCheckbox()
-                    .ensure(DISABLE_MOUNT, visible, enabled)
-                    .ensureVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
-                    .click(DISABLE_MOUNT)
-                    .ensureNotVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
-                    .setStoragePath(storageMount)
-                    .ok();
-            tools()
-                    .perform(registry, group, tool, tool ->
-                            tool.settings()
-                                    .selectDataStoragesToLimitMounts()
-                                    .clearSelection()
-                                    .searchStorage(storageMount)
-                                    .validateNotFoundStorage()
-                                    .cancel()
-                                    .runWithCustomSettings()
-                                    .selectDataStoragesToLimitMounts()
-                                    .clearSelection()
-                                    .searchStorage(storageMount)
-                                    .validateNotFoundStorage()
-                                    .cancel()
-                    );
-        } finally {
-            library()
-                    .removeStorage(storageMount);
-        }
+        library()
+                .clickOnCreateStorageButton()
+                .clickEnableVersioningCheckbox()
+                .ensure(DISABLE_MOUNT, visible, enabled)
+                .ensureVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
+                .click(DISABLE_MOUNT)
+                .ensureNotVisible(MOUNT_POINT, MOUNT_OPTIONS, ALLOW_MOUNT)
+                .setStoragePath(storageMount)
+                .ok();
+        tools()
+                .perform(registry, group, tool, tool ->
+                        tool.settings()
+                                .selectDataStoragesToLimitMounts()
+                                .clearSelection()
+                                .searchStorage(storageMount)
+                                .validateNotFoundStorage()
+                                .cancel()
+                                .runWithCustomSettings()
+                                .selectDataStoragesToLimitMounts()
+                                .clearSelection()
+                                .searchStorage(storageMount)
+                                .validateNotFoundStorage()
+                                .cancel()
+                );
     }
 
     @Test
