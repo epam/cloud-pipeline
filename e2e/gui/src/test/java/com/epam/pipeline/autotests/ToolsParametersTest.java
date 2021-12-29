@@ -28,6 +28,9 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.internal.collections.Pair;
+
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.matchText;
@@ -60,11 +63,14 @@ public class ToolsParametersTest
     private static final String CUSTOM_TEST_CAPABILITY_1 = "Custom test capability 1";
     private static final String CUSTOM_TEST_CAPABILITY_2 = "Custom test capability 2";
     private static final String CUSTOM_TEST_CAPABILITY_3 = "Custom test capability 3";
+    private static final String CUSTOM_TEST_CAPABILITY_4 = "Custom test capability 4";
     private static final String DEFAULT_CONFIGURATION = "default";
     private static final String RUN_CAPABILITIES_TITLE = "Run capabilities";
     private final String tool = C.TESTING_TOOL_NAME;
+    private final String centosTool = format("%s/%s", C.ANOTHER_GROUP, "centos");
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
+    private final String anotherGroup = C.ANOTHER_GROUP;
     private final String invalidEndpoint = "8700";
     private final String launchCapabilities = "launch.capabilities";
     private final String custCapability1 = "testCapability1";
@@ -293,5 +299,29 @@ public class ToolsParametersTest
                             .click(SAVE)
                             .waitUntilSaveEnding(DEFAULT_CONFIGURATION);
                 });
+    }
+
+    @Test(dependsOnMethods = {"customCapabilitiesForToolDockerImageOS"})
+    @TestCase(value = {"2323_3"})
+    public void customCapabilitiesForAllToolDockerImageOS() {
+        tools().perform(registry, anotherGroup, centosTool, tool ->
+                tool
+                        .versions()
+                        .viewUnscannedVersions()
+                        .scanVersionIfNeeded("latest")
+        );
+        Stream.of(
+                Pair.of(group, tool),
+                Pair.of(anotherGroup, centosTool)
+        ).forEach(t -> {
+            tools()
+                    .perform(registry, t.first(), t.second(), tool ->
+                            tool.settings()
+                                    .click(RUN_CAPABILITIES)
+                                    .sleep(2, SECONDS)
+                                    .checkCustomCapability(custCapability4, false)
+                                    .selectValue(RUN_CAPABILITIES, custCapability4));
+            new PipelineRunFormAO().checkTooltipText(custCapability4, CUSTOM_TEST_CAPABILITY_4);
+        });
     }
 }
