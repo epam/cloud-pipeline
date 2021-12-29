@@ -300,5 +300,7 @@ public enum Primitive {
     SERVER_NAME,
     COMMENT,
     SPECIFY_IP,
-    RESOLVE
+    RESOLVE,
+    DISABLE_MOUNT,
+    ALLOW_MOUNT
 }

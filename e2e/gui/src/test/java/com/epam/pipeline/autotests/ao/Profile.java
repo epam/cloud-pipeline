@@ -207,6 +207,11 @@ public class Profile implements AccessObject<Profile> {
         return this;
     }
 
+    public SelectLimitMountsPopupAO<Profile> selectDataStoragesToLimitMounts() {
+        click(LIMIT_MOUNTS);
+        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
+    }
+
     private SelenideElement cmdTemplate() {
         // TODO: 12/02/18 replace SelenideCollections call with SelenideElement with custom By
         return Selenide.$$(byAttribute("role", "presentation"))

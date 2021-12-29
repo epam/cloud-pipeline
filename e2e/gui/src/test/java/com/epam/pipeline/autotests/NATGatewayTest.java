@@ -371,14 +371,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .addMorePorts(PORT_443)
                 .ensure(ADD, enabled)
                 .addRoute()
-                .sleep(2, SECONDS)
                 .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
-                .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
+                .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_443)
+                .sleep(1, SECONDS);
         systemManagementAO
                 .click(SYSTEM_LOGS_TAB)
                 .also(() -> new ConfirmationPopupAO<>(this)
                         .ensureTitleIs("You have unsaved changes. Continue?")
-                        .cancel());
+                        .cancel())
+                .sleep(2, SECONDS);
         final String internalIPPort80 = natGatewayAO
                 .click(SAVE)
                 .checkCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_80)

@@ -45,6 +45,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.EDIT;
 import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.PIPELINE;
@@ -160,7 +161,8 @@ public class Configuration implements AccessObject<Configuration> {
                 entry(RUN, context().find(byId("run-configuration-button"))),
                 entry(ADD, context().find(byId("add-configuration-button"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
-                entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
+                entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
+                entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input")))
         );
     }
 
@@ -336,5 +338,10 @@ public class Configuration implements AccessObject<Configuration> {
     public Configuration assertPageTitleIs(final String expectedTitle) {
         $(title()).shouldHave(text(expectedTitle));
         return this;
+    }
+
+    public SelectLimitMountsPopupAO<Configuration> selectDataStoragesToLimitMounts() {
+        click(LIMIT_MOUNTS);
+        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 }
