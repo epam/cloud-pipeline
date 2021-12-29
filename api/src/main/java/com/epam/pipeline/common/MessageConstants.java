@@ -680,6 +680,7 @@ public final class MessageConstants {
     public static final String NAT_ROUTE_CONFIG_FAILURE_SUMMARY = "nat.gateway.route.creation.failure.summary";
     public static final String NAT_ROUTE_CONFIG_INVALID_MANDATORY_FIELD = "nat.gateway.route.creation.invalid.field";
     public static final String NAT_ROUTE_CONFIG_INVALID_DESCRIPTION = "nat.gateway.route.creation.invalid.description";
+    public static final String NAT_ROUTE_CONFIG_INVALID_PROTOCOL = "nat.gateway.route.creation.invalid.protocol";
     public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
         "nat.gateway.route.creation.deploy.refresh.error";
     public static final String NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED =

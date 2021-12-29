@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.TCP;
+
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
@@ -93,7 +95,7 @@ public class NatGatewayManager {
     private final String tinyproxyServiceLabelSelector;
     private final String dnsProxyConfigMapName;
     private final String globalConfigMapName;
-    private final String portForwardingRuleKey;
+    private final Map<String, String> portForwardingRuleMapping;
     private final String hostsKey;
     private final String defaultCustomDnsIP;
 
@@ -109,8 +111,9 @@ public class NatGatewayManager {
                              final String dnsProxyConfigMapName,
                              @Value("${nat.gateway.cm.global.name:cp-config-global}")
                              final String globalConfigMapName,
-                             @Value("${nat.gateway.port.forwarding.key:CP_TP_TCP_DEST}")
-                             final String portForwardingRuleKey,
+                             @Value("#{${nat.gateway.port.forwarding.protocols.mapping:"
+                                    + "{TCP:'CP_TP_TCP_DEST',UDP:'CP_TP_UDP_DEST'}}}")
+                             final Map<String, String> portForwardingRuleMapping,
                              @Value("${nat.gateway.custom.dns.server.ip:}")
                              final String defaultCustomDnsIP,
                              @Value("${nat.gateway.hosts.key:hosts}") final String hostsKey) {
@@ -122,7 +125,7 @@ public class NatGatewayManager {
         this.tinyproxyNatServiceName = tinyproxyNatServiceName;
         this.dnsProxyConfigMapName = dnsProxyConfigMapName;
         this.globalConfigMapName = globalConfigMapName;
-        this.portForwardingRuleKey = portForwardingRuleKey;
+        this.portForwardingRuleMapping = portForwardingRuleMapping;
         this.hostsKey = hostsKey;
         this.defaultCustomDnsIP = defaultCustomDnsIP;
     }
@@ -242,9 +245,10 @@ public class NatGatewayManager {
         final Map<Integer, ServicePort> activePorts = getServiceActivePorts(service);
         final String targetStatus = annotations.get(getTargetStatusLabelName(port));
         final String currentStatus = annotations.get(getCurrentStatusLabelName(port));
+        final String protocol = annotations.get(getProtocolLabelName(port));
         if (!targetStatus.equals(currentStatus)) {
             if (targetStatus.equals(NatRouteStatus.ACTIVE.name())) {
-                processScheduledStartup(service, activePorts, port);
+                processScheduledStartup(service, activePorts, port, protocol);
             } else {
                 processScheduledTermination(service, activePorts, port);
             }
@@ -321,16 +325,17 @@ public class NatGatewayManager {
     private boolean removeStatusAnnotations(final Service service, final Integer port) {
         final Set<String> annotationsToRemove = Stream.of(getCurrentStatusLabelName(port),
                                                           getTargetStatusLabelName(port),
-                                                          getLastUpdateTimeLabelName(port))
+                                                          getLastUpdateTimeLabelName(port),
+                                                          getProtocolLabelName(port))
             .collect(Collectors.toSet());
         return kubernetesManager.removeAnnotationsFromExistingService(getServiceName(service), annotationsToRemove);
     }
 
     private boolean processScheduledStartup(final Service service, final Map<Integer, ServicePort> activePorts,
-                                            final Integer port) {
+                                            final Integer port, final String protocol) {
         final String serviceName = getServiceName(service);
         log.info(messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT, port, serviceName));
-        if (!addPortToService(serviceName, activePorts, port)) {
+        if (!addPortToService(serviceName, activePorts, port, protocol)) {
             return setStatusFailed(serviceName, port,
                                    messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED));
         }
@@ -419,11 +424,13 @@ public class NatGatewayManager {
 
     private NatRoutingRuleDescription mapRouteToDescription(final NatRoute route) {
         return new NatRoutingRuleDescription(route.getExternalName(), route.getExternalIp(),
-                route.getExternalPort(), route.getDescription());
+                                             route.getExternalPort(), route.getDescription(),
+                                             Optional.ofNullable(route.getProtocol()).orElse(TCP));
     }
 
     public NatRoutingRuleDescription toRuleWoDescription(final NatRoutingRuleDescription rule) {
-        return new NatRoutingRuleDescription(rule.getExternalName(), rule.getExternalIp(), rule.getPort(), null);
+        return new NatRoutingRuleDescription(rule.getExternalName(), rule.getExternalIp(), rule.getPort(), null,
+                                             Optional.ofNullable(rule.getProtocol()).orElse(TCP));
     }
 
     private void addQueuedRouteToKubeServices(final Map<String, Service> proxyServicesMapping, final NatRoute route) {
@@ -485,7 +492,8 @@ public class NatGatewayManager {
         annotations.put(EXTERNAL_IP_LABEL, route.getExternalIp());
         final List<ServicePort> servicePorts =
             Collections.singletonList(buildNewServicePort(correspondingServiceName, externalPort,
-                                                          freeTargetPort.map(IntOrString::new).get()));
+                                                          freeTargetPort.map(IntOrString::new).get(),
+                                                          route.getProtocol()));
 
         final Map<String, String> labels =
             Collections.singletonMap(KubernetesConstants.CP_LABEL_PREFIX + tinyproxyNatServiceName,
@@ -516,7 +524,7 @@ public class NatGatewayManager {
             if (!activePorts.containsKey(externalPort)) {
                 final boolean portCreationResult = kubernetesManager.generateFreeTargetPort()
                     .map(newPort -> kubernetesManager.addPortToExistingService(
-                        service.getMetadata().getName(), externalPort, newPort))
+                        service.getMetadata().getName(), externalPort, newPort, route.getProtocol()))
                     .map(Optional::isPresent)
                     .orElse(false);
                 if (!portCreationResult) {
@@ -540,6 +548,7 @@ public class NatGatewayManager {
         final Map<String, String> requiredProxyServiceLabels = new HashMap<>();
         requiredProxyServiceLabels.put(getCurrentStatusLabelName(externalPort), statusInQueue.name());
         requiredProxyServiceLabels.put(getLastUpdateTimeLabelName(externalPort), getCurrentTimeString());
+        requiredProxyServiceLabels.put(getProtocolLabelName(externalPort), route.getProtocol());
         final NatRouteStatus targetStatus = statusInQueue.isTerminationState()
                                             ? NatRouteStatus.TERMINATED
                                             : NatRouteStatus.ACTIVE;
@@ -555,8 +564,9 @@ public class NatGatewayManager {
     }
 
     private ServicePort buildNewServicePort(final String correspondingServiceName, final Integer externalPort,
-                                            final IntOrString freeTargetPort) {
+                                            final IntOrString freeTargetPort, final String protocol) {
         final ServicePort newServicePort = new ServicePort();
+        newServicePort.setProtocol(protocol);
         newServicePort.setName(kubernetesManager.getServicePortName(correspondingServiceName, externalPort));
         newServicePort.setTargetPort(freeTargetPort);
         newServicePort.setPort(externalPort);
@@ -602,10 +612,20 @@ public class NatGatewayManager {
         validateMandatoryRuleField(EXTERNAL_NAME, rule.getExternalName());
         validateMandatoryRuleField(PORT, Optional.ofNullable(rule.getPort()).map(Object::toString).orElse(null));
         validateMandatoryRuleField(EXTERNAL_IP, rule.getExternalIp());
+        validateRuleProtocol(rule);
         Optional.ofNullable(rule.getDescription())
             .ifPresent(description -> Assert.isTrue(
                 kubernetesManager.isValidAnnotation(description),
                 messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_DESCRIPTION, description)));
+    }
+
+    private void validateRuleProtocol(final NatRoutingRuleDescription rule) {
+        Optional.ofNullable(rule.getProtocol()).ifPresent(protocol -> {
+            final Set<String> allowedProtocols = portForwardingRuleMapping.keySet();
+            Assert.isTrue(allowedProtocols.contains(protocol),
+                          messageHelper.getMessage(MessageConstants.NAT_ROUTE_CONFIG_INVALID_PROTOCOL,
+                                                   protocol, allowedProtocols));
+        });
     }
 
     private void validateMandatoryRuleField(final String fieldName, final String value) {
@@ -631,11 +651,13 @@ public class NatGatewayManager {
         final Integer externalPort = portInfo.getPort();
         final String statusLabelName = getCurrentStatusLabelName(externalPort);
         final String lastUpdateTimeLabelName = getLastUpdateTimeLabelName(externalPort);
+        final String protocolLabelName = getProtocolLabelName(externalPort);
         return NatRoute.builder()
             .externalName(extractStringFromAnnotations(annotations, EXTERNAL_NAME_LABEL))
             .externalIp(extractStringFromAnnotations(annotations, EXTERNAL_IP_LABEL))
             .description(annotations.get(getDescriptionLabelName(externalPort)))
             .externalPort(externalPort)
+            .protocol(extractStringFromAnnotations(annotations, protocolLabelName, TCP))
             .internalName(serviceName)
             .internalIp(internalIp)
             .internalPort(portInfo.getTargetPort().getIntVal())
@@ -721,7 +743,8 @@ public class NatGatewayManager {
                                               globalConfigMapName, getServiceName(service), port));
             return false;
         }
-        final Set<String> activeRules = getActivePortForwardingRules(globalConfigMap);
+        final String portForwardingRuleKey = getPortForwardingRuleKey(activePorts, port);
+        final Set<String> activeRules = getActivePortForwardingRules(globalConfigMap, portForwardingRuleKey);
         final String externalIp = getServiceAnnotations(service).get(EXTERNAL_IP_LABEL);
         final String correspondingPortForwardingRule = getForwardingRule(externalIp, activePorts.get(port));
         if (!activeRules.contains(correspondingPortForwardingRule)) {
@@ -734,7 +757,15 @@ public class NatGatewayManager {
                                                         String.join(Constants.COMMA, activeRules));
     }
 
-    private Set<String> getActivePortForwardingRules(final Optional<ConfigMap> globalConfigMap) {
+    private String getPortForwardingRuleKey(final Map<Integer, ServicePort> activePorts, final Integer port) {
+        final String portProtocol = Optional.of(activePorts.get(port))
+            .map(ServicePort::getProtocol)
+            .orElse(TCP);
+        return portForwardingRuleMapping.get(portProtocol);
+    }
+
+    private Set<String> getActivePortForwardingRules(final Optional<ConfigMap> globalConfigMap,
+                                                     final String portForwardingRuleKey) {
         return globalConfigMap.map(ConfigMap::getData)
             .map(data -> data.get(portForwardingRuleKey))
             .map(portForwardingString -> portForwardingString.split(Constants.COMMA))
@@ -823,7 +854,8 @@ public class NatGatewayManager {
         if (!globalConfigMap.isPresent()) {
             return false;
         }
-        final Set<String> portForwardingRules = getActivePortForwardingRules(globalConfigMap);
+        final String portForwardingRuleKey = getPortForwardingRuleKey(activePorts, port);
+        final Set<String> portForwardingRules = getActivePortForwardingRules(globalConfigMap, portForwardingRuleKey);
         final String externalIp = getServiceAnnotations(service).get(EXTERNAL_IP_LABEL);
         final String newPortForwardingRule = getForwardingRule(externalIp, activePorts.get(port));
         if (portForwardingRules.contains(newPortForwardingRule)) {
@@ -850,14 +882,14 @@ public class NatGatewayManager {
     }
 
     private boolean addPortToService(final String serviceName, final Map<Integer, ServicePort> activePorts,
-                                     final Integer port) {
+                                     final Integer port, final String protocol) {
         if (!activePorts.containsKey(port)) {
             final Optional<Integer> newPort = kubernetesManager.generateFreeTargetPort();
             if (!newPort.isPresent()) {
                 return false;
             }
             final Optional<ServicePort> portAddingResult =
-                kubernetesManager.addPortToExistingService(serviceName, port, newPort.get());
+                kubernetesManager.addPortToExistingService(serviceName, port, newPort.get(), protocol);
             portAddingResult.ifPresent(servicePort -> {
                 updateStatusForRoutingRule(serviceName, port, NatRouteStatus.SERVICE_CONFIGURED);
                 activePorts.put(servicePort.getPort(), servicePort);
@@ -892,11 +924,20 @@ public class NatGatewayManager {
     }
 
     private String extractStringFromAnnotations(final Map<String, String> serviceLabels, final String labelName) {
-        return Optional.ofNullable(serviceLabels.get(labelName)).orElse(UNKNOWN);
+        return extractStringFromAnnotations(serviceLabels, labelName, UNKNOWN);
+    }
+
+    private String extractStringFromAnnotations(final Map<String, String> serviceLabels, final String labelName,
+                                                final String defaultValue) {
+        return Optional.ofNullable(serviceLabels.get(labelName)).orElse(defaultValue);
     }
 
     private String extractStringFromAnnotations(final Service service, final String labelName) {
         return Optional.ofNullable(getServiceAnnotations(service).get(labelName)).orElse(UNKNOWN);
+    }
+
+    private String getProtocolLabelName(final Integer port) {
+        return NAT_ROUTE_LABELS_PREFIX + "protocol-" + port;
     }
 
     private String getCurrentStatusLabelName(final Integer port) {

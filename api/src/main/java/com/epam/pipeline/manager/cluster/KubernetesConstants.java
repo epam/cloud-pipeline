@@ -84,6 +84,8 @@ public final class KubernetesConstants {
                     NETWORK_UNAVAILABLE, CONFIG_OK, PID_PRESSURE)
                     .collect(Collectors.toSet());
 
+    protected static final String TCP = "TCP";
+
     public static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
 
     static {
