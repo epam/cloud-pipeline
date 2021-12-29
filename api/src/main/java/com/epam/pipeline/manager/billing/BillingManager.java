@@ -25,6 +25,7 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -33,8 +34,11 @@ import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -48,12 +52,18 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.xcontent.ContextParser;
 import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.action.search.RestSearchAction;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -68,6 +78,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogra
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
@@ -94,7 +105,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -147,6 +160,111 @@ public class BillingManager {
             .map(entry -> new NamedXContentRegistry.Entry(Aggregation.class,
                                                           new ParseField(entry.getKey()), entry.getValue()))
             .collect(Collectors.toList());
+    }
+
+    public List<String> getAvailableFacetValues(final String field) {
+        try {
+            final SearchSourceBuilder searchSource = new SearchSourceBuilder().size(0);
+            addTermAggregationToSource(searchSource, field);
+
+            SearchRequest searchRequest = new SearchRequest()
+                    .indicesOptions(IndicesOptions.strictExpandOpen())
+                    .indices(billingHelper.indicesPattern())
+                    .source(searchSource);
+
+            SearchResponse response = elasticHelper.buildClient().search(searchRequest, RequestOptions.DEFAULT);
+            return buildFacets(response.getAggregations()).values()
+                    .stream()
+                    .flatMap(map -> map.keySet().stream())
+                    .distinct().collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return Collections.emptyList();
+    }
+
+    public FacetedSearchResult getAvailableFacets(final BillingChartRequest request) {
+        final Set<String> fields = getFieldsFromMapping();
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
+                .query(getFacetedQuery(request.getFilters()))
+                .size(0);
+
+        SetUtils.emptyIfNull(fields)
+                .forEach(facet -> addTermAggregationToSource(searchSource, facet));
+
+        SearchRequest searchRequest = new SearchRequest()
+                .indicesOptions(IndicesOptions.strictExpandOpen())
+                .indices(billingHelper.indicesPattern())
+                .source(searchSource);
+
+        try {
+            SearchResponse response = elasticHelper.buildClient().search(searchRequest, RequestOptions.DEFAULT);
+            return FacetedSearchResult.builder()
+                    .totalHits(response.getHits().getTotalHits())
+                    .facets(buildFacets(response.getAggregations()))
+                    .build();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return FacetedSearchResult.builder().build();
+    }
+
+    private QueryBuilder getFacetedQuery(final Map<String, List<String>> filters) {
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        MapUtils.emptyIfNull(filters)
+                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
+        return boolQueryBuilder;
+    }
+
+    private Set<String> getFieldsFromMapping() {
+        try {
+            GetMappingsResponse fieldMapping = elasticHelper.buildClient().indices()
+                    .getMapping(
+                            new GetMappingsRequest().indices(billingHelper.indicesPattern()),
+                            RequestOptions.DEFAULT
+                    );
+            return fieldMapping.mappings().values()
+                    .stream()
+                    .map(MappingMetaData::sourceAsMap)
+                    .flatMap(source -> {
+                        final Object properties = source.get("properties");
+                        if (properties instanceof Map) {
+                            return ((Map<String, Object>) properties).keySet().stream().filter(Objects::nonNull);
+                        }
+                        return Stream.empty();
+                    })
+                    .collect(Collectors.toSet());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return Collections.emptySet();
+    }
+
+    private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
+        return QueryBuilders.termsQuery(fieldName, values);
+    }
+
+    private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
+        searchSource.aggregation(billingHelper.aggregateBy(facet));
+    }
+
+    private Map<String, Map<String, Long>> buildFacets(final Aggregations aggregations) {
+        if (Objects.isNull(aggregations)) {
+            return Collections.emptyMap();
+        }
+        return MapUtils.emptyIfNull(aggregations.asMap()).entrySet().stream()
+                .map(e -> ImmutablePair.of(e.getKey(), buildFacetValues(e)))
+                .filter(p -> !p.getValue().isEmpty())
+                .collect(Collectors.toMap(ImmutablePair::getKey, ImmutablePair::getValue));
+    }
+
+    private Map<String, Long> buildFacetValues(final Map.Entry<String, Aggregation> entry) {
+        final Terms fieldAggregation = (Terms) entry.getValue();
+        if (Objects.isNull(fieldAggregation)) {
+            return Collections.emptyMap();
+        }
+        return ListUtils.emptyIfNull(fieldAggregation.getBuckets()).stream()
+                .collect(Collectors.toMap(Terms.Bucket::getKeyAsString, Terms.Bucket::getDocCount));
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {

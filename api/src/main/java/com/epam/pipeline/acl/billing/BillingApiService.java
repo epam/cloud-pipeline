@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.manager.billing.BillingManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,14 @@ public class BillingApiService {
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         return billingManager.getBillingChartInfo(request);
+    }
+
+    public List<String> getAvailableFacetValues(final String facet) {
+        return billingManager.getAvailableFacetValues(facet);
+    }
+
+    public FacetedSearchResult getAvailableFields(final BillingChartRequest request) {
+        return billingManager.getAvailableFacets(request);
     }
 
     public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {

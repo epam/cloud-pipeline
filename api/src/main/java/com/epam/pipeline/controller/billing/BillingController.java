@@ -22,12 +22,14 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -53,6 +55,28 @@ public class BillingController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<BillingChartInfo>> getBillingChartInfo(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getBillingChartInfo(request));
+    }
+
+    @RequestMapping(value = "/billing/facets", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Get info for available fields to filter on.",
+            notes = "Get info for available fields to filter on.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<FacetedSearchResult> getAvailableFacets(@RequestBody final BillingChartRequest request) {
+        return Result.success(billingApi.getAvailableFields(request));
+    }
+
+    @RequestMapping(value = "/billing/facets/values/{facet}", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Get info for available facet values to filter on.",
+            notes = "Get info for available facet values to filter on.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<String>> getAvailableFacetValues(@PathVariable final String facet) {
+        return Result.success(billingApi.getAvailableFacetValues(facet));
     }
 
     @RequestMapping(value = "/billing/charts/pagination", method = RequestMethod.POST)

@@ -130,6 +130,10 @@ public class BillingHelper {
                 .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
     }
 
+    public String indicesPattern() {
+        return billingIndicesMonthlyPattern;
+    }
+
     public String[] indicesByDate(final LocalDate from, final LocalDate to) {
         return indicesByDate(from, to, billingIndicesMonthlyPattern);
     }
