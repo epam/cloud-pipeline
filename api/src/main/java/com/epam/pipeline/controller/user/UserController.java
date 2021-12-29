@@ -56,6 +56,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -441,5 +442,16 @@ public class UserController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<ImpersonationStatus> getImpersonationStatus() {
         return Result.success(userApiService.getImpersonationStatus());
+    }
+
+    @GetMapping("/users/online")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads online users",
+            notes = "Loads online users",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Collection<PipelineUser>> getOnlineUsers() {
+        return Result.success(userApiService.getOnlineUsers());
     }
 }

@@ -35,6 +35,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -238,5 +239,10 @@ public class UserApiService {
 
     public ImpersonationStatus getImpersonationStatus() {
         return userManager.getImpersonationStatus();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userManager.getOnlineUsers();
     }
 }

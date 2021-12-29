@@ -450,6 +450,10 @@ public class UserManager {
         userDao.updateUser(loadedUser);
     }
 
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userDao.loadOnlineUsers();
+    }
+
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
         dataStorageManager.tryInitUserDefaultStorage(newUser)
                 .ifPresent(storageId -> {
