@@ -21,6 +21,7 @@ import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.user.PipelineUser;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -60,5 +61,9 @@ public class CloudPipelineAPIClient {
             return false;
         }
         return Boolean.parseBoolean(preference.getValue());
+    }
+
+    public List<Preference> getAllPreferences() {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllPreference()));
     }
 }

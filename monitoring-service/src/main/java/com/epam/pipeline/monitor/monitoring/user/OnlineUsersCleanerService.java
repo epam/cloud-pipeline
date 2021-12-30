@@ -18,6 +18,7 @@ package com.epam.pipeline.monitor.monitoring.user;
 
 import com.epam.pipeline.monitor.monitoring.AbstractSchedulingService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
+import com.epam.pipeline.monitor.service.preference.PreferencesService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
@@ -33,8 +34,9 @@ public class OnlineUsersCleanerService extends AbstractSchedulingService {
                                      final OnlineUsersCleanerServiceCore core,
                                      final CloudPipelineAPIClient client,
                                      @Value("${preference.name.usage.users.clean.delay}")
-                                     final String monitorDelayPreferenceName) {
-        super(scheduler, client);
+                                     final String monitorDelayPreferenceName,
+                                     final PreferencesService preferencesService) {
+        super(scheduler, client, preferencesService);
         this.core = core;
         this.monitorDelayPreferenceName = monitorDelayPreferenceName;
     }

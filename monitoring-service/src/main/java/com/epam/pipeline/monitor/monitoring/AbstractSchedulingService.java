@@ -17,6 +17,7 @@
 package com.epam.pipeline.monitor.monitoring;
 
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
+import com.epam.pipeline.monitor.service.preference.PreferencesService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.TaskScheduler;
 
@@ -31,12 +32,15 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class AbstractSchedulingService {
     protected final TaskScheduler scheduler;
     protected final CloudPipelineAPIClient client;
+    protected final PreferencesService preferencesService;
 
     protected final AtomicReference<ScheduledFuture<?>> scheduledFuture = new AtomicReference<>();
 
-    public AbstractSchedulingService(final TaskScheduler scheduler, final CloudPipelineAPIClient client) {
+    public AbstractSchedulingService(final TaskScheduler scheduler, final CloudPipelineAPIClient client,
+                                     final PreferencesService preferencesService) {
         this.scheduler = scheduler;
         this.client = client;
+        this.preferencesService = preferencesService;
     }
 
     /**
@@ -62,5 +66,15 @@ public abstract class AbstractSchedulingService {
      */
     protected void scheduleFixedDelay(final Runnable task, final String ratePreferenceName, final String taskName) {
         scheduleFixedDelay(task, client.getIntPreference(ratePreferenceName), taskName);
+        preferencesService.getObservablePreference(ratePreferenceName)
+                .subscribe(newRate -> rescheduleFixedDelay(task, taskName, Integer.parseInt(newRate)));
+    }
+
+    private void rescheduleFixedDelay(final Runnable task, final String taskName, final Integer rate) {
+        scheduledFuture.updateAndGet(future -> {
+            log.debug("Rescheduling {} with a new rate of {} ms", taskName, rate);
+            future.cancel(false);
+            return scheduler.scheduleWithFixedDelay(task, rate.longValue());
+        });
     }
 }

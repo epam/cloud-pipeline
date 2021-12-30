@@ -263,6 +263,9 @@ public interface CloudPipelineAPI {
     @GET("preferences/{key}")
     Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
 
+    @GET("preferences")
+    Call<Result<List<Preference>>> loadAllPreference();
+
     @GET("filesharemount/{id}")
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
 
