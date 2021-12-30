@@ -116,9 +116,12 @@ public class SystemPreferences {
     private static final String BILLING_GROUP = "Billing Reports";
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
+    private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
     private static final String FACETED_FILTER_GROUP = "Faceted Filter";
+
     public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
             new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
             new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
@@ -884,6 +887,10 @@ public class SystemPreferences {
             "billing.export.aggregation.page.size", 5000, BILLING_GROUP, pass);
     public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = new IntPreference(
             "billing.export.period.aggregation.page.size", 1000, BILLING_GROUP, pass);
+
+    // Billing quotas
+    public static final BooleanPreference BILLING_QUOTAS_ENABLED = new BooleanPreference(
+            "billing.quotas.enabled", false, BILLING_QUOTAS_GROUP, pass);
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(

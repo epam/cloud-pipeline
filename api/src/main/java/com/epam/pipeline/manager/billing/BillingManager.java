@@ -21,6 +21,8 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
+import com.epam.pipeline.dto.quota.Quota;
+import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -180,6 +182,39 @@ public class BillingManager {
 
     public List<String> getAllBillingCenters() {
         return metadataManager.loadUniqueValuesFromEntityClassMetadata(AclClass.PIPELINE_USER, billingCenterKey);
+    }
+
+    public Double getQuotaExpense(final Quota quota, final LocalDate from, final LocalDate to) {
+        try (RestHighLevelClient elasticsearchClient = elasticHelper.buildClient()) {
+            final HashMap<String, List<String>> filters = buildQuotaFilters(quota);
+            final SearchRequest searchRequest = new SearchRequest()
+                    .indicesOptions(IndicesOptions.strictExpandOpen())
+                    .indices(billingHelper.indicesByDate(from, to))
+                    .source(new SearchSourceBuilder()
+                            .size(0)
+                            .aggregation(billingHelper.aggregateCostSum())
+                            .query(billingHelper.queryByDateAndFilters(from, to, filters)));
+            final SearchResponse searchResponse = elasticsearchClient.search(searchRequest, RequestOptions.DEFAULT);
+            return Optional.ofNullable(searchResponse.getAggregations())
+                    .map(aggregations -> aggregations.<ParsedSum>get(BillingUtils.COST_FIELD))
+                    .map(ParsedSum::getValue)
+                    .orElse(null);
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new SearchException(e.getMessage(), e);
+        }
+    }
+
+    private HashMap<String, List<String>> buildQuotaFilters(final Quota quota) {
+        final HashMap<String, List<String>> filters = new HashMap<>();
+        Optional.ofNullable(quota.getQuotaGroup()
+                .getResourceType())
+                .ifPresent(resource -> filters.put(BillingGrouping.RESOURCE_TYPE.getCorrespondingField(),
+                        Collections.singletonList(resource)));
+        Optional.ofNullable(quota.getType())
+                .map(QuotaType::getFilterField)
+                .ifPresent(filter -> filters.put(filter, Collections.singletonList(quota.getSubject())));
+        return filters;
     }
 
     private void verifyPagingParameters(final BillingChartRequest request) {
@@ -499,5 +534,4 @@ public class BillingManager {
         }
         return builder.build();
     }
-
 }

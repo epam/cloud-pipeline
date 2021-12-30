@@ -22,7 +22,7 @@ import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaSidEntity;
-import com.epam.pipeline.entity.user.Sid;
+import com.epam.pipeline.entity.user.SidImpl;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.ArrayList;
@@ -109,14 +109,14 @@ public interface QuotaAssertions {
         assertThat(new ArrayList<>(first), hasItems(second.toArray()));
     }
 
-    static void assertQuotaSidEntitiesAndSids(final List<QuotaSidEntity> entities, final List<Sid> sids) {
+    static void assertQuotaSidEntitiesAndSids(final List<QuotaSidEntity> entities, final List<SidImpl> sids) {
         assertEmptyCollections(entities, sids);
         assertThat(entities.size(), is(sids.size()));
 
         assertThat(
                 entities.stream()
                         .map(entity -> {
-                            final Sid sid = new Sid();
+                            final SidImpl sid = new SidImpl();
                             sid.setName(entity.getName());
                             sid.setPrincipal(entity.isPrincipal());
                             return sid;

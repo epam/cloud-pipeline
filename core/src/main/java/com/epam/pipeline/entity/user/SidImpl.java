@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.nfs;
+package com.epam.pipeline.entity.user;
 
-import com.epam.pipeline.entity.user.Sid;
 import lombok.Data;
 
 @Data
-public class NFSQuotaNotificationRecipient implements Sid {
-
-    private final boolean principal;
-    private final String name;
+public class SidImpl implements Sid {
+    private String name;
+    private boolean principal = true;
 }

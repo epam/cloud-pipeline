@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.dto.quota;
 
-import com.epam.pipeline.entity.user.Sid;
+import com.epam.pipeline.entity.user.SidImpl;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -35,6 +35,6 @@ public class Quota {
     private QuotaPeriod period;
     private String subject;
     private Double value;
-    private List<Sid> recipients;
+    private List<SidImpl> recipients;
     private List<QuotaAction> actions;
 }

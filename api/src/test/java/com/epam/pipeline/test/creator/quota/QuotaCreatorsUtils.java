@@ -24,7 +24,7 @@ import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaSidEntity;
-import com.epam.pipeline.entity.user.Sid;
+import com.epam.pipeline.entity.user.SidImpl;
 import com.epam.pipeline.test.creator.CommonCreatorConstants;
 
 import java.util.ArrayList;
@@ -32,12 +32,12 @@ import java.util.Collections;
 import java.util.List;
 
 public interface QuotaCreatorsUtils {
-    String SUBJECT = "user";
+    String SUBJECT = "USER";
     Double VALUE = 100.0;
     Double THRESHOLD = 80.8;
     Long ID = 1L;
 
-    static Quota quota(final List<Sid> recipients) {
+    static Quota quota(final List<SidImpl> recipients) {
         return Quota.builder()
                 .id(ID)
                 .subject(SUBJECT)
@@ -85,8 +85,8 @@ public interface QuotaCreatorsUtils {
         return quotaSidEntity;
     }
 
-    static Sid quotaSid() {
-        final Sid quotaSid = new Sid();
+    static SidImpl quotaSid() {
+        final SidImpl quotaSid = new SidImpl();
         quotaSid.setName(CommonCreatorConstants.TEST_NAME);
         quotaSid.setPrincipal(true);
         return quotaSid;

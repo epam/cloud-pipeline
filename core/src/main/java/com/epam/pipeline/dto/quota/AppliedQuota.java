@@ -1,11 +1,10 @@
 /*
  * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,14 +13,27 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.nfs;
+package com.epam.pipeline.dto.quota;
 
-import com.epam.pipeline.entity.user.Sid;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
-public class NFSQuotaNotificationRecipient implements Sid {
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class AppliedQuota {
 
-    private final boolean principal;
-    private final String name;
+    private Long id;
+    private Quota quota;
+    private QuotaAction action;
+    private LocalDate from;
+    private LocalDate to;
+    private Double expense;
+    private LocalDateTime modified;
 }
