@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
-import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
+import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.utils.Conditions.expandedTab;
 import static com.epam.pipeline.autotests.utils.Json.selectProfileWithName;
@@ -66,20 +66,20 @@ public class Launch_InstanceConfigTest extends AbstractAutoRemovingPipelineRunni
                 .ensure(collapsiblePanel("Advanced"), visible, expandedTab)
                 .ensure(collapsiblePanel("Parameters"), visible, expandedTab)
                 .ensure(button("Add parameter"), visible, enabled)
-                .ensure(DOCKER_IMAGE, value(dockerImage));
+                .ensure(IMAGE, value(dockerImage));
     }
 
     @Test(dependsOnMethods = {"preparePipelineAndValidateInstanceType"})
     @TestCase("EPMCMBIBPC-369")
     public void validateDiskStorage() {
-        new PipelineRunFormAO(getPipelineName())
+        new PipelineRunFormAO()
                 .ensure(DISK, value(instanceDisk));
     }
 
     @Test(dependsOnMethods = {"validateDiskStorage"})
     @TestCase("EPMCMBIBPC-370")
     public void validateDockerImage() {
-        new PipelineRunFormAO(getPipelineName())
-                .ensure(DOCKER_IMAGE, value(dockerImage));
+        new PipelineRunFormAO()
+                .ensure(IMAGE, value(dockerImage));
     }
 }

@@ -21,6 +21,7 @@ import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
+import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -41,6 +42,7 @@ import static com.codeborne.selenide.CollectionCondition.texts;
 import static com.codeborne.selenide.Condition.attribute;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exactText;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
@@ -67,6 +69,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.backgroundColor;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 
@@ -120,7 +123,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
     public static By byPrimitive(final Primitive primitive) {
         return Optional.ofNullable(bys.get(primitive))
                 .orElseThrow(() -> new RuntimeException(
-                        String.format("%s was not specified with selector in + %s", primitive,
+                        format("%s was not specified with selector in + %s", primitive,
                                 ToolVersions.class.getSimpleName())
                 ));
     }
@@ -158,7 +161,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
             public List<WebElement> findElements(final SearchContext context) {
                 return $(".ant-table-body")
                         .findAll(".ant-table-row").stream()
-                        .filter(element -> text(version).apply(element))
+                        .filter(element -> exactText(version).apply(element.find(".tools__version-name")))
                         .collect(toList());
             }
         };
@@ -177,11 +180,11 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                                                     final String tool,
                                                     final String customTag) {
         $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(
+                .find(byXpath(format(
                         ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
-                .find(byId(String.format("run-%s-button", customTag))).shouldBe(visible).click();
+                .find(byId(format("run-%s-button", customTag))).shouldBe(visible).click();
         new RunsMenuAO()
-                .messageShouldAppear(String.format(
+                .messageShouldAppear(format(
                         "Are you sure you want to launch tool (version %s) with default settings?", customTag))
                 .click(button("Launch"));
         sleep(1, SECONDS);
@@ -191,17 +194,17 @@ public class ToolVersions extends ToolTab<ToolVersions> {
 
     public ToolVersions deleteVersion(String customTag) {
         $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
+                .find(byXpath(format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
                         customTag)))
                 .find(buttonByIconClass("anticon-delete")).shouldBe(visible).click();
         new ConfirmationPopupAO<>(new RunsMenuAO())
-                .messageShouldAppear(String.format("Are you sure you want to delete version '%s'?", customTag))
+                .messageShouldAppear(format("Are you sure you want to delete version '%s'?", customTag))
                 .delete();
         return this;
     }
 
     public PipelineRunFormAO runVersion(final String version) {
-        actions().click($(toolVersion(version)).find(byId(String.format("run-%s-button", version)))).perform();
+        actions().click($(toolVersion(version)).find(byId(format("run-%s-button", version)))).perform();
         return new PipelineRunFormAO();
     }
 
@@ -287,6 +290,14 @@ public class ToolVersions extends ToolTab<ToolVersions> {
 
     public ToolVersions scanVersion(final String version) {
         $(toolVersion(version)).find(scan).click();
+        return this;
+    }
+
+    public ToolVersions scanVersionIfNeeded(final String version) {
+        if (StringUtils.isBlank($(toolVersion(version)).find(".tools__os-column").text())) {
+            scanVersion(version)
+                    .validateScanningProcess(version);
+        }
         return this;
     }
 

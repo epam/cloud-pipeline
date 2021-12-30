@@ -490,6 +490,12 @@
         </classes>
     </test>
 
+    <test name="NATGatewayTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.NATGatewayTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
