@@ -198,7 +198,7 @@ public class BillingManager {
             return Optional.ofNullable(searchResponse.getAggregations())
                     .map(aggregations -> aggregations.<ParsedSum>get(BillingUtils.COST_FIELD))
                     .map(ParsedSum::getValue)
-                    .orElse(null);
+                    .orElse(0.0);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
