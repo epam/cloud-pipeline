@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.preference;
 import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -914,6 +915,10 @@ public class SystemPreferences {
             "billing.export.aggregation.page.size", 5000, BILLING_GROUP, pass);
     public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = new IntPreference(
             "billing.export.period.aggregation.page.size", 1000, BILLING_GROUP, pass);
+    public static final ObjectPreference<Map<String, BillingGrouping>> BILLING_FIELD_MAPPING = new ObjectPreference<>(
+            "billing.fields.mapping", Collections.emptyMap(),
+            new TypeReference<Map<String, BillingGrouping>>() {},
+            BILLING_GROUP, isNullOrValidJson(new TypeReference<Map<String, BillingGrouping>>() {}));
 
     // Billing quotas
     public static final BooleanPreference BILLING_QUOTAS_ENABLED = new BooleanPreference(
