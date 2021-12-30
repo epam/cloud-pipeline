@@ -485,6 +485,7 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRED)
     public void notifyOnBillingQuotaExceeding(final AppliedQuota appliedQuota) {
         Optional.ofNullable(getNotificationSettings(NotificationType.BILLING_QUOTA_EXCEEDING))
                 .ifPresent(settings -> {
