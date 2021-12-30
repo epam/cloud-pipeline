@@ -23,6 +23,7 @@ import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import org.testng.internal.collections.Pair;
 
@@ -53,11 +54,25 @@ import static org.testng.Assert.assertNotEquals;
 
 public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements Authorization {
 
+    private static final int NAT_PROXY_SERVER_NAMES_SIZE = 4;
+
+    static {
+        if (C.NAT_PROXY_SERVER_NAMES.isEmpty() || C.NAT_PROXY_SERVER_NAMES.size() < NAT_PROXY_SERVER_NAMES_SIZE) {
+            throw new IllegalArgumentException(
+                    format("Nat proxy server names is not defined or not enough. It should be set %s server names",
+                            NAT_PROXY_SERVER_NAMES_SIZE));
+        }
+        SERVER_NAME_1 = C.NAT_PROXY_SERVER_NAMES.get(0);
+        SERVER_NAME_2 = C.NAT_PROXY_SERVER_NAMES.get(1);
+        SERVER_NAME_3 = C.NAT_PROXY_SERVER_NAMES.get(2);
+        SERVER_NAME_4 = C.NAT_PROXY_SERVER_NAMES.get(3);
+    }
+
     private static final String FIELD_IS_REQUIRED_WARNING = "Field is required";
-    private static final String GOOGLE_COM_SERVER_NAME = "google.com";
-    private static final String YAHOO_COM_SERVER_NAME = "yahoo.com";
-    private static final String DUCKDUCKGO_COM_SERVER_NAME = "duckduckgo.com";
-    private static final String BING_COM_SERVER_NAME = "bing.com";
+    private static final String SERVER_NAME_1;
+    private static final String SERVER_NAME_2;
+    private static final String SERVER_NAME_3;
+    private static final String SERVER_NAME_4;
     private static final String PORT_80 = "80";
     private static final String PORT_443 = "443";
     private static final String COMMENT_1 = "port1";
@@ -69,9 +84,30 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
-    private String google80ExternalIPAddress;
-    private String google80InternalIPAddress;
-    private String yahoo80InternalIPAddress;
+    private String server1Port80ExternalIPAddress;
+    private String server1Port80InternalIPAddress;
+    private String server2Port80InternalIPAddress;
+
+    @BeforeClass
+    public void checkExistenceRoutes() {
+        final NATGatewayAO natGatewayAO = navigationMenu()
+                .settings()
+                .switchToSystemManagement()
+                .switchToNATGateway()
+                .sleep(2, SECONDS);
+        Stream.of(
+                Pair.of(SERVER_NAME_1, PORT_80),
+                Pair.of(SERVER_NAME_1, PORT_443),
+                Pair.of(SERVER_NAME_2, PORT_80),
+                Pair.of(SERVER_NAME_2, PORT_443),
+                Pair.of(SERVER_NAME_3, PORT_80),
+                Pair.of(SERVER_NAME_3, PORT_443),
+                Pair.of(SERVER_NAME_4, PORT_80),
+                Pair.of(SERVER_NAME_4, PORT_443)
+                )
+                .filter(p -> natGatewayAO.routeRecordExist(p.first(), p.second()))
+                .forEach(p -> deleteRoute(p.first(), p.second()));
+    }
 
     @AfterClass(alwaysRun = true)
     public void cleanup() {
@@ -79,13 +115,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         logoutIfNeeded();
         loginAs(admin);
         Stream.of(
-                Pair.of(google80ExternalIPAddress, PORT_80),
-                Pair.of(google80ExternalIPAddress, PORT_443),
-                Pair.of(YAHOO_COM_SERVER_NAME, PORT_80),
-                Pair.of(DUCKDUCKGO_COM_SERVER_NAME, PORT_80),
-                Pair.of(DUCKDUCKGO_COM_SERVER_NAME, PORT_443),
-                Pair.of(BING_COM_SERVER_NAME, PORT_80),
-                Pair.of(BING_COM_SERVER_NAME, PORT_443)
+                Pair.of(SERVER_NAME_1, PORT_80),
+                Pair.of(SERVER_NAME_1, PORT_443),
+                Pair.of(SERVER_NAME_2, PORT_80),
+                Pair.of(SERVER_NAME_2, PORT_443),
+                Pair.of(SERVER_NAME_3, PORT_80),
+                Pair.of(SERVER_NAME_3, PORT_443),
+                Pair.of(SERVER_NAME_4, PORT_80),
+                Pair.of(SERVER_NAME_4, PORT_443)
         ).forEach(p -> deleteRoute(p.first(), p.second()));
     }
 
@@ -112,7 +149,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .checkFieldWarning(IP, FIELD_IS_REQUIRED_WARNING)
                 .checkFieldWarning(PORT, FIELD_IS_REQUIRED_WARNING)
                 .clear(SERVER_NAME)
-                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_1)
                 .click(COMMENT)
                 .sleep(2, SECONDS)
                 .checkIPAddress()
@@ -129,7 +166,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         natAddRouteAO
                 .addRoute()
                 .ensure(SAVE, visible, enabled)
-                .checkRouteRecord(ipAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
+                .checkRouteRecord(ipAddress, SERVER_NAME_1, PORT_80)
                 .ensure(REVERT, visible, enabled)
                 .click(REVERT)
                 .ensure(SAVE, visible, disabled)
@@ -147,25 +184,25 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .sleep(1, SECONDS)
                 .addRoute()
                 .click(SPECIFY_IP)
-                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_1)
                 .click(COMMENT)
                 .sleep(2, SECONDS)
                 .checkIPAddress()
                 .setValue(PORT, PORT_80)
                 .ensure(ADD, enabled)
                 .setValue(COMMENT, COMMENT_1);
-        google80ExternalIPAddress = natAddRouteAO.getIPAddress();
-        google80InternalIPAddress = natAddRouteAO
+        server1Port80ExternalIPAddress = natAddRouteAO.getIPAddress();
+        server1Port80InternalIPAddress = natAddRouteAO
                 .addRoute()
-                .checkRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, PORT_80)
+                .checkRouteRecord(server1Port80ExternalIPAddress, SERVER_NAME_1, PORT_80)
                 .sleep(2, SECONDS)
                 .click(SAVE)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
-                .checkCreationScheduled(google80ExternalIPAddress, PORT_80)
-                .waitRouteRecordCreationScheduled(google80ExternalIPAddress, PORT_80)
-                .checkActiveRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, COMMENT_1, PORT_80)
-                .getInternalIP(google80ExternalIPAddress, PORT_80);
+                .checkCreationScheduled(server1Port80ExternalIPAddress, PORT_80)
+                .waitRouteRecordCreationScheduled(server1Port80ExternalIPAddress, PORT_80)
+                .checkActiveRouteRecord(server1Port80ExternalIPAddress, SERVER_NAME_1, COMMENT_1, PORT_80)
+                .getInternalIP(server1Port80ExternalIPAddress, PORT_80);
         tools().perform(registry, group, tool, tool -> tool.run(this))
                 .showLog(getRunId())
                 .waitForSshLink()
@@ -173,51 +210,51 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, GOOGLE_COM_SERVER_NAME))
+                        .execute(format(COMMAND_2, SERVER_NAME_1))
                         .sleep(3, SECONDS)
-                        .assertOutputContains(format(TRYING_FORMAT, google80InternalIPAddress),
-                                format(CONNECTED_FORMAT, GOOGLE_COM_SERVER_NAME, google80InternalIPAddress, PORT_80))
+                        .assertOutputContains(format(TRYING_FORMAT, server1Port80InternalIPAddress),
+                                format(CONNECTED_FORMAT, SERVER_NAME_1, server1Port80InternalIPAddress, PORT_80))
                         .close());
     }
 
     @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
     @TestCase(value = {"2232_3"})
     public void checkNewRouteCreationWithoutSpecifiedIPAddress() {
-        yahoo80InternalIPAddress = navigationMenu()
+        server2Port80InternalIPAddress = navigationMenu()
                 .settings()
                 .switchToSystemManagement()
                 .switchToNATGateway()
                 .sleep(1, SECONDS)
                 .addRoute()
-                .setServerName(YAHOO_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_2)
                 .setValue(PORT, PORT_80)
                 .setValue(COMMENT, COMMENT_1)
                 .addRoute()
-                .checkRouteRecordByServerName(YAHOO_COM_SERVER_NAME, PORT_80)
+                .checkRouteRecordByServerName(SERVER_NAME_2, PORT_80)
                 .click(SAVE)
                 .ensure(SAVE, visible, disabled)
                 .ensure(REVERT, visible, disabled)
-                .checkCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_80)
-                .waitRouteRecordCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_80)
-                .checkActiveRouteRecord(StringUtils.EMPTY, YAHOO_COM_SERVER_NAME, COMMENT_1, PORT_80)
-                .getInternalIP(YAHOO_COM_SERVER_NAME, PORT_80);
+                .checkCreationScheduled(SERVER_NAME_2, PORT_80)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_2, PORT_80)
+                .checkActiveRouteRecord(StringUtils.EMPTY, SERVER_NAME_2, COMMENT_1, PORT_80)
+                .getInternalIP(SERVER_NAME_2, PORT_80);
         runsMenu()
                 .showLog(getRunId())
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, YAHOO_COM_SERVER_NAME))
+                        .execute(format(COMMAND_2, SERVER_NAME_2))
                         .sleep(3, SECONDS)
-                        .assertOutputContains(format(TRYING_FORMAT, yahoo80InternalIPAddress),
-                                format(CONNECTED_FORMAT, YAHOO_COM_SERVER_NAME, yahoo80InternalIPAddress, PORT_80))
+                        .assertOutputContains(format(TRYING_FORMAT, server2Port80InternalIPAddress),
+                                format(CONNECTED_FORMAT, SERVER_NAME_2, server2Port80InternalIPAddress, PORT_80))
                         .close());
     }
 
     @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress")
     @TestCase(value = {"2232_4"})
     public void checkRouteWithExistingNameAndDifferentIP() {
-        final String[] eightBitNumbers = google80ExternalIPAddress.split("\\.");
+        final String[] eightBitNumbers = server1Port80ExternalIPAddress.split("\\.");
         final String invalidExternalIP = format("%s.%s.%s.%s", eightBitNumbers[3], eightBitNumbers[2],
                 eightBitNumbers[1], eightBitNumbers[0]);
         navigationMenu()
@@ -226,17 +263,17 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToNATGateway()
                 .sleep(1, SECONDS)
                 .addRoute()
-                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_1)
                 .click(SPECIFY_IP)
                 .clear(IP)
                 .setValue(IP, invalidExternalIP)
                 .setValue(PORT, PORT_443)
                 .addRoute()
-                .checkRouteRecord(invalidExternalIP, GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkRouteRecord(invalidExternalIP, SERVER_NAME_1, PORT_443)
                 .click(SAVE)
-                .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .checkFailedRouteRecord(invalidExternalIP, GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkCreationScheduled(SERVER_NAME_1, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_1, PORT_443)
+                .checkFailedRouteRecord(invalidExternalIP, SERVER_NAME_1, PORT_443)
                 .deleteRoute(invalidExternalIP, PORT_443)
                 .click(SAVE)
                 .waitRouteRecordTerminationScheduled(invalidExternalIP, PORT_443)
@@ -251,18 +288,18 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToSystemManagement()
                 .switchToNATGateway()
                 .addRoute()
-                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_1)
                 .setValue(PORT, PORT_443)
                 .addRoute()
-                .checkRouteRecordByServerName(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkRouteRecordByServerName(SERVER_NAME_1, PORT_443)
                 .click(SAVE)
-                .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .checkFailedRouteRecord("", GOOGLE_COM_SERVER_NAME, PORT_443)
-                .deleteRoute(GOOGLE_COM_SERVER_NAME, PORT_443)
+                .checkCreationScheduled(SERVER_NAME_1, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_1, PORT_443)
+                .checkFailedRouteRecord("", SERVER_NAME_1, PORT_443)
+                .deleteRoute(SERVER_NAME_1, PORT_443)
                 .click(SAVE)
-                .waitRouteRecordTerminationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .checkNoRouteRecord(GOOGLE_COM_SERVER_NAME, PORT_443);
+                .waitRouteRecordTerminationScheduled(SERVER_NAME_1, PORT_443)
+                .checkNoRouteRecord(SERVER_NAME_1, PORT_443);
     }
 
     @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress",
@@ -274,7 +311,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToSystemManagement()
                 .switchToNATGateway()
                 .addRoute()
-                .setServerName(YAHOO_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_2)
                 .click(SPECIFY_IP)
                 .setValue(PORT, PORT_443);
         final String externalIPAddress = natAddRouteAO.getIPAddress();
@@ -283,7 +320,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .click(SAVE)
                 .checkCreationScheduled(externalIPAddress, PORT_443)
                 .waitRouteRecordCreationScheduled(externalIPAddress, PORT_443)
-                .checkFailedRouteRecord(externalIPAddress, YAHOO_COM_SERVER_NAME, PORT_443)
+                .checkFailedRouteRecord(externalIPAddress, SERVER_NAME_2, PORT_443)
                 .deleteRoute(externalIPAddress, PORT_443)
                 .click(SAVE)
                 .waitRouteRecordTerminationScheduled(externalIPAddress, PORT_443)
@@ -298,29 +335,29 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToSystemManagement()
                 .switchToNATGateway()
                 .addRoute()
-                .setServerName(GOOGLE_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_1)
                 .click(SPECIFY_IP)
                 .clear(IP)
-                .setValue(IP, google80ExternalIPAddress)
+                .setValue(IP, server1Port80ExternalIPAddress)
                 .setValue(PORT, PORT_80)
                 .checkFieldWarning(PORT, "Value should be unique")
                 .clear(PORT)
                 .setValue(PORT, PORT_443)
                 .addRoute()
                 .click(SAVE)
-                .checkCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .waitRouteRecordCreationScheduled(GOOGLE_COM_SERVER_NAME, PORT_443)
-                .checkActiveRouteRecord(google80ExternalIPAddress, GOOGLE_COM_SERVER_NAME, "", PORT_443);
+                .checkCreationScheduled(SERVER_NAME_1, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_1, PORT_443)
+                .checkActiveRouteRecord(server1Port80ExternalIPAddress, SERVER_NAME_1, "", PORT_443);
         runsMenu()
                 .showLog(getRunId())
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", GOOGLE_COM_SERVER_NAME, PORT_443)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_1, PORT_443)))
                         .sleep(3, SECONDS)
-                        .assertOutputContains(format(TRYING_FORMAT, google80InternalIPAddress),
-                                format(CONNECTED_FORMAT, GOOGLE_COM_SERVER_NAME, google80InternalIPAddress, PORT_443))
+                        .assertOutputContains(format(TRYING_FORMAT, server1Port80InternalIPAddress),
+                                format(CONNECTED_FORMAT, SERVER_NAME_1, server1Port80InternalIPAddress, PORT_443))
                         .close());
     }
 
@@ -332,26 +369,26 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToSystemManagement()
                 .switchToNATGateway()
                 .addRoute()
-                .setServerName(YAHOO_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_2)
                 .setValue(PORT, PORT_80)
                 .checkFieldWarning(PORT, "Value should be unique")
                 .clear(PORT)
                 .setValue(PORT, PORT_443)
                 .addRoute()
                 .click(SAVE)
-                .checkCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_443)
-                .waitRouteRecordCreationScheduled(YAHOO_COM_SERVER_NAME, PORT_443)
-                .checkActiveRouteRecord(yahoo80InternalIPAddress, YAHOO_COM_SERVER_NAME, "", PORT_443);
+                .checkCreationScheduled(SERVER_NAME_2, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_2, PORT_443)
+                .checkActiveRouteRecord(server2Port80InternalIPAddress, SERVER_NAME_2, "", PORT_443);
         runsMenu()
                 .showLog(getRunId())
                 .ssh(shell -> shell
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", YAHOO_COM_SERVER_NAME, PORT_443)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_2, PORT_443)))
                         .sleep(3, SECONDS)
-                        .assertOutputContains(format(TRYING_FORMAT, yahoo80InternalIPAddress),
-                                format(CONNECTED_FORMAT, YAHOO_COM_SERVER_NAME, yahoo80InternalIPAddress, PORT_443))
+                        .assertOutputContains(format(TRYING_FORMAT, server2Port80InternalIPAddress),
+                                format(CONNECTED_FORMAT, SERVER_NAME_2, server2Port80InternalIPAddress, PORT_443))
                         .close());
     }
 
@@ -364,15 +401,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         final NATGatewayAO natGatewayAO = systemManagementAO
                 .switchToNATGateway()
                 .addRoute()
-                .setServerName(DUCKDUCKGO_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_3)
                 .setValue(PORT, PORT_80)
                 .click(ADD_PORT)
                 .ensure(ADD, disabled)
                 .addMorePorts(PORT_443)
                 .ensure(ADD, enabled)
                 .addRoute()
-                .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
-                .checkRouteRecord(DUCKDUCKGO_COM_SERVER_NAME, DUCKDUCKGO_COM_SERVER_NAME, PORT_443)
+                .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_80)
+                .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_443)
                 .sleep(1, SECONDS);
         systemManagementAO
                 .click(SYSTEM_LOGS_TAB)
@@ -382,14 +419,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .sleep(2, SECONDS);
         final String internalIPPort80 = natGatewayAO
                 .click(SAVE)
-                .checkCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
-                .checkCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_443)
-                .waitRouteRecordCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_80)
-                .waitRouteRecordCreationScheduled(DUCKDUCKGO_COM_SERVER_NAME, PORT_443)
-                .getInternalIP(DUCKDUCKGO_COM_SERVER_NAME, PORT_80);
-        final String internalIPPort443 = natGatewayAO.getInternalIP(DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
-        final String internalPortPort80 = natGatewayAO.getInternalPort(DUCKDUCKGO_COM_SERVER_NAME, PORT_80);
-        final String internalPortPort443 = natGatewayAO.getInternalPort(DUCKDUCKGO_COM_SERVER_NAME, PORT_443);
+                .checkCreationScheduled(SERVER_NAME_3, PORT_80)
+                .checkCreationScheduled(SERVER_NAME_3, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_3, PORT_80)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_3, PORT_443)
+                .getInternalIP(SERVER_NAME_3, PORT_80);
+        final String internalIPPort443 = natGatewayAO.getInternalIP(SERVER_NAME_3, PORT_443);
+        final String internalPortPort80 = natGatewayAO.getInternalPort(SERVER_NAME_3, PORT_80);
+        final String internalPortPort443 = natGatewayAO.getInternalPort(SERVER_NAME_3, PORT_443);
         assertEquals(internalIPPort80, internalIPPort443);
         assertNotEquals(internalPortPort80, internalPortPort443);
         runsMenu()
@@ -398,15 +435,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", DUCKDUCKGO_COM_SERVER_NAME, PORT_80)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_3, PORT_80)))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
-                                format(CONNECTED_FORMAT, DUCKDUCKGO_COM_SERVER_NAME, internalIPPort80, PORT_80))
+                                format(CONNECTED_FORMAT, SERVER_NAME_3, internalIPPort80, PORT_80))
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", DUCKDUCKGO_COM_SERVER_NAME, PORT_443)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_3, PORT_443)))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
-                                format(CONNECTED_FORMAT, DUCKDUCKGO_COM_SERVER_NAME, internalIPPort80, PORT_443))
+                                format(CONNECTED_FORMAT, SERVER_NAME_3, internalIPPort80, PORT_443))
                         .close());
     }
 
@@ -419,14 +456,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .switchToNATGateway()
                 .sleep(1, SECONDS)
                 .addRoute()
-                .setServerName(BING_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_4)
                 .click(SPECIFY_IP)
                 .setValue(PORT, PORT_80)
                 .setValue(COMMENT, COMMENT_1)
                 .addRoute()
                 .sleep(1, SECONDS)
                 .addRoute()
-                .setServerName(BING_COM_SERVER_NAME)
+                .setServerName(SERVER_NAME_4)
                 .click(SPECIFY_IP)
                 .sleep(1, SECONDS)
                 .setValue(PORT, PORT_443)
@@ -434,16 +471,16 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .addRoute()
                 .sleep(2, SECONDS)
                 .click(SAVE)
-                .checkCreationScheduled(BING_COM_SERVER_NAME, PORT_80)
-                .checkCreationScheduled(BING_COM_SERVER_NAME, PORT_443)
-                .waitRouteRecordCreationScheduled(BING_COM_SERVER_NAME, PORT_80)
-                .waitRouteRecordCreationScheduled(BING_COM_SERVER_NAME, PORT_443);
-        final String internalIPPort80 = natGatewayAO.getInternalIP(BING_COM_SERVER_NAME, PORT_80);
-        final String internalIPPort443 = natGatewayAO.getInternalIP(BING_COM_SERVER_NAME, PORT_443);
-        final String internalPortPort80 = natGatewayAO.getInternalPort(BING_COM_SERVER_NAME, PORT_80);
-        final String internalPortPort443 = natGatewayAO.getInternalPort(BING_COM_SERVER_NAME, PORT_443);
-        final String commentPort80 = natGatewayAO.getComment(BING_COM_SERVER_NAME, PORT_80);
-        final String commentPort443 = natGatewayAO.getComment(BING_COM_SERVER_NAME, PORT_443);
+                .checkCreationScheduled(SERVER_NAME_4, PORT_80)
+                .checkCreationScheduled(SERVER_NAME_4, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_4, PORT_80)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_4, PORT_443);
+        final String internalIPPort80 = natGatewayAO.getInternalIP(SERVER_NAME_4, PORT_80);
+        final String internalIPPort443 = natGatewayAO.getInternalIP(SERVER_NAME_4, PORT_443);
+        final String internalPortPort80 = natGatewayAO.getInternalPort(SERVER_NAME_4, PORT_80);
+        final String internalPortPort443 = natGatewayAO.getInternalPort(SERVER_NAME_4, PORT_443);
+        final String commentPort80 = natGatewayAO.getComment(SERVER_NAME_4, PORT_80);
+        final String commentPort443 = natGatewayAO.getComment(SERVER_NAME_4, PORT_443);
         assertEquals(internalIPPort80, internalIPPort443);
         assertNotEquals(internalPortPort80, internalPortPort443);
         assertNotEquals(commentPort80, commentPort443);
@@ -454,15 +491,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", BING_COM_SERVER_NAME, PORT_80)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_4, PORT_80)))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
-                                format(CONNECTED_FORMAT, BING_COM_SERVER_NAME, internalIPPort80, PORT_80))
+                                format(CONNECTED_FORMAT, SERVER_NAME_4, internalIPPort80, PORT_80))
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", BING_COM_SERVER_NAME, PORT_443)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_4, PORT_443)))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
-                                format(CONNECTED_FORMAT, BING_COM_SERVER_NAME, internalIPPort80, PORT_443))
+                                format(CONNECTED_FORMAT, SERVER_NAME_4, internalIPPort80, PORT_443))
                         .close());
     }
 
@@ -474,9 +511,6 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .settings()
                 .switchToSystemManagement()
                 .switchToNATGateway()
-                .deleteRoute(externalIPAddress, port)
-                .sleep(1, SECONDS)
-                .click(SAVE)
-                .sleep(1, SECONDS);
+                .deleteRouteIfExists(externalIPAddress, port);
     }
 }

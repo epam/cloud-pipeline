@@ -195,12 +195,31 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                     : $(routeByName(externalIPAddressOrServerName, port));
     }
 
+    public boolean routeRecordExist(final String externalIPAddressOrServerName, final String port) {
+        return getRouteRecord(externalIPAddressOrServerName, port).has(visible);
+    }
+
     public NATGatewayAO deleteRoute(final String externalIPAddressOrServerName, final String port) {
         final SelenideElement route = getRouteRecord(externalIPAddressOrServerName, port);
         route.find(".at-getaway-configuration__actions-column")
                 .find(byClassName("ant-btn-danger"))
                 .shouldBe(visible)
                 .click();
+        return this;
+    }
+
+    public NATGatewayAO deleteRouteIfExists(final String externalIPAddressOrServerName, final String port) {
+        performIf(getRouteRecord(externalIPAddressOrServerName, port).has(visible), route -> {
+            getRouteRecord(externalIPAddressOrServerName, port)
+                    .find(".at-getaway-configuration__actions-column")
+                    .find(byClassName("ant-btn-danger"))
+                    .shouldBe(visible)
+                    .click();
+            sleep(1, SECONDS)
+                    .click(SAVE)
+                    .sleep(1, SECONDS)
+                    .waitRouteRecordTerminationScheduled(externalIPAddressOrServerName, port);
+        });
         return this;
     }
 
