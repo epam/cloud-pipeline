@@ -82,7 +82,10 @@ public class StopJobsQuotaHandler implements QuotaHandler {
         if (QuotaType.OVERALL.equals(quota.getType())) {
             return activeRuns;
         }
-        final Collection<PipelineUser> affectedUsers = findAffectedUsers(quota);
+        final Collection<PipelineUser> affectedUsers = findAffectedUsers(quota)
+                .stream()
+                .filter(user -> !user.isAdmin())
+                .collect(Collectors.toList());
         if (CollectionUtils.isEmpty(affectedUsers)) {
             return Collections.emptyList();
         }
