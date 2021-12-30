@@ -35,6 +35,7 @@ import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
@@ -87,7 +88,8 @@ public class Profile implements AccessObject<Profile> {
                 entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
                 entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
                 entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud Region')]"))
-                        .closest(".ant-row").find(by("role", "combobox")))
+                        .closest(".ant-row").find(by("role", "combobox"))),
+                entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
         );
     }
 
@@ -156,6 +158,10 @@ public class Profile implements AccessObject<Profile> {
         return runForm.clickAddOutputParameter();
     }
 
+    public PipelineRunFormAO.SystemParameterPopupAO<PipelineRunFormAO> addSystemParameter() {
+        return runForm.clickAddSystemParameter();
+    }
+
     @Override
     public SelenideElement context() {
         return context;
@@ -167,11 +173,12 @@ public class Profile implements AccessObject<Profile> {
     }
 
     public Profile waitUntilSaveEnding(final String name) {
-        for (int i = 0; i < 3; i++) {
-            if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
-                sleep(3, SECONDS);
-                break;
-            }
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
         }
         return this;
     }

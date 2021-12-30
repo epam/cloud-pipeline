@@ -21,6 +21,7 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
+import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
@@ -88,6 +89,16 @@ public class QuotaServiceTest {
         final Quota quota = quota(null);
         quota.setQuotaGroup(QuotaGroup.GLOBAL);
         doReturn(quotaEntity(null)).when(quotaRepository).findByQuotaGroup(QuotaGroup.GLOBAL);
+        assertThrows(IllegalArgumentException.class, () -> quotaService.create(quota));
+    }
+
+    @Test
+    public void shouldFailCreateIfOverallQuotaAlreadyExists() {
+        final Quota quota = quota(null);
+        quota.setQuotaGroup(QuotaGroup.STORAGE);
+        quota.setType(QuotaType.OVERALL);
+        doReturn(quotaEntity(null)).when(quotaRepository)
+                .findByQuotaGroupAndType(QuotaGroup.STORAGE, QuotaType.OVERALL);
         assertThrows(IllegalArgumentException.class, () -> quotaService.create(quota));
     }
 

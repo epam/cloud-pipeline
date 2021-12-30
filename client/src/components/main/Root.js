@@ -149,7 +149,6 @@ const Root = () =>
       allowedInstanceTypes,
       searchEngine,
       configurationSchedules,
-      quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
       userMetadataKeys,

@@ -140,6 +140,12 @@ public class AuthManager {
         }
     }
 
+    public void setCurrentUser(final PipelineUser pipelineUser) {
+        final UserContext user = new UserContext(pipelineUser);
+        SecurityContextHolder.getContext()
+                .setAuthentication(new JwtAuthenticationToken(user, user.getAuthorities()));
+    }
+
     public ImpersonationStatus getImpersonationStatus() {
         final PipelineUser activeUser = getCurrentUser();
         return getAuthentication().getAuthorities().stream()

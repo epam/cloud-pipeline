@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import ExportFormats from './export-formats';
 import Discounts from '../discounts';
-import {getPeriod} from '../periods';
+import {getPeriod} from '../../navigation/periods';
 import exportBillingURL from '../../../../models/billing/export';
 
 class ExportConsumer extends React.Component {
@@ -125,21 +125,12 @@ class ExportConsumer extends React.Component {
   };
 
   render () {
-    const {className, children} = this.props;
-    return (
-      <div className={className}>
-        {children}
-      </div>
-    );
+    const {children} = this.props;
+    return children;
   }
 }
 
 ExportConsumer.propTypes = {
-  className: PropTypes.string,
-  composers: PropTypes.arrayOf(PropTypes.shape({
-    composer: PropTypes.func,
-    options: PropTypes.array
-  })),
   discounts: PropTypes.shape({
     compute: PropTypes.func,
     storage: PropTypes.func,
@@ -149,22 +140,16 @@ ExportConsumer.propTypes = {
   exportConfiguration: PropTypes.object
 };
 
-ExportConsumer.defaultProps = {
-  composers: []
-};
-
 const ExportConsumerInjected = inject('export')(
   observer(ExportConsumer)
 );
 
-function ExportConsumerWithDiscounts ({className, composers, children, exportConfiguration}) {
+function ExportConsumerWithDiscounts ({children, exportConfiguration}) {
   return (
     <Discounts.Consumer>
       {
         (computeDiscounts, storageDiscounts, computeDiscountValue, storageDiscountValue) => (
           <ExportConsumerInjected
-            className={className}
-            composers={composers}
             discounts={{
               compute: computeDiscounts,
               storage: storageDiscounts,
@@ -182,11 +167,6 @@ function ExportConsumerWithDiscounts ({className, composers, children, exportCon
 }
 
 ExportConsumerWithDiscounts.propTypes = {
-  className: PropTypes.string,
-  composers: PropTypes.arrayOf(PropTypes.shape({
-    composer: PropTypes.func,
-    options: PropTypes.array
-  })),
   discounts: PropTypes.shape({
     compute: PropTypes.func,
     storage: PropTypes.func,
@@ -194,10 +174,6 @@ ExportConsumerWithDiscounts.propTypes = {
     storageValue: PropTypes.number
   }),
   exportConfiguration: PropTypes.object
-};
-
-ExportConsumerWithDiscounts.defaultProps = {
-  composers: []
 };
 
 export default ExportConsumerWithDiscounts;

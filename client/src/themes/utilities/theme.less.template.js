@@ -449,6 +449,9 @@ export default `
   color: @application-color;
   border-color: @panel-border-color;
 }
+@THEME .ant-menu > .ant-menu-item-divider {
+  background-color: @panel-border-color;
+}
 @THEME .ant-menu > .ant-menu-item > a,
 @THEME .ant-menu > .ant-menu-submenu > a {
   color: currentColor;
@@ -915,7 +918,8 @@ export default `
   border-color: @panel-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-divider {
   background-color: @panel-border-color;
 }
 @THEME .ant-select-selection__placeholder,
@@ -2020,6 +2024,9 @@ export default `
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
+@THEME .cp-billing-layout .react-grid-item {
+  transition: none;
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
@@ -2446,7 +2453,10 @@ export default `
 @THEME .cp-cluster-node-even-row {
   background-color: @even-element-background;
 }
-
+@THEME .cp-filter-popover-item:hover {
+  background-color: @element-hover-background-color;
+  color: @application-color;
+}
 @THEME .cp-settings-sidebar-element:not(.cp-table-element-disabled) {
   cursor: pointer;
 }

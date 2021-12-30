@@ -50,7 +50,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -112,8 +111,8 @@ public class NFSQuotasMonitor {
         final Map<String, Set<String>> storageSizeMasksMapping = dataStorageManager.loadSizeCalculationMasksMapping();
         nfsDataStorages.forEach(storage -> {
             final NFSStorageMountStatus statusUpdate = Optional.ofNullable(activeQuotas.get(storage.getId()))
-                .map(quota -> processActiveQuota(quota, storage, storageSizeMasksMapping
-                    .getOrDefault(storage.getName(), Collections.emptySet())))
+                .map(quota -> processActiveQuota(
+                    quota, storage, dataStorageManager.resolveSizeMasks(storageSizeMasksMapping, storage)))
                 .orElse(NFSStorageMountStatus.ACTIVE);
             dataStorageManager.updateMountStatus(storage, statusUpdate);
         });

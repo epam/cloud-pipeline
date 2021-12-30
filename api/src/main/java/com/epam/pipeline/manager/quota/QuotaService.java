@@ -22,6 +22,7 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
+import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
@@ -55,7 +56,7 @@ public class QuotaService {
         Assert.notNull(quota.getQuotaGroup(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GROUP_EMPTY));
         Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
         validateQuotaType(quota);
-        validateQuotaName(quota);
+        validateQuotaName(quota, quota.getType());
         validateUniqueness(quota);
 
         final QuotaEntity entity = quotaMapper.quotaToEntity(quota);
@@ -75,7 +76,7 @@ public class QuotaService {
         final QuotaEntity loaded = quotaRepository.findOne(id);
         Assert.notNull(loaded, messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
         Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
-        validateQuotaName(quota);
+        validateQuotaName(quota, loaded.getType());
         final QuotaEntity entity = quotaMapper.quotaToEntity(quota);
 
         deleteObsoleteActions(loaded, entity);
@@ -153,13 +154,19 @@ public class QuotaService {
                     messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GLOBAL_ALREADY_EXISTS));
             return;
         }
+        if (QuotaType.OVERALL.equals(quota.getType())) {
+            Assert.isNull(quotaRepository.findByQuotaGroupAndType(quota.getQuotaGroup(), QuotaType.OVERALL),
+                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_OVERALL_ALREADY_EXISTS,
+                            quota.getQuotaGroup()));
+            return;
+        }
         Assert.isNull(quotaRepository.findByTypeAndSubjectAndQuotaGroup(quota.getType(), quota.getSubject(),
                 quota.getQuotaGroup()), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ALREADY_EXISTS,
                 quota.getQuotaGroup().name(), quota.getType().name(), quota.getSubject()));
     }
 
-    private void validateQuotaName(final Quota quota) {
-        if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
+    private void validateQuotaName(final Quota quota, final QuotaType type) {
+        if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup()) || QuotaType.OVERALL.equals(type)) {
             quota.setSubject(null);
             return;
         }

@@ -652,6 +652,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
+    /**
+     * Controls the period of schedule monitoring task
+     */
+    public static final IntPreference SYSTEM_SCHEDULE_MONITORING_PERIOD = new IntPreference(
+        "system.schedule.monitoring.period.seconds",
+            (int) TimeUnit.HOURS.toSeconds(1), SYSTEM_GROUP, isGreaterThan(10));
 
     /**
      * Controls the amount of pod logs to be loaded
@@ -749,6 +755,12 @@ public class SystemPreferences {
 
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
+
+    public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
+            "system.maintenance.mode", false, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
+            "system.maintenance.mode.banner",
+            "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(

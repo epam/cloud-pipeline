@@ -75,15 +75,18 @@ export function validateServerName (value) {
   }
 }
 
-export function validateIP (value) {
+export function validateIP (value, skip = false) {
   const {ip, messages} = validationConfig;
-  if (!value) {
-    return {error: true, message: messages.required};
-  } else if (!ip.test(value)) {
-    return {error: true, message: messages.invalid};
-  } else {
+  if (skip) {
     return {error: false};
   }
+  if (!value) {
+    return {error: true, message: messages.required};
+  }
+  if (!ip.test(value)) {
+    return {error: true, message: messages.invalid};
+  }
+  return {error: false};
 }
 
 export const columns = {

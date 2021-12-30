@@ -56,7 +56,7 @@ class ExportImageConsumer extends React.Component {
         <div
           id={this.domIdentifier}
           className={className}
-          style={style}
+          style={{...(style || {})}}
         >
           {children}
         </div>

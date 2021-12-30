@@ -34,8 +34,10 @@ import {
   getSharedStorageItemInfo
 } from '../../../../../utils/share-storage-item';
 import UserName from '../../../../special/UserName';
+import getCommonRootFolder from './get-common-root-folder';
 import styles from './SharedItemInfo.css';
 import roleModel from '../../../../../utils/roleModel';
+import getRelativePathToItem from './get-relative-path-to-item';
 
 const MAX_SIDS_TO_PREVIEW = 10;
 const CHECK_PREVIOUS_PERMISSIONS = false;
@@ -60,7 +62,7 @@ const SidInfo = ({sid, style}) => {
   );
 };
 
-@inject('preferences')
+@inject('preferences', 'dataStorages')
 @observer
 class SharedItemInfo extends React.Component {
   state = {
@@ -70,7 +72,11 @@ class SharedItemInfo extends React.Component {
     pending: false,
     editPermissionsMode: false,
     initialized: false,
-    permissionsModificationAllowed: true
+    permissionsModificationAllowed: true,
+    storage: undefined,
+    rootPath: undefined,
+    itemLinks: [],
+    globalError: false
   }
 
   componentDidMount () {
@@ -78,35 +84,63 @@ class SharedItemInfo extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      prevProps.storage !== this.props.storage ||
-      prevProps.path !== this.props.path ||
-      (
-        prevProps.visible !== this.props.visible && this.props.visible
-      )
-    ) {
+    if (prevProps.visible !== this.props.visible && this.props.visible) {
       this.updateFromProps();
     }
   }
 
   updateFromProps () {
-    if (this.props.storage) {
-      this.setState({pending: true, initialized: false}, async () => {
+    const {
+      dataStorages,
+      shareItems = []
+    } = this.props;
+    const storageIds = [
+      ...(new Set(shareItems.map(o => Number(o.storageId)).filter(n => !Number.isNaN(n))))
+    ];
+    if (storageIds.length === 1) {
+      const [storageId] = storageIds;
+      this.setState({
+        pending: true,
+        initialized: false,
+        globalError: false
+      }, async () => {
         const newState = {
           editPermissionsMode: true,
           alreadyShared: false,
           pending: false,
           error: undefined,
           initialized: true,
-          permissionsModificationAllowed: true
+          permissionsModificationAllowed: true,
+          storage: undefined,
+          rootPath: undefined,
+          itemLinks: [],
+          globalError: false
         };
         try {
+          await dataStorages.fetch();
+          const storage = (dataStorages.value || []).find(o => o.id === storageId);
+          if (!storage) {
+            throw new Error(`Storage #${storageId} not found`);
+          }
+          const {delimiter = '/'} = storage;
+          let rootPath;
+          let itemLinks = [];
+          if (shareItems.length === 1 && /^folder$/i.test(shareItems[0].type)) {
+            rootPath = shareItems[0].path;
+          } else {
+            rootPath = getCommonRootFolder(shareItems, delimiter);
+            itemLinks = shareItems.map(item => {
+              const {type} = item;
+              const relative = getRelativePathToItem(item, rootPath, delimiter);
+              return /^folder$/i.test(type) ? `${relative}/**` : relative;
+            });
+          }
           await this.props.preferences.fetchIfNeededOrWait();
           const info = CHECK_PREVIOUS_PERMISSIONS
             ? await getSharedStorageItemInfo(
               this.props.preferences,
-              this.props.storage,
-              this.props.path
+              storage,
+              rootPath
             )
             : undefined;
           if (info) {
@@ -142,7 +176,7 @@ class SharedItemInfo extends React.Component {
               mask = 1,
               groups = []
             } = this.props.preferences.sharedStoragesDefaultPermissions;
-            const writeAvailable = roleModel.writeAllowed(this.props.storage);
+            const writeAvailable = roleModel.writeAllowed(storage);
             const correctMask = writeAvailable
               ? roleModel.buildPermissionsMask(1, 1, 1, 1, 0, 0)
               : roleModel.buildPermissionsMask(1, 1, 0, 0, 0, 0);
@@ -154,11 +188,30 @@ class SharedItemInfo extends React.Component {
             newState.usersToShare = parseGroups(groups)
               .map(g => ({name: g, principal: false}));
           }
+          newState.storage = storage;
+          newState.itemLinks = itemLinks;
+          newState.rootPath = rootPath;
         } catch (e) {
           newState.error = e.message;
+          newState.globalError = true;
         } finally {
           this.setState(newState);
         }
+      });
+    } else if (storageIds.length > 1) {
+      this.setState({
+        editPermissionsMode: false,
+        pending: false,
+        mask: 0,
+        usersToShare: [],
+        sharedLink: undefined,
+        error: 'Cannot share items from different storages',
+        initialized: true,
+        permissionsModificationAllowed: true,
+        storage: undefined,
+        rootPath: undefined,
+        itemLinks: [],
+        globalError: true
       });
     } else {
       this.setState({
@@ -168,17 +221,23 @@ class SharedItemInfo extends React.Component {
         sharedLink: undefined,
         error: undefined,
         initialized: true,
-        permissionsModificationAllowed: true
+        permissionsModificationAllowed: true,
+        storage: undefined,
+        rootPath: undefined,
+        itemLinks: [],
+        globalError: false
       });
     }
   }
 
   get itemName () {
     const {
-      path,
-      shareItems = [],
-      storage
+      shareItems = []
     } = this.props;
+    const {
+      storage,
+      rootPath: path
+    } = this.state;
     if (shareItems.length === 1) {
       return shareItems[0].name;
     }
@@ -233,11 +292,13 @@ class SharedItemInfo extends React.Component {
       sids = []
     } = options;
     const {
-      storage,
-      path,
-      preferences,
-      shareItems = []
+      preferences
     } = this.props;
+    const {
+      rootPath: path,
+      storage,
+      itemLinks = []
+    } = this.state;
     this.setState({
       pending: true
     });
@@ -249,7 +310,7 @@ class SharedItemInfo extends React.Component {
         preferences,
         storage,
         path,
-        shareItems.map(o => /^folder$/i.test(o.type) ? `${o.name}/**` : o.name),
+        itemLinks,
         {
           mask,
           permissions: (sids).slice(),
@@ -273,7 +334,7 @@ class SharedItemInfo extends React.Component {
   }
 
   renderShareInfo = () => {
-    const {storage} = this.props;
+    const {storage} = this.state;
     if (!storage) {
       return null;
     }
@@ -396,9 +457,10 @@ class SharedItemInfo extends React.Component {
     const {
       editPermissionsMode,
       sharedLink,
-      initialized
+      initialized,
+      storage
     } = this.state;
-    if (!editPermissionsMode || !initialized) {
+    if (!storage || !editPermissionsMode || !initialized) {
       return null;
     }
     const onCancel = () => {
@@ -415,7 +477,7 @@ class SharedItemInfo extends React.Component {
         onSave={this.onShare}
         onCancel={onCancel}
         saveEnabled={!this.state.sharedLink}
-        writeAvailable={roleModel.writeAllowed(this.props.storage)}
+        writeAvailable={roleModel.writeAllowed(storage)}
       />
     );
   }
@@ -424,9 +486,10 @@ class SharedItemInfo extends React.Component {
     const {
       editPermissionsMode,
       initialized,
-      permissionsModificationAllowed
+      permissionsModificationAllowed,
+      globalError
     } = this.state;
-    if (editPermissionsMode || !initialized) {
+    if (editPermissionsMode || !initialized || globalError) {
       return null;
     }
     if (!permissionsModificationAllowed) {
@@ -505,8 +568,6 @@ class SharedItemInfo extends React.Component {
 }
 
 SharedItemInfo.PropTypes = {
-  storage: PropTypes.object,
-  path: PropTypes.string,
   shareItems: PropTypes.array,
   close: PropTypes.func,
   visible: PropTypes.bool
