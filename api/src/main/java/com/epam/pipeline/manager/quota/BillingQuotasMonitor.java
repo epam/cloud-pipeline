@@ -23,6 +23,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -46,7 +47,7 @@ public class BillingQuotasMonitor {
     private final PreferenceManager preferenceManager;
 
     @Scheduled(cron = "${billing.quota.monitor.cron:*/1 * * * * ?}")
-//    @SchedulerLock(name = "BillingQuotasMonitor_checkQuotas", lockAtMostForString = "PT30M")
+    @SchedulerLock(name = "BillingQuotasMonitor_checkQuotas", lockAtMostForString = "PT30M")
     public void checkQuotas() {
         if (!preferenceManager.getPreference(SystemPreferences.BILLING_QUOTAS_ENABLED)) {
             log.debug("Billing quotas monitoring is disabled.");
