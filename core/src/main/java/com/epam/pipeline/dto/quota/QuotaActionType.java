@@ -19,7 +19,7 @@ package com.epam.pipeline.dto.quota;
 public enum QuotaActionType {
     NOTIFY,
     READ_MODE,
-    READ_MODE_AND_DISABLE_NEW_JOBS,
-    READ_MODE_AND_STOP_ALL_JOBS,
+    DISABLE_NEW_JOBS,
+    STOP_JOBS,
     BLOCK
 }

@@ -1,11 +1,10 @@
 /*
  * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,14 +13,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.nfs;
+package com.epam.pipeline.repository.quota;
 
-import com.epam.pipeline.entity.user.Sid;
-import lombok.Data;
+import com.epam.pipeline.entity.quota.AppliedQuotaEntity;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.repository.CrudRepository;
 
-@Data
-public class NFSQuotaNotificationRecipient implements Sid {
 
-    private final boolean principal;
-    private final String name;
+@SuppressWarnings({"PMD.MethodNamingConventions"})
+public interface AppliedQuotaRepository extends CrudRepository<AppliedQuotaEntity, Long>,
+        JpaSpecificationExecutor<AppliedQuotaEntity> {
+    void deleteAllByAction_Quota_Id(Long quotaId);
+    void deleteAllByAction_Id(Long actionId);
 }

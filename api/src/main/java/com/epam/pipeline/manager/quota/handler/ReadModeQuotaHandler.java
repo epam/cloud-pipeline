@@ -13,9 +13,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.user;
+package com.epam.pipeline.manager.quota.handler;
 
-public interface Sid {
-    String getName();
-    boolean isPrincipal();
+import com.epam.pipeline.dto.quota.QuotaActionType;
+import com.epam.pipeline.dto.quota.AppliedQuota;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+public class ReadModeQuotaHandler implements QuotaHandler {
+    @Override
+    public QuotaActionType type() {
+        return QuotaActionType.READ_MODE;
+    }
+
+    @Override
+    public void applyActionType(final AppliedQuota appliedQuota, final QuotaActionType type) {
+        log.debug("Converting storages to READ_ONLY mode...");
+    }
 }
