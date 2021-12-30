@@ -372,12 +372,15 @@ public class NatGatewayManager {
     private List<NatRoute> updateRoutesInDatabase(final NatRoutingRulesRequest request, final NatRouteStatus status) {
         final Predicate<NatRoute> additionalFilter;
         final UnaryOperator<NatRoutingRuleDescription> routeMapping;
+        final boolean exceptionOnExisting;
         if (status == NatRouteStatus.TERMINATION_SCHEDULED) {
             additionalFilter = this::hasTerminatingState;
             routeMapping = this::toRuleWoDescription;
+            exceptionOnExisting = false;
         } else {
             additionalFilter = route -> true;
             routeMapping = rule -> rule;
+            exceptionOnExisting = true;
         }
 
         final List<NatRoutingRuleDescription> requestedRules = validateRequest(request);
@@ -387,10 +390,16 @@ public class NatGatewayManager {
             .map(routeMapping)
             .filter(rule -> !existingRules.contains(rule))
             .collect(Collectors.toList());
-        final List<NatRoute> queuedRoutes = CollectionUtils.isNotEmpty(newRules)
-                                            ? natGatewayDao.registerRoutingRules(newRules, status)
-                                            : Collections.emptyList();
-        updatedRoutes.addAll(queuedRoutes);
+        final Collection<NatRoutingRuleDescription> matchingRules =
+            CollectionUtils.isEmpty(newRules)
+            ? requestedRules
+            : CollectionUtils.intersection(existingRules, newRules);
+        if (CollectionUtils.isEmpty(matchingRules)) {
+            updatedRoutes.addAll(natGatewayDao.registerRoutingRules(newRules, status));
+        } else if (exceptionOnExisting) {
+            throw new IllegalArgumentException(messageHelper.getMessage(MessageConstants.NAT_ROUTE_EXISTS_ALREADY,
+                                                                        matchingRules));
+        }
         return updatedRoutes;
     }
 
