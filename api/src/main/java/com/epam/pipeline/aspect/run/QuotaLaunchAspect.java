@@ -47,7 +47,7 @@ public class QuotaLaunchAspect {
     private final MessageHelper messageHelper;
 
     @Before("@annotation(com.epam.pipeline.aspect.run.QuotaLaunchCheck)")
-    public void checkToolBySecurityPolicy(JoinPoint joinPoint) {
+    public void checkRunLaunchIsNotForbidden(JoinPoint joinPoint) {
         if (!preferenceManager.getPreference(SystemPreferences.BILLING_QUOTAS_ENABLED)) {
             return;
         }
