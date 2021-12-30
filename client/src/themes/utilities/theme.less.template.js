@@ -282,7 +282,8 @@ export default `
 @THEME h2,
 @THEME h3,
 @THEME h4,
-@THEME h5 {
+@THEME h5,
+@THEME h6 {
   color: @application-color;
 }
 @THEME .ant-input,
@@ -2529,6 +2530,11 @@ export default `
   border: 1px solid @card-border-color;
   border-radius: 4px;
 }
+@THEME .markdown {
+  flex: 1;
+  overflow-y: auto;
+  margin: 5px 0;
+}
 @THEME .markdown pre {
   color: @application-color;
   background-color: @code-background-color;
@@ -2537,6 +2543,9 @@ export default `
   padding: 10px;
   margin: 5px 0;
   white-space: pre-line;
+  word-break: break-all;
+  word-wrap: break-word;
+  line-height: 1.5;
 }
 @THEME .code-highlight code,
 @THEME .markdown code {
@@ -2549,6 +2558,9 @@ export default `
   background-color: transparent;
   color: inherit;
   box-shadow: none;
+  padding: 0;
+  font-size: inherit;
+  border-radius: 0;
 }
 @THEME .markdown code {
   padding: 1px 4px;
@@ -2563,6 +2575,47 @@ export default `
 @THEME .markdown h5,
 @THEME .markdown h6 {
   margin: 2px 0;
+}
+@THEME .markdown p {
+  margin: 5px 0;
+}
+@THEME .markdown p a {
+  margin: 0 2px;
+}
+@THEME .markdown ul,
+@THEME .markdown ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+@THEME .markdown ol {
+  list-style-type: decimal;
+}
+@THEME .markdown li {
+  display: list-item;
+  margin: 5px;
+  margin-left: 15px;
+}
+@THEME .markdown ol ul {
+  list-style: circle;
+}
+@THEME .markdown ol ul li {
+  margin-left: 35px;
+}
+@THEME .markdown ol ul ul,
+@THEME .markdown ul ul {
+  list-style: square;
+}
+@THEME .markdown ul ul li {
+  margin-left: 35px;
+}
+@THEME .markdown blockquote {
+  margin: 0;
+  padding: 10px 0;
+  padding-left: 1rem;
+  border-left: 4px solid @card-border-color;
+  background-color: @code-background-color;
 }
 @THEME .hljs {
   color: @application-color;

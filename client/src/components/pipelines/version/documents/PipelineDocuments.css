@@ -89,6 +89,7 @@
   margin-bottom: 10px;
   border: 1px solid transparent;
   border-radius: 0 0 5px 5px;
+  padding: 10px;
 }
 
 .md-actions button {

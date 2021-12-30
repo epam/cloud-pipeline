@@ -23,6 +23,12 @@
   border-radius: 4px;
 }
 
+.markdown {
+  flex: 1;
+  overflow-y: auto;
+  margin: 5px 0;
+}
+
 .markdown pre {
   color: @application-color;
   background-color: @code-background-color;
@@ -31,6 +37,9 @@
   padding: 10px;
   margin: 5px 0;
   white-space: pre-line;
+  word-break: break-all;
+  word-wrap: break-word;
+  line-height: 1.5;
 }
 
 .code-highlight code,
@@ -45,6 +54,9 @@
   background-color: transparent;
   color: inherit;
   box-shadow: none;
+  padding: 0;
+  font-size: inherit;
+  border-radius: 0;
 }
 
 .markdown code {
@@ -62,6 +74,57 @@
 .markdown h5,
 .markdown h6 {
   margin: 2px 0;
+}
+
+.markdown p {
+  margin: 5px 0;
+}
+
+.markdown p a {
+  margin: 0 2px;
+}
+
+.markdown ul,
+.markdown ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown li {
+  display: list-item;
+  margin: 5px;
+  margin-left: 15px;
+}
+
+.markdown ol ul {
+  list-style: circle;
+}
+
+.markdown ol ul li {
+  margin-left: 35px;
+}
+
+.markdown ol ul ul,
+.markdown ul ul {
+  list-style: square;
+}
+
+.markdown ul ul li {
+  margin-left: 35px;
+}
+
+.markdown blockquote {
+  margin: 0;
+  padding: 10px 0;
+  padding-left: 1rem;
+  border-left: 4px solid @card-border-color;
+  background-color: @code-background-color;
 }
 
 .hljs {
