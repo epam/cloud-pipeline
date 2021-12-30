@@ -24,6 +24,7 @@
 - [Disable Hyper-Threading](#disable-hyper-threading)
 - [Saving of interim data for jobs stopped by a timeout](#saving-of-interim-data-for-jobs-stopped-by-a-timeout)
 - [Resolve variables for a rerun](#resolve-variables-for-a-rerun)
+- [NAT gateway](#nat-gateway)
 - [AWS: seamless authentication](#aws-seamless-authentication)
 - [AWS: transfer objects between AWS regions](#aws-transfer-objects-between-aws-regions-using-pipe-storage-cpmv-commands)
 
@@ -866,6 +867,28 @@ If this checkbox is ticked, all environment variables will be resolved with the 
     ![CP_v.0.17_ReleaseNotes](attachments/RN017_ResolveVariablesRerun_2.png)
 
 See example [here](../../manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md#resolve-variables-for-a-rerun).
+
+## NAT gateway
+
+Previously, if the **Cloud Pipeline** Platform was being deployed in some private subnet, it could be quite difficult for the admin to expose a network endpoint for some service to use in a Platform. This required manual execution of a number of tasks on the Platform Core instance and, accordingly, might lead to errors.  
+To resolve this, in the current version, the convenient way to manage network routes (creating/removing) from the GUI was implemented.
+
+For that, a new **NAT gateway** subtab was added to the [**System Management**](../../manual/12_Manage_Settings/12._Manage_Settings.md#system-management) section of the System settings.  
+The **NAT gateway** subtab allows to configure network routes:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_01.png)
+
+To add a route, admin shall:
+
+- click the **ADD ROUTE** button:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_02.png)
+- in the appeared pop-up, specify details of an _external_ resource: server name, IP (_if needs_), port(s) and comment to route (_optionally_), e.g.:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_03.png)
+- just-added external server will appear in the list. Admin should click the **SAVE** button to confirm made changes:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_04.png)
+- once the route creation will be done, the route details will appear in the **_INTERNAL CONFIG_** fields and near the route, the status will be shown as _ACTIVE_:  
+    ![CP_v.0.17_ReleaseNotes](attachments/RN017_NatGateway_05.png)
+
+For more details see [here](../../manual/12_Manage_Settings/12.14._NAT_gateway.md).
 
 ## AWS: seamless authentication
 
