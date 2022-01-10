@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import LoadingView from '../../../special/LoadingView';
 import localization from '../../../../utils/localization';
 import {Alert, message, Modal, Row} from 'antd';
@@ -33,9 +33,9 @@ import styles from './Panel.css';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
+@inject('preferences')
 @observer
 export default class RecentlyCompletedRunsPanel extends localization.LocalizedReactComponent {
-
   static propTypes = {
     panelKey: PropTypes.string,
     completedRuns: PropTypes.object,
@@ -124,24 +124,26 @@ export default class RecentlyCompletedRunsPanel extends localization.LocalizedRe
             onClick={this.navigateToRun}
             emptyMessage="There are no completed runs yet."
             actions={
-              getRunActions({
-                pause: run => this.confirm(
-                  `Are you sure you want to pause run ${run.podId}?`,
-                  'PAUSE',
-                  () => this.pauseRun(run)
-                ),
-                resume: run => this.confirm(
-                  `Are you sure you want to resume run ${run.podId}?`,
-                  'RESUME',
-                  () => this.resumeRun(run)
-                ),
-                stop: run => this.confirm(
-                  `Are you sure you want to stop run ${run.podId}?`,
-                  'STOP',
-                  () => this.stopRun(run)
-                ),
-                run: this.reRun
-              })
+              getRunActions(
+                this.props,
+                {
+                  pause: run => this.confirm(
+                    `Are you sure you want to pause run ${run.podId}?`,
+                    'PAUSE',
+                    () => this.pauseRun(run)
+                  ),
+                  resume: run => this.confirm(
+                    `Are you sure you want to resume run ${run.podId}?`,
+                    'RESUME',
+                    () => this.resumeRun(run)
+                  ),
+                  stop: run => this.confirm(
+                    `Are you sure you want to stop run ${run.podId}?`,
+                    'STOP',
+                    () => this.stopRun(run)
+                  ),
+                  run: this.reRun
+                })
             }
             childRenderer={renderRunCard}>
             {

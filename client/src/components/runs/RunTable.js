@@ -56,10 +56,11 @@ import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
+import getMaintenanceDisabledButton from './controls/get-maintenance-mode-disabled-button';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
 
-@inject('routing', 'pipelines', 'localization', 'dockerRegistries')
+@inject('routing', 'pipelines', 'localization', 'dockerRegistries', 'preferences')
 @runPipelineActions
 @observer
 export default class RunTable extends localization.LocalizedReactComponent {
@@ -133,6 +134,15 @@ export default class RunTable extends localization.LocalizedReactComponent {
       isLastHour: true
     }
   };
+
+  @computed
+  get maintenanceMode () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.systemMaintenanceMode;
+    }
+    return false;
+  }
 
   @computed
   get dockerImages () {
@@ -750,16 +760,24 @@ export default class RunTable extends localization.LocalizedReactComponent {
           return <span id={`run-${record.id}-resuming`}>RESUMING</span>;
         case 'running':
           if (canPauseRun(record)) {
+            const buttonId = `run-${record.id}-pause-button`;
+            if (this.maintenanceMode) {
+              return getMaintenanceDisabledButton('PAUSE', buttonId);
+            }
             return <a
-              id={`run-${record.id}-pause-button`}
+              id={buttonId}
               onClick={(e) => this.showPauseConfirmDialog(e, record)}>PAUSE</a>;
           }
           break;
         case 'paused':
           const {resumeFailureReason} = record;
+          const buttonId = `run-${record.id}-resume-button`;
+          if (this.maintenanceMode) {
+            return getMaintenanceDisabledButton('RESUME', buttonId);
+          }
           return (
             <a
-              id={`run-${record.id}-resume-button`}
+              id={buttonId}
               onClick={(e) => this.showResumeConfirmDialog(e, record)}>
               {
                 resumeFailureReason

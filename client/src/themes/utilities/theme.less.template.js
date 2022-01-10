@@ -1521,6 +1521,10 @@ export default `
 @THEME .cp-panel .cp-panel-card .cp-card-action-button.cp-danger {
   color: @btn-danger-color;
 }
+@THEME .cp-panel .cp-panel-card .cp-card-action-button.cp-disabled {
+  color: @btn-disabled-color;
+  cursor: not-allowed;
+}
 @THEME .cp-panel .cp-panel-card .cp-panel-card-actions .cp-panel-card-actions-background {
   background-color: @card-background-color;
 }
@@ -1630,7 +1634,7 @@ export default `
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @color-info;
+  color: @color-green;
 }
 @THEME .cp-notification-status-warning {
   color: @color-warning;

@@ -71,7 +71,7 @@ export default class CardsPanel extends React.Component {
 
   onActionClicked = (e, action, source) => {
     e.stopPropagation();
-    if (this.state.actionInProgress) {
+    if (this.state.actionInProgress || action.disabled) {
       return;
     }
     this.setState({
@@ -185,6 +185,7 @@ export default class CardsPanel extends React.Component {
           {
             actions.map((action, index, array) => {
               const {
+                disabled = false,
                 title,
                 icon,
                 style,
@@ -200,6 +201,10 @@ export default class CardsPanel extends React.Component {
                   className={
                     classNames(
                       styles.actionButton,
+                      {
+                        [styles.disabled]: disabled,
+                        'cp-disabled': disabled
+                      },
                       'cp-card-action-button',
                       className
                     )

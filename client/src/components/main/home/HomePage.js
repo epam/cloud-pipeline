@@ -79,7 +79,6 @@ export default class HomePage extends React.Component {
 
   initializeContainer = (container) => {
     if (container) {
-      console.log(container, container.clientWidth);
       this.setState({
         container,
         containerWidth: container.clientWidth || window.innerWidth,

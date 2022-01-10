@@ -19,8 +19,17 @@ import {Link} from 'react-router';
 import {Row} from 'antd';
 import parseRunServiceUrl from '../../../../../utils/parseRunServiceUrl';
 import {canPauseRun} from '../../../../runs/actions';
+import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 
-export default function (callbacks) {
+export default function (
+  {preferences},
+  callbacks,
+  disabled = false
+) {
+  let maintenanceMode = false;
+  if (preferences && preferences.loaded) {
+    maintenanceMode = preferences.systemMaintenanceMode;
+  }
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -80,6 +89,8 @@ export default function (callbacks) {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
+            disabled: disabled || maintenanceMode,
+            overlay: maintenanceMode ? MAINTENANCE_MODE_DISCLAIMER : undefined,
             action: callbacks ? callbacks.pause : undefined
           });
         }
@@ -99,13 +110,16 @@ export default function (callbacks) {
         ) {
           actions.push({
             title: 'RESUME',
+            disabled: disabled || maintenanceMode,
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
             action: callbacks ? callbacks.resume : undefined,
-            overlay: run.resumeFailureReason ? (
-              <div style={{maxWidth: '40vw'}}>
-                {run.resumeFailureReason}
-              </div>
-            ) : undefined
+            overlay: maintenanceMode
+              ? MAINTENANCE_MODE_DISCLAIMER
+              : run.resumeFailureReason ? (
+                <div style={{maxWidth: '40vw'}}>
+                  {run.resumeFailureReason}
+                </div>
+              ) : undefined
           });
         }
         actions.push({

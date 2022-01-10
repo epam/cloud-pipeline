@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import PausePipeline from '../../../../models/pipelines/PausePipeline';
 import {
@@ -40,6 +40,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
+@inject('preferences')
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {
   static propTypes = {
@@ -147,36 +148,39 @@ export default class MyActiveRunsPanel extends localization.LocalizedReactCompon
             onClick={this.navigateToRun}
             emptyMessage="There are no active runs"
             actions={
-              getRunActions({
-                pause: run => this.confirmPause(
-                  run,
-                  `Are you sure you want to pause run ${run.podId}?`,
-                  'PAUSE',
-                  () => this.pauseRun(run)
-                ),
-                resume: run => this.confirm(
-                  `Are you sure you want to resume run ${run.podId}?`,
-                  'RESUME',
-                  () => this.resumeRun(run)
-                ),
-                stop: stopRun(this, this.props.refresh),
-                terminate: terminateRun(this, this.props.refresh),
-                run: this.reRun,
-                openUrl: url => {
-                  window.open(url, '_blank').focus();
-                },
-                ssh: async run => {
-                  const runSSH = new PipelineRunSSH(run.id);
-                  await runSSH.fetchIfNeededOrWait();
+              getRunActions(
+                this.props,
+                {
+                  pause: run => this.confirmPause(
+                    run,
+                    `Are you sure you want to pause run ${run.podId}?`,
+                    'PAUSE',
+                    () => this.pauseRun(run)
+                  ),
+                  resume: run => this.confirm(
+                    `Are you sure you want to resume run ${run.podId}?`,
+                    'RESUME',
+                    () => this.resumeRun(run)
+                  ),
+                  stop: stopRun(this, this.props.refresh),
+                  terminate: terminateRun(this, this.props.refresh),
+                  run: this.reRun,
+                  openUrl: url => {
+                    window.open(url, '_blank').focus();
+                  },
+                  ssh: async run => {
+                    const runSSH = new PipelineRunSSH(run.id);
+                    await runSSH.fetchIfNeededOrWait();
 
-                  if (runSSH.loaded) {
-                    window.open(runSSH.value, '_blank').focus();
-                  }
-                  if (runSSH.error) {
-                    message.error(runSSH.error);
+                    if (runSSH.loaded) {
+                      window.open(runSSH.value, '_blank').focus();
+                    }
+                    if (runSSH.error) {
+                      message.error(runSSH.error);
+                    }
                   }
                 }
-              })
+              )
             }
             cardClassName={run => classNames({
               'cp-card-service': run.initialized && run.serviceUrl
