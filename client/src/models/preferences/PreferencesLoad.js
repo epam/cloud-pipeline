@@ -325,6 +325,15 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get systemMaintenanceMode () {
+    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true';
+  }
+
+  @computed
+  get systemMaintenanceModeBanner () {
+    return this.getPreferenceValue('system.maintenance.mode.banner');
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }

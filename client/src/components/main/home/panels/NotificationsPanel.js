@@ -22,22 +22,35 @@ import LoadingView from '../../../special/LoadingView';
 import {Alert, Card, Col, Icon, Row} from 'antd';
 import displayDate from '../../../../utils/displayDate';
 import Markdown from '../../../special/markdown';
+import {PredefinedNotifications} from '../../notification/NotificationCenter';
 import styles from './Panel.css';
 
-@inject('notifications')
+@inject('notifications', 'preferences')
 @observer
 export default class NotificationsPanel extends React.Component {
-
   static propTypes = {
     onInitialize: PropTypes.func
   };
 
   @computed
   get notifications () {
-    if (this.props.notifications.loaded) {
-      return (this.props.notifications.value || []).map(n => n);
+    const {notifications, preferences} = this.props;
+    const list = notifications && notifications.loaded
+      ? (notifications.value || []).map(o => o)
+      : [];
+    const {systemMaintenanceMode, systemMaintenanceModeBanner} = preferences;
+    if (systemMaintenanceMode && systemMaintenanceModeBanner) {
+      list.unshift({
+        blocking: false,
+        body: systemMaintenanceModeBanner,
+        createdDate: '',
+        notificationId: PredefinedNotifications.MaintenanceMode,
+        severity: 'INFO',
+        state: 'ACTIVE',
+        title: 'Maintenance mode'
+      });
     }
-    return [];
+    return list;
   }
 
   renderSeverityIcon = (notification) => {

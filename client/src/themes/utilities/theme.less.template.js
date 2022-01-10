@@ -1609,7 +1609,7 @@ export default `
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @color-info;
+  color: @color-green;
 }
 @THEME .cp-notification-status-warning {
   color: @color-warning;
