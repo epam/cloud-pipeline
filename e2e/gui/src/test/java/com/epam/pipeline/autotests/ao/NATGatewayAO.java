@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import java.util.Map;
 
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disappear;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
@@ -245,6 +246,12 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             sleep(1, SECONDS);
             attempt++;
         }
+        return this;
+    }
+
+    public NATGatewayAO waitForRouteData() {
+        $(byClassName("ub-settings__content")).waitUntil(visible, C.DEFAULT_TIMEOUT);
+        get(ADD_ROUTE).shouldBe(enabled);
         return this;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,9 +226,9 @@ public class ToolVersions extends ToolTab<ToolVersions> {
         return this;
     }
 
-    public ToolVersions validateUnscannedVersionsPage() {
+    public ToolVersions validateUnscannedVersionsPage(final String version) {
         $(byClassName("tools__version-scanning-info")).shouldHave(text("Version was not scanned"));
-        $(toolVersion("")).find(buttonByIconClass("anticon-exclamation-circle")).shouldBe(visible);
+        $(toolVersion(version)).find(buttonByIconClass("anticon-exclamation-circle")).shouldBe(visible);
         $(viewUnscannedVersions).is(hidden);
         $(hideUnscannedVersions).is(enabled);
         return this;

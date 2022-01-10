@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         tool
                                 .versions()
                                 .viewUnscannedVersions()
-                                .validateUnscannedVersionsPage()
+                                .validateUnscannedVersionsPage(version)
                                 .selectVersion(version)
                                 .validateVersionPage("SETTINGS")
                                 .click(versionTab("VULNERABILITIES REPORT"))
@@ -199,7 +199,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .ensure(RUN, disabled)
                         .versions()
                         .viewUnscannedVersions()
-                        .validateUnscannedVersionsPage()
+                        .validateUnscannedVersionsPage(version)
                         .ensure(RUN, disabled)
                         .hover(RUN)
                         .messageShouldAppear("The latest version shall be scanned for vulnerabilities.")
@@ -262,7 +262,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                         .ensure(RUN, enabled)
                         .versions()
                         .viewUnscannedVersions()
-                        .validateUnscannedVersionsPage()
+                        .validateUnscannedVersionsPage(version)
                         .ensure(RUN, enabled)
                         .hover(RUN)
                         .messageShouldAppear(CLAUSE_MESSAGE)
@@ -298,7 +298,7 @@ public class ToolsScanTest extends AbstractAutoRemovingPipelineRunningTest imple
                 tool
                         .versions()
                         .viewUnscannedVersions()
-                        .validateUnscannedVersionsPage()
+                        .validateUnscannedVersionsPage(version)
                         .ensure(toolVersion(version), backgroundColorNotBlackOrWhite)
                         .ensure(RUN, enabled)
                         .hover(RUN)
