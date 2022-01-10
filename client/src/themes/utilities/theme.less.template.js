@@ -2530,11 +2530,6 @@ export default `
   border: 1px solid @card-border-color;
   border-radius: 4px;
 }
-@THEME .markdown {
-  flex: 1;
-  overflow-y: auto;
-  margin: 5px 0;
-}
 @THEME .markdown pre {
   color: @application-color;
   background-color: @code-background-color;
@@ -2543,9 +2538,6 @@ export default `
   padding: 10px;
   margin: 5px 0;
   white-space: pre-line;
-  word-break: break-all;
-  word-wrap: break-word;
-  line-height: 1.5;
 }
 @THEME .code-highlight code,
 @THEME .markdown code {
@@ -2558,9 +2550,6 @@ export default `
   background-color: transparent;
   color: inherit;
   box-shadow: none;
-  padding: 0;
-  font-size: inherit;
-  border-radius: 0;
 }
 @THEME .markdown code {
   padding: 1px 4px;
