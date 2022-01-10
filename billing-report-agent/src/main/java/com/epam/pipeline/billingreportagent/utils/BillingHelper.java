@@ -39,13 +39,10 @@ import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucke
 import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -59,9 +56,6 @@ import java.util.stream.Stream;
 @Service
 public class BillingHelper {
 
-    private final String billingIndicesMonthlyPattern;
-    private final String billingRunIndicesMonthlyPattern;
-    private final String billingStorageIndicesMonthlyPattern;
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
@@ -70,19 +64,7 @@ public class BillingHelper {
     private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
 
-    public BillingHelper(final @Value("${sync.index.common.prefix}") String commonPrefix) {
-        this.billingIndicesMonthlyPattern = String.join("-",
-                commonPrefix,
-                BillingUtils.ES_WILDCARD,
-                BillingUtils.ES_MONTHLY_DATE_REGEXP);
-        this.billingRunIndicesMonthlyPattern = String.join("-",
-                commonPrefix,
-                BillingUtils.ES_WILDCARD + BillingUtils.RUN + BillingUtils.ES_WILDCARD,
-                BillingUtils.ES_MONTHLY_DATE_REGEXP);
-        this.billingStorageIndicesMonthlyPattern = String.join("-",
-                commonPrefix,
-                BillingUtils.ES_WILDCARD + BillingUtils.STORAGE + BillingUtils.ES_WILDCARD,
-                BillingUtils.ES_MONTHLY_DATE_REGEXP);
+    public BillingHelper() {
         this.costAggregation = AggregationBuilders.sum(BillingUtils.COST_FIELD)
                 .field(BillingUtils.COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG)
@@ -104,25 +86,6 @@ public class BillingHelper {
         this.lastByDateDocAggregation = AggregationBuilders.topHits(BillingUtils.LAST_BY_DATE_DOC_AGG)
                 .size(1)
                 .sort(BillingUtils.BILLING_DATE_FIELD, SortOrder.DESC);
-    }
-
-    public String[] indicesByDate(final LocalDate from, final LocalDate to) {
-        return indicesByDate(from, to, billingIndicesMonthlyPattern);
-    }
-
-    public String[] runIndicesByDate(final LocalDate from, final LocalDate to) {
-        return indicesByDate(from, to, billingRunIndicesMonthlyPattern);
-    }
-
-    public String[] storageIndicesByDate(final LocalDate from, final LocalDate to) {
-        return indicesByDate(from, to, billingStorageIndicesMonthlyPattern);
-    }
-
-    private String[] indicesByDate(final LocalDate from, final LocalDate to, final String indexPattern) {
-        return Stream.iterate(from, d -> d.plus(1, ChronoUnit.MONTHS))
-                .limit(ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) + 1)
-                .map(date -> String.format(indexPattern, date.getYear(), date.getMonthValue()))
-                .toArray(String[]::new);
     }
 
     public BoolQueryBuilder queryByDateAndFilters(final LocalDate from,

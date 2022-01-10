@@ -4,6 +4,7 @@ import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingCenterGeneralBilling;
 import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.GeneralBillingMetrics;
+import com.epam.pipeline.manager.billing.index.BillingIndexHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 public class BillingCenterBillingLoader implements BillingLoader<BillingCenterGeneralBilling> {
 
     private final BillingHelper billingHelper;
+    private final BillingIndexHelper billingIndexHelper;
     private final PreferenceManager preferenceManager;
 
     @Override
@@ -84,8 +86,8 @@ public class BillingCenterBillingLoader implements BillingLoader<BillingCenterGe
                                              final int pageOffset,
                                              final int pageSize) {
         return new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.indicesByDate(from, to))
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .indices(billingIndexHelper.monthlyIndicesBetween(from, to))
                 .source(new SearchSourceBuilder()
                         .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))

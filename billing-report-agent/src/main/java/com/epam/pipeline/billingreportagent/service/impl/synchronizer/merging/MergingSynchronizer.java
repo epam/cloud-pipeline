@@ -50,17 +50,18 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
 
     @Override
     public void synchronize(final LocalDateTime from, final LocalDateTime to) {
-        final LocalDate fromDate = Optional.ofNullable(from).map(Optional::of)
-                .orElseGet(this::latestBillingIndex)
-                .orElseGet(DateUtils::nowUTC)
-                .toLocalDate();
+        final LocalDate fromDate = Optional.ofNullable(from)
+                .map(LocalDateTime::toLocalDate)
+                .map(Optional::of)
+                .orElseGet(this::firstBillingDate)
+                .orElseGet(DateUtils::nowUTCDate);
         final LocalDate toDate = Optional.ofNullable(to)
-                .orElseGet(DateUtils::nowUTC)
-                .toLocalDate();
+                .map(LocalDateTime::toLocalDate)
+                .orElseGet(DateUtils::nowUTCDate);
         frame.periods(fromDate, toDate).forEach(this::synchronize);
     }
 
-    private Optional<LocalDateTime> latestBillingIndex() {
+    private Optional<LocalDate> firstBillingDate() {
         return elasticsearchServiceClient.indices()
                 .filter(index -> index.startsWith(indexPrefix + indexName))
                 .map(this::fromIndexToDate)
@@ -70,12 +71,11 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
                 .findFirst();
     }
 
-    private Optional<LocalDateTime> fromIndexToDate(final String index) {
+    private Optional<LocalDate> fromIndexToDate(final String index) {
         try {
             final String commonIndexPrefix = getIndexName(indexPrefix + indexName, StringUtils.EMPTY);
             final String indexDateString = index.substring(commonIndexPrefix.length());
-            return Optional.of(LocalDate.parse(indexDateString, EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT)
-                    .atStartOfDay());
+            return Optional.of(LocalDate.parse(indexDateString, EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT));
         } catch (DateTimeParseException e) {
             return Optional.empty();
         }

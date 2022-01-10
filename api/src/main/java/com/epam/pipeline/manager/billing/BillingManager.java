@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.billing.index.BillingIndexHelper;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.utils.CommonUtils;
@@ -107,6 +108,7 @@ public class BillingManager {
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
 
     private final BillingHelper billingHelper;
+    private final BillingIndexHelper billingIndexHelper;
     private final BillingExportManager billingExportManager;
     private final MessageHelper messageHelper;
     private final MetadataManager metadataManager;
@@ -117,6 +119,7 @@ public class BillingManager {
 
     @Autowired
     public BillingManager(final BillingHelper billingHelper,
+                          final BillingIndexHelper billingIndexHelper,
                           final BillingExportManager billingExportManager,
                           final MessageHelper messageHelper,
                           final MetadataManager metadataManager,
@@ -125,6 +128,7 @@ public class BillingManager {
                           final @Value("${billing.center.key}") String billingCenterKey,
                           final List<EntityBillingDetailsLoader> billingDetailsLoaders) {
         this.billingHelper = billingHelper;
+        this.billingIndexHelper = billingIndexHelper;
         this.billingExportManager = billingExportManager;
         this.messageHelper = messageHelper;
         this.metadataManager = metadataManager;
@@ -157,10 +161,12 @@ public class BillingManager {
             final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
-            } else {
+            }
+            if (grouping != null) {
                 return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to, filters, grouping,
                         request.isLoadDetails());
             }
+            throw new IllegalArgumentException("Either interval or grouping parameter has to be specified.");
         } catch (IOException e) {
             throw new SearchException(e.getMessage(), e);
         }
@@ -213,8 +219,8 @@ public class BillingManager {
                                                    final Map<String, List<String>> filters,
                                                    final DateHistogramInterval interval) {
         if (!validIntervals.contains(interval)) {
-            throw new IllegalArgumentException(messageHelper
-                                                   .getMessage(MessageConstants.ERROR_BILLING_INTERVAL_NOT_SUPPORTED));
+            throw new IllegalArgumentException(messageHelper.getMessage(
+                    MessageConstants.ERROR_BILLING_INTERVAL_NOT_SUPPORTED));
         }
 
         final AggregationBuilder intervalAgg = AggregationBuilders.dateHistogram(
@@ -226,8 +232,8 @@ public class BillingManager {
                     BillingUtils.COST_FIELD));
 
         final SearchRequest searchRequest = new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.indicesByDate(from, to))
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .indices(intervalIndicesBetween(from, to, interval))
                 .source(new SearchSourceBuilder()
                         .size(0)
                         .aggregation(intervalAgg)
@@ -246,36 +252,42 @@ public class BillingManager {
         }
     }
 
+    private String[] intervalIndicesBetween(final LocalDate from, final LocalDate to,
+                                            final DateHistogramInterval interval) {
+        if (interval.equals(DateHistogramInterval.DAY)) return billingIndexHelper.dailyIndicesBetween(from, to);
+        if (interval.equals(DateHistogramInterval.MONTH)) return billingIndexHelper.monthlyIndicesBetween(from, to);
+        throw new IllegalArgumentException(messageHelper.getMessage(
+                MessageConstants.ERROR_BILLING_INTERVAL_NOT_SUPPORTED));
+    }
+
     private List<BillingChartInfo> getBillingStats(final RestClient elasticsearchLowLevelClient,
                                                    final LocalDate from, final LocalDate to,
                                                    final Map<String, List<String>> filters,
                                                    final BillingGrouping grouping,
                                                    final boolean isLoadDetails) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
-        if (grouping != null) {
-            final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
-                .field(grouping.getCorrespondingField())
-                .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
-                .size(Integer.MAX_VALUE);
-            fieldAgg.subAggregation(billingHelper.aggregateCostSum());
-            if (grouping.runUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
-                fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
-            }
-            if (grouping.storageUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
-                fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
-                if (BillingGrouping.STORAGE.equals(grouping)) {
-                    fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
-                }
-            }
-            searchSource.aggregation(fieldAgg);
+        final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
+            .field(grouping.getCorrespondingField())
+            .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
+            .size(Integer.MAX_VALUE);
+        fieldAgg.subAggregation(billingHelper.aggregateCostSum());
+        if (grouping.isRunUsageDetailsRequired()) {
+            fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
+            fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
         }
+        if (grouping.isStorageUsageDetailsRequired()) {
+            fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
+            fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
+            if (BillingGrouping.STORAGE.equals(grouping)) {
+                fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
+            }
+        }
+        searchSource.aggregation(fieldAgg);
         searchSource.aggregation(billingHelper.aggregateCostSum());
 
         final SearchRequest searchRequest = new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.indicesByDate(from, to))
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .indices(groupingIndicesBetween(from, to, grouping))
                 .source(searchSource
                         .size(0)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters)));
@@ -291,6 +303,15 @@ public class BillingManager {
         }
     }
 
+    private String[] groupingIndicesBetween(final LocalDate from, final LocalDate to,
+                                            final BillingGrouping grouping) {
+        switch (grouping.getType()) {
+            case RUN: return billingIndexHelper.yearlyRunIndicesBetween(from, to);
+            case STORAGE: return billingIndexHelper.yearlyStorageIndicesBetween(from, to);
+            default: return billingIndexHelper.yearlyIndicesBetween(from, to);
+        }
+    }
+
     private Optional<SearchResponse> searchForGrouping(final RestClient lowLevelClient, final SearchRequest request,
                                                        final String groupingName) throws IOException {
         final String searchEndpoint = String.format(BillingUtils.ES_INDICES_SEARCH_PATTERN,
@@ -299,6 +320,9 @@ public class BillingManager {
         final Map<String, String> parameters = new HashMap<>();
         parameters.put(BillingUtils.ES_FILTER_PATH, buildResponseFilterForGrouping(groupingName));
         parameters.put(RestSearchAction.TYPED_KEYS_PARAM, Boolean.TRUE.toString());
+        parameters.put("allow_no_indices", Boolean.TRUE.toString());
+        parameters.put("expand_wildcards", "open");
+        parameters.put("ignore_unavailable", Boolean.TRUE.toString());
         final Request lowLevelRequest = new Request(HttpPost.METHOD_NAME, searchEndpoint);
         MapUtils.emptyIfNull(parameters).forEach(lowLevelRequest::addParameter);
         lowLevelRequest.setEntity(httpEntity);
@@ -375,11 +399,11 @@ public class BillingManager {
     private List<BillingChartInfo> getEmptyGroupingResponse(final BillingGrouping grouping) {
         final Map<String, String> details = new HashMap<>();
         details.put(grouping.name(), emptyValue);
-        if (grouping.runUsageDetailsRequired()) {
+        if (grouping.isRunUsageDetailsRequired()) {
             details.put(BillingUtils.RUN_USAGE_FIELD, emptyValue);
             details.put(BillingUtils.RUN_COUNT_AGG, emptyValue);
         }
-        if (grouping.storageUsageDetailsRequired()) {
+        if (grouping.isStorageUsageDetailsRequired()) {
             details.put(BillingUtils.STORAGE_USAGE_FIELD, emptyValue);
         }
         final BillingChartInfo emptyResponse = BillingChartInfo.builder()
@@ -396,27 +420,21 @@ public class BillingManager {
         if (allAggregations == null) {
             return Collections.emptyList();
         }
-        if (grouping != null) {
-            final String groupingField = grouping.getCorrespondingField();
-            final ParsedStringTerms terms = allAggregations.get(groupingField);
-            return Optional.ofNullable(terms)
-                .map(ParsedTerms::getBuckets)
-                .map(Collection::stream)
-                .orElse(Stream.empty())
-                .map(bucket -> {
-                    final Aggregations aggregations = bucket.getAggregations();
-                    return getCostAggregation(from, to,
-                                              grouping,
-                                              (String) bucket.getKey(),
-                                              aggregations,
-                                              isLoadDetails);
-                })
-                .collect(Collectors.toList());
-        } else {
-            return CollectionUtils.isEmpty(allAggregations.asList())
-                   ? Collections.emptyList()
-                   : Collections.singletonList(getCostAggregation(from, to, null, null, allAggregations, false));
-        }
+        final String groupingField = grouping.getCorrespondingField();
+        final ParsedStringTerms terms = allAggregations.get(groupingField);
+        return Optional.ofNullable(terms)
+            .map(ParsedTerms::getBuckets)
+            .map(Collection::stream)
+            .orElse(Stream.empty())
+            .map(bucket -> {
+                final Aggregations aggregations = bucket.getAggregations();
+                return getCostAggregation(from, to,
+                                          grouping,
+                                          (String) bucket.getKey(),
+                                          aggregations,
+                                          isLoadDetails);
+            })
+            .collect(Collectors.toList());
     }
 
     private BillingChartInfo getCostAggregation(final LocalDate from, final LocalDate to,
@@ -433,24 +451,22 @@ public class BillingManager {
         final Map<String, String> groupingInfo = new HashMap<>();
         final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(grouping);
         final Map<String, String> entityDetails = new HashMap<>();
-        if (grouping != null) {
-            if (detailsLoader == null) {
-                groupingInfo.put(grouping.toString(), groupValue);
-            } else {
-                entityDetails.putAll(detailsLoader.loadInformation(groupValue, loadDetails));
-                groupingInfo.put(grouping.name(), entityDetails.remove(EntityBillingDetailsLoader.NAME));
-            }
+        if (detailsLoader == null) {
+            groupingInfo.put(grouping.toString(), groupValue);
+        } else {
+            entityDetails.putAll(detailsLoader.loadInformation(groupValue, loadDetails));
+            groupingInfo.put(grouping.name(), entityDetails.remove(EntityBillingDetailsLoader.NAME));
         }
         if (loadDetails) {
             groupingInfo.putAll(entityDetails);
-            if (grouping.runUsageDetailsRequired()) {
+            if (grouping.isRunUsageDetailsRequired()) {
                 final ParsedSum usageAggResult = aggregations.get(BillingUtils.RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
                 groupingInfo.put(BillingUtils.RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedValueCount uniqueRunIds = aggregations.get(BillingUtils.RUN_COUNT_AGG);
                 groupingInfo.put(BillingUtils.RUNS, Long.toString(uniqueRunIds.getValue()));
             }
-            if (grouping.storageUsageDetailsRequired()) {
+            if (grouping.isStorageUsageDetailsRequired()) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(BillingUtils.TOTAL_STORAGE_USAGE_AGG);
                 final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
                 groupingInfo.put(BillingUtils.TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));

@@ -19,6 +19,8 @@ public final class BillingUtils {
     public static final char SEPARATOR = ',';
 
     public static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
+    public static final DateTimeFormatter ELASTIC_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.ELASTIC_DATE_FORMAT, Locale.US);
     public static final DateTimeFormatter ELASTIC_DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.ELASTIC_DATE_TIME_FORMAT, Locale.US);
     public static final DateTimeFormatter EXPORT_DATE_TIME_FORMATTER =

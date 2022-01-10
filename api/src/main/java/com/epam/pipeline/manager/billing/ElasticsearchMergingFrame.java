@@ -1,6 +1,6 @@
-package com.epam.pipeline.billingreportagent.service;
+package com.epam.pipeline.manager.billing;
 
-import com.epam.pipeline.billingreportagent.exception.BillingException;
+import com.epam.pipeline.exception.search.SearchException;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
@@ -67,7 +67,7 @@ public enum ElasticsearchMergingFrame {
 
     public Stream<String> subPeriodNamesOf(final Temporal period) {
         if (ordinal() < 1) {
-            throw new BillingException(String.format("Synchronization frame %s does not have child frame", name()));
+            throw new SearchException(String.format("Synchronization frame %s does not have child frame", name()));
         }
         final ElasticsearchMergingFrame childFrame = values()[ordinal() - 1];
         return Stream.iterate(startOf(period), date -> date.plusDays(1))

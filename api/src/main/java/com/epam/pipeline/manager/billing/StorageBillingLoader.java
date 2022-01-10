@@ -5,6 +5,7 @@ import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.StorageBilling;
 import com.epam.pipeline.entity.billing.StorageBillingMetrics;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.manager.billing.index.BillingIndexHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
@@ -40,6 +41,7 @@ import java.util.stream.Stream;
 public class StorageBillingLoader implements BillingLoader<StorageBilling> {
 
     private final BillingHelper billingHelper;
+    private final BillingIndexHelper billingIndexHelper;
     private final PreferenceManager preferenceManager;
     private final StorageBillingDetailsLoader storageBillingDetailsLoader;
 
@@ -88,8 +90,8 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                                              final int pageOffset,
                                              final int pageSize) {
         return new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.storageIndicesByDate(from, to))
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .indices(billingIndexHelper.monthlyStorageIndicesBetween(from, to))
                 .source(new SearchSourceBuilder()
                         .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))

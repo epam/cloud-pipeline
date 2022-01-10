@@ -65,9 +65,6 @@ import java.util.stream.Stream;
 public class BillingHelper {
 
     private final AuthManager authManager;
-    private final String billingIndicesMonthlyPattern;
-    private final String billingRunIndicesMonthlyPattern;
-    private final String billingStorageIndicesMonthlyPattern;
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
@@ -76,21 +73,8 @@ public class BillingHelper {
     private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
 
-    public BillingHelper(final AuthManager authManager,
-                         final @Value("${billing.index.common.prefix}") String commonPrefix) {
+    public BillingHelper(final AuthManager authManager) {
         this.authManager = authManager;
-        this.billingIndicesMonthlyPattern = String.join("-",
-                commonPrefix,
-                BillingUtils.ES_WILDCARD,
-                BillingUtils.ES_MONTHLY_DATE_REGEXP);
-        this.billingRunIndicesMonthlyPattern = String.join("-",
-                commonPrefix,
-                BillingUtils.ES_WILDCARD + BillingUtils.RUN + BillingUtils.ES_WILDCARD,
-                BillingUtils.ES_MONTHLY_DATE_REGEXP);
-        this.billingStorageIndicesMonthlyPattern = String.join("-",
-                commonPrefix,
-                BillingUtils.ES_WILDCARD + BillingUtils.STORAGE + BillingUtils.ES_WILDCARD,
-                BillingUtils.ES_MONTHLY_DATE_REGEXP);
         this.costAggregation = AggregationBuilders.sum(BillingUtils.COST_FIELD)
                 .field(BillingUtils.COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG)
@@ -128,25 +112,6 @@ public class BillingHelper {
                 || authorizedUser.getRoles().stream()
                 .map(Role::getName)
                 .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
-    }
-
-    public String[] indicesByDate(final LocalDate from, final LocalDate to) {
-        return indicesByDate(from, to, billingIndicesMonthlyPattern);
-    }
-
-    public String[] runIndicesByDate(final LocalDate from, final LocalDate to) {
-        return indicesByDate(from, to, billingRunIndicesMonthlyPattern);
-    }
-
-    public String[] storageIndicesByDate(final LocalDate from, final LocalDate to) {
-        return indicesByDate(from, to, billingStorageIndicesMonthlyPattern);
-    }
-
-    private String[] indicesByDate(final LocalDate from, final LocalDate to, final String indexPattern) {
-        return Stream.iterate(from, d -> d.plus(1, ChronoUnit.MONTHS))
-                .limit(ChronoUnit.MONTHS.between(YearMonth.from(from), YearMonth.from(to)) + 1)
-                .map(date -> String.format(indexPattern, date.getYear(), date.getMonthValue()))
-                .toArray(String[]::new);
     }
 
     public BoolQueryBuilder queryByDateAndFilters(final LocalDate from,
