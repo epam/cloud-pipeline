@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 @Data
-@EqualsAndHashCode(exclude = "protocol")
+@EqualsAndHashCode(exclude = {"description", "protocol"})
 public class NatRoutingRuleDescription {
 
     private final String externalName;
