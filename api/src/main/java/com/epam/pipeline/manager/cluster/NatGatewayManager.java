@@ -613,8 +613,17 @@ public class NatGatewayManager {
             .filter(CollectionUtils::isNotEmpty)
             .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                 MessageConstants.NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE)));
-        ruleDescriptions.forEach(this::validateRuleFields);
-        return ruleDescriptions;
+        return ruleDescriptions.stream()
+            .map(this::setProtocolIfMissing)
+            .peek(this::validateRuleFields)
+            .collect(Collectors.toList());
+    }
+
+    private NatRoutingRuleDescription setProtocolIfMissing(final NatRoutingRuleDescription rule) {
+        return rule.getProtocol() != null
+               ? rule
+               : new NatRoutingRuleDescription(rule.getExternalName(), rule.getExternalIp(), rule.getPort(),
+                                               rule.getDescription(), TCP);
     }
 
     private void validateRuleFields(final NatRoutingRuleDescription rule) {
