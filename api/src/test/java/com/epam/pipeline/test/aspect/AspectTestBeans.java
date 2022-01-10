@@ -94,6 +94,7 @@ import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
+import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
@@ -405,4 +406,8 @@ public class AspectTestBeans {
 
     @MockBean
     protected QuotaMapper quotaMapper;
+
+    @MockBean
+    protected AppliedQuotaRepository appliedQuotaRepository;
+
 }

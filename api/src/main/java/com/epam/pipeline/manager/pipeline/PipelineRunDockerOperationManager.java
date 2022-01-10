@@ -78,6 +78,7 @@ public class PipelineRunDockerOperationManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun commitRun(Long id, Long registryId, String newImageName, boolean deleteFiles,
                                  boolean stopPipeline, boolean checkSize) {
+        checkAbilityToPerformOperation();
         if (checkSize) {
             Assert.state(checkFreeSpaceAvailable(id),
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH));
@@ -115,6 +116,7 @@ public class PipelineRunDockerOperationManager {
      * @return paused {@link PipelineRun}
      */
     public PipelineRun pauseRun(Long runId, boolean checkSize) {
+        checkAbilityToPerformOperation();
         if (checkSize) {
             Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
         }
@@ -137,6 +139,7 @@ public class PipelineRunDockerOperationManager {
      * @return resumed {@link PipelineRun}
      */
     public PipelineRun resumeRun(Long runId) {
+        checkAbilityToPerformOperation();
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
@@ -263,5 +266,10 @@ public class PipelineRunDockerOperationManager {
         return lastSuccessTaskDate.isPresent()
                 && DateUtils.convertDateToLocalDateTime(lastSuccessTaskDate.get())
                 .isAfter(lastStatusUpdateDate.get());
+    }
+
+    private void checkAbilityToPerformOperation() {
+        Assert.state(!preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE).orElse(false),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_OPERATION_FORBIDDEN));
     }
 }

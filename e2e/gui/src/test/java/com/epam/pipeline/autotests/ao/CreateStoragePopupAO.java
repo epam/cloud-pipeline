@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,12 +28,17 @@ import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.epam.pipeline.autotests.ao.Primitive.ALLOW_MOUNT;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
+import static com.epam.pipeline.autotests.ao.Primitive.DISABLE_MOUNT;
 import static com.epam.pipeline.autotests.ao.Primitive.ENABLE_VERSIONING;
+import static com.epam.pipeline.autotests.ao.Primitive.MOUNT_OPTIONS;
+import static com.epam.pipeline.autotests.ao.Primitive.MOUNT_POINT;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 
 public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePopUpAO<CreateStoragePopupAO, PipelinesLibraryAO> {
@@ -46,7 +51,12 @@ public class CreateStoragePopupAO extends StorageContentAO.AbstractEditStoragePo
             entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud region')]"))
                     .closest(".ant-row").find(by("role", "combobox"))),
             entry(ENABLE_VERSIONING, context().find(byText("Enable versioning"))
-                    .parent().find(byClassName("ant-checkbox")))
+                    .parent().find(byClassName("ant-checkbox"))),
+            entry(DISABLE_MOUNT, context().find(byText("Disable mount"))
+                    .parent().find(byClassName("ant-checkbox"))),
+            entry(MOUNT_POINT, $(byId("mountPoint"))),
+            entry(MOUNT_OPTIONS, $(byId("mountOptions"))),
+            entry(ALLOW_MOUNT, $(byValue("All available docker images")))
     );
 
     public CreateStoragePopupAO() {

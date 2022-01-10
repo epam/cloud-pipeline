@@ -17,6 +17,8 @@ package com.epam.pipeline.autotests.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -108,6 +110,9 @@ public class C {
         ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
         ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
         WEBDAV_ADDRESS = conf.getProperty("e2e.ui.webdav.address");
+        NAT_PROXY_SERVICE_PREFIX = conf.getProperty("e2e.ui.nat.proxy.service.prefix");
+        NAT_PROXY_SERVER_NAMES = Arrays.asList(conf.getProperty("e2e.ui.nat.proxy.service.names")
+                .split("\\s*,\\s*"));
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -197,4 +202,7 @@ public class C {
     public static final String INVALID_EXTENSION_PATH;
     public static final String ANONYM_EXTENSION_PATH;
     public static final String ADMIN_TOKEN_IS_SERVICE;
+
+    public static final String NAT_PROXY_SERVICE_PREFIX;
+    public static final List<String> NAT_PROXY_SERVER_NAMES;
 }
