@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -245,6 +245,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             sleep(1, SECONDS);
             attempt++;
         }
+        return this;
+    }
+
+    public NATGatewayAO waitForRouteData() {
+        $(byClassName("ant-table-placeholder")).waitUntil(visible, C.DEFAULT_TIMEOUT);
         return this;
     }
 

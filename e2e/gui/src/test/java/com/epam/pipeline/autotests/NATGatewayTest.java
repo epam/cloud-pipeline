@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -503,14 +503,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .close());
     }
 
-    private void deleteRoute(final String externalIPAddress, final String port) {
-        if (StringUtils.isBlank(externalIPAddress)) {
+    private void deleteRoute(final String serverName, final String port) {
+        if (StringUtils.isBlank(serverName)) {
             return;
         }
         navigationMenu()
                 .settings()
                 .switchToSystemManagement()
                 .switchToNATGateway()
-                .deleteRouteIfExists(externalIPAddress, port);
+                .deleteRouteIfExists(serverName, port);
     }
 }
