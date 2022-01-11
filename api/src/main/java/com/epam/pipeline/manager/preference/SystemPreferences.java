@@ -913,6 +913,12 @@ public class SystemPreferences {
             "cloud.temp.credentials.expiration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
 
     //LDAP
+    public static final StringPreference LDAP_URLS = new StringPreference(
+            "ldap.urls", "ldap://localhost:389", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_USERNAME = new StringPreference(
+            "ldap.username", "", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_PASSWORD = new StringPreference(
+            "ldap.password", "", LDAP_GROUP, pass);
     public static final StringPreference LDAP_BASE_PATH = new StringPreference(
             "ldap.base.path", "", LDAP_GROUP, pass);
     public static final StringPreference LDAP_USER_FILTER = new StringPreference(
