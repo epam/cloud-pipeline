@@ -180,6 +180,13 @@ public class UserManager {
         return userDao.loadAllUsers();
     }
 
+    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+        final PipelineUser currentUser = getCurrentUser();
+        return currentUser.isAdmin()
+                ? userDao.loadUsersWithActivityStatus()
+                : loadAllUsers();
+    }
+
     public List<UserInfo> loadUsersInfo() {
         return this.loadAllUsers().stream()
             .map(UserInfo::new)

@@ -80,6 +80,36 @@
                 ]]>
             </value>
         </property>
+        <property name="loadAllUsersWithActivityStateQuery">
+            <value>
+                <![CDATA[
+                     SELECT
+                      u.id as user_id,
+                      u.name as user_name,
+                      u.groups as user_groups,
+                      u.attributes as attributes,
+                      u.default_storage_id as user_default_storage_id,
+                      u.blocked as user_blocked,
+                      u.registration_date,
+                      u.first_login_date,
+                      r.id as role_id,
+                      r.name as role_name,
+                      r.predefined as role_predefined,
+                      r.user_default as role_user_default,
+                      r.default_storage_id as role_default_storage_id,
+                      CASE
+                        WHEN EXISTS (
+                          SELECT 1 FROM pipeline.spring_session s
+                          WHERE s.principal_name = u.name
+                            AND (? - s.last_access_time) / 1000 < s.max_inactive_interval
+                        ) THEN true ELSE false
+                      END AS online
+                    FROM pipeline.user u
+                      LEFT JOIN pipeline.user_roles ur ON u.id = ur.user_id
+                      LEFT JOIN pipeline.role r ON ur.role_id = r.id
+                ]]>
+            </value>
+        </property>
         <property name="loadAllUsersWithDefaultDataStoragePathQuery">
             <value>
                 <![CDATA[

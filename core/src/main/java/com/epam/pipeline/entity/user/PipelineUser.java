@@ -88,6 +88,9 @@ public class PipelineUser implements StorageContainer {
     @Convert(converter = AttributesConverterJson.class)
     private Map<String, String> attributes;
 
+    @Transient
+    private Boolean online;
+
     public PipelineUser() {
         this.admin = false;
         this.blocked = false;

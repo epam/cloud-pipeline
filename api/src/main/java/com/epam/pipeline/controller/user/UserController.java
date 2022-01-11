@@ -220,8 +220,10 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<PipelineUser>> loadUsers() {
-        return Result.success(userApiService.loadUsers());
+    public Result<List<PipelineUser>> loadUsers(@RequestParam(defaultValue = "false") final boolean activity) {
+        return Result.success(activity
+                ? userApiService.loadUsersWithActivityStatus()
+                : userApiService.loadUsers());
     }
 
     @GetMapping(value = "/users/info")

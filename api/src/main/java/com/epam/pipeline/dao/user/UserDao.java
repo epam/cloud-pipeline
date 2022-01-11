@@ -54,6 +54,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     private String createUserQuery;
     private String updateUserQuery;
     private String loadAllUsersQuery;
+    private String loadAllUsersWithActivityStateQuery;
     private String loadAllUsersWithDefaultDataStoragePathQuery;
     private String loadUserByNameQuery;
     private String loadUsersByNamesQuery;
@@ -100,6 +101,12 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
 
     public Collection<PipelineUser> loadAllUsers() {
         return getJdbcTemplate().query(loadAllUsersQuery, UserParameters.getUserExtractor());
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+        return getJdbcTemplate().query(loadAllUsersWithActivityStateQuery,
+                UserParameters.getUserExtractor(true),
+                System.currentTimeMillis());
     }
 
     public Collection<PipelineUserWithStoragePath> loadAllUsersWithDataStoragePath() {
@@ -244,7 +251,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         USER_DEFAULT_STORAGE_PATH,
         USER_BLOCKED,
         REGISTRATION_DATE,
-        FIRST_LOGIN_DATE;
+        FIRST_LOGIN_DATE,
+        USER_BLOCK_DATE,
+        LAST_LOGIN_DATE,
+        ONLINE;
 
         private static MapSqlParameterSource getParameterSource(Long userId, Long roleId) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -272,13 +282,17 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         }
 
         static ResultSetExtractor<Collection<PipelineUser>> getUserExtractor() {
-            return (ResultSet rs) -> {
+            return getUserExtractor(false);
+        }
+
+        static ResultSetExtractor<Collection<PipelineUser>> getUserExtractor(final boolean loadActivityState) {
+            return (rs) -> {
                 Map<Long, PipelineUser> users = new HashMap<>();
                 while (rs.next()) {
                     Long userId = rs.getLong(USER_ID.name());
                     PipelineUser user = users.get(userId);
                     if (user == null) {
-                        user = parseUser(rs, userId);
+                        user = parseUser(rs, userId, loadActivityState);
                         users.put(userId, user);
                     }
                     rs.getLong(RoleParameters.ROLE_ID.name());
@@ -316,7 +330,12 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             };
         }
 
-        static PipelineUser parseUser(ResultSet rs, Long userId) throws SQLException {
+        static PipelineUser parseUser(final ResultSet rs, final Long userId) throws SQLException {
+            return parseUser(rs, userId, false);
+        }
+
+        static PipelineUser parseUser(final ResultSet rs, final Long userId,
+                                      final boolean loadActivityState) throws SQLException {
             PipelineUser user = new PipelineUser();
             user.setId(userId);
             user.setUserName(rs.getString(USER_NAME.name()));
@@ -338,6 +357,9 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
             long defaultStorageId = rs.getLong(USER_DEFAULT_STORAGE_ID.name());
             if (!rs.wasNull()) {
                 user.setDefaultStorageId(defaultStorageId);
+            }
+            if (loadActivityState) {
+                user.setOnline(rs.getBoolean(ONLINE.name()));
             }
             return user;
         }
@@ -410,6 +432,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
         this.loadAllUsersQuery = loadAllUsersQuery;
     }
 
+    @Required
+    public void setLoadAllUsersWithActivityStateQuery(final String loadAllUsersWithActivityStateQuery) {
+        this.loadAllUsersWithActivityStateQuery = loadAllUsersWithActivityStateQuery;
+    }
 
     @Required
     public void setFindUsersByPrefixQuery(String findUsersByPrefixQuery) {
