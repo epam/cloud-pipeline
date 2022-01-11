@@ -128,6 +128,11 @@ public class UserApiService {
         return new ArrayList<>(userManager.loadAllUsers());
     }
 
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    public List<PipelineUser> loadUsersWithActivityStatus() {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus());
+    }
+
     @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
         return userManager.loadUsersInfo(userNames);
