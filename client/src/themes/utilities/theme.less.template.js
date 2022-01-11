@@ -2518,6 +2518,12 @@ export default `
 @THEME .cp-nat-route-removed .cp-nat-route-status {
   color: currentColor;
 }
+@THEME .cp-user-status-online {
+  fill: @color-green;
+}
+@THEME .cp-user-status-offline {
+  fill: @color-grey;
+}
 
 @THEME .code-highlight {
   color: @application-color;
