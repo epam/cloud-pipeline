@@ -201,6 +201,13 @@ public class UserManager {
         return userDao.loadAllUsers();
     }
 
+    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+        final PipelineUser currentUser = getCurrentUser();
+        return currentUser.isAdmin()
+                ? userDao.loadUsersWithActivityStatus()
+                : loadAllUsers();
+    }
+
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
         final Collection<PipelineUser> users = CollectionUtils.isEmpty(userNames) ? loadAllUsers() :
                 loadUsersByNames(userNames);
