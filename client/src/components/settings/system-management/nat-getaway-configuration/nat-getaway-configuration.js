@@ -202,7 +202,7 @@ export default class NATGetaway extends React.Component {
                 'cp-text-not-important'
               )
             }
-            style={{visibility: 'hidden'}}
+            style={{display: 'none'}}
             type="question-circle-o"
           />
         );

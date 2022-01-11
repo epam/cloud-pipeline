@@ -27,6 +27,8 @@ import {
 } from '../helpers';
 import styles from './add-route-modal.css';
 
+const protocols = {TCP: 'tcp', UDP: 'udp'};
+
 const FormItem = Form.Item;
 export default class AddRouteForm extends React.Component {
   static portUID = 0;
@@ -43,7 +45,7 @@ export default class AddRouteForm extends React.Component {
   };
 
   state = {
-    ports: {'port': {value: undefined, protocol: 'tcp'}},
+    ports: {'port': {value: undefined, protocol: protocols.TCP}},
     ip: undefined,
     serverName: undefined,
     description: undefined,
@@ -171,7 +173,7 @@ export default class AddRouteForm extends React.Component {
     this.setState({
       ports: {
         ...ports,
-        [identifier]: {value: undefined, protocol: 'tcp'}
+        [identifier]: {value: undefined, protocol: protocols.TCP}
       }
     }, () => this.validate());
   }
@@ -187,7 +189,7 @@ export default class AddRouteForm extends React.Component {
   resetForm = () => {
     const identifier = `port${AddRouteForm.getPortUID()}`;
     this.setState({
-      ports: {[identifier]: {value: undefined, protocol: 'tcp'}},
+      ports: {[identifier]: {value: undefined, protocol: protocols.TCP}},
       ip: undefined,
       serverName: undefined,
       description: undefined,
@@ -426,8 +428,8 @@ export default class AddRouteForm extends React.Component {
                           value={port.protocol}
                           onChange={this.handleProtocolChange(portIdentifier)}
                         >
-                          <Select.Option value="tcp">TCP</Select.Option>
-                          <Select.Option value="udp">UDP</Select.Option>
+                          <Select.Option value={protocols.TCP}>TCP</Select.Option>
+                          <Select.Option value={protocols.UDP}>UDP</Select.Option>
                         </Select>
                       </FormItem>
                     </div>
