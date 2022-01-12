@@ -15,13 +15,30 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.codeborne.selenide.Condition;
+import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.SupportButtonAO;
+import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Json;
+import com.epam.pipeline.autotests.utils.SupportButton;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
-public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements Navigation {
+import java.util.List;
+
+import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
+import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertEquals;
+
+public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
+
+    private static final String SUPPORT_ICONS_JSON = "/supportIcons.json";
 
     @Test
     @TestCase(value = {"897"})
@@ -82,5 +99,51 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
                 .switchToPreferences()
                 .switchToCluster()
                 .checkClusterAllowedInstanceTypesDocker(C.DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER);
+    }
+
+    @Test
+    @TestCase(value = {"2356"})
+    public void checkSeveralSupportIconsConfiguration() {
+        final SettingsPageAO.PreferencesAO preferencesAO = navigationMenu()
+                .settings()
+                .switchToPreferences();
+        final String supportTemplateValue = preferencesAO
+                .switchToUserInterface()
+                .getSupportTemplate();
+        try {
+            final String json = readResourceFully(SUPPORT_ICONS_JSON);
+            preferencesAO
+                    .setPreference(SUPPORT_TEMPLATE, json, true)
+                    .saveIfNeeded()
+                    .refresh();
+            sleep(2, SECONDS);
+            final SupportButtonAO supportButtonAO = new SupportButtonAO();
+            final List<SupportButton.Icon> icons = Json.stringToSupportButtons(json).getIcons();
+            assertEquals(icons.size(), 3);
+            final Condition iconCondition1 = Condition.cssClass(format("anticon-%s", icons.get(0).getIcon()));
+            supportButtonAO
+                    .checkSupportButtonIcon(iconCondition1);
+            final Condition iconCondition2 = Condition.attribute("src", icons.get(1).getIcon());
+            supportButtonAO
+                    .checkSupportButtonIcon(iconCondition2);
+            supportButtonAO.checkSupportButtonContent(icons.get(0), iconCondition1);
+            supportButtonAO.checkSupportButtonContent(icons.get(1), iconCondition2);
+
+            logoutIfNeeded();
+            loginAs(user);
+            sleep(10, SECONDS);
+            final Condition iconCondition3 = Condition.cssClass(format("anticon-%s", icons.get(2).getIcon()));
+            supportButtonAO
+                    .checkSupportButtonIcon(iconCondition3);
+            supportButtonAO.checkSupportButtonContent(icons.get(2), iconCondition3);
+        } finally {
+            logoutIfNeeded();
+            loginAs(admin);
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setPreference(SUPPORT_TEMPLATE, supportTemplateValue, true)
+                    .saveIfNeeded();
+        }
     }
 }

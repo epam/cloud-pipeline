@@ -40,7 +40,10 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   }
 
   handleFilterClick = (filter) => () => {
-    const {selection, onChange} = this.props;
+    const {disabled, selection, onChange} = this.props;
+    if (disabled) {
+      return;
+    }
     let newSelection = [];
     if (filter.count > 0) {
       newSelection = (selection || []).filter(s => !filter.test(s));
@@ -54,6 +57,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
   };
 
   render () {
+    const {disabled} = this.props;
     return (
       <div
         className={styles.documentTypeFilter}
@@ -67,7 +71,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
                   'cp-search-faceted-button',
                   {
                     'selected': f.enabled,
-                    'disabled': !f.enabled && f.count === 0
+                    'disabled': (!f.enabled && f.count === 0) || disabled
                   }
                 )
               }
@@ -99,6 +103,7 @@ class DocumentTypeFilter extends localization.LocalizedReactComponent {
 }
 
 DocumentTypeFilter.propTypes = {
+  disabled: PropTypes.bool,
   onChange: PropTypes.func,
   selection: PropTypes.array,
   values: PropTypes.array

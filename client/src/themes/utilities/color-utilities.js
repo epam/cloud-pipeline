@@ -21,6 +21,9 @@ export function parseColor (color) {
   if (color === 'black') {
     color = '#000000';
   }
+  if (color === 'transparent') {
+    color = 'rgba(0, 0, 0, 0)';
+  }
   const minifiedHexExec = /^#([0-9a-f]{3})$/i.exec(color);
   const hexExec = /^#([0-9a-f]{6})$/i.exec(color);
   const rgbExec = /^rgb\(\s*([\d]+)\s*,\s*([\d]+)\s*,\s*([\d]+)\s*\)$/i.exec(color);

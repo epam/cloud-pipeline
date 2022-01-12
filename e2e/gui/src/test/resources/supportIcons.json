@@ -1,0 +1,18 @@
+{
+  "ROLE_ADMIN": {
+    "icon1": {
+      "icon": "rocket",
+      "content": "CONTENT1 for <br> Admin users"
+    },
+    "icon2": {
+      "icon": "https://t.alipayobjects.com/images/rmsweb/T1B9hfXcdvXXXXXXXX.svg",
+      "content": "CONTENT2 for <br> Admin users"
+    }
+  },
+  "_default": {
+    "icon3": {
+      "icon" : "key",
+      "content" : "CONTENT3 for <br> Non_admin users"
+    }
+  }
+}

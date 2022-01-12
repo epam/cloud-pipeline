@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {DatePicker, Button, Popover} from 'antd';
 import moment from 'moment-timezone';
-import {Range, Period} from '../../periods';
+import {Range, Period} from '../../../navigation/periods';
 import styles from './range-picker.css';
 import PickerButton from './picker-button';
 import pickerStyles from './pickers.css';

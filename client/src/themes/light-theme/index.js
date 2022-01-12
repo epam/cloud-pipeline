@@ -137,7 +137,7 @@ export default {
     '@code-background-color': 'darken(@card-background-color, 5%)',
     '@card-background-color-not-faded': 'fade(@card-background-color, 100%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@color-warning',
+    '@search-highlight-text-background-color': 'yellow',
     '@background-image': 'none',
     '@navigation-background-image': 'none',
     '@logo-image': "@static_resource('logo.png')"

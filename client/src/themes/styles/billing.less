@@ -93,7 +93,16 @@
 }
 
 .cp-billing-calendar-row-item {
-  border: 1px solid @card-border-color;
+  border-right: 1px solid @card-border-color;
+  border-bottom: 1px solid @card-border-color;
+}
+
+.cp-billing-calendar-row-item:last-child {
+  border-right: none;
+}
+
+.cp-billing-calendar-row:last-child .cp-billing-calendar-row-item {
+  border-bottom: none;
 }
 
 .cp-billing-calendar-row-item.selected {
@@ -136,4 +145,6 @@
   border-bottom-color: @application-color;
 }
 
-
+.cp-billing-layout .react-grid-item {
+  transition: none;
+}

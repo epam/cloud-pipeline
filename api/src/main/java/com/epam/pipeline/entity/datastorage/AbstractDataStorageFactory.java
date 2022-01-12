@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.region.CloudProvider;
+import org.apache.commons.lang.BooleanUtils;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +54,7 @@ public abstract class AbstractDataStorageFactory {
         storage.setParentFolderId(vo.getParentFolderId());
         storage.setShared(vo.isShared());
         storage.setSensitive(vo.isSensitive());
+        storage.setMountDisabled(BooleanUtils.isTrue(vo.getMountDisabled()));
         storage.setToolsToMount(vo.getToolsToMount());
         return storage;
     }

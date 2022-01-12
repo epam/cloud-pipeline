@@ -42,6 +42,7 @@ import java.util.function.Function;
 import static com.codeborne.selenide.Condition.empty;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.WebDriverRunner.getWebDriver;
@@ -282,7 +283,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                         text("Found in podId"))
                 .ensure(PREVIEW, text("Owner"), text(LOGIN), text("Scheduled"), text("Started"),
                         text("Finished"), text("Estimated price"))
-                .ensure(PREVIEW_TAB, text("InitializeNode"))
+                .ensure(CONTENT_PREVIEW, text("InitializeNode"))
                 .parent()
                 .moveToSearchResultItemWithText(pipelineWithRun(), LogAO::new)
                 .ensure(STATUS, text(String.format("Run #%s", testRunID)));
@@ -499,7 +500,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .ensure(PREVIEW, text("Owner"), text("Scheduled"),
                         text("Started"), text("Running for"), text("Estimated price"))
                 .checkEndpointsLink(endpointLink)
-                .ensure(PREVIEW_TAB, text("InputData"), text("MountDataStorages"),
+                .ensure(CONTENT_PREVIEW, text("InputData"), text("MountDataStorages"),
                         text("InitializeEnvironment"), text("Console"))
                 .parent()
                 .moveToSearchResultItemWithText(testRunID_2668, LogAO::new)
@@ -532,7 +533,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
             runsMenu()
                     .activeRuns()
                     .stopRun(testRunID_2668);
-            home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+            home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
             search()
                     .click(RUNS)
                     .search(testRunID_2668)
@@ -557,6 +558,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                     .clickOnEndpointLink();
             endpointPage
                     .sleep(3, SECONDS)
+                    .refresh()
                     .assertPageTitleIs("404 Not Found");
         } finally {
             if (endpointPage != null) {
@@ -607,7 +609,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         library()
                 .cd(folder)
                 .createFolder(title);
-        home().sleep(C.SEARCH_TIMEOUT, MINUTES);
+        home().sleep(C.SEARCH_TIMEOUT + 2, MINUTES);
         search()
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
                 .search(title)
@@ -619,7 +621,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .validateSearchResults(2, title)
                 .click(FOLDERS)
                 .ensureAll(enabled, FOLDERS, ISSUES)
-                .ensure(FOLDERS, GlobalSearchAO.selected)
+                .ensure(FOLDERS, not(GlobalSearchAO.disable))
                 .validateSearchResults(1, title)
                 .click(FOLDERS)
                 .ensureAll(enabled, FOLDERS, ISSUES)
@@ -627,13 +629,13 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
                 .close()
                 .click(ISSUES)
                 .ensureAll(enabled, FOLDERS, PIPELINES, RUNS, TOOLS, DATA, ISSUES)
-                .ensure(ISSUES, GlobalSearchAO.selected)
+                .ensure(ISSUES, not(GlobalSearchAO.disable))
                 .search(title)
                 .enter()
                 .ensureAll(GlobalSearchAO.disable, FOLDERS, PIPELINES, RUNS, TOOLS, DATA)
                 .ensure(ISSUES, enabled)
                 .ensure(ISSUES, text("1 ISSUE"))
-                .ensure(ISSUES, GlobalSearchAO.selected)
+                .ensure(ISSUES, not(GlobalSearchAO.disable))
                 .validateSearchResults(1, title)
                 .click(ISSUES)
                 .ensureAll(GlobalSearchAO.disable, PIPELINES, RUNS, TOOLS, DATA)

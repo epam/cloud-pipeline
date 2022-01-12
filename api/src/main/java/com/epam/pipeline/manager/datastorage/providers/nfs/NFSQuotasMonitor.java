@@ -135,7 +135,8 @@ public class NFSQuotasMonitor {
         final List<NFSQuotaTrigger> triggersList = triggersManager.loadAll();
         final List<NFSDataStorage> nfsDataStorages = loadAllNFS(dataStorageManager.getDataStorages());
         updateMapsState(triggersList, nfsDataStorages);
-        nfsDataStorages.forEach(this::processStorageQuota);
+        final Map<String, Set<String>> storageSizeMasksMapping = dataStorageManager.loadSizeCalculationMasksMapping();
+        nfsDataStorages.forEach(storage -> processStorageQuota(storage, storageSizeMasksMapping));
         final Map<Long, NFSDataStorage> nfsMapping = nfsDataStorages.stream()
             .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
         final LocalDateTime checkTime = DateUtils.nowUTC();
@@ -145,10 +146,12 @@ public class NFSQuotasMonitor {
     }
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
-    private void processStorageQuota(final NFSDataStorage storage) {
+    private void processStorageQuota(final NFSDataStorage storage,
+                                     final Map<String, Set<String>> storageSizeMasksMapping) {
         try {
             Optional.ofNullable(activeQuotas.get(storage.getId()))
-                .ifPresent(quota -> processActiveQuota(quota, storage));
+                .ifPresent(quota -> processActiveQuota(
+                    quota, storage, dataStorageManager.resolveSizeMasks(storageSizeMasksMapping, storage)));
         } catch (Exception e) {
             log.error("An error occurred during processing quotas for storageId={}: {}",
                       storage.getId(), e.getMessage());
@@ -162,11 +165,12 @@ public class NFSQuotasMonitor {
             .collect(Collectors.toList());
     }
 
-    private void processActiveQuota(final NFSQuota quota, final NFSDataStorage storage) {
+    private void processActiveQuota(final NFSQuota quota, final NFSDataStorage storage,
+                                    final Set<String> storageSizeMasks) {
         CollectionUtils.emptyIfNull(quota.getNotifications()).stream()
             .filter(Objects::nonNull)
             .sorted(quotasComparator(storage).reversed())
-            .filter(notification -> exceedsLimit(storage, notification))
+            .filter(notification -> exceedsLimit(storage, notification, storageSizeMasks))
             .findFirst()
             .ifPresent(notification -> checkMatchingNotification(storage, notification, quota.getRecipients()));
     }
@@ -301,9 +305,10 @@ public class NFSQuotasMonitor {
         return mountStatus;
     }
 
-    private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification) {
+    private boolean exceedsLimit(final NFSDataStorage storage, final NFSQuotaNotificationEntry notification,
+                                 final Set<String> storageSizeMasks) {
         final Double originalLimit = notification.getValue();
-        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, false);
+        final StorageUsage storageUsage = searchManager.getStorageUsage(storage, null, false, storageSizeMasks);
         final StorageQuotaType notificationType = notification.getType();
         switch (notificationType) {
             case GIGABYTES:
@@ -318,7 +323,7 @@ public class NFSQuotasMonitor {
 
     private boolean exceedsAbsoluteLimit(final Double originalLimit, final StorageUsage storageUsage) {
         final long limitBytes = (long) (originalLimit * GB_TO_BYTES);
-        return storageUsage.getSize() > limitBytes;
+        return storageUsage.getEffectiveSize() > limitBytes;
     }
 
     private boolean exceedsPercentageLimit(final NFSDataStorage storage, final Double originalLimit,
@@ -330,7 +335,7 @@ public class NFSQuotasMonitor {
                 return lustreManager.findLustreFS(shareMount)
                     .map(LustreFS::getCapacityGb)
                     .map(maxSize -> convertLustrePercentageLimitToAbsoluteValue(originalLimit, maxSize) * GB_TO_BYTES)
-                    .map(limit -> storageUsage.getSize() > limit)
+                    .map(limit -> storageUsage.getEffectiveSize() > limit)
                     .orElse(false);
             case NFS:
                 log.warn(messageHelper.getMessage(MessageConstants.STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN,

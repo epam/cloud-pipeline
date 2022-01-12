@@ -62,6 +62,10 @@ class PermissionHelper:
     def is_storage_readable(cls, storage):
         return cls.is_permission_set(storage, READ_MASK)
 
+    @classmethod
+    def is_storage_mount_disabled(cls, storage):
+        return storage.mount_disabled is True
+
     # Checks that tool with its version for the current run is allowed to mount this storage
     # or there is no configured restriction for this storage
     @classmethod
@@ -214,6 +218,9 @@ class MountStorageTask:
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
                     Logger.info('Storage is not readable', task_name=self.task_name)
+                    continue
+                if PermissionHelper.is_storage_mount_disabled(storage_and_mount.storage):
+                    Logger.info('Storage disabled for mounting, skipping.', task_name=self.task_name)
                     continue
                 if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
                     storage_not_allowed_msg = 'Storage {} is not allowed for {} image'.format(storage_and_mount.storage.name, run.get("actualDockerImage", ""))

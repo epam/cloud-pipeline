@@ -141,6 +141,11 @@ public class LogAO implements AccessObject<LogAO> {
                 .messageShouldAppear("COMMIT SUCCEEDED", COMMITTING_TIMEOUT);
     }
 
+    public LogAO assertCommitButtonIsNotVisible() {
+        get(COMMIT).shouldNotBe(visible);
+        return this;
+    }
+
     public LogAO waitForPauseButton() {
         get(PAUSE).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
@@ -356,7 +361,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public SelenideElement waitForMountBuckets() {
         return $(byXpath("//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
-                .waitUntil(cssClass("status-icon__icon-green"), BUCKETS_MOUNTING_TIMEOUT);
+                .waitUntil(cssClass("cp-runs-table-icon-green"), BUCKETS_MOUNTING_TIMEOUT);
     }
 
     public static By runId() {
@@ -538,10 +543,10 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public enum Status {
-        SUCCESS("status-icon__icon-green"),
-        FAILURE("status-icon__icon-red"),
-        STOPPED("status-icon__icon-yellow"),
-        WORKING("status-icon__icon-blue"),
+        SUCCESS("cp-runs-table-icon-green"),
+        FAILURE("cp-runs-table-icon-red"),
+        STOPPED("cp-runs-table-icon-yellow"),
+        WORKING("cp-runs-table-icon-blue"),
         LOADING("anticon-loading"),
         PAUSED("anticon-pause-circle-o");
 
@@ -551,7 +556,8 @@ public class LogAO implements AccessObject<LogAO> {
             this.reached = new Condition("status " + this.name()) {
                 @Override
                 public boolean apply(final WebElement element) {
-                    return $(element).find(byXpath(".//i[contains(@class, 'status-icon')]")).has(cssClass(iconClass));
+                    return $(element).find(byXpath(".//i[contains(@class, 'anticon')]"))
+                            .has(cssClass(iconClass));
                 }
 
                 @Override

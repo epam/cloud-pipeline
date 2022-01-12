@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
@@ -73,6 +74,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -113,6 +115,9 @@ public class UserManager {
 
     @Autowired
     private GrantPermissionHandler permissionHandler;
+
+    @Autowired
+    private PipelineUserRepository userRepository;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -187,8 +192,20 @@ public class UserManager {
         return user;
     }
 
+    public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
+        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
     public Collection<PipelineUser> loadAllUsers() {
         return userDao.loadAllUsers();
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+        final PipelineUser currentUser = getCurrentUser();
+        return currentUser.isAdmin()
+                ? userDao.loadUsersWithActivityStatus()
+                : loadAllUsers();
     }
 
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {

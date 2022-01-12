@@ -206,17 +206,17 @@ class YearPicker extends React.Component {
           />
         </div>
         <div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderYear(0)}
             {renderYear(1)}
             {renderYear(2)}
           </div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderYear(3)}
             {renderYear(4)}
             {renderYear(5)}
           </div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderYear(6)}
             {renderYear(7)}
             {renderYear(8)}

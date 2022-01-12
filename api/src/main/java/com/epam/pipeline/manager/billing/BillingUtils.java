@@ -1,6 +1,12 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.security.acl.AclClass;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.metadata.MetadataManager;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
@@ -157,6 +163,17 @@ public final class BillingUtils {
                 .orElse(BigDecimal.ZERO)
                 .divide(BigDecimal.valueOf(divisor), DECIMAL_SCALE, RoundingMode.CEILING)
                 .toString();
+    }
+
+    public static String getUserBillingCenter(final PipelineUser user,
+                                              final String billingCenterKey,
+                                              final MetadataManager metadataManager) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
+                .map(MetadataEntry::getData)
+                .filter(MapUtils::isNotEmpty)
+                .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
+                .flatMap(value -> Optional.ofNullable(value.getValue()))
+                .orElse(StringUtils.EMPTY);
     }
 
     private static long tenInPowerOf(final int scale) {

@@ -24,6 +24,7 @@ import java.util.Map;
 
 import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
 import static com.codeborne.selenide.CollectionCondition.texts;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
@@ -118,7 +119,8 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
     }
 
     public SelectLimitMountsPopupAO<PARENT_TYPE> storagesCountShouldBeGreaterThan(int size) {
-        $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(sizeGreaterThan(size));
+        $(byClassName("ant-modal-body")).find(byClassName("ant-table-tbody")).findAll("tr")
+                .shouldHave(sizeGreaterThan(size));
         return this;
     }
 
@@ -132,6 +134,11 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
     public int countObjectStorages() {
         return $$(byXpath("//tbody[@class='ant-table-tbody']//span[@class='ant-checkbox ant-checkbox-checked']")).size() -
                             countStoragesWithType("NFS");
+    }
+
+    public SelectLimitMountsPopupAO<PARENT_TYPE> validateNotFoundStorage() {
+        get(TABLE).shouldHave(text("No data storages available"));
+        return this;
     }
 
     private int countStoragesWithType(String type) {

@@ -142,7 +142,6 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
                 .addKeyWithValue(key1, value1)
                 .selectKey(key1)
                 .ensure(DELETE_ICON, visible)
-                .validateKeyBackgroundIsGrey()
                 .ensureVisible(REMOVE_ALL);
     }
 
@@ -150,7 +149,7 @@ public class ObjectMetadataFileTest extends AbstractBfxPipelineTest implements A
     @TestCase(value = {"EPMCMBIBPC-1173"})
     public void updateKeyValidationForFileInBucket() {
         fileMetadata()
-                .selectKeyByOrderNumber(1)
+                .selectKeyByOrderNumber(2)
                 .changeKey(key2)
                 .assertKeyIs(key2)
                 .changeValue(value2)

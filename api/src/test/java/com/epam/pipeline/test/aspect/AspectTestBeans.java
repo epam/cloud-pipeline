@@ -72,6 +72,7 @@ import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
@@ -91,10 +92,14 @@ import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
+import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
+import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
+import com.epam.pipeline.repository.quota.QuotaActionRepository;
+import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
@@ -107,7 +112,6 @@ import org.springframework.boot.autoconfigure.flyway.FlywayMigrationInitializer;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 import org.springframework.security.access.PermissionEvaluator;
@@ -394,7 +398,19 @@ public class AspectTestBeans {
     protected NatGatewayDao natGatewayDao;
 
     @MockBean
-    protected LdapTemplate ldapTemplate;
+    protected LdapTemplateProvider ldapTemplateProvider;
+
+    @MockBean
+    protected QuotaRepository quotaRepository;
+
+    @MockBean
+    protected QuotaActionRepository quotaActionRepository;
+
+    @MockBean
+    protected QuotaMapper quotaMapper;
+
+    @MockBean
+    protected AppliedQuotaRepository appliedQuotaRepository;
 
     @MockBean
     protected StorageQuotaTriggersDao storageQuotaTriggersDao;

@@ -27,11 +27,14 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.UnaryOperator;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -342,9 +345,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 private final CreateNotificationPopup parentAO;
 
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
-                        entry(INFO, context().find(By.className("edit-system-notification-form__info"))),
-                        entry(WARNING, context().find(By.className("edit-system-notification-form__warning"))),
-                        entry(CRITICAL, context().find(By.className("edit-system-notification-form__critical")))
+                        entry(INFO, context().find(byClassName("cp-setting-info"))),
+                        entry(WARNING, context().find(byClassName("cp-setting-warning"))),
+                        entry(CRITICAL, context().find(byClassName("cp-setting-critical")))
                 );
 
                 public NotificationSeverityCombobox(CreateNotificationPopup parentAO) {
@@ -445,7 +448,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public SystemEventsEntry ensureSeverityIconIs(String severity) {
-                ensure(SEVERITY_ICON, cssClass(format("tyles__%s", severity.toLowerCase())));
+                ensure(SEVERITY_ICON, cssClass(format("cp-setting-%s", severity.toLowerCase())));
                 return this;
             }
 
@@ -489,9 +492,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public class UserManagementAO extends SettingsPageAO {
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(USERS_TAB, $$(byClassName("ant-tabs-tab")).findBy(text("Users"))),
-                entry(GROUPS_TAB, $$(byClassName("ant-tabs-tab")).findBy(text("Groups"))),
-                entry(ROLE_TAB, $$(byClassName("ant-tabs-tab")).findBy(text("Roles")))
+                entry(USERS_TAB, $(byClassName("section-users")).find(byText("Users"))),
+                entry(GROUPS_TAB, $(byClassName("section-groups")).find(byText("Groups"))),
+                entry(ROLE_TAB, $(byClassName("section-roles")).find(byText("Roles")))
         );
 
         public UserManagementAO(PipelinesLibraryAO pipelinesLibraryAO) {
@@ -521,8 +524,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public class UsersTabAO extends SystemEventsAO {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
                     super.elements(),
-                    entry(TABLE, context().find(byClassName("ant-tabs-tabpane-active"))
-                            .find(byClassName("ant-table-content"))),
+                    entry(TABLE, context().find(byClassName("user-management-form__container"))
+                            .find(byClassName("ant-table-tbody"))),
                     entry(SEARCH, context().find(byClassName("ant-input-search"))),
                     entry(CREATE_USER, context().find(button("Create user"))),
                     entry(EXPORT_USERS, context().find(button("Export users")))
@@ -558,7 +561,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return elements().get(TABLE)
                         .find(byXpath(format(
                                 ".//td[contains(@class, 'user-management-form__user-name-column') and " +
-                                        "starts-with(., '%s')]", login)))
+                                        "starts-with(.//text(), '%s')]", login)))
                         .closest(".ant-table-row-level-0");
             }
 
@@ -1102,13 +1105,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public class PreferencesAO extends SettingsPageAO {
         public final Map<Primitive, SelenideElement> elements = initialiseElements(
                 super.elements(),
-                entry(CLUSTER_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Cluster"))),
-                entry(SYSTEM_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("System"))),
-                entry(DOCKER_SECURITY_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Docker security"))),
-                entry(AUTOSCALING_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Grid engine autoscaling"))),
-                entry(USER_INTERFACE_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("User Interface"))),
-                entry(LUSTRE_FS_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Lustre FS"))),
-                entry(LAUNCH_TAB, $$(byClassName("preferences__preference-group-row")).findBy(text("Launch"))),
+                entry(CLUSTER_TAB, $(byClassName("section-cluster"))),
+                entry(SYSTEM_TAB, $(byClassName("section-system"))),
+                entry(DOCKER_SECURITY_TAB, $(byClassName("section-docker-security"))),
+                entry(AUTOSCALING_TAB, $(byClassName("section-grid-engine-autoscaling"))),
+                entry(USER_INTERFACE_TAB, $(byClassName("section-user-interface"))),
+                entry(LUSTRE_FS_TAB, $(byClassName("section-lustre-fs"))),
+                entry(LAUNCH_TAB, $(byClassName("section-launch"))),
                 entry(SEARCH,  context().find(byClassName("ant-input-search")).find(tagName("input"))),
                 entry(SAVE, $(byId("edit-preference-form-ok-button")))
         );
@@ -1195,6 +1198,21 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             clearTextField(pref);
             clickAndSendKeysWithSlashes(pref, value);
             deleteExtraBrackets(pref, 100);
+            setEyeOption(eyeIsChecked);
+            return this;
+        }
+
+        public PreferencesAO updateCodeText(final String preference, final String value, final boolean eyeIsChecked) {
+            searchPreference(preference);
+            final SelenideElement editor = $(byClassName("CodeMirror-line"));
+            selectAllAndClearTextField(editor);
+            final StringSelection stringSelection = new StringSelection(value);
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(stringSelection, null);
+            actions().moveToElement(editor).click()
+                    .sendKeys(Keys.chord(Keys.CONTROL, "v"))
+                    .perform();
+            deleteExtraBrackets(editor, 500);
             setEyeOption(eyeIsChecked);
             return this;
         }
@@ -1539,6 +1557,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 ensure(supportTemplateState, cssClass("anticon-eye"));
                 return this;
             }
+
+            public String getSupportTemplate() {
+                return $(supportTemplateValue).getValue();
+            }
         }
 
         public class LustreFSAO extends PreferencesAO {
@@ -1582,6 +1604,33 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 ensure(getByField(LAUNCH_CONTAINER_CPU_RESOURCES), value(value));
                 return this;
             }
+
+            public String getLaunchSystemParameters() {
+                return $$(byClassName("preference-group__preference-row")).stream()
+                        .map(SelenideElement::getText)
+                        .filter(e -> e.startsWith(LAUNCH_PARAMETERS))
+                        .map(e -> e.replaceAll("\\n[0-9]*\\n", "\n")
+                                .replaceFirst(LAUNCH_PARAMETERS + "\n", ""))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
+            }
+
+            public LaunchAO setLaunchSystemParameters(final UnaryOperator<String> action) {
+                final String launchSystemParameters = getLaunchSystemParameters();
+                final String edited = action.apply(launchSystemParameters);
+                if (launchSystemParameters.equals(edited)) {
+                    return this;
+                }
+                final SelenideElement launchSystemParameter = $$(byClassName("preference-group__preference-row")).stream()
+                        .filter(s -> s.getText().startsWith(LAUNCH_PARAMETERS))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
+                return this;
+            }
         }
 
         @Override
@@ -1592,7 +1641,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
     public class MyProfileAO implements AccessObject<MyProfileAO> {
         private final Map<Primitive,SelenideElement> elements = initialiseElements(
-                entry(USER_NAME, $(byClassName("ser-profile__header"))),
+                entry(USER_NAME, $(byClassName("rofile__header"))),
                 entry(LIMIT_MOUNTS, $(byClassName("limit-mounts-input__limit-mounts-input"))),
                 entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
         );

@@ -104,7 +104,7 @@ export default `
   border: 1px solid @application-color;
 }
 @THEME .color-presenter {
-  border-color: @application-color;
+  stroke: @application-color;
 }
 @THEME .image-uploader {
   border-color: @application-color;
@@ -184,6 +184,9 @@ export default `
   height: 100%;
   background-color: transparent;
 }
+@THEME .cp-divider.inline {
+  background: @panel-border-color;
+}
 @THEME .cp-primary {
   color: @primary-color;
 }
@@ -217,7 +220,7 @@ export default `
 @THEME .cp-sensitive-tag.bordered {
   background-color: transparent;
   color: @color-sensitive;
-  border-color: currentColor;
+  border: 1px solid currentColor;
 }
 @THEME .cp-tag {
   background-color: transparent;
@@ -279,7 +282,8 @@ export default `
 @THEME h2,
 @THEME h3,
 @THEME h4,
-@THEME h5 {
+@THEME h5,
+@THEME h6 {
   color: @application-color;
 }
 @THEME .ant-input,
@@ -445,6 +449,9 @@ export default `
   background-color: transparent;
   color: @application-color;
   border-color: @panel-border-color;
+}
+@THEME .ant-menu > .ant-menu-item-divider {
+  background-color: @panel-border-color;
 }
 @THEME .ant-menu > .ant-menu-item > a,
 @THEME .ant-menu > .ant-menu-submenu > a {
@@ -897,6 +904,7 @@ export default `
 @THEME .ant-select-selection:hover .ant-select-selection__clear ~ .ant-select-arrow {
   opacity: 0;
 }
+@THEME .ant-dropdown,
 @THEME .ant-select-dropdown,
 @THEME .ant-dropdown-menu,
 @THEME .rc-menu,
@@ -911,7 +919,8 @@ export default `
   border-color: @panel-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-divider {
   background-color: @panel-border-color;
 }
 @THEME .ant-select-selection__placeholder,
@@ -1170,16 +1179,24 @@ export default `
   background: @primary-color;
   color: @primary-text-color;
 }
-@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow {
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow {
   border-right-color: @card-border-color;
 }
-@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after {
+@THEME .ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-right-color: @card-background-color;
 }
-@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow {
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow,
+@THEME .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow {
   border-left-color: @card-border-color;
 }
-@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after {
+@THEME .ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow::after,
+@THEME .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-left-color: @card-background-color;
 }
 @THEME .ant-popover-placement-top > .ant-popover-content > .ant-popover-arrow,
@@ -1483,6 +1500,10 @@ export default `
 @THEME .cp-panel .cp-panel-card .cp-card-action-button.cp-danger {
   color: @btn-danger-color;
 }
+@THEME .cp-panel .cp-panel-card .cp-card-action-button.cp-disabled {
+  color: @btn-disabled-color;
+  cursor: not-allowed;
+}
 @THEME .cp-panel .cp-panel-card .cp-panel-card-actions .cp-panel-card-actions-background {
   background-color: @card-background-color;
 }
@@ -1566,7 +1587,9 @@ export default `
   width: 26px;
   display: block;
   background-image: @logo-image;
-  background-size: cover;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 @THEME .cp-dashboard-sticky-panel {
@@ -1590,7 +1613,7 @@ export default `
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @color-info;
+  color: @color-green;
 }
 @THEME .cp-notification-status-warning {
   color: @color-warning;
@@ -1767,6 +1790,14 @@ export default `
 @THEME .cp-edit-permissions-selected-row {
   background-color: @element-selected-background-color;
 }
+@THEME .cp-tool-white-listed-version > td,
+@THEME .cp-tool-white-listed-version:hover > td {
+  background-color: fade(@color-success, 15%);
+}
+@THEME .cp-tool-select-option-divider::before,
+@THEME .cp-divider.tool-settings {
+  background: @panel-border-color;
+}
 
 @THEME .cp-runs-table-service-url-run {
   background-color: @card-service-background-color;
@@ -1876,6 +1907,23 @@ export default `
   border: none;
   background-color: transparent;
 }
+@THEME .cp-runs-autocomplete-menu.ant-menu {
+  background-color: fade(@panel-background-color, 100%);
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-runs-autocomplete-menu-item {
+  border-bottom: 1px solid @input-border;
+}
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item:hover,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-active,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-open,
+@THEME .cp-runs-autocomplete-menu.ant-menu > .ant-menu-item-selected,
+@THEME .cp-runs-autocomplete-menu.ant-menu-item:active {
+  background-color: @element-hover-background-color;
+  border: @menu-active-color;
+  color: @application-color;
+}
+
 
 @THEME .cp-billing-menu {
   width: fit-content;
@@ -1941,7 +1989,14 @@ export default `
   color: @application-color-disabled;
 }
 @THEME .cp-billing-calendar-row-item {
-  border: 1px solid @card-border-color;
+  border-right: 1px solid @card-border-color;
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-billing-calendar-row-item:last-child {
+  border-right: none;
+}
+@THEME .cp-billing-calendar-row:last-child .cp-billing-calendar-row-item {
+  border-bottom: none;
 }
 @THEME .cp-billing-calendar-row-item.selected {
   color: @primary-color;
@@ -1974,8 +2029,9 @@ export default `
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
-
-
+@THEME .cp-billing-layout .react-grid-item {
+  transition: none;
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
@@ -2402,7 +2458,10 @@ export default `
 @THEME .cp-cluster-node-even-row {
   background-color: @even-element-background;
 }
-
+@THEME .cp-filter-popover-item:hover {
+  background-color: @element-hover-background-color;
+  color: @application-color;
+}
 @THEME .cp-settings-sidebar-element:not(.cp-table-element-disabled) {
   cursor: pointer;
 }
@@ -2509,6 +2568,65 @@ export default `
 @THEME .markdown h5,
 @THEME .markdown h6 {
   margin: 2px 0;
+}
+@THEME .markdown p {
+  margin: 5px 0;
+}
+@THEME .markdown p a {
+  margin: 0 2px;
+}
+@THEME .markdown ul,
+@THEME .markdown ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+@THEME .markdown ol {
+  list-style-type: decimal;
+}
+@THEME .markdown li {
+  display: list-item;
+  margin: 5px;
+}
+@THEME .markdown ol ul {
+  list-style: circle;
+}
+@THEME .markdown ol ul li {
+  margin-left: 35px;
+}
+@THEME .markdown ol ul ul,
+@THEME .markdown ul ul {
+  list-style: square;
+}
+@THEME .markdown ul ul li {
+  margin-left: 35px;
+}
+@THEME .markdown blockquote {
+  margin: 0;
+  padding: 10px 0;
+  padding-left: 1rem;
+  border-left: 4px solid @card-border-color;
+  background-color: @code-background-color;
+}
+@THEME .markdown hr {
+  margin: 5px 0;
+  border-top: 1px solid @card-border-color;
+  border-right: none;
+  border-left: none;
+  border-bottom: none;
+}
+@THEME .markdown table {
+  border-collapse: collapse;
+  border: 1px solid @card-border-color;
+}
+@THEME .markdown table td,
+@THEME .markdown table th {
+  border: 1px solid @card-border-color;
+  padding: 5px;
+}
+@THEME .markdown table tr:nth-child(even) {
+  background-color: @even-element-background;
 }
 @THEME .hljs {
   color: @application-color;

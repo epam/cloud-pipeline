@@ -117,9 +117,12 @@ public class SystemPreferences {
     private static final String BILLING_GROUP = "Billing Reports";
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
+    private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
     private static final String FACETED_FILTER_GROUP = "Faceted Filter";
+
     public static final ObjectPreference<SharedStoragePermissions> DATA_SHARING_DEFAULT_PERMISSIONS =
             new ObjectPreference<>("data.sharing.storage.folders.default.permissions", null,
             new TypeReference<SharedStoragePermissions>() {}, DATA_SHARING_GROUP,
@@ -234,7 +237,18 @@ public class SystemPreferences {
             "storage.fsbrowser.black.list", STORAGE_FSBROWSER_BLACK_LIST_DEFAULT, DATA_STORAGE_GROUP, pass);
 
     /**
-     * Storage quotas configuration
+     * Storage quotas effective size masking configuration
+     */
+    public static final ObjectPreference<List<StorageFileSearchMask>> STORAGE_QUOTAS_SKIPPED_PATHS =
+        new ObjectPreference<>(
+            "storage.quotas.skipped.paths",
+            Collections.emptyList(),
+            new TypeReference<List<StorageFileSearchMask>>() {},
+            DATA_STORAGE_GROUP,
+            isNullOrValidJson(new TypeReference<List<StorageFileSearchMask>>() {}));
+
+    /**
+     * Storage quotas grace period configuration
      */
     public static final ObjectPreference<Map<StorageQuotaAction, Integer>> STORAGE_QUOTAS_ACTIONS_GRACE =
         new ObjectPreference<>(
@@ -242,7 +256,7 @@ public class SystemPreferences {
             Collections.emptyMap(),
             new TypeReference<Map<StorageQuotaAction, Integer>>() {},
             DATA_STORAGE_GROUP,
-           PreferenceValidators.isValidGraceConfiguration);
+            PreferenceValidators.isValidGraceConfiguration);
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
@@ -653,6 +667,12 @@ public class SystemPreferences {
      */
     public static final IntPreference SYSTEM_RESOURCE_MONITORING_PERIOD = new IntPreference(
         "system.resource.monitoring.period", 60000, SYSTEM_GROUP, isGreaterThan(10000));
+    /**
+     * Controls the period of schedule monitoring task
+     */
+    public static final IntPreference SYSTEM_SCHEDULE_MONITORING_PERIOD = new IntPreference(
+        "system.schedule.monitoring.period.seconds",
+            (int) TimeUnit.HOURS.toSeconds(1), SYSTEM_GROUP, isGreaterThan(10));
 
     /**
      * Controls the amount of pod logs to be loaded
@@ -750,6 +770,12 @@ public class SystemPreferences {
 
     public static final BooleanPreference SYSTEM_DISABLE_NAT_SYNC = new BooleanPreference(
             "system.disable.nat.sync", true, SYSTEM_GROUP, pass);
+
+    public static final BooleanPreference SYSTEM_MAINTENANCE_MODE = new BooleanPreference(
+            "system.maintenance.mode", false, SYSTEM_GROUP, pass);
+    public static final StringPreference SYSTEM_MAINTENANCE_MODE_BANNER = new StringPreference(
+            "system.maintenance.mode.banner",
+            "Platform is in a maintenance mode, operation is temporary unavailable", SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -874,6 +900,10 @@ public class SystemPreferences {
     public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = new IntPreference(
             "billing.export.period.aggregation.page.size", 1000, BILLING_GROUP, pass);
 
+    // Billing quotas
+    public static final BooleanPreference BILLING_QUOTAS_ENABLED = new BooleanPreference(
+            "billing.quotas.enabled", false, BILLING_QUOTAS_GROUP, pass);
+
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
             "lustre.fs.default.size.gb", 1200, LUSTRE_GROUP, pass);
@@ -895,6 +925,12 @@ public class SystemPreferences {
             "cloud.temp.credentials.expiration", 3600, CLOUD_REGION_GROUP, isGreaterThan(0));
 
     //LDAP
+    public static final StringPreference LDAP_URLS = new StringPreference(
+            "ldap.urls", "ldap://localhost:389", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_USERNAME = new StringPreference(
+            "ldap.username", "", LDAP_GROUP, pass);
+    public static final StringPreference LDAP_PASSWORD = new StringPreference(
+            "ldap.password", "", LDAP_GROUP, pass);
     public static final StringPreference LDAP_BASE_PATH = new StringPreference(
             "ldap.base.path", "", LDAP_GROUP, pass);
     public static final StringPreference LDAP_USER_FILTER = new StringPreference(

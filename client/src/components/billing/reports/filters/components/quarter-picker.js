@@ -215,11 +215,11 @@ class QuarterPicker extends React.Component {
           />
         </div>
         <div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderQuarter(1)}
             {renderQuarter(2)}
           </div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderQuarter(3)}
             {renderQuarter(4)}
           </div>

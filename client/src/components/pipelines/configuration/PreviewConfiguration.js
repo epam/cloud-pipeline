@@ -442,7 +442,7 @@ export default class PreviewConfiguration extends Component {
     return (
       <table key="body" className={styles.sectionTableBody}>
         <tbody>
-          <tr style={{height: 40, color: '#777'}}>
+          <tr className="cp-text-not-important" style={{height: 40}}>
             <td colSpan={3} style={{textAlign: 'center'}}>
               No configuration entry presented
             </td>

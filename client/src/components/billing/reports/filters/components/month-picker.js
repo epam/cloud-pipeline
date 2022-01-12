@@ -211,22 +211,22 @@ export default class MonthPicker extends React.Component {
           />
         </div>
         <div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderMonth(0)}
             {renderMonth(1)}
             {renderMonth(2)}
           </div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderMonth(3)}
             {renderMonth(4)}
             {renderMonth(5)}
           </div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderMonth(6)}
             {renderMonth(7)}
             {renderMonth(8)}
           </div>
-          <div className={styles.row}>
+          <div className={classNames(styles.row, 'cp-billing-calendar-row')}>
             {renderMonth(9)}
             {renderMonth(10)}
             {renderMonth(11)}

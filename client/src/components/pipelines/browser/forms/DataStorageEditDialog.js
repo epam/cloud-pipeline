@@ -68,6 +68,7 @@ export class DataStorageEditDialog extends React.Component {
     deleteDialogVisible: false,
     toolsToMount: undefined,
     activeTab: 'info',
+    mountDisabled: false,
     versioningEnabled: false,
     sharingEnabled: false,
     sensitive: false
@@ -105,6 +106,7 @@ export class DataStorageEditDialog extends React.Component {
         values.serviceType = this.isNfsMount
           ? ServiceTypes.fileShare
           : ServiceTypes.objectStorage;
+        values.mountDisabled = this.state.mountDisabled;
         if (!this.isNfsMount && this.props.policySupported && this.state.versioningEnabled) {
           values.versioningEnabled = true;
         } else {
@@ -404,18 +406,35 @@ export class DataStorageEditDialog extends React.Component {
                     <Input type="textarea" disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Allow mount to">
-                  {getFieldDecorator('toolsToMount', {
-                    initialValue: this.props.dataStorage
-                      ? this.props.dataStorage.toolsToMount
-                      : undefined
-                  })(
-                    <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
+                <Row>
+                  <Col xs={24} sm={6} />
+                  <Col xs={24} sm={18}>
+                    <Form.Item className={styles.dataStorageFormItem}>
+                      <Checkbox
+                        disabled={this.props.pending || isReadOnly}
+                        onChange={(e) => this.setState({mountDisabled: e.target.checked})}
+                        checked={this.state.mountDisabled}>
+                        Disable mount
+                      </Checkbox>
+                    </Form.Item>
+                  </Col>
+                </Row>
+                {
+                  !this.state.mountDisabled && (
+                    <Form.Item
+                      className={styles.dataStorageFormItem}
+                      {...this.formItemLayout}
+                      label="Allow mount to">
+                      {getFieldDecorator('toolsToMount', {
+                        initialValue: this.props.dataStorage
+                          ? this.props.dataStorage.toolsToMount
+                          : undefined
+                      })(
+                        <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
+                      )}
+                    </Form.Item>
+                  )
+                }
                 {
                   !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
                   <Form.Item
@@ -497,32 +516,40 @@ export class DataStorageEditDialog extends React.Component {
                       )}
                     </Form.Item>
                 }
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Mount-point">
-                  {getFieldDecorator('mountPoint', {
-                    initialValue: this.props.dataStorage && this.props.dataStorage.mountPoint
-                      ? this.props.dataStorage.mountPoint: undefined
-                  })(
-                    <Input
-                      style={{width: '100%'}}
-                      disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Mount options">
-                  {getFieldDecorator('mountOptions', {
-                    initialValue: this.props.dataStorage && this.props.dataStorage.mountOptions
-                      ? this.props.dataStorage.mountOptions: undefined
-                  })(
-                    <Input
-                      style={{width: '100%'}}
-                      disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
+                {
+                  !this.state.mountDisabled && (
+                    <Form.Item
+                      className={styles.dataStorageFormItem}
+                      {...this.formItemLayout}
+                      label="Mount-point">
+                      {getFieldDecorator('mountPoint', {
+                        initialValue: this.props.dataStorage && this.props.dataStorage.mountPoint
+                          ? this.props.dataStorage.mountPoint : undefined
+                      })(
+                        <Input
+                          style={{width: '100%'}}
+                          disabled={this.props.pending || isReadOnly} />
+                      )}
+                    </Form.Item>
+                  )
+                }
+                {
+                  !this.state.mountDisabled && (
+                    <Form.Item
+                      className={styles.dataStorageFormItem}
+                      {...this.formItemLayout}
+                      label="Mount options">
+                      {getFieldDecorator('mountOptions', {
+                        initialValue: this.props.dataStorage && this.props.dataStorage.mountOptions
+                          ? this.props.dataStorage.mountOptions : undefined
+                      })(
+                        <Input
+                          style={{width: '100%'}}
+                          disabled={this.props.pending || isReadOnly} />
+                      )}
+                    </Form.Item>
+                  )
+                }
                 {
                   !this.isNfsMount &&
                   (
@@ -569,15 +596,16 @@ export class DataStorageEditDialog extends React.Component {
 
   checkStorageChanged = (prevProps) => {
     if (!prevProps || prevProps.dataStorage !== this.props.dataStorage) {
-      const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy ?
-        this.props.dataStorage.storagePolicy.versioningEnabled: true;
+      const mountDisabled = this.props.dataStorage ? this.props.dataStorage.mountDisabled : false;
+      const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy
+        ? this.props.dataStorage.storagePolicy.versioningEnabled : true;
       const sensitive = this.props.dataStorage
         ? this.props.dataStorage.sensitive
         : false;
       const sharingEnabled = !this.isNfsMount && this.props.dataStorage
         ? this.props.dataStorage.shared
         : false;
-      this.setState({versioningEnabled, sharingEnabled, sensitive});
+      this.setState({mountDisabled, versioningEnabled, sharingEnabled, sensitive});
     }
   };
 

@@ -93,7 +93,6 @@ class ToolDeletionWarning extends React.Component {
         </Row>
         <Row style={{
           fontSize: 12,
-          color: 'rgba(0,0,0,.65)',
           marginTop: 8,
           marginBottom: 8
         }}>
@@ -178,8 +177,12 @@ class ToolDeletionWarning extends React.Component {
           </Row>
         )}
       >
-        <h2 style={{margin: 20, color: '#666'}}>
-          <Icon type="exclamation-circle" style={{color: 'rgb(255, 191, 51)', marginRight: 10}} />
+        <h2 style={{margin: 20}}>
+          <Icon
+            type="exclamation-circle"
+            className="cp-warning"
+            style={{marginRight: 10}}
+          />
           {title}
         </h2>
         {showGroupAlert && this.renderGroupAlert()}

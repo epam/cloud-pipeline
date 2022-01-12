@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
-import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
+import static com.epam.pipeline.autotests.ao.Primitive.NAT_GATEWAY_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
 import static com.epam.pipeline.autotests.utils.C.ADMIN_TOKEN_IS_SERVICE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.combobox;
@@ -56,7 +56,8 @@ public class SystemManagementAO extends SettingsPageAO {
     }
 
     public final Map<Primitive, SelenideElement> elements = initialiseElements(
-            entry(SYSTEM_LOGS_TAB, $$(byClassName("ystem-management__item-row")).findBy(text("LOGS")))
+            entry(SYSTEM_LOGS_TAB, $(byClassName("section-logs")).find(byText("LOGS"))),
+            entry(NAT_GATEWAY_TAB, $(byClassName("section-nat")).find(byText("NAT GATEWAY")))
     );
 
     public SystemLogsAO switchToSystemLogs() {
@@ -65,6 +66,11 @@ public class SystemManagementAO extends SettingsPageAO {
             return new SystemLogsAO();
         }
         return new SystemLogsAO().setIncludeServiceAccountEventsOption();
+    }
+
+    public NATGatewayAO switchToNATGateway() {
+        click(NAT_GATEWAY_TAB);
+        return new NATGatewayAO().waitForRouteData();
     }
 
     public class SystemLogsAO implements AccessObject<SystemLogsAO> {

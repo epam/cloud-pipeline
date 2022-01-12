@@ -33,6 +33,7 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.value;
 import static com.codeborne.selenide.Selenide.open;
+import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
@@ -168,7 +169,7 @@ public class RunToolsInSandBoxTest
         runsMenu()
                 .stopRun(getLastRunId())
                 .completedRuns()
-                .validateStoppedStatus(getLastRunId())
+                .validateStatus(getLastRunId(), STOPPED)
                 .show(getLastRunId())
                 .clickEndpoint()
                 .screenshot("test501screenshot")

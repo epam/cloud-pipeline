@@ -113,10 +113,10 @@ public class DataStorageController extends AbstractRestController {
     @ResponseBody
     @ApiOperation(
             value = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fronRegion is specified this method will return only allowed for mount" +
+                    "If fromRegion is specified this method will return only allowed for mount" +
                     " storages for specified region.",
             notes = "Returns all data storages allowed for current user (READ or WRITE) and FileShareMount object." +
-                    "If fronRegion is specified this method will return only allowed for mount " +
+                    "If fromRegion is specified this method will return only allowed for mount " +
                     "storages for specified region.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(

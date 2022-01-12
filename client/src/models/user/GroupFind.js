@@ -17,6 +17,25 @@
 import Remote from '../basic/Remote';
 
 export default class GroupFind extends Remote {
+  static findGroups (prefix) {
+    if (!prefix) {
+      return Promise.resolve([]);
+    }
+    return new Promise((resolve) => {
+      const request = new GroupFind(prefix);
+      request
+        .fetch()
+        .then(() => {
+          if (request.loaded) {
+            resolve((request.value || []).slice());
+          } else {
+            resolve([]);
+          }
+        })
+        .catch(() => resolve([]));
+    });
+  }
+
   constructor (prefix) {
     super();
     this.url = `/group/find?prefix=${prefix}`;

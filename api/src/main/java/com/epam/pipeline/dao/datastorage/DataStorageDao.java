@@ -441,6 +441,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         REGION_ID,
 
         SENSITIVE,
+        MOUNT_DISABLED,
 
         DATASTORAGE_IDS,
         
@@ -480,6 +481,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             params.addValue(MOUNT_OPTIONS.name(), dataStorage.getMountOptions());
             params.addValue(FILE_SHARE_MOUNT_ID.name(), dataStorage.getFileShareMountId());
             params.addValue(SENSITIVE.name(), dataStorage.isSensitive());
+            params.addValue(MOUNT_DISABLED.name(), dataStorage.isMountDisabled());
 
             if (dataStorage instanceof S3bucketDataStorage) {
                 S3bucketDataStorage bucket = ((S3bucketDataStorage) dataStorage);
@@ -601,6 +603,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
             StoragePolicy policy = getStoragePolicy(rs);
             dataStorage.setStoragePolicy(policy);
             dataStorage.setSensitive(rs.getBoolean(SENSITIVE.name()));
+            dataStorage.setMountDisabled(rs.getBoolean(MOUNT_DISABLED.name()));
             dataStorage.setRootId(rs.getLong(DATASTORAGE_ROOT_ID.name()));
             return dataStorage;
         }

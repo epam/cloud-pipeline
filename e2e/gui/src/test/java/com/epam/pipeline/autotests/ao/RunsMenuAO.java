@@ -222,28 +222,6 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
-    public RunsMenuAO validateStoppedStatus(String runId) {
-        $("tbody")
-                .find(withText(runId))
-                .closest(".ant-table-row")
-                .findAll("td")
-                .get(1)
-                .find("i")
-                .shouldHave(cssClass("status-icon__icon-yellow"));
-        return this;
-    }
-
-    public RunsMenuAO validateFailedStatus(String runId) {
-        $("tbody")
-                .find(withText(runId))
-                .closest(".ant-table-row")
-                .findAll("td")
-                .get(0)
-                .find("i")
-                .shouldHave(cssClass("status-icon__icon-red"));
-        return this;
-    }
-
     public ElementsCollection allRuns() {
         return $("tbody").shouldBe(visible).findAll("tr");
     }
@@ -406,7 +384,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         int attempts = 15;
 
         $(taskWithName("InitializeNode")).waitUntil(visible, C.ENDPOINT_INITIALIZATION_TIMEOUT).click();
-        while (!$(byXpath(initializeNodeTaskPath)).has(cssClass("status-icon__icon-green"))) {
+        while (!$(byXpath(initializeNodeTaskPath)).has(cssClass("cp-runs-table-icon-green"))) {
             if (new LogAO().logMessages().filter(l -> l.contains("Started initialization of new calculation node"))
                     .count() > 2 || attempts == 0) {
                 screenshot("failed_node_for_run_" + runId);

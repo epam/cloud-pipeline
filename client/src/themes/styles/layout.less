@@ -103,6 +103,10 @@ a.cp-danger:focus,
   background-color: transparent;
 }
 
+.cp-divider.inline {
+  background: @panel-border-color;
+}
+
 .cp-primary {
   color: @primary-color;
 }
@@ -145,7 +149,7 @@ a.cp-danger:focus,
 .cp-sensitive-tag.bordered {
   background-color: transparent;
   color: @color-sensitive;
-  border-color: currentColor;
+  border: 1px solid currentColor;
 }
 
 .cp-tag {
@@ -221,7 +225,8 @@ h1,
 h2,
 h3,
 h4,
-h5 {
+h5,
+h6 {
   color: @application-color;
 }
 
@@ -419,6 +424,10 @@ h5 {
   background-color: transparent;
   color: @application-color;
   border-color: @panel-border-color;
+}
+
+.ant-menu > .ant-menu-item-divider {
+  background-color: @panel-border-color;
 }
 
 .ant-menu > .ant-menu-item > a,
@@ -968,6 +977,7 @@ li.ant-calendar-time-picker-select-option-selected {
   opacity: 0;
 }
 
+.ant-dropdown,
 .ant-select-dropdown,
 .ant-dropdown-menu,
 .rc-menu,
@@ -984,7 +994,8 @@ li.ant-calendar-time-picker-select-option-selected {
 }
 
 .rc-menu > .rc-menu-item-divider,
-.rc-dropdown-menu > .rc-dropdown-menu-item-divider {
+.rc-dropdown-menu > .rc-dropdown-menu-item-divider,
+.ant-dropdown-menu > .ant-dropdown-menu-item-divider {
   background-color: @panel-border-color;
 }
 
@@ -1294,19 +1305,27 @@ a[role="button"].ant-calendar-year-panel-month-select {
   color: @primary-text-color;
 }
 
-.ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow {
+.ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow,
+.ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow,
+.ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow {
   border-right-color: @card-border-color;
 }
 
-.ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after {
+.ant-popover-placement-right > .ant-popover-content > .ant-popover-arrow::after,
+.ant-popover-placement-rightTop > .ant-popover-content > .ant-popover-arrow::after,
+.ant-popover-placement-rightBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-right-color: @card-background-color;
 }
 
-.ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow {
+.ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow,
+.ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow,
+.ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow {
   border-left-color: @card-border-color;
 }
 
-.ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after {
+.ant-popover-placement-left > .ant-popover-content > .ant-popover-arrow::after,
+.ant-popover-placement-leftTop > .ant-popover-content > .ant-popover-arrow::after,
+.ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow::after {
   border-left-color: @card-background-color;
 }
 
