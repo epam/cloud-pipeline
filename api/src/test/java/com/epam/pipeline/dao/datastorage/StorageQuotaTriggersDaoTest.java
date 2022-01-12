@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -54,8 +55,10 @@ public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
         final Long storageId1 = createNfsStorage().getId();
         final Long storageId2 = createNfsStorage().getId();
         final NFSQuotaTrigger triggerEntry1 = createQuotaTrigger(storageId1, 10.0, StorageQuotaType.PERCENTS,
+                                                                 NFSStorageMountStatus.ACTIVE,
                                                                  StorageQuotaAction.EMAIL);
         final NFSQuotaTrigger triggerEntry2 = createQuotaTrigger(storageId2, 50.0, StorageQuotaType.GIGABYTES,
+                                                                 NFSStorageMountStatus.ACTIVE,
                                                                  StorageQuotaAction.DISABLE, StorageQuotaAction.EMAIL);
 
         assertThat(storageQuotaTriggersDao.loadAll()).isEmpty();
@@ -72,6 +75,13 @@ public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
         dataStorageDao.deleteDataStorage(storageId1);
         assertThat(storageQuotaTriggersDao.loadAll()).hasSameElementsAs(Collections.singletonList(triggerEntry2));
         assertThat(storageQuotaTriggersDao.find(storageId1)).isEqualTo(Optional.empty());
+
+        final NFSQuotaTrigger triggerEntryUpdate = createQuotaTrigger(storageId2, 100.0, StorageQuotaType.GIGABYTES,
+                                                                      NFSStorageMountStatus.READ_ONLY,
+                                                                      StorageQuotaAction.READ_ONLY,
+                                                                      StorageQuotaAction.EMAIL);
+        storageQuotaTriggersDao.update(triggerEntryUpdate);
+        assertThat(storageQuotaTriggersDao.find(storageId2)).isEqualTo(Optional.of(triggerEntryUpdate));
     }
 
     private NFSDataStorage createNfsStorage() {
@@ -81,11 +91,16 @@ public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
     }
 
     private NFSQuotaTrigger createQuotaTrigger(final Long storageId, final Double value, final StorageQuotaType type,
+                                               final NFSStorageMountStatus mountStatus,
                                                final StorageQuotaAction... actions) {
         final NFSQuotaNotificationEntry quota =
             new NFSQuotaNotificationEntry(value, type, Stream.of(actions).collect(Collectors.toSet()));
+        final LocalDateTime executionTime = DateUtils.nowUTC();
         return new NFSQuotaTrigger(storageId, quota,
                                    Collections.singletonList(new NFSQuotaNotificationRecipient(true, OWNER)),
-                                   DateUtils.nowUTC());
+                                   executionTime,
+                                   mountStatus,
+                                   executionTime,
+                                   true);
     }
 }

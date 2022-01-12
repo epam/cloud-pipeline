@@ -18,6 +18,7 @@ package com.epam.pipeline.dao.datastorage;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dao.DaoHelper;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
@@ -75,7 +76,10 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
         QUOTA_TYPE,
         ACTIONS,
         RECIPIENTS,
-        UPDATE_DATE;
+        UPDATE_DATE,
+        TARGET_STATUS,
+        STATUS_ACTIVATION_DATE,
+        NOTIFICATION_REQUIRED;
 
         static MapSqlParameterSource getParameters(final NFSQuotaTrigger triggerEntry) {
             final NFSQuotaNotificationEntry quota = triggerEntry.getQuota();
@@ -87,6 +91,9 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
             params.addValue(RECIPIENTS.name(),
                             JsonMapper.convertDataToJsonStringForQuery(triggerEntry.getRecipients()));
             params.addValue(UPDATE_DATE.name(), triggerEntry.getExecutionTime());
+            params.addValue(TARGET_STATUS.name(), triggerEntry.getTargetStatus().name());
+            params.addValue(STATUS_ACTIVATION_DATE.name(), triggerEntry.getTargetStatusActivationTime());
+            params.addValue(NOTIFICATION_REQUIRED.name(), triggerEntry.isNotificationRequired());
             return params;
         }
 
@@ -99,10 +106,16 @@ public class StorageQuotaTriggersDao extends NamedParameterJdbcDaoSupport {
                     rs.getString(ACTIONS.name()), new TypeReference<Set<StorageQuotaAction>>() {});
                 final List<NFSQuotaNotificationRecipient> recipients = JsonMapper.parseData(
                     rs.getString(RECIPIENTS.name()), new TypeReference<List<NFSQuotaNotificationRecipient>>() {});
+                final NFSStorageMountStatus targetStatus =
+                    NFSStorageMountStatus.valueOf(rs.getString(TARGET_STATUS.name()));
+                final boolean notificationRequired = rs.getBoolean(NOTIFICATION_REQUIRED.name());
                 return new NFSQuotaTrigger(storageId,
                                            new NFSQuotaNotificationEntry(quotaValue, quotaType, actions),
                                            recipients,
-                                           DaoHelper.parseTimestamp(rs, UPDATE_DATE.name()));
+                                           DaoHelper.parseTimestamp(rs, UPDATE_DATE.name()),
+                                           targetStatus,
+                                           DaoHelper.parseTimestamp(rs, STATUS_ACTIVATION_DATE.name()),
+                                           notificationRequired);
             };
         }
     }

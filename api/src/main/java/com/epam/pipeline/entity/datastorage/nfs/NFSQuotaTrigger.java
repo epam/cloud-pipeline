@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.entity.datastorage.nfs;
 
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
@@ -26,10 +28,14 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @EqualsAndHashCode
+@Builder(toBuilder = true)
 public class NFSQuotaTrigger {
 
     private final Long storageId;
     private final NFSQuotaNotificationEntry quota;
     private final List<NFSQuotaNotificationRecipient> recipients;
     private final LocalDateTime executionTime;
+    private final NFSStorageMountStatus targetStatus;
+    private final LocalDateTime targetStatusActivationTime;
+    private final boolean notificationRequired;
 }
