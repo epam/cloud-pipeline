@@ -31,6 +31,7 @@ public class NatRoute {
     private final String externalName;
     private final String externalIp;
     private final Integer externalPort;
+    private final String protocol;
     private final String internalName;
     private final String internalIp;
     private final Integer internalPort;

@@ -105,6 +105,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
             .externalIp(ruleDescription.getExternalIp())
             .externalName(ruleDescription.getExternalName())
             .externalPort(ruleDescription.getPort())
+            .protocol(ruleDescription.getProtocol())
             .lastUpdateTime(getNowUTC())
             .status(status)
             .description(ruleDescription.getDescription())
@@ -116,6 +117,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
         EXTERNAL_NAME,
         EXTERNAL_IP,
         EXTERNAL_PORT,
+        PROTOCOL,
         STATUS,
         DESCRIPTION,
         INTERNAL_NAME,
@@ -135,6 +137,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
             params.addValue(EXTERNAL_NAME.name(), route.getExternalName());
             params.addValue(EXTERNAL_IP.name(), route.getExternalIp());
             params.addValue(EXTERNAL_PORT.name(), route.getExternalPort());
+            params.addValue(PROTOCOL.name(), route.getProtocol());
             params.addValue(INTERNAL_NAME.name(), route.getInternalName());
             params.addValue(INTERNAL_IP.name(), route.getInternalIp());
             params.addValue(LAST_ERROR_TIME.name(), route.getLastErrorTime());
@@ -159,6 +162,7 @@ public class NatGatewayDao extends NamedParameterJdbcDaoSupport {
                 .externalName(rs.getString(EXTERNAL_NAME.name()))
                 .externalIp(rs.getString(EXTERNAL_IP.name()))
                 .externalPort(rs.getInt(EXTERNAL_PORT.name()))
+                .protocol(rs.getString(PROTOCOL.name()))
                 .internalName(rs.getString(INTERNAL_NAME.name()))
                 .internalIp(rs.getString(INTERNAL_IP.name()))
                 .internalPort(Optional.ofNullable(rs.getObject(INTERNAL_PORT.name()))
