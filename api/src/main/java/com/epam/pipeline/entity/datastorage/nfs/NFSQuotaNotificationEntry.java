@@ -20,10 +20,14 @@ import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaType;
 import lombok.Data;
 
+import java.util.Collections;
 import java.util.Set;
 
 @Data
 public class NFSQuotaNotificationEntry {
+
+    public static final NFSQuotaNotificationEntry NO_ACTIVE_QUOTAS_NOTIFICATION =
+        new NFSQuotaNotificationEntry(0.0, StorageQuotaType.GIGABYTES, Collections.singleton(StorageQuotaAction.EMAIL));
 
     private final Double value;
     private final StorageQuotaType type;

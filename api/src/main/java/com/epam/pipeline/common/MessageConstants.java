@@ -698,6 +698,12 @@ public final class MessageConstants {
         "nat.gateway.route.creation.kube.dns.restart.error";
     public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
         "nat.gateway.route.extending.invalid.external.ip";
+    public static final String NAT_SERVICE_CONFIG_ERROR_NO_CLUSTER_IP = "nat.gateway.service.config.no.cluster.ip";
+    public static final String NAT_SERVICE_CONFIG_GENERAL_ERROR = "nat.gateway.service.config.general.error";
+    public static final String NAT_SERVICE_CONFIG_EMPTY_ANNOTATIONS_WITH_PORTS =
+        "nat.gateway.service.config.empty.annotations.with.ports.warn";
+    public static final String NAT_ROUTE_CONFIG_WARN_UNKNOWN_STATUS_PORT =
+        "nat.gateway.route.config.port.unknown.status";
 
     public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
     public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
@@ -720,12 +726,14 @@ public final class MessageConstants {
     public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
     public static final String ERROR_QUOTA_VALUE_EMPTY = "error.quota.value.empty";
     public static final String ERROR_QUOTA_NOT_FOUND_BY_ID = "error.quota.not.found.by.id";
+    public static final String ERROR_APPLIED_QUOTA_NOT_FOUND_BY_ID = "error.applied.quota.not.found.by.id";
     public static final String ERROR_QUOTA_GLOBAL_ALREADY_EXISTS = "error.quota.global.already.exists";
     public static final String ERROR_QUOTA_OVERALL_ALREADY_EXISTS = "error.quota.overall.already.exists";
     public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
     public static final String ERROR_QUOTA_SUBJECT_EMPTY = "error.quota.subject.empty";
     public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
     public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
+    public static final String ERROR_BILLING_QUOTA_EXCEEDED_LAUNCH = "error.billing.quota.exceeded.launch";
 
     private MessageConstants() {
         // no-op

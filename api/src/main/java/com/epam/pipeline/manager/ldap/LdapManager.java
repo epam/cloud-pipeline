@@ -31,7 +31,6 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.ldap.TimeLimitExceededException;
 import org.springframework.ldap.core.AttributesMapper;
-import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.query.LdapQuery;
 import org.springframework.ldap.query.LdapQueryBuilder;
 import org.springframework.ldap.query.SearchScope;
@@ -56,7 +55,7 @@ public class LdapManager {
     private static final int FALLBACK_RESPONSE_SIZE = 10;
     private static final int FALLBACK_RESPONSE_TIMEOUT = 60000;
 
-    private final LdapTemplate ldapTemplate;
+    private final LdapTemplateProvider ldapTemplateProvider;
     private final LdapEntityMapper ldapEntityMapper;
     private final PreferenceManager preferenceManager;
     private final MessageHelper messageHelper;
@@ -83,7 +82,7 @@ public class LdapManager {
     }
 
     private List<LdapEntity> ldapSearch(final LdapSearchRequest request, final String filter) {
-        return ldapTemplate.search(queryFor(request, filter), mapperFor(request));
+        return ldapTemplateProvider.get().search(queryFor(request, filter), mapperFor(request));
     }
 
     private LdapQuery queryFor(final LdapSearchRequest request, final String filter) {

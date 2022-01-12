@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
 class PreferencesLoad extends Remote {
   constructor () {
@@ -325,6 +326,15 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get systemMaintenanceMode () {
+    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true';
+  }
+
+  @computed
+  get systemMaintenanceModeBanner () {
+    return this.getPreferenceValue('system.maintenance.mode.banner');
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }
@@ -374,5 +384,5 @@ class PreferencesLoad extends Remote {
   };
 }
 
-export {FETCH_ID_SYMBOL};
+export {FETCH_ID_SYMBOL, MAINTENANCE_MODE_DISCLAIMER};
 export default new PreferencesLoad();

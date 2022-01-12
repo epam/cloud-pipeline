@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
@@ -30,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -78,11 +80,16 @@ public interface NotificationService {
     default void notifyOnStorageQuotaExceeding(final NFSDataStorage storage,
                                                final NFSStorageMountStatus newStatus,
                                                final NFSQuotaNotificationEntry exceededQuota,
-                                               final List<NFSQuotaNotificationRecipient> recipients) {
+                                               final List<NFSQuotaNotificationRecipient> recipients,
+                                               final LocalDateTime activationTime) {
 
     }
 
     default void notifyInactiveUsers(final List<PipelineUser> inactiveUsers,
                                      final List<PipelineUser> ldapBlockedUsers) {
+    }
+
+    default void notifyOnBillingQuotaExceeding(final AppliedQuota appliedQuota) {
+
     }
 }

@@ -16,8 +16,15 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum NFSStorageMountStatus {
-    ACTIVE, READ_ONLY, MOUNT_DISABLED;
+    ACTIVE(0), MOUNT_DISABLED(1), READ_ONLY(2);
+
+    private final int priority;
 
     public static NFSStorageMountStatus fromName(final String name) {
         if (name == null) {
