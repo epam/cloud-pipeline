@@ -7,10 +7,10 @@ Notification parameters:
 
 | Env | Requirements | Example value | Description |
 | --- | --- | --- | --- |
-| CP_SERVICE_MONITOR_NOTIFICATION_USER          | Required | USER1                     | The user who will receive notifications |
-| CP_SERVICE_MONITOR_NOTIFICATION_TEMPLATE_PATH | Required | USER1                     | Path to the file with the default notification template |
-| CP_SERVICE_MONITOR_NOTIFICATION_COPY_USERS    | Optional | USER2,USER3               | Comma-separated list of users who will be added as a CC in the notification email |
-| CP_SERVICE_MONITOR_NOTIFICATION_SUBJECT       | Optional | DTS statuses were changed | Subject of the message. If not specified, the default value will be used |
+| CP_SERVICE_MONITOR_NOTIFICATION_USER          | Required | USER1                            | The user who will receive notifications |
+| CP_SERVICE_MONITOR_NOTIFICATION_TEMPLATE_PATH | Required | /cloud-data/config/template.html | Path to the file with the default notification template |
+| CP_SERVICE_MONITOR_NOTIFICATION_COPY_USERS    | Optional | USER2,USER3                      | Comma-separated list of users who will be added as a CC in the notification email |
+| CP_SERVICE_MONITOR_NOTIFICATION_SUBJECT       | Optional | DTS statuses were changed        | Subject of the message. If not specified, the default value will be used |
 
 WSI-parser monitoring parameters
 

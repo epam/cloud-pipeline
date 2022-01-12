@@ -201,7 +201,7 @@ if __name__ == '__main__':
     target_search_entries = read_search_patterns_from_file()
 
     api = PipelineUtils.initialize_api(run_id)
-    logger = PipelineUtils.initialize_logger(api, run_id)
+    logger = PipelineUtils.initialize_logger(api, run_id, 'WSIParserCheckup')
     parser_monitor = WsiParserRunsMonitor(api, logger, target_image, last_sync_file_path, target_task_names,
                                           target_search_entries)
     errors_summary = parser_monitor.generate_errors_table()

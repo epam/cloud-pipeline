@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,9 +25,9 @@ class NotificationSender(object):
         self.cc_users_list = cc_users_list
         self.subject = subject
 
-    def queue_notification(self, message):
+    def queue_notification(self, *message_arguments):
         email_template = self._read_template()
-        email_body = email_template.format(message)
+        email_body = email_template.format(*message_arguments)
         self.logger.info('Registering notification...')
         new_notification = self.api.create_notification(self.subject, email_body, self.user, self.cc_users_list)
         if new_notification and 'id' in new_notification:

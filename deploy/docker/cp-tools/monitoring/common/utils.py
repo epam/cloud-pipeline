@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,16 +13,32 @@
 # limitations under the License.
 
 import os
+from datetime import datetime
 from pipeline.api import PipelineAPI
 from pipeline.log.logger import LocalLogger, TaskLogger, RunLogger
 
 
 class PipelineUtils(object):
 
+    DATE_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
+
     @staticmethod
-    def initialize_logger(api, run_id):
+    def convert_str_to_date(date_str):
+        return datetime.strptime(date_str, PipelineUtils.DATE_FORMAT)
+
+    @staticmethod
+    def convert_date_to_str(date):
+        return date.strftime(PipelineUtils.DATE_FORMAT)
+
+    @staticmethod
+    def save_timestamp_to_file(file_path, time):
+        with open(file_path, 'w') as last_sync_file:
+            last_sync_file.write(PipelineUtils.convert_date_to_str(time))
+
+    @staticmethod
+    def initialize_logger(api, run_id, task_name):
         logger = RunLogger(api=api, run_id=run_id)
-        logger = TaskLogger(task='WSIParserCheckup', inner=logger)
+        logger = TaskLogger(task=task_name, inner=logger)
         logger = LocalLogger(inner=logger)
         return logger
 
@@ -62,3 +78,7 @@ class PipelineUtils(object):
     def extract_list_from_parameter(parameter_name):
         parameter_value = os.getenv(parameter_name, None)
         return [value.strip() for value in parameter_value.split(",")] if parameter_value else []
+
+    @staticmethod
+    def extract_set_from_parameter(parameter_name):
+        return set(PipelineUtils.extract_list_from_parameter(parameter_name))
