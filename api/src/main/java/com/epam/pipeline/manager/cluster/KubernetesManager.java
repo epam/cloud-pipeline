@@ -99,7 +99,6 @@ public class KubernetesManager {
     private static final String DEFAULT_SVC_SCHEME = "http";
     private static final int NODE_PULL_TIMEOUT = 200;
     private static final String NEW_LINE = "\n";
-    private static final String TCP = "TCP";
 
     private ObjectMapper mapper = new JsonMapper();
 
@@ -451,10 +450,11 @@ public class KubernetesManager {
     }
 
     public Optional<ServicePort> addPortToExistingService(final String serviceName,
-                                                          final Integer externalPort, final Integer internalPort) {
+                                                          final Integer externalPort, final Integer internalPort,
+                                                          final String protocol) {
         try (KubernetesClient client = getKubernetesClient()) {
             final ServicePort newPortSpec = getTcpPortSpec(getServicePortName(serviceName, externalPort),
-                                                           externalPort, internalPort);
+                                                           externalPort, internalPort, protocol);
             client.services()
                 .inNamespace(kubeNamespace)
                 .withName(serviceName)
@@ -504,9 +504,10 @@ public class KubernetesManager {
         }
     }
 
-    private ServicePort getTcpPortSpec(final String portName, final Integer externalPort, final Integer internalPort) {
+    private ServicePort getTcpPortSpec(final String portName, final Integer externalPort, final Integer internalPort,
+                                       final String protocol) {
         final ServicePort newServicePort = new ServicePort();
-        newServicePort.setProtocol(TCP);
+        newServicePort.setProtocol(protocol);
         newServicePort.setName(portName);
         Optional.ofNullable(externalPort).ifPresent(newServicePort::setPort);
         Optional.ofNullable(internalPort).map(IntOrString::new).ifPresent(newServicePort::setTargetPort);

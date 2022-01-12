@@ -17,12 +17,15 @@
 package com.epam.pipeline.entity.cluster.nat;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(exclude = {"description", "protocol"})
 public class NatRoutingRuleDescription {
 
     private final String externalName;
     private final String externalIp;
     private final Integer port;
     private final String description;
+    private final String protocol;
 }

@@ -41,6 +41,7 @@ public class NatGatewayDaoTest extends AbstractSpringTest {
     private static final String INTERNAL_IP = "10.1.1.1";
     private static final Integer INTERNAL_PORT = 2;
     private static final String DESCRIPTION = "test";
+    private static final String TCP = "TCP";
 
     @Autowired
     private NatGatewayDao natGatewayDao;
@@ -49,7 +50,7 @@ public class NatGatewayDaoTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Throwable.class)
     public void testCRUD() {
         final NatRoutingRuleDescription newRoutingRule = new NatRoutingRuleDescription(
-            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION);
+            NAT_ROUTE_DOMAIN_NAME, EXTERNAL_IP, EXTERNAL_PORT, DESCRIPTION, TCP);
         final List<NatRoutingRuleDescription> newRules = Collections.singletonList(newRoutingRule);
         final List<NatRoute> routingRulesCreated = natGatewayDao.registerRoutingRules(
             newRules, NatRouteStatus.CREATION_SCHEDULED);
@@ -85,6 +86,7 @@ public class NatGatewayDaoTest extends AbstractSpringTest {
         Assert.assertEquals(request.getExternalIp(), routingRuleCreated.getExternalIp());
         Assert.assertEquals(request.getPort(), routingRuleCreated.getExternalPort());
         Assert.assertEquals(request.getDescription(), routingRuleCreated.getDescription());
+        Assert.assertEquals(request.getProtocol(), routingRuleCreated.getProtocol());
         Assert.assertEquals(status, routingRuleCreated.getStatus());
     }
 
