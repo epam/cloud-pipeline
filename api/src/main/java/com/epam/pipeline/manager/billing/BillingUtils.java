@@ -1,6 +1,7 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.billing.BillingDiscount;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
@@ -70,6 +71,7 @@ public final class BillingUtils {
     public static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     public static final String STORAGE_USAGE_FIELD = "usage_bytes";
     public static final String LAST_BY_DATE_DOC_AGG = "last_by_date";
+    public static final String DOC_ID_FIELD = "_id";
     public static final String RUN_ID_FIELD = "run_id";
     public static final String STORAGE_ID_FIELD = "storage_id";
     public static final String PAGE = "page";
@@ -159,6 +161,10 @@ public final class BillingUtils {
                 .orElse(BigDecimal.ZERO)
                 .divide(BigDecimal.valueOf(divisor), DECIMAL_SCALE, RoundingMode.CEILING)
                 .toString();
+    }
+
+    public static long withDiscount(final BillingDiscount discount, final long cost) {
+        return cost - cost * discount.getComputes();
     }
 
     private static long tenInPowerOf(final int scale) {

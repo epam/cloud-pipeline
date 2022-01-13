@@ -7,6 +7,6 @@ import java.util.stream.Stream;
 
 public interface BillingLoader<B> {
 
-    Stream<B> billings(RestHighLevelClient elasticSearchClient,
+    Stream<B> billings(RestHighLevelClient client,
                        BillingExportRequest request);
 }

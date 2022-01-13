@@ -43,13 +43,13 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
     private final PipelineBillingDetailsLoader pipelineBillingDetailsLoader;
 
     @Override
-    public Stream<PipelineBilling> billings(final RestHighLevelClient elasticSearchClient,
+    public Stream<PipelineBilling> billings(final RestHighLevelClient client,
                                             final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
         final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
-        return billings(elasticSearchClient, from, to, filters, discount, getPageSize());
+        return billings(client, from, to, filters, discount, getPageSize());
     }
 
     private int getPageSize() {
@@ -58,17 +58,17 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
                 .orElse(BillingUtils.FALLBACK_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE);
     }
 
-    private Stream<PipelineBilling> billings(final RestHighLevelClient elasticSearchClient,
+    private Stream<PipelineBilling> billings(final RestHighLevelClient client,
                                              final LocalDate from,
                                              final LocalDate to,
                                              final Map<String, List<String>> filters,
                                              final BillingDiscount discount,
                                              final int pageSize) {
-        return StreamUtils.from(billingsIterator(elasticSearchClient, from, to, filters, discount, pageSize))
+        return StreamUtils.from(billingsIterator(client, from, to, filters, discount, pageSize))
                 .flatMap(this::billings);
     }
 
-    private Iterator<SearchResponse> billingsIterator(final RestHighLevelClient elasticSearchClient,
+    private Iterator<SearchResponse> billingsIterator(final RestHighLevelClient client,
                                                       final LocalDate from,
                                                       final LocalDate to,
                                                       final Map<String, List<String>> filters,
@@ -76,7 +76,7 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
                                                       final int pageSize) {
         return new ElasticMultiBucketsIterator(BillingUtils.PIPELINE_ID_FIELD, pageSize,
             pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
-            billingHelper.searchWith(elasticSearchClient),
+            billingHelper.searchWith(client),
             billingHelper::getTerms);
     }
 
