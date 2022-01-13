@@ -18,12 +18,14 @@ import React from 'react';
 import {Provider} from 'mobx-react';
 import {Alert} from 'antd';
 import Roles from '../../models/user/Roles';
+import Users from '../../models/user/Users';
 import roleModel from '../../utils/roleModel';
 import SubSettings from './sub-settings';
 import UsersManagement from './user-management/users';
 import GroupsManagement from './user-management/groups';
 
 const roles = new Roles();
+const usersWithActivity = new Users(true);
 
 function UserManagementForm (
   {
@@ -47,7 +49,7 @@ function UserManagementForm (
     );
   }
   return (
-    <Provider roles={roles}>
+    <Provider roles={roles} usersWithActivity={usersWithActivity}>
       <SubSettings
         sections={[
           {
