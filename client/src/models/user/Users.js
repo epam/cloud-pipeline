@@ -17,8 +17,12 @@
 import Remote from '../basic/Remote';
 
 export default class Users extends Remote {
-  constructor () {
+  constructor (activity) {
     super();
-    this.url = '/users';
+    if (activity !== undefined) {
+      this.url = `/users?activity=${activity}`;
+    } else {
+      this.url = '/users';
+    }
   }
 }

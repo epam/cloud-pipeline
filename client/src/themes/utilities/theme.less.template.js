@@ -2551,6 +2551,14 @@ export default `
 @THEME .cp-nat-route-port-control {
   border-bottom: 1px solid @table-border-color;
 }
+@THEME .cp-user-status-online {
+  fill: @color-green;
+  stroke: @color-green;
+}
+@THEME .cp-user-status-offline {
+  stroke: @color-grey;
+  fill: transparent;
+}
 
 @THEME .code-highlight {
   color: @application-color;

@@ -28,7 +28,8 @@ import {
   Button,
   message,
   Alert,
-  Select
+  Select,
+  Tooltip
 } from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Roles from '../../../models/user/Roles';
@@ -41,6 +42,8 @@ import ImportUsersButton from './../components/import-users';
 import roleModel from '../../../utils/roleModel';
 import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
+import UserStatus from './user-status-indicator';
+import displayDate from '../../../utils/displayDate';
 
 const PAGE_SIZE = 20;
 
@@ -57,13 +60,16 @@ function usersFilter (criteria) {
 const USERS_FILTERS = {
   all: 'all',
   blocked: 'blocked',
-  notBlocked: 'notBlocked'
+  notBlocked: 'notBlocked',
+  online: 'online',
+  offline: 'offline'
 };
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'users', 'userMetadataKeys')
-@inject(({users, authenticatedUserInfo, userMetadataKeys}) => ({
-  users,
+@inject('dataStorages', 'usersWithActivity', 'userMetadataKeys', 'users')
+@inject(({usersWithActivity, authenticatedUserInfo, userMetadataKeys, users}) => ({
+  users: usersWithActivity,
+  usersStore: users,
   authenticatedUserInfo,
   roles: new Roles(),
   userMetadataKeys
@@ -194,10 +200,27 @@ export default class UsersManagement extends React.Component {
       userSearchText,
       filterUsers
     } = this.state;
-    const showBlocked = filterUsers === USERS_FILTERS.blocked;
     return this.users
       .filter(usersFilter(userSearchText))
-      .filter(user => filterUsers === USERS_FILTERS.all || showBlocked === user.blocked);
+      .filter(user => {
+        switch (filterUsers) {
+          case USERS_FILTERS.all: {
+            return true;
+          }
+          case USERS_FILTERS.blocked: {
+            return user.blocked;
+          }
+          case USERS_FILTERS.notBlocked: {
+            return !user.blocked;
+          }
+          case USERS_FILTERS.online: {
+            return user.online;
+          }
+          case USERS_FILTERS.offline: {
+            return !user.online;
+          }
+        }
+      });
   }
 
   onUserSearchChanged = (e) => {
@@ -276,6 +299,22 @@ export default class UsersManagement extends React.Component {
           >
             Show blocked users
           </Select.Option>
+          { this.isAdmin && (
+            <Select.Option
+              key={USERS_FILTERS.online}
+              value={USERS_FILTERS.online}
+            >
+              Show online users
+            </Select.Option>)
+          }
+          { this.isAdmin && (
+            <Select.Option
+              key={USERS_FILTERS.offline}
+              value={USERS_FILTERS.offline}
+            >
+              Show offline users
+            </Select.Option>)
+          }
         </Select>
         {
           this.isAdmin && (
@@ -382,6 +421,30 @@ export default class UsersManagement extends React.Component {
         className: styles.userNameColumn,
         render: (name, user) => {
           let blockedSpan;
+          const offlineInfo = (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                justifyContent: 'flex-start'
+              }}
+            >
+              <p>Offline</p>
+              {
+                user.lastLoginDate &&
+                (
+                  <p>
+                    Last visited: {displayDate(user.lastLoginDate, 'D MMMM YYYY, HH:mm')}
+                  </p>
+                )
+              }
+            </div>);
+          const onlineInfo = (
+            <div>
+              <p>Online</p>
+            </div>);
+
           if (user.blocked) {
             blockedSpan = (
               <span
@@ -391,6 +454,19 @@ export default class UsersManagement extends React.Component {
               </span>
             );
           }
+          const userStatus = this.isAdmin
+            ? (
+              <Tooltip
+                placement="left"
+                title={user.online ? onlineInfo : offlineInfo}
+                trigger="hover"
+              >
+                <div style={{marginRight: 5}}>
+                  <UserStatus online={user.online} />
+                </div>
+              </Tooltip>
+            )
+            : undefined;
           if (user.attributes) {
             const getAttributesValues = () => {
               const values = [];
@@ -406,7 +482,11 @@ export default class UsersManagement extends React.Component {
               <Row type="flex" style={{flexDirection: 'column'}}>
                 <Row>
                   <span className={styles.lineBreak}>
-                    {name}{blockedSpan}
+                    {userStatus}
+                    <span>
+                      {name}
+                      {blockedSpan}
+                    </span>
                   </span>
                 </Row>
                 <Row>
@@ -423,7 +503,11 @@ export default class UsersManagement extends React.Component {
             return (
               <Row>
                 <span className={styles.lineBreak}>
-                  {name}{blockedSpan}
+                  {userStatus}
+                  <span className={styles.userName}>
+                    {name}
+                    {blockedSpan}
+                  </span>
                 </span>
               </Row>
             );
@@ -598,5 +682,9 @@ export default class UsersManagement extends React.Component {
 
   componentDidMount () {
     this.props.users.fetch();
+  }
+
+  componentWillUnmount () {
+    this.props.usersStore.fetch();
   }
 }
