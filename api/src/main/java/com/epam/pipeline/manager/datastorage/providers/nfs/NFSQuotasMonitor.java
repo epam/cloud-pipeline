@@ -227,8 +227,11 @@ public class NFSQuotasMonitor {
             final NFSQuotaTrigger newTrigger = new NFSQuotaTrigger(storageId, notification, recipients,
                                                                    executionTime, newStatus, activationTime,
                                                                    isNotificationRequired);
-            updateTrigger(newTrigger);
-            if (isNotificationRequired && activationTime.isAfter(executionTime)) {
+            final boolean isDelayedActivation = activationTime.isAfter(executionTime);
+            updateTrigger(isDelayedActivation
+                          ? newTrigger
+                          : newTrigger.toBuilder().targetStatusActivationTime(null).build());
+            if (isNotificationRequired && isDelayedActivation) {
                 notificationManager.notifyOnStorageQuotaExceeding(storage, newStatus, notification, recipients,
                                                                   activationTime);
             }
@@ -239,7 +242,11 @@ public class NFSQuotasMonitor {
                                                 final NFSStorageMountStatus newMountStatus,
                                                 final LocalDateTime executionTime) {
         final NFSStorageMountStatus currentMountStatus = storage.getMountStatus();
-        if (currentMountStatus.getPriority() >= newMountStatus.getPriority()) {
+        final int graceDelay = searchCorrespondingAction(newMountStatus)
+            .map(graceConfiguration::get)
+            .orElse(0);
+        if (currentMountStatus.getPriority() >= newMountStatus.getPriority()
+            || graceDelay == 0) {
             return executionTime;
         } else {
             final LocalDateTime lastRestrictiveStatusActivation =
@@ -247,9 +254,6 @@ public class NFSQuotasMonitor {
                     .filter(trigger -> !trigger.getTargetStatus().equals(NFSStorageMountStatus.ACTIVE))
                     .map(NFSQuotaTrigger::getTargetStatusActivationTime)
                     .orElse(executionTime);
-            final int graceDelay = searchCorrespondingAction(newMountStatus)
-                .map(graceConfiguration::get)
-                .orElse(0);
             final LocalDateTime activationFromLastTrigger =
                 lastRestrictiveStatusActivation.plus(graceDelay, ChronoUnit.MINUTES);
             if (activationFromLastTrigger.isBefore(executionTime)) {
@@ -396,7 +400,9 @@ public class NFSQuotasMonitor {
 
     private void controlStatus(final Map<Long, NFSDataStorage> nfsMapping, final LocalDateTime checkTime) {
         latestTriggers.values().stream()
-            .filter(trigger -> trigger.getTargetStatusActivationTime().isBefore(checkTime))
+            .filter(trigger -> Optional.ofNullable(trigger.getTargetStatusActivationTime())
+                .map(activationTime -> activationTime.isBefore(checkTime))
+                .orElse(true))
             .map(trigger -> Pair.of(nfsMapping.get(trigger.getStorageId()), trigger))
             .filter(pair -> pair.getKey() != null)
             .filter(pair -> pair.getKey().getMountStatus() != pair.getValue().getTargetStatus())
