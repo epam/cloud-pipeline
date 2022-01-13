@@ -374,7 +374,7 @@ public class BillingManager {
         final Map<String, BillingGrouping> billingFieldMapping = preferenceManager.getPreference(
                 SystemPreferences.BILLING_FIELD_MAPPING);
         return billingFieldMapping.getOrDefault(
-                request.getGrouping().toLowerCase(Locale.ROOT),
+                request.getGrouping(),
                 BillingGrouping.getDefault(request.getGrouping())
         );
     }
@@ -606,7 +606,7 @@ public class BillingManager {
         final Map<String, String> entityDetails = new HashMap<>();
         if (grouping != null) {
             if (detailsLoader == null) {
-                groupingInfo.put(grouping.toString(), groupValue);
+                groupingInfo.put(grouping.getCorrespondingField(), groupValue);
             } else {
                 entityDetails.putAll(detailsLoader.loadInformation(groupValue, loadDetails));
                 groupingInfo.put(grouping.getCorrespondingField(), entityDetails.remove(EntityBillingDetailsLoader.NAME));
