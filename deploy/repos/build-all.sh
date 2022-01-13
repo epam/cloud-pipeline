@@ -21,6 +21,21 @@
 #    perl-Net-SSLeay-1.88-1.module_el8.3.0 410 ff426aa3.x86_64.rpm
 # 2. Otherwise AWS S3 URL encodes the "+" to hex and yum can't find them. While spaces are replaced
 #    with the "pluses"
+# 3. Use this script to copy any "+" files with spaces:
+# aws s3 ls s3://cloud-pipeline-oss-builds/tools/repos/centos/8/ > all_pkg.list
+# cat all_pkg.list | grep '+' > all_pkg_with_plus.list
+# while read pkg; do
+#   pkg=$(echo $pkg | cut -f4 -d' ')
+#   pkg_spaces=$(echo $pkg | sed 's/+/ /g')
+#   aws_exists=$(aws s3 ls "s3://cloud-pipeline-oss-builds/tools/repos/centos/8/$pkg_spaces")
+#   if [ "$aws_exists" ]; then
+#     echo "EXISTS: $pkg_spaces"
+#     continue
+#   fi
+#   aws s3 cp "s3://cloud-pipeline-oss-builds/tools/repos/centos/8/$pkg" "s3://cloud-pipeline-oss-builds/tools/repos/centos/8/$pkg_spaces" 
+#   echo "UPLOAD: $pkg_spaces"
+# done <all_pkg_with_plus.list
+
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ############################################################################################
 
