@@ -96,7 +96,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -107,7 +106,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -169,29 +167,8 @@ public class BillingManager {
             .collect(Collectors.toList());
     }
 
-    public List<String> getAvailableFacetValues(final String field) {
-        try {
-            final SearchSourceBuilder searchSource = new SearchSourceBuilder().size(0);
-            addTermAggregationToSource(searchSource, field);
-
-            SearchRequest searchRequest = new SearchRequest()
-                    .indicesOptions(IndicesOptions.strictExpandOpen())
-                    .indices(billingHelper.indicesPattern())
-                    .source(searchSource);
-
-            SearchResponse response = elasticHelper.buildClient().search(searchRequest, RequestOptions.DEFAULT);
-            return buildFacets(response.getAggregations()).values()
-                    .stream()
-                    .flatMap(map -> map.keySet().stream())
-                    .distinct().collect(Collectors.toList());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return Collections.emptyList();
-    }
-
     public FacetedSearchResult getAvailableFacets(final BillingChartRequest request) {
-        final Set<String> fields = getFieldsFromMapping();
+        final Set<String> fields = getAvailableElasticDocFieldsFromMapping();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(getFacetedQuery(request.getFilters()))
                 .size(0);
@@ -223,7 +200,7 @@ public class BillingManager {
         return boolQueryBuilder;
     }
 
-    private Set<String> getFieldsFromMapping() {
+    private Set<String> getAvailableElasticDocFieldsFromMapping() {
         try {
             GetMappingsResponse fieldMapping = elasticHelper.buildClient().indices()
                     .getMapping(

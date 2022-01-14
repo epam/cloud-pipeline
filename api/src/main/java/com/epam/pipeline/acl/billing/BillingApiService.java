@@ -37,10 +37,6 @@ public class BillingApiService {
         return billingManager.getBillingChartInfo(request);
     }
 
-    public List<String> getAvailableFacetValues(final String facet) {
-        return billingManager.getAvailableFacetValues(facet);
-    }
-
     public FacetedSearchResult getAvailableFields(final BillingChartRequest request) {
         return billingManager.getAvailableFacets(request);
     }

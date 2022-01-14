@@ -29,7 +29,6 @@ import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -66,17 +65,6 @@ public class BillingController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<FacetedSearchResult> getAvailableFacets(@RequestBody final BillingChartRequest request) {
         return Result.success(billingApi.getAvailableFields(request));
-    }
-
-    @RequestMapping(value = "/billing/facets/values/{facet}", method = RequestMethod.GET)
-    @ResponseBody
-    @ApiOperation(
-            value = "Get info for available facet values to filter on.",
-            notes = "Get info for available facet values to filter on.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<String>> getAvailableFacetValues(@PathVariable final String facet) {
-        return Result.success(billingApi.getAvailableFacetValues(facet));
     }
 
     @RequestMapping(value = "/billing/charts/pagination", method = RequestMethod.POST)
