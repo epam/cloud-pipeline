@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.app;
+package com.epam.pipeline.entity.user;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.ldap.core.ContextSource;
-import org.springframework.ldap.core.LdapTemplate;
+import lombok.Data;
 
-@Configuration
-@RequiredArgsConstructor
-public class LdapConfiguration {
-    @Bean
-    public LdapTemplate ldapTemplate(final ContextSource contextSource) {
-        return new LdapTemplate(contextSource);
-    }
+@Data
+public class SidImpl implements Sid {
+    private String name;
+    private boolean principal = true;
 }

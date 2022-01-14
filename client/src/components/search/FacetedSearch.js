@@ -15,21 +15,25 @@
  */
 
 import React from 'react';
+import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
   Alert,
+  Badge,
   Button,
   Icon,
   Input,
   Dropdown,
   Menu
 } from 'antd';
+import RcMenu, {MenuItem, Divider as MenuDivider} from 'rc-menu';
 import classNames from 'classnames';
 import LoadingView from '../special/LoadingView';
 import {SearchGroupTypes} from './searchGroupTypes';
 import FacetedFilter, {DocumentTypeFilter, DocumentTypeFilterName} from './faceted-search/filter';
 import {
   PresentationModes,
+  SelectionPreview,
   TogglePresentationMode
 } from './faceted-search/controls';
 import SearchResults, {DEFAULT_PAGE_SIZE} from './faceted-search/search-results';
@@ -49,6 +53,8 @@ import {
   removeSortingByField
 } from './faceted-search/utilities';
 import {SplitPanel} from '../special/splitPanel';
+import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
+import {SearchItemTypes} from '../../models/search';
 import styles from './FacetedSearch.css';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
@@ -82,7 +88,11 @@ class FacetedSearch extends React.Component {
     presentationMode: FacetModeStorage.load() || PresentationModes.list,
     showResults: false,
     searchToken: undefined,
-    facetsToken: undefined
+    facetsToken: undefined,
+    itemsToShare: [],
+    selectedItems: [],
+    shareDialogVisible: false,
+    showSelectionPreview: false
   }
 
   abortController;
@@ -99,6 +109,13 @@ class FacetedSearch extends React.Component {
     } else {
       this.doSearch();
     }
+  }
+
+  @computed
+  get dataStorageSharingEnabled () {
+    const {preferences} = this.props;
+    return preferences && preferences.loaded &&
+        preferences.sharedStoragesSystemDirectory && preferences.dataSharingEnabled;
   }
 
   get documentTypeFilter () {
@@ -625,6 +642,120 @@ class FacetedSearch extends React.Component {
     });
   };
 
+  openShareStorageItemsDialog = (itemsToShare = []) => {
+    const getItemType = (item) => {
+      if (item.type === SearchItemTypes.s3File) {
+        return 'file';
+      }
+      return item.type;
+    };
+    this.setState({
+      itemsToShare: itemsToShare.map(i => ({
+        storageId: i.parentId,
+        path: i.path,
+        name: i.name,
+        type: getItemType(i)
+      })),
+      shareDialogVisible: true,
+      showSelectionPreview: false
+    });
+  };
+
+  closeShareItemDialog = () => {
+    return this.setState({
+      itemsToShare: [],
+      shareDialogVisible: false
+    });
+  };
+
+  onSelectItem = (item) => {
+    const selectedItems = [...new Set([...this.state.selectedItems, item])];
+
+    this.setState({selectedItems});
+  };
+
+  onDeselectItem = (item) => {
+    const selectedItems = this.state.selectedItems.filter(i => i.elasticId !== item.elasticId);
+
+    this.setState({selectedItems});
+  };
+
+  openSelectionPreview = () => {
+    const {selectedItems = []} = this.state;
+    if (selectedItems && selectedItems.length > 0) {
+      this.setState({showSelectionPreview: true});
+    }
+  };
+
+  closeSelectionPreview = () => {
+    this.setState({showSelectionPreview: false});
+  };
+
+  clearSelection = () => {
+    this.setState({
+      showSelectionPreview: false,
+      itemsToShare: [],
+      selectedItems: []
+    });
+  };
+
+  renderDataStorageSharingControl = () => {
+    const {selectedItems} = this.state;
+    if (!this.dataStorageSharingEnabled || !selectedItems || !selectedItems.length) {
+      return null;
+    }
+    const handleMenuClick = ({key}) => {
+      if (key === 'share') {
+        this.openShareStorageItemsDialog(selectedItems);
+      } else if (key === 'clear') {
+        this.clearSelection();
+      } else if (key === 'show selection') {
+        this.openSelectionPreview();
+      }
+    };
+    const overlay = (
+      <RcMenu
+        onClick={handleMenuClick}
+        selectedKeys={[]}
+      >
+        <MenuItem
+          key="share"
+        >
+          Share selected items
+        </MenuItem>
+        <MenuItem
+          key="show selection"
+        >
+          Show selected items
+        </MenuItem>
+        <MenuDivider />
+        <MenuItem
+          key="clear"
+          className="cp-danger"
+        >
+          Clear selection
+        </MenuItem>
+      </RcMenu>
+    );
+    return (
+      <div style={{margin: '0 5px'}}>
+        <Badge count={(selectedItems || []).length} style={{zIndex: 999}}>
+          <Dropdown
+            overlay={overlay}
+            trigger={['click']}
+          >
+            <Button
+              size="large"
+              style={{width: 35, padding: 0}}
+            >
+              <Icon type="export" />
+            </Button>
+          </Dropdown>
+        </Badge>
+      </div>
+    );
+  };
+
   renderSortingControls = () => {
     const {
       sortingOrder,
@@ -725,6 +856,10 @@ class FacetedSearch extends React.Component {
         onLoadData={this.onLoadNextPage}
         onPageSizeChanged={this.onPageSizeChanged}
         onNavigate={this.onNavigate}
+        onSelectItem={this.onSelectItem}
+        onDeselectItem={this.onDeselectItem}
+        selectedItems={this.state.selectedItems}
+        selectionAvailable={this.dataStorageSharingEnabled}
         showResults={showResults}
         onChangeDocumentType={this.onChangeFilter(DocumentTypeFilterName)}
         mode={presentationMode}
@@ -740,6 +875,8 @@ class FacetedSearch extends React.Component {
       facetsLoaded,
       presentationMode,
       query,
+      showSelectionPreview,
+      selectedItems = [],
       userDocumentTypes = []
     } = this.state;
     if (!facetsLoaded || (systemDictionaries.pending && !systemDictionaries.loaded)) {
@@ -755,7 +892,9 @@ class FacetedSearch extends React.Component {
     const noFilters = this.filters.filter(f => f.name !== DocumentTypeFilterName).length === 0;
     return (
       <div
-        className={classNames(styles.container, 'cp-panel', 'cp-panel-no-hover', 'cp-panel-borderless')}
+        className={
+          classNames(styles.container, 'cp-panel', 'cp-panel-no-hover', 'cp-panel-borderless')
+        }
       >
         <div
           className={styles.search}
@@ -788,6 +927,7 @@ class FacetedSearch extends React.Component {
               />
             )
           }
+          {this.renderDataStorageSharingControl()}
           <Button
             className={styles.find}
             size="large"
@@ -815,6 +955,11 @@ class FacetedSearch extends React.Component {
                 mode={presentationMode}
               />
               {this.renderSortingControls()}
+              <SharedItemInfo
+                visible={this.state.shareDialogVisible}
+                shareItems={this.state.itemsToShare}
+                close={this.closeShareItemDialog}
+              />
             </div>
           )
         }
@@ -879,6 +1024,15 @@ class FacetedSearch extends React.Component {
           )
           }
         </div>
+        <SelectionPreview
+          title="Selected files"
+          visible={showSelectionPreview}
+          extraColumns={this.extraColumns}
+          items={selectedItems}
+          onClose={this.closeSelectionPreview}
+          onClear={this.clearSelection}
+          onShare={this.openShareStorageItemsDialog}
+        />
       </div>
     );
   }

@@ -20,6 +20,8 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.KubernetesManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.utils.DoubleUtils;
 import io.fabric8.kubernetes.api.model.Node;
@@ -45,8 +47,13 @@ public class PoolAutoscaler {
     private final NodePoolManager poolManager;
     private final NodePoolMapper poolMapper;
     private final KubernetesManager kubernetesManager;
+    private final PreferenceManager preferenceManager;
 
     public void adjustPoolSizes() {
+        if (preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE).orElse(false)) {
+            log.debug("Platform is in a maintenance mode, operation is temporary unavailable");
+            return;
+        }
         try (KubernetesClient kubernetesClient = kubernetesManager.getKubernetesClient()) {
             final List<Node> availableNodes = kubernetesManager.getNodes(kubernetesClient);
             final Set<String> activePodIds = kubernetesManager.getAllPodIds(kubernetesClient);

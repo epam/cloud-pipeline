@@ -45,19 +45,24 @@ public class LdapManagerTest {
     private static final String[] ATTRIBUTES = {"cn", "mail", "attribute"};
     private static final String USER_FILTER = "(&(objectClass=person)(attribute=*%s*))";
     private static final String GROUP_FILTER = "(&(objectClass=group)(attribute=*%s*))";
-    public static final LdapEntity ENTITY = new LdapEntity(NAME, LdapEntityType.USER, Collections.emptyMap());
+    private static final LdapEntity ENTITY = new LdapEntity(NAME, LdapEntityType.USER, Collections.emptyMap());
 
     private final LdapTemplate ldapTemplate = mock(LdapTemplate.class);
+    private final LdapTemplateProvider ldapTemplateProvider = mock(LdapTemplateProvider.class);
     private final LdapEntityMapper ldapEntityMapper = mock(LdapEntityMapper.class);
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final LdapManager ldapManager = new LdapManager(ldapTemplate, ldapEntityMapper, preferenceManager, 
+    private final LdapManager ldapManager = new LdapManager(ldapTemplateProvider, ldapEntityMapper, preferenceManager,
             messageHelper);
 
     @Before
     public void setUp() {
+        mockLdapTemplate();
         mockEmptyPreferences();
         mockPreference(SystemPreferences.LDAP_RESPONSE_SIZE, COUNT_LIMIT);
+        mockPreference(SystemPreferences.LDAP_URLS, BASE_PATH);
+        mockPreference(SystemPreferences.LDAP_USERNAME, BASE_PATH);
+        mockPreference(SystemPreferences.LDAP_PASSWORD, BASE_PATH);
         mockPreference(SystemPreferences.LDAP_BASE_PATH, BASE_PATH);
         mockPreference(SystemPreferences.LDAP_USER_FILTER, USER_FILTER);
         mockPreference(SystemPreferences.LDAP_GROUP_FILTER, GROUP_FILTER);
@@ -135,6 +140,10 @@ public class LdapManagerTest {
 
         verifyQuery(query -> CollectionUtils.isEqualCollection(
                 Arrays.asList(query.attributes()), Arrays.asList(ATTRIBUTES)));
+    }
+
+    private void mockLdapTemplate() {
+        doReturn(ldapTemplate).when(ldapTemplateProvider).get();
     }
 
     private void mockEmptyPreferences() {

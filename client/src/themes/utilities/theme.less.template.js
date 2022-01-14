@@ -282,7 +282,8 @@ export default `
 @THEME h2,
 @THEME h3,
 @THEME h4,
-@THEME h5 {
+@THEME h5,
+@THEME h6 {
   color: @application-color;
 }
 @THEME .ant-input,
@@ -921,7 +922,8 @@ export default `
   border-color: @panel-border-color;
 }
 @THEME .rc-menu > .rc-menu-item-divider,
-@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider {
+@THEME .rc-dropdown-menu > .rc-dropdown-menu-item-divider,
+@THEME .ant-dropdown-menu > .ant-dropdown-menu-item-divider {
   background-color: @panel-border-color;
 }
 @THEME .ant-select-selection__placeholder,
@@ -1501,6 +1503,10 @@ export default `
 @THEME .cp-panel .cp-panel-card .cp-card-action-button.cp-danger {
   color: @btn-danger-color;
 }
+@THEME .cp-panel .cp-panel-card .cp-card-action-button.cp-disabled {
+  color: @btn-disabled-color;
+  cursor: not-allowed;
+}
 @THEME .cp-panel .cp-panel-card .cp-panel-card-actions .cp-panel-card-actions-background {
   background-color: @card-background-color;
 }
@@ -1610,7 +1616,7 @@ export default `
   color: @nfs-icon-color;
 }
 @THEME .cp-notification-status-info {
-  color: @color-info;
+  color: @color-green;
 }
 @THEME .cp-notification-status-warning {
   color: @color-warning;
@@ -2455,7 +2461,10 @@ export default `
 @THEME .cp-cluster-node-even-row {
   background-color: @even-element-background;
 }
-
+@THEME .cp-filter-popover-item:hover {
+  background-color: @element-hover-background-color;
+  color: @application-color;
+}
 @THEME .cp-settings-sidebar-element:not(.cp-table-element-disabled) {
   cursor: pointer;
 }
@@ -2524,6 +2533,14 @@ export default `
 @THEME .cp-nat-route-port-control {
   border-color: @table-border-color;
 }
+@THEME .cp-user-status-online {
+  fill: @color-green;
+  stroke: @color-green;
+}
+@THEME .cp-user-status-offline {
+  stroke: @color-grey;
+  fill: transparent;
+}
 
 @THEME .code-highlight {
   color: @application-color;
@@ -2565,6 +2582,65 @@ export default `
 @THEME .markdown h5,
 @THEME .markdown h6 {
   margin: 2px 0;
+}
+@THEME .markdown p {
+  margin: 5px 0;
+}
+@THEME .markdown p a {
+  margin: 0 2px;
+}
+@THEME .markdown ul,
+@THEME .markdown ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+@THEME .markdown ol {
+  list-style-type: decimal;
+}
+@THEME .markdown li {
+  display: list-item;
+  margin: 5px;
+}
+@THEME .markdown ol ul {
+  list-style: circle;
+}
+@THEME .markdown ol ul li {
+  margin-left: 35px;
+}
+@THEME .markdown ol ul ul,
+@THEME .markdown ul ul {
+  list-style: square;
+}
+@THEME .markdown ul ul li {
+  margin-left: 35px;
+}
+@THEME .markdown blockquote {
+  margin: 0;
+  padding: 10px 0;
+  padding-left: 1rem;
+  border-left: 4px solid @card-border-color;
+  background-color: @code-background-color;
+}
+@THEME .markdown hr {
+  margin: 5px 0;
+  border-top: 1px solid @card-border-color;
+  border-right: none;
+  border-left: none;
+  border-bottom: none;
+}
+@THEME .markdown table {
+  border-collapse: collapse;
+  border: 1px solid @card-border-color;
+}
+@THEME .markdown table td,
+@THEME .markdown table th {
+  border: 1px solid @card-border-color;
+  padding: 5px;
+}
+@THEME .markdown table tr:nth-child(even) {
+  background-color: @even-element-background;
 }
 @THEME .hljs {
   color: @application-color;

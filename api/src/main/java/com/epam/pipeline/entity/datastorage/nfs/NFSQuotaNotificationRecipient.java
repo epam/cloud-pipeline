@@ -16,10 +16,11 @@
 
 package com.epam.pipeline.entity.datastorage.nfs;
 
+import com.epam.pipeline.entity.user.Sid;
 import lombok.Data;
 
 @Data
-public class NFSQuotaNotificationRecipient {
+public class NFSQuotaNotificationRecipient implements Sid {
 
     private final boolean principal;
     private final String name;

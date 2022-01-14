@@ -64,6 +64,79 @@
   margin: 2px 0;
 }
 
+.markdown p {
+  margin: 5px 0;
+}
+
+.markdown p a {
+  margin: 0 2px;
+}
+
+.markdown ul,
+.markdown ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+
+.markdown ol {
+  list-style-type: decimal;
+}
+
+.markdown li {
+  display: list-item;
+  margin: 5px;
+}
+
+.markdown ol ul {
+  list-style: circle;
+}
+
+.markdown ol ul li {
+  margin-left: 35px;
+}
+
+.markdown ol ul ul,
+.markdown ul ul {
+  list-style: square;
+}
+
+.markdown ul ul li {
+  margin-left: 35px;
+}
+
+.markdown blockquote {
+  margin: 0;
+  padding: 10px 0;
+  padding-left: 1rem;
+  border-left: 4px solid @card-border-color;
+  background-color: @code-background-color;
+}
+
+.markdown hr {
+  margin: 5px 0;
+  border-top: 1px solid @card-border-color;
+  border-right: none;
+  border-left: none;
+  border-bottom: none;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  border: 1px solid @card-border-color;
+}
+
+.markdown table td,
+.markdown table th {
+  border: 1px solid @card-border-color;
+  padding: 5px;
+}
+
+.markdown table tr:nth-child(even) {
+  background-color: @even-element-background;
+}
+
 .hljs {
   color: @application-color;
   background: @card-background-color;

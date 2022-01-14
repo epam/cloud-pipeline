@@ -25,12 +25,18 @@ import ConfirmNotification from '../../../models/notifications/ConfirmNotificati
 import styles from './SystemNotification.css';
 import Markdown from '../../special/markdown';
 
+const PredefinedNotifications = {
+  MaintenanceMode: -1
+};
+
+export {PredefinedNotifications};
+
 @inject(({notifications}) => ({
   notifications
 }))
+@inject('preferences')
 @observer
 export default class NotificationCenter extends React.Component {
-
   static propTypes = {
     delaySeconds: PropTypes.number
   };
@@ -46,7 +52,7 @@ export default class NotificationCenter extends React.Component {
     if (!this.props.notifications.loaded || !this.state.initialized) {
       return [];
     }
-    return (this.props.notifications.value || []).sort((a, b) => {
+    let sortedNotifications = (this.props.notifications.value || []).sort((a, b) => {
       const dateA = moment.utc(a.createdDate);
       const dateB = moment.utc(b.createdDate);
       if (dateA > dateB) {
@@ -56,6 +62,19 @@ export default class NotificationCenter extends React.Component {
       }
       return 0;
     });
+    const {systemMaintenanceMode, systemMaintenanceModeBanner} = this.props.preferences;
+    if (systemMaintenanceMode && systemMaintenanceModeBanner) {
+      sortedNotifications.unshift({
+        blocking: false,
+        body: systemMaintenanceModeBanner,
+        createdDate: '',
+        notificationId: PredefinedNotifications.MaintenanceMode,
+        severity: 'INFO',
+        state: 'ACTIVE',
+        title: 'Maintenance mode'
+      });
+    }
+    return sortedNotifications;
   }
 
   @computed
@@ -235,8 +254,8 @@ export default class NotificationCenter extends React.Component {
                   onHeightInitialized={this.onHeightInitialized}
                   key={notification.notificationId}
                   notification={notification} />
-            );
-          })
+              );
+            })
         }
         <Modal
           title={
@@ -246,12 +265,15 @@ export default class NotificationCenter extends React.Component {
                   {this.renderSeverityIcon(blockingNotification)}
                   {blockingNotification.title}
                 </Row>
-            )
+              )
               : null}
           closable={false}
           footer={
             <Row type="flex" justify="end">
-              <Button type="primary" onClick={() => this.onCloseBlockingNotification(blockingNotification)}>
+              <Button
+                type="primary"
+                onClick={() => this.onCloseBlockingNotification(blockingNotification)}
+              >
                 CONFIRM
               </Button>
             </Row>

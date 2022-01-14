@@ -67,7 +67,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row").find(byClassName("ant-select"))),
             entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row").find(by("role", "combobox"))),
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
-            entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
+            entry(IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
@@ -448,6 +448,43 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         ensure(byValue(parameter), cssClass("ant-input-disabled"));
         $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
                 .shouldHave(Condition.not(visible));
+        return this;
+    }
+
+    public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
+        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(withText(capability));
+        capabilityElement
+                .shouldBe(visible, enabled);
+        if (disable) {
+            capabilityElement
+                    .closest("li")
+                    .shouldHave(Condition.attribute("aria-disabled", "true"))
+                    .find("i")
+                    .shouldHave(Condition.cssClass("anticon-question-circle-o"));
+        }
+        return this;
+    }
+
+    public PipelineRunFormAO checkCapabilityTooltip(final String capability, final String text) {
+        $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(withText(capability))
+                .shouldBe(visible).hover();
+        $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+                .find(byClassName("ant-tooltip-content"))
+                .shouldHave(Condition.text(text));
+        return this;
+    }
+
+    public PipelineRunFormAO waitUntilSaveEnding(final String name) {
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
+        }
+        sleep(1, SECONDS);
         return this;
     }
 

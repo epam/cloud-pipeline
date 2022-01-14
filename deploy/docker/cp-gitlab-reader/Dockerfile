@@ -24,7 +24,7 @@ RUN apt update && \
                 python3 python3-venv python3-pip python3-dev \
                 build-essential libssl-dev libffi-dev python3-setuptools
 
-RUN python3 -m pip install --upgrade pip && pip3 install setuptools_rust
+RUN python3 -m pip install --upgrade pip && pip3 install setuptools_rust==0.12.1
 
 # API distribution
 ARG CP_API_DIST_URL=""
@@ -44,7 +44,7 @@ RUN cd /tmp && \
 
 RUN cd $CP_GITLAB_READER_HOME/gitreader && \
     python3 -m pip install wheel && \
-    python3 -m pip install uwsgi && \
+    python3 -m pip install uwsgi==2.0.20 && \
     python3 setup.py install
 
 

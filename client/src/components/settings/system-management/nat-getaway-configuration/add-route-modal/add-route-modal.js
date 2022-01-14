@@ -23,7 +23,8 @@ import {ResolveIp} from '../../../../../models/nat';
 import {
   validateIP,
   validatePort,
-  validateServerName
+  validateServerName,
+  validateDescription
 } from '../helpers';
 import styles from './add-route-modal.css';
 
@@ -104,12 +105,16 @@ export default class AddRouteForm extends React.Component {
       ports = {},
       serverName,
       ip,
-      useIP
+      useIP,
+      description
     } = this.state;
     const {
       routes = []
     } = this.props;
-    const currentIpRoutes = routes.filter(route => route.externalIp === ip);
+    const currentIpRoutes = routes
+      .filter(route => useIP
+        ? route.externalIp === ip
+        : serverName === route.externalIp);
     const portValues = Object
       .values(ports)
       .map(({value}) => value)
@@ -119,6 +124,7 @@ export default class AddRouteForm extends React.Component {
     const errors = {
       serverName: validateServerName(serverName),
       ip: validateIP(ip, !useIP),
+      description: validateDescription(description),
       ...(
         Object
           .entries(ports)
@@ -457,6 +463,7 @@ export default class AddRouteForm extends React.Component {
                   />
                 </FormItem>
               </div>
+              <FormItemError identifier="description" />
             </Form>
           </Spin>
         </div>
