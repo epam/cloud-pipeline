@@ -21,6 +21,11 @@
   margin-bottom: 5px;
 }
 
+.port-form-item-container {
+  padding: 5px 0;
+  margin-bottom: 5px;
+}
+
 .form-item-container .title {
   font-weight: bold;
   width: 100px;

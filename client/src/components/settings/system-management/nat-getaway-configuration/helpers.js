@@ -103,7 +103,9 @@ export const columns = {
   external: [
     {name: 'externalName', prettyName: 'name'},
     {name: 'externalIp', prettyName: 'ip'},
-    {name: 'externalPort', prettyName: 'port'}],
+    {name: 'externalPort', prettyName: 'port'},
+    {name: 'protocol', prettyName: 'protocol'}
+  ],
   internal: [
     {name: 'internalName', prettyName: 'service name'},
     {name: 'internalIp', prettyName: 'ip'},
