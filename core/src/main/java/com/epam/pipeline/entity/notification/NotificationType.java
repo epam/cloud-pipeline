@@ -61,6 +61,9 @@ public enum NotificationType {
             NotificationGroup.USER),
     BILLING_QUOTA_EXCEEDING(15, -1L, -1L, Collections.emptyList(), true,
             NotificationGroup.RESOURCE_CONSUMING);
+            NotificationGroup.USER),
+    FULL_NODE_POOL(16, -1L, -1L, Collections.emptyList(), true,
+            NotificationGroup.NODE_POOL);
 
     private static final Map<Long, NotificationType> BY_ID;
 

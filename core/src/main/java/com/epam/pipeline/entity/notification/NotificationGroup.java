@@ -24,5 +24,6 @@ public enum NotificationGroup {
     RESOURCE_CONSUMING,
     LONG_STATUS,
     LONG_PAUSED,
-    USER
+    USER,
+    NODE_POOL
 }

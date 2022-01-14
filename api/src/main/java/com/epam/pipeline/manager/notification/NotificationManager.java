@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.dto.quota.AppliedQuota;
@@ -536,6 +537,30 @@ public class NotificationManager implements NotificationService { // TODO: rewri
         monitoringNotificationDao.createMonitoringNotification(notificationMessage);
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void notifyFullNodePools(final List<NodePool> nodePools) {
+        if (CollectionUtils.isEmpty(nodePools)) {
+            LOGGER.debug("No full node pools found to notify");
+            return;
+        }
+        final NotificationSettings notificationSettings =
+                notificationSettingsManager.load(NotificationType.FULL_NODE_POOL);
+        if (notificationSettings == null || !notificationSettings.isEnabled()) {
+            LOGGER.info("No template configured for node pool notifications or it was disabled!");
+            return;
+        }
+
+        LOGGER.debug("Notification for node pools [{}] will be send", nodePools.stream()
+                .map(NodePool::getId)
+                .map(String::valueOf)
+                .collect(Collectors.joining(",")));
+
+        final List<Long> ccUserIds = getCCUsers(notificationSettings);
+        final NotificationMessage message = buildMessageForFullNodePool(nodePools, notificationSettings, ccUserIds);
+        monitoringNotificationDao.createMonitoringNotification(message);
+    }
+
     private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
         final Stream<PipelineUser> plainUsersStream = recipients.stream()
             .filter(Sid::isPrincipal)
@@ -868,6 +893,26 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             default:
                 return false;
         }
+    }
+
+    private NotificationMessage buildMessageForFullNodePool(final List<NodePool> nodePools,
+                                                            final NotificationSettings settings,
+                                                            final List<Long> recipients) {
+        final NotificationMessage notificationMessage = new NotificationMessage();
+        notificationMessage.setTemplate(new NotificationTemplate(settings.getTemplateId()));
+        notificationMessage.setTemplateParameters(buildNodePoolsTemplate(nodePools));
+        notificationMessage.setCopyUserIds(recipients);
+        return notificationMessage;
+    }
+
+    private Map<String, Object> buildNodePoolsTemplate(final List<NodePool> nodePools) {
+        return Collections.singletonMap("pools", nodePools.stream()
+                .map(this::buildNodePoolTemplate)
+                .collect(Collectors.toList()));
+    }
+
+    private Map<String, Object> buildNodePoolTemplate(final NodePool nodePool) {
+        return jsonMapper.convertValue(nodePool, new TypeReference<Map<String, Object>>() {});
     }
 
     private Map<String, Object> buildBillingQuotaParams(final AppliedQuota appliedQuota) {
