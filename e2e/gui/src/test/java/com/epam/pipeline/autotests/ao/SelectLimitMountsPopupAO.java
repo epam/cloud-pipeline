@@ -42,6 +42,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 public class SelectLimitMountsPopupAO<PARENT_TYPE>
         extends PopupAO<SelectLimitMountsPopupAO<PARENT_TYPE>, PARENT_TYPE> {
@@ -128,14 +129,14 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
             }
             click(byTitle(NEXT_PAGE));
         }
-        assert(storagesList.size() >= size);
+        assertTrue(storagesList.size() >= size);
         return this;
     }
 
     public int countObjectStorages() {
         int listTypeSize = 0;
         while (true) {
-            listTypeSize = listTypeSize + (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
+            listTypeSize += (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
                     .stream()
                     .map(e -> e.find(byXpath("./td[3]")))
                     .filter(e -> !e.text().equals("NFS"))
@@ -152,22 +153,5 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
     public SelectLimitMountsPopupAO<PARENT_TYPE> validateNotFoundStorage() {
         get(TABLE).shouldHave(text("No data storages available"));
         return this;
-    }
-
-    private int countStoragesWithType(String type) {
-        int listTypeSize = 0;
-        while (true) {
-            listTypeSize = listTypeSize + (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
-                    .stream()
-                    .map(e -> e.find(byXpath("./td[3]")))
-                    .filter(e -> e.text().equals(type))
-                    .count();
-            if ($(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
-                break;
-            }
-            click(byTitle(NEXT_PAGE));
-        }
-        click(CANCEL);
-        return listTypeSize;
     }
 }
