@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package com.epam.pipeline.monitor.monitoring.user;
 
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
-import com.epam.pipeline.monitor.service.user.OnlineUsersService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -31,18 +30,15 @@ public class OnlineUsersCleanerServiceCore {
     private final CloudPipelineAPIClient client;
     private final String monitorEnabledPreferenceName;
     private final String usersStorePeriodPreferenceName;
-    private final OnlineUsersService onlineUsersService;
 
     public OnlineUsersCleanerServiceCore(final CloudPipelineAPIClient client,
                                          @Value("${preference.name.usage.users.clean.enable}")
                                          final String monitorEnabledPreferenceName,
                                          @Value("${preference.name.usage.users.store.period}")
-                                         final String usersStorePeriodPreferenceName,
-                                         final OnlineUsersService onlineUsersService) {
+                                         final String usersStorePeriodPreferenceName) {
         this.client = client;
         this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
         this.usersStorePeriodPreferenceName = usersStorePeriodPreferenceName;
-        this.onlineUsersService = onlineUsersService;
     }
 
     public void monitor() {
@@ -56,6 +52,6 @@ public class OnlineUsersCleanerServiceCore {
             log.debug("Cannot remove expired online users statistic since period was not specified");
             return;
         }
-        onlineUsersService.deleteExpired(DateUtils.nowUTC().minusDays(duration));
+        client.deleteExpiredOnlineUsers(DateUtils.nowUTC().minusDays(duration));
     }
 }

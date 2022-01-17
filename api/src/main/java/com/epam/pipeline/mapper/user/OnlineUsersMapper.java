@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor;
+package com.epam.pipeline.mapper.user;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import com.epam.pipeline.dto.user.OnlineUsers;
+import com.epam.pipeline.entity.user.OnlineUsersEntity;
+import org.mapstruct.Mapper;
 
-@SpringBootApplication
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class MonitoringServiceApplication {
+@Mapper(componentModel = "spring")
+public interface OnlineUsersMapper {
 
-    public static void main(final String[] args) {
-        SpringApplication.run(MonitoringServiceApplication.class, args);
-    }
+    OnlineUsers toDto(OnlineUsersEntity entity);
 }

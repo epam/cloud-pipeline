@@ -58,9 +58,11 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
 import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.vo.user.OnlineUsers;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.HTTP;
 import retrofit2.http.Multipart;
@@ -70,6 +72,7 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CloudPipelineAPI {
@@ -172,8 +175,11 @@ public interface CloudPipelineAPI {
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
 
-    @GET("users/online")
-    Call<Result<List<PipelineUser>>> loadAllOnlineUsers();
+    @POST("users/online")
+    Call<Result<OnlineUsers>> saveOnlineUsers();
+
+    @DELETE("users/online")
+    Call<Result<Boolean>> deleteExpiredOnlineUsers(@Query("date") LocalDateTime date);
 
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);

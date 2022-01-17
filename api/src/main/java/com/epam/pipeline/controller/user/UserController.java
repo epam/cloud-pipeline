@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
+import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -56,6 +57,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -453,5 +455,27 @@ public class UserController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<Collection<PipelineUser>> getOnlineUsers() {
         return Result.success(userApiService.getOnlineUsers());
+    }
+
+    @PostMapping("/users/online")
+    @ResponseBody
+    @ApiOperation(
+            value = "Saves currently online users dump",
+            notes = "Saves currently online users dump",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<OnlineUsers> saveOnlineUsers() {
+        return Result.success(userApiService.saveCurrentlyOnlineUsers());
+    }
+
+    @DeleteMapping("/users/online")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes online users dumps after specified date",
+            notes = "Deletes online users dumps after specified date",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> deleteOnlineUsers(@RequestParam final LocalDateTime date) {
+        return Result.success(userApiService.deleteExpiredOnlineUsers(date));
     }
 }

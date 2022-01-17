@@ -119,6 +119,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -533,6 +534,9 @@ public class AclTestBeans {
 
     @MockBean
     protected QuotaService mockQuotaService;
+
+    @MockBean
+    protected UsersUsageReportService usersUsageReportService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.repo.user;
+package com.epam.pipeline.repository.user;
 
 import com.epam.pipeline.entity.user.OnlineUsersEntity;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
 
 @Repository
 public interface OnlineUsersRepository extends CrudRepository<OnlineUsersEntity, Long> {
 
-    void deleteAllByLogDateLessThan(LocalDateTime date);
+    void deleteByLogDateLessThan(LocalDateTime date);
+
+    List<OnlineUsersEntity> findByLogDateGreaterThanAndLogDateLessThan(LocalDateTime start, LocalDateTime end);
+
+    List<OnlineUsersEntity> findByLogDateGreaterThanAndLogDateLessThanAndUserIdsIn(LocalDateTime start,
+                                                                                   LocalDateTime end,
+                                                                                   Set<Long> userIds);
 }

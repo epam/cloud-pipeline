@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.config;
+package com.epam.pipeline.dto.user;
 
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Configuration
-@EnableJpaRepositories("com.epam.pipeline.monitor.repo")
-@EnableTransactionManagement
-@EntityScan("com.epam.pipeline.entity")
-public class DBConfiguration {
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class OnlineUsers {
+    private Long id;
+    private LocalDateTime logDate;
+    private List<Long> userIds;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,13 @@ import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.entity.preference.Preference;
-import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.vo.user.OnlineUsers;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,8 +44,12 @@ public class CloudPipelineAPIClient {
         this.executor = cloudPipelineApiExecutor;
     }
 
-    public List<PipelineUser> loadOnlineUsers() {
-        return executor.execute(cloudPipelineAPI.loadAllOnlineUsers());
+    public OnlineUsers saveOnlineUsers() {
+        return executor.execute(cloudPipelineAPI.saveOnlineUsers());
+    }
+
+    public boolean deleteExpiredOnlineUsers(final LocalDateTime date) {
+        return executor.execute(cloudPipelineAPI.deleteExpiredOnlineUsers(date));
     }
 
     public Integer getIntPreference(final String preferenceName) {

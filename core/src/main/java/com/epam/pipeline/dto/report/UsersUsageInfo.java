@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,16 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor;
+package com.epam.pipeline.dto.report;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
-@SpringBootApplication
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class MonitoringServiceApplication {
+import java.time.LocalDateTime;
+import java.util.List;
 
-    public static void main(final String[] args) {
-        SpringApplication.run(MonitoringServiceApplication.class, args);
-    }
+@Data
+@AllArgsConstructor
+@Builder
+public class UsersUsageInfo {
+    private LocalDateTime periodStart;
+    private LocalDateTime periodEnd;
+    private Integer activeUsersCount;
+    private Integer totalUsersCount;
+    private List<Long> totalUsers;
+    private List<Long> activeUsers;
 }

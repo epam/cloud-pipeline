@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,13 @@
 
 package com.epam.pipeline.entity.user;
 
-import com.epam.pipeline.entity.utils.LongsListConverter;
 import com.epam.pipeline.entity.utils.TimestampConverter;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -37,7 +36,6 @@ import java.util.List;
 @NoArgsConstructor
 @Entity
 @Table(name = "online_users", schema = "pipeline")
-@EqualsAndHashCode
 public class OnlineUsersEntity {
 
     @Id
@@ -47,6 +45,6 @@ public class OnlineUsersEntity {
     @Convert(converter = TimestampConverter.class)
     private LocalDateTime logDate;
 
-    @Convert(converter = LongsListConverter.class)
+    @ElementCollection
     private List<Long> userIds;
 }

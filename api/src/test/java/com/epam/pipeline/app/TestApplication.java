@@ -31,6 +31,7 @@ import com.epam.pipeline.manager.notification.ContextualNotificationSettingsMana
 import com.epam.pipeline.manager.ontology.OntologyManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -146,6 +147,9 @@ public class TestApplication {
 
     @MockBean
     public QuotaService mockQuotaService;
+
+    @MockBean
+    public OnlineUsersService onlineUsersService;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

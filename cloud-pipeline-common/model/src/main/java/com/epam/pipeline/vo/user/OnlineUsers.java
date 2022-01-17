@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor;
+package com.epam.pipeline.vo.user;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@SpringBootApplication
-@SuppressWarnings("checkstyle:HideUtilityClassConstructor")
-public class MonitoringServiceApplication {
+import java.time.LocalDateTime;
+import java.util.List;
 
-    public static void main(final String[] args) {
-        SpringApplication.run(MonitoringServiceApplication.class, args);
-    }
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class OnlineUsers {
+    private Long id;
+    private LocalDateTime logDate;
+    private List<Long> userIds;
 }
