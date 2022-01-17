@@ -46,7 +46,7 @@ public class BillingQuotasMonitor {
     private final QuotaHandlerService quotaHandler;
     private final PreferenceManager preferenceManager;
 
-    @Scheduled(cron = "${billing.quota.monitor.cron:*/1 * * * * ?}")
+    @Scheduled(cron = "${billing.quota.monitor.cron:0 0 9 ? * *}")
     @SchedulerLock(name = "BillingQuotasMonitor_checkQuotas", lockAtMostForString = "PT30M")
     public void checkQuotas() {
         if (!preferenceManager.getPreference(SystemPreferences.BILLING_QUOTAS_ENABLED)) {
