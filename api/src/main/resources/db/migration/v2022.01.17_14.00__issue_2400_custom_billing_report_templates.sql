@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS PIPELINE.BILLING_REPORT_TEMPLATE
+(
+  ID            SERIAL PRIMARY KEY,
+  NAME          VARCHAR(200) NOT NULL,
+  DESCRIPTION   VARCHAR(200) DEFAULT NULL,
+  TEMPLATE      TEXT NOT NULL,
+  SETTINGS      TEXT NOT NULL,
+);
+
+INSERT INTO pipeline.acl_class (class) VALUES ('com.epam.pipeline.entity.billing.BillingReportTemplate');

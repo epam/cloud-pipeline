@@ -53,6 +53,18 @@ public final class AclExpressions {
     public static final String RUN_ID_OWNER =
             "hasRole('ADMIN') OR @runPermissionManager.runPermission(#runId, 'OWNER')";
 
+    public static final String BILLING_TEMPLATE_ID_WRITE =
+            "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.billing.BillingReportTemplate', 'WRITE')";
+
+    public static final String BILLING_TEMPLATE_ID_READ =
+            "hasRole('ADMIN') OR hasPermission(#id, 'com.epam.pipeline.entity.billing.BillingReportTemplate', 'READ')";
+
+    public static final String BILLING_TEMPLATE_WRITE =
+            "hasRole('ADMIN') OR hasPermission(#template, 'WRITE')";
+
+    public static final String BILLING_TEMPLATE_READ_FILTER =
+            "hasRole('ADMIN') OR hasPermission(filterObject, 'READ')";
+
     public static final String RUN_ID_SSH =
             "hasRole('ADMIN') OR @runPermissionManager.isRunSshAllowed(#runId)";
 

@@ -1,7 +1,16 @@
 {
   "mappings": {
-    "dynamic":"runtime",
     "_doc": {
+      "dynamic_templates": [
+        {
+          "keywords": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword"
+            }
+          }
+        }
+      ],
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
         "storage_id": { "type": "keyword", "store": true },
