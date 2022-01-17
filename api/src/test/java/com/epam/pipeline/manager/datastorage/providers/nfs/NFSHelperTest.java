@@ -16,11 +16,14 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
+import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -29,6 +32,8 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 @RunWith(Enclosed.class)
 public class NFSHelperTest {
@@ -177,6 +182,80 @@ public class NFSHelperTest {
         public void shouldThrowException() {
             final boolean lustrePathValidationResult = NFSHelper.isValidLustrePath(lustrePath);
             Assert.assertEquals(isValid, lustrePathValidationResult);
+        }
+    }
+
+    @RunWith(Parameterized.class)
+    @RequiredArgsConstructor
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
+    public static class DetermineHostsTests {
+        private static final String TEST_IP_1 = "1.1.1.1";
+        private static final String TEST_IP_2 = "1.1.1.2";
+
+        private final String mountRoot;
+        private final MountType mountType;
+        private final List<String> resultHosts;
+
+        @Parameterized.Parameters
+        public static Collection<Object[]> data() {
+            return Arrays.asList(new Object[][] {
+                {
+                    "fs-12345678:/bucket1",
+                    MountType.NFS,
+                    Collections.singletonList("fs-12345678")
+                },
+                {
+                    "gcfs-12345678:/vol1/bucket1",
+                    MountType.NFS,
+                    Collections.singletonList("gcfs-12345678")
+                },
+                {
+                    "azfs-12345678/vol1/bucket1",
+                    MountType.NFS,
+                    Collections.singletonList("azfs-12345678")
+                },
+                {
+                    "fs-12345678:bucket1",
+                    MountType.NFS,
+                    Collections.singletonList("fs-12345678")
+                },
+                {
+                    "1.1.1.1@tcp1:/demo",
+                    MountType.LUSTRE,
+                    Collections.singletonList(TEST_IP_1)
+                },
+                {
+                    "1.1.1.1@tcp1:1.1.1.2@tcp1:/demo",
+                    MountType.LUSTRE,
+                    Arrays.asList(TEST_IP_1, TEST_IP_2)
+                },
+                {
+                    "lustrefs-1@tcp1:lustrefs-2@tcp1:/demo",
+                    MountType.LUSTRE,
+                    Arrays.asList("lustrefs-1", "lustrefs-2")
+                },
+                {
+                    TEST_IP_1,
+                    MountType.NFS,
+                    Collections.singletonList(TEST_IP_1)
+                },
+                {
+                    "//smb-fs/vol1",
+                    MountType.SMB,
+                    Collections.singletonList("smb-fs")
+                }
+            });
+        }
+
+        @Test
+        public void shouldDetermineHosts() {
+            final FileShareMount fileShareMount = new FileShareMount();
+            fileShareMount.setMountRoot(mountRoot);
+            fileShareMount.setMountType(mountType);
+
+            final List<String> hosts = NFSHelper.determineHosts(fileShareMount);
+            Assertions.assertThat(hosts).hasSize(resultHosts.size());
+            Assertions.assertThat(hosts).containsOnlyElementsOf(resultHosts);
         }
     }
 }
