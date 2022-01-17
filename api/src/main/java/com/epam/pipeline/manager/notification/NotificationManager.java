@@ -551,14 +551,21 @@ public class NotificationManager implements NotificationService { // TODO: rewri
             return;
         }
 
-        LOGGER.debug("Notification for node pools [{}] will be send", nodePools.stream()
+        final List<NodePool> filteredPools = nodePools.stream()
+                .filter(pool -> shouldNotify(pool.getId(), notificationSettings))
+                .collect(Collectors.toList());
+
+        LOGGER.debug("Notification for node pools [{}] will be send", filteredPools.stream()
                 .map(NodePool::getId)
                 .map(String::valueOf)
                 .collect(Collectors.joining(",")));
 
         final List<Long> ccUserIds = getCCUsers(notificationSettings);
-        final NotificationMessage message = buildMessageForFullNodePool(nodePools, notificationSettings, ccUserIds);
+        final NotificationMessage message = buildMessageForFullNodePool(filteredPools, notificationSettings, ccUserIds);
         monitoringNotificationDao.createMonitoringNotification(message);
+        monitoringNotificationDao.updateNotificationTimestamp(filteredPools.stream()
+                .map(NodePool::getId)
+                .collect(Collectors.toList()), NotificationType.FULL_NODE_POOL);
     }
 
     private List<Long> mapRecipientsToUserIds(final List<? extends Sid> recipients) {
@@ -643,19 +650,23 @@ public class NotificationManager implements NotificationService { // TODO: rewri
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void removeNotificationTimestamps(final Long runId) {
-        monitoringNotificationDao.deleteNotificationTimestampsForRun(runId);
+    public void removeNotificationTimestamps(final Long id) {
+        monitoringNotificationDao.deleteNotificationTimestampsForId(id);
     }
 
-    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long runId,
+    @Transactional(propagation = Propagation.REQUIRED)
+    public void removeNotificationTimestamps(final Long id, final NotificationType type) {
+        monitoringNotificationDao.deleteNotificationTimestampsForIdAndType(id, type);
+    }
+    public Optional<NotificationTimestamp> loadLastNotificationTimestamp(final Long id,
                                                                          final NotificationType type) {
-        return monitoringNotificationDao.loadNotificationTimestamp(runId, type);
+        return monitoringNotificationDao.loadNotificationTimestamp(id, type);
     }
 
-    private boolean shouldNotify(final Long runId, final NotificationSettings notificationSettings) {
+    private boolean shouldNotify(final Long id, final NotificationSettings notificationSettings) {
         final Long resendDelay = notificationSettings.getResendDelay();
         final Optional<NotificationTimestamp> notificationTimestamp = loadLastNotificationTimestamp(
-                runId,
+                id,
                 notificationSettings.getType());
 
         return notificationTimestamp
