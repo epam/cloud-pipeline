@@ -168,9 +168,17 @@ public class BillingManager {
     }
 
     public FacetedSearchResult getAvailableFacets(final BillingChartRequest request) {
-        final Set<String> fields = getAvailableElasticDocFieldsFromMapping();
+        final Map<String, List<String>> filters = request.getFilters();
+        final FacetedSearchResult facets = searchFacets(filters);
+        return FacetedSearchResult.builder().documents(facets.getDocuments())
+                .facets(filterBillingFacets(facets.getFacets()))
+                .totalHits(facets.getTotalHits()).build();
+    }
+
+    private FacetedSearchResult searchFacets(Map<String, List<String>> filters) {
+        final Set<String> fields = getAvailableElasticDocFieldsFromESMapping();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getFacetedQuery(request.getFilters()))
+                .query(getFacetedQuery(filters))
                 .size(0);
 
         SetUtils.emptyIfNull(fields)
@@ -182,7 +190,7 @@ public class BillingManager {
                 .source(searchSource);
 
         try {
-            SearchResponse response = elasticHelper.buildClient().search(searchRequest, RequestOptions.DEFAULT);
+            final SearchResponse response = elasticHelper.buildClient().search(searchRequest, RequestOptions.DEFAULT);
             return FacetedSearchResult.builder()
                     .totalHits(response.getHits().getTotalHits())
                     .facets(buildFacets(response.getAggregations()))
@@ -193,6 +201,15 @@ public class BillingManager {
         return FacetedSearchResult.builder().build();
     }
 
+    private Map<String, Map<String, Long>> filterBillingFacets(Map<String, Map<String, Long>> facets) {
+        final Map<String, BillingGrouping> billingFieldMapping = preferenceManager.getPreference(
+                SystemPreferences.BILLING_FIELD_MAPPING);
+        BillingGrouping.DEFAULT_GROUPING_BY_NAME.forEach(billingFieldMapping::putIfAbsent);
+        return facets.entrySet().stream()
+                .filter(e -> billingFieldMapping.containsKey(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
     private QueryBuilder getFacetedQuery(final Map<String, List<String>> filters) {
         final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         MapUtils.emptyIfNull(filters)
@@ -200,7 +217,7 @@ public class BillingManager {
         return boolQueryBuilder;
     }
 
-    private Set<String> getAvailableElasticDocFieldsFromMapping() {
+    private Set<String> getAvailableElasticDocFieldsFromESMapping() {
         try {
             GetMappingsResponse fieldMapping = elasticHelper.buildClient().indices()
                     .getMapping(
