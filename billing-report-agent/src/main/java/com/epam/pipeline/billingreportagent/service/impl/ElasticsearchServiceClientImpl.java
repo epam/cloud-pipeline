@@ -176,8 +176,10 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
     @Override
     public SearchResponse search(final SearchRequest request) {
         try {
+            log.debug("Billing request: {}", request);
             return client.search(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
+            log.error(e.getMessage(), e);
             throw new ElasticsearchException("Failed to find results for search query:" + e.getMessage(), e);
         }
     }
