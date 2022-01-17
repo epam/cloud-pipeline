@@ -745,13 +745,14 @@ class WsiFileTagProcessor:
 
 
 class WsiFileParser:
-    _SYSTEM_IMAGE_NAMES = {'overview', 'label', 'thumbnail', 'macro', 'macro image', 'macro mask image', 'label image',
-                           'overview image', 'thumbnail image'}
+    _DEFAULT_SERVICE_IMAGE_GROUPS = {'overview', 'label', 'thumbnail', 'macro', 'macro image', 'macro mask image',
+                                     'label image', 'overview image', 'thumbnail image'}
     _DEEP_ZOOM_CREATION_SCRIPT = os.path.join(os.getenv('WSI_PARSER_HOME', '/opt/local/wsi-parser'),
                                               'create_deepzoom.sh')
 
     def __init__(self, file_path):
         self.file_path = file_path
+        self.service_image_groups = self._get_service_image_groups()
         self.log_processing_info('Generating XML description')
         self.xml_info_file = os.path.join(WsiParsingUtils.get_service_directory(file_path),
                                           WsiParsingUtils.get_basename_without_extension(self.file_path) + '_info.xml')
@@ -760,6 +761,13 @@ class WsiFileParser:
         self.stat_file_name = WsiParsingUtils.get_stat_file_name(self.file_path)
         self.tmp_stat_file_name = WsiParsingUtils.get_stat_active_file_name(self.file_path)
         self.tmp_local_dir = WsiParsingUtils.generate_local_service_directory(self.file_path)
+
+    def _get_service_image_groups(self):
+        service_image_groups_parameter = os.getenv('WSI_SERVICE_SERIES_NAMES')
+        if not service_image_groups_parameter:
+            return self._DEFAULT_SERVICE_IMAGE_GROUPS
+        else:
+            return {group.strip() for group in service_image_groups_parameter.split(',')}
 
     def generate_xml_info_file(self):
         WsiParsingUtils.create_service_dir_if_not_exist(self.file_path)
@@ -845,7 +853,7 @@ class WsiFileParser:
         target_group = None
         target_image_details = None
         for group_name in series_mapping.keys():
-            if group_name not in self._SYSTEM_IMAGE_NAMES:
+            if group_name not in self.service_image_groups:
                 target_group = group_name
                 break
         self.log_processing_info('Target group is: {}'.format(target_group))
