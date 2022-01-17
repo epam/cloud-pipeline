@@ -113,7 +113,8 @@ function PoolCard ({
   onEdit,
   onRemove,
   onClick,
-  nodes
+  nodes,
+  router
 }) {
   if (!pool) {
     return null;
@@ -150,6 +151,15 @@ function PoolCard ({
   const runsCountLabel = displayCount(runs);
   const totalLabel = displayCount(total);
   const fontSize = total >= 100 ? 10 : 12;
+  const navigate = (path) => {
+    console.log('RRR', router);
+    if (!router) {
+      return;
+    }
+    if (path) {
+      router.push(path);
+    }
+  };
   return (
     <div
       className={
@@ -215,6 +225,16 @@ function PoolCard ({
                 onClick={onEdit}
               >
                 <Icon type="edit" />
+              </Button>
+              <Button
+                disabled={disabled}
+                size="small"
+                onClick={(e) => {
+                  e && e.stopPropagation();
+                  navigate('/cluster/usage');
+                }}
+              >
+                <Icon type="area-chart" />
               </Button>
               <Button
                 disabled={disabled}
