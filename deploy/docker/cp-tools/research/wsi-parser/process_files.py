@@ -557,11 +557,13 @@ class WsiFileTagProcessor:
         if ANIMAL_ID_CAT_ATTR_NAME in tags:
             animal_ids_set = tags[ANIMAL_ID_CAT_ATTR_NAME]
             if len(animal_ids_set) == 1:
-                animal_id = int(list(animal_ids_set)[0])
-                if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
-                    tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id % 1000 < 500 else {'Female'}
-                if GROUP_CAT_ATTR_NAME not in tags or not tags[GROUP_CAT_ATTR_NAME]:
-                    tags[GROUP_CAT_ATTR_NAME] = {str(animal_id / 1000)}
+                animal_id_str = list(animal_ids_set)[0]
+                if animal_id_str.isdigit():
+                    animal_id = int(animal_id_str)
+                    if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
+                        tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id % 1000 < 500 else {'Female'}
+                    if GROUP_CAT_ATTR_NAME not in tags or not tags[GROUP_CAT_ATTR_NAME]:
+                        tags[GROUP_CAT_ATTR_NAME] = {str(animal_id / 1000)}
         if PREPARATION_CAT_ATTR_NAME not in tags or not tags[PREPARATION_CAT_ATTR_NAME]:
             tags[PREPARATION_CAT_ATTR_NAME] = {'FFPE'}
         if STAIN_METHOD_CAT_ATTR_NAME not in tags or not tags[STAIN_METHOD_CAT_ATTR_NAME]:
