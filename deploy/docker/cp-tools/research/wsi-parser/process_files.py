@@ -558,7 +558,9 @@ class WsiFileTagProcessor:
             animal_ids_set = tags[ANIMAL_ID_CAT_ATTR_NAME]
             if len(animal_ids_set) == 1:
                 animal_id_str = list(animal_ids_set)[0]
-                if animal_id_str.isdigit():
+                if not animal_id_str.isdigit():
+                    del tags[ANIMAL_ID_CAT_ATTR_NAME]
+                else:
                     animal_id = int(animal_id_str)
                     if SEX_CAT_ATTR_NAME not in tags or not tags[SEX_CAT_ATTR_NAME]:
                         tags[SEX_CAT_ATTR_NAME] = {'Male'} if animal_id % 1000 < 500 else {'Female'}
