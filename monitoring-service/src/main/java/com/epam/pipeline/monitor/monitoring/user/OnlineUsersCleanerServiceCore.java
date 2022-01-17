@@ -53,5 +53,6 @@ public class OnlineUsersCleanerServiceCore {
             return;
         }
         client.deleteExpiredOnlineUsers(DateUtils.nowUTC().minusDays(duration));
+        log.debug("Finished online users removal service");
     }
 }

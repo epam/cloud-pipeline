@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -62,7 +63,7 @@ public class OnlineUsersService {
 
     public List<OnlineUsers> getUsersByPeriod(final LocalDateTime start, final LocalDateTime end,
                                               final Set<Long> filterUsers) {
-        final List<OnlineUsersEntity> users = CollectionUtils.isEmpty(filterUsers)
+        final List<OnlineUsersEntity> users = Objects.isNull(filterUsers)
                 ? onlineUsersRepository.findByLogDateGreaterThanAndLogDateLessThan(start, end)
                 : onlineUsersRepository.findByLogDateGreaterThanAndLogDateLessThanAndUserIdsIn(start, end, filterUsers);
         return users.stream()

@@ -81,10 +81,10 @@ public class UsersUsageReportService {
             filter.setTo(DateUtils.nowUTC().toLocalDate());
         }
         Assert.state(!filter.getFrom().isAfter(filter.getTo()), "'from' date must be before 'to' date");
-        if (Objects.isNull(filter.getUsers())) {
-            filter.setUsers(new HashSet<>());
-        }
         if (CollectionUtils.isNotEmpty(filter.getGroups())) {
+            if (Objects.isNull(filter.getUsers())) {
+                filter.setUsers(new HashSet<>());
+            }
             filter.getUsers().addAll(filter.getGroups().stream()
                     .flatMap(group -> userManager.loadUsersByGroupOrRole(group).stream())
                     .map(PipelineUser::getId)

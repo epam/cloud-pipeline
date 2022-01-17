@@ -41,5 +41,6 @@ public class OnlineUsersMonitoringServiceCore {
         }
 
         client.saveOnlineUsers();
+        log.debug("Finished online users monitoring");
     }
 }
