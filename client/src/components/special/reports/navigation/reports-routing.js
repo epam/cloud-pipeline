@@ -41,6 +41,9 @@ function getConfigurations (obj, paths = []) {
 }
 
 const reportsRouting = {
+  usage: {
+    path: '/settings/user/report'
+  },
   general: {
     path: '/billing/reports',
     title: 'General Report'

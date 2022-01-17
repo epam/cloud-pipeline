@@ -20,8 +20,8 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Select} from 'antd';
 import AWSRegionTag from '../../../special/AWSRegionTag';
-import styles from './provider-filter.css';
-import BillingNavigation from '../../navigation';
+import styles from '../../../billing/reports/filters/provider-filter.css';
+import ReportNavigation from '../../../special/reports/navigation';
 
 const RegionType = {
   region: 'region',
@@ -260,7 +260,7 @@ class ProviderFilter extends React.Component {
 }
 
 export default inject('cloudRegionsInfo')(
-  BillingNavigation.attach(
+  ReportNavigation.attach(
     observer(ProviderFilter)
   )
 );

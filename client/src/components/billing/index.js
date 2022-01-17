@@ -17,10 +17,12 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
-import BillingNavigation from './navigation';
+
+import ReportNavigation from '../special/reports/navigation';
 import Quotas from './quotas';
 import * as Reports from './reports';
 import roleModel from '../../utils/roleModel';
+import reportTypes from '../special/reports/navigation/report-types';
 
 function billing ({children, location, router, preferences, authenticatedUserInfo}) {
   const isBillingPrivilegedUser = authenticatedUserInfo && authenticatedUserInfo.loaded &&
@@ -40,7 +42,7 @@ function billing ({children, location, router, preferences, authenticatedUserInf
     return null;
   }
   return (
-    <BillingNavigation
+    <ReportNavigation
       className={
         classNames(
           'cp-panel',
@@ -50,9 +52,10 @@ function billing ({children, location, router, preferences, authenticatedUserInf
       }
       location={location}
       router={router}
+      type={reportTypes.billing}
     >
       {children}
-    </BillingNavigation>
+    </ReportNavigation>
   );
 }
 

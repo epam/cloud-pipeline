@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import ExportFormats from './export-formats';
 import Discounts from '../discounts';
-import {getPeriod} from '../../navigation/periods';
+import {getPeriod} from '../../../special/reports/navigation/periods';
 import exportBillingURL from '../../../../models/billing/export';
 
 class ExportConsumer extends React.Component {

@@ -32,8 +32,8 @@ import {
   DisplayUser,
   ResizableContainer
 } from './utilities';
-import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
-import {Period, getPeriod} from '../navigation/periods';
+import ReportNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../../special/reports/navigation';
+import {Period, getPeriod} from '../../special/reports/navigation/periods';
 import StorageFilter, {StorageFilters} from './filters/storage-filter';
 import Export from './export';
 import Discounts, {discounts} from './discounts';
@@ -393,7 +393,7 @@ class StorageReports extends React.Component {
 
 export default inject('reportThemes')(
   inject(injection)(
-    BillingNavigation.attach(
+    ReportNavigation.attach(
       observer(StorageReports)
     )
   )

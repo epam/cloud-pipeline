@@ -17,22 +17,22 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import Discounts from '../discounts';
-import PeriodFilter from './period-filter';
-import RunnerFilter from './runner-filter';
+import PeriodFilter from '../../../special/reports/filters/period-filter';
+import RunnerFilter from '../../../special/reports/filters/runner-filter';
 import ProviderFilter from './provider-filter';
-import Divider from './divider';
+import Divider from '../../../special/reports/filters/divider';
 import {RestoreButton} from '../layout';
 import ExportReports from '../export';
-import BillingNavigation from '../../navigation';
+import ReportNavigation from '../../../special/reports/navigation';
 import roleModel from '../../../../utils/roleModel';
-import styles from '../reports.css';
-
+import styles from '../../../special/reports/reports.css';
+import reportTypes from '../../../special/reports/navigation/report-types';
 function Filters ({children}) {
   return (
     <div className={styles.container}>
       <div className={styles.filtersContainer}>
         <div className={styles.filters}>
-          <PeriodFilter />
+          <PeriodFilter type={reportTypes.billing} />
           <Divider />
           {
             roleModel.manager.billing(
@@ -63,4 +63,4 @@ function Filters ({children}) {
   );
 }
 
-export default BillingNavigation.attach(observer(Filters));
+export default ReportNavigation.attach(observer(Filters));

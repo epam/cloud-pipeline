@@ -27,10 +27,10 @@ class Filter {
   @observable report;
   @observable runner;
 
-  rebuild = ({location, router}) => {
+  rebuild = ({location, router, type}) => {
     this.router = router;
     const {
-      period = Period.month,
+      period = type === 'billing' ? Period.month : Period.day,
       user,
       group,
       range,

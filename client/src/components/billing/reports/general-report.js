@@ -25,8 +25,8 @@ import {
   PieChart,
   Summary
 } from './charts';
-import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
-import {Period, getPeriod} from '../navigation/periods';
+import ReportNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../../special/reports/navigation';
+import {Period, getPeriod} from '../../special/reports/navigation/periods';
 import {
   GetBillingData,
   GetGroupedBillingCenters,
@@ -43,7 +43,7 @@ import {
 } from './utilities';
 import {GeneralReportLayout, Layout} from './layout';
 import roleModel from '../../../utils/roleModel';
-import styles from './reports.css';
+import styles from '../../special/reports/reports.css';
 
 function injection (stores, props) {
   const {location} = props;
@@ -216,8 +216,8 @@ function UserReport ({
     period,
     region: cloudRegionId
   } = filters || {};
-  const onResourcesSelect = BillingNavigation.generateNavigationFn(
-    BillingNavigation.resourcesNavigation,
+  const onResourcesSelect = ReportNavigation.generateNavigationFn(
+    ReportNavigation.resourcesNavigation,
     filters
   );
   return (
@@ -469,13 +469,13 @@ function GroupReport ({
     render: () => billingCenterName,
     className: styles.tableCell
   }];
-  const onResourcesSelect = BillingNavigation.generateNavigationFn(
-    BillingNavigation.resourcesNavigation,
+  const onResourcesSelect = ReportNavigation.generateNavigationFn(
+    ReportNavigation.resourcesNavigation,
     filters
   );
   const props = {authenticatedUserInfo};
   const onUserSelect = roleModel.isManager.billing({props})
-    ? BillingNavigation.generateNavigationFn(BillingNavigation.usersNavigation, filters)
+    ? ReportNavigation.generateNavigationFn(ReportNavigation.usersNavigation, filters)
     : undefined;
   return (
     <Discounts.Consumer>
@@ -597,14 +597,14 @@ function GeneralReport ({
   group
 }) {
   const {range, period, region: cloudRegionId} = filters || {};
-  const onResourcesSelect = BillingNavigation.generateNavigationFn(
-    BillingNavigation.resourcesNavigation,
+  const onResourcesSelect = ReportNavigation.generateNavigationFn(
+    ReportNavigation.resourcesNavigation,
     filters
   );
   const props = {authenticatedUserInfo};
   const isBillingManager = roleModel.isManager.billing({props});
   const onBillingCenterSelect = isBillingManager
-    ? BillingNavigation.generateNavigationFn(BillingNavigation.billingCentersNavigation, filters)
+    ? ReportNavigation.generateNavigationFn(ReportNavigation.billingCentersNavigation, filters)
     : undefined;
   return (
     <Discounts.Consumer>
@@ -726,7 +726,7 @@ function DefaultReport (props) {
 
 export default inject('billingCenters', 'users', 'preferences', 'reportThemes')(
   inject(injection)(
-    BillingNavigation.attach(
+    ReportNavigation.attach(
       roleModel.authenticationInfo(
         observer(DefaultReport)
       )

@@ -16,8 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {QuarterPicker, Quarters, RangePicker, YearPicker, MonthPicker} from './components';
-import {Period, Range, getPeriod} from '../../navigation/periods';
+import {QuarterPicker, Quarters, RangePicker, YearPicker, MonthPicker, DayPicker} from './components';
+import {Period, Range, getPeriod} from '../navigation/periods';
 
 function rangeFilter ({period, range, onChange}) {
   const onChangeDate = (date) => {
@@ -81,6 +81,15 @@ function rangeFilter ({period, range, onChange}) {
       <RangePicker
         range={range}
         onChange={onCustomRangeChanged}
+      />
+    );
+  }
+  if (period === Period.day) {
+    return (
+      <DayPicker
+        value={start}
+        onChange={onChangeDate}
+        style={{margin: '0 15px'}}
       />
     );
   }

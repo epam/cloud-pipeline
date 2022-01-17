@@ -23,12 +23,12 @@ import {Menu} from 'antd';
 import FilterStore from './filter-store';
 import RunnerTypes from './runner-types';
 import ReportsRouting from './reports-routing';
-import styles from './billing-navigation.css';
-import roleModel from '../../../utils/roleModel';
+import styles from './navigation.css';
+import roleModel from '../../../../utils/roleModel';
 
 @roleModel.authenticationInfo
 @observer
-class BillingNavigation extends React.Component {
+class ReportNavigation extends React.Component {
   static attach = (...opts) => inject('filters')(...opts);
   static generateNavigationFn = (navigation, ...configurationRest) => (
     (navigation)
@@ -199,9 +199,10 @@ class BillingNavigation extends React.Component {
             )
           }
         >
-          <div className={styles.menu}>
-            {this.renderMenu()}
-          </div>
+          { this.props.type === 'billing' && (
+            <div className={styles.menu}>
+              {this.renderMenu()}
+            </div>)}
           <div className={styles.content}>
             {children}
           </div>
@@ -211,11 +212,12 @@ class BillingNavigation extends React.Component {
   }
 }
 
-BillingNavigation.propTypes = {
+ReportNavigation.propTypes = {
   className: PropTypes.string,
   location: PropTypes.object,
   router: PropTypes.object,
-  children: PropTypes.node
+  children: PropTypes.node,
+  type: PropTypes.string
 };
 
 const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
@@ -223,4 +225,4 @@ const REGION_SEPARATOR = FilterStore.REGION_SEPARATOR;
 
 export {RUNNER_SEPARATOR, REGION_SEPARATOR, RunnerTypes};
 
-export default BillingNavigation;
+export default ReportNavigation;

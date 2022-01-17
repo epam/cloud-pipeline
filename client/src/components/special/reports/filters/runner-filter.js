@@ -20,7 +20,8 @@ import {computed, isObservableArray} from 'mobx';
 import {Row, Select} from 'antd';
 import styles from './runner-filter.css';
 import roleModel from '../../../../utils/roleModel';
-import BillingNavigation, {RunnerTypes} from '../../navigation';
+import ReportNavigation, {RunnerTypes} from '../navigation';
+import reportTypes from '../navigation/report-types';
 
 function runnersEqual (runnersA, runnersB) {
   if (!runnersA && !runnersB) {
@@ -367,6 +368,7 @@ class RunnerFilter extends React.Component {
     const open = focused &&
       showBillingCenters &&
       showUsers;
+    const isBillingReport = this.props.type !== reportTypes.usage;
     return (
       <Select
         mode="multiple"
@@ -376,9 +378,9 @@ class RunnerFilter extends React.Component {
         className={styles.runnerSelect}
         dropdownClassName={styles.dropdown}
         style={{width: 185}}
-        placeholder="All users / groups"
+        placeholder={`All users ${isBillingReport ? '/ groups' : ''}`}
         notFoundContent={
-          searchCriteria ? 'Not found' : 'Specify user or billing center name'
+          searchCriteria ? 'Not found' : `Specify user ${isBillingReport ? 'or billing center' : ''} name`
         }
         value={this.currentRunnerValue}
         onSearch={this.findRunnerDelayed}
@@ -390,8 +392,9 @@ class RunnerFilter extends React.Component {
         open={open}
       >
         <Select.OptGroup label="Billing centers">
-          {
-            (filteredCenters || this.centers).map((center) => (
+          { isBillingReport
+            ? (filteredCenters || this.centers)
+            : [].map((center) => (
               <Select.Option
                 key={`${RunnerTypes.group}_${center}`}
                 value={`${RunnerTypes.group}_${center}`}
@@ -420,7 +423,7 @@ class RunnerFilter extends React.Component {
 
 export default inject('billingCenters', 'usersInfo')(
   roleModel.authenticationInfo(
-    BillingNavigation.attach(
+    ReportNavigation.attach(
       observer(RunnerFilter)
     )
   )

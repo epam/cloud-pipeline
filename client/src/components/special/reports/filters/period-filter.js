@@ -19,18 +19,23 @@ import {Button} from 'antd';
 import {observer} from 'mobx-react';
 import Divider from './divider';
 import RangeFilter from './range-filter';
-import {Period, getPeriod, Range} from '../../navigation/periods';
-import BillingNavigation from '../../navigation';
+import {Period, getPeriod, Range} from '../navigation/periods';
+import ReportNavigation from '../navigation';
 import styles from './period-filter.css';
+import reportTypes from '../navigation/report-types';
 
 function PeriodFilter ({
-  filters = {}
+  filters = {},
+  type
 }) {
   const {
     period: filter,
     range,
     periodNavigation: onChange = () => {}
   } = filters;
+  const periods = type === reportTypes.billing
+    ? [Period.custom, Period.year, Period.quarter, Period.month]
+    : [Period.month, Period.day];
   const getButtonType = (key) => key === filter ? 'primary' : 'default';
   const onClick = (key) => () => {
     if (key !== filter) {
@@ -48,6 +53,7 @@ function PeriodFilter ({
       case Period.year: return 'Year';
       case Period.quarter: return 'Quarter';
       case Period.month: return 'Month';
+      case Period.day: return 'Day';
     }
     return period;
   };
@@ -61,7 +67,7 @@ function PeriodFilter ({
       <Divider />
       <Button.Group className={styles.periodBtnGroup}>
         {
-          [Period.custom, Period.year, Period.quarter, Period.month].map(period => (
+          periods.map(period => (
             <Button
               id={`set-period-${period}`}
               className={styles.button}
@@ -78,4 +84,4 @@ function PeriodFilter ({
   );
 }
 
-export default BillingNavigation.attach(observer(PeriodFilter));
+export default ReportNavigation.attach(observer(PeriodFilter));

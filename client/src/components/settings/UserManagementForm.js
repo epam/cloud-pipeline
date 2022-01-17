@@ -23,6 +23,8 @@ import roleModel from '../../utils/roleModel';
 import SubSettings from './sub-settings';
 import UsersManagement from './user-management/users';
 import GroupsManagement from './user-management/groups';
+import UsageReport from './user-management/usage-report';
+import ReportNavigation from '../special/reports/navigation';
 
 const roles = new Roles();
 const usersWithActivity = new Users(true);
@@ -30,7 +32,8 @@ const usersWithActivity = new Users(true);
 function UserManagementForm (
   {
     authenticatedUserInfo,
-    router
+    router,
+    location
   }
 ) {
   if (!authenticatedUserInfo.loaded && authenticatedUserInfo.pending) {
@@ -73,6 +76,17 @@ function UserManagementForm (
             render: () => (
               <GroupsManagement predefined />
             )
+          },
+          {
+            key: 'report',
+            title: 'Usage report',
+            render: () => {
+              return (
+                <ReportNavigation router={router} location={location}>
+                  <UsageReport router={router} location={location} />
+                </ReportNavigation>
+              );
+            }
           }
         ]}
         router={router}

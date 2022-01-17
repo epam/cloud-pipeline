@@ -24,7 +24,7 @@ import ExportConsumer from './export-consumer';
 import ExportImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
 import ExportFormat from './export-formats';
-import BillingNavigation from '../../navigation';
+import ReportNavigation from '../../../special/reports/navigation';
 
 const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
@@ -137,7 +137,7 @@ ExportReports.defaultProps = {
 };
 
 export default inject('users', 'cloudRegionsInfo', 'discounts')(
-  BillingNavigation.attach(
+  ReportNavigation.attach(
     observer(ExportReports)
   )
 );

@@ -22,8 +22,8 @@ import {
   BillingTable,
   Summary
 } from './charts';
-import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
-import {Period, getPeriod} from '../navigation/periods';
+import ReportNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../../special/reports/navigation';
+import {Period, getPeriod} from '../../special/reports/navigation/periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import Discounts, {discounts} from './discounts';
 import Export from './export';
@@ -43,7 +43,7 @@ import {
   ResizableContainer
 } from './utilities';
 import {InstanceReportLayout, Layout} from './layout';
-import styles from './reports.css';
+import styles from '../../special/reports/reports.css';
 
 const tablePageSize = 10;
 
@@ -451,7 +451,7 @@ class InstanceReport extends React.Component {
 
 export default inject('awsRegions', 'reportThemes')(
   inject(injection)(
-    BillingNavigation.attach(
+    ReportNavigation.attach(
       observer(InstanceReport)
     )
   )
