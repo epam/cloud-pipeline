@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import LaunchPipeline from '../pipelines/launch/LaunchPipeline';
 import ClusterRoot from '../cluster';
 import Cluster from '../cluster/Cluster';
 import HotCluster from '../cluster/hot-node-pool';
+import HotClusterUsage from '../cluster/hot-node-pool/hot-cluster-usage';
 import ClusterNode from '../cluster/ClusterNode';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
@@ -98,6 +99,7 @@ export default class AppRouter extends React.Component {
           <Route path="/cluster" component={ClusterRoot}>
             <IndexRoute component={Cluster} />
             <Route path="hot" component={HotCluster} />
+            <Route path="usage" component={HotClusterUsage} />
           </Route>
           <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
           <Route path="/cluster/:nodeName" component={ClusterNode}>
