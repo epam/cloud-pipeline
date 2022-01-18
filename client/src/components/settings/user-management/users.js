@@ -450,6 +450,19 @@ export default class UsersManagement extends React.Component {
               </span>
             );
           }
+          const userStatus = this.isAdmin
+            ? (
+              <Tooltip
+                placement="left"
+                title={user.online ? onlineInfo : offlineInfo}
+                trigger="hover"
+              >
+                <div style={{marginRight: 5}}>
+                  <UserStatus online={user.online} />
+                </div>
+              </Tooltip>
+            )
+            : undefined;
           if (user.attributes) {
             const getAttributesValues = () => {
               const values = [];
@@ -465,15 +478,7 @@ export default class UsersManagement extends React.Component {
               <Row type="flex" style={{flexDirection: 'column'}}>
                 <Row>
                   <span className={styles.lineBreak}>
-                    <Tooltip
-                      placement="left"
-                      title={user.online ? onlineInfo : offlineInfo}
-                      trigger="hover"
-                    >
-                      <div style={{marginRight: 5}}>
-                        <UserStatus online={user.online} />
-                      </div>
-                    </Tooltip>
+                    {userStatus}
                     <span>
                       {name}
                       {blockedSpan}
@@ -494,11 +499,7 @@ export default class UsersManagement extends React.Component {
             return (
               <Row>
                 <span className={styles.lineBreak}>
-                  <Tooltip placement="left" title={user.online ? onlineInfo : offlineInfo}>
-                    <div style={{marginRight: 5}}>
-                      <UserStatus online={user.online} />
-                    </div>
-                  </Tooltip>
+                  {userStatus}
                   <span className={styles.userName}>
                     {name}
                     {blockedSpan}
