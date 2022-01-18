@@ -56,6 +56,11 @@ class BaseChart extends React.Component {
               ticks: {
                 beginAtZero: true
               }
+            }],
+            xAxes: [{
+              gridLines: {
+                display: false
+              }
             }]
           },
           tooltips: {
@@ -98,6 +103,11 @@ class BaseChart extends React.Component {
                 ticks: {
                   beginAtZero: true
                 }
+              }],
+              xAxes: [{
+                gridLines: {
+                  display: false
+                }
               }]
             },
             tooltips: {
@@ -132,7 +142,13 @@ class BaseChart extends React.Component {
     return (
       <canvas
         ref={this.chartRef}
-        style={{position: 'relative', width: '100%', height: '100%'}}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          border: '1px solid #dfdfdf',
+          padding: '4px'
+        }}
       />
     );
   }

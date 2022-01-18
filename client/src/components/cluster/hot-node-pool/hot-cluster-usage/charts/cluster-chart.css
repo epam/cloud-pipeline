@@ -14,21 +14,29 @@
  * limitations under the License.
  */
 
-.control-row {
+.container {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-bottom: 10px;
+  flex-direction: column;
+  width: 50%;
+  height: 450px;
+  margin-left: 5px;
 }
 
-.main-controls {
+.chart-header {
   display: flex;
   flex-direction: row;
-  margin: 0 auto;
+  align-items: baseline;
   justify-content: center;
+  flex-wrap: nowrap;
+  height: 40px;
 }
 
-.control-item:not(:last-child) {
-  margin-right: 8px;
+.chart-description {
+  margin-left: 20px;
+  font-weight: bold;
 }
 
+.pool-select {
+  margin: 0;
+  width: 200px;
+}

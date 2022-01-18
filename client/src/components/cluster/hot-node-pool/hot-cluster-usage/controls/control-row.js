@@ -16,16 +16,13 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Select, Icon} from 'antd';
+import {Button, Icon} from 'antd';
 import PeriodPicker, {PERIOD_TYPES} from './period-picker';
 import styles from './control-row.css';
 
 function ControlRow ({
   filters = {},
   onPeriodTypeChange,
-  clusterNames,
-  currentCluster,
-  onCurrentClusterChange,
   onPeriodChange
 }) {
   const onClick = (key) => () => {
@@ -58,27 +55,6 @@ function ControlRow ({
             </Button>
           ))}
         </Button.Group>
-        <div>
-          <span
-            className={styles.controlItemLabel}
-          >
-            Select pool:
-          </span>
-          <Select
-            value={currentCluster}
-            onChange={onCurrentClusterChange}
-            className={styles.controlItem}
-          >
-            {clusterNames.map(clusterName => (
-              <Select.Option
-                value={clusterName}
-                key={clusterName}
-              >
-                {clusterName}
-              </Select.Option>
-            ))}
-          </Select>
-        </div>
       </div>
       <Button>
         <Icon type="export" />
@@ -94,9 +70,6 @@ ControlRow.propTypes = {
     periodType: PropTypes.string,
     period: PropTypes.string
   }),
-  clusterNames: PropTypes.arrayOf(PropTypes.string),
-  currentCluster: PropTypes.string,
-  onCurrentClusterChange: PropTypes.func,
   onPeriodChange: PropTypes.func
 };
 

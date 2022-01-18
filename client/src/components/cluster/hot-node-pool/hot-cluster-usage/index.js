@@ -20,6 +20,7 @@ import OverallClusterChart from './charts/overall-cluster-chart';
 import ClusterChart from './charts/cluster-chart';
 import ControlRow from './controls/control-row';
 import {PERIOD_TYPES} from './controls/period-picker';
+import styles from './hot-cluster-usage.css';
 
 const MOCKED_POOLS_AMOUNT = 4;
 
@@ -172,12 +173,10 @@ class HotClusterUsage extends React.Component {
         <ControlRow
           onPeriodTypeChange={this.onPeriodTypeChange}
           filters={filters}
-          clusterNames={this.clusterNames}
           currentCluster={currentCluster}
-          onCurrentClusterChange={this.onCurrentClusterChange}
           onPeriodChange={this.onPeriodChange}
         />
-        <div style={{display: 'flex', flexDirection: 'row'}}>
+        <div className={styles.chartsContainer}>
           <OverallClusterChart
             rawData={mockedData}
             filters={filters}
@@ -188,9 +187,12 @@ class HotClusterUsage extends React.Component {
           <ClusterChart
             rawData={mockedData}
             currentCluster={currentCluster}
+            onCurrentClusterChange={this.onCurrentClusterChange}
+            clusterNames={this.clusterNames}
             filters={filters}
             title={currentCluster}
             units=" active nodes"
+            description="M5.LARGE ON-DEMAND 50GB"
           />
         </div>
       </div>

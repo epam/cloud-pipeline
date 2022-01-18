@@ -16,9 +16,11 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Select} from 'antd';
 import moment from 'moment-timezone';
 import Chart from './base';
 import {colors, labelUtils} from './utils';
+import styles from './cluster-chart.css';
 
 const extractDataSet = (rawDataSet, labels = [], dataEntry, format) => {
   return labels.map(label => {
@@ -67,7 +69,11 @@ function ClusterChart ({
   units,
   filters,
   rawData = {},
-  currentCluster
+  currentCluster,
+  clusterNames,
+  onCurrentClusterChange,
+  containerStyle,
+  description
 }) {
   const dataConfiguration = extractDataSets(
     rawData,
@@ -83,19 +89,43 @@ function ClusterChart ({
   };
   return (
     <div
-      style={
-        Object.assign(
-          {width: '50%', height: '450px', position: 'relative', display: 'block'},
-          style
-        )
-      }
+      className={styles.container}
+      style={containerStyle}
     >
-      <Chart
-        data={dataConfiguration}
-        options={options}
-        type="line"
-        units={units}
-      />
+      <div className={styles.chartHeader}>
+        <Select
+          value={currentCluster}
+          onChange={onCurrentClusterChange}
+          className={styles.poolSelect}
+        >
+          {clusterNames.map(clusterName => (
+            <Select.Option
+              value={clusterName}
+              key={clusterName}
+            >
+              {clusterName}
+            </Select.Option>
+          ))}
+        </Select>
+        <span className={styles.chartDescription}>
+          {description}
+        </span>
+      </div>
+      <div
+        style={
+          Object.assign(
+            {width: '100%', flexGrow: '1', position: 'relative'},
+            style
+          )
+        }
+      >
+        <Chart
+          data={dataConfiguration}
+          options={options}
+          type="line"
+          units={units}
+        />
+      </div>
     </div>
   );
 }
@@ -107,8 +137,12 @@ ClusterChart.PropTypes = {
     period: PropTypes.string
   }),
   currentCluster: PropTypes.string,
+  clusterNames: PropTypes.arrayOf(PropTypes.string),
+  onCurrentClusterChange: PropTypes.func,
   title: PropTypes.string,
-  units: PropTypes.string
+  units: PropTypes.string,
+  containerStyle: PropTypes.object,
+  style: PropTypes.object
 };
 
 export default ClusterChart;

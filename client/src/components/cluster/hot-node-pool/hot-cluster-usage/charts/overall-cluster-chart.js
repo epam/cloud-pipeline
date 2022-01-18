@@ -85,7 +85,13 @@ function OverallClusterChart ({
     <div
       style={
         Object.assign(
-          {width: '50%', height: '450px', position: 'relative', display: 'block'},
+          {
+            width: '50%',
+            height: '450px',
+            position: 'relative',
+            display: 'block',
+            marginRight: '5px'
+          },
           style
         )
       }
