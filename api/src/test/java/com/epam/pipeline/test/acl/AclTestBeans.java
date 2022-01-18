@@ -124,6 +124,7 @@ import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
@@ -537,6 +538,9 @@ public class AclTestBeans {
 
     @MockBean
     protected UsersUsageReportService usersUsageReportService;
+
+    @MockBean
+    protected OnlineUsersService onlineUsersService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

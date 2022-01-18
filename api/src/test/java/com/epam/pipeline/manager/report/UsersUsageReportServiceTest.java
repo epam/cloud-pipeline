@@ -30,7 +30,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,7 +61,7 @@ public class UsersUsageReportServiceTest {
                 .from(from.toLocalDate())
                 .to(to.toLocalDate())
                 .build();
-        doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, new HashSet<>());
+        doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, null);
 
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
@@ -135,7 +134,7 @@ public class UsersUsageReportServiceTest {
                 .from(from.toLocalDate())
                 .to(to.toLocalDate())
                 .build();
-        doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, new HashSet<>());
+        doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, null);
 
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
