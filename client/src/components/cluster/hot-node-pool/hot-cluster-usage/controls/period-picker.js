@@ -17,11 +17,26 @@
 import React from 'react';
 import moment from 'moment-timezone';
 import PropTypes from 'prop-types';
-import {DatePicker} from 'antd';
+import {DatePicker, Button, Icon} from 'antd';
+import styles from './period-picker.css';
 
 const PERIOD_TYPES = {
   day: 'Day',
   month: 'Month'
+};
+
+const shiftMonth = (currentDate, amount) => {
+  if (amount > 0) {
+    return moment(currentDate).add(amount, 'months').format('YYYY-MM');
+  }
+  return moment(currentDate).subtract(Math.abs(amount), 'months').format('YYYY-MM');
+};
+
+const shiftDay = (currentDate, amount) => {
+  if (amount > 0) {
+    return moment(currentDate).add(amount, 'days').format('YYYY-MM-DD');
+  }
+  return moment(currentDate).subtract(Math.abs(amount), 'days').format('YYYY-MM-DD');
 };
 
 function PeriodPicker ({
@@ -36,23 +51,66 @@ function PeriodPicker ({
       : 'YYYY-MM';
     onPeriodChange && onPeriodChange(moment(date).format(format));
   };
-  if (type === PERIOD_TYPES.month) {
+  const renderPicker = () => {
+    if (type === PERIOD_TYPES.month) {
+      return (
+        <DatePicker.MonthPicker
+          className={styles.periodPicker}
+          onChange={onChange}
+          value={moment(filters.period)}
+          allowClear={false}
+        />
+      );
+    }
     return (
-      <DatePicker.MonthPicker
+      <DatePicker
+        className={styles.periodPicker}
         onChange={onChange}
         value={moment(filters.period)}
-        className={className}
         allowClear={false}
       />
     );
-  }
+  };
+  const canNavigateRight = () => {
+    const today = moment();
+    if (filters.periodType === 'Day') {
+      const diff = today.diff(filters.period, 'hours');
+      return diff >= 24;
+    }
+    const diff = today.diff(filters.period, 'months');
+    return diff >= 1;
+  };
+  const navigateLeft = () => {
+    if (filters.periodType === 'Day') {
+      return onPeriodChange && onPeriodChange(shiftDay(filters.period, -1));
+    }
+    return onPeriodChange && onPeriodChange(shiftMonth(filters.period, -1));
+  };
+  const navigateRight = () => {
+    if (filters.periodType === 'Day') {
+      return onPeriodChange && onPeriodChange(shiftDay(filters.period, 1));
+    }
+    return onPeriodChange && onPeriodChange(shiftMonth(filters.period, 1));
+  };
   return (
-    <DatePicker
-      onChange={onChange}
-      value={moment(filters.period)}
-      className={className}
-      allowClear={false}
-    />
+    <div className={styles.container}>
+      <Button
+        className={styles.navigateLeftBtn}
+        style={{paddingLeft: 8}}
+        onClick={navigateLeft}
+      >
+        <Icon type="left" />
+      </Button>
+      {renderPicker()}
+      <Button
+        className={styles.navigateRightBtn}
+        style={{paddingRight: 8}}
+        onClick={navigateRight}
+        disabled={!canNavigateRight()}
+      >
+        <Icon type="right" />
+      </Button>
+    </div>
   );
 }
 

@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon} from 'antd';
 import PeriodPicker, {PERIOD_TYPES} from './period-picker';
+import Divider from '../../../../special/Divider';
 import styles from './control-row.css';
 
 function ControlRow ({
@@ -41,6 +42,10 @@ function ControlRow ({
           filters={filters}
           className={styles.controlItem}
           onPeriodChange={onPeriodChange}
+        />
+        <Divider
+          vertical
+          style={{height: 'auto'}}
         />
         <Button.Group
           className={styles.controlItem}

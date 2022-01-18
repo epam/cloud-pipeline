@@ -45,8 +45,8 @@ const getDaylyMock = (day) => {
         if (randomNumber(0, 10) > 8) {
           rndLimit = randomNumber(10, 20);
           rnd = randomNumber(10, rndLimit);
-        } else if (randomNumber(0, 10) > 5) {
-          rnd = randomNumber(10, rndLimit);
+        } else if (randomNumber(0, 10) > 7) {
+          rnd = randomNumber(0, rndLimit);
         }
         return {
           poolLimit: rndLimit,
@@ -78,8 +78,8 @@ const getMonthlyMock = (date) => {
         if (randomNumber(0, 10) > 8) {
           rndLimit = randomNumber(10, 20);
           rnd = randomNumber(10, rndLimit);
-        } else if (randomNumber(0, 10) > 5) {
-          rnd = randomNumber(10, rndLimit);
+        } else if (randomNumber(0, 10) > 7) {
+          rnd = randomNumber(0, rndLimit);
         }
         return {
           poolLimit: rndLimit,
