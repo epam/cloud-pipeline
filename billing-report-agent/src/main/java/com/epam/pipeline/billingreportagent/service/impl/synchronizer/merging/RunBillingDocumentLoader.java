@@ -57,6 +57,7 @@ public class RunBillingDocumentLoader implements EntityDocumentLoader {
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(billingHelper.aggregateCostSum())
                                 .subAggregation(billingHelper.aggregateRunUsageSum())
+                                .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
     }
 
