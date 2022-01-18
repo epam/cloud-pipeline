@@ -19,10 +19,13 @@ package com.epam.pipeline.manager.billing;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.user.UserManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -66,8 +69,7 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
         if (loadDetails) {
             final PipelineUser user = userManager.loadUserByName(entityIdentifier);
             if (user != null) {
-                details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(),
-                        BillingUtils.getUserBillingCenter(user, billingCenterKey, metadataManager));
+                details.put(BillingGrouping.BILLING_CENTER.getCorrespondingField(), getUserBillingCenter(user));
             } else {
                 log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
                                                   entityIdentifier, getGrouping()));
@@ -84,7 +86,16 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
 
     String getUserBillingCenter(final String username) {
         return Optional.ofNullable(userManager.loadUserByName(username))
-            .map(user -> BillingUtils.getUserBillingCenter(user, billingCenterKey, metadataManager))
+            .map(this::getUserBillingCenter)
+            .orElse(emptyValue);
+    }
+
+    private String getUserBillingCenter(final PipelineUser user) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
+            .map(MetadataEntry::getData)
+            .filter(MapUtils::isNotEmpty)
+            .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
+            .flatMap(value -> Optional.ofNullable(value.getValue()))
             .orElse(emptyValue);
     }
 }

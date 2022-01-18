@@ -16,37 +16,26 @@
 
 package com.epam.pipeline.entity.billing;
 
-public enum BillingGrouping {
-    RESOURCE_TYPE("resource_type", false, false),
-    RUN_INSTANCE_TYPE("instance_type", true, false),
-    RUN_COMPUTE_TYPE("compute_type", false, false),
-    PIPELINE("pipeline", true, false),
-    TOOL("tool", true, false),
-    STORAGE("storage_id", false, true),
-    STORAGE_TYPE("storage_type", false, false),
-    USER("owner", true, true),
-    BILLING_CENTER("billing_center", true, true);
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
+@Getter
+@RequiredArgsConstructor
+public enum BillingGrouping {
+
+    RESOURCE_TYPE(BillingGroupingType.COMMON, "resource_type", false, false),
+    RUN_INSTANCE_TYPE(BillingGroupingType.RUN, "instance_type", true, false),
+    RUN_COMPUTE_TYPE(BillingGroupingType.RUN, "compute_type", false, false),
+    PIPELINE(BillingGroupingType.RUN, "pipeline", true, false),
+    TOOL(BillingGroupingType.RUN, "tool", true, false),
+    STORAGE(BillingGroupingType.STORAGE, "storage_id", false, true),
+    STORAGE_TYPE(BillingGroupingType.STORAGE, "storage_type", false, false),
+    USER(BillingGroupingType.COMMON, "owner", true, true),
+    BILLING_CENTER(BillingGroupingType.COMMON, "billing_center", true, true);
+
+    private final BillingGroupingType type;
     private final String correspondingField;
     private final boolean runUsageDetailsRequired;
     private final boolean storageUsageDetailsRequired;
 
-    BillingGrouping(final String correspondingField, final boolean runUsageDetailsRequired,
-                    final boolean storageUsageDetailsRequired) {
-        this.correspondingField = correspondingField;
-        this.runUsageDetailsRequired = runUsageDetailsRequired;
-        this.storageUsageDetailsRequired = storageUsageDetailsRequired;
-    }
-
-    public String getCorrespondingField() {
-        return correspondingField;
-    }
-
-    public boolean runUsageDetailsRequired() {
-        return runUsageDetailsRequired;
-    }
-
-    public boolean storageUsageDetailsRequired() {
-        return storageUsageDetailsRequired;
-    }
 }

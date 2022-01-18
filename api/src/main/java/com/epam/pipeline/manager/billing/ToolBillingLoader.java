@@ -4,6 +4,7 @@ import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.ToolBilling;
 import com.epam.pipeline.entity.billing.ToolBillingMetrics;
+import com.epam.pipeline.manager.billing.index.BillingIndexHelper;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
@@ -37,17 +38,18 @@ import java.util.stream.Stream;
 public class ToolBillingLoader implements BillingLoader<ToolBilling> {
 
     private final BillingHelper billingHelper;
+    private final BillingIndexHelper billingIndexHelper;
     private final PreferenceManager preferenceManager;
     private final ToolBillingDetailsLoader toolBillingDetailsLoader;
 
     @Override
-    public Stream<ToolBilling> billings(final RestHighLevelClient elasticSearchClient,
+    public Stream<ToolBilling> billings(final RestHighLevelClient client,
                                         final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
         final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
         final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
-        return billings(elasticSearchClient, from, to, filters, discount, getPageSize());
+        return billings(client, from, to, filters, discount, getPageSize());
     }
 
     private int getPageSize() {
@@ -56,17 +58,17 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
                 .orElse(BillingUtils.FALLBACK_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE);
     }
 
-    private Stream<ToolBilling> billings(final RestHighLevelClient elasticSearchClient,
+    private Stream<ToolBilling> billings(final RestHighLevelClient client,
                                          final LocalDate from,
                                          final LocalDate to,
                                          final Map<String, List<String>> filters,
                                          final BillingDiscount discount,
                                          final int pageSize) {
-        return StreamUtils.from(billingsIterator(elasticSearchClient, from, to, filters, discount, pageSize))
+        return StreamUtils.from(billingsIterator(client, from, to, filters, discount, pageSize))
                 .flatMap(this::billings);
     }
 
-    private Iterator<SearchResponse> billingsIterator(final RestHighLevelClient elasticSearchClient,
+    private Iterator<SearchResponse> billingsIterator(final RestHighLevelClient client,
                                                       final LocalDate from,
                                                       final LocalDate to,
                                                       final Map<String, List<String>> filters,
@@ -74,7 +76,7 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
                                                       final int pageSize) {
         return new ElasticMultiBucketsIterator(BillingUtils.TOOL_FIELD, pageSize,
             pageOffset -> getBillingsRequest(from, to, filters, discount, pageOffset, pageSize),
-            billingHelper.searchWith(elasticSearchClient),
+            billingHelper.searchWith(client),
             billingHelper::getTerms);
     }
 
@@ -85,8 +87,8 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
                                              final int pageOffset,
                                              final int pageSize) {
         return new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.runIndicesByDate(from, to))
+                .indicesOptions(IndicesOptions.lenientExpandOpen())
+                .indices(billingIndexHelper.monthlyRunIndicesBetween(from, to))
                 .source(new SearchSourceBuilder()
                         .size(NumberUtils.INTEGER_ZERO)
                         .query(billingHelper.queryByDateAndFilters(from, to, filters))

@@ -17,12 +17,43 @@ import com.epam.pipeline.manager.billing.ToolBillingLoader;
 import com.epam.pipeline.manager.billing.ToolBillingWriter;
 import com.epam.pipeline.manager.billing.UserBillingLoader;
 import com.epam.pipeline.manager.billing.UserBillingWriter;
+import com.epam.pipeline.manager.billing.index.BillingIndexHelper;
+import com.epam.pipeline.manager.billing.index.BoundingBillingIndexHelper;
+import com.epam.pipeline.manager.billing.index.DailyBillingIndexHelper;
+import com.epam.pipeline.manager.billing.index.PeriodBillingIndexHelper;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class BillingConfiguration {
+
+    private static final String TRUE = "true";
+    private static final String FALSE = "false";
+
+    @Value("${billing.index.common.prefix:cp-billing-}")
+    private String commonIndexPrefix;
+
+    @Value("${billing.run.index.name:pipeline-run}")
+    private String runIndexName;
+
+    @Value("${billing.storage.index.name:storage}")
+    private String storageIndexName;
+
+    @Bean
+    @ConditionalOnProperty(value = "billing.index.period.disable", matchIfMissing = true, havingValue = FALSE)
+    public BillingIndexHelper periodBillingIndexHelper(final GlobalSearchElasticHelper elasticHelper) {
+        final BillingIndexHelper helper = new PeriodBillingIndexHelper(commonIndexPrefix, runIndexName, storageIndexName);
+        return new BoundingBillingIndexHelper(helper, elasticHelper, commonIndexPrefix, runIndexName, storageIndexName);
+    }
+
+    @Bean
+    @ConditionalOnProperty(value = "billing.index.period.disable", havingValue = TRUE)
+    public BillingIndexHelper dailyBillingIndexHelper() {
+        return new DailyBillingIndexHelper(commonIndexPrefix, runIndexName, storageIndexName);
+    }
 
     @Bean
     public BillingExporter runBillingExporter(final RunBillingLoader runBillingLoader,

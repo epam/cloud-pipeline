@@ -1,12 +1,6 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.config.Constants;
-import com.epam.pipeline.entity.metadata.MetadataEntry;
-import com.epam.pipeline.entity.security.acl.AclClass;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.manager.metadata.MetadataManager;
-import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.math.BigDecimal;
@@ -25,6 +19,8 @@ public final class BillingUtils {
     public static final char SEPARATOR = ',';
 
     public static final String YEAR_MONTH_FORMAT = "MMMM yyyy";
+    public static final DateTimeFormatter ELASTIC_DATE_FORMATTER =
+            DateTimeFormatter.ofPattern(Constants.ELASTIC_DATE_FORMAT, Locale.US);
     public static final DateTimeFormatter ELASTIC_DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern(Constants.ELASTIC_DATE_TIME_FORMAT, Locale.US);
     public static final DateTimeFormatter EXPORT_DATE_TIME_FORMATTER =
@@ -74,6 +70,7 @@ public final class BillingUtils {
     public static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     public static final String STORAGE_USAGE_FIELD = "usage_bytes";
     public static final String LAST_BY_DATE_DOC_AGG = "last_by_date";
+    public static final String DOC_ID_FIELD = "_id";
     public static final String RUN_ID_FIELD = "run_id";
     public static final String STORAGE_ID_FIELD = "storage_id";
     public static final String PAGE = "page";
@@ -165,15 +162,8 @@ public final class BillingUtils {
                 .toString();
     }
 
-    public static String getUserBillingCenter(final PipelineUser user,
-                                              final String billingCenterKey,
-                                              final MetadataManager metadataManager) {
-        return Optional.ofNullable(metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
-                .map(MetadataEntry::getData)
-                .filter(MapUtils::isNotEmpty)
-                .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
-                .flatMap(value -> Optional.ofNullable(value.getValue()))
-                .orElse(StringUtils.EMPTY);
+    public static long withDiscount(final int discount, final long cost) {
+        return cost - cost * discount;
     }
 
     private static long tenInPowerOf(final int scale) {
