@@ -228,7 +228,7 @@ export default class DataStorage extends React.Component {
   @computed
   get toolsToMount () {
     const {info = {}} = this.props;
-    if (info.loaded && info.value.toolsToMount) {
+    if (info.loaded && info.value.toolsToMount && !info.value.mountDisabled) {
       return (info.value.toolsToMount || []).map(t => t);
     }
     return undefined;
