@@ -16,6 +16,16 @@
 
 package com.epam.pipeline.dto.quota;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Getter
 public enum QuotaType {
-    OVERALL, BILLING_CENTER, USER, GROUP
+    OVERALL(null),
+    BILLING_CENTER("billing_center"),
+    USER("owner"),
+    GROUP("groups");
+
+    private final String filterField;
 }

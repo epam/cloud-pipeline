@@ -16,21 +16,27 @@
 
 package com.epam.pipeline.mapper.quota;
 
+import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaAction;
+import com.epam.pipeline.dto.quota.QuotaType;
+import com.epam.pipeline.entity.quota.AppliedQuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaSidEntity;
-import com.epam.pipeline.entity.user.Sid;
+import com.epam.pipeline.entity.user.SidImpl;
+import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+
 
 @Mapper(componentModel = "spring")
 public interface QuotaMapper {
 
-    Sid recipientToDto(QuotaSidEntity entity);
+    SidImpl recipientToDto(QuotaSidEntity entity);
 
-    QuotaSidEntity recipientToEntity(Sid dto);
+    QuotaSidEntity recipientToEntity(SidImpl dto);
 
     QuotaAction actionToEntity(QuotaActionEntity entity);
 
@@ -40,4 +46,22 @@ public interface QuotaMapper {
     QuotaEntity quotaToEntity(Quota dto);
 
     Quota quotaToDto(QuotaEntity entity);
+
+    AppliedQuotaEntity appliedQuotaToEntity(AppliedQuota dto);
+
+    @Mapping(target = "quota", ignore = true)
+    AppliedQuota appliedQuotaToDto(AppliedQuotaEntity entity);
+
+    @AfterMapping
+    default void fillAppliedQuota(final AppliedQuotaEntity entity, final @MappingTarget AppliedQuota dto) {
+        final QuotaEntity quota = entity.getAction().getQuota();
+        dto.setQuota(quotaToDto(quota));
+    }
+
+    @AfterMapping
+    default void fillQuota(final Quota dto, final @MappingTarget QuotaEntity entity) {
+        if (QuotaType.GROUP.equals(dto.getType()) || QuotaType.USER.equals(dto.getType())) {
+            entity.setSubject(dto.getSubject().toUpperCase());
+        }
+    }
 }

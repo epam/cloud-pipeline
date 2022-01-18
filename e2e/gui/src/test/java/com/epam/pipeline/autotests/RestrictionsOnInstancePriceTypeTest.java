@@ -41,9 +41,9 @@ import static com.epam.pipeline.autotests.ao.Configuration.confirmConfigurationC
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CODE_TAB;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
-import static com.epam.pipeline.autotests.ao.Primitive.DOCKER_IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.FOLDERS;
+import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
@@ -372,7 +372,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .expandTabs(execEnvironmentTab)
                                     .sleep(4, SECONDS)
                                     .ensure(DISK, value(customDisk))
-                                    .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                    .ensure(IMAGE, value(defaultGroup), value(testingTool))
                                     .ensure(INSTANCE_TYPE, not(empty))
                                     .checkDropDownCount(INSTANCE_TYPE, instanceTypesCount)
                     );
@@ -446,7 +446,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                     .expandTabs(execEnvironmentTab)
                                     .sleep(4, SECONDS)
                                     .ensure(DISK, value(customDisk))
-                                    .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                    .ensure(IMAGE, value(defaultGroup), value(testingTool))
                                     .ensure(INSTANCE_TYPE, empty)
                                     .checkValueIsInDropDown(INSTANCE_TYPE, masks[3])
                     )
@@ -708,7 +708,7 @@ public class RestrictionsOnInstancePriceTypeTest extends AbstractBfxPipelineTest
                                 .expandTabs(execEnvironmentTab)
                                 .sleep(4, SECONDS)
                                 .ensure(DISK, value(customDisk))
-                                .ensure(DOCKER_IMAGE, value(defaultGroup), value(testingTool))
+                                .ensure(IMAGE, value(defaultGroup), value(testingTool))
                                 .ensure(INSTANCE_TYPE, empty)
                                 .checkValueIsInDropDown(INSTANCE_TYPE, instanceFamilyName)
                 )

@@ -16,16 +16,19 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Modal, Input, Button, Form, message, Spin} from 'antd';
+import {Checkbox, Modal, Input, Button, Form, message, Spin, Select} from 'antd';
 import classNames from 'classnames';
 
 import {ResolveIp} from '../../../../../models/nat';
 import {
   validateIP,
   validatePort,
-  validateServerName
+  validateServerName,
+  validateDescription
 } from '../helpers';
 import styles from './add-route-modal.css';
+
+const protocols = {TCP: 'TCP', UDP: 'UDP'};
 
 const FormItem = Form.Item;
 export default class AddRouteForm extends React.Component {
@@ -43,7 +46,7 @@ export default class AddRouteForm extends React.Component {
   };
 
   state = {
-    ports: {'port': undefined},
+    ports: {'port': {value: undefined, protocol: protocols.TCP}},
     ip: undefined,
     serverName: undefined,
     description: undefined,
@@ -88,6 +91,7 @@ export default class AddRouteForm extends React.Component {
 
   get portsDuplicates () {
     const portsObj = Object.values(this.state.ports || {})
+      .map(({value}) => value)
       .reduce((r, c) => {
         r[c] = (r[c] || 0) + 1;
         return r;
@@ -101,24 +105,30 @@ export default class AddRouteForm extends React.Component {
       ports = {},
       serverName,
       ip,
-      useIP
+      useIP,
+      description
     } = this.state;
     const {
       routes = []
     } = this.props;
-    const currentIpRoutes = routes.filter(route => route.externalIp === ip);
+    const currentIpRoutes = routes
+      .filter(route => useIP
+        ? route.externalIp === ip
+        : serverName === route.externalIp);
     const portValues = Object
       .values(ports)
+      .map(({value}) => value)
       .filter(o => !Number.isNaN(Number(o)))
       .map(o => Number(o))
       .concat(currentIpRoutes.map(o => Number(o.externalPort)));
     const errors = {
       serverName: validateServerName(serverName),
       ip: validateIP(ip, !useIP),
+      description: validateDescription(description),
       ...(
         Object
           .entries(ports)
-          .map(([identifier, value]) => ({[identifier]: validatePort(value, portValues)}))
+          .map(([identifier, {value}]) => ({[identifier]: validatePort(value, portValues)}))
           .reduce((r, c) => ({...r, ...c}), {})
       )
     };
@@ -135,12 +145,22 @@ export default class AddRouteForm extends React.Component {
     if (name && name.startsWith('port')) {
       state.ports = {
         ...ports,
-        [name]: value
+        [name]: {...ports[name], value}
       };
     } else if (name) {
       state[name] = value;
     }
     this.setState(state, () => this.validate());
+  }
+
+  handleProtocolChange = (portIdentificator) => (value) => {
+    const ports = {...this.state.ports};
+    const state = {};
+    if (ports[portIdentificator]) {
+      ports[portIdentificator].protocol = value;
+    }
+    state.ports = {...ports};
+    this.setState(state);
   }
 
   handleUseIP = (event) => {
@@ -159,7 +179,7 @@ export default class AddRouteForm extends React.Component {
     this.setState({
       ports: {
         ...ports,
-        [identifier]: undefined
+        [identifier]: {value: undefined, protocol: protocols.TCP}
       }
     }, () => this.validate());
   }
@@ -175,7 +195,7 @@ export default class AddRouteForm extends React.Component {
   resetForm = () => {
     const identifier = `port${AddRouteForm.getPortUID()}`;
     this.setState({
-      ports: {[identifier]: undefined},
+      ports: {[identifier]: {value: undefined, protocol: protocols.TCP}},
       ip: undefined,
       serverName: undefined,
       description: undefined,
@@ -376,44 +396,56 @@ export default class AddRouteForm extends React.Component {
               }
               <FormItemError identifier="ip" />
               {
-                this.ports.map(([portIdentifier, port], index, ports) => ([
+                this.ports.map(([portIdentifier, port], index, ports) => (
                   <div
                     key={`port-${portIdentifier}`}
-                    className={styles.formItemContainer}
-                  >
-                    <span
-                      className={styles.title}
-                      style={{
-                        visibility: index > 0 ? 'hidden' : undefined
-                      }}
-                    >
-                      Port{this.ports.length > 1 ? 's' : ''}:
-                    </span>
-                    <FormItem
-                      className={styles.formItem}
-                      validateStatus={this.getValidationStatus(portIdentifier)}
-                    >
-                      <Input
-                        value={port}
-                        onChange={this.handleChange(portIdentifier)}
-                      />
-                    </FormItem>
-                    {
-                      ports.length > 1 && (
-                        <Button
-                          type="danger"
-                          icon="delete"
-                          onClick={() => this.removePortInput(portIdentifier)}
-                          style={{marginLeft: 5}}
-                        />
+                    className={
+                      classNames(
+                        styles.portFormItemContainer,
+                        'cp-nat-route-port-control'
                       )
                     }
-                  </div>,
-                  <FormItemError
-                    key={`port-${portIdentifier}-validation`}
-                    identifier={portIdentifier}
-                  />
-                ]))
+                  >
+                    <div className={styles.formItemContainer}>
+                      <span className={styles.title}>Port:</span>
+                      <FormItem
+                        className={styles.formItem}
+                        validateStatus={this.getValidationStatus(portIdentifier)}
+                      >
+                        <Input
+                          value={port.value}
+                          onChange={this.handleChange(portIdentifier)}
+                        />
+                      </FormItem>
+                      {
+                        ports.length > 1 && (
+                          <Button
+                            type="danger"
+                            icon="delete"
+                            onClick={() => this.removePortInput(portIdentifier)}
+                            style={{marginLeft: 5}}
+                          />
+                        )
+                      }
+                    </div>
+                    <FormItemError
+                      key={`port-${portIdentifier}-validation`}
+                      identifier={portIdentifier}
+                    />
+                    <div className={styles.formItemContainer}>
+                      <span className={styles.title}>Protocol:</span>
+                      <FormItem className={styles.formItem}>
+                        <Select
+                          value={port.protocol}
+                          onChange={this.handleProtocolChange(portIdentifier)}
+                        >
+                          <Select.Option value={protocols.TCP}>TCP</Select.Option>
+                          <Select.Option value={protocols.UDP}>UDP</Select.Option>
+                        </Select>
+                      </FormItem>
+                    </div>
+                  </div>
+                ))
               }
               <div className={styles.addButtonContainer}>
                 <Button
@@ -436,6 +468,7 @@ export default class AddRouteForm extends React.Component {
                   />
                 </FormItem>
               </div>
+              <FormItemError identifier="description" />
             </Form>
           </Spin>
         </div>

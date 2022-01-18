@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -147,6 +148,9 @@ public class TestApplication {
 
     @MockBean
     public QuotaService mockQuotaService;
+
+    @MockBean
+    public PipelineUserRepository pipelineUserRepository;
 
     @MockBean
     public OnlineUsersService onlineUsersService;

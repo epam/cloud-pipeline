@@ -20,8 +20,11 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.pipeline.PipelineRunDockerOperationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
+import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.user.UserManager;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
@@ -42,23 +45,39 @@ public class RunScheduleJob implements Job {
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private UserManager userManager;
+
+    @Autowired
+    private AuthManager authManager;
+
     @Override
     public void execute(final JobExecutionContext context) {
-        log.debug("Job " + context.getJobDetail().getKey().getName() + " fired " + context.getFireTime());
+        log.debug("Job {} fired {}", context.getJobDetail().getKey().getName(), context.getFireTime());
 
         final Long runId = context.getMergedJobDataMap().getLongValue("SchedulableId");
-        final String action = context.getMergedJobDataMap().getString("Action");
-        Assert.notNull(runId,
-                       messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
+        Assert.notNull(runId, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
         PipelineRun pipelineRun = pipelineRunManager.loadPipelineRun(runId);
-        Assert.notNull(pipelineRun,
-                       messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, pipelineRun.getName()));
-        if (action.equals(RunScheduledAction.RESUME.name())) {
+        Assert.notNull(pipelineRun, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, runId));
+
+
+        final String userName = context.getMergedJobDataMap().getString("User");
+        Assert.notNull(userName, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED, userName));
+        final PipelineUser user = userManager.loadUserByName(userName);
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
+        authManager.setCurrentUser(user);
+
+        final String action = context.getMergedJobDataMap().getString("Action");
+        if (RunScheduledAction.RESUME.name().equals(action)) {
+            log.debug("Resuming a run with id: {}", runId);
             pipelineRunDockerOperationManager.resumeRun(runId);
-        } else if (action.equals(RunScheduledAction.PAUSE.name())) {
+        } else if (RunScheduledAction.PAUSE.name().equals(action)) {
+            log.debug("Pausing a run with id: {}", runId);
             pipelineRunDockerOperationManager.pauseRun(runId, true);
+        } else {
+            log.error("Wrong type of action for scheduling run, allowed RESUME and PAUSE, actual: {}", action);
         }
 
-        log.debug("Next job scheduled " + context.getNextFireTime());
+        log.debug("Next job scheduled {}", context.getNextFireTime());
     }
 }

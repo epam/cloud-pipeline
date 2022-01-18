@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.app;
+package com.epam.pipeline.manager.cluster.pool;
 
+import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.scheduling.AbstractSchedulingManager;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.ldap.core.ContextSource;
-import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.stereotype.Service;
 
-@Configuration
+import javax.annotation.PostConstruct;
+
+@Service
 @RequiredArgsConstructor
-public class LdapConfiguration {
-    @Bean
-    public LdapTemplate ldapTemplate(final ContextSource contextSource) {
-        return new LdapTemplate(contextSource);
+public class NodePoolMonitoringService extends AbstractSchedulingManager {
+    private final NodePoolMonitoringServiceCore core;
+
+    @PostConstruct
+    public void init() {
+        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_NODE_POOL_MONITOR_DELAY,
+                "NodePoolMonitor");
     }
 }

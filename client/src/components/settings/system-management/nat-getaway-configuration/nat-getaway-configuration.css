@@ -38,7 +38,7 @@
 .table table thead[class*="table-thead"] tr th,
 .table tbody tr td.column,
 .table tbody tr td.actions-column {
-  padding: 4px;
+  padding: 4px 8px;
 }
 
 .table-content-actions {
@@ -90,7 +90,7 @@
 }
 
 .route-status {
-  padding: 5px 10px;
+  padding: 5px 10px 5px 0px;
   font-size: larger;
 }
 

@@ -79,11 +79,11 @@
 
 .cp-settings-nat-table thead tr:first-child,
 .cp-settings-nat-table thead tr:first-child th:first-child,
-.cp-settings-nat-table thead tr th.external-column:nth-child(3),
-.cp-settings-nat-table tbody tr td.external-column:nth-child(3),
-.cp-settings-nat-table thead tr th.internal-column:nth-child(6),
-.cp-settings-nat-table tbody tr td.internal-column:nth-child(6) {
-  border-right: 2px solid @card-border-color;
+.cp-settings-nat-table thead tr th.external-column:nth-child(4),
+.cp-settings-nat-table tbody tr td.external-column:nth-child(4),
+.cp-settings-nat-table thead tr th.internal-column:nth-child(7),
+.cp-settings-nat-table tbody tr td.internal-column:nth-child(7) {
+  border-right: 2px solid @table-border-color;
 }
 
 .cp-settings-nat-table thead tr:first-child th {
@@ -96,4 +96,18 @@
 
 .cp-nat-route-removed .cp-nat-route-status {
   color: currentColor;
+}
+
+.cp-nat-route-port-control {
+  border-bottom: 1px solid @table-border-color;
+}
+
+.cp-user-status-online {
+  fill: @color-green;
+  stroke: @color-green;
+}
+
+.cp-user-status-offline {
+  stroke: @color-grey;
+  fill: transparent;
 }
