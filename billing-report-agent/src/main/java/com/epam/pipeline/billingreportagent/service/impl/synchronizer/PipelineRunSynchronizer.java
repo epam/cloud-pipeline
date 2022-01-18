@@ -19,7 +19,7 @@ package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
+import com.epam.pipeline.billingreportagent.service.ElasticsearchDailySynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 
 @Data
 @Slf4j
-public class PipelineRunSynchronizer implements ElasticsearchSynchronizer {
+public class PipelineRunSynchronizer implements ElasticsearchDailySynchronizer {
 
     private final ElasticIndexService indexService;
     private final String indexPrefix;
