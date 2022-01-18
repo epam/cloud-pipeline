@@ -13,6 +13,7 @@ import org.elasticsearch.client.indices.GetIndexResponse;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Optional;
@@ -93,7 +94,7 @@ public class BoundingBillingIndexHelper implements BillingIndexHelper {
 
     private LocalDate normalizedTo(final LocalDate to) {
         final LocalDate lastBillingDate = DateUtils.nowUTC().toLocalDate().minusDays(1);
-        return to.isAfter(lastBillingDate) ? lastBillingDate : to;
+        return to.isBefore(lastBillingDate) ? to : YearMonth.from(lastBillingDate).atEndOfMonth();
     }
 
     private Optional<LocalDate> getOrResolveFirstBillingDate() {
