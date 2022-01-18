@@ -50,10 +50,8 @@ dependencies {
 
     // Spring
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
-    implementation group: "org.springframework.boot", name: "spring-boot-starter-data-jpa", version: springBootVersion
 
     // DB
-    implementation group: "org.hibernate", name: "hibernate-core", version: hibernateVersion
     implementation group: "org.postgresql", name: "postgresql", version: postgresqlVersion
 
     // Logging
