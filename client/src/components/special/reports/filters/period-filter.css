@@ -13,28 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import React from 'react';
-import {observer} from 'mobx-react';
-import BillingNavigation from '../../navigation';
-import DateFilter from '../../../special/reports/filters/period-filter';
-
-function PeriodFilter ({
-  filters = {},
-  periods
-}) {
-  const {
-    period: filter,
-    range,
-    periodNavigation: onChange = () => {}
-  } = filters;
-  return (
-    <DateFilter
-      filter={filter}
-      range={range}
-      onChange={onChange}
-      periods={periods}
-    />);
+ 
+.period-btn-group .button {
+  width: 75px;
 }
-
-export default BillingNavigation.attach(observer(PeriodFilter));

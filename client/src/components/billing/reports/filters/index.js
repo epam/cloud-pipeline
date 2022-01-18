@@ -16,23 +16,27 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
+
 import Discounts from '../discounts';
 import PeriodFilter from './period-filter';
 import RunnerFilter from './runner-filter';
 import ProviderFilter from './provider-filter';
-import Divider from './divider';
+
 import {RestoreButton} from '../layout';
 import ExportReports from '../export';
 import BillingNavigation from '../../navigation';
 import roleModel from '../../../../utils/roleModel';
+import Divider from '../../../special/reports/divider';
+import {Period} from '../../../special/periods';
 import styles from '../reports.css';
 
+const periods = [Period.custom, Period.year, Period.quarter, Period.month];
 function Filters ({children}) {
   return (
     <div className={styles.container}>
       <div className={styles.filtersContainer}>
         <div className={styles.filters}>
-          <PeriodFilter />
+          <PeriodFilter periods={periods} />
           <Divider />
           {
             roleModel.manager.billing(

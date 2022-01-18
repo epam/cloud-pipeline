@@ -23,7 +23,7 @@ import {
   Summary
 } from './charts';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
-import {Period, getPeriod} from '../navigation/periods';
+import {Period, getPeriod} from '../../special/periods';
 import InstanceFilter, {InstanceFilters} from './filters/instance-filter';
 import Discounts, {discounts} from './discounts';
 import Export from './export';

@@ -16,8 +16,8 @@
 
 import React from 'react';
 import {observer} from 'mobx-react';
-import BillingNavigation from '../../navigation';
-import DateFilter from '../../../special/reports/filters/period-filter';
+import UsageNavigation from '../navigation';
+import DateFilter from '../../../../special/reports/filters/period-filter';
 
 function PeriodFilter ({
   filters = {},
@@ -37,4 +37,4 @@ function PeriodFilter ({
     />);
 }
 
-export default BillingNavigation.attach(observer(PeriodFilter));
+export default UsageNavigation.attach(observer(PeriodFilter));

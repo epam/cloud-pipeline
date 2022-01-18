@@ -142,22 +142,25 @@ class UsersRolesSelect extends React.Component {
   }
 
   onChangeSearchString = (e) => {
+    const {adGroups: showADGroups = true} = this.props;
     this.setState({
       searchString: e || ''
     }, () => {
-      GroupFind.findGroups(e)
-        .then((groups = []) => {
-          if (this.state.searchString === e) {
-            this.setState({
-              adGroups: groups.map(group => ({
-                name: group,
-                search: [group.toLowerCase()],
-                displayName: group,
-                principal: false
-              }))
-            });
-          }
-        });
+      if (showADGroups) {
+        GroupFind.findGroups(e)
+          .then((groups = []) => {
+            if (this.state.searchString === e) {
+              this.setState({
+                adGroups: groups.map(group => ({
+                  name: group,
+                  search: [group.toLowerCase()],
+                  displayName: group,
+                  principal: false
+                }))
+              });
+            }
+          });
+      }
     });
   };
 
@@ -196,6 +199,7 @@ class UsersRolesSelect extends React.Component {
         value={value.map(getDataSourceItemValue)}
         onChange={this.onChange}
         filterOption={false}
+        placeholder={this.props.placeholder || ''}
         getPopupContainer={o => o.parentNode}
         onSearch={this.onChangeSearchString}
         onBlur={() => this.onChangeSearchString()}
@@ -246,11 +250,17 @@ class UsersRolesSelect extends React.Component {
 }
 
 UsersRolesSelect.propTypes = {
+  adGroups: PropTypes.bool,
+  placeholder: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onChange: PropTypes.func
+};
+
+UsersRolesSelect.defaultProps = {
+  adGroups: true
 };
 
 export default UsersRolesSelect;
