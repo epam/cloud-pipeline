@@ -446,17 +446,6 @@ public class UserController extends AbstractRestController {
         return Result.success(userApiService.getImpersonationStatus());
     }
 
-    @GetMapping("/users/online")
-    @ResponseBody
-    @ApiOperation(
-            value = "Loads online users",
-            notes = "Loads online users",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Collection<PipelineUser>> getOnlineUsers() {
-        return Result.success(userApiService.getOnlineUsers());
-    }
-
     @PostMapping("/users/online")
     @ResponseBody
     @ApiOperation(

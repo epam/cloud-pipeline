@@ -248,11 +248,6 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public Collection<PipelineUser> getOnlineUsers() {
-        return userManager.getOnlineUsers();
-    }
-
-    @PreAuthorize(ADMIN_ONLY)
     public OnlineUsers saveCurrentlyOnlineUsers() {
         return onlineUsersService.saveCurrentlyOnlineUsers();
     }
