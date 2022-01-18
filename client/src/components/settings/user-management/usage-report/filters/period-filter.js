@@ -13,17 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import React from 'react';
-import UsageNavigation from './navigation';
-import Filters from './filters';
 
-export default function UsageReport ({router, location, children}) {
+import React from 'react';
+import {observer} from 'mobx-react';
+import UsageNavigation from '../navigation';
+import DateFilter from '../../../../special/reports/filters/period-filter';
+
+function PeriodFilter ({
+  filters = {},
+  periods
+}) {
+  const {
+    period: filter,
+    range,
+    periodNavigation: onChange = () => {}
+  } = filters;
   return (
-    <UsageNavigation
-      location={location}
-      router={router}
-    >
-      <Filters location={location} router={router}>{children}</Filters>
-    </UsageNavigation>
-  );
+    <DateFilter
+      filter={filter}
+      range={range}
+      onChange={onChange}
+      periods={periods}
+    />);
 }
+
+export default UsageNavigation.attach(observer(PeriodFilter));

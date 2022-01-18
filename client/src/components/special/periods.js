@@ -19,7 +19,8 @@ const Period = {
   month: 'month',
   quarter: 'quarter',
   year: 'year',
-  custom: 'custom'
+  custom: 'custom',
+  day: 'day'
 };
 
 function getTickFormat (start, end) {
@@ -41,6 +42,11 @@ function buildRangeString ({start, end}, period) {
         return undefined;
       }
       return start.format('YYYY');
+    case Period.day:
+      if (!start) {
+        return undefined;
+      }
+      return start.format('YYYY-MM-DD');
     default:
       if (!start) {
         return undefined;
@@ -61,6 +67,11 @@ function getRangeDescription ({start, end}, period) {
         return undefined;
       }
       return start.format('YYYY');
+    case Period.day:
+      if (!start) {
+        return undefined;
+      }
+      return start.format('YYYY-MM-DD');
     case Period.quarter:
       if (!start) {
         return undefined;
@@ -120,6 +131,11 @@ function parseRangeString (string, period) {
       start = moment.utc(startStr, 'YYYY-MM').startOf('M');
       end = moment(start).endOf('M');
       isCurrent = checkCurrent(start, 'Y', 'M');
+      break;
+    case Period.day:
+      start = moment.utc(startStr, 'YYYY-MM-DD').startOf('D');
+      end = moment(start).endOf('D');
+      isCurrent = checkCurrent(start, 'Y', 'M', 'D');
       break;
   }
   return {
@@ -251,6 +267,28 @@ function getPeriod (period, range) {
         }
       }
       previousShiftFn = (momentDate) => moment(momentDate).add(1, 'y');
+      break;
+    case Period.day:
+      if (!rangeIsSelected) {
+        start = moment(dateNow).startOf('D');
+        end = moment(dateNow).endOf('D');
+      }
+      before = start ? moment(start).add(-1, 'D') : moment(dateNow).add(-1, 'D');
+      tickFormat = getTickFormat(start, end);
+      previousStart = moment(start).add(-1, 'd');
+      previousEnd = moment(end).add(-1, 'd');
+      endStrict = moment(end);
+      previousEndStrict = moment(previousEnd);
+      if (isCurrent) {
+        if (dateNow < endStrict) {
+          endStrict = moment(dateNow);
+        }
+        const temp = moment(endStrict).add(-1, 'd');
+        if (temp < previousEndStrict) {
+          previousEndStrict = temp;
+        }
+      }
+      previousShiftFn = (momentDate) => moment(momentDate).add(1, 'd');
       break;
     default:
       tickFormat = getTickFormat(start, end);
