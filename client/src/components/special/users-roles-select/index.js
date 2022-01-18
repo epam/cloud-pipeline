@@ -179,7 +179,8 @@ class UsersRolesSelect extends React.Component {
       disabled: disabledProp,
       users,
       roles,
-      value = []
+      value = [],
+      onBlur = this.onChangeSearchString
     } = this.props;
     const {
       searchString = ''
@@ -199,7 +200,7 @@ class UsersRolesSelect extends React.Component {
         placeholder={this.props.placeholder || ''}
         getPopupContainer={o => o.parentNode}
         onSearch={this.onChangeSearchString}
-        onBlur={() => this.onChangeSearchString()}
+        onBlur={onBlur}
         notFoundContent={
           searchString.length >= MINIMUM_SEARCH_LENGTH
             ? `Nothing found for "${searchString}"`
@@ -252,7 +253,8 @@ UsersRolesSelect.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  onBlur: PropTypes.func
 };
 
 export default UsersRolesSelect;

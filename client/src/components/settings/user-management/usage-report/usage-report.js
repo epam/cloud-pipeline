@@ -14,7 +14,16 @@
  * limitations under the License.
  */
 import React from 'react';
+import UsageNavigation from './navigation';
+import Filters from './filters';
 
 export default function UsageReport ({router, location, children}) {
-  return (<div>{children}</div>);
+  return (
+    <UsageNavigation
+      location={location}
+      router={router}
+    >
+      <Filters location={location} router={router}>{children}</Filters>
+    </UsageNavigation>
+  );
 }
