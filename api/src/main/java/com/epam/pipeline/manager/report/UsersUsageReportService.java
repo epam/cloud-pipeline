@@ -55,7 +55,7 @@ public class UsersUsageReportService {
         final List<OnlineUsers> onlineUsers = onlineUsersService.getUsersByPeriod(start, end,
                 preparedFilter.getUsers());
         if (ChronoUnit.HOURS == filter.getInterval()) {
-            return buildDayUsersUsage(onlineUsers, start, end, preparedFilter.getUsers());
+            return calculateDayUsersUsageByHour(onlineUsers, start, end, preparedFilter.getUsers());
         }
         if (ChronoUnit.DAYS == filter.getInterval()) {
             return buildMonthUsersUsage(onlineUsers, start, end, preparedFilter.getUsers());
@@ -157,17 +157,5 @@ public class UsersUsageReportService {
                 .mapToDouble(UsersUsageInfo::getActiveUsersCount)
                 .toArray();
         return (int) Math.round(new Median().evaluate(sample));
-    }
-
-    private List<UsersUsageInfo> buildDayUsersUsage(final List<OnlineUsers> users, final LocalDateTime from,
-                                                    final LocalDateTime to, final Set<Long> filterUsers) {
-        final List<UsersUsageInfo> hourlyUsages = calculateDayUsersUsageByHour(users, from, to, filterUsers);
-        final Set<Long> accumulatedUsers = new HashSet<>();
-        for (final UsersUsageInfo hourlyUsage : hourlyUsages) {
-            accumulatedUsers.addAll(hourlyUsage.getActiveUsers());
-            hourlyUsage.setTotalUsers(new ArrayList<>(accumulatedUsers));
-            hourlyUsage.setTotalUsersCount(accumulatedUsers.size());
-        }
-        return hourlyUsages;
     }
 }

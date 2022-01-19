@@ -66,17 +66,13 @@ public class UsersUsageReportServiceTest {
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
                 .periodEnd(from.plusHours(1))
-                .totalUsers(USERS)
                 .activeUsers(USERS)
-                .totalUsersCount(USERS.size())
                 .activeUsersCount(USERS.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
                 .periodStart(from.plusHours(HOURS_IN_DAY - 1))
                 .periodEnd(from.plusHours(HOURS_IN_DAY))
-                .totalUsers(USERS)
                 .activeUsers(USERS)
-                .totalUsersCount(USERS.size())
                 .activeUsersCount(USERS.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
@@ -101,17 +97,13 @@ public class UsersUsageReportServiceTest {
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
                 .periodEnd(from.plusHours(1))
-                .totalUsers(EXPECTED_FILTER_USERS)
                 .activeUsers(EXPECTED_FILTER_USERS)
-                .totalUsersCount(EXPECTED_FILTER_USERS.size())
                 .activeUsersCount(EXPECTED_FILTER_USERS.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
                 .periodStart(from.plusHours(HOURS_IN_DAY - 1))
                 .periodEnd(from.plusHours(HOURS_IN_DAY))
-                .totalUsers(EXPECTED_FILTER_USERS)
                 .activeUsers(EXPECTED_FILTER_USERS)
-                .totalUsersCount(EXPECTED_FILTER_USERS.size())
                 .activeUsersCount(EXPECTED_FILTER_USERS.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
