@@ -57,8 +57,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -460,11 +458,11 @@ public class UserController extends AbstractRestController {
     @DeleteMapping("/users/online")
     @ResponseBody
     @ApiOperation(
-            value = "Deletes online users dumps after specified date",
-            notes = "Deletes online users dumps after specified date",
+            value = "Deletes online users dumps created before specified date",
+            notes = "Deletes online users dumps created before specified date",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> deleteOnlineUsers(@RequestParam final LocalDateTime date) {
+    public Result<Boolean> deleteOnlineUsers(@RequestParam final String date) {
         return Result.success(userApiService.deleteExpiredOnlineUsers(date));
     }
 }

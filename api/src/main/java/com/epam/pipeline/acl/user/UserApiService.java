@@ -36,9 +36,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -253,7 +251,7 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public boolean deleteExpiredOnlineUsers(final LocalDateTime date) {
+    public boolean deleteExpiredOnlineUsers(final String date) {
         return onlineUsersService.deleteExpired(date);
     }
 }

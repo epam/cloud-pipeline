@@ -26,7 +26,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,7 +47,7 @@ public class CloudPipelineAPIClient {
         return executor.execute(cloudPipelineAPI.saveOnlineUsers());
     }
 
-    public boolean deleteExpiredOnlineUsers(final LocalDateTime date) {
+    public boolean deleteExpiredOnlineUsers(final String date) {
         return executor.execute(cloudPipelineAPI.deleteExpiredOnlineUsers(date));
     }
 

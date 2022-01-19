@@ -52,7 +52,7 @@ public class OnlineUsersCleanerServiceCore {
             log.debug("Cannot remove expired online users statistic since period was not specified");
             return;
         }
-        client.deleteExpiredOnlineUsers(DateUtils.nowUTC().minusDays(duration));
+        client.deleteExpiredOnlineUsers(DateUtils.nowUTC().minusDays(duration).toLocalDate().toString());
         log.debug("Finished online users removal service");
     }
 }

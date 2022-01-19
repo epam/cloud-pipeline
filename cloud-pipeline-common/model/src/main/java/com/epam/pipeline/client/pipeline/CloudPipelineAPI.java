@@ -72,7 +72,6 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CloudPipelineAPI {
@@ -179,7 +178,7 @@ public interface CloudPipelineAPI {
     Call<Result<OnlineUsers>> saveOnlineUsers();
 
     @DELETE("users/online")
-    Call<Result<Boolean>> deleteExpiredOnlineUsers(@Query("date") LocalDateTime date);
+    Call<Result<Boolean>> deleteExpiredOnlineUsers(@Query("date") String date);
 
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);
