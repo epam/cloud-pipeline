@@ -12,7 +12,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -21,13 +20,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class StorageBillingDocumentLoader implements EntityDocumentLoader {
 
-    private final ElasticsearchServiceClient elasticsearchServiceClient;
+    private final ElasticsearchServiceClient client;
     private final BillingHelper billingHelper;
-    private final int pageSize = 5000;
+    private final int pageSize;
 
     @Override
     public Stream<EntityDocument> documents(final LocalDate from, final LocalDate to,
@@ -39,7 +37,7 @@ public class StorageBillingDocumentLoader implements EntityDocumentLoader {
     private Iterator<SearchResponse> iterator(final LocalDate from, final LocalDate to, final String[] indices) {
         return new ElasticMultiBucketsIterator(BillingUtils.RUN_ID_FIELD, pageSize,
                 pageOffset -> getRequest(from, to, indices, pageOffset, pageSize),
-                elasticsearchServiceClient::search,
+                client::search,
                 billingHelper::getTerms);
     }
 

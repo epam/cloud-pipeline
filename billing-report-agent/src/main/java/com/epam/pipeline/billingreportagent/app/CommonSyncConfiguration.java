@@ -42,11 +42,12 @@ import com.epam.pipeline.billingreportagent.service.impl.mapper.RunBillingMapper
 import com.epam.pipeline.billingreportagent.service.impl.mapper.StorageBillingMapper;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.PipelineRunSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.StorageSynchronizer;
+import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.CommonMergingSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.EntityDocumentLoader;
-import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.InitialMergingSynchronizer;
-import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.MergingSynchronizer;
+import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.RecalculatingMergingSynchronizer;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.RunBillingDocumentLoader;
 import com.epam.pipeline.billingreportagent.service.impl.synchronizer.merging.StorageBillingDocumentLoader;
+import com.epam.pipeline.billingreportagent.utils.BillingHelper;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
@@ -65,10 +66,13 @@ public class CommonSyncConfiguration {
     private String commonIndexPrefix;
 
     @Value("${sync.bulk.insert.size:1000}")
-    private int bulkSize;
+    private int bulkInsertSize;
 
     @Value("${sync.bulk.insert.timeout:1000}")
-    private long insertTimeout;
+    private long bulkInsertTimeout;
+
+    @Value("${sync.bulk.fetch.size:5000}")
+    private int bulkFetchSize;
 
     @Value("${sync.storage.index.mapping}")
     private String storageMapping;
@@ -76,8 +80,8 @@ public class CommonSyncConfiguration {
     @Value("${sync.storage.index.name}")
     private String storageIndexName;
 
-    @Value("${sync.storage.period.recalculate.enable}")
-    private boolean storagePeriodRecalculate;
+    @Value("${sync.storage.period.recalculation.disable}")
+    private boolean disableStoragePeriodRecalculation;
 
     @Value("${sync.billing.center.key}")
     private String billingCenterKey;
@@ -94,13 +98,12 @@ public class CommonSyncConfiguration {
     @Value("${sync.run.index.name}")
     private String runIndexName;
 
-    @Value("${sync.run.period.recalculate.enable}")
-    private boolean runPeriodRecalculate;
+    @Value("${sync.run.period.recalculation.disable}")
+    private boolean disableRunPeriodRecalculation;
 
     @Bean
-    public BulkRequestSender bulkRequestSender(
-            final ElasticsearchServiceClient elasticsearchClient) {
-        return new BulkRequestSender(elasticsearchClient);
+    public BulkRequestSender bulkRequestSender(final ElasticsearchServiceClient client) {
+        return new BulkRequestSender(client);
     }
 
     @Bean
@@ -109,13 +112,13 @@ public class CommonSyncConfiguration {
             final RunBillingMapper mapper,
             final PipelineRunLoader loader,
             final ElasticIndexService indexService,
-            final ElasticsearchServiceClient elasticsearchClient) {
+            final ElasticsearchServiceClient client) {
         return new PipelineRunSynchronizer(runMapping,
                 commonIndexPrefix,
                 runIndexName,
-                bulkSize,
-                insertTimeout,
-                elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                client,
                 indexService,
                 mapper,
                 loader);
@@ -123,55 +126,51 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.run.period.monthly.disable", matchIfMissing = true, havingValue = FALSE)
-    public ElasticsearchMergingSynchronizer pipelineRunMonthlySynchronizer(
-            final ElasticsearchServiceClient elasticsearchClient,
-            final ElasticIndexService indexService,
-            final RunBillingDocumentLoader loader,
-            final DocumentMapper mapper) {
-        return getRunMergingSynchronizer(elasticsearchClient, indexService, loader, mapper,
+    public ElasticsearchMergingSynchronizer pipelineRunMonthlySynchronizer(final ElasticsearchServiceClient client,
+                                                                           final ElasticIndexService indexService,
+                                                                           final RunBillingDocumentLoader loader,
+                                                                           final DocumentMapper mapper) {
+        return getRunMergingSynchronizer(client, indexService, loader, mapper,
                 ElasticsearchMergingFrame.MONTH);
     }
 
     @Bean
     @ConditionalOnProperty(value = "sync.run.period.yearly.disable", matchIfMissing = true, havingValue = FALSE)
-    public ElasticsearchMergingSynchronizer pipelineRunYearlySynchronizer(
-            final ElasticsearchServiceClient elasticsearchClient,
-            final ElasticIndexService indexService,
-            final RunBillingDocumentLoader loader,
-            final DocumentMapper mapper) {
-        return getRunMergingSynchronizer(elasticsearchClient, indexService, loader, mapper,
+    public ElasticsearchMergingSynchronizer pipelineRunYearlySynchronizer(final ElasticsearchServiceClient client,
+                                                                          final ElasticIndexService indexService,
+                                                                          final RunBillingDocumentLoader loader,
+                                                                          final DocumentMapper mapper) {
+        return getRunMergingSynchronizer(client, indexService, loader, mapper,
                 ElasticsearchMergingFrame.YEAR);
     }
 
-    private ElasticsearchMergingSynchronizer getRunMergingSynchronizer(
-            final ElasticsearchServiceClient elasticsearchClient,
-            final ElasticIndexService indexService,
-            final EntityDocumentLoader loader,
-            final DocumentMapper mapper,
-            final ElasticsearchMergingFrame frame) {
-        final ElasticsearchMergingSynchronizer joiner = new MergingSynchronizer(
+    private ElasticsearchMergingSynchronizer getRunMergingSynchronizer(final ElasticsearchServiceClient client,
+                                                                       final ElasticIndexService indexService,
+                                                                       final EntityDocumentLoader loader,
+                                                                       final DocumentMapper mapper,
+                                                                       final ElasticsearchMergingFrame frame) {
+        final ElasticsearchMergingSynchronizer synchronizer = new CommonMergingSynchronizer(
                 getMergingSynchronizerName("Run", frame),
                 runMapping,
                 commonIndexPrefix,
                 runIndexName,
-                bulkSize,
-                elasticsearchClient,
+                bulkInsertSize,
+                client,
                 indexService,
                 loader,
                 mapper,
                 frame);
-        return runPeriodRecalculate ? new InitialMergingSynchronizer(joiner) : joiner;
+        return disableRunPeriodRecalculation ? synchronizer : new RecalculatingMergingSynchronizer(synchronizer);
     }
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.s3.disable", matchIfMissing = true, havingValue = FALSE)
-    public ElasticsearchDailySynchronizer s3Synchronizer(final StorageLoader loader,
-                                                         final ElasticIndexService indexService,
-                                                         final ElasticsearchServiceClient elasticsearchClient,
-                                                         final @Value("${sync.storage.price.load.mode:api}")
-                                                                 String priceMode,
-                                                         final @Value("${sync.aws.json.price.endpoint.template}")
-                                                                 String endpointTemplate) {
+    public ElasticsearchDailySynchronizer s3Synchronizer(
+            final StorageLoader loader,
+            final ElasticIndexService indexService,
+            final ElasticsearchServiceClient client,
+            @Value("${sync.storage.price.load.mode:api}") final String priceMode,
+            @Value("${sync.aws.json.price.endpoint.template}") final String endpointTemplate) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.S3_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
                 new StoragePricingService(new AwsStoragePriceListLoader("AmazonS3",
@@ -180,12 +179,12 @@ public class CommonSyncConfiguration {
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
-                bulkSize,
-                insertTimeout,
-                elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                client,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper, client,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
                         fileIndexPattern,
@@ -195,14 +194,13 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.efs.disable", matchIfMissing = true, havingValue = FALSE)
-    public ElasticsearchDailySynchronizer efsSynchronizer(final StorageLoader loader,
-                                                          final ElasticIndexService indexService,
-                                                          final ElasticsearchServiceClient elasticsearchClient,
-                                                          final @Value("${sync.storage.price.load.mode:api}")
-                                                                  String priceMode,
-                                                          final @Value("${sync.aws.json.price.endpoint.template}")
-                                                                  String endpointTemplate,
-                                                          final FileShareMountsService fileShareMountsService) {
+    public ElasticsearchDailySynchronizer efsSynchronizer(
+            final StorageLoader loader,
+            final ElasticIndexService indexService,
+            final ElasticsearchServiceClient client,
+            @Value("${sync.storage.price.load.mode:api}") final String priceMode,
+            @Value("${sync.aws.json.price.endpoint.template}") final String endpointTemplate,
+            final FileShareMountsService fileShareMountsService) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
                 new StoragePricingService(new AwsStoragePriceListLoader("AmazonEFS",
@@ -211,12 +209,12 @@ public class CommonSyncConfiguration {
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
-                bulkSize,
-                insertTimeout,
-                elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                client,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper, client,
                         StorageType.FILE_STORAGE,
                         pricingService,
                         fileIndexPattern,
@@ -230,19 +228,19 @@ public class CommonSyncConfiguration {
     @ConditionalOnProperty(value = "sync.storage.gs.disable", matchIfMissing = true, havingValue = FALSE)
     public ElasticsearchDailySynchronizer gsSynchronizer(final StorageLoader loader,
                                                          final ElasticIndexService indexService,
-                                                         final ElasticsearchServiceClient elasticsearchClient) {
+                                                         final ElasticsearchServiceClient client) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.GS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
                 new StoragePricingService(new GcpStoragePriceListLoader());
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
-                bulkSize,
-                insertTimeout,
-                elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                client,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper, client,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
                         fileIndexPattern,
@@ -253,14 +251,14 @@ public class CommonSyncConfiguration {
     @Bean
     @ConditionalOnProperty(value = "sync.storage.azure-blob.disable", matchIfMissing = true, havingValue = FALSE)
     public ElasticsearchDailySynchronizer azureBlobSynchronizer(
-        final StorageLoader loader,
-        final ElasticIndexService indexService,
-        final ElasticsearchServiceClient elasticsearchClient,
-        final CloudRegionLoader regionLoader,
-        final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
-        final AzureEARawPriceLoader rawEAPriceLoader,
-        final @Value("${sync.storage.azure-blob.category:General Block Blob}") String blobStorageCategory,
-        final @Value("${sync.storage.azure-blob.redundancy:LRS}") String redundancyType) {
+            final StorageLoader loader,
+            final ElasticIndexService indexService,
+            final ElasticsearchServiceClient client,
+            final CloudRegionLoader regionLoader,
+            final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
+            final AzureEARawPriceLoader rawEAPriceLoader,
+            @Value("${sync.storage.azure-blob.category:General Block Blob}") final String blobStorageCategory,
+            @Value("${sync.storage.azure-blob.redundancy:LRS}") final String redundancyType) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.AZ_BLOB_STORAGE,
                 billingCenterKey);
         final StoragePricingService pricingService =
@@ -272,12 +270,12 @@ public class CommonSyncConfiguration {
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
-                bulkSize,
-                insertTimeout,
-                elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                client,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper, client,
                         StorageType.OBJECT_STORAGE,
                         pricingService,
                         fileIndexPattern,
@@ -290,25 +288,24 @@ public class CommonSyncConfiguration {
     public ElasticsearchDailySynchronizer azureNetAppSynchronizer(
             final StorageLoader loader,
             final ElasticIndexService indexService,
-            final ElasticsearchServiceClient elasticsearchClient,
+            final ElasticsearchServiceClient client,
             final FileShareMountsService fileShareMountsService,
             final CloudRegionLoader regionLoader,
             final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
             final AzureEARawPriceLoader rawEAPriceLoader,
-            final @Value("${sync.storage.azure-netapp.tier:Standard}")
-                    String storageTier) {
+            @Value("${sync.storage.azure-netapp.tier:Standard}") final String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
                 new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
-                bulkSize,
-                insertTimeout,
-                elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                client,
                 loader,
                 indexService,
-                new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                new StorageToBillingRequestConverter(mapper, client,
                         StorageType.FILE_STORAGE,
                         pricingService,
                         fileIndexPattern,
@@ -323,25 +320,24 @@ public class CommonSyncConfiguration {
     public ElasticsearchDailySynchronizer azureFilesSynchronizer(
             final StorageLoader loader,
             final ElasticIndexService indexService,
-            final ElasticsearchServiceClient elasticsearchClient,
+            final ElasticsearchServiceClient client,
             final FileShareMountsService fileShareMountsService,
             final CloudRegionLoader regionLoader,
             final AzureRateCardRawPriceLoader rawRateCardPriceLoader,
             final AzureEARawPriceLoader rawEAPriceLoader,
-            final @Value("${sync.storage.azure-files.tier:Cool LRS}")
-                    String storageTier) {
+            @Value("${sync.storage.azure-files.tier:Cool LRS}") final String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
             new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        storageIndexName,
-                                       bulkSize,
-                                       insertTimeout,
-                                       elasticsearchClient,
+                bulkInsertSize,
+                bulkInsertTimeout,
+                                       client,
                                        loader,
                                        indexService,
-                                       new StorageToBillingRequestConverter(mapper, elasticsearchClient,
+                                       new StorageToBillingRequestConverter(mapper, client,
                                                                             StorageType.FILE_STORAGE,
                                                                             pricingService,
                                                                             fileIndexPattern,
@@ -353,49 +349,58 @@ public class CommonSyncConfiguration {
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.period.monthly.disable", matchIfMissing = true, havingValue = FALSE)
-    public ElasticsearchMergingSynchronizer storageMonthlySynchronizer(
-            final ElasticsearchServiceClient elasticsearchClient,
-            final ElasticIndexService indexService,
-            final StorageBillingDocumentLoader loader,
-            final DocumentMapper mapper) {
-        return getStorageMergingSynchronizer(elasticsearchClient, indexService, loader, mapper,
+    public ElasticsearchMergingSynchronizer storageMonthlySynchronizer(final ElasticsearchServiceClient client,
+                                                                       final ElasticIndexService indexService,
+                                                                       final StorageBillingDocumentLoader loader,
+                                                                       final DocumentMapper mapper) {
+        return getStorageMergingSynchronizer(client, indexService, loader, mapper,
                 ElasticsearchMergingFrame.MONTH);
     }
 
     @Bean
     @ConditionalOnProperty(value = "sync.storage.period.yearly.disable", matchIfMissing = true, havingValue = FALSE)
-    public ElasticsearchMergingSynchronizer storageYearlySynchronizer(
-            final ElasticsearchServiceClient elasticsearchClient,
-            final ElasticIndexService indexService,
-            final StorageBillingDocumentLoader loader,
-            final DocumentMapper mapper) {
-        return getStorageMergingSynchronizer(elasticsearchClient, indexService, loader, mapper,
+    public ElasticsearchMergingSynchronizer storageYearlySynchronizer(final ElasticsearchServiceClient client,
+                                                                      final ElasticIndexService indexService,
+                                                                      final StorageBillingDocumentLoader loader,
+                                                                      final DocumentMapper mapper) {
+        return getStorageMergingSynchronizer(client, indexService, loader, mapper,
                 ElasticsearchMergingFrame.YEAR);
     }
 
-    private ElasticsearchMergingSynchronizer getStorageMergingSynchronizer(
-            final ElasticsearchServiceClient elasticsearchClient,
-            final ElasticIndexService indexService,
-            final EntityDocumentLoader loader,
-            final DocumentMapper mapper,
-            final ElasticsearchMergingFrame frame) {
-        final ElasticsearchMergingSynchronizer joiner = new MergingSynchronizer(
+    private ElasticsearchMergingSynchronizer getStorageMergingSynchronizer(final ElasticsearchServiceClient client,
+                                                                           final ElasticIndexService indexService,
+                                                                           final EntityDocumentLoader loader,
+                                                                           final DocumentMapper mapper,
+                                                                           final ElasticsearchMergingFrame frame) {
+        final ElasticsearchMergingSynchronizer synchronizer = new CommonMergingSynchronizer(
                 getMergingSynchronizerName("Storage", frame),
                 storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
-                bulkSize,
-                elasticsearchClient,
+                bulkInsertSize,
+                client,
                 indexService,
                 loader,
                 mapper,
                 frame);
-        return storagePeriodRecalculate ? new InitialMergingSynchronizer(joiner) : joiner;
+        return disableStoragePeriodRecalculation ? synchronizer : new RecalculatingMergingSynchronizer(synchronizer);
     }
 
     private String getMergingSynchronizerName(final String entity, final ElasticsearchMergingFrame frame) {
         return String.format("%s%slyMergingSynchronizer", entity,
                 StringUtils.capitalize(StringUtils.lowerCase(frame.name())));
+    }
+
+    @Bean
+    public RunBillingDocumentLoader runBillingDocumentLoader(final ElasticsearchServiceClient client,
+                                                             final BillingHelper billingHelper) {
+        return new RunBillingDocumentLoader(client, billingHelper, bulkFetchSize);
+    }
+
+    @Bean
+    public StorageBillingDocumentLoader storageBillingDocumentLoader(final ElasticsearchServiceClient client,
+                                                                     final BillingHelper billingHelper) {
+        return new StorageBillingDocumentLoader(client, billingHelper, bulkFetchSize);
     }
 
 }

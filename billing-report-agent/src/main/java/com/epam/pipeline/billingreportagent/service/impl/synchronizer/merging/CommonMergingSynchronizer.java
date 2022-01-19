@@ -23,7 +23,7 @@ import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
-public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
+public class CommonMergingSynchronizer implements ElasticsearchMergingSynchronizer {
 
     private static final String INDEX_TYPE = "_doc";
 
@@ -32,7 +32,7 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
     private final String indexPrefix;
     private final String indexName;
     private final int bulkInsertSize;
-    private final ElasticsearchServiceClient elasticsearchServiceClient;
+    private final ElasticsearchServiceClient client;
     private final ElasticIndexService elasticIndexService;
     private final EntityDocumentLoader loader;
     private final DocumentMapper mapper;
@@ -62,7 +62,7 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
     }
 
     private Optional<LocalDate> firstBillingDate() {
-        return elasticsearchServiceClient.indices()
+        return client.indices()
                 .filter(index -> index.startsWith(indexPrefix + indexName))
                 .map(this::fromIndexToDate)
                 .filter(Optional::isPresent)
@@ -86,7 +86,7 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
         final String indexAlias = getIndexName(indexPrefix + indexName, frame.nameOf(period));
         final String creatingIndex = getIndexName(PasswordGenerator.generateRandomString(5).toLowerCase(), indexAlias);
         try {
-            final String existingIndex = elasticsearchServiceClient.getIndexNameByAlias(indexAlias);
+            final String existingIndex = client.getIndexNameByAlias(indexAlias);
             elasticIndexService.createIndexIfNotExists(creatingIndex, indexMappingFile);
 
             final String[] subIndices = frame.subPeriodNamesOf(period)
@@ -94,15 +94,15 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
                     .toArray(String[]::new);
             synchronize(frame.startOf(period), frame.endOf(period), creatingIndex, subIndices);
 
-            elasticsearchServiceClient.createIndexAlias(creatingIndex, indexAlias);
+            client.createIndexAlias(creatingIndex, indexAlias);
             if (StringUtils.isNotBlank(existingIndex)) {
-                elasticsearchServiceClient.deleteIndex(existingIndex);
+                client.deleteIndex(existingIndex);
             }
             log.debug("{} - Successfully merged {} period billings...", name(), period);
         } catch (Exception e) {
             log.error(String.format("%s - Failed merging %s period billings.", name(), period), e);
-            if (elasticsearchServiceClient.isIndexExists(creatingIndex))  {
-                elasticsearchServiceClient.deleteIndex(creatingIndex);
+            if (client.isIndexExists(creatingIndex))  {
+                client.deleteIndex(creatingIndex);
             }
         }
     }
@@ -128,7 +128,7 @@ public class MergingSynchronizer implements ElasticsearchMergingSynchronizer {
     }
 
     private IndexRequestContainer getRequestContainer(final int bulkInsertSize) {
-        return new IndexRequestContainer(elasticsearchServiceClient::sendRequests, bulkInsertSize);
+        return new IndexRequestContainer(client::sendRequests, bulkInsertSize);
     }
 
 }
