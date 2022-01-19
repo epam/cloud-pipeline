@@ -747,7 +747,7 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
             "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
-            "system.user.monitor.delay.hours", 24, SYSTEM_GROUP, pass);
+            "system.user.monitor.delay", 86400000, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
             "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED = new BooleanPreference(
