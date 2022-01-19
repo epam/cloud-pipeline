@@ -43,7 +43,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -175,20 +174,10 @@ public class ElasticsearchAgentService {
                                           final ElasticsearchMergingFrame frame,
                                           final CompletableFuture<Void> phase) {
         final CompletableFuture<Void> stage = phase
-                .thenRunAsync(() -> sleep(TimeUnit.MINUTES.toMillis(1L)))
                 .thenRunAsync(() -> log.debug("Starting {} merging stage...", frame));
         return CompletableFuture.allOf(mergers.stream()
                         .map(synchronizer -> sync(from, to, synchronizer, stage))
                         .toArray(CompletableFuture[]::new))
                 .thenRunAsync(() -> log.debug("Finished {} merging stage.", frame));
-    }
-
-    private void sleep(final long millis) {
-        try {
-            log.debug("Sleeping {} ms...", millis);
-            Thread.sleep(millis);
-        } catch (InterruptedException e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

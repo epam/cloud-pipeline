@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class PipelineRunSynchronizer implements ElasticsearchDailySynchronizer {
 
+    private final ElasticsearchServiceClient client;
     private final ElasticIndexService indexService;
     private final String indexPrefix;
     private final String pipelineRunIndexMappingFile;
@@ -54,16 +55,17 @@ public class PipelineRunSynchronizer implements ElasticsearchDailySynchronizer {
                                    final String pipelineRunIndexName,
                                    final Integer bulkInsertSize,
                                    final Long insertTimeout,
-                                   final ElasticsearchServiceClient elasticsearchServiceClient,
+                                   final ElasticsearchServiceClient client,
                                    final ElasticIndexService indexService,
                                    final RunBillingMapper mapper,
                                    final EntityLoader<PipelineRunWithType> loader) {
         this.pipelineRunIndexMappingFile = pipelineRunIndexMappingFile;
         this.indexService = indexService;
         this.indexPrefix = indexPrefix + pipelineRunIndexName;
+        this.client = client;
         this.loader = loader;
         this.runToBillingRequestConverter = new RunToBillingRequestConverter(mapper);
-        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize, insertTimeout);
+        this.requestSender = new BulkRequestSender(client, bulkInsertSize, insertTimeout);
     }
 
     @Override
@@ -93,6 +95,7 @@ public class PipelineRunSynchronizer implements ElasticsearchDailySynchronizer {
                         log.debug("Inserting {} document(s) into index {}.", docs.size(), index);
                         indexService.createIndexIfNotExists(index, pipelineRunIndexMappingFile);
                         requestSender.indexDocuments(docs);
+                        client.refreshIndex(index);
                     } catch (ElasticClientException e) {
                         log.error("Can't create index {}!", index);
                     }

@@ -28,6 +28,7 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -170,6 +171,20 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
             return indices[0];
         } catch (IOException e) {
             throw new ElasticsearchException("Failed to get alias name:" + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public void refreshIndex(final String[] indices) {
+        try {
+            log.debug("Refreshing indices {}...", (Object[]) indices);
+            final RefreshRequest request = new RefreshRequest()
+                    .indices(indices)
+                    .indicesOptions(IndicesOptions.strictExpandOpen());
+            client.indices().refresh(request, RequestOptions.DEFAULT);
+            log.debug("Indices {} were refreshed.", (Object[]) indices);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to refresh indices.", e);
         }
     }
 

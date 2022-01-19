@@ -44,6 +44,7 @@ public class StorageSynchronizer implements ElasticsearchDailySynchronizer {
     private final String indexPrefix;
     private final EntityLoader<AbstractDataStorage> loader;
     private final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingRequestConverter;
+    private final ElasticsearchServiceClient client;
     private final ElasticIndexService indexService;
     private final BulkRequestSender requestSender;
     private final DataStorageType storageType;
@@ -53,7 +54,7 @@ public class StorageSynchronizer implements ElasticsearchDailySynchronizer {
                                final String storageIndexName,
                                final Integer bulkInsertSize,
                                final Long insertTimeout,
-                               final ElasticsearchServiceClient elasticsearchServiceClient,
+                               final ElasticsearchServiceClient client,
                                final EntityLoader<AbstractDataStorage> loader,
                                final ElasticIndexService indexService,
                                final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingReqConverter,
@@ -62,8 +63,9 @@ public class StorageSynchronizer implements ElasticsearchDailySynchronizer {
         this.indexPrefix = indexPrefix + storageIndexName;
         this.loader = loader;
         this.storageToBillingRequestConverter = storageToBillingReqConverter;
+        this.client = client;
         this.indexService = indexService;
-        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize, insertTimeout);
+        this.requestSender = new BulkRequestSender(client, bulkInsertSize, insertTimeout);
         this.storageType = storageType;
     }
 
@@ -84,6 +86,7 @@ public class StorageSynchronizer implements ElasticsearchDailySynchronizer {
                         log.debug("Inserting {} document(s) into index {}.", docs.size(), index);
                         indexService.createIndexIfNotExists(index, storageIndexMappingFile);
                         requestSender.indexDocuments(docs);
+                        client.refreshIndex(index);
                     } catch (ElasticClientException e) {
                         log.error("Can't create index {}!", index);
                     }

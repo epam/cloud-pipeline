@@ -94,6 +94,7 @@ public class CommonMergingSynchronizer implements ElasticsearchMergingSynchroniz
                     .toArray(String[]::new);
             synchronize(frame.startOf(period), frame.endOf(period), creatingIndex, subIndices);
 
+            client.refreshIndex(creatingIndex);
             client.createIndexAlias(creatingIndex, indexAlias);
             if (StringUtils.isNotBlank(existingIndex)) {
                 client.deleteIndex(existingIndex);
