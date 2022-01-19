@@ -23,7 +23,7 @@ import roleModel from '../../utils/roleModel';
 import SubSettings from './sub-settings';
 import UsersManagement from './user-management/users';
 import GroupsManagement from './user-management/groups';
-import UsageReport from './user-management/usage-report/usage-report';
+import UsageReport from './user-management/usage-report';
 
 const roles = new Roles();
 const usersWithActivity = new Users(true);

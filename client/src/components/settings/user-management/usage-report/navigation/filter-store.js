@@ -14,10 +14,30 @@
  *  limitations under the License.
  */
 
-import {observable, isObservableArray} from 'mobx';
+import {observable} from 'mobx';
 import {Period} from '../../../../special/periods';
 import RunnerType from './runner-types';
 import reportsRouting from './reports-routing';
+
+export function runnersEqual (a, b) {
+  const arrayA = (a || []);
+  const arrayB = (b || []);
+  if (arrayA.length !== arrayB.length) {
+    return false;
+  }
+  for (let i = 0; i < arrayA.length; i++) {
+    const testA = arrayA[i];
+    if (!arrayB.find(o => o.type === testA.type && o.id === testA.id)) {
+      return false;
+    }
+    const testB = arrayB[i];
+    if (!arrayA.find(o => o.type === testB.type && o.id === testB.id)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 class Filter {
   static RUNNER_SEPARATOR = '|';
   static REGION_SEPARATOR = '|';
@@ -29,23 +49,14 @@ class Filter {
     this.router = router;
     const {
       period = Period.day,
-      user,
-      group,
+      users,
       range
     } = (location || {}).query || {};
-    if (user) {
-      this.runner = {
-        type: RunnerType.user,
-        id: (user || '').split(Filter.RUNNER_SEPARATOR)
-      };
-    } else if (group) {
-      this.runner = {
-        type: RunnerType.group,
-        id: (group || '').split(Filter.RUNNER_SEPARATOR)
-      };
-    } else {
-      this.runner = undefined;
-    }
+    this.runner = (users || '')
+      .split(Filter.RUNNER_SEPARATOR)
+      .filter(o => !!o && o.length)
+      .map(o => o.split(':'))
+      .map(([type, id]) => ({type: RunnerType.parse(type), id}));
     this.period = period;
     this.range = range;
   };
@@ -61,15 +72,9 @@ class Filter {
     if (range === undefined && !strictRange) {
       range = this.range;
     }
-    const mapRunnerId = (id) => {
-      if (id && (Array.isArray(id) || isObservableArray(id))) {
-        return id.join(Filter.RUNNER_SEPARATOR);
-      }
-      return id;
-    };
     const params = [
-      runner && runner.type === RunnerType.user && `user=${mapRunnerId(runner.id)}`,
-      runner && runner.type === RunnerType.group && `group=${mapRunnerId(runner.id)}`,
+      (runner || []).length > 0 &&
+      `users=${runner.map(o => `${o.type}:${o.id}`).join(Filter.RUNNER_SEPARATOR)}`,
       period && `period=${period}`,
       range && `range=${range}`
     ].filter(Boolean);

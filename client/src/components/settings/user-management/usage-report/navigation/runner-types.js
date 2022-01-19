@@ -16,5 +16,11 @@
 
 export default {
   user: 'user',
-  group: 'group'
+  group: 'group',
+  parse (o) {
+    if (/^group/i.test(o)) {
+      return 'group';
+    }
+    return 'user';
+  }
 };

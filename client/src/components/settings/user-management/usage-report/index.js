@@ -16,14 +16,24 @@
 import React from 'react';
 import UsageNavigation from './navigation';
 import Filters from './filters';
+import UsersActivityChart from './charts/users-activity-chart';
 
-export default function UsageReport ({router, location, children}) {
+export default function UsageReport (
+  {
+    className,
+    router,
+    location
+  }
+) {
   return (
     <UsageNavigation
       location={location}
       router={router}
+      className={className}
     >
-      <Filters location={location} router={router}>{children}</Filters>
+      <Filters location={location} router={router}>
+        <UsersActivityChart style={{flex: 1}} />
+      </Filters>
     </UsageNavigation>
   );
 }

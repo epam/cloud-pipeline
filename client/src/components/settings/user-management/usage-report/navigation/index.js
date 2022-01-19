@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {observable} from 'mobx';
 import {inject, observer, Provider} from 'mobx-react';
 import classNames from 'classnames';
-import FilterStore from './filter-store';
+import FilterStore, {runnersEqual} from './filter-store';
 import RunnerTypes from './runner-types';
 import styles from './navigation.css';
 import roleModel from '../../../../../utils/roleModel';
@@ -91,6 +91,6 @@ UsageNavigation.propTypes = {
 const RUNNER_SEPARATOR = FilterStore.RUNNER_SEPARATOR;
 const REGION_SEPARATOR = FilterStore.REGION_SEPARATOR;
 
-export {RUNNER_SEPARATOR, REGION_SEPARATOR, RunnerTypes};
+export {RUNNER_SEPARATOR, REGION_SEPARATOR, RunnerTypes, runnersEqual};
 
 export default UsageNavigation;
