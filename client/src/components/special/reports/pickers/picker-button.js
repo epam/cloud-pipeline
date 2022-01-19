@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Icon} from 'antd';
 import styles from './pickers.css';
-import '../../../../../staticStyles/billing-calendar.css';
+import '../../../../staticStyles/billing-calendar.css';
 
 class PickerButton extends React.Component {
   static propTypes = {

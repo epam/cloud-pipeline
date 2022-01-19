@@ -15,67 +15,26 @@
  */
 
 import React from 'react';
-import {Button} from 'antd';
 import {observer} from 'mobx-react';
-import Divider from './divider';
-import RangeFilter from './range-filter';
-import {Period, getPeriod, Range} from '../../navigation/periods';
 import BillingNavigation from '../../navigation';
-import styles from './period-filter.css';
+import DateFilter from '../../../special/reports/filters/period-filter';
 
 function PeriodFilter ({
-  filters = {}
+  filters = {},
+  periods
 }) {
   const {
     period: filter,
     range,
     periodNavigation: onChange = () => {}
   } = filters;
-  const getButtonType = (key) => key === filter ? 'primary' : 'default';
-  const onClick = (key) => () => {
-    if (key !== filter) {
-      if (key === Period.custom) {
-        const {start, end} = getPeriod(filter, range);
-        onChange(key, Range.build({start, end}, Period.custom));
-      } else {
-        onChange(key);
-      }
-    }
-  };
-  const getPeriodName = (period) => {
-    switch (period) {
-      case Period.custom: return 'Custom';
-      case Period.year: return 'Year';
-      case Period.quarter: return 'Quarter';
-      case Period.month: return 'Month';
-    }
-    return period;
-  };
   return (
-    <div style={{display: 'flex', alignItems: 'center'}}>
-      <RangeFilter
-        period={filter}
-        range={range}
-        onChange={onChange}
-      />
-      <Divider />
-      <Button.Group className={styles.periodBtnGroup}>
-        {
-          [Period.custom, Period.year, Period.quarter, Period.month].map(period => (
-            <Button
-              id={`set-period-${period}`}
-              className={styles.button}
-              key={period}
-              type={getButtonType(period)}
-              onClick={onClick(period)}
-            >
-              {getPeriodName(period)}
-            </Button>
-          ))
-        }
-      </Button.Group>
-    </div>
-  );
+    <DateFilter
+      filter={filter}
+      range={range}
+      onChange={onChange}
+      periods={periods}
+    />);
 }
 
 export default BillingNavigation.attach(observer(PeriodFilter));

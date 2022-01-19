@@ -13,17 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import React from 'react';
-import UsageNavigation from './navigation';
-import Filters from './filters';
-
-export default function UsageReport ({router, location, children}) {
-  return (
-    <UsageNavigation
-      location={location}
-      router={router}
-    >
-      <Filters location={location} router={router}>{children}</Filters>
-    </UsageNavigation>
-  );
+ 
+.period-btn-group .button {
+  width: 75px;
 }
