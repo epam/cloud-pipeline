@@ -496,6 +496,12 @@
         </classes>
     </test>
 
+    <test name="ADInfoTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.ADInfoTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>

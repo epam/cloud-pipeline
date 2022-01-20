@@ -119,6 +119,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
         tools()
                 .perform(registry, group, ldapServerTool, ToolTab::runWithCustomSettings)
                 .configureInternalDNSName(LDAP_DNS_NAME, LDAP_PORT)
+                .doNotMountStoragesSelect(true)
                 .launch(this);
         if (!userMonitor) {
             navigationMenu()

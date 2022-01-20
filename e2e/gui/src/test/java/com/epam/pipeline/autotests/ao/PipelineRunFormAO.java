@@ -435,7 +435,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                         "No such node type with RAM {%s}.", minRAM)));
     }
 
-    public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
+    public PipelineRunFormAO doNotMountStoragesSelect(boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
             click(DO_NOT_MOUNT_STORAGES);
