@@ -48,6 +48,8 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .startObject()
                 .field(DOC_TYPE_FIELD, documentType.name())
                 .field("storage_id", storage.getId())
+                .field("storage_name", storage.getName())
+                .field("storage_created", storage.getCreatedDate())
                 .field("resource_type", billingInfo.getResourceType())
                 .field("cloudRegionId", billingInfo.getRegionId())
                 .field("provider", storage.getType())
