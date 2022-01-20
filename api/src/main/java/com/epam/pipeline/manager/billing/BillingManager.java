@@ -167,20 +167,14 @@ public class BillingManager {
             .collect(Collectors.toList());
     }
 
-    public FacetedSearchResult getAvailableFacets(final BillingChartRequest request) {
-        final FacetedSearchResult facets = searchFacets(request);
-        return FacetedSearchResult.builder().documents(facets.getDocuments())
-                .facets(filterBillingFacets(facets.getFacets()))
-                .totalHits(facets.getTotalHits()).build();
-    }
-
-    private FacetedSearchResult searchFacets(BillingChartRequest request) {
+    public FacetedSearchResult getAvailableFacets(BillingChartRequest request) {
         final Set<String> fields = getAvailableElasticDocFieldsFromESMapping();
+        final Set<String> filteredFields = filterBillingFacets(fields);
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
                 .query(getFacetedQuery(request.getFilters()))
                 .size(0);
 
-        SetUtils.emptyIfNull(fields)
+        SetUtils.emptyIfNull(filteredFields)
                 .forEach(facet -> addTermAggregationToSource(searchSource, facet));
 
         final String[] indices;
@@ -207,13 +201,11 @@ public class BillingManager {
         return FacetedSearchResult.builder().build();
     }
 
-    private Map<String, Map<String, Long>> filterBillingFacets(Map<String, Map<String, Long>> facets) {
+    private Set<String> filterBillingFacets(Set<String> fields) {
         final Map<String, BillingGrouping> billingFieldMapping = preferenceManager.getPreference(
                 SystemPreferences.BILLING_FIELD_MAPPING);
         BillingGrouping.DEFAULT_GROUPING_BY_NAME.forEach(billingFieldMapping::putIfAbsent);
-        return facets.entrySet().stream()
-                .filter(e -> billingFieldMapping.containsKey(e.getKey()))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return fields.stream().filter(billingFieldMapping::containsKey).collect(Collectors.toSet());
     }
 
     private QueryBuilder getFacetedQuery(final Map<String, List<String>> filters) {

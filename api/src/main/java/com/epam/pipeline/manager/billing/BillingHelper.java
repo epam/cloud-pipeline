@@ -136,6 +136,7 @@ public class BillingHelper {
         return billingIndicesMonthlyPattern;
     }
 
+    // TODO rewrite to get only year indices (it will be enough to get all available fields)
     public String allBillingIndicesPattern() {
         return billingIndicesPattern;
     }
