@@ -10,11 +10,11 @@ import java.util.stream.Stream;
 
 public interface LowLevelBillingLoader<B> {
 
-    Stream<B> billings(final RestHighLevelClient client,
-                       final String[] indices,
-                       final LocalDate from,
-                       final LocalDate to,
-                       final Map<String, List<String>> filters,
-                       final BillingDiscount discount,
-                       final int pageSize);
+    Stream<B> billings(RestHighLevelClient client,
+                       String[] indices,
+                       LocalDate from,
+                       LocalDate to,
+                       Map<String, List<String>> filters,
+                       BillingDiscount discount,
+                       int pageSize);
 }

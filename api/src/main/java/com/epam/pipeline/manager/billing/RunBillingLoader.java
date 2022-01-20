@@ -83,7 +83,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                            final Map<String, List<String>> filters,
                                            final BillingDiscount discount,
                                            final int pageSize) {
-            return StreamUtils.from(iterator(client, indices, from, to, filters, discount, pageSize))
+            return StreamUtils.from(iterator(client, indices, from, to, filters, pageSize))
                     .flatMap(response -> billings(response, discount));
         }
 
@@ -92,18 +92,16 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                                   final LocalDate from,
                                                   final LocalDate to,
                                                   final Map<String, List<String>> filters,
-                                                  final BillingDiscount discount,
                                                   final int pageSize) {
             return new ElasticDocumentsIterator(pageSize,
-                    searchAfter -> getRequest(indices, from, to, filters, discount, searchAfter, pageSize),
-                    billingHelper.searchWith(client));
+                searchAfter -> getRequest(indices, from, to, filters, searchAfter, pageSize),
+                billingHelper.searchWith(client));
         }
 
         private SearchRequest getRequest(final String[] indices,
                                          final LocalDate from,
                                          final LocalDate to,
                                          final Map<String, List<String>> filters,
-                                         final BillingDiscount discount,
                                          final Object[] searchAfter,
                                          final int pageSize) {
             final SearchSourceBuilder source = new SearchSourceBuilder()
@@ -160,7 +158,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                            final BillingDiscount discount,
                                            final int pageSize) {
             return StreamUtils.from(iterator(client, indices, from, to, filters, discount, pageSize))
-                    .flatMap(documents -> billings(documents, discount));
+                    .flatMap(documents -> billings(documents));
         }
 
         private Iterator<SearchResponse> iterator(final RestHighLevelClient client,
@@ -171,9 +169,9 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                                   final BillingDiscount discount,
                                                   final int pageSize) {
             return new ElasticMultiBucketsIterator(BillingUtils.RUN_ID_FIELD, pageSize,
-                    pageOffset -> getRequest(indices, from, to, filters, discount, pageOffset, pageSize),
-                    billingHelper.searchWith(client),
-                    billingHelper::getTerms);
+                pageOffset -> getRequest(indices, from, to, filters, discount, pageOffset, pageSize),
+                billingHelper.searchWith(client),
+                billingHelper::getTerms);
         }
 
         private SearchRequest getRequest(final String[] indices,
@@ -197,7 +195,7 @@ public class RunBillingLoader implements BillingLoader<RunBilling> {
                                     .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
         }
 
-        private Stream<RunBilling> billings(final SearchResponse response, final BillingDiscount discount) {
+        private Stream<RunBilling> billings(final SearchResponse response) {
             return billingHelper.termBuckets(response.getAggregations(), BillingUtils.RUN_ID_FIELD)
                     .map(bucket -> getBilling(bucket.getKeyAsString(), bucket.getAggregations()));
         }

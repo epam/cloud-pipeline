@@ -292,8 +292,12 @@ public class BillingManager {
 
     private String[] intervalIndicesBetween(final LocalDate from, final LocalDate to,
                                             final DateHistogramInterval interval) {
-        if (interval.equals(DateHistogramInterval.DAY)) return billingIndexHelper.dailyIndicesBetween(from, to);
-        if (interval.equals(DateHistogramInterval.MONTH)) return billingIndexHelper.monthlyIndicesBetween(from, to);
+        if (interval.equals(DateHistogramInterval.DAY)) {
+            return billingIndexHelper.dailyIndicesBetween(from, to);
+        }
+        if (interval.equals(DateHistogramInterval.MONTH)) {
+            return billingIndexHelper.monthlyIndicesBetween(from, to);
+        }
         throw new IllegalArgumentException(messageHelper.getMessage(
                 MessageConstants.ERROR_BILLING_INTERVAL_NOT_SUPPORTED));
     }

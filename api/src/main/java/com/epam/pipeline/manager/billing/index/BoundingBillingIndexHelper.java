@@ -119,7 +119,7 @@ public class BoundingBillingIndexHelper implements BillingIndexHelper {
     }
 
     private Stream<String> indices() {
-        try (final RestHighLevelClient client = elasticHelper.buildClient()) {
+        try (RestHighLevelClient client = elasticHelper.buildClient()) {
             final GetIndexRequest request = new GetIndexRequest(commonIndexPrefix + BillingUtils.ES_WILDCARD)
                     .indicesOptions(IndicesOptions.strictExpandOpen());
             final GetIndexResponse response = client.indices().get(request, RequestOptions.DEFAULT);

@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+@SuppressWarnings("checkstyle:MagicNumber")
 public class PeriodBillingIndexHelperTest {
 
     private static final String PREFIX = "index-";

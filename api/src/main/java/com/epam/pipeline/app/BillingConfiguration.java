@@ -45,7 +45,8 @@ public class BillingConfiguration {
     @Bean
     @ConditionalOnProperty(value = "billing.index.period.disable", matchIfMissing = true, havingValue = FALSE)
     public BillingIndexHelper periodBillingIndexHelper(final GlobalSearchElasticHelper elasticHelper) {
-        final BillingIndexHelper helper = new PeriodBillingIndexHelper(commonIndexPrefix, runIndexName, storageIndexName);
+        final BillingIndexHelper helper = new PeriodBillingIndexHelper(commonIndexPrefix, runIndexName,
+                storageIndexName);
         return new BoundingBillingIndexHelper(helper, elasticHelper, commonIndexPrefix, runIndexName, storageIndexName);
     }
 
