@@ -37,20 +37,23 @@ const DEFAULT_ERROR_COLOR = '#ff0000';
 const DEFAULT_LINE_COLOR = DEFAULT_TEXT_COLOR;
 
 const Modes = {
-  active: 'active',
-  total: 'total'
+  average: 'average',
+  unique: 'unique'
 };
 
-const AllModes = Object.values(Modes);
+const modes = {
+  [Period.month]: [Modes.average, Modes.unique],
+  [Period.day]: [Modes.average]
+};
 
 const ModeNames = {
-  [Modes.active]: 'Active',
-  [Modes.total]: 'Total'
+  [Modes.average]: 'Average',
+  [Modes.unique]: 'Unique'
 };
 
 const Titles = {
-  [Modes.active]: 'Online users count',
-  [Modes.total]: 'Accumulative users count'
+  [Modes.average]: 'Online users count',
+  [Modes.unique]: 'Total unique users count'
 };
 
 function fetchDataMock (options) {
@@ -340,7 +343,8 @@ class UsersActivityChart extends React.Component {
       period,
       range,
       runner,
-      tooltip: undefined
+      tooltip: undefined,
+      mode: modes[period][0]
     }, () => {
       const setError = (error) => new Promise((resolve) => {
         const {period: requestedPeriod, range: requestedRange} = this.state;
@@ -432,9 +436,13 @@ class UsersActivityChart extends React.Component {
   };
 
   onItemClick = (index, {x, y}) => {
-    const {data = []} = this.state;
+    const {data = [], period, mode} = this.state;
     const info = data[index];
-    if (info) {
+    const clickIsAvalable = (
+      (period === Period.month && mode !== Modes.average) ||
+      period === Period.day
+    );
+    if (info && clickIsAvalable) {
       this.setState({
         tooltip: {
           x,
@@ -459,7 +467,8 @@ class UsersActivityChart extends React.Component {
       pending,
       mode: currentMode,
       labels = [],
-      tooltip
+      tooltip,
+      period = Period.day
     } = this.state;
     const {
       className,
@@ -486,7 +495,7 @@ class UsersActivityChart extends React.Component {
         <div className={styles.modeSwitcher}>
           <Button.Group>
             {
-              AllModes.map(mode => (
+              modes[period].length > 1 && modes[period].map(mode => (
                 <Button
                   key={mode}
                   size="small"
