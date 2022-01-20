@@ -49,6 +49,10 @@ class BaseChart extends React.Component {
             line: {
               tension: 0,
               borderJoinStyle: 'round'
+            },
+            point: {
+              borderWidth: 1,
+              radius: 2
             }
           },
           scales: {
@@ -96,6 +100,10 @@ class BaseChart extends React.Component {
               line: {
                 tension: 0,
                 borderJoinStyle: 'round'
+              },
+              point: {
+                borderWidth: 1,
+                radius: 2
               }
             },
             scales: {

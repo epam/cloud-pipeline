@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {Select} from 'antd';
 import moment from 'moment-timezone';
 import Chart from './base';
-import {colors, labelUtils} from './utils';
+import {labelUtils} from './utils';
 import styles from './cluster-chart.css';
 
 const extractDataSet = (rawDataSet, labels = [], dataEntry, format) => {
@@ -33,7 +33,7 @@ const extractDataSet = (rawDataSet, labels = [], dataEntry, format) => {
   });
 };
 
-const extractDataSets = (rawData, filters, currentCluster) => {
+const extractDataSets = (rawData, filters, currentCluster, colorOptions) => {
   const format = filters.periodType === 'Day' ? 'HH:mm' : 'YYYY-MM-DD';
   const labels = filters.periodType === 'Day'
     ? labelUtils.getDayHours()
@@ -57,7 +57,9 @@ const extractDataSets = (rawData, filters, currentCluster) => {
     datasets: Object.entries(data).map(([label, rawDataSet], index) => ({
       fill: false,
       label,
-      borderColor: colors[index],
+      borderColor: label === 'poolLimit'
+        ? colorOptions.limit
+        : colorOptions.usage,
       data: extractDataSet(rawDataSet, labels, label, format)
     }))
   };
@@ -73,12 +75,14 @@ function ClusterChart ({
   clusterNames,
   onCurrentClusterChange,
   containerStyle,
-  description
+  description,
+  colorOptions
 }) {
   const dataConfiguration = extractDataSets(
     rawData,
     filters,
-    currentCluster
+    currentCluster,
+    colorOptions
   );
   const options = {
     animation: {duration: 0},
@@ -142,7 +146,8 @@ ClusterChart.PropTypes = {
   title: PropTypes.string,
   units: PropTypes.string,
   containerStyle: PropTypes.object,
-  style: PropTypes.object
+  style: PropTypes.object,
+  colorOptions: PropTypes.object
 };
 
 export default ClusterChart;

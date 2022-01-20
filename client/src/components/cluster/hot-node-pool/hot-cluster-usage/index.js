@@ -20,6 +20,7 @@ import OverallClusterChart from './charts/overall-cluster-chart';
 import ClusterChart from './charts/cluster-chart';
 import ControlRow from './controls/control-row';
 import {PERIOD_TYPES} from './controls/period-picker';
+import {colors} from './charts/utils';
 import styles from './hot-cluster-usage.css';
 
 const MOCKED_POOLS_AMOUNT = 4;
@@ -127,6 +128,14 @@ class HotClusterUsage extends React.Component {
     return Object.keys(mockedData);
   }
 
+  get clusterChartColors () {
+    const {currentCluster} = this.state;
+    return {
+      limit: '#ff4d4f',
+      usage: colors[this.clusterNames.indexOf(currentCluster)]
+    };
+  }
+
   onPeriodTypeChange = (key) => {
     const {filters} = this.state;
     if (!key || filters.periodType === key) {
@@ -181,8 +190,10 @@ class HotClusterUsage extends React.Component {
             rawData={mockedData}
             filters={filters}
             onClick={this.onCurrentClusterChange}
+            currentCluster={currentCluster}
             title="All hot node pools usage, %"
             units="%"
+            colors={colors}
           />
           <ClusterChart
             rawData={mockedData}
@@ -193,6 +204,7 @@ class HotClusterUsage extends React.Component {
             title={currentCluster}
             units=" active nodes"
             description="M5.LARGE ON-DEMAND 50GB"
+            colorOptions={this.clusterChartColors}
           />
         </div>
       </div>

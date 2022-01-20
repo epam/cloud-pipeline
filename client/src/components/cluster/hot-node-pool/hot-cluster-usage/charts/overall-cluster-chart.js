@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import Chart from './base';
 import {ChartClickPlugin, ChartHoverCursorPlugin} from './extensions';
-import {colors, labelUtils} from './utils';
+import {labelUtils} from './utils';
 
 const extractDataSet = (rawDataSet, labels = [], format) => {
   return labels.map(label => {
@@ -32,7 +32,7 @@ const extractDataSet = (rawDataSet, labels = [], format) => {
   });
 };
 
-const extractDataSets = (rawData, filters) => {
+const extractDataSets = (rawData, filters, colors, currentCluster) => {
   const format = filters.periodType === 'Day'
     ? 'HH:mm'
     : 'YYYY-MM-DD';
@@ -46,6 +46,8 @@ const extractDataSets = (rawData, filters) => {
       fill: false,
       label,
       borderColor: colors[index],
+      borderWidth: currentCluster === label
+        ? 4 : 1.5,
       data: extractDataSet(rawDataSet, labels, format)
     }))
   };
@@ -54,13 +56,19 @@ const extractDataSets = (rawData, filters) => {
 function OverallClusterChart ({
   title,
   style,
-  showByPoolName,
   filters,
   onClick,
   rawData = {},
-  units
+  units,
+  colors,
+  currentCluster
 }) {
-  const dataConfiguration = extractDataSets(rawData, filters, showByPoolName);
+  const dataConfiguration = extractDataSets(
+    rawData,
+    filters,
+    colors,
+    currentCluster
+  );
   const options = {
     animation: {duration: 0},
     title: {
@@ -114,7 +122,9 @@ OverallClusterChart.PropTypes = {
   }),
   onClick: PropTypes.func,
   title: PropTypes.string,
-  units: PropTypes.string
+  units: PropTypes.string,
+  colors: PropTypes.array,
+  currentCluster: PropTypes.string
 };
 
 export default OverallClusterChart;
