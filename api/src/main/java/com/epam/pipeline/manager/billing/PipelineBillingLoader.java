@@ -38,6 +38,7 @@ import java.util.stream.Stream;
 public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
 
     private final BillingHelper billingHelper;
+    private final BillingSecurityHelper billingSecurityHelper;
     private final BillingIndexHelper billingIndexHelper;
     private final PreferenceManager preferenceManager;
     private final PipelineBillingDetailsLoader pipelineBillingDetailsLoader;
@@ -47,7 +48,7 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
                                             final BillingExportRequest request) {
         final LocalDate from = request.getFrom();
         final LocalDate to = request.getTo();
-        final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
+        final Map<String, List<String>> filters = billingSecurityHelper.getFilters(request.getFilters());
         final BillingDiscount discount = Optional.ofNullable(request.getDiscount()).orElseGet(BillingDiscount::empty);
         return billings(client, from, to, filters, discount, getPageSize());
     }

@@ -1,11 +1,7 @@
 package com.epam.pipeline.manager.billing;
 
 import com.epam.pipeline.entity.search.SearchDocumentType;
-import com.epam.pipeline.entity.user.DefaultRoles;
-import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.exception.search.SearchException;
-import com.epam.pipeline.manager.security.AuthManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -43,17 +39,13 @@ import org.elasticsearch.search.aggregations.pipeline.bucketmetrics.sum.SumBucke
 import org.elasticsearch.search.aggregations.pipeline.bucketsort.BucketSortPipelineAggregationBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +56,6 @@ import java.util.stream.Stream;
 @Service
 public class BillingHelper {
 
-    private final AuthManager authManager;
     private final SumAggregationBuilder costAggregation;
     private final SumAggregationBuilder runUsageAggregation;
     private final TermsAggregationBuilder storageUsageGroupingAggregation;
@@ -73,8 +64,7 @@ public class BillingHelper {
     private final TopHitsAggregationBuilder lastByDateStorageDocAggregation;
     private final TopHitsAggregationBuilder lastByDateDocAggregation;
 
-    public BillingHelper(final AuthManager authManager) {
-        this.authManager = authManager;
+    public BillingHelper() {
         this.costAggregation = AggregationBuilders.sum(BillingUtils.COST_FIELD)
                 .field(BillingUtils.COST_FIELD);
         this.runUsageAggregation = AggregationBuilders.sum(BillingUtils.RUN_USAGE_AGG)
@@ -96,22 +86,6 @@ public class BillingHelper {
         this.lastByDateDocAggregation = AggregationBuilders.topHits(BillingUtils.LAST_BY_DATE_DOC_AGG)
                 .size(1)
                 .sort(BillingUtils.BILLING_DATE_FIELD, SortOrder.DESC);
-    }
-
-    public Map<String, List<String>> getFilters(final Map<String, List<String>> requestedFilters) {
-        final Map<String, List<String>> filters = new HashMap<>(MapUtils.emptyIfNull(requestedFilters));
-        final PipelineUser authorizedUser = authManager.getCurrentUser();
-        if (!hasFullBillingAccess(authorizedUser)) {
-            filters.put(BillingUtils.OWNER_FIELD, Collections.singletonList(authorizedUser.getUserName()));
-        }
-        return filters;
-    }
-
-    private boolean hasFullBillingAccess(final PipelineUser authorizedUser) {
-        return authorizedUser.isAdmin()
-                || authorizedUser.getRoles().stream()
-                .map(Role::getName)
-                .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
     }
 
     public BoolQueryBuilder queryByDateAndFilters(final LocalDate from,

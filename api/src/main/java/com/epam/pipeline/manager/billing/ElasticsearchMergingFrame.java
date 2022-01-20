@@ -81,7 +81,7 @@ public enum ElasticsearchMergingFrame {
         return Stream.iterate(from, date -> date.plusDays(1))
                 .map(this::periodOf)
                 .distinct()
-                .limit(unit().between(from, to) + 1);
+                .limit(unit().between(periodOf(from), periodOf(to)) + 1);
     }
 
     public Stream<ElasticsearchMergingFrame> children() {

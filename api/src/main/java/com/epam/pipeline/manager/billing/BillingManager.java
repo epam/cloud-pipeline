@@ -110,6 +110,7 @@ public class BillingManager {
     private final Map<BillingGrouping, EntityBillingDetailsLoader> billingDetailsLoaders;
 
     private final BillingHelper billingHelper;
+    private final BillingSecurityHelper billingSecurityHelper;
     private final BillingIndexHelper billingIndexHelper;
     private final BillingExportManager billingExportManager;
     private final MessageHelper messageHelper;
@@ -121,6 +122,7 @@ public class BillingManager {
 
     @Autowired
     public BillingManager(final BillingHelper billingHelper,
+                          final BillingSecurityHelper billingSecurityHelper,
                           final BillingIndexHelper billingIndexHelper,
                           final BillingExportManager billingExportManager,
                           final MessageHelper messageHelper,
@@ -130,6 +132,7 @@ public class BillingManager {
                           final @Value("${billing.center.key}") String billingCenterKey,
                           final List<EntityBillingDetailsLoader> billingDetailsLoaders) {
         this.billingHelper = billingHelper;
+        this.billingSecurityHelper = billingSecurityHelper;
         this.billingIndexHelper = billingIndexHelper;
         this.billingExportManager = billingExportManager;
         this.messageHelper = messageHelper;
@@ -160,7 +163,7 @@ public class BillingManager {
             final LocalDate to = request.getTo();
             final BillingGrouping grouping = request.getGrouping();
             final DateHistogramInterval interval = request.getInterval();
-            final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
+            final Map<String, List<String>> filters = billingSecurityHelper.getFilters(request.getFilters());
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
             }
