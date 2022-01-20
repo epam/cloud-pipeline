@@ -50,7 +50,7 @@ public class BillingTemplateDao  extends NamedParameterJdbcDaoSupport {
     public BillingReportTemplate create(final BillingReportTemplate template) {
         final KeyHolder keyHolder = new GeneratedKeyHolder();
         getNamedParameterJdbcTemplate().update(createBillingTemplateQuery,
-                BillingReportTemplateParameters.getParameters(template), keyHolder);
+                BillingReportTemplateParameters.getParameters(template), keyHolder, new String[] { "id" });
         template.setId(keyHolder.getKey().longValue());
         return template;
     }

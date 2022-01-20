@@ -168,25 +168,31 @@ public class BillingManager {
     }
 
     public FacetedSearchResult getAvailableFacets(final BillingChartRequest request) {
-        final Map<String, List<String>> filters = request.getFilters();
-        final FacetedSearchResult facets = searchFacets(filters);
+        final FacetedSearchResult facets = searchFacets(request);
         return FacetedSearchResult.builder().documents(facets.getDocuments())
                 .facets(filterBillingFacets(facets.getFacets()))
                 .totalHits(facets.getTotalHits()).build();
     }
 
-    private FacetedSearchResult searchFacets(Map<String, List<String>> filters) {
+    private FacetedSearchResult searchFacets(BillingChartRequest request) {
         final Set<String> fields = getAvailableElasticDocFieldsFromESMapping();
         final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getFacetedQuery(filters))
+                .query(getFacetedQuery(request.getFilters()))
                 .size(0);
 
         SetUtils.emptyIfNull(fields)
                 .forEach(facet -> addTermAggregationToSource(searchSource, facet));
 
+        final String[] indices;
+        if (request.getFrom() != null && request.getTo() != null) {
+            indices = billingHelper.indicesByDate(request.getFrom(), request.getTo());
+        } else  {
+            indices = Collections.singletonList(billingHelper.allBillingIndicesPattern()).toArray(new String[0]);
+        }
+
         SearchRequest searchRequest = new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(billingHelper.indicesPattern())
+                .indices(indices)
                 .source(searchSource);
 
         try {
@@ -221,7 +227,7 @@ public class BillingManager {
         try {
             GetMappingsResponse fieldMapping = elasticHelper.buildClient().indices()
                     .getMapping(
-                            new GetMappingsRequest().indices(billingHelper.indicesPattern()),
+                            new GetMappingsRequest().indices(billingHelper.allBillingIndicesPattern()),
                             RequestOptions.DEFAULT
                     );
             return fieldMapping.mappings().values()
