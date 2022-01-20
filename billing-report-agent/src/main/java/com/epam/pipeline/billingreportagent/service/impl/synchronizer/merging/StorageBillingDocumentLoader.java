@@ -54,6 +54,7 @@ public class StorageBillingDocumentLoader implements EntityDocumentLoader {
                         .aggregation(billingHelper.aggregateBy(BillingUtils.STORAGE_ID_FIELD)
                                 .size(Integer.MAX_VALUE)
                                 .subAggregation(billingHelper.aggregateCostSum())
+                                .subAggregation(billingHelper.aggregateStorageUsageAvg())
                                 .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
     }
@@ -66,6 +67,7 @@ public class StorageBillingDocumentLoader implements EntityDocumentLoader {
     private EntityDocument getBilling(final String id, final Aggregations aggregations) {
         final Map<String, Object> lastDoc = new HashMap<>(billingHelper.getLastByDateDocFields(aggregations));
         lastDoc.put(BillingUtils.COST_FIELD, billingHelper.getCostSum(aggregations));
+        lastDoc.put(BillingUtils.STORAGE_USAGE_AVG_FIELD, billingHelper.getStorageUsageAvg(aggregations));
         return EntityDocument.builder()
                 .id(id)
                 .fields(lastDoc)

@@ -69,6 +69,7 @@ public final class BillingUtils {
     public static final String TOTAL_STORAGE_USAGE_AGG = "usage_storages";
     public static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     public static final String STORAGE_USAGE_FIELD = "usage_bytes";
+    public static final String STORAGE_USAGE_AVG_FIELD = "usage_bytes_avg";
     public static final String LAST_BY_DATE_DOC_AGG = "last_by_date";
     public static final String DOC_ID_FIELD = "_id";
     public static final String RUN_ID_FIELD = "run_id";
