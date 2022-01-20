@@ -23,6 +23,7 @@ import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidFieldNameMatchingMethodName")
 public class CommonMergingSynchronizer implements ElasticsearchMergingSynchronizer {
 
     private static final String INDEX_TYPE = "_doc";
@@ -81,6 +82,7 @@ public class CommonMergingSynchronizer implements ElasticsearchMergingSynchroniz
         }
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void synchronize(final Temporal period) {
         log.debug("{} - Merging {} period billings...", name(), period);
         final String indexAlias = getIndexName(indexPrefix + indexName, frame.nameOf(period));
