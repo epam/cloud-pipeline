@@ -51,6 +51,7 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("provider", storage.getType())
                 .field("storage_type", billingInfo.getStorageType())
                 .field("usage_bytes", billingInfo.getUsageBytes())
+                .field("usage_bytes_avg", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost())
                 .field("created_date", billingInfo.getDate());
             buildUserContent(container.getOwner(), jsonBuilder);
