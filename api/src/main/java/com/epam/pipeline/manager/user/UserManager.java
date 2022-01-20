@@ -197,6 +197,10 @@ public class UserManager {
                 .collect(Collectors.toList());
     }
 
+    public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
+        return userRepository.findByRoles_NameIn(roleNames);
+    }
+
     public Collection<PipelineUser> loadAllUsers() {
         return userDao.loadAllUsers();
     }

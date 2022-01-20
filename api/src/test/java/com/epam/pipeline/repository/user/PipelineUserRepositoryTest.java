@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.repository.user;
 
+import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.pipeline.run.parameter.RunAccessType;
+import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.user.RunnerSid;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.test.repository.AbstractJpaTest;
@@ -40,12 +42,15 @@ import static org.junit.Assert.assertTrue;
 public class PipelineUserRepositoryTest extends AbstractJpaTest {
     private static final String USER_NAME = "user";
     private static final String ROLE_NAME = "role";
+    private static final String USER_NAME_2 = "user2";
     private static final String SERVICE_ACCOUNT = "service";
 
     @Autowired
     private TestEntityManager entityManager;
     @Autowired
     private UserDao userDao;
+    @Autowired
+    private RoleDao roleDao;
     @Autowired
     private PipelineUserRepository pipelineUserRepository;
 
@@ -67,6 +72,18 @@ public class PipelineUserRepositoryTest extends AbstractJpaTest {
                 .getAllowedRunners();
         assertThat(allowedRunners.size(), is(2));
         allowedRunners.forEach(this::assertSid);
+    }
+
+    @Test
+    @Transactional
+    public void shouldLoadUsersWithRoles() {
+        final Role targetRole = roleDao.createRole(ROLE_NAME);
+        userDao.createUser(getPipelineUser(USER_NAME), Collections.emptyList());
+        userDao.createUser(getPipelineUser(USER_NAME_2), Collections.singletonList(targetRole.getId()));
+
+        final List<PipelineUser> result = pipelineUserRepository.findByRoles_NameIn(
+                Collections.singletonList(targetRole.getName()));
+        assertThat(result.size(), is(1));
     }
 
     private void assertSid(final RunnerSid runnerSid) {

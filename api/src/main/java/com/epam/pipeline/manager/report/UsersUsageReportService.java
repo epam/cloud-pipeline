@@ -73,12 +73,11 @@ public class UsersUsageReportService {
             filter.setTo(DateUtils.nowUTC().toLocalDate());
         }
         Assert.state(!filter.getFrom().isAfter(filter.getTo()), "'from' date must be before 'to' date");
-        if (CollectionUtils.isNotEmpty(filter.getGroups())) {
+        if (CollectionUtils.isNotEmpty(filter.getRoles())) {
             if (Objects.isNull(filter.getUsers())) {
                 filter.setUsers(new HashSet<>());
             }
-            filter.getUsers().addAll(filter.getGroups().stream()
-                    .flatMap(group -> userManager.loadUsersByGroupOrRole(group).stream())
+            filter.getUsers().addAll(userManager.loadUsersByRoles(filter.getRoles()).stream()
                     .map(PipelineUser::getId)
                     .collect(Collectors.toList()));
         }

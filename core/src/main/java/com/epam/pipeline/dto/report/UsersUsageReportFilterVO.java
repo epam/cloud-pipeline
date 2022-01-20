@@ -35,5 +35,5 @@ public class UsersUsageReportFilterVO {
     private LocalDate to;
     private ChronoUnit interval;
     private Set<Long> users;
-    private List<String> groups;
+    private List<String> roles;
 }
