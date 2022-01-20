@@ -16,5 +16,6 @@
 
 import colors from './colors';
 import * as labelUtils from './label-utils';
+import chartEventIntersections from './chart-event-intersections';
 
-export {colors, labelUtils};
+export {colors, labelUtils, chartEventIntersections};

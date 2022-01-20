@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import moment from 'moment-timezone';
 import Chart from './base';
-import {ChartClickPlugin} from './extensions';
+import {ChartClickPlugin, ChartHoverCursorPlugin} from './extensions';
 import {colors, labelUtils} from './utils';
 
 const extractDataSet = (rawDataSet, labels = [], format) => {
@@ -67,17 +67,16 @@ function OverallClusterChart ({
       display: !!title,
       text: title
     },
-    hover: {
-      onHover: function (event) {
-        const point = this.getDatasetAtEvent(event);
-        event.target.style.cursor = point.length && onClick
-          ? 'pointer'
-          : 'default';
-      }
-    },
     plugins: {
       [ChartClickPlugin.id]: {
         handler: onClick ? key => onClick(key) : undefined
+      },
+      [ChartHoverCursorPlugin.id]: {
+        handler: (event, isLineHovered) => {
+          event.native.target.style.cursor = isLineHovered && onClick
+            ? 'pointer'
+            : 'default';
+        }
       }
     }
   };
@@ -100,7 +99,7 @@ function OverallClusterChart ({
         data={dataConfiguration}
         options={options}
         type="line"
-        plugins={[ChartClickPlugin.plugin]}
+        plugins={[ChartClickPlugin.plugin, ChartHoverCursorPlugin.plugin]}
         units={units}
       />
     </div>

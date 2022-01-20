@@ -14,25 +14,34 @@
  * limitations under the License.
  */
 
+import {chartEventIntersections} from '../utils';
+
 const id = 'chart-click-plugin';
 
 const plugin = {
   id,
   beforeEvent: function (chart, event, configuration) {
     const {handler} = configuration;
-    const [nearestActivePoint] = chart.getElementsAtEventForMode(
-      event,
-      'nearest',
-      {intersect: true},
-      false
-    );
-    if (!nearestActivePoint) {
-      return null;
-    }
-    const datasetIndex = nearestActivePoint._datasetIndex;
-    const currentDataset = chart.config.data.datasets[datasetIndex];
-    if (handler && currentDataset && event.type === 'click') {
-      return handler(currentDataset.label);
+    if (event.type === 'click') {
+      const [nearestActivePoint] = chart.getElementsAtEventForMode(
+        event,
+        'nearest',
+        {intersect: true},
+        false
+      );
+      if (nearestActivePoint) {
+        const datasetIndex = nearestActivePoint._datasetIndex;
+        const currentDataset = chart.config.data.datasets[datasetIndex];
+        if (handler && currentDataset) {
+          return handler(currentDataset.label);
+        }
+      } else {
+        const clickIntersections = chartEventIntersections(chart, event);
+        if (clickIntersections.length) {
+          const currentDataset = chart.config.data.datasets[clickIntersections[0].dataIndex];
+          return handler(currentDataset.label);
+        }
+      }
     }
     return null;
   }
