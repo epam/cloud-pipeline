@@ -33,6 +33,10 @@ public class ElasticsearchConfig {
     private int elasticsearchPort;
     @Value("${elasticsearch.client.scheme:http}")
     private String elasticsearchScheme;
+    @Value("${sync.client.connect.timeout.ms:5000}")
+    private int connectTimeout;
+    @Value("${sync.client.socket.timeout.ms:120000}")
+    private int socketTimeout;
 
     @Bean
     public RestHighLevelClient elasticsearchClient() {
@@ -45,7 +49,10 @@ public class ElasticsearchConfig {
     }
 
     private RestClientBuilder getRestClientBuilder() {
-        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme));
+        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, elasticsearchScheme))
+                .setRequestConfigCallback(config -> config
+                        .setConnectTimeout(connectTimeout)
+                        .setSocketTimeout(socketTimeout))
+                .setMaxRetryTimeoutMillis(socketTimeout);
     }
 }
-
