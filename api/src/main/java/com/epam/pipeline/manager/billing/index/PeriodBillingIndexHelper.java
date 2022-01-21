@@ -3,19 +3,10 @@ package com.epam.pipeline.manager.billing.index;
 import com.epam.pipeline.manager.billing.ElasticsearchMergingFrame;
 import com.epam.pipeline.manager.billing.ElasticsearchMergingFramePeriod;
 import lombok.extern.slf4j.Slf4j;
-import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
-import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 @Slf4j
 public class PeriodBillingIndexHelper implements BillingIndexHelper {
@@ -112,17 +103,5 @@ public class PeriodBillingIndexHelper implements BillingIndexHelper {
                 .filter(period -> period.isBetween(from, to))
                 .findFirst()
                 .orElseGet(() -> new ElasticsearchMergingFramePeriod(ElasticsearchMergingFrame.DAY, from));
-    }
-
-    public Stream<String> indices(final RestHighLevelClient client) {
-        try {
-            final GetIndexRequest request = new GetIndexRequest()
-                    .indices("*")
-                    .indicesOptions(IndicesOptions.strictExpandOpen());
-            final GetIndexResponse response = client.indices().get(request, RequestOptions.DEFAULT);
-            return Arrays.stream(response.getIndices());
-        } catch (IOException e) {
-            throw new ElasticsearchException("Failed to list indices.", e);
-        }
     }
 }
