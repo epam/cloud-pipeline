@@ -75,7 +75,7 @@ public class BillingHelper {
                 .field(BillingUtils.STORAGE_ID_FIELD)
                 .size(Integer.MAX_VALUE)
                 .subAggregation(AggregationBuilders.avg(BillingUtils.SINGLE_STORAGE_USAGE_AGG)
-                        .field(BillingUtils.STORAGE_USAGE_FIELD));
+                        .script(new Script(BillingUtils.STORAGE_USAGE_AVG_SCRIPT)));
         this.storageUsageTotalAggregation = PipelineAggregatorBuilders
                 .sumBucket(BillingUtils.TOTAL_STORAGE_USAGE_AGG,
                         fieldsPath(BillingUtils.STORAGE_GROUPING_AGG, BillingUtils.SINGLE_STORAGE_USAGE_AGG));
@@ -183,7 +183,7 @@ public class BillingHelper {
 
     public AvgAggregationBuilder aggregateStorageUsageAvg() {
         return AggregationBuilders.avg(BillingUtils.STORAGE_USAGE_AGG)
-                .field(BillingUtils.STORAGE_USAGE_FIELD);
+                .script(new Script(BillingUtils.STORAGE_USAGE_AVG_SCRIPT));
     }
 
     public BucketSortPipelineAggregationBuilder aggregateCostSortBucket() {
