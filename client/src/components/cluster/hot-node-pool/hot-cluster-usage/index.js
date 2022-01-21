@@ -151,7 +151,6 @@ class HotClusterUsage extends React.Component {
 
   onPeriodChange = (period) => {
     const {filters} = this.state;
-    console.log('PERIOD', period);
     return this.setState({
       filters: {
         ...filters,

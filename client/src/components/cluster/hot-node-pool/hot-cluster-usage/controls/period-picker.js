@@ -51,14 +51,24 @@ function PeriodPicker ({
       : 'YYYY-MM';
     onPeriodChange && onPeriodChange(moment(date).format(format));
   };
+  const disabledEndDate = (date) => {
+    const dateToCheck = moment(date).startOf('D').add(1, 'D');
+    const dateNow = moment();
+    if (type === PERIOD_TYPES.month) {
+      return dateNow.endOf('M') < dateToCheck;
+    }
+    return dateNow.endOf('D') < dateToCheck;
+  };
   const renderPicker = () => {
     if (type === PERIOD_TYPES.month) {
       return (
         <DatePicker.MonthPicker
           className={styles.periodPicker}
           onChange={onChange}
+          format="MMM YYYY"
           value={moment(filters.period)}
           allowClear={false}
+          disabledDate={disabledEndDate}
         />
       );
     }
@@ -66,8 +76,10 @@ function PeriodPicker ({
       <DatePicker
         className={styles.periodPicker}
         onChange={onChange}
+        format="DD MMM YYYY"
         value={moment(filters.period)}
         allowClear={false}
+        disabledDate={disabledEndDate}
       />
     );
   };

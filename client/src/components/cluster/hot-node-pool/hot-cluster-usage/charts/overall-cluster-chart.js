@@ -35,7 +35,7 @@ const extractDataSet = (rawDataSet, labels = [], format) => {
 const extractDataSets = (rawData, filters, colors, currentCluster) => {
   const format = filters.periodType === 'Day'
     ? 'HH:mm'
-    : 'YYYY-MM-DD';
+    : 'DD MMM';
   const labels = filters.periodType === 'Day'
     ? labelUtils.getDayHours()
     : labelUtils.getMonthDays(filters.period, format);

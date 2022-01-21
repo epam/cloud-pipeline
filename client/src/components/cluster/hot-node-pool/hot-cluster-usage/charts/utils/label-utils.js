@@ -25,7 +25,7 @@ const getMonthDays = (date, format) => {
   const days = moment(date).daysInMonth();
   return Array.from(
     {length: days},
-    (_, i) => moment(`${currentMonth}-${moment(i + 1, 'DD').format('DD')}`, format)
+    (_, i) => moment(`${currentMonth}-${moment(i + 1, 'DD').format('DD')}`)
       .format(format)
   );
 };
