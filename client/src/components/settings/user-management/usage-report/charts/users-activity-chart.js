@@ -241,7 +241,7 @@ Chart.propTypes = {
 
 class UsersActivityChart extends React.Component {
   state = {
-    mode: Modes.active,
+    mode: Modes.average,
     period: undefined,
     range: undefined,
     pending: false,
@@ -298,9 +298,9 @@ class UsersActivityChart extends React.Component {
   get data () {
     const {
       data = [],
-      mode = Modes.active
+      mode = Modes.average
     } = this.state;
-    return data.map(o => mode === Modes.active ? o.online : o.count);
+    return data.map(o => mode === Modes.average ? o.online : o.count);
   }
 
   componentDidMount () {
