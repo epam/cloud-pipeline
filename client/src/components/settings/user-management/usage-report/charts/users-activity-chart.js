@@ -37,20 +37,25 @@ const DEFAULT_ERROR_COLOR = '#ff0000';
 const DEFAULT_LINE_COLOR = DEFAULT_TEXT_COLOR;
 
 const Modes = {
-  active: 'active',
-  total: 'total'
+  average: 'average',
+  unique: 'unique'
 };
 
-const AllModes = Object.values(Modes);
+const DEFAULT_MODE = [Modes.average];
+
+const modes = {
+  [Period.month]: [Modes.average, Modes.unique],
+  [Period.day]: [Modes.average]
+};
 
 const ModeNames = {
-  [Modes.active]: 'Active',
-  [Modes.total]: 'Total'
+  [Modes.average]: 'Average',
+  [Modes.unique]: 'Unique'
 };
 
 const Titles = {
-  [Modes.active]: 'Online users count',
-  [Modes.total]: 'Accumulative users count'
+  [Modes.average]: 'Online users count',
+  [Modes.unique]: 'Total unique users count'
 };
 
 function fetchDataMock (options) {
@@ -238,7 +243,7 @@ Chart.propTypes = {
 
 class UsersActivityChart extends React.Component {
   state = {
-    mode: Modes.active,
+    mode: Modes.average,
     period: undefined,
     range: undefined,
     pending: false,
@@ -295,9 +300,9 @@ class UsersActivityChart extends React.Component {
   get data () {
     const {
       data = [],
-      mode = Modes.active
+      mode = Modes.average
     } = this.state;
-    return data.map(o => mode === Modes.active ? o.online : o.count);
+    return data.map(o => mode === Modes.average ? o.online : o.count);
   }
 
   componentDidMount () {
@@ -333,6 +338,7 @@ class UsersActivityChart extends React.Component {
       range,
       runner
     } = filters;
+    const periodHasModes = modes[period] && modes[period].length;
     this.setState({
       pending: true,
       data: [],
@@ -340,7 +346,8 @@ class UsersActivityChart extends React.Component {
       period,
       range,
       runner,
-      tooltip: undefined
+      tooltip: undefined,
+      mode: periodHasModes ? modes[period][0] : DEFAULT_MODE
     }, () => {
       const setError = (error) => new Promise((resolve) => {
         const {period: requestedPeriod, range: requestedRange} = this.state;
@@ -432,9 +439,13 @@ class UsersActivityChart extends React.Component {
   };
 
   onItemClick = (index, {x, y}) => {
-    const {data = []} = this.state;
+    const {data = [], period, mode} = this.state;
     const info = data[index];
-    if (info) {
+    const clickIsAvalable = (
+      (period === Period.month && mode !== Modes.average) ||
+      period === Period.day
+    );
+    if (info && clickIsAvalable) {
       this.setState({
         tooltip: {
           x,
@@ -459,8 +470,10 @@ class UsersActivityChart extends React.Component {
       pending,
       mode: currentMode,
       labels = [],
-      tooltip
+      tooltip,
+      period = Period.day
     } = this.state;
+    const availableModes = modes[period] || DEFAULT_MODE;
     const {
       className,
       style
@@ -486,7 +499,7 @@ class UsersActivityChart extends React.Component {
         <div className={styles.modeSwitcher}>
           <Button.Group>
             {
-              AllModes.map(mode => (
+              availableModes.length > 1 && availableModes.map(mode => (
                 <Button
                   key={mode}
                   size="small"
