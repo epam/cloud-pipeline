@@ -41,6 +41,8 @@ const Modes = {
   unique: 'unique'
 };
 
+const DEFAULT_MODE = [Modes.average];
+
 const modes = {
   [Period.month]: [Modes.average, Modes.unique],
   [Period.day]: [Modes.average]
@@ -336,6 +338,7 @@ class UsersActivityChart extends React.Component {
       range,
       runner
     } = filters;
+    const periodHasModes = modes[period] && modes[period].length;
     this.setState({
       pending: true,
       data: [],
@@ -344,7 +347,7 @@ class UsersActivityChart extends React.Component {
       range,
       runner,
       tooltip: undefined,
-      mode: modes[period][0]
+      mode: periodHasModes ? modes[period][0] : DEFAULT_MODE
     }, () => {
       const setError = (error) => new Promise((resolve) => {
         const {period: requestedPeriod, range: requestedRange} = this.state;
@@ -470,6 +473,7 @@ class UsersActivityChart extends React.Component {
       tooltip,
       period = Period.day
     } = this.state;
+    const availableModes = modes[period] || DEFAULT_MODE;
     const {
       className,
       style
@@ -495,7 +499,7 @@ class UsersActivityChart extends React.Component {
         <div className={styles.modeSwitcher}>
           <Button.Group>
             {
-              modes[period].length > 1 && modes[period].map(mode => (
+              availableModes.length > 1 && availableModes.map(mode => (
                 <Button
                   key={mode}
                   size="small"
