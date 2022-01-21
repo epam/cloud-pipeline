@@ -130,21 +130,21 @@ public class ElasticsearchAgentService {
     private CompletableFuture<Void> sync(final LocalDateTime from, final LocalDateTime to,
                                          final ElasticsearchSynchronizer synchronizer) {
         return CompletableFuture.runAsync(() -> {
-                    final LocalDateTime startSyncTime = DateUtils.nowUTC();
-                    log.debug("Synchronizer {} starts work at {} ", synchronizer.name(), startSyncTime);
-                    synchronizer.synchronize(from, to);
-                    final LocalDateTime stopSyncTime = DateUtils.nowUTC();
-                    log.debug("Synchronizer {} stops work at {}. Duration is {} seconds.",
-                            synchronizer.name(),
-                            stopSyncTime,
-                            Duration.between(startSyncTime, stopSyncTime)
-                                    .abs()
-                                    .getSeconds());
-                }, executor)
-                .exceptionally(throwable -> {
-                    log.warn("Synchronizer {} fails work at {}.", synchronizer.name(), DateUtils.nowUTC(), throwable);
-                    return null;
-                });
+            final LocalDateTime startSyncTime = DateUtils.nowUTC();
+            log.debug("Synchronizer {} starts work at {} ", synchronizer.name(), startSyncTime);
+            synchronizer.synchronize(from, to);
+            final LocalDateTime stopSyncTime = DateUtils.nowUTC();
+            log.debug("Synchronizer {} stops work at {}. Duration is {} seconds.",
+                    synchronizer.name(),
+                    stopSyncTime,
+                    Duration.between(startSyncTime, stopSyncTime)
+                            .abs()
+                            .getSeconds());
+        }, executor)
+        .exceptionally(throwable -> {
+            log.warn("Synchronizer {} fails work at {}.", synchronizer.name(), DateUtils.nowUTC(), throwable);
+            return null;
+        });
     }
 
     private CompletableFuture<Void> merge(final LocalDateTime from, final LocalDateTime to) {
@@ -154,10 +154,10 @@ public class ElasticsearchAgentService {
                 .stream()
                 .sorted(Map.Entry.comparingByKey(ElasticsearchMergingFrame.comparingByDuration()))
                 .reduce(CompletableFuture.runAsync(() -> log.debug("Starting MERGE phase..."), executor),
-                        (phase, entry) ->
-                                phase.thenComposeAsync(nothing ->
-                                        merge(from, to, entry.getValue(), entry.getKey()), executor),
-                        CompletableFuture::allOf)
+                    (phase, entry) ->
+                            phase.thenComposeAsync(nothing ->
+                                    merge(from, to, entry.getValue(), entry.getKey()), executor),
+                    CompletableFuture::allOf)
                 .thenRunAsync(() -> log.debug("Finished MERGE phase."), executor);
     }
 

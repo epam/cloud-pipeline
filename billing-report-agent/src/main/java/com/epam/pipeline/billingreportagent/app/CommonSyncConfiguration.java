@@ -296,7 +296,8 @@ public class CommonSyncConfiguration {
             @Value("${sync.storage.azure-netapp.tier:Standard}") final String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-                new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
+                new StoragePricingService(new AzureNetAppStoragePriceListLoader(regionLoader, rawRateCardPriceLoader,
+                        rawEAPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                 commonIndexPrefix,
                 storageIndexName,
@@ -328,7 +329,8 @@ public class CommonSyncConfiguration {
             @Value("${sync.storage.azure-files.tier:Cool LRS}") final String storageTier) {
         final StorageBillingMapper mapper = new StorageBillingMapper(SearchDocumentType.NFS_STORAGE, billingCenterKey);
         final StoragePricingService pricingService =
-            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, rawRateCardPriceLoader, rawEAPriceLoader, storageTier));
+            new StoragePricingService(new AzureFilesStoragePriceListLoader(regionLoader, rawRateCardPriceLoader,
+                    rawEAPriceLoader, storageTier));
         return new StorageSynchronizer(storageMapping,
                                        commonIndexPrefix,
                                        storageIndexName,
