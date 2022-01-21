@@ -26,6 +26,7 @@ const LABEL_STRING = {
   poolLimit: 'Pool limit',
   poolUsage: 'Pool usage'
 };
+const BACKGROUND_OPACITY_PERCENT = 15;
 
 const extractDataSet = (rawDataSet, labels = [], dataEntry, format) => {
   return labels.map(label => {
@@ -60,7 +61,10 @@ const extractDataSets = (rawData, filters, currentCluster, colorOptions) => {
   return {
     labels,
     datasets: Object.entries(data).map(([datasetLabel, rawDataSet], index) => ({
-      fill: false,
+      fill: datasetLabel === 'poolUsage',
+      backgroundColor: datasetLabel === 'poolUsage'
+        ? `${colorOptions.usage}${BACKGROUND_OPACITY_PERCENT}`
+        : undefined,
       label: LABEL_STRING[datasetLabel],
       borderColor: datasetLabel === 'poolLimit'
         ? colorOptions.limit

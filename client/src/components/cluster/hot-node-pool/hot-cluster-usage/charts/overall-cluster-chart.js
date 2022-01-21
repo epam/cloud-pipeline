@@ -21,6 +21,8 @@ import Chart from './base';
 import {ChartClickPlugin, ChartHoverCursorPlugin} from './extensions';
 import {labelUtils} from './utils';
 
+const BACKGROUND_OPACITY_PERCENT = 15;
+
 const extractDataSet = (rawDataSet, labels = [], format) => {
   return labels.map(label => {
     const current = rawDataSet
@@ -32,7 +34,13 @@ const extractDataSet = (rawDataSet, labels = [], format) => {
   });
 };
 
-const extractDataSets = (rawData, filters, colors, currentCluster) => {
+const extractDataSets = (
+  rawData,
+  filters,
+  colors,
+  currentCluster,
+  hiddenDatasets = []
+) => {
   const format = filters.periodType === 'Day'
     ? 'HH:mm'
     : 'DD MMM';
@@ -43,8 +51,14 @@ const extractDataSets = (rawData, filters, colors, currentCluster) => {
   return {
     labels: labels,
     datasets: dataEntries.map(([label, rawDataSet], index) => ({
-      fill: false,
+      fill: currentCluster === label,
+      backgroundColor: currentCluster === label
+        ? `${colors[index]}${BACKGROUND_OPACITY_PERCENT}`
+        : undefined,
       label,
+      ...(hiddenDatasets && hiddenDatasets.length && {
+        hidden: hiddenDatasets.includes(label)
+      }),
       borderColor: colors[index],
       borderWidth: currentCluster === label
         ? 4 : 1.5,
@@ -61,19 +75,27 @@ function OverallClusterChart ({
   rawData = {},
   units,
   colors,
-  currentCluster
+  currentCluster,
+  onToggleDataset,
+  hiddenDatasets
 }) {
   const dataConfiguration = extractDataSets(
     rawData,
     filters,
     colors,
-    currentCluster
+    currentCluster,
+    hiddenDatasets
   );
   const options = {
     animation: {duration: 0},
     title: {
       display: !!title,
       text: title
+    },
+    legend: {
+      ...(onToggleDataset && {
+        onClick: onToggleDataset
+      })
     },
     plugins: {
       [ChartClickPlugin.id]: {
@@ -124,7 +146,9 @@ OverallClusterChart.PropTypes = {
   title: PropTypes.string,
   units: PropTypes.string,
   colors: PropTypes.array,
-  currentCluster: PropTypes.string
+  currentCluster: PropTypes.string,
+  onToggleDataset: PropTypes.func,
+  hiddenDatasets: PropTypes.arrayOf(PropTypes.string)
 };
 
 export default OverallClusterChart;

@@ -23,6 +23,7 @@
   position: absolute;
   top: 10px;
   width: 100%;
+  user-select: none;
 }
 
 .selector {

@@ -100,6 +100,7 @@ class HotClusterUsage extends React.Component {
       periodType: PERIOD_TYPES.day,
       period: moment().format('YYYY-MM-DD')
     },
+    hiddenPools: [],
     currentCluster: null
   }
 
@@ -167,11 +168,23 @@ class HotClusterUsage extends React.Component {
     return null;
   };
 
+  toggleHiddenPools = (event, {text}) => {
+    const {hiddenPools} = this.state;
+    if (!text) {
+      return null;
+    }
+    if (!hiddenPools.includes(text)) {
+      return this.setState({hiddenPools: [...hiddenPools, text]});
+    }
+    return this.setState({hiddenPools: hiddenPools.filter(pool => pool !== text)});
+  };
+
   render () {
     const {
       filters,
       currentCluster,
-      mockedData
+      mockedData,
+      hiddenPools
     } = this.state;
     if (!mockedData) {
       return null;
@@ -193,6 +206,8 @@ class HotClusterUsage extends React.Component {
             title="All hot node pools usage, %"
             units="%"
             colors={colors}
+            onToggleDataset={this.toggleHiddenPools}
+            hiddenDatasets={hiddenPools}
           />
           <ClusterChart
             rawData={mockedData}
