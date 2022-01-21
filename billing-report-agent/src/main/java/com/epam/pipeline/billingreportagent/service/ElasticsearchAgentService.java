@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.billingreportagent.service;
 
+import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.apache.commons.lang3.StringUtils;
@@ -29,7 +30,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,7 +52,7 @@ public class ElasticsearchAgentService {
     private static final String DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(DATE_PATTERN);
 
-    private final ExecutorService elasticsearchAgentThreadPool;
+    private final ExecutorService executor;
     private final Set<ElasticsearchDailySynchronizer> dailySynchronizers;
     private final Set<ElasticsearchMergingSynchronizer> mergingSynchronizers;
     private final String lastSynchronizationTimeFilePath;
@@ -64,7 +64,7 @@ public class ElasticsearchAgentService {
                                      final @Value("${sync.last.synchronization.file}")
                                          String lastSynchronizationTimeFilePath,
                                      final @Value("${sync.billing.initial.date:}") String startDateStringValue) {
-        this.elasticsearchAgentThreadPool = elasticsearchAgentThreadPool;
+        this.executor = elasticsearchAgentThreadPool;
         this.dailySynchronizers = dailySynchronizers.orElse(Collections.emptySet());
         this.mergingSynchronizers = mergingSynchronizers.orElse(Collections.emptySet());
         this.lastSynchronizationTimeFilePath = lastSynchronizationTimeFilePath;
@@ -81,22 +81,18 @@ public class ElasticsearchAgentService {
      */
     @Scheduled(cron = "${sync.billing.schedule}")
     public void startElasticsearchAgent() {
-        log.debug("Start synchronising billing data...");
+        final LocalDateTime from = getLastSyncTime();
+        final LocalDateTime to = DateUtils.nowUTC();
         try {
-            final LocalDateTime from = getLastSyncTime();
-            final LocalDateTime to = LocalDateTime.now(Clock.systemUTC());
-            sync(from, to)
-                    .thenComposeAsync(ignored -> merge(from, to))
+            CompletableFuture.runAsync(() -> log.debug("Start synchronising billing data..."), executor)
+                    .thenComposeAsync(nothing -> sync(from, to), executor)
+                    .thenComposeAsync(nothing -> merge(from, to), executor)
+                    .thenRunAsync(() -> persistCurrentSyncTimestamp(to), executor)
+                    .thenRunAsync(() -> log.debug("Finished billing data synchronization..."), executor)
                     .get();
-            Files.write(Paths.get(lastSynchronizationTimeFilePath),
-                        (to.toString() + System.lineSeparator()).getBytes(),
-                        StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-            log.debug("Finished billing data synchronization...");
-        } catch (IOException | InterruptedException | ExecutionException e) {
-            log.error("An error occurred synchronization: {}", e.getMessage());
-            log.error(e.getMessage(), e);
+        } catch (InterruptedException | ExecutionException e) {
+            log.error("An error occurred during synchronization: {}", e.getMessage(), e);
         }
-
         log.debug("Stop Elasticsearch agent.");
     }
 
@@ -124,60 +120,64 @@ public class ElasticsearchAgentService {
     }
 
     private CompletableFuture<Void> sync(final LocalDateTime from, final LocalDateTime to) {
-        final CompletableFuture<Void> phase = CompletableFuture.runAsync(
-                () -> log.debug("Starting synchronization phase..."),
-                elasticsearchAgentThreadPool);
-        return CompletableFuture.allOf(dailySynchronizers.stream()
-                        .map(synchronizer -> sync(from, to, synchronizer, phase))
-                        .toArray(CompletableFuture[]::new))
-                .thenRunAsync(() -> log.debug("Finished synchronization phase."));
+        return CompletableFuture.runAsync(() -> log.debug("Starting SYNC phase..."), executor)
+                .thenComposeAsync(nothing -> CompletableFuture.allOf(dailySynchronizers.stream()
+                        .map(synchronizer -> sync(from, to, synchronizer))
+                        .toArray(CompletableFuture[]::new)))
+                .thenRunAsync(() -> log.debug("Finished SYNC phase."), executor);
     }
 
     private CompletableFuture<Void> sync(final LocalDateTime from, final LocalDateTime to,
-                                         final ElasticsearchSynchronizer synchronizer,
-                                         final CompletableFuture<Void> phase) {
-        return phase.thenRunAsync(() -> {
-                    final LocalDateTime startSyncTime = LocalDateTime.now(Clock.systemUTC());
+                                         final ElasticsearchSynchronizer synchronizer) {
+        return CompletableFuture.runAsync(() -> {
+                    final LocalDateTime startSyncTime = DateUtils.nowUTC();
                     log.debug("Synchronizer {} starts work at {} ", synchronizer.name(), startSyncTime);
                     synchronizer.synchronize(from, to);
+                    final LocalDateTime stopSyncTime = DateUtils.nowUTC();
                     log.debug("Synchronizer {} stops work at {}. Duration is {} seconds.",
                             synchronizer.name(),
-                            LocalDateTime.now(Clock.systemUTC()),
-                            Duration.between(startSyncTime, LocalDateTime.now(Clock.systemUTC()))
+                            stopSyncTime,
+                            Duration.between(startSyncTime, stopSyncTime)
                                     .abs()
                                     .getSeconds());
-                })
+                }, executor)
                 .exceptionally(throwable -> {
-                    log.warn("Exception while trying to send data to Elasticsearch service", throwable);
-                    log.debug("Synchronizer {} stops work at {}.", synchronizer.name(),
-                            LocalDateTime.now(Clock.systemUTC()));
+                    log.warn("Synchronizer {} fails work at {}.", synchronizer.name(), DateUtils.nowUTC(), throwable);
                     return null;
                 });
     }
 
     private CompletableFuture<Void> merge(final LocalDateTime from, final LocalDateTime to) {
-        final CompletableFuture<Void> phase = CompletableFuture.runAsync(
-                () -> log.debug("Starting merging phase..."),
-                elasticsearchAgentThreadPool);
         return mergingSynchronizers.stream()
                 .collect(Collectors.groupingBy(ElasticsearchMergingSynchronizer::frame, Collectors.toList()))
                 .entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey(ElasticsearchMergingFrame.comparingByDuration()))
-                .reduce(phase, (future, entry) -> merge(from, to, entry.getValue(), entry.getKey(), future),
+                .reduce(CompletableFuture.runAsync(() -> log.debug("Starting MERGE phase..."), executor),
+                        (phase, entry) ->
+                                phase.thenComposeAsync(nothing ->
+                                        merge(from, to, entry.getValue(), entry.getKey()), executor),
                         CompletableFuture::allOf)
-                .thenRunAsync(() -> log.debug("Finished merging phase."));
+                .thenRunAsync(() -> log.debug("Finished MERGE phase."), executor);
     }
 
     private CompletableFuture<Void> merge(final LocalDateTime from, final LocalDateTime to,
                                           final List<ElasticsearchMergingSynchronizer> mergers,
-                                          final ElasticsearchMergingFrame frame,
-                                          final CompletableFuture<Void> phase) {
-        final CompletableFuture<Void> stage = phase
-                .thenRunAsync(() -> log.debug("Starting {} merging stage...", frame));
-        return CompletableFuture.allOf(mergers.stream()
-                        .map(synchronizer -> sync(from, to, synchronizer, stage))
-                        .toArray(CompletableFuture[]::new))
-                .thenRunAsync(() -> log.debug("Finished {} merging stage.", frame));
+                                          final ElasticsearchMergingFrame frame) {
+        return CompletableFuture.runAsync(() -> log.debug("Starting MERGE {} stage...", frame), executor)
+                .thenComposeAsync(nothing -> CompletableFuture.allOf(mergers.stream()
+                        .map(synchronizer -> sync(from, to, synchronizer))
+                        .toArray(CompletableFuture[]::new)))
+                .thenRunAsync(() -> log.debug("Finished MERGE {} stage.", frame), executor);
+    }
+
+    private void persistCurrentSyncTimestamp(final LocalDateTime to) {
+        try {
+            Files.write(Paths.get(lastSynchronizationTimeFilePath),
+                    (to.toString() + System.lineSeparator()).getBytes(),
+                    StandardOpenOption.APPEND, StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            log.error("An error occurred during current sync timestamp persisting: {}", e.getMessage(), e);
+        }
     }
 }
