@@ -35,7 +35,7 @@ public class StorageBillingDocumentLoader implements EntityDocumentLoader {
     }
 
     private Iterator<SearchResponse> iterator(final LocalDate from, final LocalDate to, final String[] indices) {
-        return new ElasticMultiBucketsIterator(BillingUtils.RUN_ID_FIELD, pageSize,
+        return new ElasticMultiBucketsIterator(BillingUtils.STORAGE_ID_FIELD, pageSize,
             pageOffset -> getRequest(from, to, indices, pageOffset, pageSize),
             client::search,
             billingHelper::getTerms);
