@@ -201,7 +201,7 @@ class HotClusterUsage extends React.Component {
             onCurrentClusterChange={this.onCurrentClusterChange}
             clusterNames={this.clusterNames}
             filters={filters}
-            title={currentCluster}
+            displayEmptyTitleRow
             units=" active nodes"
             description="M5.LARGE ON-DEMAND 50GB"
             colorOptions={this.clusterChartColors}

@@ -16,8 +16,28 @@
 
 .container {
   display: flex;
-  flex-direction: column;
-  width: 50%;
-  height: 450px;
-  margin-left: 5px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  position: absolute;
+  top: 10px;
+  width: 100%;
+}
+
+.selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: #108ee9;
+  cursor: pointer;
+}
+
+.selector-value {
+  font-size: small;
+}
+
+.description {
+  margin-left: 20px;
+  font-weight: bold;
 }

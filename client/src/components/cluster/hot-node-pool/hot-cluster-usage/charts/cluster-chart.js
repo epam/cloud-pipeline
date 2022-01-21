@@ -16,11 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Select} from 'antd';
 import moment from 'moment-timezone';
 import Chart from './base';
+import PoolSelector from '../controls/pool-selector';
 import {labelUtils} from './utils';
 import styles from './cluster-chart.css';
+
+const LABEL_STRING = {
+  poolLimit: 'Pool limit',
+  poolUsage: 'Pool usage'
+};
 
 const extractDataSet = (rawDataSet, labels = [], dataEntry, format) => {
   return labels.map(label => {
@@ -54,13 +59,13 @@ const extractDataSets = (rawData, filters, currentCluster, colorOptions) => {
   });
   return {
     labels,
-    datasets: Object.entries(data).map(([label, rawDataSet], index) => ({
+    datasets: Object.entries(data).map(([datasetLabel, rawDataSet], index) => ({
       fill: false,
-      label,
-      borderColor: label === 'poolLimit'
+      label: LABEL_STRING[datasetLabel],
+      borderColor: datasetLabel === 'poolLimit'
         ? colorOptions.limit
         : colorOptions.usage,
-      data: extractDataSet(rawDataSet, labels, label, format)
+      data: extractDataSet(rawDataSet, labels, datasetLabel, format)
     }))
   };
 };
@@ -76,7 +81,8 @@ function ClusterChart ({
   onCurrentClusterChange,
   containerStyle,
   description,
-  colorOptions
+  colorOptions,
+  displayEmptyTitleRow
 }) {
   const dataConfiguration = extractDataSets(
     rawData,
@@ -87,8 +93,8 @@ function ClusterChart ({
   const options = {
     animation: {duration: 0},
     title: {
-      display: !!title,
-      text: title
+      display: !!title || displayEmptyTitleRow,
+      text: displayEmptyTitleRow ? '' : title
     }
   };
   return (
@@ -96,25 +102,6 @@ function ClusterChart ({
       className={styles.container}
       style={containerStyle}
     >
-      <div className={styles.chartHeader}>
-        <Select
-          value={currentCluster}
-          onChange={onCurrentClusterChange}
-          className={styles.poolSelect}
-        >
-          {clusterNames.map(clusterName => (
-            <Select.Option
-              value={clusterName}
-              key={clusterName}
-            >
-              {clusterName}
-            </Select.Option>
-          ))}
-        </Select>
-        <span className={styles.chartDescription}>
-          {description}
-        </span>
-      </div>
       <div
         style={
           Object.assign(
@@ -128,6 +115,12 @@ function ClusterChart ({
           options={options}
           type="line"
           units={units}
+        />
+        <PoolSelector
+          value={currentCluster}
+          clusterNames={clusterNames}
+          onChange={onCurrentClusterChange}
+          description={description}
         />
       </div>
     </div>
@@ -147,7 +140,8 @@ ClusterChart.PropTypes = {
   units: PropTypes.string,
   containerStyle: PropTypes.object,
   style: PropTypes.object,
-  colorOptions: PropTypes.object
+  colorOptions: PropTypes.object,
+  displayEmptyTitleRow: PropTypes.bool
 };
 
 export default ClusterChart;

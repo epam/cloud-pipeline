@@ -18,6 +18,9 @@ const INTERSECTION_DISTANCE = 12;
 
 const getElementsAtXQuadrant = (chart, event) => {
   const elementsAtX = chart.getElementsAtXAxis(event);
+  if (!elementsAtX || elementsAtX.length === 0) {
+    return null;
+  }
   const isLeftHalfClick = elementsAtX[0]._view.x - event.x < 0;
   const datasetsInfo = elementsAtX.map(dataset => ({
     nextIndex: isLeftHalfClick ? dataset._index + 1 : dataset._index,
@@ -72,9 +75,12 @@ const getInterpolatedCoordsAtX = (elements, event) => {
 
 const chartEventIntersections = (chart, event) => {
   if (!chart || !event) {
-    return undefined;
+    return [];
   }
   const XQuadrantElements = getElementsAtXQuadrant(chart, event);
+  if (!XQuadrantElements) {
+    return [];
+  }
   const coords = getInterpolatedCoordsAtX(XQuadrantElements, event);
   if (coords && coords.length) {
     return (getInterpolatedCoordsAtX(XQuadrantElements, event) || [])
