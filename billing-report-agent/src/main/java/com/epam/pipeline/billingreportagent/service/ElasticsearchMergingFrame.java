@@ -18,22 +18,22 @@ import java.util.stream.Stream;
 public enum ElasticsearchMergingFrame {
 
     DAY(ChronoUnit.DAYS,
-            LocalDate::from,
-            LocalDate::from,
-            LocalDate::from,
-            date -> DateTimeFormatter.ofPattern("yyyy-MM-dd").format(date)),
+        LocalDate::from,
+        LocalDate::from,
+        LocalDate::from,
+        date -> DateTimeFormatter.ofPattern("yyyy-MM-dd").format(date)),
 
     MONTH(ChronoUnit.MONTHS,
-            YearMonth::from,
-            ym -> YearMonth.from(ym).atDay(1),
-            ym -> YearMonth.from(ym).atEndOfMonth(),
-            ym -> DateTimeFormatter.ofPattern("yyyy-MM'm'").format(ym)),
+        YearMonth::from,
+        ym -> YearMonth.from(ym).atDay(1),
+        ym -> YearMonth.from(ym).atEndOfMonth(),
+        ym -> DateTimeFormatter.ofPattern("yyyy-MM'm'").format(ym)),
 
     YEAR(ChronoUnit.YEARS,
-            Year::from,
-            y -> Year.from(y).atDay(1),
-            y -> Year.from(y).atDay(Year.from(y).length()),
-            y -> DateTimeFormatter.ofPattern("yyyy'y'").format(y));
+        Year::from,
+        y -> Year.from(y).atDay(1),
+        y -> Year.from(y).atDay(Year.from(y).length()),
+        y -> DateTimeFormatter.ofPattern("yyyy'y'").format(y));
 
     private static final Comparator<ElasticsearchMergingFrame> DURATION_COMPARATOR =
             Comparator.comparing(ElasticsearchMergingFrame::unit,

@@ -110,6 +110,8 @@ public final class BillingUtils {
     public static final String PROVIDER_FIELD = "provider";
     public static final String SORT_AGG = "sort";
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
+    public static final String STORAGE_USAGE_AVG_SCRIPT =
+            "doc.containsKey('usage_bytes_avg') ? doc.usage_bytes_avg.value : doc.usage_bytes.value";
 
     private BillingUtils() {
     }
@@ -161,6 +163,10 @@ public final class BillingUtils {
                 .orElse(BigDecimal.ZERO)
                 .divide(BigDecimal.valueOf(divisor), DECIMAL_SCALE, RoundingMode.CEILING)
                 .toString();
+    }
+
+    public static long withDiscount(final int discount, final long cost) {
+        return cost - cost * discount;
     }
 
     private static long tenInPowerOf(final int scale) {
