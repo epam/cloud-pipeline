@@ -51,9 +51,6 @@ dependencies {
     // Spring
     implementation group: "org.springframework.boot", name: "spring-boot-starter", version: springBootVersion
 
-    // DB
-    implementation group: "org.postgresql", name: "postgresql", version: postgresqlVersion
-
     // Logging
     implementation group: "org.apache.logging.log4j", name: "log4j-slf4j-impl", version: log4jVersion
     implementation group: "org.apache.logging.log4j", name: "log4j-api", version: log4jVersion
@@ -70,10 +67,6 @@ dependencies {
 
     // Jackson
     implementation group: "com.fasterxml.jackson.core", name: "jackson-databind", version: jaksonVersion
-
-    //ShedLock
-    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-spring', version: shedlockVersion
-    compile group: 'net.javacrumbs.shedlock', name: 'shedlock-provider-jdbc-template', version: shedlockVersion
 
     // RxJava
     compile group: "io.reactivex.rxjava2", name: "rxjava", version: rxjavaVersion

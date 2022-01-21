@@ -18,7 +18,6 @@ package com.epam.pipeline.monitor.config;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
 import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
-import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,7 +33,6 @@ import java.time.Duration;
 @Configuration
 @EnableScheduling
 @EnableAsync
-@EnableSchedulerLock(interceptMode = EnableSchedulerLock.InterceptMode.PROXY_METHOD, defaultLockAtMostFor = "PT30S")
 public class AppConfiguration implements SchedulingConfigurer {
 
     @Value("${scheduled.pool.size:5}")
