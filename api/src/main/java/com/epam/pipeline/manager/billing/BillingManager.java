@@ -36,11 +36,8 @@ import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
@@ -54,18 +51,12 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.GetMappingsRequest;
-import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.cluster.metadata.MappingMetaData;
 import org.elasticsearch.common.ParseField;
 import org.elasticsearch.common.xcontent.ContextParser;
 import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.rest.action.search.RestSearchAction;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
@@ -80,7 +71,6 @@ import org.elasticsearch.search.aggregations.bucket.histogram.ParsedDateHistogra
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.bucket.terms.StringTerms;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.metrics.sum.ParsedSum;
 import org.elasticsearch.search.aggregations.metrics.sum.SumAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.tophits.ParsedTopHits;
@@ -107,7 +97,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -168,14 +157,8 @@ public class BillingManager {
     }
 
     public FacetedSearchResult getAvailableFacets(BillingChartRequest request) {
-        final Set<String> fields = getAvailableElasticDocFieldsFromESMapping();
-        final Set<String> filteredFields = filterBillingFacets(fields);
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder()
-                .query(getFacetedQuery(request.getFilters()))
-                .size(0);
-
-        SetUtils.emptyIfNull(filteredFields)
-                .forEach(facet -> addTermAggregationToSource(searchSource, facet));
+        final Set<String> filteredFields = filterBillingFacetFields(
+                elasticHelper.getAvailableFacetFields(billingHelper.allBillingIndicesPattern()));
 
         final String[] indices;
         if (request.getFrom() != null && request.getTo() != null) {
@@ -183,87 +166,14 @@ public class BillingManager {
         } else  {
             indices = Collections.singletonList(billingHelper.allBillingIndicesPattern()).toArray(new String[0]);
         }
-
-        SearchRequest searchRequest = new SearchRequest()
-                .indicesOptions(IndicesOptions.strictExpandOpen())
-                .indices(indices)
-                .source(searchSource);
-
-        try {
-            final SearchResponse response = elasticHelper.buildClient().search(searchRequest, RequestOptions.DEFAULT);
-            return FacetedSearchResult.builder()
-                    .totalHits(response.getHits().getTotalHits())
-                    .facets(buildFacets(response.getAggregations()))
-                    .build();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return FacetedSearchResult.builder().build();
+        return elasticHelper.buildFacets(filteredFields, request.getFilters(), indices);
     }
 
-    private Set<String> filterBillingFacets(Set<String> fields) {
+    private Set<String> filterBillingFacetFields(Set<String> fields) {
         final Map<String, BillingGrouping> billingFieldMapping = preferenceManager.getPreference(
                 SystemPreferences.BILLING_FIELD_MAPPING);
         BillingGrouping.DEFAULT_GROUPING_BY_NAME.forEach(billingFieldMapping::putIfAbsent);
         return fields.stream().filter(billingFieldMapping::containsKey).collect(Collectors.toSet());
-    }
-
-    private QueryBuilder getFacetedQuery(final Map<String, List<String>> filters) {
-        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        MapUtils.emptyIfNull(filters)
-                .forEach((fieldName, values) -> boolQueryBuilder.must(filterToTermsQuery(fieldName, values)));
-        return boolQueryBuilder;
-    }
-
-    private Set<String> getAvailableElasticDocFieldsFromESMapping() {
-        try {
-            GetMappingsResponse fieldMapping = elasticHelper.buildClient().indices()
-                    .getMapping(
-                            new GetMappingsRequest().indices(billingHelper.allBillingIndicesPattern()),
-                            RequestOptions.DEFAULT
-                    );
-            return fieldMapping.mappings().values()
-                    .stream()
-                    .map(MappingMetaData::sourceAsMap)
-                    .flatMap(source -> {
-                        final Object properties = source.get("properties");
-                        if (properties instanceof Map) {
-                            return ((Map<String, Object>) properties).keySet().stream().filter(Objects::nonNull);
-                        }
-                        return Stream.empty();
-                    })
-                    .collect(Collectors.toSet());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return Collections.emptySet();
-    }
-
-    private QueryBuilder filterToTermsQuery(final String fieldName, final List<String> values) {
-        return QueryBuilders.termsQuery(fieldName, values);
-    }
-
-    private void addTermAggregationToSource(final SearchSourceBuilder searchSource, final String facet) {
-        searchSource.aggregation(billingHelper.aggregateBy(facet));
-    }
-
-    private Map<String, Map<String, Long>> buildFacets(final Aggregations aggregations) {
-        if (Objects.isNull(aggregations)) {
-            return Collections.emptyMap();
-        }
-        return MapUtils.emptyIfNull(aggregations.asMap()).entrySet().stream()
-                .map(e -> ImmutablePair.of(e.getKey(), buildFacetValues(e)))
-                .filter(p -> !p.getValue().isEmpty())
-                .collect(Collectors.toMap(ImmutablePair::getKey, ImmutablePair::getValue));
-    }
-
-    private Map<String, Long> buildFacetValues(final Map.Entry<String, Aggregation> entry) {
-        final Terms fieldAggregation = (Terms) entry.getValue();
-        if (Objects.isNull(fieldAggregation)) {
-            return Collections.emptyMap();
-        }
-        return ListUtils.emptyIfNull(fieldAggregation.getBuckets()).stream()
-                .collect(Collectors.toMap(Terms.Bucket::getKeyAsString, Terms.Bucket::getDocCount));
     }
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
@@ -352,8 +262,7 @@ public class BillingManager {
                 messageHelper.getMessage(MessageConstants.ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED));
         }
         final boolean shouldLoadDetails = request.isLoadDetails();
-        if (shouldLoadDetails
-            && grouping == null) {
+        if (shouldLoadDetails && grouping == null) {
             throw new IllegalArgumentException(messageHelper
                                                    .getMessage(MessageConstants.ERROR_BILLING_DETAILS_NOT_SUPPORTED));
         }
@@ -606,14 +515,14 @@ public class BillingManager {
         }
         if (loadDetails) {
             groupingInfo.putAll(entityDetails);
-            if (grouping.isRunUsageDetailsRequired()) {
+            if (Optional.ofNullable(grouping).map(BillingGrouping::isRunUsageDetailsRequired).orElse(false)) {
                 final ParsedSum usageAggResult = aggregations.get(BillingUtils.RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
                 groupingInfo.put(BillingUtils.RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedValueCount uniqueRunIds = aggregations.get(BillingUtils.RUN_COUNT_AGG);
                 groupingInfo.put(BillingUtils.RUNS, Long.toString(uniqueRunIds.getValue()));
             }
-            if (grouping.isStorageUsageDetailsRequired()) {
+            if (Optional.ofNullable(grouping).map(BillingGrouping::isStorageUsageDetailsRequired).orElse(false)) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(BillingUtils.TOTAL_STORAGE_USAGE_AGG);
                 final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
                 groupingInfo.put(BillingUtils.TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));

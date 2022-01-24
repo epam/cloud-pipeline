@@ -73,7 +73,7 @@ public class BillingGrouping {
     }
 
     private static BillingGrouping fromField(final String correspondingField) {
-        return BillingGrouping.builder().correspondingField(correspondingField).build();
+        return BillingGrouping.builder().name(correspondingField).correspondingField(correspondingField).build();
     }
 
 }
