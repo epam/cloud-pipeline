@@ -30,13 +30,12 @@ import {
   costTickFormatter,
   numberFormatter,
   DisplayUser,
-  ResizableContainer,
-  getPeriodMonths
+  ResizableContainer
 } from './utilities';
-import Filters, {RUNNER_SEPARATOR, REGION_SEPARATOR} from './filters';
-import {Period, getPeriod} from './periods';
+import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
+import {Period, getPeriod} from '../navigation/periods';
 import StorageFilter, {StorageFilters} from './filters/storage-filter';
-import Export, {ExportComposers} from './export';
+import Export from './export';
 import Discounts, {discounts} from './discounts';
 import {
   GetBillingData,
@@ -48,8 +47,6 @@ import {
   GetGroupedObjectStoragesWithPrevious
 } from '../../../models/billing';
 import {StorageReportLayout, Layout} from './layout';
-import styles from './reports.css';
-import displayDate from '../../../utils/displayDate';
 
 const tablePageSize = 10;
 
@@ -74,8 +71,6 @@ function injection (stores, props) {
     cloudRegionId,
     ...periodInfo
   };
-  const periods = getPeriodMonths(periodInfo);
-  const exportCsvRequest = [];
   let filterBy = GetBillingData.FILTER_BY.storages;
   let storages;
   let storagesTable;
@@ -85,40 +80,15 @@ function injection (stores, props) {
     storages = new GetGroupedFileStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedFileStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.fileStorages;
-    if (periods && periods.length > 0) {
-      exportCsvRequest.push(...periods.map(p => (
-        new GetGroupedFileStorages(
-          {...filters, ...p, name: Period.month},
-          true
-        )
-      )));
-    }
   } else if (/^object$/i.test(type)) {
     storageType = 'OBJECT_STORAGE';
     storages = new GetGroupedObjectStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedObjectStorages(filters, true);
     filterBy = GetBillingData.FILTER_BY.objectStorages;
-    if (periods && periods.length > 0) {
-      exportCsvRequest.push(...periods.map(p => (
-        new GetGroupedObjectStorages(
-          {...filters, ...p, name: Period.month},
-          true
-        )
-      )));
-    }
   } else {
     storages = new GetGroupedStoragesWithPrevious(filters, true);
     storagesTable = new GetGroupedStorages(filters, true);
-    if (periods && periods.length > 0) {
-      exportCsvRequest.push(...periods.map(p => (
-        new GetGroupedStorages(
-          {...filters, ...p, name: Period.month},
-          true
-        )
-      )));
-    }
   }
-  exportCsvRequest.push(storages);
   storages.fetch();
   storagesTable.fetch();
   const summary = new GetBillingData({
@@ -133,7 +103,6 @@ function injection (stores, props) {
     type,
     summary,
     storages,
-    exportCsvRequest,
     storagesTable,
     storageType
   };
@@ -293,7 +262,6 @@ class StorageReports extends React.Component {
   render () {
     const {
       storages,
-      exportCsvRequest,
       storagesTable,
       summary,
       user,
@@ -302,76 +270,12 @@ class StorageReports extends React.Component {
       storageType
     } = this.props;
     const {period, range, region: cloudRegionId} = filters;
-    const composers = [
-      {
-        composer: ExportComposers.discountsComposer
-      },
-      {
-        composer: ExportComposers.tableComposer,
-        options: [
-          exportCsvRequest,
-          `${this.getTitle()} (TOP ${tablePageSize})`,
-          [
-            {
-              key: 'owner',
-              title: 'Owner'
-            },
-            {
-              key: 'billingCenter',
-              title: 'Billing Center'
-            },
-            {
-              key: 'storageType',
-              title: 'Type'
-            },
-            {
-              key: 'region',
-              title: 'Region'
-            },
-            {
-              key: 'provider',
-              title: 'Provider'
-            },
-            {
-              key: 'created',
-              title: 'Created date',
-              formatter: displayDate
-            }
-          ],
-          [
-            {
-              key: 'value',
-              title: 'Cost',
-              applyDiscounts: ({storage}) => storage,
-              formatter: (value) => value ? costTickFormatter(value, '') : ''
-            },
-            {
-              key: 'usage',
-              title: 'Average Volume (GB)',
-              formatter: (value) => value ? numberFormatter(value, '') : ''
-            },
-            {
-              key: 'usageLast',
-              title: 'Current Volume (GB)',
-              formatter: (value) => value ? numberFormatter(value, '') : ''
-            }
-          ],
-          'Storage',
-          {
-            key: 'value',
-            top: tablePageSize
-          }
-        ]
-      }
-    ];
     const costsUsageSelectorHeight = 30;
     return (
       <Discounts.Consumer>
         {
           (o, storageDiscounts) => (
             <Export.Consumer
-              className={styles.chartsContainer}
-              composers={composers}
               exportConfiguration={{
                 types: ['STORAGE'],
                 user,
@@ -489,7 +393,7 @@ class StorageReports extends React.Component {
 
 export default inject('reportThemes')(
   inject(injection)(
-    Filters.attach(
+    BillingNavigation.attach(
       observer(StorageReports)
     )
   )

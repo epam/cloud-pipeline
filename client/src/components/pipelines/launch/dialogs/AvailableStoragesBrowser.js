@@ -18,11 +18,11 @@ import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Input, Modal, Row, Table} from 'antd';
+import classNames from 'classnames';
+import {Button, Checkbox, Input, Modal, Pagination, Row, Table} from 'antd';
 import {SensitiveBucketsWarning} from '../../../runs/actions';
 import styles from './Browser.css';
 import {CP_CAP_LIMIT_MOUNTS} from '../form/utilities/parameters';
-import classNames from "classnames";
 
 function sensitiveSorter (a, b) {
   return a.sensitive - b.sensitive;
@@ -54,6 +54,8 @@ export function filterNFSStorages (nfsSensitivePolicy, sensitiveStoragesAreSelec
     a.type !== 'NFS';
 }
 
+const PAGE_SIZE = 20;
+
 @inject('preferences')
 @observer
 export default class AvailableStoragesBrowser extends Component {
@@ -67,7 +69,8 @@ export default class AvailableStoragesBrowser extends Component {
 
   state = {
     selectedStorages: [],
-    searchString: null
+    searchString: null,
+    page: 0
   };
 
   componentDidMount () {
@@ -79,13 +82,21 @@ export default class AvailableStoragesBrowser extends Component {
       this.updateSelectionFromProps();
     }
     if (this.props.visible !== prevProps.visible) {
-      this.setState({searchString: null});
+      this.onModalVisibilityChanged();
     }
   }
 
+  onModalVisibilityChanged = () => {
+    this.setState({
+      searchString: null,
+      page: 0
+    });
+  };
+
   updateSelectionFromProps = () => {
     this.setState({
-      selectedStorages: this.props.selectedStorages.slice()
+      selectedStorages: this.props.selectedStorages.slice(),
+      page: 0
     });
   };
 
@@ -164,7 +175,7 @@ export default class AvailableStoragesBrowser extends Component {
 
   onSearch = (event) => {
     const searchString = event.target.value;
-    this.setState({searchString});
+    this.setState({searchString, page: 0});
   };
 
   onSelect = (event, storage) => {
@@ -183,7 +194,8 @@ export default class AvailableStoragesBrowser extends Component {
   selectAllNonSensitive = () => {
     this.setState({
       selectedStorages: this.availableNonSensitiveStorages.map(s => +(s.id)),
-      searchString: null
+      searchString: null,
+      page: 0
     });
   };
 
@@ -193,12 +205,13 @@ export default class AvailableStoragesBrowser extends Component {
       selectedStorages: (this.props.availableStorages || [])
         .filter(filterNFSStorages(this.nfsSensitivePolicy, hasSensitive))
         .map(s => +(s.id)),
-      searchString: null
+      searchString: null,
+      page: 0
     });
   };
 
   clearSelection = () => {
-    this.setState({selectedStorages: []});
+    this.setState({selectedStorages: [], page: 0});
   };
 
   itemIsSelected = (item) => {
@@ -210,15 +223,16 @@ export default class AvailableStoragesBrowser extends Component {
     if (!this.props.availableStorages || !this.props.availableStorages.length) {
       return [];
     }
-
+    const {searchString} = this.state;
+    const searchStringLowerCased = searchString ? searchString.toLowerCase() : '';
+    const test = searchStringLowerCased.length
+      ? o => o && o.toLowerCase().includes(searchStringLowerCased)
+      : false;
     const storageMatches = (storage) => {
-      if (!this.state.searchString || !this.state.searchString.length) {
+      if (!test) {
         return true;
       }
-      return storage.name.toLowerCase().includes(this.state.searchString.toLowerCase()) ||
-        storage.type.toLowerCase().includes(this.state.searchString.toLowerCase()) ||
-        (storage.description &&
-          storage.description.toLowerCase().includes(this.state.searchString.toLowerCase()));
+      return test(storage.name) || test(storage.type) || test(storage.description);
     };
 
     return this.props.availableStorages
@@ -244,6 +258,7 @@ export default class AvailableStoragesBrowser extends Component {
         key: 'selection',
         title: '',
         className: styles.checkboxCell,
+        width: 30,
         render: (item) => {
           return (
             <Checkbox
@@ -298,22 +313,56 @@ export default class AvailableStoragesBrowser extends Component {
       }, {
         title: 'Type',
         dataIndex: 'type',
-        key: 'type'
+        key: 'type',
+        width: 100
       }
     ];
+    const {page = 0} = this.state;
+
+    const slicedData = this.availableStorages.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
     return (
       <Row type="flex" style={{flex: 1, overflow: 'auto'}}>
         <Table
           className={styles.table}
-          dataSource={this.availableStorages}
+          dataSource={slicedData}
           columns={columns}
           rowKey="name"
+          showHeader={false}
           pagination={false}
           style={{width: '100%'}}
           locale={{emptyText: 'No data storages available'}}
-          size="small" />
+          size="small"
+        />
       </Row>
+    );
+  };
+
+  renderStoragesPagination = () => {
+    const {page = 0} = this.state;
+    const total = this.availableStorages.length;
+    const pages = Math.ceil(total / PAGE_SIZE);
+    if (pages <= 1) {
+      return null;
+    }
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          margin: '5px 0'
+        }}
+      >
+        <Pagination
+          size="small"
+          total={total}
+          current={page + 1}
+          pageSize={PAGE_SIZE}
+          onChange={(newPage) => this.setState({page: newPage - 1})}
+        />
+      </div>
     );
   };
 
@@ -384,6 +433,7 @@ export default class AvailableStoragesBrowser extends Component {
             )}
           />
           {this.renderStoragesTable()}
+          {this.renderStoragesPagination()}
         </div>
       </Modal>
     );

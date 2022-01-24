@@ -12,3 +12,8 @@
 | [**2182_4**](2182/2182_4.md) | READ ONLY Quota verification |
 | [**2182_5**](2182/2182_5.md) | Quota verification at back process |
 | [**2182_6**](2182/2182_6.md) | Validate quotas and storage size via UI |
+| [**2233_1**](2233/2233_1.md)| Check webdav access duration preference |
+| [**2233_2**](2233/2233_2.md)| Check max number of storages with webdav access |
+| [**2233_3**](2233/2233_3.md)| Check Disable link |
+| [**2233_4**](2233/2233_4.md)| Check "Remove all" button |
+| [**2233_5**](2233/2233_5.md)| Check help tooltip |

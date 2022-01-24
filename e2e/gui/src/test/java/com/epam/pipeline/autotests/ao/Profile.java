@@ -19,6 +19,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.autotests.utils.Utils;
@@ -35,12 +36,14 @@ import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PARAMETER;
+import static com.epam.pipeline.autotests.ao.Primitive.ADD_SYSTEM_PARAMETER;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.ESTIMATE_PRICE;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.ao.Primitive.IMAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.LIMIT_MOUNTS;
@@ -53,6 +56,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.TIMEOUT;
 import static com.codeborne.selenide.Condition.visible;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.comboboxOf;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.fieldWithLabel;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.inputOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Profile implements AccessObject<Profile> {
@@ -76,6 +80,7 @@ public class Profile implements AccessObject<Profile> {
                 entry(NAME, context().find(byId("configuration.name"))),
                 entry(ESTIMATE_PRICE, context().find(byText("Estimated price per hour:"))),
                 entry(INSTANCE, context().find(byId("launch-pipeline-advanced-panel"))),
+                entry(IMAGE, context().find(inputOf(fieldWithLabel("Docker image")))),
                 entry(DISK, context().find(byId("exec.disk"))),
                 entry(TIMEOUT, context().find(byId("advanced.timeout"))),
                 entry(EXEC_ENVIRONMENT, context().find(byId("launch-pipeline-exec-environment-panel"))),
@@ -87,7 +92,8 @@ public class Profile implements AccessObject<Profile> {
                 entry(PRICE_TYPE, context().find(comboboxOf(fieldWithLabel("Price type")))),
                 entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
                 entry(CLOUD_REGION, context().find(byXpath("//*[contains(text(), 'Cloud Region')]"))
-                        .closest(".ant-row").find(by("role", "combobox")))
+                        .closest(".ant-row").find(by("role", "combobox"))),
+                entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button")))
         );
     }
 
@@ -156,6 +162,10 @@ public class Profile implements AccessObject<Profile> {
         return runForm.clickAddOutputParameter();
     }
 
+    public PipelineRunFormAO.SystemParameterPopupAO<PipelineRunFormAO> addSystemParameter() {
+        return runForm.clickAddSystemParameter();
+    }
+
     @Override
     public SelenideElement context() {
         return context;
@@ -167,11 +177,12 @@ public class Profile implements AccessObject<Profile> {
     }
 
     public Profile waitUntilSaveEnding(final String name) {
-        for (int i = 0; i < 3; i++) {
-            if ($(withText(String.format("Updating '%s' configuration ...", name))).exists()) {
-                sleep(3, SECONDS);
-                break;
-            }
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
         }
         return this;
     }
@@ -188,6 +199,17 @@ public class Profile implements AccessObject<Profile> {
         Utils.clearTextField(cmdTemplate());
         Utils.clickAndSendKeysWithSlashes(cmdTemplate(), command);
         return this;
+    }
+
+    public Profile selectDockerImage(final Consumer<DockerImageSelection> dockerImage) {
+        click(IMAGE);
+        dockerImage.accept(new DockerImageSelection(this));
+        return this;
+    }
+
+    public SelectLimitMountsPopupAO<Profile> selectDataStoragesToLimitMounts() {
+        click(LIMIT_MOUNTS);
+        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 
     private SelenideElement cmdTemplate() {

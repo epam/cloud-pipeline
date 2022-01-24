@@ -18,20 +18,29 @@ package com.epam.pipeline.manager.quota;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
+import com.epam.pipeline.dto.quota.QuotaType;
+import com.epam.pipeline.entity.quota.AppliedQuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.billing.BillingUtils;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
+import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
+import com.epam.pipeline.repository.quota.AppliedQuotaSpecification;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
@@ -43,19 +52,37 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @Service
-@RequiredArgsConstructor
 public class QuotaService {
     private final QuotaRepository quotaRepository;
     private final QuotaActionRepository quotaActionRepository;
+    private final AppliedQuotaRepository appliedQuotaRepository;
+    private final MetadataManager metadataManager;
     private final QuotaMapper quotaMapper;
     private final MessageHelper messageHelper;
+    private final String billingCenterKey;
+
+    public QuotaService(final QuotaRepository quotaRepository,
+                        final QuotaActionRepository quotaActionRepository,
+                        final AppliedQuotaRepository appliedQuotaRepository,
+                        final MetadataManager metadataManager,
+                        final QuotaMapper quotaMapper,
+                        final MessageHelper messageHelper,
+                        final @Value("${billing.center.key:}") String billingCenterKey) {
+        this.quotaRepository = quotaRepository;
+        this.quotaActionRepository = quotaActionRepository;
+        this.appliedQuotaRepository = appliedQuotaRepository;
+        this.metadataManager = metadataManager;
+        this.quotaMapper = quotaMapper;
+        this.messageHelper = messageHelper;
+        this.billingCenterKey = billingCenterKey;
+    }
 
     @Transactional
     public Quota create(final Quota quota) {
         Assert.notNull(quota.getQuotaGroup(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GROUP_EMPTY));
         Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
         validateQuotaType(quota);
-        validateQuotaName(quota);
+        validateQuotaName(quota, quota.getType());
         validateUniqueness(quota);
 
         final QuotaEntity entity = quotaMapper.quotaToEntity(quota);
@@ -75,7 +102,7 @@ public class QuotaService {
         final QuotaEntity loaded = quotaRepository.findOne(id);
         Assert.notNull(loaded, messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
         Assert.notNull(quota.getValue(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_VALUE_EMPTY));
-        validateQuotaName(quota);
+        validateQuotaName(quota, loaded.getType());
         final QuotaEntity entity = quotaMapper.quotaToEntity(quota);
 
         deleteObsoleteActions(loaded, entity);
@@ -93,12 +120,47 @@ public class QuotaService {
     public void delete(final Long id) {
         Assert.state(quotaRepository.exists(id),
                 messageHelper.getMessage(MessageConstants.ERROR_QUOTA_NOT_FOUND_BY_ID, id));
+        appliedQuotaRepository.deleteAllByAction_Quota_Id(id);
         quotaRepository.delete(id);
     }
 
+    @Transactional
     public List<Quota> getAll() {
         return StreamSupport.stream(quotaRepository.findAll().spliterator(), false)
                 .map(quotaMapper::quotaToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public AppliedQuota createAppliedQuota(final AppliedQuota appliedQuota) {
+        final AppliedQuotaEntity entity = quotaMapper.appliedQuotaToEntity(appliedQuota);
+        entity.setModified(DateUtils.nowUTC());
+        return quotaMapper.appliedQuotaToDto(appliedQuotaRepository.save(entity));
+    }
+
+    @Transactional
+    public void deleteAppliedQuota(final Long id) {
+        Assert.state(appliedQuotaRepository.exists(id),
+                messageHelper.getMessage(MessageConstants.ERROR_APPLIED_QUOTA_NOT_FOUND_BY_ID, id));
+        appliedQuotaRepository.delete(id);
+    }
+
+    @Transactional
+    public List<AppliedQuota> findActiveQuotaForAction(final Long actionId) {
+        return ListUtils.emptyIfNull(appliedQuotaRepository.findAll(
+                AppliedQuotaSpecification.activeQuotas(actionId)))
+                .stream()
+                .map(quotaMapper::appliedQuotaToDto)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public List<AppliedQuota> findActiveQuotasForUser(final PipelineUser user) {
+        return ListUtils.emptyIfNull(appliedQuotaRepository.findAll(
+                AppliedQuotaSpecification.userActiveQuotas(user,
+                        BillingUtils.getUserBillingCenter(user, billingCenterKey, metadataManager))))
+                .stream()
+                .map(quotaMapper::appliedQuotaToDto)
                 .collect(Collectors.toList());
     }
 
@@ -111,7 +173,12 @@ public class QuotaService {
         ListUtils.emptyIfNull(loaded.getActions()).stream()
                 .map(QuotaActionEntity::getId)
                 .filter(actionId -> !idsToUpdate.contains(actionId))
-                .forEach(quotaActionRepository::delete);
+                .forEach(this::deleteAction);
+    }
+
+    private void deleteAction(final Long actionId) {
+        appliedQuotaRepository.deleteAllByAction_Id(actionId);
+        quotaActionRepository.delete(actionId);
     }
 
     private void validateQuotaAction(final List<QuotaActionType> allowedActions,
@@ -137,9 +204,6 @@ public class QuotaService {
     }
 
     private void prepareQuotaActions(final QuotaEntity entity) {
-        if (QuotaGroup.GLOBAL.equals(entity.getQuotaGroup())) {
-            entity.setActions(null);
-        }
         ListUtils.emptyIfNull(entity.getActions()).forEach(action -> prepareQuotaAction(entity, action));
     }
 
@@ -153,13 +217,19 @@ public class QuotaService {
                     messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GLOBAL_ALREADY_EXISTS));
             return;
         }
+        if (QuotaType.OVERALL.equals(quota.getType())) {
+            Assert.isNull(quotaRepository.findByQuotaGroupAndType(quota.getQuotaGroup(), QuotaType.OVERALL),
+                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_OVERALL_ALREADY_EXISTS,
+                            quota.getQuotaGroup()));
+            return;
+        }
         Assert.isNull(quotaRepository.findByTypeAndSubjectAndQuotaGroup(quota.getType(), quota.getSubject(),
                 quota.getQuotaGroup()), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ALREADY_EXISTS,
                 quota.getQuotaGroup().name(), quota.getType().name(), quota.getSubject()));
     }
 
-    private void validateQuotaName(final Quota quota) {
-        if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
+    private void validateQuotaName(final Quota quota, final QuotaType type) {
+        if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup()) || QuotaType.OVERALL.equals(type)) {
             quota.setSubject(null);
             return;
         }
@@ -169,7 +239,7 @@ public class QuotaService {
 
     private void validateQuotaType(final Quota quota) {
         if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
-            quota.setType(null);
+            quota.setType(QuotaType.OVERALL);
             return;
         }
         Assert.notNull(quota.getType(), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_TYPE_EMPTY));

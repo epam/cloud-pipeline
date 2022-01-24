@@ -20,7 +20,9 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.notification.NotificationManager;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -39,6 +41,7 @@ public class NodePoolManager {
     private final NodePoolDao poolDao;
     private final NodePoolMapper poolMapper;
     private final NodePoolValidator validator;
+    private final NotificationManager notificationManager;
     private final MessageHelper messageHelper;
 
     public List<NodePool> getActivePools() {
@@ -72,6 +75,7 @@ public class NodePoolManager {
     public NodePool delete(final Long poolId) {
         final NodePool node = load(poolId);
         poolDao.delete(poolId);
+        notificationManager.removeNotificationTimestamps(poolId, NotificationType.FULL_NODE_POOL);
         return node;
     }
 

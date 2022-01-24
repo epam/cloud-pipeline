@@ -15,30 +15,106 @@
  */
 
 import React from 'react';
+import {Modal} from 'antd';
+
 import SystemLogs from './system-logs';
 import NATGetaway from './nat-getaway-configuration/nat-getaway-configuration';
 import SubSettings from '../sub-settings';
 
-const sections = [
-  {
-    key: 'logs',
-    title: 'LOGS',
-    default: true,
-    render: () => (<SystemLogs />)
-  },
-  {
-    key: 'nat',
-    title: 'NAT GATEWAY',
-    render: () => (<NATGetaway />)
+export default class SystemManagement extends React.Component {
+  state={
+    modified: false,
+    changesCanBeSkipped: false
   }
-];
 
-export default function SystemManagement ({router}) {
-  return (
-    <SubSettings
-      sections={sections}
-      router={router}
-      root="system"
-    />
-  );
+  getSections () {
+    return [
+      {
+        key: 'logs',
+        title: 'LOGS',
+        default: true,
+        render: () => (<SystemLogs />)
+      },
+      {
+        key: 'nat',
+        title: 'NAT GATEWAY',
+        render: () => (<NATGetaway handleModified={this.handleModified} />)
+      }
+    ];
+  }
+
+  componentDidMount () {
+    const {route, router} = this.props;
+    if (route && router) {
+      router.setRouteLeaveHook(route, this.checkModifiedBeforeLeave);
+    }
+  }
+
+  componentWillUnmount () {
+    this.resetChangesStateTimeout && clearTimeout(this.resetChangesStateTimeout);
+  }
+
+  handleModified = (modified) => {
+    if (this.state.modified !== modified) {
+      this.setState({modified});
+    }
+  }
+
+  confirmChangeURL = () => {
+    return new Promise((resolve) => {
+      if (this.state.modified) {
+        Modal.confirm({
+          title: 'You have unsaved changes. Continue?',
+          style: {
+            wordWrap: 'break-word'
+          },
+          onOk () {
+            resolve(true);
+          },
+          onCancel () {
+            resolve(false);
+          },
+          okText: 'Yes',
+          cancelText: 'No'
+        });
+      } else {
+        resolve(true);
+      }
+    });
+  };
+
+  checkModifiedBeforeLeave = (nextLocation) => {
+    const {router} = this.props;
+    const {changesCanBeSkipped, modified} = this.state;
+    const resetChangesCanBeSkipped = () => {
+      this.resetChangesStateTimeout = setTimeout(
+        () => this.setState && this.setState({changesCanBeSkipped: false}),
+        0
+      );
+    };
+    const makeTransition = () => {
+      this.setState({changesCanBeSkipped: true},
+        () => {
+          router.push(nextLocation);
+          resetChangesCanBeSkipped();
+        }
+      );
+    };
+    if (modified && !changesCanBeSkipped) {
+      this.confirmChangeURL()
+        .then(confirmed => confirmed ? makeTransition() : undefined);
+      return false;
+    }
+  };
+
+  render () {
+    return (
+      <SubSettings
+        sections={this.getSections()}
+        router={this.props.router}
+        canNavigate={this.confirmChangeURL}
+        root="system"
+      />
+    );
+  }
 }

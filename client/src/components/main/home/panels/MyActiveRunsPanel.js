@@ -41,7 +41,7 @@ import styles from './Panel.css';
 @roleModel.authenticationInfo
 @localization.localizedComponent
 @runPipelineActions
-@inject('pipelines', 'multiZoneManager')
+@inject('pipelines', 'multiZoneManager', 'preferences')
 @VSActions.check
 @observer
 export default class MyActiveRunsPanel extends localization.LocalizedReactComponent {

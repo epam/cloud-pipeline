@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
@@ -66,7 +67,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row").find(byClassName("ant-select"))),
             entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row").find(by("role", "combobox"))),
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
-            entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
+            entry(IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
@@ -370,9 +371,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunParameterAO(this, parameterIndex);
     }
 
-    public SystemParameterPopupAO clickAddSystemParameter() {
+    public SystemParameterPopupAO<PipelineRunFormAO> clickAddSystemParameter() {
         click(ADD_SYSTEM_PARAMETER);
-        return new SystemParameterPopupAO(this);
+        return new SystemParameterPopupAO<>(this);
     }
 
     public PipelineRunFormAO chooseConfiguration(final String profileName) {
@@ -443,20 +444,64 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO validateDisabledParameter(final String parameter) {
+        ensure(byValue(parameter), cssClass("ant-input-disabled"));
+        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
+                .shouldHave(Condition.not(visible));
+        return this;
+    }
+
+    public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
+        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(withText(capability));
+        capabilityElement
+                .shouldBe(visible, enabled);
+        if (disable) {
+            capabilityElement
+                    .closest("li")
+                    .shouldHave(Condition.attribute("aria-disabled", "true"))
+                    .find("i")
+                    .shouldHave(Condition.cssClass("anticon-question-circle-o"));
+        }
+        return this;
+    }
+
+    public PipelineRunFormAO checkCapabilityTooltip(final String capability, final String text) {
+        $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+                .find(withText(capability))
+                .shouldBe(visible).hover();
+        $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+                .find(byClassName("ant-tooltip-content"))
+                .shouldHave(Condition.text(text));
+        return this;
+    }
+
+    public PipelineRunFormAO waitUntilSaveEnding(final String name) {
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
+        }
+        sleep(1, SECONDS);
+        return this;
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
     }
 
-    public static class SystemParameterPopupAO  extends PopupAO<SystemParameterPopupAO, PipelineRunFormAO> {
+    public static class SystemParameterPopupAO<PARENT_AO>  extends PopupAO<SystemParameterPopupAO<PARENT_AO>, PARENT_AO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(PARAMETER_NAME, context().$(byXpath("//*[@placeholder='Parameter']"))),
                 entry(ADD, context().find(byId("system-parameters-browser-ok-button"))),
-                entry(CANCEL, context().find(byClassName("system-parameters-browser-cancel-button")))
+                entry(CANCEL, context().find(byId("system-parameters-browser-cancel-button")))
         );
 
-        public SystemParameterPopupAO(PipelineRunFormAO parentAO) {
+        public SystemParameterPopupAO(PARENT_AO parentAO) {
             super(parentAO);
         }
 
@@ -465,24 +510,34 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return elements;
         }
         @Override
-        public PipelineRunFormAO cancel() {
+        public PARENT_AO cancel() {
             return click(CANCEL).parent();
         }
 
         @Override
-        public PipelineRunFormAO ok() {
+        public PARENT_AO ok() {
             return click(ADD).parent();
         }
 
-        private SystemParameterPopupAO selectSystemParameter(String parameter) {
-            clear(PARAMETER_NAME);
-            setValue(PARAMETER_NAME, parameter);
+        private SystemParameterPopupAO<PARENT_AO> selectSystemParameter(String parameter) {
+            searchSystemParameter(parameter);
             $(byText(parameter)).shouldBe(visible).click();
             return this;
         }
 
-        public SystemParameterPopupAO selectSystemParameters(String ... parameters) {
+        public SystemParameterPopupAO<PARENT_AO> selectSystemParameters(String ... parameters) {
             Arrays.stream(parameters).forEach(this::selectSystemParameter);
+            return this;
+        }
+
+        public SystemParameterPopupAO<PARENT_AO> searchSystemParameter(String parameter) {
+            clear(PARAMETER_NAME);
+            setValue(PARAMETER_NAME, parameter);
+            return this;
+        }
+
+        public SystemParameterPopupAO<PARENT_AO> validateNotFoundParameters() {
+            ensure(byText("No system parameters"), visible);
             return this;
         }
     }
@@ -558,4 +613,4 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
     }
-    }
+}

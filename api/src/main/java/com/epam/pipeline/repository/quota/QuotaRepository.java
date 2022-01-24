@@ -25,5 +25,7 @@ public interface QuotaRepository extends CrudRepository<QuotaEntity, Long> {
 
     QuotaEntity findByQuotaGroup(QuotaGroup quotaGroup);
 
+    QuotaEntity findByQuotaGroupAndType(QuotaGroup quotaGroup, QuotaType type);
+
     QuotaEntity findByTypeAndSubjectAndQuotaGroup(QuotaType type, String subject, QuotaGroup quotaGroup);
 }

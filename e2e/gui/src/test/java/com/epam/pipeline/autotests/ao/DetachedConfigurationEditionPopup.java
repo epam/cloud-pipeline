@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,12 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.SelenideElement;
 import java.util.Map;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
+import static com.epam.pipeline.autotests.ao.Primitive.PERMISSIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.modalWithTitle;
 
@@ -28,7 +31,8 @@ public class DetachedConfigurationEditionPopup extends DetachedConfigurationPopu
 
     private final Map<Primitive, SelenideElement> elements = initialiseElements(super.elements(),
             entry(SAVE, context().find(byId("edit-configuration-form-save-button"))),
-            entry(DELETE, context().find(byId("edit-configuration-form-delete-button")))
+            entry(DELETE, context().find(byId("edit-configuration-form-delete-button"))),
+            entry(PERMISSIONS, context().find(byText("Permissions")))
     );
 
     public DetachedConfigurationEditionPopup(final Configuration configuration) {
@@ -41,6 +45,11 @@ public class DetachedConfigurationEditionPopup extends DetachedConfigurationPopu
                 .find(byId("edit-configuration-delete-dialog-delete-button"))
                 .shouldBe(visible).click();
         return parent();
+    }
+
+    public PermissionTabAO permission() {
+        click(PERMISSIONS);
+        return new PermissionTabAO(() -> $(byClassName("ant-modal-close-x")).shouldBe(visible).click());
     }
 
     @Override

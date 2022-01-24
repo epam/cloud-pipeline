@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {message} from 'antd';
+import {message, Tooltip, Icon} from 'antd';
 import {inject, observer} from 'mobx-react';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
 import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStoragePathUsageUpdate';
@@ -27,11 +27,39 @@ import styles from './storage-size.css';
 const REFRESH_REQUESTED_MESSAGE =
   'Storage size refresh has been requested. Please wait a couple of minutes.';
 
+function InfoTooltip ({size}) {
+  const {realSize, effectiveSize} = size;
+
+  if (!effectiveSize || effectiveSize === realSize) {
+    return null;
+  }
+
+  const tooltip = (
+    <div>
+      <div>Effective size: {displaySize(effectiveSize, effectiveSize > 1024)}</div>
+      <div>Real size: {displaySize(realSize, realSize > 1024)}</div>
+    </div>
+  );
+
+  return (
+    <Tooltip
+      title={tooltip}
+      placement="top"
+    >
+      <Icon
+        type="info-circle"
+        className="cp-text"
+        style={{marginRight: 5, marginLeft: 5}}
+      />
+    </Tooltip>
+  );
+}
 @inject('preferences')
 @observer
 class StorageSize extends React.PureComponent {
   state = {
-    size: undefined
+    realSize: undefined,
+    effectiveSize: undefined
   };
 
   componentDidMount () {
@@ -62,18 +90,24 @@ class StorageSize extends React.PureComponent {
         .fetch()
         .then(() => {
           if (request.loaded && request.value && request.value.size) {
-            return Promise.resolve(request.value.size);
+            const size = {
+              realSize: request.value.size,
+              effectiveSize: request.value.effectiveSize
+            };
+            return Promise.resolve(size);
           }
           return Promise.resolve();
         })
         .then((size) => {
           this.setState({
-            size
+            realSize: size ? size.realSize : undefined,
+            effectiveSize: size ? size.effectiveSize : undefined
           });
         });
     } else {
       this.setState({
-        size: undefined
+        realSize: undefined,
+        effectiveSize: undefined
       });
     }
   }
@@ -102,9 +136,10 @@ class StorageSize extends React.PureComponent {
   };
 
   render () {
-    const {size} = this.state;
+    const {realSize, effectiveSize} = this.state;
     const {className, style} = this.props;
-    if (size) {
+    if (realSize) {
+      const size = effectiveSize || realSize;
       return (
         <div
           className={
@@ -119,6 +154,7 @@ class StorageSize extends React.PureComponent {
           <span>
             Storage size: {displaySize(size, size > 1024)}
           </span>
+          <InfoTooltip size={{realSize, effectiveSize}} />
           <a
             className={styles.refreshButton}
             onClick={this.refreshSize}

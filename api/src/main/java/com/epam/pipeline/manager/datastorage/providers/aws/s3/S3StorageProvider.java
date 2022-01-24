@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFilePathMatchingMasks;
+import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.resolveFolderPathListingMasks;
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
 
 import com.amazonaws.services.s3.model.CORSRule;
@@ -184,19 +185,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public DataStorageListing getItems(S3bucketDataStorage dataStorage, String path,
             Boolean showVersion, Integer pageSize, String marker) {
         final DatastoragePath datastoragePath = ProviderUtils.parsePath(dataStorage.getPath());
-        if (StringUtils.isNotBlank(path)) {
-            validateFolderPathMatchingMasks(dataStorage, path);
-        } else if (CollectionUtils.isNotEmpty(dataStorage.getLinkingMasks())){
-            return getS3Helper(dataStorage)
-                .getItems(datastoragePath.getRoot(),
-                          ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                          ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
-                          dataStorage.getLinkingMasks());
-        }
+        final Set<String> activeLinkingMasks = resolveFolderPathListingMasks(dataStorage, path);
         return getS3Helper(dataStorage)
             .getItems(datastoragePath.getRoot(),
                       ProviderUtils.buildPath(dataStorage, path), showVersion, pageSize, marker,
-                      ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()), null);
+                      ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
+                      Optional.of(activeLinkingMasks).filter(CollectionUtils::isNotEmpty).orElse(null));
     }
 
     @Override
@@ -260,13 +254,13 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override
     public Stream<DataStorageFile> listDataStorageFiles(final S3bucketDataStorage dataStorage,
                                                         final String path) {
-        if (StringUtils.isNotBlank(path)) {
-            validateFolderPathMatchingMasks(dataStorage, path);
+        final Set<String> activeLinkingMasks = resolveFolderPathListingMasks(dataStorage, path);
+        if (CollectionUtils.isEmpty(activeLinkingMasks)) {
             return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
                                                                  ProviderUtils.buildPath(dataStorage, path));
         } else {
-            final Set<String> fileMasks = S3Helper.extractFileMasks(dataStorage.getLinkingMasks());
-            final Set<String> folderMasks = S3Helper.extractFolderMasks(dataStorage.getLinkingMasks());
+            final Set<String> fileMasks = S3Helper.extractFileMasks(activeLinkingMasks);
+            final Set<String> folderMasks = S3Helper.extractFolderMasks(activeLinkingMasks);
             return getS3Helper(dataStorage).listDataStorageFiles(dataStorage.getRoot(),
                                                                  ProviderUtils.buildPath(dataStorage, path))
                 .filter(item -> ProviderUtils.dataStorageItemMatching(item, fileMasks, folderMasks));

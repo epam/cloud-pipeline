@@ -189,6 +189,7 @@ public enum Primitive {
     USER_MANAGEMENT_TAB,
     PREFERENCES_TAB,
     SYSTEM_LOGS_TAB,
+    NAT_GATEWAY_TAB,
     USERS_TAB,
     ROLE_TAB,
     GROUPS_TAB,
@@ -213,7 +214,6 @@ public enum Primitive {
     TOOL_SETTINGS,
     INSTANCE_TYPE,
     NEW_ENDPOINT,
-    DOCKER_IMAGE,
     SEVERITY,
     STATE,
     STATE_CHECKBOX,
@@ -292,5 +292,15 @@ public enum Primitive {
     MY_PROFILE,
     FILE_SYSTEM_ACCESS,
     DISABLE,
-    CONTENT_PREVIEW
+    ALLOW_COMMIT,
+    CONTENT_PREVIEW,
+    ADD_ROUTE,
+    ROUTE_TABLE,
+    ADD_PORT,
+    SERVER_NAME,
+    COMMENT,
+    SPECIFY_IP,
+    RESOLVE,
+    DISABLE_MOUNT,
+    ALLOW_MOUNT
 }

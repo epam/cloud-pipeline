@@ -169,7 +169,7 @@ export default class EditEmailNotification extends React.Component {
       this.props.template.type === 'LONG_STATUS' ||
       this.props.template.type === 'LONG_PAUSED';
     const renderThreshold = this.props.template.type === 'LONG_PAUSED_STOPPED';
-    const renderDelay = this.props.template.type === 'IDLE_RUN';
+    const renderDelay = ['IDLE_RUN', 'FULL_NODE_POOL'].includes(this.props.template.type);
     const renderStatusesToInform = this.props.template.type === 'PIPELINE_RUN_STATUS';
     const {getFieldDecorator, resetFields} = this.props.form;
     return (

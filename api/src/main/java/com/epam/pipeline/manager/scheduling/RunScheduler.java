@@ -18,12 +18,13 @@ package com.epam.pipeline.manager.scheduling;
 
 import com.epam.pipeline.entity.pipeline.run.RunSchedule;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.exception.scheduling.SchedulingException;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDetail;
 import org.quartz.JobKey;
+import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.Trigger;
-import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
@@ -32,40 +33,38 @@ import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.util.Date;
-import java.util.Properties;
-
-import org.quartz.Scheduler;
-
-import javax.annotation.PostConstruct;
 
 @Slf4j
 @Component
 public class RunScheduler {
 
-    private static final String JOB_EXECUTION_THREADS = "5";
-    private static final String MAX_CONCURRENT_JOB_FIRING_AT_ONCE = "2";
     private static final String ID = " id: ";
+
     private final Scheduler quartzScheduler;
+    private final ScheduleProviderManager scheduleProviderManager;
 
     @Autowired
-    private ScheduleProviderManager scheduleProviderManager;
-
-    @Autowired
-    RunScheduler(final SchedulerFactoryBean schedulerFactoryBean) {
-        final Properties quartsProperties = new Properties();
-        quartsProperties.setProperty(SchedulerFactoryBean.PROP_THREAD_COUNT, JOB_EXECUTION_THREADS);
-        quartsProperties.setProperty(StdSchedulerFactory.PROP_SCHED_MAX_BATCH_SIZE, MAX_CONCURRENT_JOB_FIRING_AT_ONCE);
-        schedulerFactoryBean.setQuartzProperties(quartsProperties);
+    public RunScheduler(final SchedulerFactoryBean schedulerFactoryBean,
+                        final ScheduleProviderManager scheduleProviderManager) {
         this.quartzScheduler = schedulerFactoryBean.getScheduler();
+        this.scheduleProviderManager = scheduleProviderManager;
     }
 
-    @PostConstruct
     public void init() {
         try {
+            log.debug("Starting quartz scheduler...");
             quartzScheduler.start();
-            log.debug("Scheduler is running.");
+            log.debug("Quartz scheduler is running.");
         } catch (SchedulerException e) {
-            log.error("SchedulerException while scheduling process: " + e.getMessage());
+            throw new SchedulingException("Error while initiating quartz scheduler", e);
+        }
+    }
+
+    public void scheduleRunScheduleIfPossible(final RunSchedule schedule) {
+        try {
+            scheduleRunSchedule(schedule);
+        } catch (SchedulingException e) {
+            log.error("Error while scheduling job for run {}: {}", schedule.getSchedulableId(), e.getMessage());
         }
     }
 
@@ -82,8 +81,7 @@ public class RunScheduler {
             log.debug("Job for: " + schedule.getType() + ID
                     + schedule.getSchedulableId() + " scheduled successfully for date: " + scheduledDate);
         } catch (SchedulerException | ParseException e) {
-            log.error("SchedulerException while scheduling job for run " + schedule.getSchedulableId() + " : " +
-                      e.getMessage());
+            throw new SchedulingException(e.getMessage(), e);
         }
     }
 
@@ -99,8 +97,7 @@ public class RunScheduler {
             log.debug("Schedule " + schedule.getCronExpression() + " for "  + schedule.getType()
                     + ID + schedule.getSchedulableId() + " was revoked successfully.");
         } catch (SchedulerException e) {
-            log.error("SchedulerException while unscheduling trigger for "  + schedule.getType()
-                    + ID + schedule.getSchedulableId() + " : " + e.getMessage());
+            throw new SchedulingException(e.getMessage(), e);
         }
     }
 

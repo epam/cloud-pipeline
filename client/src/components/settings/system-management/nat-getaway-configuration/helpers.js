@@ -23,7 +23,8 @@ const validationConfig = {
   messages: {
     required: 'Field is required',
     invalid: 'Invalid format',
-    duplicate: 'Value should be unique'
+    duplicate: 'Value should be unique',
+    lengthExceed: 'Maximum length exceeded. Expected length should be less than 253 characters'
   }
 };
 
@@ -75,12 +76,24 @@ export function validateServerName (value) {
   }
 }
 
-export function validateIP (value) {
+export function validateIP (value, skip = false) {
   const {ip, messages} = validationConfig;
+  if (skip) {
+    return {error: false};
+  }
   if (!value) {
     return {error: true, message: messages.required};
-  } else if (!ip.test(value)) {
+  }
+  if (!ip.test(value)) {
     return {error: true, message: messages.invalid};
+  }
+  return {error: false};
+}
+
+export function validateDescription (value) {
+  const {messages} = validationConfig;
+  if (value) {
+    return {error: value.toString().length > 253, message: messages.lengthExceed};
   } else {
     return {error: false};
   }
@@ -90,7 +103,9 @@ export const columns = {
   external: [
     {name: 'externalName', prettyName: 'name'},
     {name: 'externalIp', prettyName: 'ip'},
-    {name: 'externalPort', prettyName: 'port'}],
+    {name: 'externalPort', prettyName: 'port'},
+    {name: 'protocol', prettyName: 'protocol'}
+  ],
   internal: [
     {name: 'internalName', prettyName: 'service name'},
     {name: 'internalIp', prettyName: 'ip'},

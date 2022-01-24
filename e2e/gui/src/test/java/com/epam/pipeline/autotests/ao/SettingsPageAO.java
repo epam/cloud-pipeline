@@ -27,11 +27,14 @@ import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.UnaryOperator;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
@@ -1199,6 +1202,21 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             return this;
         }
 
+        public PreferencesAO updateCodeText(final String preference, final String value, final boolean eyeIsChecked) {
+            searchPreference(preference);
+            final SelenideElement editor = $(byClassName("CodeMirror-line"));
+            selectAllAndClearTextField(editor);
+            final StringSelection stringSelection = new StringSelection(value);
+            Toolkit.getDefaultToolkit().getSystemClipboard()
+                    .setContents(stringSelection, null);
+            actions().moveToElement(editor).click()
+                    .sendKeys(Keys.chord(Keys.CONTROL, "v"))
+                    .perform();
+            deleteExtraBrackets(editor, 500);
+            setEyeOption(eyeIsChecked);
+            return this;
+        }
+
         public String[] getLinePreference(String preference) {
             searchPreference(preference);
             String[] prefValue = new String[2];
@@ -1539,6 +1557,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 ensure(supportTemplateState, cssClass("anticon-eye"));
                 return this;
             }
+
+            public String getSupportTemplate() {
+                return $(supportTemplateValue).getValue();
+            }
         }
 
         public class LustreFSAO extends PreferencesAO {
@@ -1580,6 +1602,33 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public LaunchAO checkLaunchContainerCpuResource(final String value) {
                 ensure(getByField(LAUNCH_CONTAINER_CPU_RESOURCES), value(value));
+                return this;
+            }
+
+            public String getLaunchSystemParameters() {
+                return $$(byClassName("preference-group__preference-row")).stream()
+                        .map(SelenideElement::getText)
+                        .filter(e -> e.startsWith(LAUNCH_PARAMETERS))
+                        .map(e -> e.replaceAll("\\n[0-9]*\\n", "\n")
+                                .replaceFirst(LAUNCH_PARAMETERS + "\n", ""))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
+            }
+
+            public LaunchAO setLaunchSystemParameters(final UnaryOperator<String> action) {
+                final String launchSystemParameters = getLaunchSystemParameters();
+                final String edited = action.apply(launchSystemParameters);
+                if (launchSystemParameters.equals(edited)) {
+                    return this;
+                }
+                final SelenideElement launchSystemParameter = $$(byClassName("preference-group__preference-row")).stream()
+                        .filter(s -> s.getText().startsWith(LAUNCH_PARAMETERS))
+                        .findFirst()
+                        .orElseThrow(() -> new NoSuchElementException(format(
+                                "%s preference was not found.", LAUNCH_PARAMETERS
+                        )));
                 return this;
             }
         }
