@@ -30,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -40,8 +39,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class OnlineUsersService {
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
     private final OnlineUsersRepository onlineUsersRepository;
     private final OnlineUsersMapper onlineUsersMapper;
     private final UserManager userManager;
@@ -60,9 +57,8 @@ public class OnlineUsersService {
     }
 
     @Transactional
-    public boolean deleteExpired(final String stringDate) {
-        final LocalDateTime date = LocalDate.parse(stringDate, DATE_FORMATTER).atStartOfDay();
-        onlineUsersRepository.deleteByLogDateLessThan(date);
+    public boolean deleteExpired(final LocalDate date) {
+        onlineUsersRepository.deleteByLogDateLessThan(date.atStartOfDay());
         return true;
     }
 

@@ -39,6 +39,7 @@ import io.swagger.annotations.ApiResponses;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -57,6 +58,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 
@@ -462,7 +464,8 @@ public class UserController extends AbstractRestController {
             notes = "Deletes online users dumps created before specified date",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Boolean> deleteOnlineUsers(@RequestParam final String date) {
+    public Result<Boolean> deleteOnlineUsers(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam
+                                                 final LocalDate date) {
         return Result.success(userApiService.deleteExpiredOnlineUsers(date));
     }
 }

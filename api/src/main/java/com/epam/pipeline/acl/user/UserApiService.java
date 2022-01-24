@@ -36,6 +36,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -251,7 +252,7 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public boolean deleteExpiredOnlineUsers(final String date) {
+    public boolean deleteExpiredOnlineUsers(final LocalDate date) {
         return onlineUsersService.deleteExpired(date);
     }
 }
