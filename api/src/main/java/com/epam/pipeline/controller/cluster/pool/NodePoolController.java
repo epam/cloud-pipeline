@@ -20,15 +20,26 @@ import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecord;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Controller
@@ -37,7 +48,6 @@ import java.util.List;
 @RequestMapping("/cluster/pool")
 @ResponseBody
 public class NodePoolController extends AbstractRestController {
-
     private final NodePoolApiService apiService;
 
     @GetMapping
@@ -68,4 +78,19 @@ public class NodePoolController extends AbstractRestController {
         return Result.success(apiService.delete(id));
     }
 
+    @PostMapping("/usages")
+    @ApiOperation(value = "Persists node pool usage", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<NodePoolUsage> saveUsage(final @RequestBody List<NodePoolUsageRecord> records) {
+        return Result.success(apiService.saveUsage(records));
+    }
+
+    @DeleteMapping("/usages")
+    @ApiOperation(value = "Deletes node pool usage records older than specified date",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> deleteUsage(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam
+                                           final LocalDate date) {
+        return Result.success(apiService.deleteUsage(date));
+    }
 }

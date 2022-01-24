@@ -17,12 +17,16 @@ package com.epam.pipeline.acl.cluster.pool;
 
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecord;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -30,6 +34,7 @@ import java.util.List;
 public class NodePoolApiService {
 
     private final NodePoolManager nodeManager;
+    private final NodePoolUsageService nodePoolUsageService;
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public List<NodePool> loadAll() {
@@ -49,5 +54,15 @@ public class NodePoolApiService {
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public NodePool delete(final Long poolId) {
         return nodeManager.delete(poolId);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public NodePoolUsage saveUsage(final List<NodePoolUsageRecord> records) {
+        return nodePoolUsageService.save(records);
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
+    public Boolean deleteUsage(final LocalDate date) {
+        return nodePoolUsageService.deleteExpired(date);
     }
 }
