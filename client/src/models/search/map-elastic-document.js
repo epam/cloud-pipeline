@@ -26,7 +26,8 @@ export default function mapElasticDocument (document) {
     case SearchItemTypes.s3File:
     case SearchItemTypes.NFSFile:
     case SearchItemTypes.gsFile:
-      document.name = document.name.split('/').pop();
+      const path = document.name || document.description || document.path || '';
+      document.name = path.split('/').pop();
       break;
     case SearchItemTypes.dockerRegistry:
       document.name = document.name || document.description || document.path;

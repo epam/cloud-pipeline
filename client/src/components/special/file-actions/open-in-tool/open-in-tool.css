@@ -29,7 +29,6 @@
 
 .modal-overlay {
   width: 35vw;
-  height: 35vh;
   min-width: 200px;
   z-index: 100;
 }
