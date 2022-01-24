@@ -181,14 +181,13 @@ public class BillingManager {
         try (RestHighLevelClient elasticsearchClient = elasticHelper.buildClient()) {
             final LocalDate from = request.getFrom();
             final LocalDate to = request.getTo();
-            final BillingGrouping grouping = fetchBillingGrouping(request);
             final DateHistogramInterval interval = request.getInterval();
             final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
             } else {
-                return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to, filters, grouping,
-                        request.isLoadDetails());
+                return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to,
+                        filters, fetchBillingGrouping(request), request.isLoadDetails());
             }
         } catch (IOException e) {
             throw new SearchException(e.getMessage(), e);
@@ -261,6 +260,12 @@ public class BillingManager {
             throw new UnsupportedOperationException(
                 messageHelper.getMessage(MessageConstants.ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED));
         }
+
+        if (interval == null && grouping == null) {
+            throw new UnsupportedOperationException(
+                    messageHelper.getMessage(MessageConstants.ERROR_BILLING_NON_GROUPING_NOT_SUPPORTED));
+        }
+
         final boolean shouldLoadDetails = request.isLoadDetails();
         if (shouldLoadDetails && grouping == null) {
             throw new IllegalArgumentException(messageHelper
@@ -269,9 +274,6 @@ public class BillingManager {
     }
 
     private BillingGrouping fetchBillingGrouping(final BillingChartRequest request) {
-        if (StringUtils.isBlank(request.getGrouping())) {
-            return null;
-        }
         final Map<String, BillingGrouping> billingFieldMapping = preferenceManager.getPreference(
                 SystemPreferences.BILLING_FIELD_MAPPING);
         return billingFieldMapping.getOrDefault(
@@ -323,26 +325,28 @@ public class BillingManager {
                                                    final Map<String, List<String>> filters,
                                                    final BillingGrouping grouping,
                                                    final boolean isLoadDetails) {
-        final SearchSourceBuilder searchSource = new SearchSourceBuilder();
-        if (grouping != null) {
-            final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
-                .field(grouping.getCorrespondingField())
-                .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
-                .size(Integer.MAX_VALUE);
-            fieldAgg.subAggregation(billingHelper.aggregateCostSum());
-            if (grouping.isRunUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
-                fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
-            }
-            if (grouping.isStorageUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
-                fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
-                if (BillingGrouping.STORAGE.getCorrespondingField().equals(grouping.getCorrespondingField())) {
-                    fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
-                }
-            }
-            searchSource.aggregation(fieldAgg);
+        if (grouping == null) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(MessageConstants.ERROR_BILLING_GROUPING_SHOULD_BE_SPECIFIED));
         }
+        final SearchSourceBuilder searchSource = new SearchSourceBuilder();
+        final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
+            .field(grouping.getCorrespondingField())
+            .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
+            .size(Integer.MAX_VALUE);
+        fieldAgg.subAggregation(billingHelper.aggregateCostSum());
+        if (grouping.isRunUsageDetailsRequired()) {
+            fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
+            fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
+        }
+        if (grouping.isStorageUsageDetailsRequired()) {
+            fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
+            fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
+            if (BillingGrouping.STORAGE.getCorrespondingField().equals(grouping.getCorrespondingField())) {
+                fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
+            }
+        }
+        searchSource.aggregation(fieldAgg);
         searchSource.aggregation(billingHelper.aggregateCostSum());
 
         final SearchRequest searchRequest = new SearchRequest()

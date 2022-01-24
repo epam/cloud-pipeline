@@ -582,6 +582,8 @@ public final class MessageConstants {
     //Billing
     public static final String ERROR_BILLING_FIELD_DATE_GROUPING_NOT_SUPPORTED =
         "error.billing.date.field.grouping.not.supported";
+    public static final String ERROR_BILLING_NON_GROUPING_NOT_SUPPORTED =
+            "error.billing.non.grouping.not.supported";
     public static final String INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND =
         "error.billing.entity.for.grouping.not.found";
     public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
@@ -589,6 +591,8 @@ public final class MessageConstants {
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
     public static final String ERROR_BILLING_EXPORT_TYPE_NOT_SUPPORTED = "error.billing.export.type.not.supported";
     public static final String ERROR_BILLING_EXPORT_TYPES_MISSING = "error.billing.export.types.missing";
+    public static final String ERROR_BILLING_GROUPING_SHOULD_BE_SPECIFIED =
+            "error.billing.grouping.should.be.specified";
 
     //Disks
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";

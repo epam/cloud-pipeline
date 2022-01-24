@@ -152,8 +152,8 @@ public class BillingController extends AbstractRestController {
     @RequestMapping(value = "/billing/templates", method = RequestMethod.PUT)
     @ResponseBody
     @ApiOperation(
-            value = "Create custom billing report template.",
-            notes = "Create custom billing report template.",
+            value = "Update custom billing report template.",
+            notes = "Update custom billing report template.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<BillingReportTemplate> updateCustomBillingTemplates(
