@@ -26,7 +26,7 @@ import {
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {discounts} from '../discounts';
-import {getTickFormat, getCurrentDate} from '../../navigation/periods';
+import {getCurrentDate} from '../../navigation/periods';
 import moment from 'moment-timezone';
 
 const Display = {
@@ -44,12 +44,13 @@ function generateEmptySet (filters) {
   }
   const {
     start: initial,
-    end
+    end,
+    tick
   } = filters;
   const emptySet = [];
   let start = moment(initial);
   let unit = 'day';
-  if (getTickFormat(initial, end) === '1M') {
+  if (tick === '1M') {
     unit = 'M';
   }
   while (start <= end) {
@@ -87,8 +88,7 @@ function generateLabels (data, filters = {}) {
     return {labels: []};
   }
   const {
-    start,
-    end
+    tick
   } = filters;
   const currentDate = getCurrentDate();
   let currentDateIndex;
@@ -100,7 +100,7 @@ function generateLabels (data, filters = {}) {
   let fullFormat = 'DD MMM YYYY';
   let tooltipFormat = 'MMMM DD, YYYY';
   let previousDateFn = date => moment(date).add(-1, 'M');
-  if (getTickFormat(start, end) === '1M') {
+  if (tick === '1M') {
     format = 'MMM';
     fullFormat = 'MMM YYYY';
     tooltipFormat = 'MMMM YYYY';

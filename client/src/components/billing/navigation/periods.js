@@ -26,7 +26,7 @@ function getTickFormat (start, end) {
   if (!start || !end) {
     return '1M';
   }
-  return moment.duration(end.diff(start)).asMonths() > 3 ? '1M' : '1d';
+  return moment.duration(end.diff(start)).asMonths() >= 1 ? '1M' : '1d';
 }
 
 function buildRangeString ({start, end}, period) {
@@ -190,7 +190,7 @@ function getPeriod (period, range) {
         end = moment(dateNow).endOf('month');
       }
       before = start ? moment(start).add(-1, 'M') : moment(dateNow).add(-1, 'M');
-      tickFormat = getTickFormat(start, end);
+      tickFormat = '1d';
       previousStart = moment(start).add(-1, 'M');
       previousEnd = moment(previousStart).endOf('M');
       endStrict = moment(end);
@@ -214,7 +214,7 @@ function getPeriod (period, range) {
         end = moment(start).endOf('Q');
       }
       before = start ? moment(start).add(-1, 'Q') : moment(dateNow).add(-1, 'Q');
-      tickFormat = getTickFormat(start, end);
+      tickFormat = '1M';
       previousStart = moment(start).add(-1, 'y');
       previousEnd = moment(end).add(-1, 'y');
       endStrict = moment(end);
@@ -236,7 +236,7 @@ function getPeriod (period, range) {
         end = moment(dateNow).endOf('Y');
       }
       before = start ? moment(start).add(-1, 'Y') : moment(dateNow).add(-1, 'Y');
-      tickFormat = getTickFormat(start, end);
+      tickFormat = '1M';
       previousStart = moment(start).add(-1, 'y');
       previousEnd = moment(end).add(-1, 'y');
       endStrict = moment(end);
