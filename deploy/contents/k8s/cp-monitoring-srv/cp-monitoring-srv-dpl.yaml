@@ -20,8 +20,6 @@ spec:
         - name: cp-monitoring-srv
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:monitoring-service-$CP_VERSION
           imagePullPolicy: "Always"
-          securityContext:
-            privileged: true
           command: ["/init"]
           envFrom:
           - configMapRef:
@@ -29,81 +27,9 @@ spec:
           volumeMounts:
             - name: monitoring-srv-logs
               mountPath: /opt/monitoring/logs
-            - mountPath: /opt/api/pki
-              name: api-pki
-              readOnly: true
-            - mountPath: /opt/api/sso
-              name: api-sso
-              readOnly: true
-            - mountPath: /opt/gitlab/pki
-              name: git-pki
-              readOnly: true
-            - mountPath: /opt/gitlab/sso
-              name: git-sso
-              readOnly: true
-            - mountPath: /opt/docker-registry/pki
-              name: docker-pki
-              readOnly: true
-            - mountPath: /opt/edge/pki
-              name: edge-pki
-              readOnly: true
-            - mountPath: /opt/share-srv/pki
-              name: share-pki
-              readOnly: true
-            - mountPath: /opt/share-srv/sso
-              name: share-sso
-              readOnly: true
-            - mountPath: /opt/common/pki
-              name: common-pki
-              readOnly: true
-            - name: cp-cloud-credentials
-              mountPath: "/root/.cloud"
-              readOnly: true
-            - mountPath: /root/.kube
-              name: kube-config
-              readOnly: true
-            - mountPath: /etc/kubernetes/pki
-              name: kube-pki
-              readOnly: true
       volumes:
         - name: monitoring-srv-logs
           hostPath:
             path: /opt/monitoring/logs
-        - name: api-pki
-          hostPath:
-            path: /opt/api/pki
-        - name: api-sso
-          hostPath:
-            path: /opt/api/sso
-        - name: git-pki
-          hostPath:
-            path: /opt/gitlab/pki
-        - name: git-sso
-          hostPath:
-            path: /opt/gitlab/sso
-        - name: docker-pki
-          hostPath:
-            path: /opt/docker-registry/pki
-        - name: edge-pki
-          hostPath:
-            path: /opt/edge/pki
-        - name: share-pki
-          hostPath:
-            path: /opt/share-srv/pki
-        - name: share-sso
-          hostPath:
-            path: /opt/share-srv/sso
-        - name: common-pki
-          hostPath:
-            path: /opt/common/pki
-        - name: cp-cloud-credentials
-          secret:
-            secretName: cp-cloud-credentials
-        - name: kube-config
-          hostPath:
-            path: /root/.kube
-        - name: kube-pki
-          hostPath:
-            path: /etc/kubernetes/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

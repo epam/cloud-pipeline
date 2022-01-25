@@ -1278,5 +1278,24 @@ if is_service_requested cp-run-policy-manager; then
   fi
 fi
 
+# Monitoring Service
+if is_service_requested cp-monitoring-srv; then
+    print_ok "[Starting Monitoring service deployment]"
+
+    print_info "-> Deleting existing instance of Monitoring service"
+    delete_deployment_and_service   "cp-monitoring-srv" \
+                                    "/opt/monitoring"
+    if is_install_requested; then
+        print_info "-> Deploying Monitoring service"
+        create_kube_resource $K8S_SPECS_HOME/cp-monitoring-srv/cp-monitoring-srv-dpl.yaml
+
+        print_info "-> Waiting for Monitoring service to initialize"
+        wait_for_deployment "cp-monitoring-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-monitoring-srv: deployed"
+    fi
+    echo
+fi
+
 print_ok "Installation done"
 echo -e $CP_INSTALL_SUMMARY
