@@ -135,6 +135,11 @@ public class BillingHelper {
                 .minDocCount(NumberUtils.LONG_ONE);
     }
 
+    public TermsAggregationBuilder aggregateByOwnership() {
+        return AggregationBuilders.terms(BillingUtils.OWNER_FIELD)
+                .script(new Script(BillingUtils.DOC_OWNERSHIP_HASH_SCRIPT));
+    }
+
     public ValueCountAggregationBuilder aggregateUniqueRunsCount() {
         return uniqueRunsAggregation;
     }

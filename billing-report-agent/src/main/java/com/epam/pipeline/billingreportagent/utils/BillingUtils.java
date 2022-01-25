@@ -112,6 +112,8 @@ public final class BillingUtils {
     public static final String DISCOUNT_SCRIPT_TEMPLATE = "_value + _value * (%s)";
     public static final String STORAGE_USAGE_AVG_SCRIPT =
             "doc.containsKey('usage_bytes_avg') ? doc.usage_bytes_avg.value : doc.usage_bytes.value";
+    public static final String DOC_OWNERSHIP_HASH_SCRIPT =
+            "doc.billing_center.value + ' ' + doc.owner.value + ' ' + doc.groups.hashCode()";
 
     private BillingUtils() {
     }
