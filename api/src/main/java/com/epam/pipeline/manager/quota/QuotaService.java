@@ -24,12 +24,13 @@ import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.dto.quota.QuotaPeriod;
 import com.epam.pipeline.dto.quota.QuotaType;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.quota.AppliedQuotaEntity;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.billing.BillingUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
@@ -38,6 +39,7 @@ import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,6 +50,7 @@ import org.springframework.util.Assert;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -157,11 +160,19 @@ public class QuotaService {
     @Transactional
     public List<AppliedQuota> findActiveQuotasForUser(final PipelineUser user) {
         return ListUtils.emptyIfNull(appliedQuotaRepository.findAll(
-                AppliedQuotaSpecification.userActiveQuotas(user,
-                        BillingUtils.getUserBillingCenter(user, billingCenterKey, metadataManager))))
+                AppliedQuotaSpecification.userActiveQuotas(user, getUserBillingCenter(user))))
                 .stream()
                 .map(quotaMapper::appliedQuotaToDto)
                 .collect(Collectors.toList());
+    }
+
+    private String getUserBillingCenter(final PipelineUser user) {
+        return Optional.ofNullable(metadataManager.loadMetadataItem(user.getId(), AclClass.PIPELINE_USER))
+                                .map(MetadataEntry::getData)
+                                .filter(MapUtils::isNotEmpty)
+                                .flatMap(attributes -> Optional.ofNullable(attributes.get(billingCenterKey)))
+                                .flatMap(value -> Optional.ofNullable(value.getValue()))
+                                .orElse(StringUtils.EMPTY);
     }
 
     private void deleteObsoleteActions(final QuotaEntity loaded, final QuotaEntity entity) {

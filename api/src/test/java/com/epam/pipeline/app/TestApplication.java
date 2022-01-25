@@ -19,6 +19,8 @@ package com.epam.pipeline.app;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.monitoring.MonitoringESDao;
 import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.billing.BillingSecurityHelper;
+import com.epam.pipeline.manager.billing.index.BillingIndexHelper;
 import com.epam.pipeline.manager.cloud.CloudFacade;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
@@ -117,6 +119,12 @@ public class TestApplication {
 
     @MockBean
     public BillingManager billingManager;
+
+    @MockBean
+    public BillingSecurityHelper billingSecurityHelper;
+
+    @MockBean
+    public BillingIndexHelper billingIndexHelper;
 
     @MockBean
     public OntologyManager ontologyManager;
