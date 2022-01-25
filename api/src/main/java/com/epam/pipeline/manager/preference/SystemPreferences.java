@@ -605,6 +605,17 @@ public class SystemPreferences {
     public static final IntPreference SYSTEM_VM_SEARCH_DELAY = new IntPreference("system.vm.search.delay.ms",
             1000, SYSTEM_GROUP, isGreaterThan(0));
 
+    public static final IntPreference SYSTEM_USAGE_USERS_MONITOR_DELAY = new IntPreference(
+            "system.usage.users.monitor.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final BooleanPreference SYSTEM_USAGE_USERS_MONITOR_ENABLE = new BooleanPreference(
+            "system.usage.users.monitor.enable", false, SYSTEM_GROUP, pass);
+    public static final BooleanPreference SYSTEM_USAGE_USERS_CLEAN_ENABLE = new BooleanPreference(
+            "system.usage.users.clean.enable", false, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_USAGE_USERS_CLEAN_DELAY = new IntPreference(
+            "system.usage.users.clean.delay", 86400000, SYSTEM_GROUP, isGreaterThan(0));
+    public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
+            "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
+
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
         "firecloud.api.scopes", null, new TypeReference<List<String>>() {}, FIRECLOUD_GROUP,

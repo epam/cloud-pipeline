@@ -25,4 +25,8 @@ public class PipelineResponseException extends RuntimeException {
     public PipelineResponseException(Throwable cause) {
         super(cause);
     }
+
+    public PipelineResponseException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

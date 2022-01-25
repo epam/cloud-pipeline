@@ -107,10 +107,12 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -487,6 +489,12 @@ public class AclTestBeans {
 
     @MockBean
     protected ToolScanInfoManager toolScanInfoManager;
+
+    @MockBean
+    protected UsersUsageReportService usersUsageReportService;
+
+    @MockBean
+    protected OnlineUsersService onlineUsersService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

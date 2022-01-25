@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
@@ -106,6 +107,9 @@ public class UserManager {
 
     @Autowired
     private DataStorageManager dataStorageManager;
+
+    @Autowired
+    private PipelineUserRepository userRepository;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -174,6 +178,10 @@ public class UserManager {
         PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         return user;
+    }
+
+    public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
+        return userRepository.findByRoles_NameIn(roleNames);
     }
 
     public Collection<PipelineUser> loadAllUsers() {
@@ -417,6 +425,10 @@ public class UserManager {
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userDao.loadOnlineUsers();
     }
 
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {

@@ -18,12 +18,14 @@ package com.epam.pipeline.acl.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +49,9 @@ public class UserApiService {
 
     @Autowired
     private UsersFileImportManager usersFileImportManager;
+
+    @Autowired
+    private OnlineUsersService onlineUsersService;
 
     /**
      * Registers a new user
@@ -206,5 +212,15 @@ public class UserApiService {
                                                       final List<String> systemDictionariesToCreate,
                                                       final MultipartFile file) {
         return usersFileImportManager.importUsersFromFile(createUser, createGroup, systemDictionariesToCreate, file);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public OnlineUsers saveCurrentlyOnlineUsers() {
+        return onlineUsersService.saveCurrentlyOnlineUsers();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public boolean deleteExpiredOnlineUsers(final LocalDate date) {
+        return onlineUsersService.deleteExpired(date);
     }
 }

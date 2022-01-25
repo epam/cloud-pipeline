@@ -77,7 +77,8 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           ":api:bootRepackage", ":notifier:smtp:bootRepackage", ":docker-comp-scan:bootRepackage",
                           ":elasticsearch-agent:bootJar", ":data-transfer-service:bootJar", ":vm-monitor:bootJar",
                           ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar",
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux"]) {
+                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
+                          ":monitoring-service:build"]) {
     group = 'build'
 }
 
@@ -86,7 +87,8 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":api:build", ":notifier:smtp:build", ":docker-comp-scan:build",
                           ":elasticsearch-agent:build", ":data-transfer-service:build", ":vm-monitor:build",
                           ":data-sharing-service:buildAll", ":fs-browser:build", ":billing-report-agent:build",
-                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux"]) {
+                          ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
+                          ":monitoring-service:build"]) {
     group = 'build'
 }
 
@@ -151,7 +153,8 @@ task installDist() {
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
-                "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar"
+                "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
+                "$rootDir/monitoring-service/dist/monitoring-service.jar"
         )
 
         distFiles.each {
