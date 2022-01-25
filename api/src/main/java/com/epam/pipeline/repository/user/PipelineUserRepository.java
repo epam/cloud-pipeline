@@ -19,9 +19,13 @@ package com.epam.pipeline.repository.user;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.List;
 import java.util.Optional;
 
+@SuppressWarnings("PMD.MethodNamingConventions")
 public interface PipelineUserRepository extends CrudRepository<PipelineUser, Long> {
 
     Optional<PipelineUser> findByUserName(String userName);
+
+    List<PipelineUser> findByRoles_NameIn(List<String> userName);
 }

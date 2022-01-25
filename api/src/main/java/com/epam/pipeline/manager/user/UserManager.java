@@ -197,6 +197,10 @@ public class UserManager {
                 .collect(Collectors.toList());
     }
 
+    public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
+        return userRepository.findByRoles_NameIn(roleNames);
+    }
+
     public Collection<PipelineUser> loadAllUsers() {
         return userDao.loadAllUsers();
     }
@@ -458,6 +462,10 @@ public class UserManager {
         final PipelineUser loadedUser = loadUserById(user.getId());
         loadedUser.setLastLoginDate(DateUtils.nowUTC());
         userDao.updateUser(loadedUser);
+    }
+
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userDao.loadOnlineUsers();
     }
 
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {

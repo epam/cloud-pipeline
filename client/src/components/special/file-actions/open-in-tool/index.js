@@ -376,10 +376,11 @@ class OpenInToolAction extends React.Component {
     const {
       className,
       style,
-      titleStyle
+      titleStyle,
+      file
     } = this.props;
     const {modalVisible} = this.state;
-    if (this.filteredFileTools.length === 0) {
+    if (this.filteredFileTools.length === 0 || !this.storage || !file) {
       return null;
     }
     return (
@@ -392,7 +393,6 @@ class OpenInToolAction extends React.Component {
         placement="left"
         overlayStyle={{
           width: '35vw',
-          height: '35vh',
           minWidth: 200
         }}
         overlayClassName={styles.modalOverlay}

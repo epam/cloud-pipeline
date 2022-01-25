@@ -94,6 +94,7 @@ import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
+import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
@@ -102,6 +103,7 @@ import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
+import com.epam.pipeline.repository.user.OnlineUsersRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -417,4 +419,10 @@ public class AspectTestBeans {
 
     @MockBean
     protected StorageQuotaTriggersManager storageQuotaTriggersManager;
+
+    @MockBean
+    protected OnlineUsersRepository onlineUsersRepository;
+
+    @MockBean
+    protected OnlineUsersMapper onlineUsersMapper;
 }

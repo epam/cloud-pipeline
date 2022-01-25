@@ -24,6 +24,7 @@ import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.acl.quota.QuotaApiService;
+import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
@@ -246,4 +247,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected QuotaApiService quotaApiService;
+
+    @MockBean
+    protected ReportApiService reportApiService;
 }
