@@ -154,7 +154,7 @@ task installDist() {
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
                 "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
-                "$rootDir/monitoring-service/dist/monitoring-service.jar"
+                "$rootDir/monitoring-service/build/libs/monitoring-service.jar"
         )
 
         distFiles.each {
