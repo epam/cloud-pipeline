@@ -423,6 +423,9 @@ export default `
   color: @application-color;
   border-color: @card-border-color;
 }
+@THEME .ant-table-footer:before {
+  background-color: @card-background-color;
+}
 @THEME .ant-modal-title {
   color: @application-color;
 }
