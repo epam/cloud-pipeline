@@ -2929,4 +2929,13 @@ export default `
 @THEME .d2h-del {
   background-color: @color-red-semi-transparent;
 }
+@THEME .d2h-code-line.d2h-del.d2h-change del {
+  color: @card-background-color;
+  background-color: @color-red;
+}
+@THEME .d2h-code-line.d2h-ins.d2h-change ins {
+  color: @card-background-color;
+  background-color: @color-green;
+}
+
 `;
