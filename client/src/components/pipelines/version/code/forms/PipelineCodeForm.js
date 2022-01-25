@@ -18,13 +18,14 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import classNames from 'classnames';
-import VersionFile from '../../../../../models/pipelines/VersionFile';
 import PropTypes from 'prop-types';
+import Papa from 'papaparse';
+import HotTable from 'react-handsontable';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
+
+import VersionFile from '../../../../../models/pipelines/VersionFile';
 import CodeFileCommitForm from './CodeFileCommitForm';
 import CodeEditor from '../../../../special/CodeEditor';
-import HotTable from 'react-handsontable';
-import Papa from 'papaparse';
 import styles from './PipelineCodeForm.css';
 import roleModel from '../../../../../utils/roleModel';
 
@@ -254,7 +255,7 @@ export default class PipelineCodeForm extends React.Component {
             colHeaders
             rowHeaders
             readOnly={!this.state.editMode}
-            readOnlyCellClassName={'readonly-cell'}
+            readOnlyCellClassName={classNames('readonly-cell', 'cp-table-cell')}
             manualColumnResize
             manualRowResize
             contextMenu={this.state.editMode

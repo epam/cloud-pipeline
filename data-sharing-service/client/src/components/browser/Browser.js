@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {
   Alert,
   Button,
@@ -850,7 +851,7 @@ export default class Browser extends React.Component {
           title={title}
           rowKey="key"
           pagination={false}
-          rowClassName={(item) => `${styles[item.type.toLowerCase()]} ${item.deleteMarker ? styles.deleteMarker : ''}`}
+          rowClassName={(item) => classNames({[styles[item.type.toLowerCase()]]: true}, {'cp-storage-deleted-row': !!item.deleteMarker})}
           locale={{emptyText: 'Folder is empty'}}
           size="small" />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}>

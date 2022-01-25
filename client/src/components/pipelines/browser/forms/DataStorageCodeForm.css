@@ -26,10 +26,6 @@
   overflow: hidden;
 }
 
-.table-editor-readonly td {
-  background-color: #f0f0f0 !important;
-}
-
 .button {
   margin-right: 10px;
   text-transform: uppercase;
