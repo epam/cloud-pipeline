@@ -80,7 +80,6 @@ public class StorageBillingDocumentLoader implements EntityDocumentLoader {
         lastDoc.put(BillingUtils.COST_FIELD, billingHelper.getCostSum(aggregations));
         lastDoc.put(BillingUtils.STORAGE_USAGE_AVG_FIELD, billingHelper.getStorageUsageAvg(aggregations));
         return EntityDocument.builder()
-                .id(id)
                 .fields(lastDoc)
                 .build();
     }

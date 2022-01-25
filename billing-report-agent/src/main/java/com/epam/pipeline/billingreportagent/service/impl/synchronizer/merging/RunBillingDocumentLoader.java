@@ -80,7 +80,6 @@ public class RunBillingDocumentLoader implements EntityDocumentLoader {
         lastDoc.put(BillingUtils.RUN_USAGE_FIELD, billingHelper.getRunUsageSum(aggregations));
         lastDoc.put(BillingUtils.COST_FIELD, billingHelper.getCostSum(aggregations));
         return EntityDocument.builder()
-                .id(id)
                 .fields(lastDoc)
                 .build();
     }
