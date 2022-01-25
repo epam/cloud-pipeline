@@ -2905,5 +2905,28 @@ export default `
   color: @primary-text-color;
   background-color: @primary-color;
 }
-
+@THEME .d2h-file-wrapper,
+@THEME .d2h-file-header,
+@THEME .d2h-diff-table,
+@THEME .d2h-code-linenumber,
+@THEME .d2h-code-line.d2h-info,
+@THEME .d2h-code-linenumber.d2h-info {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+@THEME .d2h-tag {
+  background-color: @card-background-color;
+}
+@THEME .d2h-info {
+  background-color: @panel-background-color;
+}
+@THEME .d2h-file-diff .d2h-ins.d2h-change,
+@THEME .d2h-ins {
+  background-color: @color-green-semi-transparent;
+}
+@THEME .d2h-file-diff .d2h-del.d2h-change,
+@THEME .d2h-del {
+  background-color: @color-red-semi-transparent;
+}
 `;
