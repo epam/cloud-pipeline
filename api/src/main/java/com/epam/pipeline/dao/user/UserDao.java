@@ -71,6 +71,7 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     private String loadUsersByStorageIdQuery;
     private String addRoleToUserQuery;
     private String deleteRoleFromUserQuery;
+    private String loadOnlineUsersQuery;
 
     @Autowired
     private DaoHelper daoHelper;
@@ -243,6 +244,12 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
      */
     public List<String> loadAllGroups() {
         return getJdbcTemplate().query(loadAllGroupsQuery, UserParameters.getGroupExtractor());
+    }
+
+    public Collection<PipelineUser> loadOnlineUsers() {
+        return getJdbcTemplate().query(loadOnlineUsersQuery,
+                UserParameters.getUserExtractor(),
+                System.currentTimeMillis());
     }
 
     enum UserParameters {
@@ -504,5 +511,10 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadUsersByGroupOrRoleQuery(final String loadUsersByGroupOrRoleQuery) {
         this.loadUsersByGroupOrRoleQuery = loadUsersByGroupOrRoleQuery;
+    }
+
+    @Required
+    public void setLoadOnlineUsersQuery(final String loadOnlineUsersQuery) {
+        this.loadOnlineUsersQuery = loadOnlineUsersQuery;
     }
 }
