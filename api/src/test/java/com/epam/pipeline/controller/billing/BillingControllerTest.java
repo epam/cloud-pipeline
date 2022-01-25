@@ -50,7 +50,7 @@ public class BillingControllerTest extends AbstractControllerTest {
                                                 "\"to\":\"+999999999-12-31\"," +
                                                 "\"filters\":{\"test\":[\"test\"]}," +
                                                 "\"interval\":\"1d\"," +
-                                                "\"grouping\":\"BILLING_CENTER\"," +
+                                                "\"grouping\":\"billing_center\"," +
                                                 "\"loadDetails\":true," +
                                                 "\"pageSize\":5," +
                                                 "\"pageNum\":1}";

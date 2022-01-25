@@ -16,11 +16,14 @@
 
 package com.epam.pipeline.manager.billing;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.billing.BillingTemplateDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.billing.BillingReportTemplate;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
+import com.epam.pipeline.manager.security.acl.AclSync;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -33,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+@AclSync
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -40,26 +44,30 @@ import java.util.List;
 public class BillingTemplateManager implements SecuredEntityManager {
 
     private final BillingTemplateDao billingTemplateDao;
+    private final MessageHelper messageHelper;
 
     public List<BillingReportTemplate> loadAll() {
         return billingTemplateDao.loadAll();
     }
 
     @Override
-    public BillingReportTemplate load(Long id) {
+    public BillingReportTemplate load(final Long id) {
         return billingTemplateDao.load(id)
-                .orElseThrow(() -> new IllegalArgumentException("Can't find Billing report template with id: " + id));
+                .orElseThrow(() -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_BILLING_CUSTOM_TEMPLATE_NOT_FOUND, id)));
     }
 
-    public BillingReportTemplate loadByName(String name) {
+    public BillingReportTemplate loadByName(final String name) {
         return billingTemplateDao.loadByName(name).orElseThrow(
-                () -> new IllegalArgumentException("Can't find Billing report template with name: " + name));
+                () -> new IllegalArgumentException(
+                        messageHelper.getMessage(MessageConstants.ERROR_BILLING_CUSTOM_TEMPLATE_NOT_FOUND, name)));
     }
 
     @Override
-    public BillingReportTemplate loadByNameOrId(String identifier) {
+    public BillingReportTemplate loadByNameOrId(final String identifier) {
         if (StringUtils.isEmpty(identifier)) {
-            throw new IllegalArgumentException("Provided identifier is empty!");
+            throw new IllegalArgumentException(
+                    messageHelper.getMessage(MessageConstants.ERROR_BILLING_CUSTOM_TEMPLATE_ID_EMPTY));
         }
         if (NumberUtils.isNumber(identifier)) {
             return load(Long.getLong(identifier));
@@ -69,16 +77,16 @@ public class BillingTemplateManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public BillingReportTemplate create(BillingReportTemplate template) {
+    public BillingReportTemplate create(final BillingReportTemplate template) {
         return billingTemplateDao.create(template);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public BillingReportTemplate update(BillingReportTemplate template) {
+    public BillingReportTemplate update(final BillingReportTemplate template) {
         if (template.getId() == null) {
             throw new IllegalArgumentException();
         }
-        BillingReportTemplate loaded = load(template.getId());
+        final BillingReportTemplate loaded = load(template.getId());
         if (loaded != null) {
             return billingTemplateDao.update(template);
         } else {
@@ -109,12 +117,12 @@ public class BillingTemplateManager implements SecuredEntityManager {
     }
 
     @Override
-    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(Integer page, Integer pageSize) {
+    public Collection<? extends AbstractSecuredEntity> loadAllWithParents(final Integer page, final Integer pageSize) {
         return Collections.emptyList();
     }
 
     @Override
-    public AbstractSecuredEntity loadWithParents(Long id) {
+    public AbstractSecuredEntity loadWithParents(final Long id) {
         return load(id);
     }
 

@@ -594,6 +594,13 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_GROUPING_SHOULD_BE_SPECIFIED =
             "error.billing.grouping.should.be.specified";
 
+    //Billing custom templates
+    public static final String ERROR_BILLING_CUSTOM_TEMPLATE_NOT_FOUND = "error.billing.custom.template.not.found";
+    public static final String ERROR_BILLING_CUSTOM_TEMPLATE_NOT_FOUND_BY_NAME =
+            "error.billing.custom.template.name.not.found";
+    public static final String ERROR_BILLING_CUSTOM_TEMPLATE_ID_EMPTY = "error.billing.custom.template.id.empty";
+
+
     //Disks
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
     public static final String ERROR_DISK_DATE_MISSING = "error.disk.date.missing";
