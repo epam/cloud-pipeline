@@ -116,7 +116,9 @@ export default class S3FilePreview extends React.Component {
   @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
-      this.props.item && this.props.item.id.split('.').pop().toLowerCase() === 'csv') {
+      this.props.item && this.props.item.id &&
+      this.props.item.id.split('.').pop().toLowerCase() === 'csv'
+    ) {
       const result = {};
       const parseRes = Papa.parse(this.filePreview.preview);
       if (parseRes.errors.length) {
@@ -355,7 +357,7 @@ export default class S3FilePreview extends React.Component {
     ) {
       return null;
     }
-    const extension = this.props.item.id.split('.').pop().toLowerCase();
+    const extension = this.props.item.id && this.props.item.id.split('.').pop().toLowerCase();
     const previewRenderers = {
       pdb: this.renderPDBPreview,
       csv: this.renderCSVPreview,
