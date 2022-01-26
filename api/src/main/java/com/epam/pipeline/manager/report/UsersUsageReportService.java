@@ -29,9 +29,7 @@ import org.apache.commons.math3.stat.descriptive.rank.Median;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -50,8 +48,8 @@ public class UsersUsageReportService {
         final UsersUsageReportFilterVO preparedFilter = prepareFilter(Objects.isNull(filter)
                 ? new UsersUsageReportFilterVO()
                 : filter);
-        final LocalDateTime start = preparedFilter.getFrom().atStartOfDay();
-        final LocalDateTime end = buildEndOfInterval(preparedFilter.getTo());
+        final LocalDateTime start = preparedFilter.getFrom();
+        final LocalDateTime end = preparedFilter.getTo();
         final List<OnlineUsers> onlineUsers = onlineUsersService.getUsersByPeriod(start, end,
                 preparedFilter.getUsers());
         if (ChronoUnit.HOURS == filter.getInterval()) {
@@ -67,11 +65,9 @@ public class UsersUsageReportService {
     private UsersUsageReportFilterVO prepareFilter(final UsersUsageReportFilterVO filter) {
         Assert.notNull(filter.getInterval(), "Interval must be specified");
         if (Objects.isNull(filter.getFrom())) {
-            filter.setFrom(DateUtils.nowUTC().toLocalDate());
+            filter.setFrom(DateUtils.nowUTC().toLocalDate().atStartOfDay());
         }
-        if (Objects.isNull(filter.getTo())) {
-            filter.setTo(DateUtils.nowUTC().toLocalDate());
-        }
+        filter.setTo(buildEndOfInterval(filter.getTo()));
         Assert.state(!filter.getFrom().isAfter(filter.getTo()), "'from' date must be before 'to' date");
         if (CollectionUtils.isNotEmpty(filter.getRoles())) {
             if (Objects.isNull(filter.getUsers())) {
@@ -95,10 +91,12 @@ public class UsersUsageReportService {
         return timeIntervals;
     }
 
-    private LocalDateTime buildEndOfInterval(final LocalDate to) {
-        final LocalDateTime end = to.atTime(LocalTime.MAX);
+    private LocalDateTime buildEndOfInterval(final LocalDateTime to) {
         final LocalDateTime now = DateUtils.nowUTC();
-        return end.isAfter(now) ? now : end;
+        if (Objects.isNull(to)) {
+            return now;
+        }
+        return to.isAfter(now) ? now : to;
     }
 
     private UsersUsageInfo buildHourUsersUsageInfo(final List<OnlineUsers> users, final LocalDateTime from,

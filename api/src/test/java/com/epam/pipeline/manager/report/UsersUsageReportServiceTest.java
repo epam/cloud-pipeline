@@ -58,8 +58,8 @@ public class UsersUsageReportServiceTest {
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.HOURS)
-                .from(from.toLocalDate())
-                .to(to.toLocalDate())
+                .from(from)
+                .to(to)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, null);
 
@@ -88,8 +88,8 @@ public class UsersUsageReportServiceTest {
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.HOURS)
-                .from(from.toLocalDate())
-                .to(to.toLocalDate())
+                .from(from)
+                .to(to)
                 .users(FILTER_USERS)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, FILTER_USERS);
@@ -123,8 +123,8 @@ public class UsersUsageReportServiceTest {
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.DAYS)
-                .from(from.toLocalDate())
-                .to(to.toLocalDate())
+                .from(from)
+                .to(to)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, null);
 
@@ -159,8 +159,8 @@ public class UsersUsageReportServiceTest {
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.DAYS)
-                .from(from.toLocalDate())
-                .to(to.toLocalDate())
+                .from(from)
+                .to(to)
                 .users(FILTER_USERS)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, FILTER_USERS);
