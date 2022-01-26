@@ -127,6 +127,7 @@ export default {
     '@table-element-hover-color': '@element-hover-color',
     '@table-border-color': '@card-border-color',
     '@table-head-color': '@application-color-accent',
+    '@deleted-row-accent': 'fadeout(@color-error, 90%)',
     '@menu-active-color': '@primary-color',
     '@btn-danger-color': '@color-error',
     '@btn-danger-background-color': '@btn-disabled-background-color',

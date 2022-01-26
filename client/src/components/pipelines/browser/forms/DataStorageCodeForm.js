@@ -18,7 +18,9 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
+
 import CodeEditor from '../../../special/CodeEditor';
 import HotTable from 'react-handsontable';
 import Papa from 'papaparse';
@@ -279,7 +281,7 @@ export default class DataStorageCodeForm extends React.Component {
             colHeaders={true}
             rowHeaders={true}
             readOnly={!this.state.editMode}
-            readOnlyCellClassName={'readonly-cell'}
+            readOnlyCellClassName={classNames('readonly-cell', 'cp-table-cell')}
             manualColumnResize={true}
             manualRowResize={true}
             contextMenu={this.state.editMode

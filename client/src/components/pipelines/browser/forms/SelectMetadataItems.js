@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {
   Alert,
   Button,
@@ -238,7 +239,7 @@ class SelectMetadataItems extends React.Component {
     const columns = [
       {
         key: 'selection',
-        className: styles.selectionColumn,
+        className: classNames(styles.selectionColumn, 'cp-table-cell'),
         fixed: 'left',
         render: ({externalId}) => (
           <Checkbox
@@ -256,7 +257,7 @@ class SelectMetadataItems extends React.Component {
         fixed: /^externalId$/i.test(field)
           ? 'left'
           : undefined,
-        className: `${styles.column} ${styles[field]}`,
+        className: `${styles.column} ${styles[field]} cp-table-cell`,
         title: /^externalId$/i.test(field) ? 'ID' : field,
         render: renderCell
       }))
