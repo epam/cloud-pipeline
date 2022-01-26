@@ -1211,6 +1211,25 @@ export default class DataStorage extends React.Component {
         hasVersions = true;
       }
     }
+    const getItemIcon = (item) => {
+      if (!item) {
+        return null;
+      }
+      if (/^file$/i.test(item.type) && /^samplesheet.csv$/i.test(item.name)) {
+        return (
+          <Icon
+            className={classNames(styles.itemType, 'cp-primary')}
+            type="appstore-o"
+          />
+        );
+      }
+      return (
+        <Icon
+          className={styles.itemType}
+          type={item.type.toLowerCase()}
+        />
+      );
+    };
     const selectionColumn = {
       key: 'selection',
       title: '',
@@ -1233,7 +1252,7 @@ export default class DataStorage extends React.Component {
       title: '',
       className: styles.itemTypeCell,
       onCellClick: (item) => this.didSelectDataStorageItem(item),
-      render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
+      render: (text, item) => getItemIcon(item)
     };
     const appsColumn = {
       key: 'apps',

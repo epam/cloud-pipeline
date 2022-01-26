@@ -27,6 +27,7 @@ import Papa from 'papaparse';
 import styles from './DataStorageCodeForm.css';
 import GenerateDownloadUrlRequest from '../../../../models/dataStorage/GenerateDownloadUrl';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
+import SampleSheet, {utilities} from '../../../special/sample-sheet';
 
 @inject(({routing}, params) => ({
   routing
@@ -34,7 +35,6 @@ import DataStorageItemContent from '../../../../models/dataStorage/DataStorageIt
 @inject('cancel', 'storageId', 'save')
 @observer
 export default class DataStorageCodeForm extends React.Component {
-
   static propTypes = {
     file: PropTypes.object,
     cancel: PropTypes.func,
@@ -171,7 +171,7 @@ export default class DataStorageCodeForm extends React.Component {
     }
   };
 
-  toggleEditMode = async() => {
+  toggleEditMode = async () => {
     if (this.hotEditor && this.state.editMode) {
       this._modifiedCode = this.stringTableData;
     }
@@ -183,6 +183,29 @@ export default class DataStorageCodeForm extends React.Component {
     } else {
       this._modifiedCode = null;
       this.setState({editMode: !this.state.editMode});
+    }
+  };
+
+  cancelEdit = () => {
+    if (this.hotEditor && this.state.editMode) {
+      this._modifiedCode = this.stringTableData;
+    }
+    const reset = () => {
+      this._modifiedCode = null;
+      this.setState({editMode: false});
+    };
+    if (this._modifiedCode !== null && this._modifiedCode !== this._originalCode) {
+      Modal.confirm({
+        title: `All changes will be lost. Continue?`,
+        style: {
+          wordWrap: 'break-word'
+        },
+        onOk () {
+          reset();
+        }
+      });
+    } else {
+      reset();
     }
   };
 
@@ -227,6 +250,18 @@ export default class DataStorageCodeForm extends React.Component {
       this.fileType === 'csv';
   }
 
+  get isSampleSheet () {
+    const {file} = this.props;
+    const code = this._modifiedCode === null ? this._originalCode : this._modifiedCode;
+    return this.isTabular &&
+      file &&
+      file.name &&
+      this._fileContents &&
+      this._fileContents.loaded &&
+      code &&
+      utilities.isSampleSheetContent(code, file.name);
+  }
+
   get structuredTableData () {
     const result = {};
     const csvString = this._modifiedCode !== null
@@ -265,9 +300,19 @@ export default class DataStorageCodeForm extends React.Component {
     return Papa.unparse(this.hotEditor.hotInstance.getData(), unparseConfig);
   }
 
-  get fileEditor () {
+  renderFileEditor () {
     if (this._fileContents && this._fileContents.pending) {
       return null;
+    }
+    if (this.isSampleSheet && !this.state.editTabularAsText) {
+      return (
+        <SampleSheet
+          content={this._modifiedCode === null ? this._originalCode : this._modifiedCode}
+          onChange={this.onCodeChange}
+          style={{height: '100%', overflow: 'auto'}}
+          editable={this.state.editMode}
+        />
+      );
     }
     if (this.isTabular && !this.state.editTabularAsText) {
       this._tableData = this.structuredTableData;
@@ -278,12 +323,12 @@ export default class DataStorageCodeForm extends React.Component {
             root="hot"
             ref={this.initializeTableEditor}
             data={this._tableData.data}
-            colHeaders={true}
-            rowHeaders={true}
+            colHeaders
+            rowHeaders
             readOnly={!this.state.editMode}
             readOnlyCellClassName={classNames('readonly-cell', 'cp-table-cell')}
-            manualColumnResize={true}
-            manualRowResize={true}
+            manualColumnResize
+            manualRowResize
             contextMenu={this.state.editMode
               ? [
                 'row_above',
@@ -309,22 +354,22 @@ export default class DataStorageCodeForm extends React.Component {
           <Alert
             message={`Error parsing tabular file ${this.props.file.name}:
               ${this._tableData.message}`}
-            type="error"/>
+            type="error"
+          />
         );
-    } else {
-      return (
-        <CodeEditor
-          ref={this.initializeEditor}
-          readOnly={!this.state.editMode}
-          code={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
-          onChange={this.onCodeChange}
-          supportsFullScreen={true}
-          language="text"
-          fileName={this.props.file ? this.props.file.name : undefined}
-          delayedUpdate={true}
-        />
-      );
     }
+    return (
+      <CodeEditor
+        ref={this.initializeEditor}
+        readOnly={!this.state.editMode}
+        code={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
+        onChange={this.onCodeChange}
+        supportsFullScreen
+        language="text"
+        fileName={this.props.file ? this.props.file.name : undefined}
+        delayedUpdate
+      />
+    );
   }
 
   render () {
@@ -361,17 +406,40 @@ export default class DataStorageCodeForm extends React.Component {
             }
             {
               this.isEditable && this.state.editMode &&
-              <Button type="primary" className={styles.button} onClick={this.toggleEditMode}>
+              <Button
+                id="code-form-save-edit-button"
+                type="primary"
+                className={styles.button}
+                onClick={this.toggleEditMode}
+              >
                 Save
               </Button>
             }
             {
+              this.isEditable && this.state.editMode &&
+              <Button
+                id="code-form-cancel-edit-button"
+                className={styles.button}
+                onClick={this.cancelEdit}
+              >
+                CANCEL
+              </Button>
+            }
+            {
               this.isEditable && !this.state.editMode &&
-              <Button className={styles.button} onClick={this.toggleEditMode}>
+              <Button
+                id="code-form-edit-button"
+                className={styles.button}
+                onClick={this.toggleEditMode}
+              >
                 Edit
               </Button>
             }
-            <Button className={styles.button} onClick={this.onClose}>
+            <Button
+              id="code-form-close-button"
+              className={styles.button}
+              onClick={this.onClose}
+            >
               Close
             </Button>
           </Col>
@@ -387,10 +455,11 @@ export default class DataStorageCodeForm extends React.Component {
         maskClosable={false}
         footer={false}
         style={{top: 20}}
+        bodyStyle={{padding: 8}}
       >
         <Spin spinning={this._fileContents && this._fileContents.pending}>
           <div className={`${styles.editorContainer} ${tableClassName}`}>
-            { this.fileEditor }
+            {this.renderFileEditor()}
           </div>
         </Spin>
       </Modal>

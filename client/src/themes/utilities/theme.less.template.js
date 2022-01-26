@@ -2449,6 +2449,11 @@ export default `
   border-bottom: 1px solid @input-addon;
   background-color: @card-background-color;
 }
+@THEME .cp-sample-sheet-table,
+@THEME .cp-sample-sheet-table th,
+@THEME .cp-sample-sheet-table td {
+  border-color: @card-border-color;
+}
 
 @THEME .cp-node-tag {
   border-color: @application-color-disabled;
@@ -2849,6 +2854,19 @@ export default `
 @THEME .handsontable td.area {
   background-image: linear-gradient(to bottom, @primary-color-semi-transparent 0%, @primary-color-semi-transparent 100%);
   background-color: @card-background-color;
+}
+@THEME .htContextMenu table.htCore,
+@THEME .htContextMenu table tbody tr td.htSeparator {
+  border-color: @card-border-color;
+}
+@THEME .htContextMenu table tbody tr td.current,
+@THEME .htContextMenu table tbody tr td.zeroclipboard-is-hover {
+  background-color: @element-selected-background-color;
+}
+@THEME .htContextMenu table tbody tr td.htDisabled,
+@THEME .htContextMenu table tbody tr td.htDisabled:hover {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
 }
 @THEME .cp-pipeline-code-editor-readonly .handsontable td,
 @THEME .cp-pipeline-code-editor-readonly .handsontable td.area,

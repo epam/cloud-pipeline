@@ -373,6 +373,22 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
   background-color: @card-background-color;
 }
 
+.htContextMenu table.htCore,
+.htContextMenu table tbody tr td.htSeparator {
+  border-color: @card-border-color;
+}
+
+.htContextMenu table tbody tr td.current,
+.htContextMenu table tbody tr td.zeroclipboard-is-hover {
+  background-color: @element-selected-background-color;
+}
+
+.htContextMenu table tbody tr td.htDisabled,
+.htContextMenu table tbody tr td.htDisabled:hover {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
+
 .cp-pipeline-code-editor-readonly .handsontable td,
 .cp-pipeline-code-editor-readonly .handsontable td.area,
 .cp-pipeline-code-editor-readonly .CodeMirror {
