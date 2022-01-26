@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
 # limitations under the License.
 
 FROM centos:7
+
+ENV LANG="en_US.UTF-8" \
+	LC_ALL="en_US.UTF-8" \
+	LC_CTYPE="en_US.UTF-8"
 
 RUN	yum install -y unzip && \
 	curl -o bcl2fastq2-v2-20-0-linux-x86-64.zip "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bcl2fastq2/2.20.0/bcl2fastq2-v2-20-0-linux-x86-64.zip" && \
