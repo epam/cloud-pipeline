@@ -45,6 +45,8 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
+import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.vo.cluster.pool.NodePoolUsageRecord;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
@@ -55,6 +57,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -220,5 +223,13 @@ public class CloudPipelineAPIClient {
 
     public FileShareMount loadFileShareMount(final Long id) {
         return executor.execute(cloudPipelineAPI.loadShareMount(id));
+    }
+
+    public NodePoolUsage saveNodePoolUsage(final List<NodePoolUsageRecord> records) {
+        return executor.execute(cloudPipelineAPI.saveNodePoolUsage(records));
+    }
+
+    public boolean deleteExpiredNodePoolUsage(final LocalDate date) {
+        return executor.execute(cloudPipelineAPI.deleteExpiredNodePoolUsage(date));
     }
 }

@@ -16,33 +16,33 @@
 
 package com.epam.pipeline.monitor.monitoring.user;
 
-import com.epam.pipeline.monitor.monitoring.AbstractSchedulingService;
+import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
-import com.epam.pipeline.monitor.service.preference.PreferencesService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-
 @Service
-public class OnlineUsersMonitoringService extends AbstractSchedulingService {
-    private final OnlineUsersMonitoringServiceCore core;
-    private final String monitorDelayPreferenceName;
+@Slf4j
+public class OnlineUsersMonitoringService implements MonitoringService {
+    private final CloudPipelineAPIClient client;
+    private final String monitorEnabledPreferenceName;
 
-    public OnlineUsersMonitoringService(final TaskScheduler scheduler,
-                                        final OnlineUsersMonitoringServiceCore core,
-                                        final CloudPipelineAPIClient client,
-                                        @Value("${preference.name.usage.users.monitor.delay}")
-                                        final String monitorDelayPreferenceName,
-                                        final PreferencesService preferencesService) {
-        super(scheduler, client, preferencesService);
-        this.core = core;
-        this.monitorDelayPreferenceName = monitorDelayPreferenceName;
+    public OnlineUsersMonitoringService(final CloudPipelineAPIClient client,
+                                        @Value("${preference.name.usage.users.monitor.enable}")
+                                            final String monitorEnabledPreferenceName) {
+        this.client = client;
+        this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
     }
 
-    @PostConstruct
-    public void init() {
-        scheduleFixedDelay(core::monitor, monitorDelayPreferenceName, "UsageUserMonitor");
+    @Override
+    public void monitor() {
+        if (!client.getBooleanPreference(monitorEnabledPreferenceName)) {
+            log.debug("Users usage monitor is not enabled");
+            return;
+        }
+
+        client.saveOnlineUsers();
+        log.debug("Finished online users monitoring");
     }
 }
