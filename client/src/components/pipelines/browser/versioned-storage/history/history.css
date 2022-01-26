@@ -76,8 +76,12 @@
   line-height: 1;
 }
 
-.commit .diff {
+.commit .commit-controls {
   float: right;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .commit .line > * {
@@ -92,15 +96,10 @@
   display: inline-block;
 }
 
-.commit .message {
-}
-
 .commit .sha {
   font-family: monospace;
   white-space: nowrap;
 }
-
-.commit .date {}
 
 .diff-content .empty-content {
   font-style: italic;

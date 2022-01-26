@@ -28,17 +28,26 @@ import Papa from 'papaparse';
 import styles from './PipelineCodeForm.css';
 import roleModel from '../../../../../utils/roleModel';
 
+const FILE_PREVIEW_MODES = {
+  default: 'default',
+  history: 'history'
+};
+
 @inject(({routing}, params) => ({
   routing
 }))
 @inject('cancel', 'version', 'pipeline', 'save')
 @observer
-export default class PipelineCodeForm extends React.Component {
+class PipelineCodeForm extends React.Component {
   static propTypes = {
     file: PropTypes.object,
+    pipeline: PropTypes.object,
     version: PropTypes.string,
     cancel: PropTypes.func,
     save: PropTypes.func,
+    onDownloadFile: PropTypes.func,
+    renderContentFn: PropTypes.func,
+    filePreviewMode: PropTypes.string,
     vsStorage: PropTypes.bool
   };
 
@@ -75,12 +84,32 @@ export default class PipelineCodeForm extends React.Component {
 
   componentDidUpdate () {
     if (this._fileContents && !this._fileContents.pending && !this._originalCode) {
-      this._originalCode = atob(this._fileContents.response);
+      this._originalCode = this.fileHasErrors
+        ? null
+        : window.atob(this._fileContents.response);
     }
+  }
+
+  get filePreviewMode () {
+    const {filePreviewMode} = this.props;
+    return filePreviewMode || FILE_PREVIEW_MODES.default;
+  }
+
+  get fileHasErrors () {
+    return typeof this._fileContents.response === 'object' &&
+      this._fileContents.response.status === 'ERROR';
   }
 
   onCodeChange = (newText) => {
     this._modifiedCode = newText;
+  };
+
+  onDownload = () => {
+    const {onDownloadFile, file, version} = this.props;
+    if (onDownloadFile && file) {
+      onDownloadFile(file, version);
+    }
+    return null;
   };
 
   onClose = () => {
@@ -119,7 +148,7 @@ export default class PipelineCodeForm extends React.Component {
       editTabularAsText: false
     }, () => {
       this.closeCommitForm();
-      this.props.save(this._modifiedCode, options.message);
+      this.props.save && this.props.save(this._modifiedCode, options.message);
     });
   };
 
@@ -157,6 +186,7 @@ export default class PipelineCodeForm extends React.Component {
       roleModel.writeAllowed(pipeline.value) &&
       pipeline.value &&
       pipeline.value.currentVersion &&
+      this.filePreviewMode !== FILE_PREVIEW_MODES.history &&
       version &&
       (vsStorage
         ? pipeline.value.currentVersion.commitId
@@ -167,6 +197,23 @@ export default class PipelineCodeForm extends React.Component {
         ? this.props.pipeline.value.currentVersion.commitId
         : this.props.pipeline.value.currentVersion.name;
       return currentVersionName.toLowerCase() === this.props.version.toLowerCase();
+    }
+    return false;
+  }
+
+  get isDownloadable () {
+    const {vsStorage, pipeline, version} = this.props;
+    if (
+      pipeline &&
+      roleModel.readAllowed(pipeline.value) &&
+      version &&
+      vsStorage &&
+      this._fileContents &&
+      !this._fileContents.pending &&
+      !this.fileHasErrors &&
+      this.filePreviewMode === FILE_PREVIEW_MODES.history
+    ) {
+      return true;
     }
     return false;
   }
@@ -304,7 +351,16 @@ export default class PipelineCodeForm extends React.Component {
     const title = this.props.file
       ? (
         <Row type="flex" justify="space-between">
-          <Col>{this.props.name}</Col>
+          {this.props.name
+            ? (<Col>{this.props.name}</Col>)
+            : null
+          }
+          <Col>
+            {this.filePreviewMode === FILE_PREVIEW_MODES.history
+              ? `At revision ${this.props.version}:`
+              : ''
+            }
+          </Col>
           <Col>
             {
               this.isEditable && this.isTabular &&
@@ -325,6 +381,12 @@ export default class PipelineCodeForm extends React.Component {
                 Edit
               </Button>
             }
+            {
+              this.isDownloadable && !this.state.editMode &&
+              <Button className={styles.button} onClick={this.onDownload}>
+                Download
+              </Button>
+            }
             <Button className={styles.button} onClick={this.onClose}>
               Close
             </Button>
@@ -342,28 +404,37 @@ export default class PipelineCodeForm extends React.Component {
         footer={false}
         style={{top: 20}}
       >
-        <div className={styles.spinContainer}>
-          <Spin spinning={this._fileContents && this._fileContents.pending}>
-            <div
-              className={
-                classNames(
-                  styles.editorContainer,
-                  styles.tableEditor,
-                  {
-                    'cp-pipeline-code-editor-readonly': !this.state.editMode
+        {this.props.renderContentFn
+          ? this.props.renderContentFn()
+          : (
+            <div className={styles.spinContainer}>
+              <Spin spinning={this._fileContents && this._fileContents.pending}>
+                <div
+                  className={
+                    classNames(
+                      styles.editorContainer,
+                      styles.tableEditor,
+                      {
+                        'cp-pipeline-code-editor-readonly': !this.state.editMode
+                      }
+                    )
                   }
-                )
-              }
-            >
-              { this.fileEditor }
+                >
+                  { this.fileEditor }
+                </div>
+              </Spin>
+              <CodeFileCommitForm
+                visible={this.state.commitMessageForm}
+                pending={false} onSubmit={this.doCommit}
+                onCancel={this.closeCommitForm}
+              />
             </div>
-          </Spin>
-          <CodeFileCommitForm
-            visible={this.state.commitMessageForm}
-            pending={false} onSubmit={this.doCommit}
-            onCancel={this.closeCommitForm} />
-        </div>
+          )
+        }
       </Modal>
     );
   }
 }
+
+export default PipelineCodeForm;
+export {FILE_PREVIEW_MODES};

@@ -27,12 +27,13 @@ import {
 } from 'antd';
 import Papa from 'papaparse';
 import VersionFile from '../../../../../models/pipelines/VersionFile';
+import PipelineCodeForm, {FILE_PREVIEW_MODES} from '../../../version/code/forms/PipelineCodeForm';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel';
 import VSHistory from '../history';
 import styles from './info-panel.css';
 
-const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 25kb
+const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 75kb
 const CONTENT_INFO = [{
   key: 'preview',
   containerStyle: {
@@ -75,7 +76,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
     binaryFile: false,
     tabularFile: false,
     fileContent: null,
-    editFile: false,
+    previewFileVersion: null,
     fileEditable: true,
     fileSizeExceeded: false
   };
@@ -99,9 +100,35 @@ class InfoPanel extends localization.LocalizedReactComponent {
     return false;
   };
 
+  get fileHasWarnings () {
+    const {file} = this.props;
+    const {
+      fileFetchingError,
+      fileIsFetching,
+      binaryFile
+    } = this.state;
+    if (
+      fileIsFetching ||
+      fileFetchingError ||
+      (file && file.size > MAX_SIZE_TO_PREVIEW) ||
+      binaryFile
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   handleFileEdit = () => {
     const {onFileEdit} = this.props;
     onFileEdit && onFileEdit();
+  };
+
+  showVersionPreview = (commit) => {
+    this.setState({previewFileVersion: commit});
+  };
+
+  closeVersionPreview = () => {
+    this.setState({previewFileVersion: null});
   };
 
   handleGoBackClick = () => {
@@ -186,15 +213,17 @@ class InfoPanel extends localization.LocalizedReactComponent {
   };
 
   renderDownloadLink = (description) => {
-    const {file, onFileDownload} = this.props;
+    const {previewFileVersion} = this.state;
+    const {file, onFileDownload, lastCommitId} = this.props;
     if (!file) {
       return null;
     }
+    const version = previewFileVersion || lastCommitId;
     return (
       <span>
         <span
           className={styles.downloadBtn}
-          onClick={() => onFileDownload(file)}
+          onClick={() => onFileDownload(file, version)}
         >
           Download file
         </span>
@@ -203,8 +232,9 @@ class InfoPanel extends localization.LocalizedReactComponent {
     );
   };
 
-  renderPreviewHeader = () => {
+  renderFileWarnings = () => {
     const {file} = this.props;
+    const {previewFileVersion} = this.state;
     if (!file) {
       return null;
     }
@@ -213,8 +243,15 @@ class InfoPanel extends localization.LocalizedReactComponent {
       fileIsFetching,
       binaryFile
     } = this.state;
-    const {fileEditable} = this.state;
-    let content;
+    let content = null;
+    const previewFileVersionWarning = () => {
+      if (binaryFile) {
+        return 'File is binary. Preview is not available. Download file to view contents';
+      } else if (file.size > MAX_SIZE_TO_PREVIEW) {
+        return 'File is too large to be shown. Download file to view full contents';
+      }
+      return '';
+    };
     if (fileIsFetching) {
       content = (
         <Row type="flex" justify="center">
@@ -246,12 +283,33 @@ class InfoPanel extends localization.LocalizedReactComponent {
           type="flex"
           style={{color: '#777', marginTop: 5, marginBottom: 5}}
         >
-          <span style={{marginRight: 5}}>
-            File preview is not available.
-          </span>
-          {this.renderDownloadLink('to view full contents')}
+          {previewFileVersion ? (
+            <span>
+              {previewFileVersionWarning()}
+            </span>
+          ) : (
+            <div>
+              <span style={{marginRight: 5}}>
+                File preview is not available.
+              </span>
+              {this.renderDownloadLink('to view full contents')}
+            </div>
+          )}
         </Row>
       );
+    }
+    return content;
+  };
+
+  renderPreviewHeader = () => {
+    const {file} = this.props;
+    if (!file) {
+      return null;
+    }
+    const {fileEditable} = this.state;
+    let content;
+    if (this.fileHasWarnings) {
+      content = this.renderFileWarnings();
     } else {
       content = (
         <Row
@@ -400,6 +458,24 @@ class InfoPanel extends localization.LocalizedReactComponent {
     }
   };
 
+  renderVersionPreview = () => {
+    const {previewFileVersion} = this.state;
+    const {pipeline, file, onFileDownload} = this.props;
+    return (
+      <PipelineCodeForm
+        file={previewFileVersion ? file : null}
+        pipeline={pipeline}
+        version={previewFileVersion}
+        cancel={this.closeVersionPreview}
+        save={() => {}}
+        onDownloadFile={onFileDownload}
+        filePreviewMode={FILE_PREVIEW_MODES.history}
+        vsStorage
+        renderContentFn={this.fileHasWarnings ? this.renderFileWarnings : null}
+      />
+    );
+  };
+
   render () {
     const {
       lastCommitId,
@@ -421,6 +497,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
             >
               {this.renderPreviewHeader()}
               {this.renderFilePreview()}
+              {this.renderVersionPreview()}
             </div>
           )
         }
@@ -433,6 +510,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           style={{
             flex: 1
           }}
+          onShowVersionPreview={this.showVersionPreview}
         />
       </SplitPanel>
     );
@@ -442,6 +520,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
 InfoPanel.propTypes = {
   file: PropTypes.object,
   path: PropTypes.string,
+  pipeline: PropTypes.object,
   pipelineId: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.number

@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Icon} from 'antd';
+import {Icon, Button} from 'antd';
 import CommitDiffButton from './commit-diff-button';
 import UserName from '../../../../special/UserName';
 import displayDate from '../../../../../utils/displayDate';
@@ -30,9 +30,16 @@ function CommitCard (
     disabled = false,
     path,
     style,
-    versionedStorageId
+    versionedStorageId,
+    onShowVersionPreview,
+    previewAvailable = false
   }
 ) {
+  const handleClick = () => {
+    if (onShowVersionPreview && commit?.commit) {
+      onShowVersionPreview(commit.commit);
+    }
+  };
   if (!commit) {
     return null;
   }
@@ -52,12 +59,23 @@ function CommitCard (
       }
       style={style}
     >
-      <CommitDiffButton
-        disabled={disabled}
-        commit={commit?.commit}
-        path={path}
-        versionedStorageId={versionedStorageId}
-      />
+      <div className={styles.commitControls}>
+        {previewAvailable && (
+          <Button
+            onClick={handleClick}
+            size="small"
+            style={{marginRight: '2px'}}
+          >
+            <Icon type="file-unknown" />
+          </Button>
+        )}
+        <CommitDiffButton
+          disabled={disabled}
+          commit={commit?.commit}
+          path={path}
+          versionedStorageId={versionedStorageId}
+        />
+      </div>
       <div>
         {
           commit.commit_message && (
@@ -117,7 +135,9 @@ CommitCard.propTypes = {
   disabled: PropTypes.bool,
   path: PropTypes.string,
   style: PropTypes.object,
-  versionedStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  versionedStorageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  previewAvailable: PropTypes.bool,
+  onShowVersionPreview: PropTypes.func
 };
 
 export default CommitCard;

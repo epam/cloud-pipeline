@@ -43,7 +43,7 @@ import PipelineGenerateReport from '../../../../models/pipelines/PipelineGenerat
 import InfoPanel from './info-panel';
 import LaunchVSForm from './forms/launch-vs-form';
 import getToolLaunchingOptions from '../../launch/utilities/get-tool-launching-options';
-import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
+import PipelineCodeForm, {FILE_PREVIEW_MODES} from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import PipelineFileInfo from '../../../../models/pipelines/PipelineFileInfo';
@@ -757,9 +757,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  downloadSingleFile = async (document) => {
+  downloadSingleFile = async (document, version = this.lastCommitId) => {
     const {pipelineId} = this.props;
-    const pipelineFile = new PipelineFile(pipelineId, this.lastCommitId, document.path);
+    const pipelineFile = new PipelineFile(pipelineId, version, document.path);
     let res;
     await pipelineFile.fetch();
     res = pipelineFile.response;
@@ -976,6 +976,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         version={this.lastCommitId}
         cancel={this.closeEditFileForm}
         save={this.saveEditFileForm}
+        onDownloadFile={this.downloadSingleFile}
+        filePreviewMode={FILE_PREVIEW_MODES.default}
         vsStorage
       />
     );
@@ -1121,6 +1123,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
                   file={selectedFile}
                   path={path}
                   pipelineId={pipelineId}
+                  pipeline={pipeline}
                   lastCommitId={this.lastCommitId}
                   pending={pending}
                   onFileEdit={this.openEditFileForm}

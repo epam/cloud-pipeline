@@ -208,7 +208,9 @@ class VSHistory extends React.Component {
     const {
       className,
       style,
-      versionedStorageId
+      versionedStorageId,
+      onShowVersionPreview,
+      isFolder
     } = this.props;
     if (!versionedStorageId) {
       return null;
@@ -290,6 +292,8 @@ class VSHistory extends React.Component {
                 disabled={pending}
                 versionedStorageId={versionedStorageId}
                 path={this.path}
+                previewAvailable={!isFolder}
+                onShowVersionPreview={onShowVersionPreview}
               />
             ))
           }
@@ -325,7 +329,8 @@ VSHistory.propTypes = {
   revision: PropTypes.string,
   path: PropTypes.string,
   isFolder: PropTypes.bool,
-  style: PropTypes.object
+  style: PropTypes.object,
+  onShowVersionPreview: PropTypes.func
 };
 
 export default VSHistory;
