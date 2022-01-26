@@ -66,7 +66,36 @@ function CommitCard (
             size="small"
             style={{marginRight: '2px'}}
           >
-            <Icon type="file-unknown" />
+            <Icon
+              type="file"
+              style={{
+                position: 'relative',
+                fontSize: '16px'
+              }}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  width: '100%',
+                  height: '100%',
+                  lineHeight: '14px'
+                }}
+              >
+                <Icon
+                  type="left"
+                  style={{fontSize: '7px', fontWeight: 'bold'}}
+                />
+                <Icon
+                  type="right"
+                  style={{
+                    fontSize: '7px',
+                    fontWeight: 'bold',
+                    marginLeft: '-2px'
+                  }}
+                />
+              </div>
+            </Icon>
           </Button>
         )}
         <CommitDiffButton
