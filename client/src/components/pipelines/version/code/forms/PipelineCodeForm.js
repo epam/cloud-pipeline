@@ -254,7 +254,7 @@ export default class PipelineCodeForm extends React.Component {
             colHeaders
             rowHeaders
             readOnly={!this.state.editMode}
-            readOnlyCellClassName={'readonly-cell'}
+            readOnlyCellClassName={classNames('readonly-cell', 'cp-table-cell')}
             manualColumnResize
             manualRowResize
             contextMenu={this.state.editMode
