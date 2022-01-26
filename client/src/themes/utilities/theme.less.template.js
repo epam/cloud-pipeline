@@ -419,6 +419,9 @@ export default `
   color: @application-color;
   border-color: @card-border-color;
 }
+@THEME .ant-table-footer:before {
+  background-color: @card-background-color;
+}
 @THEME .ant-modal-title {
   color: @application-color;
 }
@@ -753,11 +756,22 @@ export default `
 }
 @THEME .ant-table,
 @THEME .ant-table-placeholder,
+@THEME .ant-table-footer,
 @THEME tr.ant-table-expanded-row,
 @THEME tr.ant-table-expanded-row:hover {
   color: @application-color;
   border-color: @table-border-color;
   background: @card-background-color;
+}
+@THEME .cp-table-cell {
+  color: @application-color;
+  border-color: darken(@card-border-color, 5%);
+  background: @card-background-color;
+}
+@THEME .cp-table-cell.readonly-cell {
+  color: @application-color;
+  border-color: darken(@card-border-color, 5%);
+  background: @card-header-background;
 }
 @THEME .ant-table-thead > tr > th {
   color: @table-head-color;
@@ -772,6 +786,11 @@ export default `
 @THEME .ant-table-column-sorter-up:hover .anticon,
 @THEME .ant-table-column-sorter-down:hover .anticon {
   color: @application-color;
+}
+@THEME .ant-table-row-hover,
+@THEME .ant-table-row-hover > .cp-table-cell {
+  color: @table-element-hover-color;
+  background-color: @table-element-hover-background-color;
 }
 @THEME .ant-table-column-sorter-up.on .anticon-caret-up,
 @THEME .ant-table-column-sorter-down.on .anticon-caret-up,
@@ -2297,7 +2316,10 @@ export default `
   background-color: @card-background-color;
   color: @application-color;
 }
-
+@THEME .cp-storage-deleted-row {
+  background-color: @deleted-row-accent;
+  cursor: default;
+}
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;
