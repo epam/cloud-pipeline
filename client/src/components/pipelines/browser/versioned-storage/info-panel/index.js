@@ -232,9 +232,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
     );
   };
 
-  renderFileWarnings = () => {
+  renderFileWarnings = (forFilePreview = false) => {
     const {file} = this.props;
-    const {previewFileVersion} = this.state;
     if (!file) {
       return null;
     }
@@ -283,17 +282,17 @@ class InfoPanel extends localization.LocalizedReactComponent {
           type="flex"
           style={{color: '#777', marginTop: 5, marginBottom: 5}}
         >
-          {previewFileVersion ? (
-            <span>
-              {previewFileVersionWarning()}
-            </span>
-          ) : (
+          {forFilePreview ? (
             <div>
               <span style={{marginRight: 5}}>
                 File preview is not available.
               </span>
               {this.renderDownloadLink('to view full contents')}
             </div>
+          ) : (
+            <span>
+              {previewFileVersionWarning()}
+            </span>
           )}
         </Row>
       );
@@ -309,7 +308,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
     const {fileEditable} = this.state;
     let content;
     if (this.fileHasWarnings) {
-      content = this.renderFileWarnings();
+      content = this.renderFileWarnings(true);
     } else {
       content = (
         <Row
