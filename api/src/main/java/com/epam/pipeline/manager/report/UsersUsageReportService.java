@@ -50,13 +50,13 @@ public class UsersUsageReportService {
                 : filter);
         final LocalDateTime start = preparedFilter.getFrom();
         final LocalDateTime end = preparedFilter.getTo();
-        final List<OnlineUsers> onlineUsers = onlineUsersService.getUsersByPeriod(start, end,
-                preparedFilter.getUsers());
+        final Set<Long> users = prepareUsers(filter);
+        final List<OnlineUsers> onlineUsers = onlineUsersService.getUsersByPeriod(start, end, users);
         if (ChronoUnit.HOURS == filter.getInterval()) {
-            return calculateDayUsersUsageByHour(onlineUsers, start, end, preparedFilter.getUsers());
+            return calculateDayUsersUsageByHour(onlineUsers, start, end, users);
         }
         if (ChronoUnit.DAYS == filter.getInterval()) {
-            return buildMonthUsersUsage(onlineUsers, start, end, preparedFilter.getUsers());
+            return buildMonthUsersUsage(onlineUsers, start, end, users);
         }
         throw new UnsupportedOperationException(String.format("Time interval '%s' is not supported for now",
                 filter.getInterval().name()));
@@ -69,14 +69,6 @@ public class UsersUsageReportService {
         }
         filter.setTo(buildEndOfInterval(filter.getTo()));
         Assert.state(!filter.getFrom().isAfter(filter.getTo()), "'from' date must be before 'to' date");
-        if (CollectionUtils.isNotEmpty(filter.getRoles())) {
-            if (Objects.isNull(filter.getUsers())) {
-                filter.setUsers(new HashSet<>());
-            }
-            filter.getUsers().addAll(userManager.loadUsersByRoles(filter.getRoles()).stream()
-                    .map(PipelineUser::getId)
-                    .collect(Collectors.toList()));
-        }
         return filter;
     }
 
@@ -108,8 +100,11 @@ public class UsersUsageReportService {
                 .distinct()
                 .filter(userId -> CollectionUtils.isEmpty(filterUsers) || filterUsers.contains(userId))
                 .collect(Collectors.toList());
+        final List<String> userNamesInInterval = userManager.loadUsersById(usersInInterval).stream()
+                .map(PipelineUser::getUserName)
+                .collect(Collectors.toList());
         return UsersUsageInfo.builder()
-                .activeUsers(usersInInterval)
+                .activeUsers(userNamesInInterval)
                 .activeUsersCount(usersInInterval.size())
                 .periodStart(from)
                 .periodEnd(to)
@@ -128,7 +123,7 @@ public class UsersUsageReportService {
                                                         final Set<Long> filterUsers) {
         final LocalDateTime to = from.plusDays(1);
         final List<UsersUsageInfo> usersUsageByHour = calculateDayUsersUsageByHour(users, from, to, filterUsers);
-        final List<Long> totalUsersInInterval = usersUsageByHour.stream()
+        final List<String> totalUsersInInterval = usersUsageByHour.stream()
                 .flatMap(usage -> usage.getActiveUsers().stream())
                 .distinct()
                 .collect(Collectors.toList());
@@ -154,5 +149,23 @@ public class UsersUsageReportService {
                 .mapToDouble(UsersUsageInfo::getActiveUsersCount)
                 .toArray();
         return (int) Math.round(new Median().evaluate(sample));
+    }
+
+    private Set<Long> prepareUsers(final UsersUsageReportFilterVO filter) {
+        if (CollectionUtils.isEmpty(filter.getRoles()) && CollectionUtils.isEmpty(filter.getUsers())) {
+            return null;
+        }
+        final Set<Long> users = new HashSet<>();
+        if (CollectionUtils.isNotEmpty(filter.getRoles())) {
+            users.addAll(userManager.loadUsersByRoles(filter.getRoles()).stream()
+                    .map(PipelineUser::getId)
+                    .collect(Collectors.toList()));
+        }
+        if (CollectionUtils.isNotEmpty(filter.getUsers())) {
+            users.addAll(userManager.loadUsersByNames(filter.getUsers()).stream()
+                    .map(PipelineUser::getId)
+                    .collect(Collectors.toList()));
+        }
+        return users;
     }
 }
