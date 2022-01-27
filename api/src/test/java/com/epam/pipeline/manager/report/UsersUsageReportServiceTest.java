@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.report;
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
@@ -39,9 +40,12 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 public class UsersUsageReportServiceTest {
+    private static final String USERNAME1 = "user1";
+    private static final String USERNAME2 = "user2";
     private static final List<Long> USERS = Arrays.asList(1L, 2L);
+    private static final List<String> USER_NAMES = Arrays.asList(USERNAME1, USERNAME2);
     private static final Set<Long> FILTER_USERS = Collections.singleton(1L);
-    private static final List<Long> EXPECTED_FILTER_USERS = new ArrayList<>(FILTER_USERS);
+    private static final List<String> FILTER_USER_NAMES = Collections.singletonList(USERNAME1);
     private static final int HOURS_IN_DAY = 24;
     private static final int JANUARY_DAYS_COUNT = 31;
     private static final int LOG_MINUTES_INTERVAL = 10;
@@ -62,18 +66,19 @@ public class UsersUsageReportServiceTest {
                 .to(to)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, null);
+        doReturn(mockedUsers()).when(userManager).loadUsersById(USERS);
 
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
                 .periodEnd(from.plusHours(1))
-                .activeUsers(USERS)
-                .activeUsersCount(USERS.size())
+                .activeUsers(USER_NAMES)
+                .activeUsersCount(USER_NAMES.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
                 .periodStart(from.plusHours(HOURS_IN_DAY - 1))
                 .periodEnd(from.plusHours(HOURS_IN_DAY))
-                .activeUsers(USERS)
-                .activeUsersCount(USERS.size())
+                .activeUsers(USER_NAMES)
+                .activeUsersCount(USER_NAMES.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
         assertThat(result).hasSize(HOURS_IN_DAY);
@@ -90,21 +95,23 @@ public class UsersUsageReportServiceTest {
                 .interval(ChronoUnit.HOURS)
                 .from(from)
                 .to(to)
-                .users(FILTER_USERS)
+                .users(FILTER_USER_NAMES)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, FILTER_USERS);
+        doReturn(mockedFilterUsers()).when(userManager).loadUsersById(Collections.singletonList(1L));
+        doReturn(mockedFilterUsers()).when(userManager).loadUsersByNames(Collections.singletonList(USERNAME1));
 
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
                 .periodEnd(from.plusHours(1))
-                .activeUsers(EXPECTED_FILTER_USERS)
-                .activeUsersCount(EXPECTED_FILTER_USERS.size())
+                .activeUsers(FILTER_USER_NAMES)
+                .activeUsersCount(FILTER_USER_NAMES.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
                 .periodStart(from.plusHours(HOURS_IN_DAY - 1))
                 .periodEnd(from.plusHours(HOURS_IN_DAY))
-                .activeUsers(EXPECTED_FILTER_USERS)
-                .activeUsersCount(EXPECTED_FILTER_USERS.size())
+                .activeUsers(FILTER_USER_NAMES)
+                .activeUsersCount(FILTER_USER_NAMES.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
         assertThat(result).hasSize(HOURS_IN_DAY);
@@ -127,20 +134,21 @@ public class UsersUsageReportServiceTest {
                 .to(to)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, null);
+        doReturn(mockedUsers()).when(userManager).loadUsersById(USERS);
 
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
                 .periodEnd(from.plusDays(1))
-                .totalUsers(USERS)
-                .totalUsersCount(USERS.size())
-                .activeUsersCount(USERS.size())
+                .totalUsers(USER_NAMES)
+                .totalUsersCount(USER_NAMES.size())
+                .activeUsersCount(USER_NAMES.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
                 .periodStart(from.plusDays(JANUARY_DAYS_COUNT - 1))
                 .periodEnd(from.plusDays(JANUARY_DAYS_COUNT))
-                .totalUsers(USERS)
-                .totalUsersCount(USERS.size())
-                .activeUsersCount(USERS.size())
+                .totalUsers(USER_NAMES)
+                .totalUsersCount(USER_NAMES.size())
+                .activeUsersCount(USER_NAMES.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
         assertThat(result).hasSize(JANUARY_DAYS_COUNT);
@@ -161,23 +169,25 @@ public class UsersUsageReportServiceTest {
                 .interval(ChronoUnit.DAYS)
                 .from(from)
                 .to(to)
-                .users(FILTER_USERS)
+                .users(FILTER_USER_NAMES)
                 .build();
         doReturn(generateOnlineUsers(from, to)).when(onlineUsersService).getUsersByPeriod(from, to, FILTER_USERS);
+        doReturn(mockedFilterUsers()).when(userManager).loadUsersById(Collections.singletonList(1L));
+        doReturn(mockedFilterUsers()).when(userManager).loadUsersByNames(Collections.singletonList(USERNAME1));
 
         final UsersUsageInfo expectedFirstResult = UsersUsageInfo.builder()
                 .periodStart(from)
                 .periodEnd(from.plusDays(1))
-                .totalUsers(EXPECTED_FILTER_USERS)
-                .totalUsersCount(EXPECTED_FILTER_USERS.size())
-                .activeUsersCount(EXPECTED_FILTER_USERS.size())
+                .totalUsers(FILTER_USER_NAMES)
+                .totalUsersCount(FILTER_USER_NAMES.size())
+                .activeUsersCount(FILTER_USER_NAMES.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
                 .periodStart(from.plusDays(JANUARY_DAYS_COUNT - 1))
                 .periodEnd(from.plusDays(JANUARY_DAYS_COUNT))
-                .totalUsers(EXPECTED_FILTER_USERS)
-                .totalUsersCount(EXPECTED_FILTER_USERS.size())
-                .activeUsersCount(EXPECTED_FILTER_USERS.size())
+                .totalUsers(FILTER_USER_NAMES)
+                .totalUsersCount(FILTER_USER_NAMES.size())
+                .activeUsersCount(FILTER_USER_NAMES.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
         assertThat(result).hasSize(JANUARY_DAYS_COUNT);
@@ -206,5 +216,20 @@ public class UsersUsageReportServiceTest {
             intervalTime = intervalTime.plus(LOG_MINUTES_INTERVAL, ChronoUnit.MINUTES);
         }
         return timeIntervals;
+    }
+
+    private List<PipelineUser> mockedUsers() {
+        return Arrays.asList(pipelineUser(1L, USERNAME1), pipelineUser(2L, USERNAME2));
+    }
+
+    private PipelineUser pipelineUser(final Long id, final String name) {
+        final PipelineUser user = new PipelineUser();
+        user.setId(id);
+        user.setUserName(name);
+        return user;
+    }
+
+    private List<PipelineUser> mockedFilterUsers() {
+        return Collections.singletonList(pipelineUser(1L, USERNAME1));
     }
 }

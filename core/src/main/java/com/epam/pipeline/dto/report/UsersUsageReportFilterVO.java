@@ -24,7 +24,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
@@ -34,6 +33,6 @@ public class UsersUsageReportFilterVO {
     private LocalDateTime from;
     private LocalDateTime to;
     private ChronoUnit interval;
-    private Set<Long> users;
+    private List<String> users;
     private List<String> roles;
 }

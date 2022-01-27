@@ -31,6 +31,6 @@ public class UsersUsageInfo {
     private LocalDateTime periodEnd;
     private Integer activeUsersCount;
     private Integer totalUsersCount;
-    private List<Long> totalUsers;
-    private List<Long> activeUsers;
+    private List<String> totalUsers;
+    private List<String> activeUsers;
 }
