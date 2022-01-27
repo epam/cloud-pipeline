@@ -1062,6 +1062,30 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
                     ec2.create_tags(
                         Resources=[volume['Ebs']['VolumeId']],
                         Tags=ebs_tags)
+            
+            # FIXME: 'modify_instance_metadata_options' shall be added to the pipe-common/autoscaling/awsprovider.py
+            try:
+                pipe_log('- Waiting for instance {} (spot request {}) to become RUNNING before setting IMDSv2'.format(ins_id, request_id))
+                ins_status = PENDING
+                ins_status_rep = 0
+                while ins_status_rep <= num_rep and ins_status != RUNNING:
+                    ins_status = get_current_status(ec2, ins_id)
+                    ins_status_rep += 1
+                    sleep(time_rep)
+
+                if ins_status == RUNNING:
+                    pipe_log('- Tying to set IMDSv2 for instance {} (spot request {})'.format(ins_id, request_id))
+                    ec2.modify_instance_metadata_options(
+                        InstanceId=ins_id,
+                        HttpTokens='optional',
+                        HttpPutResponseHopLimit=2,
+                        HttpEndpoint='enabled'
+                    )
+                else:
+                    raise RuntimeError('Time out error while waiting for the instance transition to RUNNING state')
+            except Exception as modify_metadata_ex:
+                pipe_log_warn('- [WARN] Cannot set IMDSv2 for instance {} (spot request {}):\n{}'.format(ins_id, request_id, str(modify_metadata_ex)))
+
 
             pipe_log('Instance is successfully created for spot request {}. ID: {}, IP: {}\n-'.format(request_id, ins_id, ins_ip))
             break
