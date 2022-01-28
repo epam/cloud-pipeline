@@ -28,15 +28,16 @@ import styles from './commit-dialog.css';
 class GitCommitDialog extends React.Component {
   state = {
     commitMessage: '',
-    commitInProgress: false
+    commitInProgress: false,
+    selectedFiles: []
   }
 
   onOk = () => {
     const {onCommit, storage} = this.props;
-    const {commitMessage} = this.state;
-    if (onCommit && commitMessage) {
+    const {commitMessage, selectedFiles} = this.state;
+    if (onCommit && commitMessage && selectedFiles.length) {
       this.setState({commitInProgress: true}, () => {
-        onCommit(storage, commitMessage);
+        onCommit(storage, commitMessage, selectedFiles);
       });
     }
   }
@@ -50,6 +51,12 @@ class GitCommitDialog extends React.Component {
     if (event) {
       this.setState({commitMessage: event.target.value});
     }
+  }
+
+  onSelectionChanged = (files) => {
+    this.setState({
+      selectedFiles: files
+    });
   }
 
   get messageIsCorrect () {
@@ -71,7 +78,12 @@ class GitCommitDialog extends React.Component {
       run,
       mergeInProgress
     } = this.props;
-    const {commitMessage, commitInProgress} = this.state;
+    const {
+      commitMessage,
+      commitInProgress,
+      selectedFiles
+    } = this.state;
+
     if (!storage) {
       return null;
     }
@@ -93,7 +105,7 @@ class GitCommitDialog extends React.Component {
         </Button>
         <Button
           type="primary"
-          disabled={!this.messageIsCorrect || commitInProgress}
+          disabled={!this.messageIsCorrect || !selectedFiles.length || commitInProgress}
           onClick={this.onOk}
           loading={commitInProgress}
         >
@@ -133,7 +145,10 @@ class GitCommitDialog extends React.Component {
             visible={visible}
             className="commit-dialog"
             collapsed
+            selectable
             style={{marginBottom: '3px'}}
+            onSelectionChanged={this.onSelectionChanged}
+            selectedFiles={selectedFiles}
           />
         </div>
       </Modal>

@@ -38,7 +38,15 @@
 }
 
 .commit-dialog .git-diff-collapse .ant-collapse-header > .arrow {
-  left: 13px;
+  left: 20px;
+  margin: 0 10px;
   transform: scale(0.75) rotate(0);
-  top: calc(0px - 12.5%);
+  top: calc(0px - 14%);
+}
+
+.commit-dialog .git-diff-collapse .ant-collapse-header .ant-checkbox-wrapper {
+  position: absolute;
+  top: 12.5%;
+  left: 10px;
+  display: inline-block;
 }
