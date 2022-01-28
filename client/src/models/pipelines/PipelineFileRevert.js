@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,25 +14,13 @@
  *  limitations under the License.
  */
 
-.modal-content {
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-height: 70vh;
+import RemotePost from '../basic/RemotePost';
+
+class PipelineFileRevert extends RemotePost {
+  constructor (id) {
+    super();
+    this.url = `/pipeline/${id}/file/revert`;
+  }
 }
 
-.input-container {
-  display: flex;
-  flex-direction: column;
-  margin: 5px;
-  margin-bottom: 10px;
-}
-
-.input-container > textarea {
-  min-width: 100%;
-  min-height: 50px;
-  max-height: 300px;
-}
-
-.textarea-label {
-  margin-bottom: 5px;
-}
+export default PipelineFileRevert;

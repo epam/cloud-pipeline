@@ -950,6 +950,9 @@ export default `
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
+@THEME .rc-menu-item-group-title {
+  border-bottom: 1px solid @card-border-color;
+}
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
   border-color: @panel-border-color;
@@ -2389,6 +2392,10 @@ export default `
   background-color: @deleted-row-accent;
   cursor: default;
 }
+@THEME .cp-git-diff-collapse .ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
+  border-bottom: 1px solid @card-border-color;
+}
+
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;
