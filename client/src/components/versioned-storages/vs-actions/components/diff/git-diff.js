@@ -192,13 +192,14 @@ class GitDiff extends React.Component {
     const allFilesSelected = selectedFiles.length === this.groupedFiles.tracked.length;
     return (
       <div className={styles.container}>
-        <div className={styles.selectionActions}>
-          <h3 className={styles.listTitle}>Select files to commit changes</h3>
-          <div >
-            <Button onClick={this.onSelectAll} disabled={allFilesSelected}>Select All</Button>
-            <Button onClick={this.onClearAll} disabled={!selectedFiles.length}>Clear selection</Button>
-          </div>
-        </div>
+        { selectable && (
+          <div className={styles.selectionActions}>
+            <h3 className={styles.listTitle}>Select files to commit changes</h3>
+            <div >
+              <Button onClick={this.onSelectAll} disabled={allFilesSelected}>Select All</Button>
+              <Button onClick={this.onClearAll} disabled={!selectedFiles.length}>Clear selection</Button>
+            </div>
+          </div>)}
 
         {
           this.groupedFiles.tracked
@@ -225,14 +226,19 @@ class GitDiff extends React.Component {
             className={classNames(
               'git-diff-collapse',
               'cp-git-diff-collapse',
-              {'git-diff-selectable': selectable},
-              {'git-diff-unselectable': !selectable}
+              {
+                'git-diff-selectable': selectable,
+                'git-diff-unselectable': !selectable
+              }
             )}
             activeKey={opened ? [IGNORED] : []}
             onChange={this.onOpenedChange}
           >
             <Collapse.Panel
-              header={<div className={styles.fileDiffHeader}>Ignored files</div>}
+              header={<div className={classNames(
+                styles.fileDiffHeader,
+                {[styles.fileDiffHeaderSelectable]: selectable}
+              )}>Ignored files</div>}
               key={IGNORED}
             >
               <ul className={styles.ignoredList}>
