@@ -118,7 +118,7 @@ public class BillingTemplateManager implements SecuredEntityManager {
 
     @Override
     public Collection<? extends AbstractSecuredEntity> loadAllWithParents(final Integer page, final Integer pageSize) {
-        return Collections.emptyList();
+        return loadAll();
     }
 
     @Override

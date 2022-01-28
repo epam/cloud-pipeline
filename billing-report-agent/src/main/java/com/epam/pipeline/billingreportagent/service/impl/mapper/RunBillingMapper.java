@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
+import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +37,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -77,10 +79,12 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
                 .field("cloudRegionId", run.getInstance().getCloudRegionId())
                 .field("created_date", billingInfo.getDate())
                 .field("started_date", asString(run.getStartDate()))
-                .field("finished_date", asString(run.getEndDate()))
-                .field("pipeline_run_parameters",
-                        run.getPipelineRunParameters().stream()
-                                .collect(Collectors.toMap(PipelineRunParameter::getName, p -> p)));
+                .field("finished_date", asString(run.getEndDate()));
+
+            for (PipelineRunParameter parameter : ListUtils.emptyIfNull(run.getPipelineRunParameters())) {
+                jsonBuilder.field(parameter.getName(), parameter.getValue());
+            }
+
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;

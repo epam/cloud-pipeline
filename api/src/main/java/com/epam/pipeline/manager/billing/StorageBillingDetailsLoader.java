@@ -112,8 +112,8 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Override
     public Map<String, String> getEmptyDetails() {
         return Stream.of(PROVIDER, REGION, OWNER, CREATED,
-                        BillingGrouping.BILLING_CENTER.getCorrespondingField(),
-                        BillingGrouping.STORAGE_TYPE.getCorrespondingField())
+                         BillingGrouping.BILLING_CENTER.getCorrespondingField(),
+                         BillingGrouping.STORAGE_TYPE.getCorrespondingField())
             .collect(Collectors.toMap(Function.identity(), k -> emptyValue));
     }
 
