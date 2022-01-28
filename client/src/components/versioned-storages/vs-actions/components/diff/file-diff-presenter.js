@@ -126,6 +126,7 @@ class FileDiffPresenter extends React.PureComponent {
       return (
         <div key="description">
           {selectable && <Checkbox
+            onClick={event => event.stopPropagation()}
             onChange={onSelectionChanged(file)}
             checked={selectedFiles.includes(file)}
           />}
@@ -154,7 +155,8 @@ class FileDiffPresenter extends React.PureComponent {
     const {
       className,
       file,
-      style
+      style,
+      selectable
     } = this.props;
     const {
       opened
@@ -166,7 +168,12 @@ class FileDiffPresenter extends React.PureComponent {
         style={style}
       >
         <Collapse
-          className={classNames('git-diff-collapse', 'cp-git-diff-collapse')}
+          className={classNames(
+            'cp-git-diff-collapse',
+            'git-diff-collapse',
+            {'git-diff-unselectable': !selectable},
+            {'git-diff-selectable': selectable}
+          )}
           activeKey={opened ? ['presentation'] : []}
           onChange={this.onOpenedChange}
         >

@@ -182,7 +182,7 @@ class GitDiff extends React.Component {
       collapsed,
       className,
       style,
-      selectable = false,
+      selectable,
       selectedFiles = []
     } = this.props;
     const {
@@ -222,7 +222,12 @@ class GitDiff extends React.Component {
         }
         <div className={classNames(styles.file, className)}>
           <Collapse
-            className={classNames('git-diff-collapse', 'cp-git-diff-collapse')}
+            className={classNames(
+              'git-diff-collapse',
+              'cp-git-diff-collapse',
+              {'git-diff-selectable': selectable},
+              {'git-diff-unselectable': !selectable}
+            )}
             activeKey={opened ? [IGNORED] : []}
             onChange={this.onOpenedChange}
           >
