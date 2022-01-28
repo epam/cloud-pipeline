@@ -825,7 +825,6 @@ class VSActions extends React.Component {
       gitCommit,
       conflicts
     } = this.state;
-    console.log(this.props, this.state);
     if (!this.fsBrowserAvailable) {
       return null;
     }
