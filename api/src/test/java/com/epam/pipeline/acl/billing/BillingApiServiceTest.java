@@ -60,7 +60,7 @@ public class BillingApiServiceTest extends AbstractAclTest {
                 LocalDate.MAX,
                 Collections.singletonMap("filter", Collections.singletonList("filter")),
                 DateHistogramInterval.DAY,
-                BillingGrouping.BILLING_CENTER,
+                BillingGrouping.BILLING_CENTER.getCorrespondingField(),
                 true,
                 1L,
                 1L

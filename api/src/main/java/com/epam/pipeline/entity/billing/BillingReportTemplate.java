@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,30 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.billingreportagent.model;
+package com.epam.pipeline.entity.billing;
 
-import com.epam.pipeline.entity.metadata.PipeConfValue;
-import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class EntityContainer<T> {
+public class BillingReportTemplate extends AbstractSecuredEntity {
 
-    private T entity;
-    private Map<String, PipeConfValue> metadata;
-    private EntityWithMetadata<PipelineUser> owner;
+    private String description;
+    private String template;
+    private String settings;
+
+    @Override
+    public AbstractSecuredEntity getParent() {
+        return null;
+    }
+
+    @Override
+    public AclClass getAclClass() {
+        return AclClass.BILLING_REPORT_TEMPLATE;
+    }
 }

@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import com.epam.pipeline.acl.docker.ToolApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.dao.billing.BillingTemplateDao;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
 import com.epam.pipeline.dao.cluster.NatGatewayDao;
@@ -67,6 +68,7 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.billing.BillingTemplateManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
@@ -425,4 +427,10 @@ public class AspectTestBeans {
 
     @MockBean
     protected OnlineUsersMapper onlineUsersMapper;
+
+    @MockBean
+    protected BillingTemplateManager billingTemplateManager;
+
+    @MockBean
+    protected BillingTemplateDao billingTemplateDao;
 }

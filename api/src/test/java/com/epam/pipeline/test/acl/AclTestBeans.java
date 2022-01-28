@@ -35,6 +35,7 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.HierarchicalEntityManager;
 import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.billing.BillingTemplateManager;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
@@ -541,6 +542,9 @@ public class AclTestBeans {
 
     @MockBean
     protected OnlineUsersService onlineUsersService;
+
+    @MockBean
+    protected BillingTemplateManager billingTemplateManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

@@ -16,37 +16,64 @@
 
 package com.epam.pipeline.entity.billing;
 
-public enum BillingGrouping {
-    RESOURCE_TYPE("resource_type", false, false),
-    RUN_INSTANCE_TYPE("instance_type", true, false),
-    RUN_COMPUTE_TYPE("compute_type", false, false),
-    PIPELINE("pipeline", true, false),
-    TOOL("tool", true, false),
-    STORAGE("storage_id", false, true),
-    STORAGE_TYPE("storage_type", false, false),
-    USER("owner", true, true),
-    BILLING_CENTER("billing_center", true, true);
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+
+import javax.validation.constraints.NotNull;
+import java.util.HashMap;
+import java.util.Map;
+
+@Builder
+@Getter
+@AllArgsConstructor
+@EqualsAndHashCode(of = "correspondingField")
+public class BillingGrouping {
+
+    public static final BillingGrouping RESOURCE_TYPE = new BillingGrouping("resource_type", "Resource",
+            false, false);
+    public static final BillingGrouping RUN_INSTANCE_TYPE = new BillingGrouping("instance_type", "Instance Type",
+            true, false);
+    public static final BillingGrouping RUN_COMPUTE_TYPE = new BillingGrouping("compute_type", "Compute Type",
+            false, false);
+    public static final BillingGrouping PIPELINE = new BillingGrouping("pipeline", "Pipeline",
+            true, false);
+    public static final BillingGrouping TOOL = new BillingGrouping("tool", "Tool",
+            true, false);
+    public static final BillingGrouping STORAGE = new BillingGrouping("storage_id", "Storage",
+            false, true);
+    public static final BillingGrouping STORAGE_TYPE = new BillingGrouping("storage_type", "Storage Type",
+            false, false);
+    public static final BillingGrouping USER = new BillingGrouping("owner", "Owner",
+            true, true);
+    public static final BillingGrouping BILLING_CENTER = new BillingGrouping("billing_center", "Billing Center",
+            true, true);
+
+    public static final Map<String, BillingGrouping> DEFAULT_GROUPING_BY_NAME = new HashMap<String, BillingGrouping>(){{
+        put(RESOURCE_TYPE.getCorrespondingField(), RESOURCE_TYPE);
+        put(RUN_INSTANCE_TYPE.getCorrespondingField(), RUN_INSTANCE_TYPE);
+        put(RUN_COMPUTE_TYPE.getCorrespondingField(), RUN_COMPUTE_TYPE);
+        put(PIPELINE.getCorrespondingField(), PIPELINE);
+        put(TOOL.getCorrespondingField(), TOOL);
+        put(STORAGE.getCorrespondingField(), STORAGE);
+        put(STORAGE_TYPE.getCorrespondingField(), STORAGE_TYPE);
+        put(USER.getCorrespondingField(), USER);
+        put(BILLING_CENTER.getCorrespondingField(), BILLING_CENTER);
+    }};
 
     private final String correspondingField;
+    private final String name;
     private final boolean runUsageDetailsRequired;
     private final boolean storageUsageDetailsRequired;
 
-    BillingGrouping(final String correspondingField, final boolean runUsageDetailsRequired,
-                    final boolean storageUsageDetailsRequired) {
-        this.correspondingField = correspondingField;
-        this.runUsageDetailsRequired = runUsageDetailsRequired;
-        this.storageUsageDetailsRequired = storageUsageDetailsRequired;
+    @NotNull
+    public static BillingGrouping getDefault(final String correspondingField) {
+        return DEFAULT_GROUPING_BY_NAME.getOrDefault(correspondingField, fromField(correspondingField));
     }
 
-    public String getCorrespondingField() {
-        return correspondingField;
+    private static BillingGrouping fromField(final String correspondingField) {
+        return BillingGrouping.builder().name(correspondingField).correspondingField(correspondingField).build();
     }
 
-    public boolean runUsageDetailsRequired() {
-        return runUsageDetailsRequired;
-    }
-
-    public boolean storageUsageDetailsRequired() {
-        return storageUsageDetailsRequired;
-    }
 }

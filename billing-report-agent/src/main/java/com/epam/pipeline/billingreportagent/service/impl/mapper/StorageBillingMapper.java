@@ -22,6 +22,7 @@ import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Getter
@@ -46,6 +48,8 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .startObject()
                 .field(DOC_TYPE_FIELD, documentType.name())
                 .field("storage_id", storage.getId())
+                .field("storage_name", storage.getName())
+                .field("storage_created", storage.getCreatedDate())
                 .field("resource_type", billingInfo.getResourceType())
                 .field("cloudRegionId", billingInfo.getRegionId())
                 .field("provider", storage.getType())
@@ -53,6 +57,9 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
                 .field("usage_bytes", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost())
                 .field("created_date", billingInfo.getDate());
+            for (Map.Entry<String, PipeConfValue> entry : container.getMetadata().entrySet()) {
+                jsonBuilder.field(entry.getKey(), entry.getValue().getValue());
+            }
             buildUserContent(container.getOwner(), jsonBuilder);
             jsonBuilder.endObject();
             return jsonBuilder;

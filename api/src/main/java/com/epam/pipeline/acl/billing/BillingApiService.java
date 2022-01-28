@@ -20,8 +20,14 @@ import com.epam.pipeline.controller.ResultWriter;
 import com.epam.pipeline.controller.vo.billing.BillingChartRequest;
 import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingChartInfo;
+import com.epam.pipeline.entity.billing.BillingReportTemplate;
+import com.epam.pipeline.entity.search.FacetedSearchResult;
 import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.billing.BillingTemplateManager;
+import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostFilter;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,9 +37,14 @@ import java.util.List;
 public class BillingApiService {
 
     private final BillingManager billingManager;
+    private final BillingTemplateManager billingTemplateManager;
 
     public List<BillingChartInfo> getBillingChartInfo(final BillingChartRequest request) {
         return billingManager.getBillingChartInfo(request);
+    }
+
+    public FacetedSearchResult getAvailableFields(final BillingChartRequest request) {
+        return billingManager.getAvailableFacets(request);
     }
 
     public List<BillingChartInfo> getBillingChartInfoPaginated(final BillingChartRequest request) {
@@ -46,5 +57,30 @@ public class BillingApiService {
 
     public ResultWriter export(final BillingExportRequest request) {
         return billingManager.export(request);
+    }
+
+    @PostFilter(AclExpressions.BILLING_TEMPLATE_READ_FILTER)
+    public List<BillingReportTemplate> getAvailableCustomBillingTemplates() {
+        return billingTemplateManager.loadAll();
+    }
+
+    @PreAuthorize(AclExpressions.ADMIN_OR_GENERAL_USER)
+    public BillingReportTemplate createCustomBillingTemplates(final BillingReportTemplate template) {
+        return billingTemplateManager.create(template);
+    }
+
+    @PreAuthorize(AclExpressions.BILLING_TEMPLATE_ID_READ)
+    public BillingReportTemplate getCustomBillingTemplate(final Long id) {
+        return billingTemplateManager.load(id);
+    }
+
+    @PreAuthorize(AclExpressions.BILLING_TEMPLATE_ID_WRITE)
+    public void deleteCustomBillingTemplate(final Long id) {
+        billingTemplateManager.delete(id);
+    }
+
+    @PreAuthorize(AclExpressions.BILLING_TEMPLATE_WRITE)
+    public BillingReportTemplate updateCustomBillingTemplates(final BillingReportTemplate template) {
+        return billingTemplateManager.update(template);
     }
 }

@@ -65,6 +65,7 @@ import java.util.stream.Stream;
 public class BillingHelper {
 
     private final AuthManager authManager;
+    private final String billingIndicesPattern;
     private final String billingIndicesMonthlyPattern;
     private final String billingRunIndicesMonthlyPattern;
     private final String billingStorageIndicesMonthlyPattern;
@@ -79,6 +80,7 @@ public class BillingHelper {
     public BillingHelper(final AuthManager authManager,
                          final @Value("${billing.index.common.prefix}") String commonPrefix) {
         this.authManager = authManager;
+        this.billingIndicesPattern = String.join("-", commonPrefix, BillingUtils.ES_WILDCARD);
         this.billingIndicesMonthlyPattern = String.join("-",
                 commonPrefix,
                 BillingUtils.ES_WILDCARD,
@@ -128,6 +130,11 @@ public class BillingHelper {
                 || authorizedUser.getRoles().stream()
                 .map(Role::getName)
                 .anyMatch(DefaultRoles.ROLE_BILLING_MANAGER.getName()::equals);
+    }
+
+    // TODO rewrite to get only year indices (it will be enough to get all available fields)
+    public String allBillingIndicesPattern() {
+        return billingIndicesPattern;
     }
 
     public String[] indicesByDate(final LocalDate from, final LocalDate to) {
