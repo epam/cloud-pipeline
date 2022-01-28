@@ -26,6 +26,7 @@
 
 .file-diff-header {
   font-family: Source Sans Pro, Helvetica Neue, Helvetica, Arial, sans-serif;
+  margin-left: 20px;
 }
 
 .file-diff-header > * {
@@ -66,4 +67,24 @@
   font-style: italic;
   color: #999;
   padding: 5px;
+}
+
+.ignored-list {
+  margin: 0 40px;
+  padding: 5px;
+}
+
+.selection-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.selection-actions button {
+  margin: 5px;
+}
+
+.list-title{
+  margin-bottom: 4px;
+  margin-left: 5px;
 }

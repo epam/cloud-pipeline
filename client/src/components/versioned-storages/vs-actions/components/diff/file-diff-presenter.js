@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as diff2html from 'diff2html';
-import {Collapse, Icon} from 'antd';
+import {Checkbox, Collapse, Icon} from 'antd';
 import classNames from 'classnames';
 import rawTemplates from './raw-templates';
 import styles from './diff.css';
@@ -117,11 +117,18 @@ class FileDiffPresenter extends React.PureComponent {
   renderDescription = () => {
     const {
       file,
-      type
+      type,
+      selectable,
+      selectedFiles,
+      onSelectionChanged
     } = this.props;
     if (file && type) {
       return (
         <div key="description">
+          {selectable && <Checkbox
+            onChange={onSelectionChanged(file)}
+            checked={selectedFiles.includes(file)}
+          />}
           <div className={styles.fileDiffHeader}>
             <Icon type="file-text" />
             <span>{file}</span>
@@ -159,7 +166,7 @@ class FileDiffPresenter extends React.PureComponent {
         style={style}
       >
         <Collapse
-          className="git-diff-collapse"
+          className={classNames('git-diff-collapse', 'cp-git-diff-collapse')}
           activeKey={opened ? ['presentation'] : []}
           onChange={this.onOpenedChange}
         >
@@ -183,7 +190,10 @@ FileDiffPresenter.propTypes = {
   type: PropTypes.string,
   visible: PropTypes.bool,
   collapsed: PropTypes.bool,
-  style: PropTypes.object
+  style: PropTypes.object,
+  selectable: PropTypes.bool,
+  onSelectionChanged: PropTypes.func,
+  selectedFiles: PropTypes.arrayOf(PropTypes.string)
 };
 
 export default FileDiffPresenter;

@@ -178,10 +178,11 @@ class VSActions extends React.Component {
     request,
     resolve,
     onConflicts = undefined,
-    options = {}
+    options = {},
+    body = {}
   ) => {
     request
-      .send()
+      .send(body)
       .then(() => {
         if (request.error) {
           message.error(request.error, 5);
@@ -350,7 +351,7 @@ class VSActions extends React.Component {
     });
   };
 
-  doCommit = (versionedStorage, commitMessage) => {
+  doCommit = (versionedStorage, commitMessage, filesToCommit) => {
     return new Promise((resolve) => {
       const {id, name} = versionedStorage;
       const hide = message.loading((
@@ -376,7 +377,8 @@ class VSActions extends React.Component {
           storage: versionedStorage,
           onSuccess,
           mergeInProgress: true
-        }
+        },
+        filesToCommit
       );
     });
   };
@@ -823,6 +825,7 @@ class VSActions extends React.Component {
       gitCommit,
       conflicts
     } = this.state;
+    console.log(this.props, this.state);
     if (!this.fsBrowserAvailable) {
       return null;
     }
