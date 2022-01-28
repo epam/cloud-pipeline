@@ -17,19 +17,12 @@ package com.epam.pipeline.mapper.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsageEntity;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecord;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecordEntity;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface NodePoolUsageMapper {
 
     NodePoolUsage toVO(NodePoolUsageEntity entity);
 
-    @Mapping(target = "recordId", source = "record.id")
-    NodePoolUsageRecord toRecordVO(NodePoolUsageRecordEntity entity);
-
-    @Mapping(target = "record", ignore = true)
-    NodePoolUsageRecordEntity toRecordEntity(NodePoolUsageRecord vo);
+    NodePoolUsageEntity toEntity(NodePoolUsage vo);
 }

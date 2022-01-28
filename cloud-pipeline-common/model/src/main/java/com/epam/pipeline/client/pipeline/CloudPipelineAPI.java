@@ -54,7 +54,6 @@ import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
-import com.epam.pipeline.vo.cluster.pool.NodePoolUsageRecord;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
@@ -284,7 +283,7 @@ public interface CloudPipelineAPI {
     Call<Result<ApplicationInfo>> fetchVersion();
 
     @POST("cluster/pool/usages")
-    Call<Result<NodePoolUsage>> saveNodePoolUsage(@Body final List<NodePoolUsageRecord> records);
+    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body final List<NodePoolUsage> records);
 
     @DELETE("cluster/pool/usages")
     Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);

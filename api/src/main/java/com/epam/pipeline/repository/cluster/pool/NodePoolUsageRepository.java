@@ -19,8 +19,12 @@ import com.epam.pipeline.entity.cluster.pool.NodePoolUsageEntity;
 import org.springframework.data.repository.CrudRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface NodePoolUsageRepository extends CrudRepository<NodePoolUsageEntity, Long> {
 
     void deleteByLogDateLessThan(LocalDateTime date);
+
+    List<NodePoolUsageEntity> findByLogDateGreaterThanAndLogDateLessThan(LocalDateTime start,
+                                                                         LocalDateTime end);
 }

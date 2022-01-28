@@ -21,7 +21,6 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecord;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -81,7 +80,7 @@ public class NodePoolController extends AbstractRestController {
     @PostMapping("/usages")
     @ApiOperation(value = "Persists node pool usage", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<NodePoolUsage> saveUsage(final @RequestBody List<NodePoolUsageRecord> records) {
+    public Result<List<NodePoolUsage>> saveUsage(final @RequestBody List<NodePoolUsage> records) {
         return Result.success(apiService.saveUsage(records));
     }
 

@@ -30,5 +30,7 @@ import java.util.List;
 public class NodePoolUsage {
     private Long id;
     private LocalDateTime logDate;
-    private List<NodePoolUsageRecord> records;
+    private Long nodePoolId;
+    private Integer totalNodesCount;
+    private Integer occupiedNodesCount;
 }

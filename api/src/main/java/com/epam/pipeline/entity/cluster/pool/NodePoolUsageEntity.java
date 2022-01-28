@@ -21,16 +21,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
 @Getter
@@ -46,6 +43,9 @@ public class NodePoolUsageEntity {
     @Convert(converter = TimestampConverter.class)
     private LocalDateTime logDate;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "record") // TODO: naming!
-    private List<NodePoolUsageRecordEntity> records;
+    private Long nodePoolId;
+
+    private Integer totalNodesCount;
+
+    private Integer occupiedNodesCount;
 }

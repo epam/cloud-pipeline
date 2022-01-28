@@ -18,7 +18,6 @@ package com.epam.pipeline.acl.cluster.pool;
 import com.epam.pipeline.controller.vo.cluster.pool.NodePoolVO;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecord;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -57,7 +56,7 @@ public class NodePoolApiService {
     }
 
     @PreAuthorize(AclExpressions.ADMIN_ONLY)
-    public NodePoolUsage saveUsage(final List<NodePoolUsageRecord> records) {
+    public List<NodePoolUsage> saveUsage(final List<NodePoolUsage> records) {
         return nodePoolUsageService.save(records);
     }
 

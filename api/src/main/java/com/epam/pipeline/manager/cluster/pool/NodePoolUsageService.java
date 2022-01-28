@@ -16,18 +16,15 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageEntity;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecord;
-import com.epam.pipeline.entity.cluster.pool.NodePoolUsageRecordEntity;
 import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,37 +34,25 @@ public class NodePoolUsageService {
     private final NodePoolUsageRepository nodePoolUsageRepository;
     private final NodePoolUsageMapper nodePoolUsageMapper;
 
-    @Transactional
-    public NodePoolUsage save(final List<NodePoolUsageRecord> records) {
-        final NodePoolUsageEntity entity = new NodePoolUsageEntity();
-        entity.setLogDate(DateUtils.nowUTC());
-        entity.setRecords(prepareRecords(records, entity));
-        nodePoolUsageRepository.save(entity);
+    public List<NodePoolUsage> getByPeriod(final LocalDateTime from, final LocalDateTime to) {
+        return ListUtils.emptyIfNull(nodePoolUsageRepository
+                .findByLogDateGreaterThanAndLogDateLessThan(from, to)).stream()
+                .map(nodePoolUsageMapper::toVO)
+                .collect(Collectors.toList());
+    }
 
-        return nodePoolUsageMapper.toVO(entity);
+    @Transactional
+    public List<NodePoolUsage> save(final List<NodePoolUsage> records) {
+        return records.stream()
+                .map(nodePoolUsageMapper::toEntity)
+                .peek(nodePoolUsageRepository::save)
+                .map(nodePoolUsageMapper::toVO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
     public boolean deleteExpired(final LocalDate date) {
         nodePoolUsageRepository.deleteByLogDateLessThan(date.atStartOfDay());
         return true;
-    }
-
-    private List<NodePoolUsageRecordEntity> prepareRecords(final List<NodePoolUsageRecord> records,
-                                                           final NodePoolUsageEntity entity) {
-        if (CollectionUtils.isEmpty(records)) {
-            return null;
-        }
-        return records.stream()
-                .map(record -> prepareRecord(record, entity))
-                .collect(Collectors.toList());
-    }
-
-    private NodePoolUsageRecordEntity prepareRecord(final NodePoolUsageRecord record,
-                                                    final NodePoolUsageEntity entity) {
-        final NodePoolUsageRecordEntity recordEntity = nodePoolUsageMapper.toRecordEntity(record);
-        recordEntity.setId(null);
-        recordEntity.setRecord(entity);
-        return recordEntity;
     }
 }

@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
-import com.epam.pipeline.vo.cluster.pool.NodePoolUsageRecord;
 import com.epam.pipeline.vo.user.OnlineUsers;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -84,7 +83,7 @@ public class CloudPipelineAPIClient {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadRunsByPool(poolId)));
     }
 
-    public NodePoolUsage saveNodePoolUsage(final List<NodePoolUsageRecord> records) {
+    public List<NodePoolUsage> saveNodePoolUsage(final List<NodePoolUsage> records) {
         return executor.execute(cloudPipelineAPI.saveNodePoolUsage(records));
     }
 

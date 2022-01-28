@@ -32,14 +32,15 @@ import org.springframework.scheduling.TaskScheduler;
 public class MonitoringConfiguration {
 
     @Bean
-    public SchedulingService nodePoolUsage(final TaskScheduler scheduler,
-                                           final NodePoolMonitoringService monitoringService,
-                                           final CloudPipelineAPIClient client,
-                                           @Value("${preference.name.usage.node.pool.delay}")
-                                               final String monitorDelayPreferenceName,
-                                           final PreferencesService preferencesService) {
+    public SchedulingService nodePoolMonitor(final TaskScheduler scheduler,
+                                             final NodePoolMonitoringService monitoringService,
+                                             final CloudPipelineAPIClient client,
+                                             @Value("${preference.name.usage.node.pool.delay}")
+                                                 final String monitorDelayPreferenceName,
+                                             final PreferencesService preferencesService) {
+
         return new SchedulingService(scheduler, monitoringService, client, monitorDelayPreferenceName,
-                preferencesService, "NodePoolUsage");
+                preferencesService, "NodePoolUsageMonitor");
     }
 
     @Bean

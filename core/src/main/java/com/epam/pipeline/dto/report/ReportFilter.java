@@ -13,21 +13,22 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cluster.pool;
+package com.epam.pipeline.dto.report;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class NodePoolUsageRecord {
-    private Long id;
-    private Long recordId; // TODO: naming!
-    private Long nodePoolId;
-    private Integer totalNodes;
-    private Integer nodesInUse;
+@NoArgsConstructor
+public class ReportFilter {
+    private LocalDateTime from;
+    private LocalDateTime to;
+    private ChronoUnit interval;
 }

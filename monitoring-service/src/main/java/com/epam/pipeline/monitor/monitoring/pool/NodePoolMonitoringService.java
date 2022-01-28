@@ -19,7 +19,7 @@ package com.epam.pipeline.monitor.monitoring.pool;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
-import com.epam.pipeline.vo.cluster.pool.NodePoolUsageRecord;
+import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -49,19 +49,19 @@ public class NodePoolMonitoringService implements MonitoringService {
         }
         final List<NodePool> pools = client.loadAllNodePools();
         client.saveNodePoolUsage(pools.stream()
-                .map(this::buildUsageRecord)
+                .map(this::buildUsage)
                 .collect(Collectors.toList()));
         log.debug("Finished node pool usage monitoring");
     }
 
-    private NodePoolUsageRecord buildUsageRecord(final NodePool pool) {
+    private NodePoolUsage buildUsage(final NodePool pool) {
         final long activePoolRuns = client.loadRunsByPool(pool.getId()).stream()
                 .filter(run -> Objects.nonNull(run.getInstance()) && Objects.nonNull(run.getInstance().getPoolId()))
                 .count();
-        return NodePoolUsageRecord.builder()
+        return NodePoolUsage.builder()
                 .nodePoolId(pool.getId())
-                .totalNodes(pool.getCount())
-                .nodesInUse(Math.toIntExact(activePoolRuns))
+                .totalNodesCount(pool.getCount())
+                .occupiedNodesCount(Math.toIntExact(activePoolRuns))
                 .build();
     }
 }

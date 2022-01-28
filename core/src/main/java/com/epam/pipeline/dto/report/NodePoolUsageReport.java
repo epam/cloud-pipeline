@@ -13,21 +13,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vo.cluster.pool;
+package com.epam.pipeline.dto.report;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class NodePoolUsageRecord {
-    private Long id;
-    private Long recordId; // TODO: naming!
-    private Long nodePoolId;
-    private Integer totalNodes;
-    private Integer nodesInUse;
+public class NodePoolUsageReport {
+    private Long poolId;
+    private List<NodePoolUsageReportRecord> records;
 }
