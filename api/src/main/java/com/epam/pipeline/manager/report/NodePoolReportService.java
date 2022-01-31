@@ -97,12 +97,17 @@ public class NodePoolReportService {
         final Integer nodesCount = ReportUtils.calculateSampleMax(NodePoolUsage::getTotalNodesCount, hourUsages);
         final Integer occupiedNodesCount = ReportUtils.calculateSampleMax(NodePoolUsage::getOccupiedNodesCount,
                 hourUsages);
+        final Integer utilization = hourUsages.stream()
+                .map(usage -> calculateHourUtilization(usage.getOccupiedNodesCount(), usage.getTotalNodesCount()))
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(null);
         return NodePoolUsageReportRecord.builder()
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
                 .occupiedNodesCount(occupiedNodesCount)
                 .nodesCount(nodesCount)
-                .utilization(calculateHourUtilization(occupiedNodesCount, nodesCount))
+                .utilization(utilization)
                 .build();
     }
 
