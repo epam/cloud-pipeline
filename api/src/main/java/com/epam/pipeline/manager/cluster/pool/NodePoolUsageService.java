@@ -16,6 +16,7 @@
 package com.epam.pipeline.manager.cluster.pool;
 
 import com.epam.pipeline.entity.cluster.pool.NodePoolUsage;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +46,7 @@ public class NodePoolUsageService {
     public List<NodePoolUsage> save(final List<NodePoolUsage> records) {
         return records.stream()
                 .map(nodePoolUsageMapper::toEntity)
+                .peek(entity -> entity.setLogDate(DateUtils.nowUTC()))
                 .peek(nodePoolUsageRepository::save)
                 .map(nodePoolUsageMapper::toVO)
                 .collect(Collectors.toList());
