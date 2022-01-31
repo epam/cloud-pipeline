@@ -33,7 +33,7 @@ RUN  yum install -y -q  awscli \
                         unzip
 
 # Install tools
-ARG BFTOOLS_VERSION="5.8.2"
+ARG BFTOOLS_VERSION="6.8.0"
 ARG VIPS_VERSION="8.11.2"
 ENV WSI_PARSER_HOME=/opt/local/wsi-parser
 
