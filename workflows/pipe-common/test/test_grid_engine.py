@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+import logging
 
+from datetime import datetime
 from mock import MagicMock, Mock
 
 from scripts.autoscale_sge import GridEngine, GridEngineJobState, GridEngineJob
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 MAX_CLUSTER_CORES = 6
 MAX_INSTANCE_CORES = 2
@@ -83,7 +86,6 @@ def test_qstat_array_job_parsing():
     executor.execute_to_lines = MagicMock(return_value=__to_lines(stdout))
     jobs = grid_engine.get_jobs()
 
-    assert [1] == [1]
     assert len([job for job in jobs if '2.' in job.id]) == 10
     assert len([job for job in jobs if '3.' in job.id]) == 5
     assert len([job for job in jobs if '4.' in job.id]) == 2
@@ -101,8 +103,8 @@ def test_qstat_empty_parsing():
 
 def test_kill_jobs():
     jobs = [
-        GridEngineJob(id=1, name='', user='', state='', datetime=''),
-        GridEngineJob(id=2, name='', user='', state='', datetime='')
+        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime=''),
+        GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='')
     ]
 
     grid_engine.kill_jobs(jobs)
@@ -113,8 +115,8 @@ def test_kill_jobs():
 
 def test_force_kill_jobs():
     jobs = [
-        GridEngineJob(id=1, name='', user='', state='', datetime=''),
-        GridEngineJob(id=2, name='', user='', state='', datetime='')
+        GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime=''),
+        GridEngineJob(id='2', root_id=2, name='', user='', state='', datetime='')
     ]
 
     grid_engine.kill_jobs(jobs, force=True)

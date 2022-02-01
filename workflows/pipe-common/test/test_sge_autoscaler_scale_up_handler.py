@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from mock import MagicMock, Mock
+
+from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, Instance
 from utils import assert_first_argument_contained
 
-from scripts.autoscale_sge import GridEngineScaleUpHandler, MemoryHostStorage, ComputeResource, CPInstance
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 HOSTNAME = 'hostname'
 POD_IP = '127.0.0.1'
@@ -23,7 +27,7 @@ RUN_ID = '12345'
 
 cmd_executor = Mock()
 grid_engine = Mock()
-pipe = Mock()
+api = Mock()
 host_storage = MemoryHostStorage()
 instance_helper = Mock()
 parent_run_id = 'parent_run_id'
@@ -33,14 +37,18 @@ instance_type = 'instance_type'
 instance_image = 'instance_image'
 cmd_template = 'cmd_template'
 price_type = 'price_type'
+owner = 'owner'
+owner_param_name = 'owner_param_name'
 region_id = 1
 instance_cores = 4
 polling_timeout = 600
-compute_resource = ComputeResource(4)
-scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, pipe=pipe, grid_engine=grid_engine,
-                                            host_storage=host_storage, parent_run_id=parent_run_id, instance_helper=instance_helper,
-                                            default_hostfile=default_hostfile, instance_disk=instance_disk,
-                                            instance_image=instance_image, cmd_template=cmd_template, price_type=price_type, region_id=region_id,
+instance = Instance(name='instance', price_type=price_type, cpu=4, memory=16, gpu=0)
+scale_up_handler = GridEngineScaleUpHandler(cmd_executor=cmd_executor, api=api, grid_engine=grid_engine,
+                                            host_storage=host_storage, parent_run_id=parent_run_id,
+                                            default_hostfile=default_hostfile,
+                                            instance_disk=instance_disk, instance_image=instance_image,
+                                            cmd_template=cmd_template, price_type=price_type,
+                                            region_id=region_id, owner_param_name=owner_param_name,
                                             polling_timeout=polling_timeout, polling_delay=0, instance_family='c5')
 
 
@@ -48,10 +56,11 @@ def setup_function():
     not_initialized_run = {'initialized': False, 'podId': HOSTNAME}
     initialized_pod_run = {'initialized': False, 'podId': HOSTNAME, 'podIP': POD_IP}
     initialized_run = {'initialized': True, 'podId': HOSTNAME, 'podIP': POD_IP}
-    pipe.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
+    api.load_run = MagicMock(side_effect=[not_initialized_run] * 4 + [initialized_pod_run] * 4 + [initialized_run])
+    api.load_task = MagicMock(return_value=[{'status': 'SUCCESS'}])
     cmd_executor.execute_to_lines = MagicMock(return_value=[RUN_ID])
     instance_helper.select_instance = MagicMock(return_value=
-        CPInstance.from_cp_response({
+        Instance.from_cp_response({
             "sku": "78J32SRETMXEPY86",
             "name": "c5.xlarge",
             "termType": "OnDemand",
@@ -69,39 +78,27 @@ def setup_function():
 
 
 def test_waiting_for_run_to_initialize():
-    scale_up_handler.scale_up(compute_resource)
+    scale_up_handler.scale_up(instance, owner)
 
-    pipe.load_run.assert_called()
-    assert pipe.load_run.call_count == 9
+    api.load_run.assert_called()
+    assert api.load_run.call_count == 9
 
 
 def test_enabling_worker_in_grid_engine():
-    scale_up_handler.scale_up(compute_resource)
+    scale_up_handler.scale_up(instance, owner)
 
     grid_engine.enable_host.assert_called_with(HOSTNAME)
 
 
 def test_updating_hosts():
-    scale_up_handler.scale_up(compute_resource)
+    scale_up_handler.scale_up(instance, owner)
 
-    assert_first_argument_contained(cmd_executor.execute, '%s\t%s' % (POD_IP, HOSTNAME))
-    assert_first_argument_contained(cmd_executor.execute, '/etc/hosts')
-
-
-def test_updating_default_hostfile():
-    scale_up_handler.scale_up(compute_resource)
-
-    assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
-    assert_first_argument_contained(cmd_executor.execute, default_hostfile)
+    assert_first_argument_contained(cmd_executor.execute, 'add_to_hosts')
+    assert_first_argument_contained(cmd_executor.execute,  HOSTNAME)
+    assert_first_argument_contained(cmd_executor.execute,  POD_IP)
 
 
 def test_scale_up_add_host_to_storage():
-    scale_up_handler.scale_up(compute_resource)
+    scale_up_handler.scale_up(instance, owner)
 
     assert [HOSTNAME] == host_storage.load_hosts()
-
-
-def test_scale_up_increase_parallel_environment_slots():
-    scale_up_handler.scale_up(compute_resource)
-
-    grid_engine.increase_parallel_environment_slots.assert_called_with(instance_cores)

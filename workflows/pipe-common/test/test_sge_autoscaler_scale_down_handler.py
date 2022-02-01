@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
+import logging
 
+from datetime import datetime
 from mock import MagicMock, Mock
 
 from scripts.autoscale_sge import GridEngineScaleDownHandler, GridEngineJob, GridEngineJobState, ComputeResource
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 HOSTNAME = 'hostname'
 ANOTHER_HOSTNAME = 'another-hostname'
@@ -44,7 +47,8 @@ def test_not_scaling_down_if_host_has_running_jobs():
     submit_datetime = datetime(2018, 12, 29, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -66,7 +70,8 @@ def test_scaling_down_if_host_has_no_running_jobs():
     submit_datetime = datetime(2018, 12, 29, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -93,18 +98,5 @@ def test_scaling_down_stops_pipeline():
 def test_scaling_down_updates_hosts():
     scale_down_handler.scale_down(HOSTNAME)
 
-    assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
-    assert_first_argument_contained(cmd_executor.execute, '/etc/hosts')
-
-
-def test_scaling_down_updates_default_hostfile():
-    scale_down_handler.scale_down(HOSTNAME)
-
-    assert_first_argument_contained(cmd_executor.execute, HOSTNAME)
-    assert_first_argument_contained(cmd_executor.execute, default_hostfile)
-
-
-def test_scaling_down_decreases_parallel_environment_slots():
-    scale_down_handler.scale_down(HOSTNAME)
-
-    grid_engine.decrease_parallel_environment_slots.assert_called_with(instance_cores)
+    assert_first_argument_contained(cmd_executor.execute, 'remove_from_hosts')
+    assert_first_argument_contained(cmd_executor.execute,  HOSTNAME)

@@ -12,26 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 import tempfile
 
 import pytest
-
 from pytest import fail
 
-from scripts.autoscale_sge import FileSystemHostStorage, MemoryHostStorage, CmdExecutor, ScalingError
+from scripts.autoscale_sge import FileSystemHostStorage, MemoryHostStorage, ThreadSafeStorage, CmdExecutor, ScalingError
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 HOST1 = "host1"
 HOST2 = "host2"
 
 cmd_executor = CmdExecutor()
 _, storage_file = tempfile.mkstemp()
-host_storage = FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=storage_file)
 
 
 @pytest.fixture(params=[
     MemoryHostStorage(),
-    FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=storage_file)
+    FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=storage_file),
+    ThreadSafeStorage(MemoryHostStorage())
 ])
 def host_storage(request):
     host_storage = request.param
