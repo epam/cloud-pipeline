@@ -100,8 +100,8 @@ class InfoPanel extends localization.LocalizedReactComponent {
   };
 
   handleFileEdit = () => {
-    const {onFileEdit} = this.props;
-    onFileEdit && onFileEdit();
+    const {onFileEdit, file} = this.props;
+    onFileEdit && onFileEdit(file);
   };
 
   handleGoBackClick = () => {

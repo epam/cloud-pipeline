@@ -15,5 +15,6 @@
  */
 
 import checkFileExistence from './check-file-existence';
+import * as gitIgnoreUtils from './git-ignore-utils';
 
-export default checkFileExistence;
+export {gitIgnoreUtils, checkFileExistence};

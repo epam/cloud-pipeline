@@ -26,6 +26,7 @@ import {
 import FileSaver from 'file-saver';
 import VersionedStorageHeader from './header';
 import VersionedStorageTable from './table';
+import {gitIgnoreUtils} from './utils';
 import {SplitPanel} from '../../../special/splitPanel';
 import localization from '../../../../utils/localization';
 import HiddenObjects from '../../../../utils/hidden-objects';
@@ -33,6 +34,7 @@ import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
 import PipelineFile from '../../../../models/pipelines/PipelineFile';
+import VersionFile from '../../../../models/pipelines/VersionFile';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
@@ -152,8 +154,14 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     pending: false,
     showHistoryPanel: false,
     selectedFile: null,
-    editSelectedFile: false,
-    launchVSFormVisible: false
+    editFile: null,
+    launchVSFormVisible: false,
+    gitIgnore: {
+      pending: false,
+      checked: false,
+      content: undefined,
+      missing: undefined
+    }
   };
 
   updateVSRequest = new UpdatePipeline();
@@ -163,9 +171,19 @@ class VersionedStorage extends localization.LocalizedReactComponent {
   };
 
   componentDidUpdate (prevProps) {
+    const {gitIgnore} = this.state;
+    const {pipeline, pipelineId, path} = this.props;
     if (
-      prevProps.path !== this.props.path ||
-      prevProps.pipelineId !== this.props.pipelineId
+      pipeline?.loaded &&
+      pipelineId &&
+      !gitIgnore.pending &&
+      !gitIgnore.checked
+    ) {
+      this.fetchGitIgnore();
+    }
+    if (
+      prevProps.path !== path ||
+      prevProps.pipelineId !== pipelineId
     ) {
       this.clearSelectedFile();
       this.pathWasChanged();
@@ -204,6 +222,15 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     };
   };
 
+  get gitIgnoreActions () {
+    return {
+      createGitIgnore: this.createGitIgnore,
+      addToGitIgnore: this.addToGitIgnore,
+      removeFromGitIgnore: this.removeFromGitIgnore,
+      editGitIgnore: this.editGitIgnore
+    };
+  }
+
   get parentPath () {
     const {path} = this.props;
     let parentPath;
@@ -225,6 +252,75 @@ class VersionedStorage extends localization.LocalizedReactComponent {
         pending: false
       });
     });
+  };
+
+  fetchGitIgnore = () => {
+    const {pipelineId} = this.props;
+    const {gitIgnore} = this.state;
+    this.setState({gitIgnore: {...gitIgnore, pending: true}}, () => {
+      const reject = error => {
+        if (typeof error === 'string' && error.toLowerCase().includes('404 file not found')) {
+          this.setState({gitIgnore: {
+            ...gitIgnore,
+            pending: false,
+            checked: true,
+            missing: true
+          }});
+        } else {
+          this.setState({gitIgnore: {
+            ...gitIgnore,
+            pending: false,
+            checked: true
+          }});
+        }
+      };
+      const resolve = result => {
+        let content;
+        try {
+          content = window.atob(result);
+        } catch (e) {
+          console.error(e);
+          return null;
+        }
+        return this.setState({gitIgnore: {
+          ...gitIgnore,
+          content: gitIgnoreUtils.parseGitIgnore(content),
+          pending: false,
+          checked: true
+        }});
+      };
+      const request = new VersionFile(pipelineId, '.gitignore', this.lastCommitId);
+      request.fetch()
+        .then(() => {
+          if (request.error) {
+            reject(request.error);
+          } else {
+            resolve(request.response);
+          }
+        })
+        .catch(reject);
+    });
+  };
+
+  refreshGitIgnore = () => {
+    return this.setState({
+      gitIgnore: {
+        pending: false,
+        checked: false,
+        content: undefined,
+        missing: undefined
+      }
+    });
+  };
+
+  retrieveFileByPath = async (path) => {
+    const {pipelineId} = this.props;
+    const request = new PipelineFileInfo(pipelineId, undefined, path);
+    await request.fetch();
+    if (request.error) {
+      return undefined;
+    }
+    return request.value;
   };
 
   pathWasChanged = () => {
@@ -630,6 +726,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           ? folders.invalidateFolder(parentFolderId)
           : pipelinesLibrary.invalidateCache();
         await pipeline.fetch();
+        if (document.path === '.gitignore') {
+          this.refreshGitIgnore();
+        }
         if (selectedFile && selectedFile.path === document.path) {
           this.clearSelectedFile();
         }
@@ -722,7 +821,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  createFile = async ({name, comment}) => {
+  createFile = async ({name, comment, path: filePath}) => {
     if (this.lastCommitId && name) {
       const {
         pipeline,
@@ -732,7 +831,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       } = this.props;
       const request = new PipelineFileUpdate(pipelineId);
       const parentFolderId = pipeline.value.parentFolderId;
-      let path = this.props.path || '';
+      let path = filePath !== undefined
+        ? filePath
+        : (this.props.path || '');
       if (path.length > 0 && !path.endsWith('/')) {
         path = `${path}`;
       }
@@ -893,21 +994,71 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  openEditFileForm = () => {
-    const {selectedFile} = this.state;
-    if (selectedFile) {
-      this.setState({editSelectedFile: true});
+  createGitIgnore = async (path = '') => {
+    let correctedPath = '';
+    if (path && path.length > 0 && !path.endsWith('/')) {
+      correctedPath = `${path}/`;
     }
+    await this.createFile({
+      name: '.gitignore',
+      comment: 'creating file .gitignore',
+      path: correctedPath
+    });
+    this.refreshGitIgnore();
+  };
+
+  editGitIgnore = (path = '') => {
+    let correctedPath = '';
+    if (path && path.length > 0 && !path.endsWith('/')) {
+      correctedPath = `${path}/`;
+    }
+    this.openEditFileForm(undefined, `${correctedPath}.gitignore`);
+  };
+
+  addToGitIgnore = async (entityPath) => {
+    const {gitIgnore} = this.state;
+    const fileContent = [...gitIgnore.content, entityPath];
+    await this.updateFileContent(
+      '.gitignore',
+      gitIgnoreUtils.buildGitIgnoreString(fileContent),
+      `add ${entityPath} to .gitignore`
+    );
+    this.refreshGitIgnore();
+  };
+
+  removeFromGitIgnore = async (entityPath) => {
+    const {gitIgnore} = this.state;
+    const fileContent = (gitIgnore.content || [])
+      .filter(line => line.trim() !== entityPath);
+    await this.updateFileContent(
+      '.gitignore',
+      gitIgnoreUtils.buildGitIgnoreString(fileContent),
+      `remove ${entityPath} from .gitignore`
+    );
+    this.refreshGitIgnore();
+  };
+
+  openEditFileForm = async (fileObject, filePath) => {
+    if (!fileObject && !filePath) {
+      return null;
+    }
+    if (!fileObject && filePath) {
+      const file = await this.retrieveFileByPath(filePath);
+      return this.setState({editFile: file});
+    }
+    if (fileObject) {
+      return this.setState({editFile: fileObject});
+    }
+    return null;
   };
 
   closeEditFileForm = () => {
-    this.setState({editSelectedFile: false});
+    this.setState({editFile: null});
   };
 
-  saveEditFileForm = async (contents, comment) => {
+  updateFileContent = async (path, contents, comment) => {
     const {pipelineId, pipeline} = this.props;
-    const {selectedFile} = this.state;
-    if (!selectedFile) {
+    if (!path) {
       return;
     }
     const request = new PipelineFileUpdate(pipelineId);
@@ -915,7 +1066,30 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     await request.send({
       contents: contents,
       comment,
-      path: selectedFile.path,
+      path: path,
+      lastCommitId: this.lastCommitId
+    });
+    hide();
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      await pipeline.fetch();
+      this.pathWasChanged();
+    }
+  };
+
+  saveEditFileForm = async (contents, comment) => {
+    const {pipelineId, pipeline} = this.props;
+    const {editFile} = this.state;
+    if (!editFile) {
+      return;
+    }
+    const request = new PipelineFileUpdate(pipelineId);
+    const hide = message.loading('Committing file changes...');
+    await request.send({
+      contents: contents,
+      comment,
+      path: editFile.path,
       lastCommitId: this.lastCommitId
     });
     hide();
@@ -925,6 +1099,9 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       this.closeEditFileForm();
       await pipeline.fetch();
       this.pathWasChanged();
+      if (editFile.path === '.gitignore') {
+        this.refreshGitIgnore();
+      }
       this.refreshSelectedFile();
     }
   };
@@ -966,12 +1143,12 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     );
   };
 
-  renderEditFileContent = () => {
-    const {editSelectedFile, selectedFile} = this.state;
+  renderEditFileForm = () => {
+    const {editFile} = this.state;
     const {pipeline} = this.props;
     return (
       <PipelineCodeForm
-        file={editSelectedFile ? selectedFile : undefined}
+        file={editFile}
         pipeline={pipeline}
         version={this.lastCommitId}
         cancel={this.closeEditFileForm}
@@ -995,7 +1172,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       page,
       selectedFile,
       generateReportDialog,
-      launchVSFormVisible
+      launchVSFormVisible,
+      gitIgnore
     } = this.state;
     const {
       editStorageDialog,
@@ -1081,6 +1259,8 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               onTableActionClick={this.onTableActionClick}
               onDeleteDocument={this.onDeleteDocument}
               onRenameDocument={this.openRenameDocumentDialog}
+              gitIgnoreActions={this.gitIgnoreActions}
+              gitIgnore={gitIgnore}
               onDownloadFile={this.downloadSingleFile}
               onNavigate={this.navigate}
               pipelineId={pipelineId}
@@ -1131,7 +1311,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
             )
           }
         </SplitPanel>
-        {this.renderEditFileContent()}
+        {this.renderEditFileForm()}
         <EditPipelineForm
           onSubmit={this.folderOperationWrapper(this.editVersionedStorage)}
           onCancel={this.closeEditStorageDialog}

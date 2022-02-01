@@ -32,7 +32,10 @@ import UploadButton from '../../../../special/UploadButton';
 import VSTableNavigation from './vs-table-navigation';
 import roleModel from '../../../../../utils/roleModel';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
-import checkFileExistence from '../utils';
+import {
+  checkFileExistence,
+  gitIgnoreUtils
+} from '../utils';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
@@ -69,7 +72,8 @@ class VersionedStorageTable extends React.Component {
     const {
       contents,
       showNavigateBack,
-      versionedStorage
+      versionedStorage,
+      gitIgnore
     } = this.props;
     if (!contents) {
       return null;
@@ -84,7 +88,11 @@ class VersionedStorageTable extends React.Component {
         ...content.git_object,
         mask: versionedStorage
           ? versionedStorage.mask
-          : 0
+          : 0,
+        ignored: gitIgnoreUtils.pathIgnored(content.git_object.path, gitIgnore?.content),
+        showGitIgnoreActions: gitIgnore && gitIgnore.missing
+          ? false
+          : !this.currentFolderIgnored
       })).sort(typeSorter);
     return showNavigateBack ? [navigateBack, ...content] : content;
   };
@@ -92,12 +100,23 @@ class VersionedStorageTable extends React.Component {
   get actions () {
     const {
       onRenameDocument,
-      onDownloadFile
+      onDownloadFile,
+      gitIgnoreActions = {}
     } = this.props;
+    const {
+      addToGitIgnore,
+      removeFromGitIgnore
+    } = gitIgnoreActions;
     return {
       delete: (record) => this.showDeleteDialog(record),
       edit: (record) => onRenameDocument && onRenameDocument(record),
-      download: (record) => onDownloadFile && onDownloadFile(record)
+      download: (record) => onDownloadFile && onDownloadFile(record),
+      addGitIgnore: (record) => {
+        addToGitIgnore && addToGitIgnore(record.path);
+      },
+      removeGitIgnore: (record) => {
+        removeFromGitIgnore && removeFromGitIgnore(record.path);
+      }
     };
   };
 
@@ -108,6 +127,14 @@ class VersionedStorageTable extends React.Component {
       path || '/',
       {trimTrailingSlash: !!path}
     );
+  }
+
+  get currentFolderIgnored () {
+    const {gitIgnore = {}, path} = this.props;
+    if (!path) {
+      return false;
+    }
+    return gitIgnoreUtils.pathIgnored(path, gitIgnore.content);
   }
 
   onCommentChange = (event) => {
@@ -176,6 +203,33 @@ class VersionedStorageTable extends React.Component {
   onCreateActionSelect = (action) => {
     const {onTableActionClick} = this.props;
     onTableActionClick && onTableActionClick(action);
+  };
+
+  onHeaderGitActionSelect = ({key}) => {
+    const {
+      path,
+      gitIgnoreActions = {}
+    } = this.props;
+    const {
+      createGitIgnore,
+      editGitIgnore,
+      addToGitIgnore,
+      removeFromGitIgnore
+    } = gitIgnoreActions;
+    switch (key) {
+      case 'createGitIgnore':
+        createGitIgnore && createGitIgnore();
+        break;
+      case 'editGitIgnore':
+        editGitIgnore && editGitIgnore();
+        break;
+      case 'addToIgnored':
+        addToGitIgnore && addToGitIgnore(`/${path}*`);
+        break;
+      case 'removeFromIgnored':
+        removeFromGitIgnore && removeFromGitIgnore(`/${path}*`);
+        break;
+    }
   };
 
   onUploadFinished = (uploadedFiles) => {
@@ -268,11 +322,17 @@ class VersionedStorageTable extends React.Component {
       controlsEnabled,
       versionedStorage,
       path,
-      onNavigate
+      onNavigate,
+      gitIgnore
     } = this.props;
     if (roleModel.writeAllowed(versionedStorage)) {
       return (
-        <div className={classNames(styles.tableControlsContainer, 'cp-versioned-storage-table-header')}>
+        <div
+          className={classNames(
+            styles.tableControlsContainer,
+            'cp-versioned-storage-table-header'
+          )}
+        >
           <VSTableNavigation
             path={path}
             onNavigate={onNavigate}
@@ -313,6 +373,68 @@ class VersionedStorageTable extends React.Component {
                 <Icon type="down" />
               </Button>
             </Dropdown>
+            {gitIgnore && (
+              <Dropdown
+                placement="bottomRight"
+                trigger={['hover']}
+                key="git actions"
+                overlay={
+                  <Menu
+                    selectedKeys={[]}
+                    onClick={this.onHeaderGitActionSelect}
+                    style={{width: 250}}
+                  >
+                    {gitIgnore.missing ? (
+                      <MenuItem
+                        key="createGitIgnore"
+                        disabled={!controlsEnabled}
+                      >
+                        <Icon type="file-add" className={styles.action} />
+                        Create .gitignore
+                      </MenuItem>
+                    ) : (
+                      <MenuItem
+                        key="editGitIgnore"
+                        disabled={!controlsEnabled}
+                      >
+                        <Icon type="edit" className={styles.action} />
+                        Edit .gitignore
+                      </MenuItem>
+                    )}
+                    {path && !gitIgnore.missing && !this.currentFolderIgnored && (
+                      <MenuItem
+                        key="addToIgnored"
+                        disabled={!controlsEnabled}
+                      >
+                        <Icon type="plus-square-o" className={styles.action} />
+                        Add current folder to .gitignore
+                      </MenuItem>
+                    )}
+                    {path && !gitIgnore.missing && this.currentFolderIgnored && (
+                      <MenuItem
+                        key="removeFromIgnored"
+                        disabled={!controlsEnabled}
+                      >
+                        <Icon type="minus-square-o" className={styles.action} />
+                        Remove current folder from .gitignore
+                      </MenuItem>
+                    )}
+                  </Menu>
+                }
+              >
+                <Button
+                  type="primary"
+                  id="create-button"
+                  size="small"
+                  className={styles.tableControl}
+                  disabled={!controlsEnabled}
+                >
+                  <Icon type="github" className={styles.action} />
+                  .gitignore actions
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
+            )}
             <UploadButton
               multiple
               synchronous
@@ -448,7 +570,19 @@ VersionedStorageTable.PropTypes = {
   path: PropTypes.string,
   afterUpload: PropTypes.func,
   style: PropTypes.object,
-  versionedStorage: PropTypes.object
+  versionedStorage: PropTypes.object,
+  gitIgnoreActions: PropTypes.shape({
+    createGitIgnore: PropTypes.func,
+    addToGitIgnore: PropTypes.func,
+    removeFromGitIgnore: PropTypes.func,
+    editGitIgnore: PropTypes.func
+  }),
+  gitIgnore: PropTypes.shape({
+    pending: PropTypes.bool,
+    checked: PropTypes.bool,
+    content: PropTypes.arrayOf(PropTypes.string),
+    missing: PropTypes.bool
+  })
 };
 
 export default VersionedStorageTable;
