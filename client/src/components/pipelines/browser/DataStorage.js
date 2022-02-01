@@ -92,6 +92,7 @@ import StorageSize from '../../special/storage-size';
 import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
+import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../special/sample-sheet/utilities';
 
 const PAGE_SIZE = 40;
 
@@ -1215,7 +1216,7 @@ export default class DataStorage extends React.Component {
       if (!item) {
         return null;
       }
-      if (/^file$/i.test(item.type) && /^samplesheet.csv$/i.test(item.name)) {
+      if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
         return (
           <Icon
             className={classNames(styles.itemType, 'cp-primary')}

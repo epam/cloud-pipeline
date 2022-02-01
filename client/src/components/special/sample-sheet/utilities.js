@@ -14,9 +14,11 @@
  *  limitations under the License.
  */
 
-const SAMPLE_SHEET_FILE_NAME_REGEXP = /(^|\/|\\)samplesheet.csv$/i;
+const SAMPLE_SHEET_FILE_NAME_REGEXP = /samplesheet.*\.csv$/i;
 const SAMPLE_SHEET_SECTION_REGEXP = /^["]?\[([^\]]+)\]["]?/gm;
 const SAMPLE_SHEET_SECTION_REGEXP_SINGLE = /^["]?\[([^\]]+)\]["]?/;
+
+export {SAMPLE_SHEET_FILE_NAME_REGEXP};
 
 export function isSampleSheetContent (content, fileName) {
   if (!content) {
