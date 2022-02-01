@@ -19,7 +19,7 @@ import tempfile
 import pytest
 from pytest import fail
 
-from scripts.autoscale_sge import FileSystemHostStorage, MemoryHostStorage, ThreadSafeStorage, CmdExecutor, ScalingError
+from scripts.autoscale_sge import FileSystemHostStorage, MemoryHostStorage, ThreadSafeHostStorage, CmdExecutor, ScalingError
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -33,7 +33,7 @@ _, storage_file = tempfile.mkstemp()
 @pytest.fixture(params=[
     MemoryHostStorage(),
     FileSystemHostStorage(cmd_executor=cmd_executor, storage_file=storage_file),
-    ThreadSafeStorage(MemoryHostStorage())
+    ThreadSafeHostStorage(MemoryHostStorage())
 ])
 def host_storage(request):
     host_storage = request.param

@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 
 from scripts.autoscale_sge import GridEngineAutoscaler, GridEngineJob, GridEngineJobState, Clock, MemoryHostStorage, \
-    SolidDemand
+    IntegralDemand
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -76,7 +76,7 @@ def test_scale_up_if_some_of_the_jobs_are_in_queue_for_more_than_scale_up_timeou
             datetime=submit_datetime
         )
     ]
-    demands = 2 * [SolidDemand()]
+    demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
@@ -106,7 +106,7 @@ def test_not_scale_up_if_none_of_the_jobs_are_in_queue_for_more_than_scale_up_ti
             datetime=submit_datetime
         )
     ]
-    demands = 2 * [SolidDemand()]
+    demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout - 1))
@@ -136,7 +136,7 @@ def test_that_scale_up_will_not_launch_more_additional_workers_than_limit():
             datetime=submit_datetime
         )
     ]
-    demands = 2 * [SolidDemand()]
+    demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
@@ -168,7 +168,7 @@ def test_that_scale_up_will_try_to_scale_down_smallest_host_if_additional_worker
             datetime=submit_datetime
         )
     ]
-    demands = 2 * [SolidDemand()]
+    demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
@@ -240,7 +240,7 @@ def test_scale_up_if_some_of_the_array_jobs_are_in_queue_for_more_than_scale_up_
             datetime=submit_datetime,
         )
     ]
-    demands = 7 * [SolidDemand()]
+    demands = 7 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
@@ -310,7 +310,7 @@ def test_not_scale_up_if_none_of_the_array_jobs_are_in_queue_for_more_than_scale
             datetime=submit_datetime,
         )
     ]
-    demands = 7 * [SolidDemand()]
+    demands = 7 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout - 1))
@@ -342,7 +342,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
     ]
     for run_id in range(0, autoscaler.max_additional_hosts):
         autoscaler.host_storage.add_host(str(run_id))
-    demands = 2 * [SolidDemand()]
+    demands = 2 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))
@@ -414,7 +414,7 @@ def test_not_scale_up_if_number_of_additional_workers_is_already_equals_to_the_l
     ]
     for run_id in range(0, autoscaler.max_additional_hosts):
         autoscaler.host_storage.add_host(str(run_id))
-    demands = 7 * [SolidDemand()]
+    demands = 7 * [IntegralDemand()]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
     grid_engine.get_resource_demands = MagicMock(return_value=demands)
     clock.now = MagicMock(return_value=submit_datetime + timedelta(seconds=scale_up_timeout))

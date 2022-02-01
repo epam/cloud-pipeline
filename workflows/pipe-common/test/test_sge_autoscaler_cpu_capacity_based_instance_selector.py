@@ -17,8 +17,8 @@ import logging
 import pytest
 from mock import MagicMock, Mock
 
-from scripts.autoscale_sge import CpuCapacityInstanceSelector, SolidDemand, InstanceDemand, Instance, \
-    FluidDemand
+from scripts.autoscale_sge import CpuCapacityInstanceSelector, IntegralDemand, InstanceDemand, Instance, \
+    FractionalDemand
 
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
@@ -44,113 +44,113 @@ all_instances = [instance_2cpu, instance_4cpu,
 test_cases = [
     ['2cpu job using 2cpu instances',
      [instance_2cpu],
-     [SolidDemand(cpu=2, owner=owner)],
+     [IntegralDemand(cpu=2, owner=owner)],
      [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
     ['2x2cpu jobs using 2cpu instances',
      [instance_2cpu],
-     2 * [SolidDemand(cpu=2, owner=owner)],
+     2 * [IntegralDemand(cpu=2, owner=owner)],
      [InstanceDemand(instance=instance_2cpu, owner=owner),
       InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
     ['3x1cpu and 2cpu jobs using 2cpu and 4cpu instances',
      [instance_2cpu,
       instance_4cpu],
-     3 * [SolidDemand(cpu=1, owner=owner)]
-     + [SolidDemand(cpu=3, owner=owner)],
+     3 * [IntegralDemand(cpu=1, owner=owner)]
+     + [IntegralDemand(cpu=3, owner=owner)],
      [InstanceDemand(instance=instance_4cpu, owner=owner),
       InstanceDemand(instance=instance_4cpu, owner=owner)]],
 
     ['3x3cpu jobs using 2cpu and 4cpu instances',
      [instance_2cpu,
       instance_4cpu],
-     3 * [SolidDemand(cpu=3, owner=owner)],
+     3 * [IntegralDemand(cpu=3, owner=owner)],
      3 * [InstanceDemand(instance=instance_4cpu, owner=owner)]],
 
     ['3x3cpu jobs using all instances',
      all_instances,
-     3 * [SolidDemand(cpu=3, owner=owner)],
+     3 * [IntegralDemand(cpu=3, owner=owner)],
      [InstanceDemand(instance=instance_16cpu, owner=owner)]],
 
     ['2cpu and 6cpu jobs using 2cpu and 4cpu and 8cpu instances',
      [instance_2cpu,
       instance_4cpu,
       instance_8cpu],
-     [SolidDemand(cpu=2, owner=owner),
-      SolidDemand(cpu=6, owner=owner)],
+     [IntegralDemand(cpu=2, owner=owner),
+      IntegralDemand(cpu=6, owner=owner)],
      [InstanceDemand(instance=instance_8cpu, owner=owner)]],
 
     ['10x16cpu jobs using all instances',
      all_instances,
-     10 * [SolidDemand(cpu=16, owner=owner)],
+     10 * [IntegralDemand(cpu=16, owner=owner)],
      [InstanceDemand(instance=instance_96cpu, owner=owner),
       InstanceDemand(instance=instance_64cpu, owner=owner)]],
 
     ['2cpu fluid job using 2cpu instances',
      [instance_2cpu],
-     [FluidDemand(cpu=2, owner=owner)],
+     [FractionalDemand(cpu=2, owner=owner)],
      [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
     ['2x2cpu fluid jobs using 2cpu instances',
      [instance_2cpu],
-     2 * [FluidDemand(cpu=2, owner=owner)],
+     2 * [FractionalDemand(cpu=2, owner=owner)],
      2 * [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
     ['3x1cpu and 2cpu fluid jobs using 2cpu and 4cpu instances',
      [instance_2cpu,
       instance_4cpu],
-     3 * [FluidDemand(cpu=1, owner=owner)]
-     + [FluidDemand(cpu=3, owner=owner)],
+     3 * [FractionalDemand(cpu=1, owner=owner)]
+     + [FractionalDemand(cpu=3, owner=owner)],
      [InstanceDemand(instance=instance_4cpu, owner=owner),
       InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
     ['3x3cpu fluid jobs using 2cpu and 4cpu instances',
      [instance_2cpu,
       instance_4cpu],
-     3 * [FluidDemand(cpu=3, owner=owner)],
+     3 * [FractionalDemand(cpu=3, owner=owner)],
      2 * [InstanceDemand(instance=instance_4cpu, owner=owner)]
      + [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
     ['3x3cpu fluid jobs using all instances',
      all_instances,
-     3 * [FluidDemand(cpu=3, owner=owner)],
+     3 * [FractionalDemand(cpu=3, owner=owner)],
      [InstanceDemand(instance=instance_16cpu, owner=owner)]],
 
     ['2cpu and 6cpu fluid jobs using 2cpu and 4cpu and 8cpu instances',
      [instance_2cpu,
       instance_4cpu,
       instance_8cpu],
-     [FluidDemand(cpu=2, owner=owner),
-      FluidDemand(cpu=6, owner=owner)],
+     [FractionalDemand(cpu=2, owner=owner),
+      FractionalDemand(cpu=6, owner=owner)],
      [InstanceDemand(instance=instance_8cpu, owner=owner)]],
 
     ['10x16cpu fluid jobs using all instances',
      all_instances,
-     10 * [FluidDemand(cpu=16, owner=owner)],
+     10 * [FractionalDemand(cpu=16, owner=owner)],
      [InstanceDemand(instance=instance_96cpu, owner=owner),
       InstanceDemand(instance=instance_64cpu, owner=owner)]],
 
     ['16cpu owner jobs and 48cpu another owner jobs using all instances',
      all_instances,
-     [SolidDemand(cpu=16, owner=owner),
-      SolidDemand(cpu=48, owner=another_owner)],
+     [IntegralDemand(cpu=16, owner=owner),
+      IntegralDemand(cpu=48, owner=another_owner)],
      [InstanceDemand(instance=instance_64cpu, owner=another_owner)]],
 
     ['16cpu owner jobs and 48x1cpu another owner jobs using all instances',
      all_instances,
-     [SolidDemand(cpu=16, owner=owner)]
-     + 48 * [SolidDemand(cpu=1, owner=another_owner)],
+     [IntegralDemand(cpu=16, owner=owner)]
+     + 48 * [IntegralDemand(cpu=1, owner=another_owner)],
      [InstanceDemand(instance=instance_64cpu, owner=another_owner)]],
 
     ['4x16cpu another owner jobs and 4x16cpu owner jobs using all instances',
      all_instances,
-     4 * [SolidDemand(cpu=16, owner=owner)] + 4 * [SolidDemand(cpu=16, owner=another_owner)],
+     4 * [IntegralDemand(cpu=16, owner=owner)] + 4 * [IntegralDemand(cpu=16, owner=another_owner)],
      [InstanceDemand(instance=instance_96cpu, owner=owner),
       InstanceDemand(instance=instance_32cpu, owner=another_owner)]],
 
     ['4x16cpu another owner jobs and 4x16cpu owner jobs using 64cpu instances',
      [instance_64cpu],
-     4 * [SolidDemand(cpu=16, owner=owner)] + 4 * [SolidDemand(cpu=16, owner=another_owner)],
+     4 * [IntegralDemand(cpu=16, owner=owner)] + 4 * [IntegralDemand(cpu=16, owner=another_owner)],
      [InstanceDemand(instance=instance_64cpu, owner=owner),
       InstanceDemand(instance=instance_64cpu, owner=another_owner)]]
 ]

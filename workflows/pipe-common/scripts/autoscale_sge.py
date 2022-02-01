@@ -378,10 +378,10 @@ class GridEngine:
                 if available_slots >= job.slots:
                     available_slots -= job.slots
                 else:
-                    demands.append(FluidDemand(job.slots - available_slots, owner=job.user))
+                    demands.append(FractionalDemand(job.slots - available_slots, owner=job.user))
                     available_slots = 0
             else:
-                demands.append(SolidDemand(job.slots, owner=job.user))
+                demands.append(IntegralDemand(job.slots, owner=job.user))
         return demands
 
     def get_host_to_scale_down(self, hosts):
@@ -402,7 +402,7 @@ class GridEngine:
     def get_host_resource(self, host):
         for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host):
             if "processors" in line:
-                return SolidSupply(int(line.strip().split()[1]))
+                return ResourceSupply(int(line.strip().split()[1]))
 
     def _shutdown_execution_host(self, host, skip_on_failure):
         self._perform_command(
@@ -488,6 +488,9 @@ class GridEngine:
 class ComputeResource:
 
     def __init__(self, cpu=0, gpu=0, memory=0, disk=0, owner=None):
+        """
+        Common compute resource.
+        """
         self.cpu = cpu
         self.gpu = gpu
         self.memory = memory
@@ -519,21 +522,37 @@ class ComputeResource:
     __nonzero__ = __bool__
 
 
-class FluidDemand(ComputeResource):
+class FractionalDemand(ComputeResource):
+    """
+    Fractional resource demand which can be fulfilled using multiple resource supplies.
+
+    Example of a fractional demand is mpi grid engine job requirements.
+    """
     pass
 
 
-class SolidDemand(ComputeResource):
+class IntegralDemand(ComputeResource):
+    """
+    Integral resource demand which can be fulfilled using only a single resource supply.
+
+    Example of a integral demand is non mpi grid engine job requirements.
+    """
     pass
 
 
-class SolidSupply(ComputeResource):
+class ResourceSupply(ComputeResource):
+    """
+    Resource supply which can be used to fulfill resource demands.
+    """
     pass
 
 
 class InstanceDemand:
 
     def __init__(self, instance, owner):
+        """
+        Execution instance demand.
+        """
         self.instance = instance
         self.owner = owner
 
@@ -547,6 +566,9 @@ class InstanceDemand:
 class Instance:
 
     def __init__(self, name, price_type, memory, gpu, cpu):
+        """
+        Execution instance.
+        """
         self.name = name
         self.price_type = price_type
         self.memory = memory
@@ -578,18 +600,16 @@ class Clock:
 
 
 class GridEngineScaleUpOrchestrator:
-    _POLL_TIMEOUT = 900
-    _POLL_ATTEMPTS = 60
     _POLL_DELAY = 10
-    _GE_POLL_TIMEOUT = 60
-    _GE_POLL_ATTEMPTS = 6
 
     def __init__(self, scale_up_handler, grid_engine, host_storage, instance_selector, price_type, batch_size,
                  polling_delay=_POLL_DELAY, clock=Clock()):
         """
         Grid engine scale up orchestrator.
 
-        It handles additional workers batch scaling up.
+        Handles additional workers batch scaling up.
+        Scales up no more than a configured number of additional workers at once.
+        Waits for all batch additional workers to scale up before continuing.
 
         :param scale_up_handler: Scaling up handler.
         :param grid_engine: Grid engine client.
@@ -608,14 +628,14 @@ class GridEngineScaleUpOrchestrator:
         self.polling_delay = polling_delay
         self.clock = clock
 
-    def scale_up(self, resource_demands, remaining_additional_hosts):
+    def scale_up(self, resource_demands, max_batch_size):
         instance_demands = list(itertools.islice(self.instance_selector.select(resource_demands, self.price_type),
-                                                 min(self.batch_size, remaining_additional_hosts)))
+                                                 min(self.batch_size, max_batch_size)))
         number_of_threads = len(instance_demands)
         Logger.info('Scaling up %s additional workers...' % number_of_threads)
         threads = []
         for instance_demand in instance_demands:
-            thread = threading.Thread(target=scale_up_handler.scale_up,
+            thread = threading.Thread(target=self.scale_up_handler.scale_up,
                                       args=(instance_demand.instance, instance_demand.owner))
             thread.setDaemon(True)
             thread.start()
@@ -649,8 +669,9 @@ class GridEngineScaleUpHandler:
                  instance_image, cmd_template, price_type, region_id, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
                  ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params='', clock=Clock()):
         """
-        Grid engine scale up implementation. It handles additional nodes launching and hosts configuration (/etc/hosts
-        and self.default_hostfile).
+        Grid engine scale up handler.
+
+        Manages additional workers scaling up.
 
         :param cmd_executor: Cmd executor.
         :param api: Cloud pipeline client.
@@ -699,8 +720,6 @@ class GridEngineScaleUpHandler:
         Also notice that an additional worker host is manually enabled in GE only after its run is initialized.
         This happens because additional workers are disabled in GE by default to prevent job submissions to not
         initialized runs.
-
-        :return: Host name of the launched additional worker.
         """
         try:
             Logger.info('Scaling up additional worker (%s)...' % instance.name)
@@ -713,19 +732,16 @@ class GridEngineScaleUpHandler:
             self._enable_worker_in_grid_engine(pod)
             Logger.info('Additional worker %s (%s) has been scaled up.' % (pod.name, instance.name), crucial=True)
         except KeyboardInterrupt:
-            raise
+            pass
         except Exception as e:
             Logger.warn('Scaling up additional worker (%s) has failed due to %s.' % (instance.name, str(e)),
                         crucial=True)
             Logger.warn(traceback.format_exc())
-            raise
 
         # todo: Some delay is needed for GE to submit task to a new host.
         #  Probably, we should check if some jobs is scheduled on the host and release the block only after that.
         #  On the other hand, some jobs may finish between our checks so the program may stuck until host is filled
         #  with some task.
-
-        return pod.name
 
     def _launch_additional_worker(self, instance, owner):
         Logger.info('Launching additional worker (%s)...' % instance)
@@ -796,6 +812,7 @@ class GridEngineScaleUpHandler:
         raise ScalingError(error_msg)
 
     def _add_worker_to_master_hosts(self, pod):
+        Logger.info('Adding host %s (%s) to hosts...' % (pod.name, pod.ip))
         self.executor.execute('add_to_hosts "%s" "%s"' % (pod.name, pod.ip))
 
     def _await_worker_initialization(self, run_id):
@@ -849,8 +866,9 @@ class GridEngineScaleDownHandler:
 
     def __init__(self, cmd_executor, grid_engine, default_hostfile):
         """
-        Grid engine scale down implementation. It handles grid engine host removal, hosts configuration (/etc/hosts
-        and self.default_hostfile) and additional nodes stopping.
+        Grid engine scale down handler.
+
+        Manages additional workers scaling down.
 
         :param cmd_executor: Cmd executor.
         :param grid_engine: Grid engine client.
@@ -870,7 +888,7 @@ class GridEngineScaleDownHandler:
         :param child_host: Host name of an additional worker to be scaled down.
         :return: True if the run stopping was successful, False otherwise.
         """
-        Logger.info('Disable additional worker %s.' % child_host)
+        Logger.info('Disabling additional worker %s...' % child_host)
         self.grid_engine.disable_host(child_host)
         jobs = self.grid_engine.get_jobs()
         disabled_host_jobs = [job for job in jobs if child_host in job.hosts]
@@ -887,7 +905,7 @@ class GridEngineScaleDownHandler:
         return True
 
     def _remove_host_from_grid_engine_configuration(self, host):
-        Logger.info('Remove additional worker %s from GE cluster configuration.' % host)
+        Logger.info('Removing additional worker %s from GE cluster configuration...' % host)
         self.grid_engine.delete_host(host)
         Logger.info('Additional worker %s was removed from GE cluster configuration.' % host)
 
@@ -902,13 +920,18 @@ class GridEngineScaleDownHandler:
         return host_elements[len(host_elements) - 1]
 
     def _remove_host_from_hosts(self, host):
-        Logger.info('Remove host %s from /etc/hosts and default hostfile.' % host)
+        Logger.info('Removing host %s from hosts...' % host)
         self.executor.execute('remove_from_hosts "%s"' % host)
 
 
-class ThreadSafeStorage:
+class ThreadSafeHostStorage:
 
     def __init__(self, storage):
+        """
+        Thread safe host storage.
+
+        Works as a thread safe decorator for an underlying storage.
+        """
         self._storage = storage
         self._lock = threading.RLock()
 
@@ -945,9 +968,10 @@ class MemoryHostStorage:
 
     def __init__(self):
         """
-        Additional hosts storage.
+        In memory additional hosts storage.
+
         Contains the hostname along with the time of the last activity on it.
-        It stores all hosts in memory unlike FileSystemHostStorage implementation.
+        Additional hosts details are lost on grid engine autoscaler restart.
         """
         self._storage = dict()
         self.clock = Clock()
@@ -1000,9 +1024,11 @@ class FileSystemHostStorage:
 
     def __init__(self, cmd_executor, storage_file, clock=Clock()):
         """
-        Additional hosts storage.
+        File system additional hosts storage.
+
         Contains the hostname along with the time of the last activity on it.
-        It uses file system to persist all hosts. Therefore it can be used through relaunches of the autoscaler script.
+        It uses file system to persist all hosts.
+        Additional hosts details are persisted between grid engine autoscaler restarts.
 
         :param cmd_executor: Cmd executor.
         :param storage_file: File to store hosts into.
@@ -1214,11 +1240,9 @@ class GridEngineAutoscaler:
     def scale_up(self, resource_demands, remaining_additional_hosts):
         """
         Scales up a new additional worker.
-
-        :return: Scaled up additional worker host.
         """
         Logger.info('Start grid engine SCALING UP.')
-        return self.scale_up_orchestrator.scale_up(resource_demands, remaining_additional_hosts)
+        self.scale_up_orchestrator.scale_up(resource_demands, remaining_additional_hosts)
 
     def _scale_down(self, running_jobs, additional_hosts, scaling_period_start=None):
         active_hosts = set([host for job in running_jobs for host in job.hosts])
@@ -1370,21 +1394,21 @@ class BackwardCompatibleInstanceSelector(GridEngineInstanceSelector):
         if batch_size > 1:
             self.instance_selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
         else:
-            self.instance_selector = FluidCpuCapacityInstanceSelector(instance_provider, free_cores)
+            self.instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider, free_cores)
 
     def select(self, demands, price_type):
         return self.instance_selector.select(demands, price_type)
 
 
-class FluidCpuCapacityInstanceSelector(GridEngineInstanceSelector):
+class NaiveCpuCapacityInstanceSelector(GridEngineInstanceSelector):
 
     def __init__(self, instance_provider, free_cores):
         """
-        Fluid CPU capacity instance selector.
+        Naive CPU capacity instance selector.
 
         CPU capacity is a number of job CPU requirements a single instance can process.
         If a bigger instance can process more job CPU requirements then it will be selected.
-        Handles job CPU requirements as fluid requirements.
+        Handles resource demands as if they were fractional.
 
         :param instance_provider: Cloud Pipeline instance provider.
         :param free_cores: Number of system reserved cpus on each cluster instance.
@@ -1394,15 +1418,15 @@ class FluidCpuCapacityInstanceSelector(GridEngineInstanceSelector):
         self.instance_selector = CpuCapacityInstanceSelector(instance_provider, free_cores)
 
     def select(self, demands, price_type):
-        Logger.info('Selecting instances using fluid cpu capacity strategy...')
-        fluid_demands = [demand if isinstance(demand, FluidDemand)
-                         else FluidDemand(cpu=demand.cpu,
-                                          gpu=demand.gpu,
-                                          memory=demand.memory,
-                                          disk=demand.disk,
-                                          owner=demand.owner)
-                         for demand in demands]
-        return self.instance_selector.select(fluid_demands, price_type)
+        Logger.info('Selecting instances using fractional cpu capacity strategy...')
+        fractional_demands = [demand if isinstance(demand, FractionalDemand)
+                              else FractionalDemand(cpu=demand.cpu,
+                                                    gpu=demand.gpu,
+                                                    memory=demand.memory,
+                                                    disk=demand.disk,
+                                                    owner=demand.owner)
+                              for demand in demands]
+        return self.instance_selector.select(fractional_demands, price_type)
 
 
 class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
@@ -1430,10 +1454,10 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
             best_remaining_demands = None
             best_fulfilled_demands = None
             for instance in instances:
-                supply = SolidSupply(cpu=instance.cpu - self.free_cores, gpu=instance.gpu, memory=instance.memory)
+                supply = ResourceSupply(cpu=instance.cpu - self.free_cores, gpu=instance.gpu, memory=instance.memory)
                 current_remaining_demands, current_fulfilled_demands = self._apply(remaining_demands, supply)
                 current_fulfilled_demand = functools.reduce(ComputeResource.add, current_fulfilled_demands,
-                                                            SolidDemand())
+                                                            IntegralDemand())
                 current_capacity = current_fulfilled_demand.cpu
                 if current_capacity > best_capacity:
                     best_capacity = current_capacity
@@ -1456,14 +1480,14 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
             if not remaining_supply:
                 remaining_demands.extend(demands[i:])
                 break
-            if isinstance(demand, SolidDemand):
+            if isinstance(demand, IntegralDemand):
                 current_remaining_supply, remaining_demand = remaining_supply.subtract(demand)
                 if remaining_demand:
                     remaining_demands.append(demand)
                 else:
                     fulfilled_demands.append(demand)
                     remaining_supply = current_remaining_supply
-            elif isinstance(demand, FluidDemand):
+            elif isinstance(demand, FractionalDemand):
                 current_remaining_supply, remaining_demand = remaining_supply.subtract(demand)
                 if remaining_demand:
                     remaining_demands.append(remaining_demand)
@@ -1727,7 +1751,7 @@ if __name__ == '__main__':
                                 CloudPipelineInstanceProvider.get_family_from_type(cloud_provider, instance_type))
     owner_param_name = os.getenv('CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', 'CP_CAP_AUTOSCALE_OWNER')
     idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
-    scale_up_strategy = os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY', 'bc-cpu-capacity')
+    scale_up_strategy = os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY', 'default')
     scale_up_batch_size = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE', 1))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
 
@@ -1748,8 +1772,8 @@ if __name__ == '__main__':
     if scale_up_strategy == 'cpu-capacity':
         instance_selector = CpuCapacityInstanceSelector(instance_provider=instance_provider,
                                                         free_cores=free_cores)
-    elif scale_up_strategy == 'fluid-cpu-capacity':
-        instance_selector = FluidCpuCapacityInstanceSelector(instance_provider=instance_provider,
+    elif scale_up_strategy == 'naive-cpu-capacity':
+        instance_selector = NaiveCpuCapacityInstanceSelector(instance_provider=instance_provider,
                                                              free_cores=free_cores)
     else:
         instance_selector = BackwardCompatibleInstanceSelector(instance_provider=instance_provider,
@@ -1770,7 +1794,7 @@ if __name__ == '__main__':
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                          storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'),
                                          clock=scaling_operations_clock)
-    host_storage = ThreadSafeStorage(host_storage)
+    host_storage = ThreadSafeHostStorage(host_storage)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
     scale_down_timeout = int(api.retrieve_preference('ge.autoscaling.scale.down.timeout', default_value=30))
     scale_up_polling_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.polling.timeout',
