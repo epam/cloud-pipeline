@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,6 +60,30 @@ RUN     apt-get install -y r-base \
                            r-cran-getopt \
                            r-cran-plyr
 
+## Python 3
+#  - Set it up using conda, otherwise it may clash with the system-level py2
+ENV CONDA_HOME=$BFX_INSTALL_ROOT/conda
+RUN wget -q "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+    bash /tmp/Anaconda_Install.sh -f -b -p $CONDA_HOME && \
+    rm -f /tmp/Anaconda_Install.sh && \
+    $CONDA_HOME/bin/conda create -y -n py3 python=3.8 && \
+    ln -s $CONDA_HOME/envs/py3/bin/python3 /usr/local/bin/python3
+
+## multiqc
+RUN $CONDA_HOME/envs/py3/bin/pip3 install multiqc==1.11 && \
+    rm -f /usr/local/bin/multiqc && \
+    ln -s $CONDA_HOME/envs/py3/bin/multiqc /usr/local/bin/multiqc
+
+## bowtie
+ENV BOWTIE_HOME=$BFX_INSTALL_ROOT/bowtie
+ENV BOWTIE_BIN_DIR=$BOWTIE_HOME/bowtie-1.3.0-linux-x86_64
+ENV BOWTIE_BIN=$BOWTIE_BIN_DIR/bowtie
+ENV PATH=$PATH:$BOWTIE_BIN_DIR
+RUN     mkdir -p $BOWTIE_HOME && \
+        cd $BOWTIE_HOME && \
+        wget -q "https://sourceforge.net/projects/bowtie-bio/files/bowtie/1.3.0/bowtie-1.3.0-linux-x86_64.zip" && \
+        unzip bowtie-1.3.0-linux-x86_64.zip && \
+        rm -f bowtie-1.3.0-linux-x86_64.zip
 
 ## STAR
 ENV STAR_HOME=$BFX_INSTALL_ROOT/STAR

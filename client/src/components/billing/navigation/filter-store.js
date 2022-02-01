@@ -15,7 +15,7 @@
  */
 
 import {observable, isObservableArray} from 'mobx';
-import {Period, getPeriod} from './periods';
+import {Period, getPeriod} from '../../special/periods';
 import RunnerType from './runner-types';
 import ReportsRouting from './reports-routing';
 

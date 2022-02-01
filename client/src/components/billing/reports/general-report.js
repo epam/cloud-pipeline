@@ -26,7 +26,7 @@ import {
   Summary
 } from './charts';
 import BillingNavigation, {RUNNER_SEPARATOR, REGION_SEPARATOR} from '../navigation';
-import {Period, getPeriod} from '../navigation/periods';
+import {Period, getPeriod} from '../../special/periods';
 import {
   GetBillingData,
   GetGroupedBillingCenters,

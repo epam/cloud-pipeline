@@ -26,7 +26,7 @@ import {
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {discounts} from '../discounts';
-import {getCurrentDate} from '../../navigation/periods';
+import {getCurrentDate} from '../../../special/periods';
 import moment from 'moment-timezone';
 
 const Display = {

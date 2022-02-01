@@ -28,9 +28,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
@@ -52,15 +50,15 @@ public class UsersUsageReportService {
         final UsersUsageReportFilterVO preparedFilter = prepareFilter(Objects.isNull(filter)
                 ? new UsersUsageReportFilterVO()
                 : filter);
-        final LocalDateTime start = preparedFilter.getFrom().atStartOfDay();
-        final LocalDateTime end = buildEndOfInterval(preparedFilter.getTo());
-        final List<OnlineUsers> onlineUsers = onlineUsersService.getUsersByPeriod(start, end,
-                preparedFilter.getUsers());
+        final LocalDateTime start = preparedFilter.getFrom();
+        final LocalDateTime end = preparedFilter.getTo();
+        final Set<Long> users = prepareUsers(filter);
+        final List<OnlineUsers> onlineUsers = onlineUsersService.getUsersByPeriod(start, end, users);
         if (ChronoUnit.HOURS == filter.getInterval()) {
-            return calculateDayUsersUsageByHour(onlineUsers, start, end, preparedFilter.getUsers());
+            return calculateDayUsersUsageByHour(onlineUsers, start, end, users);
         }
         if (ChronoUnit.DAYS == filter.getInterval()) {
-            return buildMonthUsersUsage(onlineUsers, start, end, preparedFilter.getUsers());
+            return buildMonthUsersUsage(onlineUsers, start, end, users);
         }
         throw new UnsupportedOperationException(String.format("Time interval '%s' is not supported for now",
                 filter.getInterval().name()));
@@ -69,27 +67,19 @@ public class UsersUsageReportService {
     private UsersUsageReportFilterVO prepareFilter(final UsersUsageReportFilterVO filter) {
         Assert.notNull(filter.getInterval(), "Interval must be specified");
         if (Objects.isNull(filter.getFrom())) {
-            filter.setFrom(DateUtils.nowUTC().toLocalDate());
+            filter.setFrom(DateUtils.nowUTC().toLocalDate().atStartOfDay());
         }
-        if (Objects.isNull(filter.getTo())) {
-            filter.setTo(DateUtils.nowUTC().toLocalDate());
-        }
+        filter.setTo(buildEndOfInterval(filter.getTo()));
         Assert.state(!filter.getFrom().isAfter(filter.getTo()), "'from' date must be before 'to' date");
-        if (CollectionUtils.isNotEmpty(filter.getRoles())) {
-            if (Objects.isNull(filter.getUsers())) {
-                filter.setUsers(new HashSet<>());
-            }
-            filter.getUsers().addAll(userManager.loadUsersByRoles(filter.getRoles()).stream()
-                    .map(PipelineUser::getId)
-                    .collect(Collectors.toList()));
-        }
         return filter;
     }
 
-    private LocalDateTime buildEndOfInterval(final LocalDate to) {
-        final LocalDateTime end = to.atTime(LocalTime.MAX);
+    private LocalDateTime buildEndOfInterval(final LocalDateTime to) {
         final LocalDateTime now = DateUtils.nowUTC();
-        return end.isAfter(now) ? now : end;
+        if (Objects.isNull(to)) {
+            return now;
+        }
+        return to.isAfter(now) ? now : to;
     }
 
     private UsersUsageInfo buildHourUsersUsageInfo(final List<OnlineUsers> users, final LocalDateTime from,
@@ -101,8 +91,11 @@ public class UsersUsageReportService {
                 .distinct()
                 .filter(userId -> CollectionUtils.isEmpty(filterUsers) || filterUsers.contains(userId))
                 .collect(Collectors.toList());
+        final List<String> userNamesInInterval = userManager.loadUsersById(usersInInterval).stream()
+                .map(PipelineUser::getUserName)
+                .collect(Collectors.toList());
         return UsersUsageInfo.builder()
-                .activeUsers(usersInInterval)
+                .activeUsers(userNamesInInterval)
                 .activeUsersCount(usersInInterval.size())
                 .periodStart(from)
                 .periodEnd(to)
@@ -121,7 +114,7 @@ public class UsersUsageReportService {
                                                         final Set<Long> filterUsers) {
         final LocalDateTime to = from.plusDays(1);
         final List<UsersUsageInfo> usersUsageByHour = calculateDayUsersUsageByHour(users, from, to, filterUsers);
-        final List<Long> totalUsersInInterval = usersUsageByHour.stream()
+        final List<String> totalUsersInInterval = usersUsageByHour.stream()
                 .flatMap(usage -> usage.getActiveUsers().stream())
                 .distinct()
                 .collect(Collectors.toList());
@@ -140,5 +133,23 @@ public class UsersUsageReportService {
         return intervals.stream()
                 .map(interval -> calculateDailyUsersUsageInfo(users, interval, filterUsers))
                 .collect(Collectors.toList());
+    }
+
+    private Set<Long> prepareUsers(final UsersUsageReportFilterVO filter) {
+        if (CollectionUtils.isEmpty(filter.getRoles()) && CollectionUtils.isEmpty(filter.getUsers())) {
+            return null;
+        }
+        final Set<Long> users = new HashSet<>();
+        if (CollectionUtils.isNotEmpty(filter.getRoles())) {
+            users.addAll(userManager.loadUsersByRoles(filter.getRoles()).stream()
+                    .map(PipelineUser::getId)
+                    .collect(Collectors.toList()));
+        }
+        if (CollectionUtils.isNotEmpty(filter.getUsers())) {
+            users.addAll(userManager.loadUsersByNames(filter.getUsers()).stream()
+                    .map(PipelineUser::getId)
+                    .collect(Collectors.toList()));
+        }
+        return users;
     }
 }

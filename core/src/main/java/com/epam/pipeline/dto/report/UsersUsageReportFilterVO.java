@@ -21,19 +21,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Set;
 
 @Data
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
 public class UsersUsageReportFilterVO {
-    private LocalDate from;
-    private LocalDate to;
+    private LocalDateTime from;
+    private LocalDateTime to;
     private ChronoUnit interval;
-    private Set<Long> users;
+    private List<String> users;
     private List<String> roles;
 }

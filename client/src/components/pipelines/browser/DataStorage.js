@@ -92,6 +92,7 @@ import StorageSize from '../../special/storage-size';
 import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
+import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../special/sample-sheet/utilities';
 
 const PAGE_SIZE = 40;
 
@@ -1211,6 +1212,25 @@ export default class DataStorage extends React.Component {
         hasVersions = true;
       }
     }
+    const getItemIcon = (item) => {
+      if (!item) {
+        return null;
+      }
+      if (/^file$/i.test(item.type) && SAMPLE_SHEET_FILE_NAME_REGEXP.test(item.name)) {
+        return (
+          <Icon
+            className={classNames(styles.itemType, 'cp-primary')}
+            type="appstore-o"
+          />
+        );
+      }
+      return (
+        <Icon
+          className={styles.itemType}
+          type={item.type.toLowerCase()}
+        />
+      );
+    };
     const selectionColumn = {
       key: 'selection',
       title: '',
@@ -1233,7 +1253,7 @@ export default class DataStorage extends React.Component {
       title: '',
       className: styles.itemTypeCell,
       onCellClick: (item) => this.didSelectDataStorageItem(item),
-      render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
+      render: (text, item) => getItemIcon(item)
     };
     const appsColumn = {
       key: 'apps',
@@ -1851,7 +1871,7 @@ export default class DataStorage extends React.Component {
           title={title}
           rowKey="key"
           pagination={false}
-          rowClassName={(item) => `${styles[item.type.toLowerCase()]} ${item.deleteMarker ? styles.deleteMarker : ''}`}
+          rowClassName={(item) => classNames({[styles[item.type.toLowerCase()]]: true}, {'cp-storage-deleted-row': !!item.deleteMarker})}
           locale={{emptyText: 'Folder is empty'}}
           size="small" />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10, marginBottom: 10, paddingRight: 15}}>

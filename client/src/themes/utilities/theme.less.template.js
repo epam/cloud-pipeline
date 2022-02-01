@@ -423,6 +423,9 @@ export default `
   color: @application-color;
   border-color: @card-border-color;
 }
+@THEME .ant-table-footer:before {
+  background-color: @card-background-color;
+}
 @THEME .ant-modal-title {
   color: @application-color;
 }
@@ -760,11 +763,22 @@ export default `
 }
 @THEME .ant-table,
 @THEME .ant-table-placeholder,
+@THEME .ant-table-footer,
 @THEME tr.ant-table-expanded-row,
 @THEME tr.ant-table-expanded-row:hover {
   color: @application-color;
   border-color: @table-border-color;
   background: @card-background-color;
+}
+@THEME .cp-table-cell {
+  color: @application-color;
+  border-color: darken(@card-border-color, 5%);
+  background: @card-background-color;
+}
+@THEME .cp-table-cell.readonly-cell {
+  color: @application-color;
+  border-color: darken(@card-border-color, 5%);
+  background: @card-header-background;
 }
 @THEME .ant-table-thead > tr > th {
   color: @table-head-color;
@@ -779,6 +793,11 @@ export default `
 @THEME .ant-table-column-sorter-up:hover .anticon,
 @THEME .ant-table-column-sorter-down:hover .anticon {
   color: @application-color;
+}
+@THEME .ant-table-row-hover,
+@THEME .ant-table-row-hover > .cp-table-cell {
+  color: @table-element-hover-color;
+  background-color: @table-element-hover-background-color;
 }
 @THEME .ant-table-column-sorter-up.on .anticon-caret-up,
 @THEME .ant-table-column-sorter-down.on .anticon-caret-up,
@@ -2308,7 +2327,10 @@ export default `
   background-color: @card-background-color;
   color: @application-color;
 }
-
+@THEME .cp-storage-deleted-row {
+  background-color: @deleted-row-accent;
+  cursor: default;
+}
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;
@@ -2426,6 +2448,11 @@ export default `
 @THEME .cp-metadata-dropdown-row {
   border-bottom: 1px solid @input-addon;
   background-color: @card-background-color;
+}
+@THEME .cp-sample-sheet-table,
+@THEME .cp-sample-sheet-table th,
+@THEME .cp-sample-sheet-table td {
+  border-color: @card-border-color;
 }
 
 @THEME .cp-node-tag {
@@ -2828,6 +2855,19 @@ export default `
   background-image: linear-gradient(to bottom, @primary-color-semi-transparent 0%, @primary-color-semi-transparent 100%);
   background-color: @card-background-color;
 }
+@THEME .htContextMenu table.htCore,
+@THEME .htContextMenu table tbody tr td.htSeparator {
+  border-color: @card-border-color;
+}
+@THEME .htContextMenu table tbody tr td.current,
+@THEME .htContextMenu table tbody tr td.zeroclipboard-is-hover {
+  background-color: @element-selected-background-color;
+}
+@THEME .htContextMenu table tbody tr td.htDisabled,
+@THEME .htContextMenu table tbody tr td.htDisabled:hover {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
 @THEME .cp-pipeline-code-editor-readonly .handsontable td,
 @THEME .cp-pipeline-code-editor-readonly .handsontable td.area,
 @THEME .cp-pipeline-code-editor-readonly .CodeMirror {
@@ -2904,6 +2944,38 @@ export default `
 @THEME .cp-issue-markdown-link:hover {
   color: @primary-text-color;
   background-color: @primary-color;
+}
+@THEME .d2h-file-wrapper,
+@THEME .d2h-file-header,
+@THEME .d2h-diff-table,
+@THEME .d2h-code-linenumber,
+@THEME .d2h-code-line.d2h-info,
+@THEME .d2h-code-linenumber.d2h-info {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+@THEME .d2h-tag {
+  background-color: @card-background-color;
+}
+@THEME .d2h-info {
+  background-color: @panel-background-color;
+}
+@THEME .d2h-file-diff .d2h-ins.d2h-change,
+@THEME .d2h-ins {
+  background-color: @color-green-semi-transparent;
+}
+@THEME .d2h-file-diff .d2h-del.d2h-change,
+@THEME .d2h-del {
+  background-color: @color-red-semi-transparent;
+}
+@THEME .d2h-code-line.d2h-del.d2h-change del {
+  color: @card-background-color;
+  background-color: @color-red;
+}
+@THEME .d2h-code-line.d2h-ins.d2h-change ins {
+  color: @card-background-color;
+  background-color: @color-green;
 }
 
 `;

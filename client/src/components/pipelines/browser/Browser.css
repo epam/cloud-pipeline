@@ -300,11 +300,6 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   text-decoration: underline;
 }
 
-.delete-marker {
-  background-color: #fff2ef;
-  cursor: default;
-}
-
 .modal-container {
   height: 500px;
 }

@@ -373,6 +373,22 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
   background-color: @card-background-color;
 }
 
+.htContextMenu table.htCore,
+.htContextMenu table tbody tr td.htSeparator {
+  border-color: @card-border-color;
+}
+
+.htContextMenu table tbody tr td.current,
+.htContextMenu table tbody tr td.zeroclipboard-is-hover {
+  background-color: @element-selected-background-color;
+}
+
+.htContextMenu table tbody tr td.htDisabled,
+.htContextMenu table tbody tr td.htDisabled:hover {
+  background-color: @card-background-color;
+  color: @application-color-disabled;
+}
+
 .cp-pipeline-code-editor-readonly .handsontable td,
 .cp-pipeline-code-editor-readonly .handsontable td.area,
 .cp-pipeline-code-editor-readonly .CodeMirror {
@@ -464,4 +480,37 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
 .cp-issue-markdown-link:hover {
   color: @primary-text-color;
   background-color: @primary-color;
+}
+
+.d2h-file-wrapper,
+.d2h-file-header,
+.d2h-diff-table,
+.d2h-code-linenumber,
+.d2h-code-line.d2h-info,
+.d2h-code-linenumber.d2h-info {
+  background-color: @card-background-color;
+  color: @application-color;
+  border-color: @card-border-color;
+}
+.d2h-tag {
+  background-color: @card-background-color;
+}
+.d2h-info {
+  background-color: @panel-background-color;
+}
+.d2h-file-diff .d2h-ins.d2h-change,
+.d2h-ins {
+  background-color: @color-green-semi-transparent;
+}
+.d2h-file-diff .d2h-del.d2h-change,
+.d2h-del {
+  background-color: @color-red-semi-transparent;
+}
+.d2h-code-line.d2h-del.d2h-change del {
+  color: @card-background-color;
+  background-color: @color-red;
+}
+.d2h-code-line.d2h-ins.d2h-change ins {
+  color: @card-background-color;
+  background-color: @color-green;
 }
