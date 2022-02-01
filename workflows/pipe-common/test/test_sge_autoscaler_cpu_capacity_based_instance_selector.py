@@ -86,17 +86,17 @@ test_cases = [
      [InstanceDemand(instance=instance_96cpu, owner=owner),
       InstanceDemand(instance=instance_64cpu, owner=owner)]],
 
-    ['2cpu fluid job using 2cpu instances',
+    ['2cpu fractional job using 2cpu instances',
      [instance_2cpu],
      [FractionalDemand(cpu=2, owner=owner)],
      [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
-    ['2x2cpu fluid jobs using 2cpu instances',
+    ['2x2cpu fractional jobs using 2cpu instances',
      [instance_2cpu],
      2 * [FractionalDemand(cpu=2, owner=owner)],
      2 * [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
-    ['3x1cpu and 2cpu fluid jobs using 2cpu and 4cpu instances',
+    ['3x1cpu and 2cpu fractional jobs using 2cpu and 4cpu instances',
      [instance_2cpu,
       instance_4cpu],
      3 * [FractionalDemand(cpu=1, owner=owner)]
@@ -104,19 +104,19 @@ test_cases = [
      [InstanceDemand(instance=instance_4cpu, owner=owner),
       InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
-    ['3x3cpu fluid jobs using 2cpu and 4cpu instances',
+    ['3x3cpu fractional jobs using 2cpu and 4cpu instances',
      [instance_2cpu,
       instance_4cpu],
      3 * [FractionalDemand(cpu=3, owner=owner)],
      2 * [InstanceDemand(instance=instance_4cpu, owner=owner)]
      + [InstanceDemand(instance=instance_2cpu, owner=owner)]],
 
-    ['3x3cpu fluid jobs using all instances',
+    ['3x3cpu fractional jobs using all instances',
      all_instances,
      3 * [FractionalDemand(cpu=3, owner=owner)],
      [InstanceDemand(instance=instance_16cpu, owner=owner)]],
 
-    ['2cpu and 6cpu fluid jobs using 2cpu and 4cpu and 8cpu instances',
+    ['2cpu and 6cpu fractional jobs using 2cpu and 4cpu and 8cpu instances',
      [instance_2cpu,
       instance_4cpu,
       instance_8cpu],
@@ -124,7 +124,7 @@ test_cases = [
       FractionalDemand(cpu=6, owner=owner)],
      [InstanceDemand(instance=instance_8cpu, owner=owner)]],
 
-    ['10x16cpu fluid jobs using all instances',
+    ['10x16cpu fractional jobs using all instances',
      all_instances,
      10 * [FractionalDemand(cpu=16, owner=owner)],
      [InstanceDemand(instance=instance_96cpu, owner=owner),
@@ -144,15 +144,34 @@ test_cases = [
 
     ['4x16cpu another owner jobs and 4x16cpu owner jobs using all instances',
      all_instances,
-     4 * [IntegralDemand(cpu=16, owner=owner)] + 4 * [IntegralDemand(cpu=16, owner=another_owner)],
+     4 * [IntegralDemand(cpu=16, owner=owner)]
+     + 4 * [IntegralDemand(cpu=16, owner=another_owner)],
      [InstanceDemand(instance=instance_96cpu, owner=owner),
       InstanceDemand(instance=instance_32cpu, owner=another_owner)]],
 
     ['4x16cpu another owner jobs and 4x16cpu owner jobs using 64cpu instances',
      [instance_64cpu],
-     4 * [IntegralDemand(cpu=16, owner=owner)] + 4 * [IntegralDemand(cpu=16, owner=another_owner)],
+     4 * [IntegralDemand(cpu=16, owner=owner)]
+     + 4 * [IntegralDemand(cpu=16, owner=another_owner)],
      [InstanceDemand(instance=instance_64cpu, owner=owner),
-      InstanceDemand(instance=instance_64cpu, owner=another_owner)]]
+      InstanceDemand(instance=instance_64cpu, owner=another_owner)]],
+
+    ['2x3cpu integral jobs and 2x1cpu fractional jobs using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     2 * [IntegralDemand(cpu=3, owner=owner)]
+     + 2 * [FractionalDemand(cpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner),
+      InstanceDemand(instance=instance_4cpu, owner=owner)]],
+
+    ['2x3cpu integral jobs and 3x1cpu fractional jobs using 2cpu and 4cpu instances',
+     [instance_2cpu,
+      instance_4cpu],
+     2 * [IntegralDemand(cpu=3, owner=owner)]
+     + 3 * [FractionalDemand(cpu=1, owner=owner)],
+     [InstanceDemand(instance=instance_4cpu, owner=owner),
+      InstanceDemand(instance=instance_4cpu, owner=owner),
+      InstanceDemand(instance=instance_2cpu, owner=owner)]]
 ]
 
 
