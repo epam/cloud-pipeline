@@ -2003,7 +2003,7 @@
                     FROM
                         pipeline.pipeline_run
                     WHERE
-                        node_pool_id = ?
+                        node_pool_id = :NODE_POOL_ID AND status IN (:list)
                     ORDER BY
                         start_date
                 ]]>

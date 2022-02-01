@@ -22,9 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.OptionalInt;
 import java.util.function.Function;
-import java.util.function.ToIntFunction;
 
 public interface ReportUtils {
 
@@ -51,12 +49,15 @@ public interface ReportUtils {
                 .filter(Objects::nonNull)
                 .mapToDouble(Integer::doubleValue)
                 .toArray();
-        return (int) Math.round(new Median().evaluate(sample));
+        return sample.length == 0 ? null : (int) Math.round(new Median().evaluate(sample));
     }
 
-    static <T> Integer calculateSampleMax(final ToIntFunction<T> getValueFunction,
+    static <T> Integer calculateSampleMax(final Function<T, Integer> getValueFunction,
                                           final List<T> records) {
-        final OptionalInt maxValue = records.stream().mapToInt(getValueFunction).max();
-        return maxValue.isPresent() ? maxValue.getAsInt() : null;
+        return records.stream()
+                .map(getValueFunction)
+                .filter(Objects::nonNull)
+                .max(Integer::compareTo)
+                .orElse(null);
     }
 }

@@ -33,6 +33,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.manager.report.ReportUtils.buildTimeIntervals;
+import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMax;
+import static com.epam.pipeline.manager.report.ReportUtils.calculateSampleMedian;
+import static com.epam.pipeline.manager.report.ReportUtils.dateInInterval;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -81,7 +86,7 @@ public class NodePoolReportService {
 
     private List<NodePoolUsageReportRecord> buildHourlyUsage(final ReportFilter filter,
                                                              final List<NodePoolUsage> poolUsage) {
-        final List<LocalDateTime> hourIntervals = ReportUtils.buildTimeIntervals(filter.getFrom(), filter.getTo(),
+        final List<LocalDateTime> hourIntervals = buildTimeIntervals(filter.getFrom(), filter.getTo(),
                 filter.getInterval());
         return hourIntervals.stream()
                 .map(periodStart -> calculateHourUsage(periodStart, poolUsage))
@@ -92,16 +97,11 @@ public class NodePoolReportService {
                                                          final List<NodePoolUsage> poolUsage) {
         final LocalDateTime periodEnd = periodStart.plusHours(1);
         final List<NodePoolUsage> hourUsages = poolUsage.stream()
-                .filter(usage -> ReportUtils.dateInInterval(usage.getLogDate(), periodStart, periodEnd))
+                .filter(usage -> dateInInterval(usage.getLogDate(), periodStart, periodEnd))
                 .collect(Collectors.toList());
-        final Integer nodesCount = ReportUtils.calculateSampleMax(NodePoolUsage::getTotalNodesCount, hourUsages);
-        final Integer occupiedNodesCount = ReportUtils.calculateSampleMax(NodePoolUsage::getOccupiedNodesCount,
-                hourUsages);
-        final Integer utilization = hourUsages.stream()
-                .map(usage -> calculateHourUtilization(usage.getOccupiedNodesCount(), usage.getTotalNodesCount()))
-                .filter(Objects::nonNull)
-                .max(Integer::compareTo)
-                .orElse(null);
+        final Integer nodesCount = calculateSampleMax(NodePoolUsage::getTotalNodesCount, hourUsages);
+        final Integer occupiedNodesCount = calculateSampleMax(NodePoolUsage::getOccupiedNodesCount, hourUsages);
+        final Integer utilization = calculateSampleMax(this::calculateHourUtilization, hourUsages);
         return NodePoolUsageReportRecord.builder()
                 .periodStart(periodStart)
                 .periodEnd(periodEnd)
@@ -111,9 +111,10 @@ public class NodePoolReportService {
                 .build();
     }
 
-    private Integer calculateHourUtilization(final Integer occupiedNodesCount, final Integer nodesCount) {
+    private Integer calculateHourUtilization(final NodePoolUsage usage) {
+        final Integer nodesCount = usage.getTotalNodesCount();
+        final Integer occupiedNodesCount = usage.getOccupiedNodesCount();
         if (Objects.isNull(occupiedNodesCount) || Objects.isNull(nodesCount) || nodesCount == 0) {
-            log.debug("Cannot calculate pool utilization");
             return null;
         }
         return Math.toIntExact(Math.round(TO_PERCENTS * occupiedNodesCount / (double) nodesCount));
@@ -121,7 +122,7 @@ public class NodePoolReportService {
 
     private List<NodePoolUsageReportRecord> buildDailyUsage(final ReportFilter filter,
                                                             final List<NodePoolUsage> poolUsage) {
-        final List<LocalDateTime> dayIntervals = ReportUtils.buildTimeIntervals(filter.getFrom(), filter.getTo(),
+        final List<LocalDateTime> dayIntervals = buildTimeIntervals(filter.getFrom(), filter.getTo(),
                 filter.getInterval());
         return dayIntervals.stream()
                 .map(dayInterval -> calculateDayUsage(dayInterval, poolUsage))
@@ -140,12 +141,10 @@ public class NodePoolReportService {
         return NodePoolUsageReportRecord.builder()
                 .periodStart(daysStart)
                 .periodEnd(daysEnd)
-                .occupiedNodesCount(ReportUtils.calculateSampleMedian(
+                .occupiedNodesCount(calculateSampleMedian(
                         NodePoolUsageReportRecord::getOccupiedNodesCount, hourlyUsage))
-                .nodesCount(ReportUtils.calculateSampleMedian(
-                        NodePoolUsageReportRecord::getNodesCount, hourlyUsage))
-                .utilization(ReportUtils.calculateSampleMedian(
-                        NodePoolUsageReportRecord::getUtilization, hourlyUsage))
+                .nodesCount(calculateSampleMedian(NodePoolUsageReportRecord::getNodesCount, hourlyUsage))
+                .utilization(calculateSampleMedian(NodePoolUsageReportRecord::getUtilization, hourlyUsage))
                 .build();
     }
 

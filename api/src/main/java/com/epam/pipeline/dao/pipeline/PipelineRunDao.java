@@ -467,8 +467,17 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     }
 
     public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
-        return ListUtils.emptyIfNull(getJdbcTemplate()
-                .query(loadRunsByPoolIdQuery, PipelineRunParameters.getRowMapper(), poolId));
+        final List<Long> activeStatuses = Arrays.asList(TaskStatus.RUNNING.getId(),
+                TaskStatus.PAUSING.getId(),
+                TaskStatus.PAUSED.getId(),
+                TaskStatus.RESUMING.getId());
+
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.NODE_POOL_ID.name(), poolId);
+        params.addValue(LIST_PARAMETER, activeStatuses);
+
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadRunsByPoolIdQuery, params, PipelineRunParameters.getRowMapper()));
     }
 
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {

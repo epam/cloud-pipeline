@@ -1013,13 +1013,17 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     public void shouldLoadRunsByPoolId() {
         final PipelineRun run1 = runningRun();
         final PipelineRun run2 = runningRun();
+        final PipelineRun run3 = successfulRun();
         pipelineRunDao.createPipelineRun(run1);
         pipelineRunDao.createPipelineRun(run2);
+        pipelineRunDao.createPipelineRun(run3);
 
         run1.getInstance().setPoolId(ID);
+        run3.getInstance().setPoolId(ID);
         run2.getInstance().setPoolId(ID_2);
         pipelineRunDao.updateRunInstance(run1);
         pipelineRunDao.updateRunInstance(run2);
+        pipelineRunDao.updateRunInstance(run3);
 
         final List<PipelineRun> loaded = pipelineRunDao.loadRunsByPoolId(ID);
         assertThat(loaded.size(), is(1));
@@ -1245,13 +1249,19 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
 
     private PipelineRun runningRun() {
         return TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING,
-                USER, null, null, true, null, null, "pod-id",
+                USER, null, null, true, null, null, TEST_POD_ID,
                 cloudRegion.getId());
     }
 
     private PipelineRun pausedRun() {
         return TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.PAUSED,
-                USER, null, null, true, null, null, "pod-id",
+                USER, null, null, true, null, null, TEST_POD_ID,
+                cloudRegion.getId());
+    }
+
+    private PipelineRun successfulRun() {
+        return TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.SUCCESS,
+                USER, null, null, true, null, null, TEST_POD_ID,
                 cloudRegion.getId());
     }
 }
