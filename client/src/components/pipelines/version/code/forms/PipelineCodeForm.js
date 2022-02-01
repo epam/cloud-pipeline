@@ -43,7 +43,9 @@ class PipelineCodeForm extends React.PureComponent {
     download: PropTypes.bool,
     showRevision: PropTypes.bool,
     visible: PropTypes.bool,
-    byteLimit: PropTypes.number
+    byteLimit: PropTypes.number,
+    ignoreError: PropTypes.bool,
+    editMode: PropTypes.bool
   };
   static defaultProps = {
     editable: false,
@@ -84,7 +86,14 @@ class PipelineCodeForm extends React.PureComponent {
   }
 
   fetchDocumentContents = () => {
-    const {pipelineId, version, path, byteLimit} = this.props;
+    const {
+      pipelineId,
+      version,
+      path,
+      byteLimit,
+      ignoreError,
+      editMode
+    } = this.props;
     if (pipelineId && version && path) {
       this.setState({
         pending: true,
@@ -92,7 +101,8 @@ class PipelineCodeForm extends React.PureComponent {
       }, async () => {
         const state = {
           pending: false,
-          error: undefined
+          error: undefined,
+          editMode
         };
         try {
           const {
@@ -103,10 +113,10 @@ class PipelineCodeForm extends React.PureComponent {
           if (binary) {
             throw new Error('File preview is not available (binary content)');
           }
-          if (error) {
+          if (error && !ignoreError) {
             throw new Error(error);
           }
-          this._originalCode = content;
+          this._originalCode = content || '';
         } catch (e) {
           this._originalCode = null;
           state.error = e.message;

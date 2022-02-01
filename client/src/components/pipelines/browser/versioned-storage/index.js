@@ -1028,6 +1028,7 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               onTableActionClick={this.onTableActionClick}
               onDeleteDocument={this.onDeleteDocument}
               onRenameDocument={this.openRenameDocumentDialog}
+              onRefresh={this.onRefresh}
               onNavigate={this.navigate}
               pipelineId={pipelineId}
               path={path}

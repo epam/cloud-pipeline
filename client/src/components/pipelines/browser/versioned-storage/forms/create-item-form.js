@@ -24,7 +24,7 @@ import {
   Spin
 } from 'antd';
 import PropTypes from 'prop-types';
-import checkFileExistence from '../utils';
+import checkFileExistence from '../utils/check-file-existence';
 
 // eslint-disable-next-line
 const NAME_VALIDATION_TEXT = 'Name can contain only letters, digits, "_", "-", and "."';

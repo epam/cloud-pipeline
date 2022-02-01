@@ -23,20 +23,24 @@ import {
   Icon,
   Input,
   Modal,
-  Row
+  Row, message
 } from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
 import UploadButton from '../../../../special/UploadButton';
 import VSTableNavigation from './vs-table-navigation';
 import roleModel from '../../../../../utils/roleModel';
 import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
-import checkFileExistence from '../utils';
+import checkFileExistence from '../utils/check-file-existence';
+import GitIgnore from '../utils/git-ignore-utils';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
 import downloadPipelineFile from '../../../version/utilities/download-pipeline-file';
+import PipelineCodeForm from '../../../version/code/forms/PipelineCodeForm';
 import styles from './table.css';
 import '../../../../../staticStyles/vs-storage.css';
 
@@ -60,17 +64,37 @@ function getDocumentType (document) {
   return type;
 }
 
+function isFolder (document) {
+  if (!document || !document.type) {
+    return false;
+  }
+  return document.type.toLowerCase() === DOCUMENT_TYPES.tree;
+}
+
+@inject((stores, props) => {
+  const {
+    pipelineId,
+    lastCommit
+  } = props;
+  return {
+    gitIgnore: GitIgnore.getGitIgnore(pipelineId, lastCommit)
+  };
+})
+@observer
 class VersionedStorageTable extends React.Component {
   state = {
     comment: '',
-    deletingDocument: null
+    deletingDocument: null,
+    gitIgnoreDialogVisible: false
   }
 
+  @computed
   get data () {
     const {
       contents,
       showNavigateBack,
-      versionedStorage
+      versionedStorage,
+      gitIgnore
     } = this.props;
     if (!contents) {
       return null;
@@ -85,7 +109,15 @@ class VersionedStorageTable extends React.Component {
         ...content.git_object,
         mask: versionedStorage
           ? versionedStorage.mask
-          : 0
+          : 0,
+        isFolder: isFolder(content.git_object),
+        ignored: gitIgnore.pathIsIgnored(content.git_object.path, isFolder(content.git_object)),
+        hasExplicitIgnoreRule: gitIgnore.hasPathRule(
+          content.git_object.path,
+          isFolder(content.git_object)
+        ),
+        showGitIgnoreActions: !/\.gitignore$/i.test(content.git_object.path) &&
+          !this.currentFolderIgnored
       })).sort(typeSorter);
     return showNavigateBack ? [navigateBack, ...content] : content;
   };
@@ -100,7 +132,9 @@ class VersionedStorageTable extends React.Component {
     return {
       delete: (record) => this.showDeleteDialog(record),
       edit: (record) => onRenameDocument && onRenameDocument(record),
-      download: onDownloadFile
+      download: onDownloadFile,
+      addGitIgnore: (record) => this.ignoreItem(record.path, record.isFolder),
+      removeGitIgnore: (record) => this.stopIgnoreItem(record.path, record.isFolder)
     };
   };
 
@@ -112,6 +146,35 @@ class VersionedStorageTable extends React.Component {
       {trimTrailingSlash: !!path}
     );
   }
+
+  get currentFolderIgnored () {
+    const {
+      gitIgnore,
+      path
+    } = this.props;
+    return gitIgnore.folderIsIgnored(path);
+  }
+
+  updateFileContent = async (path, contents, comment) => {
+    const {pipelineId, onRefresh} = this.props;
+    if (!path) {
+      return;
+    }
+    const request = new PipelineFileUpdate(pipelineId);
+    const hide = message.loading('Committing changes...');
+    await request.send({
+      contents: contents,
+      comment,
+      path: path,
+      lastCommitId: this.lastCommitId
+    });
+    hide();
+    if (request.error) {
+      message.error(request.error, 5);
+    } else {
+      onRefresh && onRefresh();
+    }
+  };
 
   onCommentChange = (event) => {
     if (event) {
@@ -266,6 +329,145 @@ class VersionedStorageTable extends React.Component {
     return uploadFiles;
   };
 
+  openGitIgnoreDialog = () => {
+    this.setState({
+      gitIgnoreDialogVisible: true
+    });
+  };
+
+  closeGitIgnoreDialog = () => {
+    this.setState({
+      gitIgnoreDialogVisible: false
+    });
+  };
+
+  saveGitIgnoreContent = async (content, commitMessage) => {
+    await this.updateFileContent('.gitignore', content, commitMessage);
+    this.closeGitIgnoreDialog();
+  };
+
+  ignoreItem = (path, itemIsFolder = false) => {
+    const {gitIgnore} = this.props;
+    const content = itemIsFolder
+      ? gitIgnore.ignoreFolder(path).join('\n')
+      : gitIgnore.ignoreFile(path).join('\n');
+    return this.updateFileContent(
+      '.gitignore',
+      content,
+      `Ignoring ${path || '/'} ${itemIsFolder ? 'folder' : 'file'}`
+    );
+  };
+
+  stopIgnoreItem = (path, itemIsFolder = false) => {
+    const {gitIgnore} = this.props;
+    const content = itemIsFolder
+      ? gitIgnore.stopIgnoreFolder(path).join('\n')
+      : gitIgnore.stopIgnoreFile(path).join('\n');
+    return this.updateFileContent(
+      '.gitignore',
+      content,
+      `Tracking ${path || '/'} ${itemIsFolder ? 'folder' : 'file'}`
+    );
+  };
+
+  renderGitIgnoreActions = () => {
+    const {
+      controlsEnabled,
+      path,
+      gitIgnore
+    } = this.props;
+    const items = [
+      (
+        <MenuItem
+          key="configure"
+          disabled={!controlsEnabled}
+        >
+          Configure
+        </MenuItem>
+      )
+    ];
+    if (
+      path &&
+      !this.currentFolderIgnored
+    ) {
+      items.push((
+        <MenuItem
+          key="ignore-current"
+          disabled={!controlsEnabled}
+        >
+          Ignore current folder
+        </MenuItem>
+      ));
+    }
+    if (
+      path &&
+      this.currentFolderIgnored &&
+      gitIgnore.hasFolderRule(path)
+    ) {
+      items.push((
+        <MenuItem
+          key="stop-ignore-current"
+          disabled={!controlsEnabled}
+        >
+          Track current folder
+        </MenuItem>
+      ));
+    }
+    if (!path || items.length === 1) {
+      return (
+        <Button
+          id="ignore-button"
+          size="small"
+          className={styles.tableControl}
+          disabled={!controlsEnabled}
+          onClick={this.openGitIgnoreDialog}
+        >
+          <Icon type="setting" />
+          Ignored files
+        </Button>
+      );
+    }
+    const onHeaderGitActionSelect = ({key}) => {
+      switch (key) {
+        case 'configure':
+          this.openGitIgnoreDialog();
+          break;
+        case 'ignore-current':
+          this.ignoreItem(path, true);
+          break;
+        case 'stop-ignore-current':
+          this.stopIgnoreItem(path, true);
+          break;
+      }
+    };
+    return (
+      <Dropdown
+        placement="bottomRight"
+        trigger={['hover']}
+        key="git actions"
+        overlay={
+          <Menu
+            selectedKeys={[]}
+            onClick={onHeaderGitActionSelect}
+          >
+            {items}
+          </Menu>
+        }
+      >
+        <Button
+          id="ignore-button"
+          size="small"
+          className={styles.tableControl}
+          disabled={!controlsEnabled}
+        >
+          <Icon type="setting" />
+          Ignored files
+          <Icon type="down" />
+        </Button>
+      </Dropdown>
+    );
+  }
+
   renderTableControls = () => {
     const {
       controlsEnabled,
@@ -327,6 +529,7 @@ class VersionedStorageTable extends React.Component {
               </Dropdown>
             )
           }
+          {writeAllowed && this.renderGitIgnoreActions()}
           {
             writeAllowed && (
               <UploadButton
@@ -408,8 +611,13 @@ class VersionedStorageTable extends React.Component {
     const {
       className,
       pending,
-      style
+      style,
+      pipelineId,
+      lastCommit
     } = this.props;
+    const {
+      gitIgnoreDialogVisible
+    } = this.state;
     if (!this.data) {
       return <Spin />;
     }
@@ -437,10 +645,26 @@ class VersionedStorageTable extends React.Component {
           size="small"
           onRowClick={this.onRowClick}
           pagination={false}
-          rowClassName={() => styles.tableRow}
+          rowClassName={(record) => classNames(
+            styles.tableRow,
+            {
+              'cp-disabled': record.ignored
+            }
+          )}
           loading={pending}
         />
         {this.renderDeleteDialog()}
+        <PipelineCodeForm
+          pipelineId={pipelineId}
+          version={lastCommit}
+          path=".gitignore"
+          visible={gitIgnoreDialogVisible}
+          cancel={this.closeGitIgnoreDialog}
+          save={this.saveGitIgnoreContent}
+          editable
+          ignoreError
+          editMode
+        />
       </div>
     );
   }
@@ -457,6 +681,7 @@ VersionedStorageTable.PropTypes = {
   onTableActionClick: PropTypes.func,
   onDeleteDocument: PropTypes.func,
   onRenameDocument: PropTypes.func,
+  onRefresh: PropTypes.func,
   pipelineId: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.number
