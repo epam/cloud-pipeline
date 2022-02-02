@@ -138,6 +138,9 @@ class EditSection extends React.Component {
     if (data && Array.isArray(data)) {
       [key, value] = data;
     }
+    if (!editable && !key && !value) {
+      return null;
+    }
     const onChangeKeyValue = (field) => (e) => {
       const {data: oldData} = this.state;
       const newData = oldData.slice();
