@@ -130,7 +130,10 @@ class FileDiffPresenter extends React.PureComponent {
             onChange={onSelectionChanged(file)}
             checked={selectedFiles.includes(file)}
           />}
-          <div className={styles.fileDiffHeader}>
+          <div className={classNames(
+            styles.fileDiffHeader,
+            {[styles.fileDiffHeaderSelectable]: selectable}
+          )}>
             <Icon type="file-text" />
             <span>{file}</span>
             <span
@@ -171,8 +174,10 @@ class FileDiffPresenter extends React.PureComponent {
           className={classNames(
             'cp-git-diff-collapse',
             'git-diff-collapse',
-            {'git-diff-unselectable': !selectable},
-            {'git-diff-selectable': selectable}
+            {
+              'git-diff-unselectable': !selectable,
+              'git-diff-selectable': selectable
+            }
           )}
           activeKey={opened ? ['presentation'] : []}
           onChange={this.onOpenedChange}

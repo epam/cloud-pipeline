@@ -178,11 +178,10 @@ class VSActions extends React.Component {
     request,
     resolve,
     onConflicts = undefined,
-    options = {},
-    body = {}
+    options = {}
   ) => {
     request
-      .send(body)
+      .send()
       .then(() => {
         if (request.error) {
           message.error(request.error, 5);
@@ -352,6 +351,7 @@ class VSActions extends React.Component {
   };
 
   doCommit = (versionedStorage, commitMessage, filesToCommit) => {
+    const files = filesToCommit && filesToCommit.length ? filesToCommit.join(',') : '';
     return new Promise((resolve) => {
       const {id, name} = versionedStorage;
       const hide = message.loading((
@@ -369,7 +369,7 @@ class VSActions extends React.Component {
       );
       this.closeCommitDialog();
       this.performRequestWithStatus(
-        new VSCommit(this.props.run?.id, id, commitMessage),
+        new VSCommit(this.props.run?.id, id, commitMessage, files),
         resolve,
         this.onConflictsDetected,
         {
@@ -377,8 +377,7 @@ class VSActions extends React.Component {
           storage: versionedStorage,
           onSuccess,
           mergeInProgress: true
-        },
-        filesToCommit
+        }
       );
     });
   };

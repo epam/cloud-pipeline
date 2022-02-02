@@ -26,6 +26,9 @@
 
 .file-diff-header {
   font-family: Source Sans Pro, Helvetica Neue, Helvetica, Arial, sans-serif;
+}
+
+.file-diff-header-selectable {
   margin-left: 20px;
 }
 
