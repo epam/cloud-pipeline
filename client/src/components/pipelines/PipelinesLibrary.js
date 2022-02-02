@@ -83,8 +83,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   state = {
     rootItems: [],
     expandedKeys: [],
-    selectedKeys: [],
-    currentPath: null
+    selectedKeys: []
   };
 
   get dragEnabled () {
@@ -691,21 +690,21 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
 
   async reloadTree (reload, folderToReload) {
     const parts = this.props.path.split('/');
-    let currentPath, placeholderOrPipelineId, idOrVersionName, metadataClass, selectedKey, history;
-    for (let i = 0; i < parts.length; i++) {
-      if (i === 0) {
-        currentPath = parts[i];
-        placeholderOrPipelineId = parts[i];
-      } else if (i === 1) {
-        currentPath += `/${parts[i]}`;
-        idOrVersionName = parts[i];
-      } else if (i === 2) {
-        currentPath += `/${parts[i]}`;
-        if ((placeholderOrPipelineId || '').toLowerCase() === ItemTypes.metadata) {
-          metadataClass = parts[i];
-        } else if ((placeholderOrPipelineId || '').toLowerCase() === 'folder') {
-          history = (parts[i] || '').toLowerCase() === 'history';
-        }
+    let metadataClass,
+      selectedKey,
+      history,
+      metadata;
+    const [
+      placeholderOrPipelineId,
+      idOrVersionName,
+      section,
+      subSection
+    ] = parts;
+    if ((placeholderOrPipelineId || '').toLowerCase() === 'folder') {
+      history = /^history$/i.test(section);
+      metadata = /^metadata$/i.test(section);
+      if (metadata && subSection) {
+        metadataClass = subSection;
       }
     }
     let rootItems = this.state.rootItems || [];
@@ -734,11 +733,6 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       case 'configuration':
         if (idOrVersionName) {
           selectedKey = `${ItemTypes.configuration}_${idOrVersionName}`;
-        }
-        break;
-      case 'metadatafolder':
-        if (idOrVersionName) {
-          selectedKey = `${ItemTypes.metadataFolder}_${idOrVersionName}metadataFolder`;
         }
         break;
       case 'metadata':
@@ -804,6 +798,13 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     if ((placeholderOrPipelineId || '').toLowerCase() === 'folder' && idOrVersionName && history) {
       selectedKey = `${ItemTypes.projectHistory}_${idOrVersionName}`;
     }
+    if ((placeholderOrPipelineId || '').toLowerCase() === 'folder' && idOrVersionName && metadata) {
+      if (metadataClass) {
+        selectedKey = `${ItemTypes.metadata}_${idOrVersionName}metadataFolder${metadataClass}`;
+      } else {
+        selectedKey = `${ItemTypes.metadataFolder}_${idOrVersionName}metadataFolder`;
+      }
+    }
     selectedItem = getTreeItemByKey(selectedKey, rootItems);
     if (selectedItem) {
       if (selectedItem.type === ItemTypes.pipeline) {
@@ -814,8 +815,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     this.setState({
       rootItems: rootItems,
       selectedKeys: selectedKey ? [selectedKey] : [],
-      expandedKeys: getExpandedKeys(rootItems),
-      currentPath: currentPath
+      expandedKeys: getExpandedKeys(rootItems)
     });
   }
 

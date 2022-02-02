@@ -247,7 +247,7 @@ export default class MetadataBrowser extends React.Component {
         className={styles.libraryTree}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         expandedKeys={this.state.expandedKeys}
         selectedKeys={this.state.selectedKeys} >
         {this.generateTreeItems(this.rootItems)}
@@ -438,9 +438,9 @@ export default class MetadataBrowser extends React.Component {
             id={this.state.folderId}
             onNavigate={this.onSelectItem}
             onSelectItem={this.onSelectMetadataEntityItem}
-            initialSelection={this.state.selectedMetadataClassEntity}
-            selectionAvailable={true}
-            hideUploadMetadataBtn={true}
+            selection={this.state.selectedMetadataClassEntity}
+            selectionAvailable
+            hideUploadMetadataBtn
           />
         );
       } else if (this.state.isMetadata && this.state.metadataClassName) {
@@ -451,7 +451,7 @@ export default class MetadataBrowser extends React.Component {
               class={this.state.metadataClassName}
               initialSelection={this.state.selectedMetadata}
               onSelectItems={this.onSelectMetadataItems}
-              hideUploadMetadataBtn={true}
+              hideUploadMetadataBtn
               readOnly={this.props.readOnly}
             />
           </div>
@@ -462,8 +462,8 @@ export default class MetadataBrowser extends React.Component {
             id={this.state.folderId}
             treatAsRootId={this.props.initialFolderId}
             onSelectItem={this.onSelectItem}
-            listingMode={true}
-            readOnly={true}
+            listingMode
+            readOnly
             supportedTypes={[ItemTypes.metadataFolder, ItemTypes.metadata]} />
         );
       }

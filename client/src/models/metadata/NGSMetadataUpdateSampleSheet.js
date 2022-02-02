@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,11 @@
  *  limitations under the License.
  */
 
-import SampleSheet from './edit-form';
-import SampleSheetPreview from './preview';
-import MetadataSampleSheetValue from './metadata-sample-sheet-value';
+import RemotePost from '../basic/RemotePost';
 
-SampleSheet.Preview = SampleSheetPreview;
-SampleSheet.MetadataActions = MetadataSampleSheetValue;
-
-export * as utilities from './utilities';
-export {
-  MetadataSampleSheetValue,
-  SampleSheetPreview,
-  SampleSheet
-};
-export default SampleSheet;
+export default class NGSMetadataUpdateSampleSheet extends RemotePost {
+  constructor () {
+    super();
+    this.url = '/preprocessing/samplesheet';
+  }
+}
