@@ -24,7 +24,7 @@ ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com
 ARG BFTOOLS_VERSION=6.8.0
 ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
-ARG PYTHON_3_9_DISTRIBUTION_URL="https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz"
+ARG PYTHON_3_9_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/Python-3.9.6.tgz"
 
 ENV HCS_TOOLS_HOME="/opt/local/hcs-tools"
 ENV LANG="en_US.UTF-8"
@@ -38,14 +38,15 @@ RUN yum install -y curl \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
 # Install HCS-tools and their dependencies
-RUN yum install -y -q blosc \
+RUN yum install -y -q epel-release && \
+    yum update -y && \
+    yum install -y -q blosc \
                       gcc \
                       java-1.8.0-openjdk-devel \
                       make \
                       openssl-devel \
-                      xz-devel
-
-RUN mkdir -p "$HCS_TOOLS_HOME" && \
+                      xz-devel && \
+    mkdir -p "$HCS_TOOLS_HOME" && \
     wget -q "$BIOFORMATS_TO_RAW_DISTR_URL" -O "$HCS_TOOLS_HOME/bioformats2raw.zip" && \
     unzip "$HCS_TOOLS_HOME/bioformats2raw.zip" -d "$HCS_TOOLS_HOME/bioformats2raw" && \
     rm -f "$HCS_TOOLS_HOME/bioformats2raw.zip" && \
