@@ -88,7 +88,7 @@ export default class Breadcrumbs extends React.Component {
       items.push({
         name: 'Metadata',
         id: `${ItemTypes.metadataFolder}_${this.props.id}`,
-        url: `/metadataFolder/${this.props.id}`
+        url: `/folder/${this.props.id}/metadata`
       });
       items.push({
         name: this.props.displayTextEditableField,

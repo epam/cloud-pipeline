@@ -175,3 +175,10 @@ export function buildSampleSheet (options = {}) {
   const content = lines.map(line => extendArrayToFitLength(line, columns));
   return content.map(line => line.join(',')).join('\n');
 }
+
+export function buildEmptySampleSheet () {
+  return buildSampleSheet({
+    header: {name: 'Header'},
+    data: {name: 'Data', data: [['Lane', 'Sample_ID'], ['', '']]}
+  });
+}

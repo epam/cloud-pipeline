@@ -67,6 +67,7 @@ import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import {MetadataSampleSheetValue} from '../../special/sample-sheet';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
@@ -75,6 +76,7 @@ import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
+import ngsProject, {ngsProjectMachineRuns} from '../../../utils/ngs-project';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -162,6 +164,8 @@ function makeCurrentOrderSort (array) {
     pipelinesLibrary
   };
 })
+@ngsProject
+@ngsProjectMachineRuns
 @observer
 export default class Metadata extends React.Component {
   static propTypes = {
@@ -519,7 +523,7 @@ export default class Metadata extends React.Component {
   };
 
   renderFilterButton = (key) => {
-    if (this.state.selectedItemsAreShowing) {
+    if (this.state.selectedItemsAreShowing || this.isSampleSheetColumn(key)) {
       return null;
     }
     const handleControlVisibility = (visible) => {
@@ -1203,6 +1207,11 @@ export default class Metadata extends React.Component {
       return;
     }
     const {e, rowInfo, column: columnInfo} = opts;
+    const selectable = columnInfo.selectable === undefined || columnInfo.selectable;
+    if (!selectable) {
+      // cell is not selectable, ignore it
+      return;
+    }
     if (columnInfo.index === undefined) {
       // selection cell, ignore it
       return;
@@ -1378,8 +1387,11 @@ export default class Metadata extends React.Component {
     const {cellsSelection: selection, hoveredCell} = this.state;
     const row = rowInfo.index;
     const column = columnInfo.index;
+    const selectable = columnInfo.selectable === undefined || columnInfo.selectable;
     if (!selection) {
-      if (
+      if (!selectable) {
+        this.setState({hoveredCell: undefined});
+      } else if (
         column !== undefined && (
           !hoveredCell ||
           hoveredCell.column !== column ||
@@ -1392,9 +1404,13 @@ export default class Metadata extends React.Component {
       }
       return;
     }
-    if ((!selection.selecting && !selection.spreading)) {
+    if (!selection.selecting && !selection.spreading) {
       const cellSelected = autoFillEntities.cellIsSelected(selection, column, row);
-      if (cellSelected && !!hoveredCell) {
+      if (!selectable) {
+        this.setState({
+          hoveredCell: undefined
+        });
+      } else if (cellSelected && !!hoveredCell) {
         this.setState({
           hoveredCell: undefined
         });
@@ -1524,7 +1540,12 @@ export default class Metadata extends React.Component {
           columns={this.tableColumns}
           data={this.state.currentMetadata}
           getTableProps={() => ({
-            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse', borderRadius: 5},
+            style: {
+              overflowY: 'hidden',
+              userSelect: 'none',
+              borderCollapse: 'collapse',
+              borderRadius: 5
+            },
             onMouseOut: this.clearHovering
           })}
           getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
@@ -1541,7 +1562,7 @@ export default class Metadata extends React.Component {
               }
               if (column.id === 'selection') {
                 this.onItemSelect(rowInfo.row._original);
-              } else {
+              } else if (column.selectable === undefined || column.selectable) {
                 this.onRowClick(rowInfo.row._original);
               }
               this.clearSelection();
@@ -1702,7 +1723,7 @@ export default class Metadata extends React.Component {
           this.props.onReloadTree(!this.props.folder.value.parentId);
         }
         hide();
-        this.props.router.push(`/metadataFolder/${this.props.folderId}`);
+        this.props.router.push(`/folder/${this.props.folderId}/metadata`);
       }
     };
     Modal.confirm({
@@ -1863,10 +1884,23 @@ export default class Metadata extends React.Component {
     );
   };
 
+  isSampleSheetColumn = (key) => {
+    const {
+      ngsProjectInfo,
+      ngsProjectMachineRuns
+    } = this.props;
+    return ngsProjectInfo.isNGSProject &&
+      ngsProjectMachineRuns.isMachineRunsMetadataClass &&
+      ngsProjectMachineRuns.isSampleSheetValue(key);
+  };
+
   get tableColumns () {
     const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
+      }
+      if (this.isSampleSheetColumn(key)) {
+        return;
       }
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       if (!orderBy) {
@@ -1880,7 +1914,7 @@ export default class Metadata extends React.Component {
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon, orderNumber;
-      if (orderBy) {
+      if (orderBy && !this.isSampleSheetColumn(key)) {
         let iconStyle = {fontSize: 10, marginRight: 5};
         if (this.state.filterModel.orderBy.length > 1) {
           const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
@@ -1934,7 +1968,10 @@ export default class Metadata extends React.Component {
       const item = props.original;
       const className = classNames(
         getCellClassName(item, styles.metadataColumnCell),
-        {'cp-library-metadata-table-cell-selected': getCellClassName(item, styles.metadataColumnCell).search('selected') > -1});
+        {
+          'cp-library-metadata-table-cell-selected':
+            getCellClassName(item, styles.metadataColumnCell).search('selected') > -1
+        });
       return (
         <div
           className={className}
@@ -1986,13 +2023,27 @@ export default class Metadata extends React.Component {
           accessor: key,
           index,
           style: {
-            cursor: this.props.readOnly ? 'default' : 'cell',
+            cursor: this.props.readOnly || this.isSampleSheetColumn(key)
+              ? 'default'
+              : 'cell',
             padding: 0
           },
+          ...(
+            this.isSampleSheetColumn(key)
+              ? {width: 280, resizable: false, selectable: false}
+              : {}
+          ),
           className: 'cp-library-metadata-table-cell',
           Header: () => renderTitle(key),
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
+            if (this.isSampleSheetColumn(key)) {
+              return (
+                <MetadataSampleSheetValue
+                  value={data ? data.value : undefined}
+                />
+              );
+            }
             if (data) {
               if (data.type.toLowerCase().startsWith('array')) {
                 let referenceType = key;
@@ -2012,28 +2063,30 @@ export default class Metadata extends React.Component {
                   onClick={(e) => this.onArrayReferencesClick(e, key, data)}>
                   {value}
                 </a>;
-              } else if (data.type.toLowerCase().endsWith(':id')) {
+              }
+              if (data.type.toLowerCase().endsWith(':id')) {
                 return <a
                   title={data.value}
                   className={styles.actionLink}
                   onClick={(e) => this.onReferenceTypesClick(e, data)}>
                   {data.value}
                 </a>;
-              } else if (data.type.toLowerCase() === 'path') {
+              }
+              if (data.type.toLowerCase() === 'path') {
                 return this.renderDataStorageLinks(data);
-              } else if (/^date$/i.test(data.type)) {
+              }
+              if (/^date$/i.test(data.type)) {
                 return (
                   <span title={data.value}>
                     {displayDate(data.value)}
                   </span>
                 );
-              } else {
-                return (
-                  <span title={data.value}>
-                    {data.value}
-                  </span>
-                );
               }
+              return (
+                <span title={data.value}>
+                  {data.value}
+                </span>
+              );
             }
           })
         };
