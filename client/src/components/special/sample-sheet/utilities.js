@@ -88,12 +88,14 @@ export function parseSampleSheet (content) {
       sections.push(section);
     } else if (section) {
       const [key, value, ...rest] = splitLine(line);
-      section.data.push({
-        key,
-        value,
-        data: [key, value, ...rest],
-        raw: line
-      });
+      if ([key, value, ...rest].filter(o => (o || '').length).length > 0) {
+        section.data.push({
+          key,
+          value,
+          data: [key, value, ...rest],
+          raw: line
+        });
+      }
     }
   }
   const otherSections = sections.filter(section => !/^(data|header)$/i.test(section.name));
