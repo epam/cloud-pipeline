@@ -137,16 +137,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
                 .updatePreference(LDAP_BASE_PATH, C.LDAP_BASE_PATH, false)
                 .updatePreference(LDAP_USERNAME, C.LDAP_USERNAME, false)
                 .updatePreference(LDAP_PASSWORD, C.LDAP_PASSWORD, false);
-        final SettingsPageAO.UserManagementAO.UsersTabAO usersTabAO = navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers();
-        usersTabAO
-                .searchUserEntry(admin.login.toUpperCase())
-                .validateBlockedStatus(admin.login.toUpperCase(), false);
-        usersTabAO
-                .searchUserEntry(userWithoutCompletedRuns.login.toUpperCase())
-                .validateBlockedStatus(userWithoutCompletedRuns.login.toUpperCase(), false);
+        checkBlockedStatus(false, false);
         if (!ldapUserBlockMonitor) {
             navigationMenu()
                     .settings()
@@ -159,15 +150,7 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
                 .showLog(getRunId())
                 .waitForSshLink();
         Utils.sleep(Long.parseLong(C.SYSTEM_MONITOR_DELAY), TimeUnit.MILLISECONDS);
-        navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers()
-                .searchUserEntry(admin.login.toUpperCase())
-                .validateBlockedStatus(admin.login.toUpperCase(), false);
-        usersTabAO
-                .searchUserEntry(userWithoutCompletedRuns.login.toUpperCase())
-                .validateBlockedStatus(userWithoutCompletedRuns.login.toUpperCase(), true);
+        checkBlockedStatus(false, true);
         runsMenu()
                 .showLog(getRunId())
                 .waitForSshLink()
@@ -177,14 +160,19 @@ public class ADInfoTest extends AbstractSinglePipelineRunningTest implements Aut
                         .assertPageContainsString(format("Enabled user '%s'", user.login.toUpperCase()))
                         .close());
         Utils.sleep(Long.parseLong(C.SYSTEM_MONITOR_DELAY), TimeUnit.MILLISECONDS);
-        navigationMenu()
+        checkBlockedStatus(false, true);
+    }
+
+    private void checkBlockedStatus(final boolean adminBlockedStatus, final boolean userBlockedStatus) {
+        final SettingsPageAO.UserManagementAO.UsersTabAO usersTabAO = navigationMenu()
                 .settings()
                 .switchToUserManagement()
-                .switchToUsers()
+                .switchToUsers();
+        usersTabAO
                 .searchUserEntry(admin.login.toUpperCase())
-                .validateBlockedStatus(admin.login.toUpperCase(), false);
+                .validateBlockedStatus(admin.login.toUpperCase(), adminBlockedStatus);
         usersTabAO
                 .searchUserEntry(userWithoutCompletedRuns.login.toUpperCase())
-                .validateBlockedStatus(userWithoutCompletedRuns.login.toUpperCase(), true);
+                .validateBlockedStatus(userWithoutCompletedRuns.login.toUpperCase(), userBlockedStatus);
     }
 }
