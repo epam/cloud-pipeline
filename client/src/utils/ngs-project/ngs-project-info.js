@@ -15,16 +15,19 @@
  */
 
 import {observable, computed} from 'mobx';
+import {
+  getMachineRunMetadataClassName
+} from './ngs-project-machine-runs';
+import {
+  getSampleMetadataClassName
+} from './ngs-project-samples';
 
 const UI_PROJECT_INDICATOR_PREFERENCE = 'ui.project.indicator';
 // todo: change NGS project indicator preference name when backend is ready
 const UI_NGS_PROJECT_INDICATOR_PREFERENCE = 'ui.ngs.project.indicator';
 
 const DEFAULT_PROJECT_INDICATOR = {key: 'type', value: 'project'};
-const DEFAULT_NGS_PROJECT_INDICATOR = {key: 'project-type', value: 'NGS'};
-
-const MACHINE_RUN_METADATA_CLASS_NAME = 'MachineRun';
-const SAMPLES_METADATA_CLASS_NAME = 'Samples';
+const DEFAULT_NGS_PROJECT_INDICATOR = {key: 'project-type', value: 'ngs-project'};
 
 function buildMetadataCheckFunction (key, value) {
   return function check (metadata) {
@@ -110,6 +113,70 @@ class NgsProjectInfo {
       return folderIsProject(objectMetadata) && projectIsNGSProject(objectMetadata);
     }
     return false;
+  }
+
+  @computed
+  get machineRunClassName () {
+    if (
+      this.preferences &&
+      this.preferences.loaded
+    ) {
+      return getMachineRunMetadataClassName(this.preferences);
+    }
+    return undefined;
+  }
+
+  @computed
+  get sampleClassName () {
+    if (
+      this.preferences &&
+      this.preferences.loaded
+    ) {
+      return getSampleMetadataClassName(this.preferences);
+    }
+    return undefined;
+  }
+
+  async fetchPreferences () {
+    if (this.preferences) {
+      try {
+        await this.preferences.fetchIfNeededOrWait();
+      } catch (_) {}
+    }
+  }
+
+  isMachineRunClassName (className) {
+    const machineRunClassName = this.machineRunClassName;
+    return className &&
+      machineRunClassName &&
+      className.toLowerCase() === machineRunClassName.toLowerCase();
+  }
+
+  isSampleClassName (className) {
+    const sampleClassName = this.sampleClassName;
+    return className &&
+      sampleClassName &&
+      className.toLowerCase() === sampleClassName.toLowerCase();
+  }
+
+  getMachineRunLink (entityFieldsRequest) {
+    const {entityFields, metadataClasses} = this.props;
+    if (entityFields.loaded && metadataClasses.loaded) {
+      const mappedEntityFields = (entityFields.value || [])
+        .map(e => e);
+      const ignoreClasses = new Set(mappedEntityFields.map(f => f.metadataClass.id));
+      const otherClasses = (metadataClasses.value || [])
+        .filter(({id}) => !ignoreClasses.has(id))
+        .map(metadataClass => ({
+          fields: [],
+          metadataClass: {...metadataClass, outOfProject: true}
+        }));
+      return [
+        ...mappedEntityFields,
+        ...otherClasses
+      ];
+    }
+    return [];
   }
 }
 

@@ -15,7 +15,8 @@
  */
 import {inject} from 'mobx-react';
 import NgsProjectInfo from './ngs-project-info';
-import NgsProjectMachineRuns from "./ngs-project-machine-runs";
+import NgsProjectMachineRuns from './ngs-project-machine-runs';
+import NgsProjectSamples from './ngs-project-samples';
 
 /**
  * @typedef {Object} NgsProjectConfiguration
@@ -46,25 +47,35 @@ export function ngsProjectConfiguration (configuration = {}) {
 }
 
 /**
- * @typedef {Object} NgsProjectMachineRunsConfiguration
+ * @typedef {Object} NgsProjectClassConfiguration
  * @property {String} [metadataClassProperty]
+ * @property {String} [folderIdProperty]
+ * @property {String} [fieldsRequestProperty]
  */
 
 /**
  * Injects ngsProjectMachineRuns instance
- * @param {NgsProjectMachineRunsConfiguration} configuration
+ * @param {NgsProjectClassConfiguration} configuration
  * @returns {function(*=): any}
  */
 export function ngsProjectMachineRunsConfiguration (configuration = {}) {
   const {
-    metadataClassProperty = 'metadataClass'
+    metadataClassProperty = 'metadataClass',
+    folderIdProperty = 'folderId',
+    fieldsRequestProperty = 'entityFields'
   } = configuration;
   return (WrappedComponent) => inject('preferences')(
     inject((stores = {}, props = {}) => {
       const {preferences} = stores;
       const metadataClass = props[metadataClassProperty];
+      const folderId = props[folderIdProperty];
+      const entityFields = props[fieldsRequestProperty];
       return {
-        ngsProjectMachineRuns: new NgsProjectMachineRuns({metadataClass}, preferences)
+        ngsProjectMachineRuns: new NgsProjectMachineRuns({
+          metadataClass,
+          folderId,
+          entityFields
+        }, preferences)
       };
     })(WrappedComponent)
   );
@@ -72,6 +83,38 @@ export function ngsProjectMachineRunsConfiguration (configuration = {}) {
 
 export function ngsProjectMachineRuns (WrappedComponent) {
   return ngsProjectMachineRunsConfiguration({})(WrappedComponent);
+}
+
+/**
+ * Injects ngsProjectSamples instance
+ * @param {NgsProjectClassConfiguration} configuration
+ * @returns {function(*=): any}
+ */
+export function ngsProjectSamplesConfiguration (configuration = {}) {
+  const {
+    metadataClassProperty = 'metadataClass',
+    folderIdProperty = 'folderId',
+    fieldsRequestProperty = 'entityFields'
+  } = configuration;
+  return (WrappedComponent) => inject('preferences')(
+    inject((stores = {}, props = {}) => {
+      const {preferences} = stores;
+      const metadataClass = props[metadataClassProperty];
+      const folderId = props[folderIdProperty];
+      const entityFields = props[fieldsRequestProperty];
+      return {
+        ngsProjectSamples: new NgsProjectSamples({
+          metadataClass,
+          folderId,
+          entityFields
+        }, preferences)
+      };
+    })(WrappedComponent)
+  );
+}
+
+export function ngsProjectSamples (WrappedComponent) {
+  return ngsProjectSamplesConfiguration({})(WrappedComponent);
 }
 
 export default function ngsProject (WrappedComponent) {

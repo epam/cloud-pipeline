@@ -76,7 +76,8 @@ import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
-import ngsProject, {ngsProjectMachineRuns} from '../../../utils/ngs-project';
+import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
+import * as metadataFilterUtitilies from './metadata-controls/metadata-filters';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -145,10 +146,25 @@ function makeCurrentOrderSort (array) {
 @inject('preferences', 'dataStorages')
 @HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
 @HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
-@inject(({folders, pipelinesLibrary, authenticatedUserInfo, preferences, dataStorages}, params) => {
+@inject((
+  {
+    folders,
+    pipelinesLibrary,
+    authenticatedUserInfo,
+    preferences,
+    dataStorages,
+    routing
+  },
+  params
+) => {
   let componentParameters = params;
+  let filters = {};
   if (params.params) {
+    // Router renderer
     componentParameters = params.params;
+    filters = routing && routing.location
+      ? metadataFilterUtitilies.parse(routing.location.query)
+      : {};
   }
   return {
     folders,
@@ -161,11 +177,13 @@ function makeCurrentOrderSort (array) {
     authenticatedUserInfo,
     preferences,
     dataStorages,
-    pipelinesLibrary
+    pipelinesLibrary,
+    filters
   };
 })
 @ngsProject
 @ngsProjectMachineRuns
+@ngsProjectSamples
 @observer
 export default class Metadata extends React.Component {
   static propTypes = {
@@ -773,11 +791,60 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onArrayReferencesClick = (event, key, data) => {
-    const selectedItem = {};
-    selectedItem[key] = {type: data.type, value: data.value};
-    this.setState({metadata: true, selectedItem: selectedItem});
+  onArrayReferencesClick = (event, key, data, referenceType, item) => {
+    const {
+      ngsProjectInfo,
+      ngsProjectMachineRuns,
+      ngsProjectSamples
+    } = this.props;
     event.stopPropagation();
+    const defaultAction = () => {
+      const selectedItem = {};
+      selectedItem[key] = {type: data.type, value: data.value};
+      this.setState({metadata: true, selectedItem: selectedItem});
+    };
+    if (
+      ngsProjectInfo.isNGSProject &&
+      ngsProjectMachineRuns.isMachineRunsMetadataClass &&
+      item &&
+      item.ID &&
+      item.ID.value
+    ) {
+      ngsProjectInfo
+        .fetchPreferences()
+        .then(() => {
+          if (
+            ngsProjectInfo.isSampleClassName(referenceType)
+          ) {
+            return ngsProjectSamples.getMachineRunField(referenceType);
+          }
+          return Promise.reject(new Error('Not a NGS project'));
+        })
+        .then(machineRunFieldInfo => {
+          if (machineRunFieldInfo) {
+            const {
+              className,
+              fieldName
+            } = machineRunFieldInfo;
+            const {
+              router,
+              folderId
+            } = this.props;
+            const query = metadataFilterUtitilies
+              .build([{key: fieldName, values: [item.ID.value]}]);
+            if (query) {
+              router.push(`/folder/${folderId}/metadata/${className}?${query}`);
+            } else {
+              router.push(`/folder/${folderId}/metadata/${className}`);
+            }
+            return Promise.resolve();
+          }
+          return Promise.reject(new Error('Machine run field is missing'));
+        })
+        .catch(() => defaultAction());
+    } else {
+      defaultAction();
+    }
   };
 
   onReferenceTypesClick = async (event, data) => {
@@ -2037,6 +2104,7 @@ export default class Metadata extends React.Component {
           Header: () => renderTitle(key),
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
+            const item = props.original;
             if (this.isSampleSheetColumn(key)) {
               return (
                 <MetadataSampleSheetValue
@@ -2057,12 +2125,21 @@ export default class Metadata extends React.Component {
                   count = JSON.parse(data.value).length;
                 } catch (___) { }
                 let value = `${count} ${referenceType}(s)`;
-                return <a
-                  title={value}
-                  className={styles.actionLink}
-                  onClick={(e) => this.onArrayReferencesClick(e, key, data)}>
-                  {value}
-                </a>;
+                return (
+                  <a
+                    title={value}
+                    className={styles.actionLink}
+                    onClick={(e) => this.onArrayReferencesClick(
+                      e,
+                      key,
+                      data,
+                      referenceType,
+                      item
+                    )}
+                  >
+                    {value}
+                  </a>
+                );
               }
               if (data.type.toLowerCase().endsWith(':id')) {
                 return <a
@@ -2453,7 +2530,13 @@ export default class Metadata extends React.Component {
   componentDidUpdate (prevProps, prevState, snapshot) {
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
     const folderChanged = prevProps.folderId !== this.props.folderId;
-    if (metadataClassChanged || folderChanged) {
+    const filtersChanged = metadataFilterUtitilies
+      .filtersChanged(prevProps.filters, this.props.filters);
+    if (
+      metadataClassChanged ||
+      folderChanged ||
+      filtersChanged
+    ) {
       this.onFolderChanged(folderChanged);
     } else {
       this.fetchDefaultColumnsIfRequested();
@@ -2479,7 +2562,7 @@ export default class Metadata extends React.Component {
       selectedItems: [],
       selectedItemsAreShowing: false,
       filterModel: {
-        filters: [],
+        filters: (this.props.filters || []).slice(),
         folderId: parseInt(this.props.folderId),
         metadataClass: this.props.metadataClass,
         orderBy: [],

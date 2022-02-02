@@ -18,7 +18,7 @@ import {observable, computed} from 'mobx';
 
 const MACHINE_RUN_METADATA_CLASS_NAME = 'MachineRun';
 
-function getMachineRunMetadataClassName (preferences) {
+export function getMachineRunMetadataClassName (preferences) {
   if (preferences && preferences.loaded) {
     // todo: fetch machine run class name from preferences
   }
