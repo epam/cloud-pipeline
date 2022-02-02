@@ -350,8 +350,7 @@ class VSActions extends React.Component {
     });
   };
 
-  doCommit = (versionedStorage, commitMessage, filesToCommit) => {
-    const files = filesToCommit && filesToCommit.length ? filesToCommit.join(',') : '';
+  doCommit = (versionedStorage, commitMessage, filesToCommit = []) => {
     return new Promise((resolve) => {
       const {id, name} = versionedStorage;
       const hide = message.loading((
@@ -369,7 +368,12 @@ class VSActions extends React.Component {
       );
       this.closeCommitDialog();
       this.performRequestWithStatus(
-        new VSCommit(this.props.run?.id, id, commitMessage, files),
+        new VSCommit(
+          this.props.run?.id,
+          id,
+          commitMessage,
+          filesToCommit
+        ),
         resolve,
         this.onConflictsDetected,
         {
@@ -680,8 +684,9 @@ class VSActions extends React.Component {
           pending = false,
           unsaved = false
         } = status;
+        const notIgnoredFiles = files.filter(f => !/^ignored$/i.test(f.status));
         const hasConflicts = !!files.find(f => /^conflicts$/i.test(f.status));
-        const hasModifications = !!files.find(f => !/^conflicts$/i.test(f.status));
+        const hasModifications = !!notIgnoredFiles.find(f => !/^conflicts$/i.test(f.status));
         const diffEnabled = !pending && files.length > 0;
         const saveEnabled = !storage.detached &&
           !pending &&

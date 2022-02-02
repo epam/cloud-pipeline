@@ -146,6 +146,7 @@ class GitCommitDialog extends React.Component {
             className="commit-dialog"
             collapsed
             selectable
+            selectableTitle="Files to commit:"
             style={{marginBottom: '3px'}}
             onSelectionChanged={this.onSelectionChanged}
             selectedFiles={selectedFiles}

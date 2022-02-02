@@ -17,8 +17,13 @@
 import VSRemotePost from './base/remote-post';
 
 export default class VSCommit extends VSRemotePost {
-  constructor (runId, storageId, message, files) {
+  constructor (runId, storageId, message, files = []) {
     super(runId);
-    this.url = `vs/${storageId}/commit?message=${encodeURIComponent(message)}&files=${encodeURIComponent(files)}`;
+    const baseURL = `vs/${storageId}/commit?message=${encodeURIComponent(message)}`;
+    if (files && files.length > 0) {
+      this.url = `${baseURL}&files=${encodeURIComponent(files.join(','))}`;
+    } else {
+      this.url = `${baseURL}`;
+    }
   }
 }

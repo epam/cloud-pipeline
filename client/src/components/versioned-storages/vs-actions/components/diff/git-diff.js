@@ -100,11 +100,11 @@ class GitDiff extends React.Component {
   }
 
   get groupedFiles () {
-    const {diffs, files} = this.state;
-    return files.reduce((all, f) => {
-      diffs[f] && diffs[f].status === IGNORED ? all.ignored.push(f) : all.tracked.push(f);
-      return all;
-    }, {ignored: [], tracked: []});
+    const {diffs, files = []} = this.state;
+    return {
+      ignored: files.filter(file => diffs[file] && diffs[file].status === IGNORED),
+      tracked: files.filter(file => diffs[file] && diffs[file].status !== IGNORED)
+    };
   }
 
   fetchDiffs = () => {
@@ -183,6 +183,7 @@ class GitDiff extends React.Component {
       className,
       style,
       selectable,
+      selectableTitle,
       selectedFiles = []
     } = this.props;
     const {
@@ -192,15 +193,21 @@ class GitDiff extends React.Component {
     const allFilesSelected = selectedFiles.length === this.groupedFiles.tracked.length;
     return (
       <div className={styles.container}>
-        { selectable && (
-          <div className={styles.selectionActions}>
-            <h3 className={styles.listTitle}>Select files to commit changes</h3>
-            <div >
-              <Button onClick={this.onSelectAll} disabled={allFilesSelected}>Select All</Button>
-              <Button onClick={this.onClearAll} disabled={!selectedFiles.length}>Clear selection</Button>
+        {
+          selectable && (
+            <div className={styles.selectionActions}>
+              <span className={styles.listTitle}>{selectableTitle}</span>
+              <div >
+                <Button onClick={this.onSelectAll} disabled={allFilesSelected}>Select All</Button>
+                <Button
+                  onClick={this.onClearAll} disabled={!selectedFiles.length}
+                >
+                  Clear selection
+                </Button>
+              </div>
             </div>
-          </div>)}
-
+          )
+        }
         {
           this.groupedFiles.tracked
             .map((file) => (
@@ -221,35 +228,49 @@ class GitDiff extends React.Component {
               />
             ))
         }
-        <div className={classNames(styles.file, className)}>
-          <Collapse
-            className={classNames(
-              'git-diff-collapse',
-              'cp-git-diff-collapse',
-              {
-                'git-diff-selectable': selectable,
-                'git-diff-unselectable': !selectable
-              }
-            )}
-            activeKey={opened ? [IGNORED] : []}
-            onChange={this.onOpenedChange}
-          >
-            <Collapse.Panel
-              header={<div className={classNames(
-                styles.fileDiffHeader,
-                {[styles.fileDiffHeaderSelectable]: selectable}
-              )}>Ignored files</div>}
-              key={IGNORED}
-            >
-              <ul className={styles.ignoredList}>
-                {
-                  this.groupedFiles.ignored
-                    .map((file) => (<li key={file}>{file}</li>))
+        {
+          this.groupedFiles.ignored && this.groupedFiles.ignored.length > 0 && (
+            <div className={classNames(styles.file, className)}>
+              <Collapse
+                className={
+                  classNames(
+                    'git-diff-collapse',
+                    'cp-git-diff-collapse',
+                    {
+                      'git-diff-selectable': selectable,
+                      'git-diff-unselectable': !selectable
+                    }
+                  )
                 }
-              </ul>
-            </Collapse.Panel>
-          </Collapse>
-        </div>
+                activeKey={opened ? [IGNORED] : []}
+                onChange={this.onOpenedChange}
+              >
+                <Collapse.Panel
+                  header={(
+                    <div
+                      className={
+                        classNames(
+                          styles.fileDiffHeader,
+                          {[styles.fileDiffHeaderSelectable]: selectable}
+                        )
+                      }
+                    >
+                      Ignored files
+                    </div>
+                  )}
+                  key={IGNORED}
+                >
+                  <ul className={styles.ignoredList}>
+                    {
+                      this.groupedFiles.ignored
+                        .map((file) => (<li key={file}>{file}</li>))
+                    }
+                  </ul>
+                </Collapse.Panel>
+              </Collapse>
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -263,6 +284,7 @@ GitDiff.propTypes = {
   visible: PropTypes.bool,
   collapsed: PropTypes.bool,
   selectable: PropTypes.bool,
+  selectableTitle: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
   onSelectionChanged: PropTypes.func,

@@ -125,15 +125,23 @@ class FileDiffPresenter extends React.PureComponent {
     if (file && type) {
       return (
         <div key="description">
-          {selectable && <Checkbox
-            onClick={event => event.stopPropagation()}
-            onChange={onSelectionChanged(file)}
-            checked={selectedFiles.includes(file)}
-          />}
-          <div className={classNames(
-            styles.fileDiffHeader,
-            {[styles.fileDiffHeaderSelectable]: selectable}
-          )}>
+          {
+            selectable && (
+              <Checkbox
+                onClick={event => event.stopPropagation()}
+                onChange={onSelectionChanged(file)}
+                checked={selectedFiles.includes(file)}
+              />
+            )
+          }
+          <div
+            className={
+              classNames(
+                styles.fileDiffHeader,
+                {[styles.fileDiffHeaderSelectable]: selectable}
+              )
+            }
+          >
             <Icon type="file-text" />
             <span>{file}</span>
             <span
