@@ -110,7 +110,7 @@ public class NgsPreprocessingManager {
         final List<MetadataEntityVO> samples = mapSampleSheetToMetadataEntities(
                 folderId, sampleSheet, sampleMetadataClass, dataHeader);
 
-        unregisterSampleSheet(folderId, machineRunId, registrationVO.isOverwriteContent());
+        unregisterSampleSheet(folderId, machineRunId, true);
         samples.forEach(metadataEntityManager::updateMetadataEntity);
 
         final String machineRunToSampleColumn = preferenceManager.getPreference(
@@ -119,12 +119,12 @@ public class NgsPreprocessingManager {
         linkSamplesToMachineRun(folderId, machineRunMetadataEntity, sampleMetadataClassName,
                 samples, machineRunToSampleColumn);
 
-        storageManager.createDataStorageFile(
-                dataFolderPath.getDataStorageId(),
-                Paths.get(dataFolderPath.getPath(), machineRunMetadataEntity.getExternalId()).toString(),
-                preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME),
-                content
-        );
+        final String sampleSheetFilePath = Paths.get(
+                dataFolderPath.getPath(),
+                machineRunMetadataEntity.getExternalId(),
+                preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME)
+        ).toString();
+        storageManager.createDataStorageFile(dataFolderPath.getDataStorageId(), sampleSheetFilePath, content);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
