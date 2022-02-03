@@ -419,16 +419,23 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_PARALLEL_TRANSFER",
+        "type": "boolean",
+        "description": "Enables multi-threaded InputData/OutputData task execution",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_TRANSFER_THREADS",
         "type": "int",
-        "description": "A number of CPUs to use for the InputData task",
+        "description": "A number of CPUs to use for the InputData/OutputData task",
         "defaultValue": "1",
         "passToWorkers": false
     },
     {
         "name": "CP_TRANSFER_PROC_RATIO",
         "type": "int",
-        "description": "A divider for the CPUs count to determine a number of threads for the InputData task",
+        "description": "A divider for the CPUs count to determine a number of threads for the InputData/OutputData task",
         "defaultValue": "4",
         "passToWorkers": false
     }
