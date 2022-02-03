@@ -21,7 +21,7 @@ LOCALIZE_FROM_FILES_TASK_NAME="${2:-InputDataConfigs}"
 
 if [ -z "$CP_LOCALIZE_FROM_FILES" ]; then
     pipe_log_info "Localization from the config files is not requested" "$LOCALIZE_GENERAL_TASK_NAME"
-    exit 1
+    exit 0
 fi
 
 pipe_log_info "Will localize any remotes from the config files, defined by the following parameters: $CP_LOCALIZE_FROM_FILES" "$LOCALIZE_FROM_FILES_TASK_NAME"
