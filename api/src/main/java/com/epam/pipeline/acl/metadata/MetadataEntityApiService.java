@@ -53,8 +53,12 @@ public class MetadataEntityApiService {
     private MetadataDownloadManager metadataDownloadManager;
 
     @PreAuthorize(ADMIN_ONLY)
-    public MetadataClass createMetadataClass(String className) {
+    public MetadataClass createMetadataClass(final String className) {
         return metadataEntityManager.createMetadataClass(className);
+    }
+
+    public MetadataClass loadMetadataClassByIdOrName(final String id) {
+        return metadataEntityManager.loadMetadataClassByIdOrName(id);
     }
 
     public List<MetadataClass> loadAllMetadataClasses() {
@@ -62,101 +66,101 @@ public class MetadataEntityApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public MetadataClass deleteMetadataClass(Long id) {
+    public MetadataClass deleteMetadataClass(final Long id) {
         return metadataEntityManager.deleteMetadataClass(id);
     }
 
     @PreAuthorize(ADMIN_ONLY)
-    public MetadataClass updateExternalClassName(Long classId, FireCloudClass externalClassName) {
+    public MetadataClass updateExternalClassName(final Long classId, final FireCloudClass externalClassName) {
         return metadataEntityManager.updateExternalClassName(classId, externalClassName);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#metadataEntityVO.parentId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
-    public MetadataEntity updateMetadataEntity(MetadataEntityVO metadataEntityVO) {
+    public MetadataEntity updateMetadataEntity(final MetadataEntityVO metadataEntityVO) {
         return metadataEntityManager.updateMetadataEntity(metadataEntityVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#metadataEntityVO.parentId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
-    public MetadataEntity createMetadataEntity(MetadataEntityVO metadataEntityVO) {
+    public MetadataEntity createMetadataEntity(final MetadataEntityVO metadataEntityVO) {
         return metadataEntityManager.updateMetadataEntity(metadataEntityVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.metadataEntityPermission(#id, 'READ')")
-    public MetadataEntity loadMetadataEntity(Long id) {
+    public MetadataEntity loadMetadataEntity(final Long id) {
         return metadataEntityManager.load(id);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND "
             + "@grantPermissionManager.metadataEntityPermission(#id, 'WRITE'))")
-    public MetadataEntity deleteMetadataEntity(Long id) {
+    public MetadataEntity deleteMetadataEntity(final Long id) {
         return metadataEntityManager.deleteMetadataEntity(id);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#id, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'READ')")
-    public List<MetadataEntity> loadMetadataEntityByClass(Long id, String className) {
+    public List<MetadataEntity> loadMetadataEntityByClass(final Long id, final String className) {
         return metadataEntityManager.loadMetadataEntityByClassNameAndFolderId(id, className);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#metadataEntityVO.parentId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
-    public MetadataEntity updateMetadataItemKey(MetadataEntityVO metadataEntityVO) {
+    public MetadataEntity updateMetadataItemKey(final MetadataEntityVO metadataEntityVO) {
         return metadataEntityManager.updateMetadataItemKey(metadataEntityVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.metadataEntityPermission(#id, 'WRITE')")
-    public MetadataEntity deleteMetadataItemKey(Long id, String key) {
+    public MetadataEntity deleteMetadataItemKey(final Long id, final String key) {
         return metadataEntityManager.deleteMetadataItemKey(id, key);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND "
             + "@grantPermissionManager.metadataEntitiesPermission(#entitiesIds, 'WRITE'))")
-    public Set<Long> deleteMetadataEntities(Set<Long> entitiesIds) {
+    public Set<Long> deleteMetadataEntities(final Set<Long> entitiesIds) {
         return metadataEntityManager.deleteMetadataEntities(entitiesIds);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#filter.folderId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'READ')")
-    public PagedResult<List<MetadataEntity>> filterMetadata(MetadataFilter filter) {
+    public PagedResult<List<MetadataEntity>> filterMetadata(final MetadataFilter filter) {
         return metadataEntityManager.filterMetadata(filter);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#folderId, 'com.epam.pipeline.entity.pipeline.Folder', 'READ')")
-    public List<MetadataField> getMetadataKeys(Long folderId, String metadataClass) {
+    public List<MetadataField> getMetadataKeys(final Long folderId, final String metadataClass) {
         return metadataEntityManager.getMetadataKeys(folderId, metadataClass);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#folderId, 'com.epam.pipeline.entity.pipeline.Folder', 'READ')")
-    public Collection<MetadataClassDescription> getMetadataFields(Long folderId) {
+    public Collection<MetadataClassDescription> getMetadataFields(final Long folderId) {
         return metadataEntityManager.getMetadataFields(folderId);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#parentId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
-    public List<MetadataEntity> uploadMetadataFromFile(Long parentId, MultipartFile file) {
+    public List<MetadataEntity> uploadMetadataFromFile(final Long parentId, final MultipartFile file) {
         return metadataUploadManager.uploadFromFile(parentId, file);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#folderId, 'com.epam.pipeline.entity.pipeline.Folder', 'READ')")
-    public MetadataEntity loadByExternalId(String id, String className, Long folderId) {
+    public MetadataEntity loadByExternalId(final String id, final String className, final Long folderId) {
         return metadataEntityManager.loadByExternalId(id, className, folderId);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#projectId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
-    public void deleteMetadataFromProject(Long projectId, String entityClassName) {
+    public void deleteMetadataFromProject(final Long projectId, final String entityClassName) {
         metadataEntityManager.deleteMetadataEntitiesInProject(projectId, entityClassName);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.metadataEntitiesPermission(#entitiesIds, 'READ')")
-    public Map<String, String> loadEntitiesData(Set<Long> entitiesIds) {
+    public Map<String, String> loadEntitiesData(final Set<Long> entitiesIds) {
         return metadataEntityManager.loadEntitiesData(entitiesIds);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('ENTITIES_MANAGER') AND hasPermission(#folderId, "
             + "'com.epam.pipeline.entity.pipeline.Folder', 'READ'))")
-    public InputStream getMetadataEntityFile(Long folderId, String entityClass, String fileFormat) {
+    public InputStream getMetadataEntityFile(final Long folderId, final String entityClass, final String fileFormat) {
         return metadataDownloadManager.getInputStream(folderId, entityClass, fileFormat);
     }
 }

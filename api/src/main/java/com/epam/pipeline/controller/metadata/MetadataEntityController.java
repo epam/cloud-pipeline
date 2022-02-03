@@ -83,6 +83,19 @@ public class MetadataEntityController extends AbstractRestController {
         return Result.success(metadataEntityApiService.loadAllMetadataClasses());
     }
 
+    @RequestMapping(value = "/metadataClass/load", method = RequestMethod.GET)
+    @ResponseBody
+    @ApiOperation(
+            value = "Returns metadata class by name or id.",
+            notes = "Returns metadata class by name or id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<MetadataClass> loadMetadataClass(@RequestParam(value = ID) final String id) {
+        return Result.success(metadataEntityApiService.loadMetadataClassByIdOrName(id));
+    }
+
     @RequestMapping(value = "/metadataClass/{id}/delete", method = RequestMethod.DELETE)
     @ResponseBody
     @ApiOperation(

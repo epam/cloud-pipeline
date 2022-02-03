@@ -20,6 +20,7 @@ import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.preprocessing.SampleSheetRegistrationVO;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -47,9 +48,9 @@ public class NgsPreprocessingController extends AbstractRestController {
             notes = "Registers a new or update an existing samplesheet.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result registerSampleSheet(@RequestBody final SampleSheetRegistrationVO sheetRegistrationVO) {
-        preprocessingApiService.registerSampleSheet(sheetRegistrationVO);
-        return Result.success();
+    public MetadataEntity registerSampleSheet(@RequestBody final SampleSheetRegistrationVO sheetRegistrationVO,
+                                              @RequestParam(defaultValue = "false") final boolean overwrite) {
+        return preprocessingApiService.registerSampleSheet(sheetRegistrationVO, overwrite);
     }
 
     @DeleteMapping(value = "/samplesheet")

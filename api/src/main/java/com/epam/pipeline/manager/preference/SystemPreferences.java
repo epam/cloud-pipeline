@@ -992,6 +992,12 @@ public class SystemPreferences {
     public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
             "ngs.preprocessing.machine.run.column.name", "Machine Run",
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference NGS_PREPROCESSING_COMPLETION_MARK_NAME = new StringPreference(
+            "ngs.preprocessing.completion.mark.file.default.name", "RTAComplete.txt",
+            NGS_PREPROCESSING_GROUP, pass);
+    public static final StringPreference NGS_PREPROCESSING_COMPLETION_MARK_METADATA_KEY = new StringPreference(
+            "ngs.preprocessing.completion.mark.metadata.key", "completion-mark",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

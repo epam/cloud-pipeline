@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.preprocessing;
+package com.epam.pipeline.vo.preprocessing;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,6 +24,7 @@ import lombok.NoArgsConstructor;
 public class SampleSheetRegistrationVO {
     private Long folderId;
     private Long machineRunId;
+    private Boolean overwrite;
     private String path;
     private byte[] content;
 }

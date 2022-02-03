@@ -14,16 +14,31 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.preprocessing;
+package com.epam.pipeline.entity.samplesheet;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
 
-@Data
-@NoArgsConstructor
-public class SampleSheetRegistrationVO {
-    private Long folderId;
-    private Long machineRunId;
-    private String path;
-    private byte[] content;
+import java.util.List;
+import java.util.Map;
+
+@Value
+@Builder
+public class SampleSheet {
+
+    boolean withHeader;
+    Map<String, String> header;
+
+    boolean withManifests;
+    Map<String, String> manifests;
+
+    boolean withReads;
+    List<Integer> reads;
+
+    boolean withSettings;
+    Map<String, String> settings;
+
+    boolean withData;
+    List<String> dataHeader;
+    List<String> dataLines;
 }

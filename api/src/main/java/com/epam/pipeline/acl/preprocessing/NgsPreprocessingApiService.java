@@ -17,6 +17,7 @@
 package com.epam.pipeline.acl.preprocessing;
 
 import com.epam.pipeline.controller.vo.preprocessing.SampleSheetRegistrationVO;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,8 +31,9 @@ public class NgsPreprocessingApiService {
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#registrationVO.folderId, " +
             "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
-    public void registerSampleSheet(final SampleSheetRegistrationVO registrationVO) {
-        preprocessingManager.registerSampleSheet(registrationVO);
+    public MetadataEntity registerSampleSheet(final SampleSheetRegistrationVO registrationVO,
+                                              final boolean overwrite) {
+        return preprocessingManager.registerSampleSheet(registrationVO, overwrite);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#folderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")

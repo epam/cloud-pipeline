@@ -28,6 +28,8 @@ import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 public class FolderApiService {
 
@@ -63,6 +65,11 @@ public class FolderApiService {
     @AclTree
     public Folder loadProjects() {
         return folderManager.loadAllProjects();
+    }
+
+    @AclTree
+    public Folder filterFolders(final Map<String, String> indicators) {
+        return folderManager.filterFoldersByMetadata(indicators);
     }
 
     @AclTree

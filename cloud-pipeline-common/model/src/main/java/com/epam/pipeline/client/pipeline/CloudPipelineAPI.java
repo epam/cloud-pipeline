@@ -23,7 +23,9 @@ import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageDownloadFileUrl;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -31,6 +33,8 @@ import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.issue.Issue;
+import com.epam.pipeline.entity.metadata.FolderWithMetadata;
+import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.notification.NotificationMessage;
@@ -57,7 +61,9 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
 import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
+import com.epam.pipeline.vo.metadata.MetadataEntityVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.vo.preprocessing.SampleSheetRegistrationVO;
 import com.epam.pipeline.vo.user.OnlineUsers;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
@@ -73,6 +79,7 @@ import retrofit2.http.Path;
 import retrofit2.http.Query;
 
 import java.util.List;
+import java.util.Map;
 
 public interface CloudPipelineAPI {
 
@@ -92,6 +99,10 @@ public interface CloudPipelineAPI {
     String TO = "to";
     String TOOL_ID = "toolId";
     String REGION_ID = "regionId";
+    String FOLDER_ID = "folderId";
+    String CLASS_NAME = "className";
+    String NAME = "name";
+    String ACL_CLASS = "aclClass";
 
 
     @POST("run/{runId}/status")
@@ -131,11 +142,35 @@ public interface CloudPipelineAPI {
     Call<Result<List<MetadataEntity>>> uploadMetadataEntity(@Query(PARENT_ID) Long parentId,
                                                             @Part MultipartBody.Part file);
 
+    @GET("metadataEntity/loadExternal")
+    Call<Result<MetadataEntity>> loadMetadataEntityByExternalId(@Query(ID) String id,
+                                                                @Query(FOLDER_ID) Long folderId,
+                                                                @Query(CLASS_NAME) String className);
+
+    @GET("metadataClass/load")
+    Call<Result<MetadataClass>> loadMetadataClassByNameOrId(@Query(ID) String id);
+
+    @POST("metadataClass/register")
+    Call<Result<MetadataClass>> registerMetadataClass(@Query(NAME) String name);
+
+    @POST("metadataEntity/save")
+    Call<Result<MetadataEntity>> saveMetadataEntity(@Body MetadataEntityVO entityVO);
+
     @GET("folder/find")
     Call<Result<Folder>> findFolder(@Query(ID) String fullyQualifiedName);
 
+    @GET("folder/project")
+    Call<Result<FolderWithMetadata>> loadProject(@Query(ID) Long id, @Query(ACL_CLASS) String aclClass);
+
     @POST("folder/register")
     Call<Result<Folder>> registerFolder(@Body Folder folder, @Query(TEMPLATE_NAME) String templateName);
+
+    @POST("folder/filterByMetadata")
+    Call<Result<FolderWithMetadata>> filterFolders(@Body Map<String, String> filter);
+
+
+    @GET("folder/projects")
+    Call<Result<FolderWithMetadata>> listProjects();
 
     @GET("pipeline/loadAll")
     Call<Result<List<Pipeline>>> loadAllPipelines();
@@ -159,6 +194,13 @@ public interface CloudPipelineAPI {
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
 
+    @GET("datastorage/findByPath")
+    Call<Result<AbstractDataStorage>> findDataStorage(@Query(ID) String storageId);
+
+    @GET("datastorage/{id}/list")
+    Call<Result<List<AbstractDataStorageItem>>> loadDataStorageItems(@Path(ID) Long storageId, @Query(PATH) String path,
+                                                                     @Query("showVersion") Boolean showVersion);
+
     @PUT("datastorage/{id}/tags/batch/insert")
     Call<Result<Object>> insertDataStorageTags(@Path(ID) Long storageId,
                                                @Body DataStorageTagInsertBatchRequest request);
@@ -170,6 +212,10 @@ public interface CloudPipelineAPI {
     @POST("datastorage/{id}/tags/batch/load")
     Call<Result<List<DataStorageTag>>> loadDataStorageObjectTags(@Path(ID) Long storageId,
                                                                  @Body DataStorageTagLoadBatchRequest request);
+
+    @GET("datastorage/{id}/generateUrl")
+    Call<Result<DataStorageDownloadFileUrl>> getDataStorageItemUrlToDownload(@Path(ID) Long storageId,
+                                                                             @Query(PATH) String internalStoragePath);
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
@@ -229,17 +275,17 @@ public interface CloudPipelineAPI {
     Call<Result<Pipeline>> loadPipelineByUrl(@Query("url") String url);
 
     @GET("permissions")
-    Call<Result<EntityPermissionVO>> loadEntityPermissions(@Query(ID) Long id, @Query("aclClass") AclClass aclClass);
+    Call<Result<EntityPermissionVO>> loadEntityPermissions(@Query(ID) Long id, @Query(ACL_CLASS) AclClass aclClass);
 
     @GET("pipeline/{id}/repository")
     Call<Result<List<GitRepositoryEntry>>> loadRepositoryContent(@Path(ID) Long id, @Query(VERSION) String version,
                                                                  @Query(PATH) String path);
-
     // Node methods
+
     @POST("cluster/node/filter")
     Call<Result<List<NodeInstance>>> findNodes(@Body FilterNodesVO filterNodesVO);
-
     //Notification methods
+
     @POST("notification/message")
     Call<Result<NotificationMessage>> createNotification(@Body NotificationMessageVO notification);
 
@@ -273,6 +319,10 @@ public interface CloudPipelineAPI {
 
     @GET("filesharemount/{id}")
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
+
+    @POST("preprocessing/samplesheet")
+    Call<Result<Object>> registerSampleSheetFile(@Body final SampleSheetRegistrationVO registrationVO,
+                                                 @Query("overwrite") final boolean overwrite);
 
     @GET("app/info")
     Call<Result<ApplicationInfo>> fetchVersion();

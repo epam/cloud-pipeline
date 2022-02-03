@@ -94,6 +94,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
         if (StringUtils.isEmpty(className)) {
             throw new IllegalArgumentException("User entity class name must be not empty.");
         }
+        Assert.isNull(metadataClassDao.loadMetadataClass(className), "MetadataClass: " + className + " exists!");
         MetadataClass metadataClass = new MetadataClass();
         metadataClass.setName(className);
         metadataClassDao.createMetadataClass(metadataClass);
@@ -102,6 +103,10 @@ public class MetadataEntityManager implements SecuredEntityManager {
 
     public List<MetadataClass> loadAllMetadataClasses() {
         return metadataClassDao.loadAllMetadataClasses();
+    }
+
+    public MetadataClass loadMetadataClassByIdOrName(final String id) {
+        return NumberUtils.isDigits(id) ? loadClass(Long.parseLong(id)) : loadClass(id);
     }
 
     public MetadataClass loadClass(String name) {
