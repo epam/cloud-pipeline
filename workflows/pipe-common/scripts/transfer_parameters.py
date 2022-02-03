@@ -220,7 +220,7 @@ def transfer_async_without_file_list(chunk):
 
 
 class InputDataTask:
-    def __init__(self, input_dir, common_dir, analysis_dir, task_name, bucket, report_file, rules, upload):
+    def __init__(self, input_dir, common_dir, analysis_dir, task_name, bucket, report_file, rules, upload, env_suffix):
         self.input_dir = input_dir
         self.common_dir = common_dir
         self.analysis_dir = get_path_with_trailing_delimiter(analysis_dir)
@@ -238,6 +238,7 @@ class InputDataTask:
         self.token = os.environ['API_TOKEN']
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.is_upload = upload
+        self.env_suffix = env_suffix
 
     def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
@@ -290,7 +291,7 @@ class InputDataTask:
     def find_remote_locations(self, dts_registry, parameter_types):
         remote_locations = []
         for env in os.environ:
-            param_type_name = env + '_PARAM_TYPE'
+            param_type_name = env + self.env_suffix
             if os.environ[env] and param_type_name in os.environ:
                 param_type = os.environ[param_type_name]
                 if param_type in parameter_types:
@@ -551,6 +552,7 @@ def main():
     parser.add_argument('--storage-rules', required=False, default=None)
     parser.add_argument('--report-file', required=False, default=None)
     parser.add_argument('--task', required=False, default=LOCALIZATION_TASK_NAME)
+    parser.add_argument('--env-suffix', required=False, default='_PARAM_TYPE')
     args = parser.parse_args()
     if args.operation == 'upload':
         upload = True
@@ -562,7 +564,8 @@ def main():
     if not bucket and 'CP_TRANSFER_BUCKET' in os.environ:
         bucket = os.environ['CP_TRANSFER_BUCKET']
     InputDataTask(args.input_dir, args.common_dir, args.analysis_dir,
-                  args.task, bucket, args.report_file, args.storage_rules, upload).run()
+                  args.task, bucket, args.report_file, args.storage_rules, upload,
+                  args.env_suffix).run()
 
 
 if __name__ == '__main__':
