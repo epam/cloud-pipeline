@@ -38,8 +38,8 @@ import java.util.Map;
 public final class TestUtils {
 
     public static final String COMMON_INDEX_PREFIX = "cp-billing-";
-    public static final String RUN_BILLING_PREFIX = COMMON_INDEX_PREFIX + "pipeline-run-";
-    public static final String STORAGE_BILLING_PREFIX = COMMON_INDEX_PREFIX + "storage-";
+    public static final String RUN_BILLING_PREFIX = COMMON_INDEX_PREFIX + "pipeline-run";
+    public static final String STORAGE_BILLING_PREFIX = COMMON_INDEX_PREFIX + "storage";
 
     private TestUtils() {
     }
@@ -85,8 +85,7 @@ public final class TestUtils {
     }
 
     public static String buildBillingIndex(final String prefix, final LocalDateTime syncDate) {
-        return prefix
-               + EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(syncDate.toLocalDate());
+        return prefix + "-" + EntityToBillingRequestConverter.SIMPLE_DATE_FORMAT.format(syncDate.toLocalDate());
     }
 
     private static ArrayList<String> toStringArray(final Object object) {

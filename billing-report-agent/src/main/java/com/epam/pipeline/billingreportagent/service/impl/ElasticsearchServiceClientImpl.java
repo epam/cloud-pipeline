@@ -17,6 +17,7 @@
 package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.DocWriteRequest;
@@ -27,31 +28,43 @@ import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.rest.RestStatus;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClient {
 
-    private RestHighLevelClient client;
+    private final RestHighLevelClient client;
 
-    @Autowired
-    public ElasticsearchServiceClientImpl(final RestHighLevelClient client) {
-        this.client = client;
+    @Override
+    public Stream<String> indices() {
+        try {
+            final GetIndexRequest request = new GetIndexRequest()
+                    .indices("*")
+                    .indicesOptions(IndicesOptions.strictExpandOpen());
+            final GetIndexResponse response = client.indices().get(request, RequestOptions.DEFAULT);
+            return Arrays.stream(response.getIndices());
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to list indices.", e);
+        }
     }
 
     @Override
@@ -162,10 +175,26 @@ public class ElasticsearchServiceClientImpl implements ElasticsearchServiceClien
     }
 
     @Override
+    public void refreshIndex(final String[] indices) {
+        try {
+            log.debug("Refreshing indices {}...", (Object[]) indices);
+            final RefreshRequest request = new RefreshRequest()
+                    .indices(indices)
+                    .indicesOptions(IndicesOptions.strictExpandOpen());
+            client.indices().refresh(request, RequestOptions.DEFAULT);
+            log.debug("Indices {} were refreshed.", (Object[]) indices);
+        } catch (IOException e) {
+            throw new ElasticsearchException("Failed to refresh indices.", e);
+        }
+    }
+
+    @Override
     public SearchResponse search(final SearchRequest request) {
         try {
+            log.debug("Billing request: {}", request);
             return client.search(request, RequestOptions.DEFAULT);
         } catch (IOException e) {
+            log.error(e.getMessage(), e);
             throw new ElasticsearchException("Failed to find results for search query:" + e.getMessage(), e);
         }
     }

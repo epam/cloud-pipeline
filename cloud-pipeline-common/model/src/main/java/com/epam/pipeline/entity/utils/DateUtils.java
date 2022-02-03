@@ -17,6 +17,7 @@
 package com.epam.pipeline.entity.utils;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -37,6 +38,10 @@ public final class DateUtils {
 
     public static LocalDateTime nowUTC() {
         return LocalDateTime.now(Clock.systemUTC());
+    }
+
+    public static LocalDate nowUTCDate() {
+        return LocalDate.now(Clock.systemUTC());
     }
 
     public static LocalDateTime toLocalDateTime(final Date date) {

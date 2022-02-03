@@ -18,8 +18,8 @@ package com.epam.pipeline.billingreportagent.service.impl.synchronizer;
 
 import com.epam.pipeline.billingreportagent.exception.ElasticClientException;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
+import com.epam.pipeline.billingreportagent.service.ElasticsearchDailySynchronizer;
 import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
-import com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.billingreportagent.service.impl.BulkRequestSender;
@@ -38,12 +38,13 @@ import java.util.stream.Collectors;
 @Data
 @Slf4j
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
-public class StorageSynchronizer implements ElasticsearchSynchronizer {
+public class StorageSynchronizer implements ElasticsearchDailySynchronizer {
 
     private final String storageIndexMappingFile;
     private final String indexPrefix;
     private final EntityLoader<AbstractDataStorage> loader;
     private final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingRequestConverter;
+    private final ElasticsearchServiceClient client;
     private final ElasticIndexService indexService;
     private final BulkRequestSender requestSender;
     private final DataStorageType storageType;
@@ -53,7 +54,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
                                final String storageIndexName,
                                final Integer bulkInsertSize,
                                final Long insertTimeout,
-                               final ElasticsearchServiceClient elasticsearchServiceClient,
+                               final ElasticsearchServiceClient client,
                                final EntityLoader<AbstractDataStorage> loader,
                                final ElasticIndexService indexService,
                                final EntityToBillingRequestConverter<AbstractDataStorage> storageToBillingReqConverter,
@@ -62,8 +63,9 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
         this.indexPrefix = indexPrefix + storageIndexName;
         this.loader = loader;
         this.storageToBillingRequestConverter = storageToBillingReqConverter;
+        this.client = client;
         this.indexService = indexService;
-        this.requestSender = new BulkRequestSender(elasticsearchServiceClient, bulkInsertSize, insertTimeout);
+        this.requestSender = new BulkRequestSender(client, bulkInsertSize, insertTimeout);
         this.storageType = storageType;
     }
 
@@ -84,6 +86,7 @@ public class StorageSynchronizer implements ElasticsearchSynchronizer {
                         log.debug("Inserting {} document(s) into index {}.", docs.size(), index);
                         indexService.createIndexIfNotExists(index, storageIndexMappingFile);
                         requestSender.indexDocuments(docs);
+                        client.refreshIndex(index);
                     } catch (ElasticClientException e) {
                         log.error("Can't create index {}!", index);
                     }

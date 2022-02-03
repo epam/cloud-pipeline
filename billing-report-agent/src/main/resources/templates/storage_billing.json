@@ -12,6 +12,7 @@
         "groups": { "type": "keyword" },
         "billing_center":  { "type": "keyword" },
         "usage_bytes": {"type": "long"},
+        "usage_bytes_avg": {"type": "long"},
         "cost": {"type": "long"},
         "created_date": {"type": "date"}
       }
