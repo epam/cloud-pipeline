@@ -33,6 +33,7 @@ ENV LANGUAGE=en_US
 # Install common dependencies
 RUN yum install -y curl \
                    git \
+                   openssh-server \
                    wget \
                    unzip && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
