@@ -25,12 +25,12 @@ HCS_PROCESSING_TASK="${HCS_PROCESSING_TASK:-HCS processing}"
 
 function log_info() {
     _message="$1"
-    pipe_log_info "[$INDEX_FILE_PATH|$SEQUENCE_ID] $_message" "$HCS_PROCESSING_TASK"
+    pipe_log_info "[$INDEX_FILE_PATH] $_message" "$HCS_PROCESSING_TASK"
 }
 
 function log_warn() {
     _message="$1"
-    pipe_log_warn "[$INDEX_FILE_PATH|$SEQUENCE_ID] $_message" "$HCS_PROCESSING_TASK"
+    pipe_log_warn "[$INDEX_FILE_PATH] $_message" "$HCS_PROCESSING_TASK"
 }
 
 function cleanup_raw_dir() {
@@ -65,5 +65,5 @@ if [ $? -ne 0 ]; then
     log_warn "Errors during offset file generation, exiting..."
     exit 1
 fi
-log_info "Timepoint processing is finished."
+log_info "Sequence processing is finished."
 exit 0
