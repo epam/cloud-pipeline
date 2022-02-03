@@ -26,21 +26,21 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
-@Controller
+@RestController
 @Api(value = "NGS Project Preprocessing")
 public class NgsPreprocessingController extends AbstractRestController {
 
     @Autowired
     private NgsPreprocessingApiService preprocessingApiService;
 
-    @RequestMapping(value = "/preprocessing/samplesheet", method = RequestMethod.POST)
+    @PostMapping(value = "/preprocessing/samplesheet")
     @ResponseBody
     @ApiOperation(
             value = "Registers a new or update an existing samplesheet.",
@@ -54,7 +54,7 @@ public class NgsPreprocessingController extends AbstractRestController {
         return Result.success();
     }
 
-    @RequestMapping(value = "/preprocessing/samplesheet", method = RequestMethod.DELETE)
+    @DeleteMapping(value = "/preprocessing/samplesheet")
     @ResponseBody
     @ApiOperation(
             value = "Deletes an existing samplesheet.",
@@ -63,8 +63,9 @@ public class NgsPreprocessingController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result deleteSampleSheet(@RequestParam final Long folderId, @RequestParam final Long machineRunId) {
-        preprocessingApiService.deleteSampleSheet(folderId, machineRunId);
+    public Result deleteSampleSheet(@RequestParam final Long folderId, @RequestParam final Long machineRunId,
+                                    @RequestParam(defaultValue = "false") final Boolean deleteFile) {
+        preprocessingApiService.unregisterSampleSheet(folderId, machineRunId, deleteFile);
         return Result.success();
     }
 

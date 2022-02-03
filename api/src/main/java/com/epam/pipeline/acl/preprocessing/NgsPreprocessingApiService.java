@@ -18,25 +18,25 @@ package com.epam.pipeline.acl.preprocessing;
 
 import com.epam.pipeline.controller.vo.preprocessing.SampleSheetRegistrationVO;
 import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class NgsPreprocessingApiService {
 
-    @Autowired
-    private NgsPreprocessingManager preprocessingManager;
+    private final NgsPreprocessingManager preprocessingManager;
 
-    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#registrationVO.folderId, "
-            + "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE'))")
+    @PreAuthorize("hasRole('ADMIN') OR hasPermission(#registrationVO.folderId, " +
+            "'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
     public void registerSampleSheet(final SampleSheetRegistrationVO registrationVO) {
         preprocessingManager.registerSampleSheet(registrationVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR hasPermission(#folderId, 'com.epam.pipeline.entity.pipeline.Folder', 'WRITE')")
-    public void deleteSampleSheet(final Long folderId, final Long machineRunId) {
-        preprocessingManager.deleteSampleSheet(folderId, machineRunId);
+    public void unregisterSampleSheet(final Long folderId, final Long machineRunId, final boolean deleteFile) {
+        preprocessingManager.unregisterSampleSheet(folderId, machineRunId, deleteFile);
     }
 
 }

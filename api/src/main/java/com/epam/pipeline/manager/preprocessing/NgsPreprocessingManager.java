@@ -42,12 +42,13 @@ import com.epam.pipeline.manager.metadata.parser.MetadataParsingResult;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.utils.SystemPreferenceUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.util.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,10 +62,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NgsPreprocessingManager {
 
@@ -72,23 +75,12 @@ public class NgsPreprocessingManager {
     public static final String SAMPLE_PREFIX = "_S";
     public static final String LANE_PREFIX = "_L";
 
-    @Autowired
-    private FolderManager folderManager;
-
-    @Autowired
-    private MetadataManager metadataManager;
-
-    @Autowired
-    private MetadataEntityManager metadataEntityManager;
-
-    @Autowired
-    private DataStorageManager storageManager;
-
-    @Autowired
-    private PreferenceManager preferenceManager;
-
-    @Autowired
-    private MessageHelper messageHelper;
+    private final FolderManager folderManager;
+    private final MetadataManager metadataManager;
+    private final MetadataEntityManager metadataEntityManager;
+    private final DataStorageManager storageManager;
+    private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void registerSampleSheet(final SampleSheetRegistrationVO registrationVO) {
@@ -110,35 +102,33 @@ public class NgsPreprocessingManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_SAMPLESHEET_CONTENT_NOT_PROVIDED));
         final SampleSheet sampleSheet = SampleSheetParser.parseSampleSheet(content);
 
-        final String sampleMetadataClass = preferenceManager.getStringPreference(
-                SystemPreferences.PREPROCESSING_SAMPLE_CLASS.getKey());
-        final MetadataClass metadataClass = metadataEntityManager.loadClass(sampleMetadataClass);
+        final String sampleMetadataClassName = preferenceManager.getPreference(
+                SystemPreferences.PREPROCESSING_SAMPLE_CLASS);
+        final MetadataClass sampleMetadataClass = metadataEntityManager.getOrCreate(sampleMetadataClassName);
         final List<String> dataHeader = sampleSheet.getDataHeader();
 
         final List<MetadataEntityVO> samples = mapSampleSheetToMetadataEntities(
-                folderId, sampleSheet, metadataClass, dataHeader);
+                folderId, sampleSheet, sampleMetadataClass, dataHeader);
 
-        deleteSampleSheet(folderId, machineRunId);
+        unregisterSampleSheet(folderId, machineRunId, registrationVO.isOverwriteContent());
+        samples.forEach(metadataEntityManager::updateMetadataEntity);
 
-        for (MetadataEntityVO sample : samples) {
-            metadataEntityManager.updateMetadataEntity(sample);
-        }
+        final String machineRunToSampleColumn = preferenceManager.getPreference(
+                SystemPreferences.PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN);
 
-        final String machineRunToSampleColumn = preferenceManager.getStringPreference(
-                SystemPreferences.PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN.getKey());
-
-        linkSamplesToMachineRun(folderId, machineRunMetadataEntity, sampleMetadataClass, samples, machineRunToSampleColumn);
+        linkSamplesToMachineRun(folderId, machineRunMetadataEntity, sampleMetadataClassName,
+                samples, machineRunToSampleColumn);
 
         storageManager.createDataStorageFile(
                 dataFolderPath.getDataStorageId(),
                 Paths.get(dataFolderPath.getPath(), machineRunMetadataEntity.getExternalId()).toString(),
-                preferenceManager.getStringPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME.getKey()),
+                preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME),
                 content
         );
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void deleteSampleSheet(final Long folderId, final Long machineRunId) {
+    public void unregisterSampleSheet(final Long folderId, final Long machineRunId, boolean deleteFile) {
         final MetadataEntry folderMetadata = metadataManager.listMetadataItems(
                         Collections.singletonList(new EntityVO(folderId, AclClass.FOLDER))).stream().findFirst()
                 .orElseThrow(() -> new IllegalStateException(
@@ -148,12 +138,12 @@ public class NgsPreprocessingManager {
 
         final MetadataEntity machineRunMetadata = fetchMachineRunMetadataEntity(dataFolderPath, machineRunId);
 
-        final String sampleMetadataClassName = preferenceManager.getStringPreference(
-                SystemPreferences.PREPROCESSING_SAMPLE_CLASS.getKey());
+        final String sampleMetadataClassName = preferenceManager.getPreference(
+                SystemPreferences.PREPROCESSING_SAMPLE_CLASS);
         final MetadataClass sampleMetadataClass = metadataEntityManager.loadClass(sampleMetadataClassName);
 
-        final String machineRunToSampleColumn = preferenceManager.getStringPreference(
-                SystemPreferences.PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN.getKey());
+        final String machineRunToSampleColumn = preferenceManager.getPreference(
+                SystemPreferences.PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN);
 
         Optional.ofNullable(machineRunMetadata.getData().get(machineRunToSampleColumn))
                 .ifPresent(value -> {
@@ -170,21 +160,23 @@ public class NgsPreprocessingManager {
 
         metadataEntityManager.deleteMetadataItemKey(machineRunMetadata.getId(), machineRunToSampleColumn);
 
-        final String sampleSheetFilePath = Paths.get(
-                dataFolderPath.getPath(),
-                machineRunMetadata.getExternalId(),
-                preferenceManager.getStringPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME.getKey())
-        ).toString();
-        final AbstractDataStorage dataStorage = storageManager.load(dataFolderPath.getDataStorageId());
-        if (checkPathExistence(dataStorage.getId(), sampleSheetFilePath)) {
-            final UpdateDataStorageItemVO sampleSheetItem = new UpdateDataStorageItemVO();
-            sampleSheetItem.setPath(sampleSheetFilePath);
-            sampleSheetItem.setType(DataStorageItemType.File);
-            storageManager.deleteDataStorageItems(
-                    dataFolderPath.getDataStorageId(),
-                    Collections.singletonList(sampleSheetItem),
-                    dataStorage.isVersioningEnabled()
-            );
+        if (deleteFile) {
+            final String sampleSheetFilePath = Paths.get(
+                    dataFolderPath.getPath(),
+                    machineRunMetadata.getExternalId(),
+                    preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME)
+            ).toString();
+            final AbstractDataStorage dataStorage = storageManager.load(dataFolderPath.getDataStorageId());
+            if (checkPathExistence(dataStorage.getId(), sampleSheetFilePath)) {
+                final UpdateDataStorageItemVO sampleSheetItem = new UpdateDataStorageItemVO();
+                sampleSheetItem.setPath(sampleSheetFilePath);
+                sampleSheetItem.setType(DataStorageItemType.File);
+                storageManager.deleteDataStorageItems(
+                        dataFolderPath.getDataStorageId(),
+                        Collections.singletonList(sampleSheetItem),
+                        dataStorage.isVersioningEnabled()
+                );
+            }
         }
     }
 
@@ -210,8 +202,8 @@ public class NgsPreprocessingManager {
 
     private MetadataEntity fetchMachineRunMetadataEntity(final DataStorageLink dataFolderPath,
                                                          final Long machineRunId) {
-        final String machineRunMetadataClass = preferenceManager.getStringPreference(
-                SystemPreferences.PREPROCESSING_MACHINE_RUN_CLASS.getKey());
+        final String machineRunMetadataClass = preferenceManager.getPreference(
+                SystemPreferences.PREPROCESSING_MACHINE_RUN_CLASS);
 
         final MetadataEntity machineRunMetadataEntity = metadataEntityManager.load(machineRunId);
         Assert.notNull(machineRunMetadataEntity,
@@ -232,14 +224,14 @@ public class NgsPreprocessingManager {
     }
 
     private DataStorageLink fetchDataFolder(final MetadataEntry metadata) {
-        final String dataFolderMetadataKey = preferenceManager.getStringPreference(
-                SystemPreferences.PREPROCESSING_DATA_FOLDER.getKey());
+        final String dataFolderMetadataKey = preferenceManager.getPreference(
+                SystemPreferences.PREPROCESSING_DATA_FOLDER);
         final PipeConfValue dataPath = metadata.getData().get(dataFolderMetadataKey);
         Assert.notNull(dataPath,
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA,
                         dataFolderMetadataKey)
         );
-        storageManager.analyzePaths(Collections.singletonList(dataPath));
+        storageManager.analyzePathsV2(Collections.singletonList(dataPath));
 
         return Optional.ofNullable(dataPath.getDataStorageLinks())
                 .flatMap(sl -> sl.stream().findFirst())
@@ -256,28 +248,24 @@ public class NgsPreprocessingManager {
                                 MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_HAS_NO_METADATA,
                                 folder.getId())));
 
-        final Pair<String, String> projectIndicator =
-                fetchProjectIndicatorPair(SystemPreferences.UI_PROJECT_INDICATOR.getKey());
-
-        PipeConfValue projectAttribute = folderMetadata.getData().get(projectIndicator.getFirst());
-        Assert.state(projectAttribute != null
-                        && projectAttribute.getValue().equals(projectIndicator.getSecond()),
-                messageHelper.getMessage(
-                        MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA,
-                        projectIndicator
-                ));
-
-        final Pair<String, String> projectTypeIndicator =
-                fetchProjectIndicatorPair(SystemPreferences.UI_NGS_PROJECT_INDICATOR.getKey());
-        PipeConfValue projectTypeAttribute = folderMetadata.getData().get(projectTypeIndicator.getFirst());
-        Assert.state(projectTypeAttribute != null
-                        && projectTypeAttribute.getValue().equals(projectTypeIndicator.getSecond()),
-                messageHelper.getMessage(
-                        MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA,
-                        projectTypeIndicator
-                ));
+        checkFolderAttribute(preferenceManager.getPreference(SystemPreferences.UI_PROJECT_INDICATOR), folderMetadata);
+        checkFolderAttribute(
+                preferenceManager.getPreference(SystemPreferences.UI_NGS_PROJECT_INDICATOR), folderMetadata);
 
         return folderMetadata;
+    }
+
+    private void checkFolderAttribute(final String attribute, final MetadataEntry folderMetadata) {
+        final Set<Pair<String, String>> projectIndicators = SystemPreferenceUtils.parseProjectIndicator(attribute);
+        projectIndicators.forEach(indicator -> {
+            final PipeConfValue projectAttribute = folderMetadata.getData().get(indicator.getKey());
+            Assert.state(projectAttribute != null
+                            && projectAttribute.getValue().equals(indicator.getValue()),
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA,
+                            projectIndicators
+                    ));
+        });
     }
 
     private List<MetadataEntityVO> mapSampleSheetToMetadataEntities(final Long folderId, final SampleSheet sampleSheet,
@@ -288,10 +276,10 @@ public class NgsPreprocessingManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND));
         final int laneIndex = dataHeader.indexOf(SampleSheetParser.LANE_COLUMN);
 
-        List<MetadataEntityVO> result = new ArrayList<>();
+        final List<MetadataEntityVO> result = new ArrayList<>();
         for (int i = 0; i < sampleSheet.getDataLines().size(); i++) {
-            String l = sampleSheet.getDataLines().get(i);
-            final List<String> fields = Arrays.asList(l.split(SampleSheetParser.SAMPLESHEET_DELIMETR));
+            final String l = sampleSheet.getDataLines().get(i);
+            final List<String> fields = Arrays.asList(l.split(SampleSheetParser.SAMPLESHEET_DELIMITER));
 
             final MetadataEntityVO entityVO = new MetadataEntityVO();
 
@@ -318,20 +306,6 @@ public class NgsPreprocessingManager {
         }
 
         return result;
-    }
-
-    private Pair<String, String> fetchProjectIndicatorPair(final String preferenceKey) {
-        final String projectIndicator = preferenceManager.getStringPreference(preferenceKey);
-
-        Assert.state(StringUtils.isNotBlank(projectIndicator) && projectIndicator.matches(".+=.+"),
-                messageHelper.getMessage(MessageConstants.ERROR_PREFERENCE_VALUE_INVALID,
-                        preferenceKey, projectIndicator));
-
-        final String[] projectIndicatorKeyValue = projectIndicator.split(TAG_KEY_VALUE_DELIMITER);
-        Assert.state(projectIndicatorKeyValue.length == 2,
-                messageHelper.getMessage(MessageConstants.ERROR_PREFERENCE_VALUE_INVALID,
-                        preferenceKey, projectIndicator));
-        return Pair.of(projectIndicatorKeyValue[0], projectIndicatorKeyValue[1]);
     }
 
     private boolean checkPathExistence(final Long dataStorageId, final String path) {

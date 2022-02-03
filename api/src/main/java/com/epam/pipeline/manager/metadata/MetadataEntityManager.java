@@ -111,6 +111,14 @@ public class MetadataEntityManager implements SecuredEntityManager {
         return metadataClass;
     }
 
+    public MetadataClass getOrCreate(final String name) {
+        final MetadataClass metadataClass = metadataClassDao.loadMetadataClass(name);
+        if (metadataClass == null) {
+            return createMetadataClass(name);
+        }
+        return metadataClass;
+    }
+
     public MetadataClass loadClass(Long id) {
         MetadataClass metadataClass = metadataClassDao.loadMetadataClass(id);
         Assert.notNull(metadataClass,

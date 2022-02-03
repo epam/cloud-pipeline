@@ -17,6 +17,8 @@
 package com.epam.pipeline.manager.preprocessing;
 
 import com.epam.pipeline.entity.samplesheet.SampleSheet;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.data.util.Pair;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -35,7 +37,9 @@ import java.util.stream.Collectors;
  * This class parses provided content regarding to sample sheet description:
  * https://www.illumina.com/content/dam/illumina-marketing/documents/products/technotes/sequencing-sheet-format-specifications-technical-note-970-2017-004.pdf
  * */
-public class SampleSheetParser {
+@SuppressWarnings({"LineLength", "HideUtilityClassConstructor"})
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class SampleSheetParser {
 
     public static final String SAMPLE_ID_COLUMN = "Sample_ID";
     public static final String LANE_COLUMN = "Lane";
@@ -50,11 +54,11 @@ public class SampleSheetParser {
     public static final int SETTINGS_SECTION_NUMBER = 4;
     public static final String DATA_SECTION = "[Data]";
     public static final int DATA_SECTION_NUMBER = 5;
-    public static final String SAMPLESHEET_DELIMETR = ",";
+    public static final String SAMPLESHEET_DELIMITER = ",";
     public static final int SECTION_DEFAULT_VALUE = 0;
 
     public static SampleSheet parseSampleSheet(final byte[] content) {
-        try(final BufferedReader reader = new BufferedReader(new InputStreamReader(
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new ByteArrayInputStream(content)))) {
             final SampleSheet.SampleSheetBuilder sampleSheetBuilder = SampleSheet.builder();
             int section = SECTION_DEFAULT_VALUE;
@@ -82,6 +86,7 @@ public class SampleSheetParser {
                             break;
                         case DATA_SECTION_NUMBER:
                             throw new IllegalStateException("Data section should be last one!");
+                        default:
                     }
                     section = newSection;
                     lineStorage.clear();
@@ -108,7 +113,7 @@ public class SampleSheetParser {
     private static List<String> parseDataHeader(final List<String> lines) {
         Assert.state(lines.size() > 1, "No data lines in sample sheet!");
         String dataHeaderLine = lines.stream().findFirst().orElseThrow(
-                () -> new IllegalStateException("No data lines in sample sheet!"));
+            () -> new IllegalStateException("No data lines in sample sheet!"));
         return Arrays.asList(dataHeaderLine.split(","));
     }
 
@@ -118,7 +123,7 @@ public class SampleSheetParser {
 
     private static Map<String, String> parseMapLines(final List<String> lines) {
         return lines.stream().map(l -> {
-            String[] firstSecond = l.split(SAMPLESHEET_DELIMETR);
+            String[] firstSecond = l.split(SAMPLESHEET_DELIMITER);
             return Pair.of(firstSecond[0], firstSecond[1]);
         }).collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
     }

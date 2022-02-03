@@ -16,13 +16,14 @@
 
 package com.epam.pipeline.controller.vo.preprocessing;
 
-import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Value
-@Builder
+@Data
+@NoArgsConstructor
 public class SampleSheetRegistrationVO {
-    Long folderId;
-    Long machineRunId;
-    byte[] content;
+    private Long folderId;
+    private Long machineRunId;
+    private boolean overwriteContent;
+    private byte[] content;
 }
