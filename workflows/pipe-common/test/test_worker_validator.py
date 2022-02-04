@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from mock import Mock, MagicMock
 
 from scripts.autoscale_sge import GridEngineWorkerValidator, MemoryHostStorage, GridEngineJob
 from utils import assert_first_argument_contained, assert_first_argument_not_contained
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 HOST1 = 'HOST-1'
 HOST2 = 'HOST-2'
@@ -47,7 +51,7 @@ def setup_function():
 def test_stopping_hosts_that_are_invalid_in_grid_engine():
     worker_validator.validate_hosts()
 
-    assert [HOST1, HOST3] == host_storage.load_hosts()
+    assert sorted([HOST1, HOST3]) == sorted(host_storage.load_hosts())
 
 
 def test_stopping_invalid_worker_pipeline():
@@ -59,7 +63,7 @@ def test_stopping_invalid_worker_pipeline():
 
 
 def test_force_killing_invalid_host_jobs():
-    jobs = [GridEngineJob(id=1, name='', user='', state='', datetime='', hosts=[HOST2])]
+    jobs = [GridEngineJob(id='1', root_id=1, name='', user='', state='', datetime='', hosts=[HOST2])]
     grid_engine.get_jobs = MagicMock(return_value=jobs)
 
     worker_validator.validate_hosts()

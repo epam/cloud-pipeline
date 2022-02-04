@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime, timedelta
+import logging
 
+from datetime import datetime, timedelta
 from mock import MagicMock, Mock
 
 from scripts.autoscale_sge import GridEngineAutoscaler, GridEngineJob, GridEngineJobState, Clock, MemoryHostStorage
+
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s [%(threadName)s] [%(levelname)s] %(message)s')
 
 MASTER_HOST = 'pipeline-1000'
 ADDITIONAL_HOST = 'pipeline-1001'
@@ -24,18 +27,21 @@ ADDITIONAL_HOST = 'pipeline-1001'
 cmd_executor = Mock()
 grid_engine = Mock()
 host_storage = MemoryHostStorage()
+submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
 scale_up_timeout = 30
 scale_down_timeout = 30
+idle_timeout = 30
 max_additional_hosts = 2
 clock = Clock()
 autoscaler = GridEngineAutoscaler(grid_engine=grid_engine,
                                   cmd_executor=cmd_executor,
-                                  scale_up_handler=None,
+                                  scale_up_orchestrator=None,
                                   scale_down_handler=None,
                                   host_storage=host_storage,
                                   scale_up_timeout=scale_up_timeout,
                                   scale_down_timeout=scale_down_timeout,
                                   max_additional_hosts=max_additional_hosts,
+                                  idle_timeout=idle_timeout,
                                   clock=clock)
 
 
@@ -44,13 +50,16 @@ def setup_function():
     autoscaler.host_storage.clear()
     autoscaler.host_storage.add_host(ADDITIONAL_HOST)
     grid_engine.get_host_to_scale_down = MagicMock(return_value=ADDITIONAL_HOST)
+    host_storage.get_hosts_activity = MagicMock(return_value={
+        ADDITIONAL_HOST: submit_datetime + timedelta(seconds=scale_down_timeout) - timedelta(seconds=idle_timeout)
+    })
 
 
 def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -67,10 +76,10 @@ def test_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout():
 
 
 def test_not_scale_down_if_all_jobs_are_running_for_less_than_scale_down_timeout():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -87,10 +96,10 @@ def test_not_scale_down_if_all_jobs_are_running_for_less_than_scale_down_timeout
 
 
 def test_not_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout_and_additional_host_is_active():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -107,10 +116,10 @@ def test_not_scale_down_if_all_jobs_are_running_for_more_than_scale_down_timeout
 
 
 def test_that_scale_down_only_stops_inactive_additional_hosts():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -126,7 +135,6 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
 
     for i in range(0, len(inactive_hosts) * 2):
         grid_engine.get_host_to_scale_down = MagicMock(return_value=inactive_hosts[i % 2])
-        print inactive_hosts[i % 2]
         autoscaler.scale()
 
     for inactive_host in inactive_hosts:
@@ -138,10 +146,10 @@ def test_that_scale_down_only_stops_inactive_additional_hosts():
 
 
 def test_that_deadlock_can_be_resolved():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.PENDING,
@@ -164,10 +172,10 @@ def test_that_deadlock_can_be_resolved():
 
 
 def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale_down_timeout():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -195,10 +203,10 @@ def test_scale_down_if_there_are_no_pending_and_running_jobs_for_more_than_scale
 
 
 def test_not_scale_down_if_there_are_pending_jobs_and_running_jobs():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
@@ -206,7 +214,8 @@ def test_not_scale_down_if_there_are_pending_jobs_and_running_jobs():
             hosts=[MASTER_HOST]
         ),
         GridEngineJob(
-            id=2,
+            id='2',
+            root_id=2,
             name='name2',
             user='user',
             state=GridEngineJobState.PENDING,
@@ -222,10 +231,10 @@ def test_not_scale_down_if_there_are_pending_jobs_and_running_jobs():
 
 
 def test_not_scale_down_if_there_are_pending_jobs_and_no_running_jobs_yet():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.PENDING,
@@ -241,10 +250,10 @@ def test_not_scale_down_if_there_are_pending_jobs_and_no_running_jobs_yet():
 
 
 def test_host_is_not_removed_from_storage_if_scaling_down_is_aborted():
-    submit_datetime = datetime(2018, 12, 21, 11, 00, 00)
     jobs = [
         GridEngineJob(
-            id=1,
+            id='1',
+            root_id=1,
             name='name1',
             user='user',
             state=GridEngineJobState.RUNNING,
