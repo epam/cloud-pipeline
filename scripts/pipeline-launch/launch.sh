@@ -1475,6 +1475,21 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
             echo
 
             [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+
+            ######################################################
+            echo "Checking if any data is defined by the config files and shall be localized"
+            echo "-"
+            ######################################################
+            localize_inputs_from_files "${LOCALIZATION_TASK_NAME}"
+            if [ $? -ne 0 ]; then
+                  echo "Failed to localize data from the config files"
+                  if [ "$CP_LOCALIZE_FROM_FILES_KEEP_JON_ON_FAILURE" != "true" ]; then
+                        exit 1
+                  else
+                        echo "--> It is requested to continue running on config files based localization failure"
+                  fi
+            fi
+            echo
       fi
 fi
 echo "------"
