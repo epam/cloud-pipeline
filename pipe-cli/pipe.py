@@ -191,7 +191,8 @@ def resources_cleaning(func, ctx, *args, **kwargs):
 
     Removes temporary directories which are not locked by :func:`frozen_locking` decorator.
     """
-    if ctx.params.get('noclean'):
+    noclean = (os.getenv('CP_NOCLEAN', 'false').lower().strip() == 'true') or ctx.params.get('noclean') or False
+    if noclean:
         return ctx.invoke(func, *args, **kwargs)
     try:
         CleanOperationsManager().clean(quiet=ctx.params.get('quiet'))
@@ -205,7 +206,8 @@ def frozen_locking(func, ctx, *args, **kwargs):
     """
     Enables temporary resources directory locking in a decorating click command.
     """
-    if not is_frozen() or __bundle_info__['bundle_type'] != 'one-file':
+    nolock = (os.getenv('CP_NOLOCK', 'false').lower().strip() == 'true') or ctx.params.get('nolock') or False
+    if nolock or not is_frozen() or __bundle_info__['bundle_type'] != 'one-file':
         return ctx.invoke(func, *args, **kwargs)
     LockOperationsManager().execute(Config.get_base_source_dir(),
                                     lambda: ctx.invoke(func, *args, **kwargs))
