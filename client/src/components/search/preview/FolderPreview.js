@@ -218,7 +218,7 @@ export default class FolderPreview extends React.Component {
     }
 
     const highlights = renderHighlights(this.props.item);
-    const attributes = renderAttributes(this.folderMetadataTags, true);
+    const attributes = renderAttributes(this.folderMetadataTags, {tags: true});
     const items = this.renderItems();
 
     return (

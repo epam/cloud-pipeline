@@ -160,6 +160,12 @@ export default `
 @THEME .cp-link.cp-danger:focus {
   color: lighten(@color-red, 5%);
 }
+@THEME .cp-bordered {
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-outline-bordered {
+  outline: 1px solid @panel-border-color;
+}
 @THEME .cp-divider.top,
 @THEME .cp-divider.horizontal {
   border-top: 1px solid @panel-border-color;
@@ -275,6 +281,14 @@ export default `
 @THEME .ant-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
+}
+@THEME .app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+@THEME .app-background:not(.no-image) {
   background-image: @background-image;
   background-size: cover;
 }
@@ -1455,6 +1469,29 @@ export default `
 }
 @THEME .cp-close-button:hover {
   color: @application-color;
+}
+@THEME .cp-timepoint-button {
+  background-color: fade(@primary-color, 40%);
+  border: 1px solid @primary-color;
+}
+@THEME .cp-timepoint-button-active {
+  background-color: fade(@color-warning, 40%);
+  border: 1px solid @color-warning;
+}
+@THEME .cp-dark-background {
+  background-color: @application-dark-background-color;
+}
+@THEME .cp-hcs-zoom-button {
+  cursor: pointer;
+  color: @application-color;
+  transition: all 100ms ease;
+}
+@THEME .cp-hcs-zoom-button:not(.cp-disabled):hover {
+  color: @primary-hover-color;
+}
+@THEME .cp-hcs-zoom-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
 }
 
 @THEME .cp-panel {

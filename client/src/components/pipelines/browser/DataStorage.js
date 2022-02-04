@@ -93,6 +93,7 @@ import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../special/sample-sheet/utilities';
+import fetchHCSInfo from '../../special/hcs-image/utilities/fetch-hcs-info';
 
 const PAGE_SIZE = 40;
 
@@ -1041,7 +1042,7 @@ export default class DataStorage extends React.Component {
       .split('.')
       .pop()
       .toLowerCase();
-    if (extension === 'vsi' || extension === 'mrxs') {
+    if (extension === 'vsi' || extension === 'mrxs' || extension === 'hcs') {
       return (
         <Row
           key="preview body"
@@ -1081,7 +1082,7 @@ export default class DataStorage extends React.Component {
     this.setState({previewModal: null});
   };
 
-  checkPreviewAvailability = (file) => {
+  checkWsiPreviewAvailability = (file) => {
     if (!file) {
       return;
     }
@@ -1105,6 +1106,34 @@ export default class DataStorage extends React.Component {
           });
       });
     }
+  };
+
+  checkHcsPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    const {storageId} = this.props;
+    this.setState({
+      previewPending: true
+    }, async () => {
+      let error;
+      try {
+        const info = await fetchHCSInfo({path: file.path, storageId});
+        if (info && info.sequences && info.sequences.length) {
+          const [sequence] = info.sequences;
+          await sequence.fetch();
+        } else {
+          throw new Error('HCS preview not available');
+        }
+      } catch (e) {
+        error = true;
+      } finally {
+        this.setState({
+          previewPending: false,
+          previewAvailable: !error
+        });
+      }
+    });
   };
 
   getStorageItemsTable = () => {
@@ -1193,6 +1222,9 @@ export default class DataStorage extends React.Component {
           vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
             i.path.toLowerCase().endsWith('.vsi') ||
             i.path.toLowerCase().endsWith('.mrxs')
+          ),
+          hcs: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
+            i.path.toLowerCase().endsWith('.hcs')
           )
         };
       }));
@@ -1205,7 +1237,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew || item.vsi) {
+      if (item.miew || item.vsi || item.hcs) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -1301,6 +1333,17 @@ export default class DataStorage extends React.Component {
             </div>
           );
         }
+        if (item.hcs) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openPreviewModal(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/hcs.png" />
+            </div>
+          );
+        }
         return apps;
       }
     };
@@ -1392,8 +1435,15 @@ export default class DataStorage extends React.Component {
         selectedFile: item,
         metadata: true
       }, () => {
-        if (extension === 'vsi' || extension === 'mrxs') {
-          this.checkPreviewAvailability(item);
+        switch (extension) {
+          case 'vsi':
+          case 'mrxs':
+            this.checkWsiPreviewAvailability(item);
+            break;
+          case 'hcs':
+            this.checkHcsPreviewAvailability(item);
+            break;
+          default: return false;
         }
       });
     }

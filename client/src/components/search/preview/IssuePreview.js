@@ -132,15 +132,17 @@ export default class IssuePreview extends React.Component {
 
     const labels = this.props.issueInfo.value.labels;
 
-    return <Row type="flex" className={styles.attributes}>
-      {
-        labels.map((label, key) => (
-          <div key={key} className={styles.attribute}>
-            <div className={styles.attributeValue}>{label}</div>
-          </div>
-        ))
-      }
-    </Row>;
+    return (
+      <div className={styles.attributes}>
+        {
+          labels.map((label, key) => (
+            <div key={key} className={styles.attribute}>
+              <div className={styles.attributeValue}>{label}</div>
+            </div>
+          ))
+        }
+      </div>
+    );
   };
 
   commentTextPreview = (text, style = {}) => {

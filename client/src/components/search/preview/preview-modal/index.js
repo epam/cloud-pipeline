@@ -24,7 +24,8 @@ import styles from './preview-modal.css';
 class PreviewModal extends React.Component {
   state = {
     maximized: false,
-    maximizedAvailable: false
+    maximizedAvailable: false,
+    requireMaximumSpace: false
   };
 
   componentDidUpdate (prevProps) {
@@ -42,10 +43,12 @@ class PreviewModal extends React.Component {
 
   onPreviewLoaded = (options = {}) => {
     const {
-      maximizedAvailable = false
+      maximizedAvailable = false,
+      requireMaximumSpace = false
     } = options;
     this.setState({
-      maximizedAvailable
+      maximizedAvailable,
+      requireMaximumSpace
     });
   };
 
@@ -61,11 +64,19 @@ class PreviewModal extends React.Component {
     if (!preview) {
       return null;
     }
-    const {maximized, maximizedAvailable} = this.state;
+    const {
+      maximized,
+      maximizedAvailable,
+      requireMaximumSpace
+    } = this.state;
     const handleClosePreview = (event) => {
       if (event && event.target === event.currentTarget) {
         onClose && onClose();
-        this.setState({maximized: false, maximizedAvailable: false});
+        this.setState({
+          maximized: false,
+          maximizedAvailable: false,
+          requireMaximumSpace: false
+        });
       }
     };
     return (
@@ -74,7 +85,15 @@ class PreviewModal extends React.Component {
         onClick={handleClosePreview}
       >
         <div
-          className={classNames(styles.preview, 'cp-search-preview')}
+          className={
+            classNames(
+              styles.preview,
+              {
+                [styles.maximumSpace]: requireMaximumSpace
+              },
+              'cp-search-preview'
+            )
+          }
         >
           <Preview
             item={preview}

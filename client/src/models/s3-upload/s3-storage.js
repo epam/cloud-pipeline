@@ -83,7 +83,7 @@ class S3Storage {
   }
 
   get prefix () {
-    return this._prefix;
+    return this._prefix || '';
   }
 
   set prefix (value) {

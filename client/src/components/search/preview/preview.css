@@ -26,6 +26,11 @@
   padding: 20px 10px;
 }
 
+.header.shrinked-header {
+  padding: 5px;
+  font-size: medium;
+}
+
 .header .title {
   white-space: nowrap;
   overflow-x: hidden;
@@ -74,12 +79,28 @@
   padding: 10px;
 }
 
+.attributes {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.attributes.column {
+  flex-direction: column;
+  padding: 5px;
+}
+
 .attribute {
   display: flex;
   flex-direction: column;
   margin-right: 5px;
   margin-bottom: 5px;
   max-width: 33%;
+}
+
+.attributes.column .attribute {
+  width: 100%;
+  max-width: 100%;
 }
 
 .attribute-name,
@@ -96,6 +117,7 @@
   cursor: default;
 }
 
+.attributes.column .attribute-value,
 .attribute-value:hover {
   overflow-x: visible;
   white-space: normal;

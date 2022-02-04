@@ -41,6 +41,12 @@
   position: fixed;
 }
 
+.preview.maximum-space {
+  max-width: 80vw;
+  max-height: 100vh;
+  width: 80vw;
+}
+
 .preview .preview-button {
   position: absolute;
   right: 5px;
