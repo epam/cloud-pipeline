@@ -278,6 +278,14 @@ export default `
   background-image: @background-image;
   background-size: cover;
 }
+@THEME .app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+@THEME .app-background:not(.no-image) {
+  background-image: @background-image;
+  background-size: cover;
+}
 @THEME h1,
 @THEME h2,
 @THEME h3,

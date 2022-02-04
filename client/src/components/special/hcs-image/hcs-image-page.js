@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,25 @@
  *  limitations under the License.
  */
 
-export default {
-  dashboard: 'dashboard',
-  library: 'library',
-  cluster: 'cluster',
-  tools: 'tools',
-  runs: 'runs',
-  run: 'run',
-  settings: 'settings',
-  search: 'search',
-  billing: 'billing',
-  miew: 'miew',
-  wsi: 'wsi',
-  hcs: 'hcs'
-};
+import React from 'react';
+import HcsImage from './hcs-image';
+import classNames from 'classnames';
+import styles from './hcs-image.css';
+
+class HcsImagePage extends React.Component {
+  render () {
+    return (
+      <HcsImage
+        className={
+          classNames(
+            styles.hcsImagePage,
+            'app-background',
+            'no-image'
+          )
+        }
+      />
+    );
+  }
+}
+
+export default HcsImagePage;

@@ -97,7 +97,11 @@ export default class App extends Component {
     const isBillingPrivilegedUser = authenticatedUserInfo.loaded &&
       roleModel.isManager.billing(this);
     const activeTabPath = uiNavigation.getActivePage(this.props.router);
-    const isExternalApp = [Pages.miew, Pages.wsi].indexOf(activeTabPath) >= 0;
+    const isExternalApp = [
+      Pages.miew,
+      Pages.wsi,
+      Pages.hcs
+    ].indexOf(activeTabPath) >= 0;
     const isSearch = /[\\/]+search\/advanced/i.test(this.props.router.location.pathname);
     let content;
     if (isExternalApp) {
