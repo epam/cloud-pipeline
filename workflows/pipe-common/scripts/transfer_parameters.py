@@ -39,6 +39,25 @@ CLOUD_STORAGE_PATHS = ['cp://', 's3://', 'az://', 'gs://']
 TRANSFER_ATTEMPTS = 3
 
 
+class ParallelType:
+    Nothing = 1
+    Threaded = 2
+    Multiprocessing = 3
+
+    @classmethod
+    def current(cls):
+        if 'CP_PARALLEL_TRANSFER' in os.environ:
+            _mode = os.getenv('CP_PARALLEL_TRANSFER_MODE')
+            if _mode == 'multiprocessing':
+                return ParallelType.Multiprocessing
+            elif _mode == 'threaded':
+                return ParallelType.Threaded
+            else:
+                # Default value is a "multiprocessing", if CP_PARALLEL_TRANSFER is set at all
+                return ParallelType.Multiprocessing
+        else:
+            return ParallelType.Nothing
+
 class File:
 
     def __init__(self, filename, size):
@@ -75,8 +94,11 @@ class Cluster:
 
     @classmethod
     def build_cluster(cls, api, task_name):
-        if 'CP_PARALLEL_TRANSFER' not in os.environ:
+        if ParallelType.current() == ParallelType.Nothing:
             Logger.info('Parallel transfer is not enabled.', task_name=task_name)
+            return None
+        if ParallelType.current() == ParallelType.Threaded:
+            Logger.info('Parallel transfer is enabled using "pipe" threads.', task_name=task_name)
             return None
         slots_per_node = cls.get_slots_per_node()
         local_cluster = cls.build_local_cluster(slots_per_node)
@@ -170,12 +192,13 @@ class ParameterType(object):
 
 class LocalizedPath:
 
-    def __init__(self, path, cloud_path, local_path, type, prefix=None):
+    def __init__(self, path, cloud_path, local_path, type, prefix=None, suffix=None):
         self.path = path
         self.cloud_path = cloud_path
         self.local_path = local_path
         self.type = type
         self.prefix = prefix
+        self.suffix = suffix
 
 
 class RemoteLocation:
@@ -260,7 +283,10 @@ class InputDataTask:
                             for location in remote_locations:
                                 env_name = location.env_name
                                 original_value = location.original_value
-                                localized_value = location.delimiter.join([path.local_path for path in location.paths])
+                                localized_value = location.delimiter.join(
+                                    [os.path.join(path.local_path, path.suffix) if path.suffix else path.local_path 
+                                    for path in location.paths]
+                                )
                                 report.write('export {}="{}"\n'.format(env_name, localized_value))
                                 report.write('export {}="{}"\n'.format(env_name + '_ORIGINAL', original_value))
                 else:
@@ -377,6 +403,12 @@ class InputDataTask:
         if input_type == ParameterType.OUTPUT_PARAMETER:
             local_path = self.analysis_dir
         else:
+            path_suffix = None
+            if path.endswith('*'):
+                Logger.info('Path {} ends with a wildcard. Whole parent directory will be downloaded.'.format(path),
+                            task_name=self.task_name)
+                path_suffix = os.path.basename(path)[:-1]
+                path = os.path.dirname(path)
             remote = urlparse.urlparse(path)
             relative_path = path.replace('%s://%s' % (remote.scheme, remote.netloc), '')
             local_dir = self.get_local_dir(input_type)
@@ -384,7 +416,7 @@ class InputDataTask:
         Logger.info('Found %s %s path %s. It will be localized to %s.' % (path_type.lower(), input_type, path,
                                                                           local_path),
                     task_name=self.task_name)
-        return LocalizedPath(path, path, local_path, path_type)
+        return LocalizedPath(path, path, local_path, path_type, suffix=path_suffix)
 
     def get_local_dir(self, type):
         return self.input_dir if type == ParameterType.INPUT_PARAMETER else self.common_dir
@@ -429,10 +461,11 @@ class InputDataTask:
 
     def perform_local_transfer(self, source, destination):
         Logger.info('Uploading files from {} to {} using local pipe'.format(source, destination), self.task_name)
+        threads = Cluster.get_slots_per_node() if ParallelType.current() == ParallelType.Threaded else None
         if self.is_upload or self.rules is None:
-            S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS)
+            S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS, threads=threads)
         else:
-            S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules)
+            S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules, threads=threads)
 
     def perform_cluster_file_transfer(self, files, cluster, rules=None):
         Logger.info('Uploading {} files using cluster'.format(len(files)), self.task_name)
