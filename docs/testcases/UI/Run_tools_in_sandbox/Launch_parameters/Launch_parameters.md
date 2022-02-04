@@ -5,6 +5,7 @@
 | [**223**](223.md) | Check the launch system parameters preference (CP_FSBROWSER_ENABLED) |
 | [**2234**](2234.md) | "Custom" capabilities implementation |
 | [**2295**](2295.md) | "Custom" capabilities with configured job parameters |
+| [**2319**](2319.md) | Check automatically blocking users, based on the AD info |
 | [**2323_1**](2323/2323_1.md) | Check that "Capabilities" for Tools can depend on the docker image OS |
 | [**2323_2**](2323/2323_2.md) | Check that "Capabilities" for Pipelines and Configurations can depend on the docker image OS |
 | [**2323_3**](2323/2323_3.md) | Check custom "Capabilities" for all OS |
