@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import HcsControlGrid from './hcs-control-grid';
 
 class HcsImage extends React.PureComponent {
   componentDidMount () {
@@ -41,9 +42,39 @@ class HcsImage extends React.PureComponent {
             className
           )
         }
-        style={style}
+        style={Object.assign({
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh'
+        }, style)}
       >
-        HCS Image Preview
+        <div>
+          HCS Image Preview header
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            height: '100%'
+          }}
+        >
+          <div style={{flex: '1 0 auto'}}>
+            HCS Image Preview
+          </div>
+          <div
+            style={{
+              width: '30vw',
+              height: '100%',
+              borderLeft: '1px solid #dfdfdf'
+            }}
+          >
+            HCS Image Preview controls
+            <HcsControlGrid
+              style={{width: '100%', height: '300px'}}
+              rows={32}
+              columns={48}
+            />
+          </div>
+        </div>
       </div>
     );
   }
