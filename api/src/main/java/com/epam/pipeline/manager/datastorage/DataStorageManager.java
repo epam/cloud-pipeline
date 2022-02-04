@@ -602,7 +602,7 @@ public class DataStorageManager implements SecuredEntityManager {
     /**
      * Tries to match value from values as path to an item in some datastorage.
      * For this purpose it loads all storage -> could be slow and consuming
-     * See method analyzePathV2, to choose what sites you best
+     * See method analyzePathsV2, to choose what fits you best
      * */
     public void analyzePaths(List<PipeConfValue> values) {
         if (CollectionUtils.isEmpty(values)) {
@@ -629,7 +629,7 @@ public class DataStorageManager implements SecuredEntityManager {
      * Performance could degrade when there is a lot of values and paths in those values because of many
      * independent calls to database to load storage by prefix.
      * But works pretty well for semi-individual path values.
-     * See method analyzePath, to choose what sites you best
+     * See method analyzePaths, to choose what fits you best
      * */
     public void analyzePathsV2(List<PipeConfValue> values) {
         if (CollectionUtils.isEmpty(values)) {
@@ -1244,10 +1244,12 @@ public class DataStorageManager implements SecuredEntityManager {
         List<DataStorageLink> links = new ArrayList<>();
         String paramDelimiter = paramValue.contains(",") ? "," : ";";
         for (String path : paramValue.split(paramDelimiter)) {
-            if (path.toLowerCase().trim().matches(providerMask)) {
-                path = path.replaceAll(DATA_STORAGE_PROVIDER_MASK, StringUtils.EMPTY);
+            if (!path.toLowerCase().trim().matches(providerMask)) {
+                log.warn("Data Storage path should start with storage mask: " + path + ", skipping.");
+                continue;
             }
-            final AbstractDataStorage dataStorage = loadByNameOrId(path);
+            final String pathWithOutStorageMask = path.replaceAll(DATA_STORAGE_PROVIDER_MASK, StringUtils.EMPTY);
+            final AbstractDataStorage dataStorage = loadByPathOrId(pathWithOutStorageMask);
             final String mask = dataStorage.getPathMask() + ProviderUtils.DELIMITER;
             links.add(constructDataStorageLink(path, dataStorage, mask));
         }
