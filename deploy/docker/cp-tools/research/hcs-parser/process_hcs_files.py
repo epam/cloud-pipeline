@@ -17,6 +17,7 @@ import json
 import os
 import multiprocessing
 import datetime
+import math
 import shutil
 import tempfile
 import time
@@ -34,6 +35,7 @@ HCS_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('HCS_ACTIVE_PROCESSING_TIMEOUT
 TAGS_PROCESSING_ONLY = os.getenv('HCS_PARSING_TAGS_ONLY', 'false') == 'true'
 FORCE_PROCESSING = os.getenv('HCS_FORCE_PROCESSING', 'false') == 'true'
 HCS_CLOUD_FILES_SCHEMA = os.getenv('HCS_CLOUD_FILES_SCHEMA', 's3')
+PLANE_COORDINATES_DELIMITER = os.getenv('HCS_CLOUD_FILES_SCHEMA', '_')
 
 HCS_PROCESSING_TASK_NAME = 'HCS processing'
 MEASUREMENT_INDEX_FILE_SUFFIX = '/Images/Index.xml'
@@ -42,6 +44,14 @@ UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 TAGS_MAPPING_RULE_DELIMITER = ','
 TAGS_MAPPING_KEYS_DELIMITER = '='
+
+
+def log_success(message):
+    log_info(message, status=TaskStatus.SUCCESS)
+
+
+def log_info(message, status=TaskStatus.RUNNING):
+    Logger.log_task_event(HCS_PROCESSING_TASK_NAME, message, status)
 
 
 class HcsParsingUtils:
@@ -152,6 +162,15 @@ class HcsProcessingDirsGenerator:
         return self.is_folder_content_modified_after(hcs_folder_root_path, stat_file_modification_date)
 
 
+class FieldDetails:
+    def __init__(self, well_column, well_row, ome_image_id, x, y):
+        self.well_column = int(well_column)
+        self.well_row = int(well_row)
+        self.ome_image_id = ome_image_id
+        self.x = float(x)
+        self.y = float(y)
+
+
 class HcsFileTagProcessor:
 
     CATEGORICAL_ATTRIBUTE = '/categoricalAttribute'
@@ -183,7 +202,7 @@ class HcsFileTagProcessor:
         return metadata_dict
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
-        Logger.log_task_event(HCS_PROCESSING_TASK_NAME, '[{}] {}'.format(self.hcs_img_path, message), status=status)
+        log_info('[{}] {}'.format(self.hcs_img_path, message), status=status)
 
     def process_tags(self):
         existing_attributes_dictionary = self.load_existing_attributes()
@@ -313,15 +332,16 @@ class HcsFileParser:
         self.stat_file_path = HcsParsingUtils.get_stat_file_name(self.hcs_img_path)
         self.tmp_stat_file_path = HcsParsingUtils.get_stat_active_file_name(self.hcs_img_path)
         self.tmp_local_dir = HcsParsingUtils.generate_local_service_directory(self.hcs_img_path)
+        self.well_size_dict = json.loads(os.getenv('HCS_PARSING_PLATE_DETAILS_DICT', '{}'))
+
+    def log_processing_info(self, message, status=TaskStatus.RUNNING):
+        Logger.log_task_event(HCS_PROCESSING_TASK_NAME, '[{}] {}'.format(self.hcs_root_dir, message), status=status)
 
     def generate_ome_xml_info_file(self):
         self.log_processing_info('Generating XML description')
         HcsParsingUtils.create_service_dir_if_not_exist(self.hcs_img_path)
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_SUFFIX
-        os.system('showinf -nopix -omexml-only "{}" > "{}"'.format(hcs_index_file_path, self.ome_xml_info_file_path))
-
-    def log_processing_info(self, message, status=TaskStatus.RUNNING):
-        Logger.log_task_event(HCS_PROCESSING_TASK_NAME, '[{}] {}'.format(self.hcs_root_dir, message), status=status)
+        self.generate_bioformats_ome_xml(hcs_index_file_path, self.ome_xml_info_file_path)
 
     def create_tmp_stat_file(self):
         self.write_dict_to_file(self.tmp_stat_file_path, {})
@@ -334,10 +354,9 @@ class HcsFileParser:
         with open(file_path, 'w') as output_file:
             output_file.write(json.dumps(dict, indent=4))
 
-    @staticmethod
-    def _extract_time_series_details(hcs_index_file_path):
+    def _extract_time_series_details(self, hcs_index_file_path):
         hcs_xml_info_tree = ET.parse(hcs_index_file_path).getroot()
-        hcs_schema_prefix = hcs_xml_info_tree.tag[:hcs_xml_info_tree.tag.rindex('}') + 1]
+        hcs_schema_prefix = self.extract_xml_schema(hcs_xml_info_tree)
         images_list = hcs_xml_info_tree.find(hcs_schema_prefix + 'Images')
         time_series_details = dict()
         for image in images_list.findall(hcs_schema_prefix + 'Image'):
@@ -353,13 +372,48 @@ class HcsFileParser:
 
     @staticmethod
     def _get_plate_configuration(xml_info_tree):
-        plate_details = xml_info_tree.find(OME_SCHEMA_PREFIX + 'Plate')
         plate_height = 1
         plate_width = 1
+        plate_details = HcsFileParser.extract_plate_from_ome_xml(xml_info_tree)
         if plate_details:
             plate_width = plate_details.get('Columns')
             plate_height = plate_details.get('Rows')
         return plate_width, plate_height
+
+    @staticmethod
+    def extract_xml_schema(xml_info_root):
+        full_schema = xml_info_root.tag
+        return full_schema[:full_schema.rindex('}') + 1]
+
+    @staticmethod
+    def build_cartesian_coords_key(x_coord, y_coord):
+        return PLANE_COORDINATES_DELIMITER.join([str(x_coord), str(y_coord)])
+
+    @staticmethod
+    def extract_plate_from_hcs_xml(hcs_xml_info_root):
+        hcs_schema_prefix = HcsFileParser.extract_xml_schema(hcs_xml_info_root)
+        plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
+        plate = plates_list.find(hcs_schema_prefix + 'Plate')
+        return plate
+
+    @staticmethod
+    def extract_plate_from_ome_xml(ome_xml_info_root):
+        ome_schema_prefix = HcsFileParser.extract_xml_schema(ome_xml_info_root)
+        ome_plate = ome_xml_info_root.find(ome_schema_prefix + 'Plate')
+        return ome_plate
+
+    @staticmethod
+    def extract_first_well_coordinates(hcs_xml_info_root):
+        well_x = 0
+        well_y = 0
+        hcs_schema_prefix = HcsFileParser.extract_xml_schema(hcs_xml_info_root)
+        hcs_wells = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
+        if hcs_wells:
+            first_well = hcs_wells.find(hcs_schema_prefix + 'Well')
+            if first_well:
+                well_x = int(first_well.find(hcs_schema_prefix + 'Col').text)
+                well_y = int(first_well.find(hcs_schema_prefix + 'Row').text)
+        return well_x, well_y
 
     def clear_tmp_stat_file(self):
         if os.path.exists(self.tmp_stat_file_path):
@@ -408,9 +462,6 @@ class HcsFileParser:
         self.create_tmp_stat_file()
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_SUFFIX
         time_series_details = self._extract_time_series_details(hcs_index_file_path)
-        if len(time_series_details) != 1:
-            self.log_processing_info('Only single sequence measurements are supported, for now, exiting...')
-            return 1
         self.generate_ome_xml_info_file()
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
         plate_width, plate_height = self._get_plate_configuration(xml_info_tree)
@@ -422,12 +473,18 @@ class HcsFileParser:
             self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
             return 1
         local_preview_dir = os.path.join(self.tmp_local_dir, 'preview')
+        hcs_local_index_file_path = get_path_without_trailing_delimiter(self.tmp_local_dir) \
+                                    + MEASUREMENT_INDEX_FILE_SUFFIX
         for sequence_id, timepoints in time_series_details.items():
+            self.log_processing_info('Processing sequence with id={}'.format(sequence_id))
+            sequence_index_file_path = self.extract_sequence_data(sequence_id, hcs_local_index_file_path)
             conversion_result = os.system('bash "{}" "{}" "{}" {}'.format(
-                self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, hcs_index_file_path, local_preview_dir, sequence_id))
+                self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_index_file_path, local_preview_dir, sequence_id))
             if conversion_result != 0:
                 self.log_processing_info('File processing was not successful...')
                 return 1
+            self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
+                                    self.build_wells_map(os.path.join(self.tmp_local_dir, sequence_id, 'Index.xml')))
         cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
                                           .format(local_preview_dir,
                                                   HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
@@ -436,6 +493,133 @@ class HcsFileParser:
             return 1
         self.create_stat_file()
         return 0
+
+    def extract_sequence_data(self, target_sequence_id, hcs_local_index_file_path):
+        hcs_xml_info_tree = ET.parse(hcs_local_index_file_path)
+        hcs_xml_info_root = hcs_xml_info_tree.getroot()
+        hcs_schema_prefix = self.extract_xml_schema(hcs_xml_info_root)
+        images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
+        sequence_data_local_dir = os.path.join(self.tmp_local_dir, target_sequence_id)
+        self._mkdir(sequence_data_local_dir)
+        src_images_dir = os.path.dirname(hcs_local_index_file_path)
+        sequence_image_ids = set()
+        for image in images_list.findall(hcs_schema_prefix + 'Image'):
+            sequence_id = image.find(hcs_schema_prefix + 'SequenceID').text
+            if sequence_id != target_sequence_id:
+                images_list.remove(image)
+            else:
+                sequence_image_ids.add(image.find(hcs_schema_prefix + 'id').text)
+                file_name = image.find(hcs_schema_prefix + 'URL').text
+                src_file_path = os.path.join(src_images_dir, file_name)
+                dest_file_path = os.path.join(sequence_data_local_dir, file_name)
+                shutil.move(src_file_path, dest_file_path)
+        sequence_wells = set()
+        wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
+        for well in wells_list.findall(hcs_schema_prefix + 'Well'):
+            well_images = well.findall(hcs_schema_prefix + 'Image')
+            exists_in_sequence = False
+            for image in well_images:
+                if image.get('id') in sequence_image_ids:
+                    exists_in_sequence = True
+                    sequence_wells.add(well.find(hcs_schema_prefix + 'id').text)
+                else:
+                    well.remove(image)
+            if not exists_in_sequence:
+                wells_list.remove(well)
+        plate = self.extract_plate_from_hcs_xml(hcs_xml_info_root)
+        for well in plate.findall(hcs_schema_prefix + 'Well'):
+            if well.get('id') not in sequence_wells:
+                plate.remove(well)
+        sequence_index_file_path = os.path.join(sequence_data_local_dir, 'Index.xml')
+        ET.register_namespace('', hcs_schema_prefix[1:-1])
+        hcs_xml_info_tree.write(sequence_index_file_path)
+        return sequence_index_file_path
+
+    def build_wells_map(self, hcs_index_file_path):
+        hcs_xml_info_root = ET.parse(hcs_index_file_path).getroot()
+
+        wells_x_padding, wells_y_padding = self.extract_first_well_coordinates(hcs_xml_info_root)
+        ome_xml_file_path = os.path.join(os.path.dirname(hcs_index_file_path), 'Index.ome.xml')
+        self.generate_bioformats_ome_xml(hcs_index_file_path, ome_xml_file_path)
+        ome_xml_info_root = ET.parse(ome_xml_file_path).getroot()
+        ome_plate = self.extract_plate_from_ome_xml(ome_xml_info_root)
+        ome_schema_prefix = self.extract_xml_schema(ome_xml_info_root)
+        measured_wells = self.find_measured_wells(ome_plate, ome_schema_prefix, wells_x_padding, wells_y_padding)
+
+        wells_mapping = dict()
+        is_well_round, well_size = self.extract_well_configuration(hcs_xml_info_root)
+        for well_key, fields_list in measured_wells.items():
+            wells_mapping[well_key] = self.build_well_details(fields_list, well_size, is_well_round)
+        return wells_mapping
+
+    def build_well_details(self, fields_list, well_size, is_well_round):
+        x_coords = set()
+        y_coords = set()
+        for field in fields_list:
+            x_coords.add(field.x)
+            y_coords.add(field.y)
+        x_coords = list(x_coords)
+        x_coords.sort()
+        y_coords = list(y_coords)
+        y_coords.sort()
+        if len(x_coords) > 1:
+            well_radius = well_size / 2
+            field_cell_width = x_coords[1] - x_coords[0]
+            well_viewer_radius = well_radius / field_cell_width
+            well_view_height = int(math.ceil(well_viewer_radius) * 2)
+            well_view_width = int(math.ceil(well_viewer_radius) * 2)
+            x_coord_padding = int(round((well_radius - x_coords[0]) / field_cell_width))
+            y_coord_padding = int(round((well_radius - y_coords[0]) / field_cell_width))
+        else:
+            well_viewer_radius = None
+            x_coord_padding = 0
+            y_coord_padding = 0
+            well_view_width = len(x_coords)
+            well_view_height = len(y_coords)
+        to_ome_mapping = dict()
+        for field in fields_list:
+            field_x_coord = x_coords.index(field.x) + x_coord_padding
+            field_y_coord = y_coords.index(field.y) + y_coord_padding
+            to_ome_mapping[self.build_cartesian_coords_key(field_x_coord, field_y_coord)] = field.ome_image_id
+        well_details = {
+            "width": well_view_width,
+            "height": well_view_height,
+            "round_radius": round(well_viewer_radius, 2) if is_well_round else None,
+            "to_ome_wells_mapping": to_ome_mapping
+        }
+        return well_details
+
+    def find_measured_wells(self, ome_plate, ome_schema_prefix, wells_x_padding, wells_y_padding):
+        measured_wells = {}
+        for well in ome_plate.findall(ome_schema_prefix + 'Well'):
+            well_x_coord = int(well.get('Column')) + wells_x_padding
+            well_y_coord = int(well.get('Row')) + wells_y_padding
+            well_fields = set()
+            for field in well.findall(ome_schema_prefix + 'WellSample'):
+                field_x_coord = field.get('PositionX')
+                field_y_coord = field.get('PositionY')
+                if field_x_coord is not None and field_y_coord is not None:
+                    ome_image_id = field.find(ome_schema_prefix + 'ImageRef').get('ID')
+                    well_fields.add(
+                        FieldDetails(well_x_coord, well_y_coord, ome_image_id, field_x_coord, field_y_coord))
+            if len(well_fields) > 0:
+                measured_wells[self.build_cartesian_coords_key(well_x_coord, well_y_coord)] = well_fields
+        return measured_wells
+
+    @staticmethod
+    def generate_bioformats_ome_xml(input_file, output_file):
+        exit_code = os.system('showinf -nopix -omexml-only "{}" > "{}"'.format(input_file, output_file))
+        if exit_code != 0:
+            raise RuntimeError('An error occurred during OME-XML generation [{}]'.format(input_file))
+
+    def extract_well_configuration(self, hcs_xml_info_root):
+        hcs_schema_prefix = self.extract_xml_schema(hcs_xml_info_root)
+        plate = self.extract_plate_from_hcs_xml(hcs_xml_info_root)
+        plate_type = plate.find(hcs_schema_prefix + 'PlateTypeName').text
+        well_configuration = self.well_size_dict[plate_type]
+        well_size = well_configuration['size']
+        is_well_round = True if 'is_round' not in well_configuration else well_configuration['is_round'] == 'false'
+        return is_well_round, well_size
 
     def try_process_tags(self, xml_info_tree):
         tags_processing_result = 0
@@ -450,14 +634,6 @@ class HcsFileParser:
         return tags_processing_result
 
 
-def log_success(message):
-    log_info(message, status=TaskStatus.SUCCESS)
-
-
-def log_info(message, status=TaskStatus.RUNNING):
-    Logger.log_task_event(HCS_PROCESSING_TASK_NAME, message, status)
-
-
 def try_process_hcs(hcs_root_dir):
     parser = None
     try:
@@ -468,7 +644,6 @@ def try_process_hcs(hcs_root_dir):
         log_info('An error occurred during [{}] parsing: {}'.format(hcs_root_dir, str(e)))
     finally:
         if parser:
-            pass
             parser.clear_tmp_stat_file()
             parser.clear_tmp_local_dir()
 
