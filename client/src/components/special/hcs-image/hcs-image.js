@@ -72,6 +72,7 @@ class HcsImage extends React.PureComponent {
               style={{width: '100%', height: '300px'}}
               rows={32}
               columns={48}
+              onClick={(element) => console.log(element)}
             />
           </div>
         </div>

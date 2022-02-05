@@ -21,7 +21,7 @@ const CANVAS_PADDING = 20;
 const ZOOM_TICK_PERCENT = 10 / 100;
 const CELL_DIAMETER_LIMITS = {
   min: 5,
-  max: 30
+  max: 50
 };
 const CTX_STYLE = {
   strokeStyle: '#595959',
@@ -29,9 +29,12 @@ const CTX_STYLE = {
 };
 
 class HcsControlGrid extends React.Component {
+  canvas;
+
   componentWillUnmount () {
     if (this.canvas) {
       this.canvas.removeEventListener('wheel', this.handleZoom);
+      this.canvas.removeEventListener('click', this.handleClick);
     }
   }
 
@@ -58,7 +61,36 @@ class HcsControlGrid extends React.Component {
   initializeCanvas = (canvas) => {
     this.canvas = canvas;
     this.canvas.addEventListener('wheel', this.handleZoom);
+    this.canvas.addEventListener('click', this.handleClick);
     this.draw();
+  };
+
+  getElementAtEvent = (event) => {
+    if (event && this.canvas) {
+      const rect = this.canvas.getBoundingClientRect();
+      const eventX = event.clientX - rect.left;
+      const eventY = event.clientY - rect.top;
+      if (
+        eventX < this.bounds.xFrom ||
+        eventX > this.bounds.xTo ||
+        eventY < this.bounds.yFrom ||
+        eventY > this.bounds.yTo
+      ) {
+        return null;
+      }
+      return {
+        column: Math.ceil((eventX - this.bounds.xFrom) / this.cellDiameter),
+        row: Math.ceil((eventY - this.bounds.yFrom) / this.cellDiameter)
+      };
+    }
+    return null;
+  };
+
+  handleClick = (event) => {
+    const {onClick} = this.props;
+    if (event && this.canvas) {
+      onClick && onClick(this.getElementAtEvent(event));
+    }
   };
 
   cleanUpCanvas = () => {
@@ -160,14 +192,14 @@ class HcsControlGrid extends React.Component {
           ref={this.initializeCanvas}
         />
       </div>
-
     );
   }
 }
 
 HcsControlGrid.propTypes = {
   rows: PropTypes.number,
-  columns: PropTypes.number
+  columns: PropTypes.number,
+  onClick: PropTypes.func
 };
 
 export default HcsControlGrid;
