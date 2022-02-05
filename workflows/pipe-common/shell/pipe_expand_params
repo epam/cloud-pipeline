@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+
+# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function check_env_name() {
+    local _env_name="$1"
+    local _env_type="$2"
+
+    local _match_name=1
+    if (( "${#_cp_include_names[@]}" > 0 )); then
+        _match_name=0
+        if [[ " ${_cp_include_names[*]} " =~ " ${_env_name} " ]]; then
+            _match_name=1
+        fi
+    fi
+    if (( "${#_cp_exclude_names[@]}" > 0 )); then
+        _match_name=1
+        if [[ " ${_cp_exclude_names[*]} " =~ " ${_env_name} " ]]; then
+            _match_name=0
+        fi
+    fi
+
+    local _match_type=1
+    if (( "${#_cp_include_types[@]}" > 0 )); then
+        _match_type=0
+        if [[ " ${_cp_include_types[*]} " =~ " ${_env_type} " ]]; then
+            _match_type=1
+        fi
+    fi
+    if (( "${#_cp_exclude_types[@]}" > 0 )); then
+        _match_type=1
+        if [[ " ${_cp_exclude_types[*]} " =~ " ${_env_type} " ]]; then
+            _match_type=0
+        fi
+    fi
+
+    if [ $_match_name -eq 1 ] && [ $_match_type -eq 1 ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+_positional=()
+
+_cp_include_names=()
+_cp_exclude_names=()
+_cp_include_types=()
+_cp_exclude_types=()
+
+while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+        -in|--include-name)
+        _cp_include_names+=("$2")
+        shift
+        shift
+        ;;
+        -en|--exclude-name)
+        _cp_exclude_names+=("$2")
+        shift
+        shift
+        ;;
+        -it|--include-type)
+        _cp_include_types+=("$2")
+        shift
+        shift
+        ;;
+        -et|--exclude-type)
+        _cp_exclude_types+=("$2")
+        shift
+        shift
+        ;;
+        -f|--format)
+        _cp_format="$2"
+        shift
+        shift
+        ;;
+        --boolean-as-flag)
+        _cp_boolean_as_flag="true"
+        shift
+        ;;
+        *)                  # unknown option
+        _positional+=("$1")  # save it in an array for later
+        shift
+        ;;
+    esac
+done
+set -- "${_positional[@]}"
+
+if (( "${#_cp_include_names[@]}" > 0 )) && (( "${#_cp_exclude_names[@]}" > 0 )); then
+    echo "[ERROR] Cannot combine include and exclude names options"
+    exit 1
+fi
+if (( "${#_cp_include_types[@]}" > 0 )) && (( "${#_cp_exclude_types[@]}" > 0 )); then
+    echo "[ERROR] Cannot combine include and exclude types options"
+    exit 1
+fi
+
+if (( "${#_cp_exclude_types[@]}" == 0 )); then
+    _cp_exclude_types+=("output")
+fi
+if [ -z "$_cp_format" ]; then
+    _cp_format='--${param_name} \"${param_value}\"'
+    # FIXME: make configurable
+    _cp_boolen_format='--${param_name}'
+fi
+
+_all_env_names=$(awk 'BEGIN{for(v in ENVIRON) print v}')
+_env_param_suffix="_PARAM_TYPE"
+for _env_name in $_all_env_names; do
+    if [[ "$_env_name" == *"_PARAM_TYPE" ]]; then
+        param_name=${_env_name%"$_env_param_suffix"}
+        param_value="${!param_name}"
+        param_type=${!_env_name}
+
+        if [ -z "$param_value" ]; then
+            continue
+        fi
+
+        if check_env_name "$param_name" "$param_type"; then
+            _effective_format=$_cp_format
+            if [ "$param_type" == "boolean" ]; then
+                _effective_format=$_cp_boolen_format
+            fi
+            result_params="$result_params $(eval echo $_effective_format)"
+        fi
+    fi
+done
+
+echo $result_params
