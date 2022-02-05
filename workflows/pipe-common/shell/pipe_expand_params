@@ -46,7 +46,18 @@ function check_env_name() {
         fi
     fi
 
-    if [ $_match_name -eq 1 ] && [ $_match_type -eq 1 ]; then
+    local _match_system=1
+    if [ "$_cp_include_system_params" != "true" ]; then
+        local _system_search_result=$(echo "$_cp_system_params" | \
+            jq -r ".[] | select(.name == \"$_env_name\")")
+        if [ -z "$_system_search_result" ] || [ "$_system_search_result" == "null" ]; then
+            _match_system=1
+        else
+            _match_system=0
+        fi
+    fi
+
+    if [ $_match_name -eq 1 ] && [ $_match_type -eq 1 ] && [ $_match_system -eq 1 ]; then
         return 0
     else
         return 1
@@ -88,8 +99,8 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
-        --boolean-as-flag)
-        _cp_boolean_as_flag="true"
+        --include-system-params)
+        _cp_include_system_params="true"
         shift
         ;;
         *)                  # unknown option
@@ -117,6 +128,7 @@ if [ -z "$_cp_format" ]; then
     # FIXME: make configurable
     _cp_boolen_format='--${param_name}'
 fi
+_cp_system_params=$(pipe_get_preference launch.system.parameters)
 
 _all_env_names=$(awk 'BEGIN{for(v in ENVIRON) print v}')
 _env_param_suffix="_PARAM_TYPE"
