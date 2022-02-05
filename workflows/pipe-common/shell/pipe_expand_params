@@ -99,6 +99,11 @@ while [[ $# -gt 0 ]]; do
         shift
         shift
         ;;
+        -fb|--format-boolean)
+        _cp_format_boolean="$2"
+        shift
+        shift
+        ;;
         --include-system-params)
         _cp_include_system_params="true"
         shift
@@ -125,8 +130,10 @@ if (( "${#_cp_exclude_types[@]}" == 0 )); then
 fi
 if [ -z "$_cp_format" ]; then
     _cp_format='--${param_name} \"${param_value}\"'
-    # FIXME: make configurable
-    _cp_boolen_format='--${param_name}'
+fi
+if [ -z "$_cp_format_boolean" ]; then
+    # FIXME: add a smarter configuration to choose a format based on a param type
+    _cp_format_boolean='--${param_name}'
 fi
 _cp_system_params=$(pipe_get_preference launch.system.parameters)
 
@@ -145,7 +152,11 @@ for _env_name in $_all_env_names; do
         if check_env_name "$param_name" "$param_type"; then
             _effective_format=$_cp_format
             if [ "$param_type" == "boolean" ]; then
-                _effective_format=$_cp_boolen_format
+                if [ "$param_value" == "true" ]; then
+                    _effective_format=$_cp_format_boolean
+                else
+                    continue
+                fi
             fi
             result_params="$result_params $(eval echo $_effective_format)"
         fi
