@@ -129,7 +129,7 @@ if (( "${#_cp_exclude_types[@]}" == 0 )); then
     _cp_exclude_types+=("output")
 fi
 if [ -z "$_cp_format" ]; then
-    _cp_format='--${param_name} \"${param_value}\"'
+    _cp_format='--${param_name} "${param_value}"'
 fi
 if [ -z "$_cp_format_boolean" ]; then
     # FIXME: add a smarter configuration to choose a format based on a param type
