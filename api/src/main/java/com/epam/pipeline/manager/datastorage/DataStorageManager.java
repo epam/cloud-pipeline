@@ -83,6 +83,7 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.DataStorageUtils;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -137,7 +138,6 @@ public class DataStorageManager implements SecuredEntityManager {
     private static final String DEFAULT_USER_STORAGE_DESCRIPTION_TEMPLATE = "Home folder for user @@";
     public static final String DAV_MOUNT_TAG = "dav-mount";
     private static final String SHARED_STORAGE_SUFFIX = "share";
-    public static final String DATA_STORAGE_PROVIDER_MASK = "[A-Za-z0-9]+://";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -599,11 +599,6 @@ public class DataStorageManager implements SecuredEntityManager {
         });
     }
 
-    /**
-     * Tries to match value from values as path to an item in some datastorage.
-     * For this purpose it loads all storage -> could be slow and consuming
-     * See method analyzePathsV2, to choose what fits you best
-     * */
     public void analyzePaths(List<PipeConfValue> values) {
         if (CollectionUtils.isEmpty(values)) {
             return;
@@ -619,26 +614,6 @@ public class DataStorageManager implements SecuredEntityManager {
             }
             if (!links.isEmpty()) {
                 value.setDataStorageLinks(links);
-            }
-        });
-    }
-
-    /**
-     * Tries to match value from values as path to an item in some datastorage.
-     * This method instead of loading all storages, tries to load storage by prefix from provided values
-     * Performance could degrade when there is a lot of values and paths in those values because of many
-     * independent calls to database to load storage by prefix.
-     * But works pretty well for semi-individual path values.
-     * See method analyzePaths, to choose what fits you best
-     * */
-    public void analyzePathsV2(List<PipeConfValue> values) {
-        if (CollectionUtils.isEmpty(values)) {
-            return;
-        }
-        values.forEach(value -> {
-            List<DataStorageLink> dataStorageLinks = getLinks(value.getValue());
-            if (!dataStorageLinks.isEmpty()) {
-                value.setDataStorageLinks(dataStorageLinks);
             }
         });
     }
@@ -1230,56 +1205,10 @@ public class DataStorageManager implements SecuredEntityManager {
         String paramDelimiter = paramValue.contains(",") ? "," : ";";
         for (String path : paramValue.split(paramDelimiter)) {
             if (path.toLowerCase().trim().startsWith(mask.toLowerCase())) {
-                links.add(constructDataStorageLink(path, dataStorage, mask));
+                links.add(DataStorageUtils.constructDataStorageLink(dataStorage, path, mask));
             }
         }
         return links;
-    }
-
-    private List<DataStorageLink> getLinks(final String paramValue) {
-        if (StringUtils.isBlank(paramValue)) {
-            return Collections.emptyList();
-        }
-        final String providerMask = DATA_STORAGE_PROVIDER_MASK + ".+";
-        List<DataStorageLink> links = new ArrayList<>();
-        String paramDelimiter = paramValue.contains(",") ? "," : ";";
-        for (String path : paramValue.split(paramDelimiter)) {
-            if (!path.toLowerCase().trim().matches(providerMask)) {
-                log.warn("Data Storage path should start with storage mask: " + path + ", skipping.");
-                continue;
-            }
-            final String pathWithOutStorageMask = path.replaceAll(DATA_STORAGE_PROVIDER_MASK, StringUtils.EMPTY);
-            final AbstractDataStorage dataStorage = loadByPathOrId(pathWithOutStorageMask);
-            final String mask = dataStorage.getPathMask() + ProviderUtils.DELIMITER;
-            links.add(constructDataStorageLink(path, dataStorage, mask));
-        }
-        return links;
-    }
-
-    private DataStorageLink constructDataStorageLink(final String path, final AbstractDataStorage dataStorage,
-                                                     final String mask) {
-        final DataStorageLink dataStorageLink = new DataStorageLink();
-        dataStorageLink.setAbsolutePath(path.trim());
-        dataStorageLink.setDataStorageId(dataStorage.getId());
-        String relativePath = path.trim().substring(mask.length());
-        if (relativePath.startsWith(ProviderUtils.DELIMITER)) {
-            relativePath = relativePath.substring(1);
-        }
-        final String[] parts = relativePath.split(ProviderUtils.DELIMITER);
-        final String lastPart = parts[parts.length - 1];
-        if (lastPart.contains(".")) {
-            String newPath = "";
-            for (int i = 0; i < parts.length - 1; i++) {
-                newPath = newPath.concat(parts[i] + ProviderUtils.DELIMITER);
-            }
-            if (newPath.endsWith(ProviderUtils.DELIMITER)) {
-                newPath = newPath.substring(0, newPath.length() - 1);
-            }
-            dataStorageLink.setPath(newPath);
-        } else {
-            dataStorageLink.setPath(relativePath);
-        }
-        return dataStorageLink;
     }
 
     private void validateStorageIsNotUsedAsDefault(final Long storageId,

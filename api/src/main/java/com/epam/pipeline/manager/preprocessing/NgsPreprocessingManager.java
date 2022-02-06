@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.samplesheet.SampleSheet;
 import com.epam.pipeline.controller.vo.preprocessing.SampleSheetRegistrationVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
@@ -43,11 +44,12 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.SystemPreferenceUtils;
+import com.epam.pipeline.utils.DataStorageUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -71,6 +73,7 @@ import java.util.stream.Collectors;
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NgsPreprocessingManager {
 
+    public static final String DATA_STORAGE_PROVIDER_MASK = "[A-Za-z0-9]+://";
     public static final String TAG_KEY_VALUE_DELIMITER = "=";
     public static final String SAMPLE_PREFIX = "_S";
     public static final String LANE_PREFIX = "_L";
@@ -230,13 +233,19 @@ public class NgsPreprocessingManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA,
                         dataFolderMetadataKey)
         );
-        storageManager.analyzePathsV2(Collections.singletonList(dataPath));
 
-        return Optional.ofNullable(dataPath.getDataStorageLinks())
-                .flatMap(sl -> sl.stream().findFirst())
-                .orElseThrow(() -> new IllegalStateException(
-                        messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_DATA_PATH,
-                                dataFolderMetadataKey + TAG_KEY_VALUE_DELIMITER + dataPath.getValue())));
+        final String pathWithOutStorageMask = dataPath.getValue()
+                .replaceAll(DATA_STORAGE_PROVIDER_MASK, StringUtils.EMPTY);
+        final AbstractDataStorage dataStorage = storageManager.loadByPathOrId(pathWithOutStorageMask);
+
+        final DataStorageLink dataStorageLink = DataStorageUtils.constructDataStorageLink(
+                dataStorage, dataPath.getValue(), dataStorage.getPathMask() + ProviderUtils.DELIMITER);
+        if (!checkPathExistence(dataStorageLink.getDataStorageId(), dataStorageLink.getPath())) {
+            throw new IllegalStateException(
+                    messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_DATA_PATH,
+                    dataFolderMetadataKey + TAG_KEY_VALUE_DELIMITER + dataPath.getValue()));
+        }
+        return dataStorageLink;
     }
 
     private MetadataEntry fetchFolderMetadata(final Folder folder) {
