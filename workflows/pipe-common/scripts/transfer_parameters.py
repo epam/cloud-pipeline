@@ -400,10 +400,10 @@ class InputDataTask:
         return self._build_remote_path(path, input_type, PathType.HTTP_OR_FTP)
 
     def _build_remote_path(self, path, input_type, path_type):
+        path_suffix = None
         if input_type == ParameterType.OUTPUT_PARAMETER:
             local_path = self.analysis_dir
         else:
-            path_suffix = None
             if path.endswith('*'):
                 Logger.info('Path {} ends with a wildcard. Whole parent directory will be downloaded.'.format(path),
                             task_name=self.task_name)
