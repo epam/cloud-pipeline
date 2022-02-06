@@ -150,11 +150,10 @@ public class NgsPreprocessingManager {
                     if (EntityTypeField.isArrayType(value.getType())) {
                         final List<String> samples = JsonMapper
                                 .parseData(value.getValue(), new TypeReference<List<String>>() {});
-                        for (String sample : samples) {
-                            final MetadataEntity sampleMetadataEntity = metadataEntityManager
-                                    .loadByExternalId(sample, sampleMetadataClass.getName(), folderId);
-                            metadataEntityManager.deleteMetadataEntity(sampleMetadataEntity.getId());
-                        }
+                        samples.stream().map(sample -> metadataEntityManager
+                                .loadByExternalId(sample, sampleMetadataClass.getName(), folderId))
+                                .forEach(sampleMetadataEntity ->
+                                        metadataEntityManager.deleteMetadataEntity(sampleMetadataEntity.getId()));
                     }
                 });
 

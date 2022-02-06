@@ -24,45 +24,38 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiredArgsConstructor
+@RequestMapping(value = "/preprocessing")
 @Api(value = "NGS Project Preprocessing")
 public class NgsPreprocessingController extends AbstractRestController {
 
-    @Autowired
-    private NgsPreprocessingApiService preprocessingApiService;
+    private final NgsPreprocessingApiService preprocessingApiService;
 
-    @PostMapping(value = "/preprocessing/samplesheet")
-    @ResponseBody
+    @PostMapping(value = "/samplesheet")
     @ApiOperation(
             value = "Registers a new or update an existing samplesheet.",
             notes = "Registers a new or update an existing samplesheet.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result registerSampleSheet(@RequestBody final SampleSheetRegistrationVO sheetRegistrationVO) {
         preprocessingApiService.registerSampleSheet(sheetRegistrationVO);
         return Result.success();
     }
 
-    @DeleteMapping(value = "/preprocessing/samplesheet")
-    @ResponseBody
-    @ApiOperation(
-            value = "Deletes an existing samplesheet.",
-            notes = "Deletes an existing samplesheet.",
+    @DeleteMapping(value = "/samplesheet")
+    @ApiOperation(value = "Deletes an existing samplesheet.", notes = "Deletes an existing samplesheet.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @ApiResponses(
-            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
-            })
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result deleteSampleSheet(@RequestParam final Long folderId, @RequestParam final Long machineRunId,
                                     @RequestParam(defaultValue = "false") final Boolean deleteFile) {
         preprocessingApiService.unregisterSampleSheet(folderId, machineRunId, deleteFile);

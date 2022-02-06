@@ -33,10 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * This class parses provided content regarding to sample sheet description:
- * https://www.illumina.com/content/dam/illumina-marketing/documents/products/technotes/sequencing-sheet-format-specifications-technical-note-970-2017-004.pdf
- * */
 @SuppressWarnings({"LineLength", "HideUtilityClassConstructor"})
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SampleSheetParser {
@@ -57,6 +53,10 @@ public final class SampleSheetParser {
     public static final String SAMPLESHEET_DELIMITER = ",";
     public static final int SECTION_DEFAULT_VALUE = 0;
 
+    /**
+     * Parses provided content regarding sample sheet description:
+     * https://www.illumina.com/content/dam/illumina-marketing/documents/products/technotes/sequencing-sheet-format-specifications-technical-note-970-2017-004.pdf
+     * */
     public static SampleSheet parseSampleSheet(final byte[] content) {
         try(BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new ByteArrayInputStream(content)))) {
