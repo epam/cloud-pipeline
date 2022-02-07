@@ -67,6 +67,7 @@ import {
 import Metadata from '../../special/metadata/Metadata';
 import PreviewModal from '../../search/preview/preview-modal';
 import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
+import {getHcsInfo} from '../../search/preview/hcs-preview';
 import UploadButton from '../../special/UploadButton';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -1081,7 +1082,7 @@ export default class DataStorage extends React.Component {
     this.setState({previewModal: null});
   };
 
-  checkPreviewAvailability = (file) => {
+  checkWsiPreviewAvailability = (file) => {
     if (!file) {
       return;
     }
@@ -1103,6 +1104,20 @@ export default class DataStorage extends React.Component {
               });
             }
           });
+      });
+    }
+  };
+
+  checkHcsPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    // this is temporal plug for showing empty preview modal
+    const info = getHcsInfo(file.path);
+    if (info) {
+      this.setState({
+        previewPending: false,
+        previewAvailable: true
       });
     }
   };
@@ -1311,7 +1326,7 @@ export default class DataStorage extends React.Component {
               onClick={(event) => this.openPreviewModal(item, event)}
               key={item.key}
             >
-              <span>HCS</span>
+              <img src="icons/file-extensions/hcs.png" />
             </div>
           );
         }
@@ -1406,8 +1421,15 @@ export default class DataStorage extends React.Component {
         selectedFile: item,
         metadata: true
       }, () => {
-        if (extension === 'vsi' || extension === 'mrxs') {
-          this.checkPreviewAvailability(item);
+        switch (extension) {
+          case 'vsi':
+          case 'mrxs':
+            this.checkWsiPreviewAvailability(item);
+            break;
+          case 'hcs':
+            this.checkHcsPreviewAvailability(item);
+            break;
+          default: return false;
         }
       });
     }

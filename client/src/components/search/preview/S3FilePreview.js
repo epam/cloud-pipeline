@@ -85,7 +85,8 @@ export default class S3FilePreview extends React.Component {
 
   state = {
     pdbError: null,
-    imageError: null
+    imageError: null,
+    hideInfo: false
   };
 
   @computed
@@ -132,6 +133,14 @@ export default class S3FilePreview extends React.Component {
       return result;
     }
     return null;
+  }
+
+  hideInfo = (value) => {
+    if (value !== this.state.hideInfo) {
+      this.setState({
+        hideInfo: value
+      });
+    }
   }
 
   renderInfo = () => {
@@ -338,6 +347,7 @@ export default class S3FilePreview extends React.Component {
         fullscreen={this.props.fullscreen}
         onFullScreenChange={this.props.onFullScreenChange}
         fullScreenAvailable={this.props.fullScreenAvailable}
+        onHideInfo={this.hideInfo}
       />
     );
   }
@@ -402,8 +412,8 @@ export default class S3FilePreview extends React.Component {
       return null;
     }
     const highlights = renderHighlights(this.props.item);
-    const info = this.renderInfo();
-    const attributes = renderAttributes(this.props.metadata, true);
+    const info = this.state.hideInfo ? null : this.renderInfo();
+    const attributes = this.state.hideInfo ? null : renderAttributes(this.props.metadata, true);
     const preview = this.renderPreview();
     return (
       <div
