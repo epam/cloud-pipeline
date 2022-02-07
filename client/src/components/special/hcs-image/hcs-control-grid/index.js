@@ -21,10 +21,12 @@ const CANVAS_PADDING = 20;
 const ZOOM_TICK_PERCENT = 10 / 100;
 const CELL_DIAMETER_LIMITS = {
   min: 5,
-  max: 50
+  max: 25
 };
 const DEFAULTS = {
   strokeStyle: '#595959',
+  dataColor: '#91d5ff',
+  selectedColor: '#ffc53d',
   lineWidth: 1,
   background: '#ececec'
 };
@@ -37,6 +39,12 @@ class HcsControlGrid extends React.Component {
   horisontalLegendContainer;
   horisontalLegend;
   scrolling = false;
+
+  componentDidUpdate (prevProps) {
+    if (prevProps.selectedCell !== this.props.selectedCell) {
+      this.draw();
+    }
+  }
 
   componentWillUnmount () {
     if (this.canvas) {
@@ -101,8 +109,8 @@ class HcsControlGrid extends React.Component {
         return null;
       }
       return {
-        column: Math.ceil((eventX - this.bounds.xFrom) / this.cellDiameter),
-        row: Math.ceil((eventY - this.bounds.yFrom) / this.cellDiameter)
+        column: Math.floor((eventX - this.bounds.xFrom) / this.cellDiameter),
+        row: Math.floor((eventY - this.bounds.yFrom) / this.cellDiameter)
       };
     }
     return null;
@@ -258,9 +266,24 @@ class HcsControlGrid extends React.Component {
         this.cleanUpCanvas();
         this.drawCells(ctx, rows, columns);
         this.drawLegends();
-        this.synchronizeScrolls();
       }
     }
+  };
+
+  getCellColor = (row, column) => {
+    const {dataCells, selectedCell} = this.props;
+    const isSelected = selectedCell &&
+      selectedCell.row === row &&
+      selectedCell.column === column;
+    if (isSelected) {
+      return DEFAULTS.selectedColor;
+    }
+    const hasData = dataCells && dataCells
+      .some(cell => cell.row === row && cell.column === column);
+    if (hasData) {
+      return DEFAULTS.dataColor;
+    }
+    return undefined;
   };
 
   drawCells = (ctx, rows, columns) => {
@@ -268,23 +291,25 @@ class HcsControlGrid extends React.Component {
       const radius = this.cellDiameter / 2;
       for (let row = 0; row < rows; row++) {
         for (let column = 0; column < columns; column++) {
-          this.drawCell(
+          this.drawCircle(
             ctx,
             (this.bounds.xFrom + radius) + column * this.cellDiameter,
             (this.bounds.yFrom + radius) + row * this.cellDiameter,
             this.cellDiameter,
-            'circle'
+            this.getCellColor(row, column)
           );
         }
       }
     }
   };
 
-  drawCell = (ctx, x, y, diameter, shape = 'circle') => {
-    if (shape === 'circle') {
-      ctx.beginPath();
-      ctx.arc(x, y, diameter / 2, 0, Math.PI * 2);
-      ctx.stroke();
+  drawCircle = (ctx, x, y, diameter, fillColor) => {
+    ctx.beginPath();
+    ctx.arc(x, y, diameter / 2, 0, Math.PI * 2);
+    ctx.stroke();
+    if (fillColor) {
+      ctx.fillStyle = fillColor;
+      ctx.fill();
     }
   };
 
@@ -362,7 +387,15 @@ class HcsControlGrid extends React.Component {
 HcsControlGrid.propTypes = {
   rows: PropTypes.number,
   columns: PropTypes.number,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  selectedCell: PropTypes.shape({
+    row: PropTypes.number,
+    column: PropTypes.number
+  }),
+  dataCells: PropTypes.arrayOf(PropTypes.shape({
+    row: PropTypes.number,
+    column: PropTypes.number
+  }))
 };
 
 export default HcsControlGrid;

@@ -20,6 +20,21 @@ import classNames from 'classnames';
 import HcsControlGrid from './hcs-control-grid';
 
 class HcsImage extends React.PureComponent {
+  state = {
+    selectedCell: null,
+    dataCells: [
+      {row: 3, column: 6},
+      {row: 3, column: 7},
+      {row: 3, column: 8},
+      {row: 4, column: 6},
+      {row: 4, column: 7},
+      {row: 4, column: 8},
+      {row: 5, column: 6},
+      {row: 5, column: 7},
+      {row: 5, column: 8}
+    ]
+  }
+
   componentDidMount () {
     this.prepare();
   }
@@ -30,11 +45,21 @@ class HcsImage extends React.PureComponent {
   prepare = () => {
   };
 
+  onSelectCell = (cell) => {
+    const {dataCells} = this.state;
+    const dataCellSelected = dataCells
+      .find(c => c.row === cell.row && c.column === cell.column);
+    if (dataCellSelected) {
+      this.setState({selectedCell: cell});
+    }
+  };
+
   render () {
     const {
       className,
       style
     } = this.props;
+    const {selectedCell, dataCells} = this.state;
     return (
       <div
         className={
@@ -72,7 +97,9 @@ class HcsImage extends React.PureComponent {
               style={{width: '100%', height: '300px'}}
               rows={32}
               columns={48}
-              onClick={(element) => console.log(element)}
+              onClick={this.onSelectCell}
+              selectedCell={selectedCell}
+              dataCells={dataCells}
             />
           </div>
         </div>
