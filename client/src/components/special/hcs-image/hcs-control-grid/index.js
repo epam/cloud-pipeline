@@ -200,6 +200,8 @@ class HcsControlGrid extends React.Component {
       if (!furtherZoomPossible) {
         return;
       }
+      e.preventDefault();
+      e.stopPropagation();
       return zoomIn ? this.zoomIn() : this.zoomOut();
     }
   };
@@ -315,13 +317,17 @@ class HcsControlGrid extends React.Component {
 
   render () {
     const {
+      className,
       style
     } = this.props;
     return (
-      <div style={{position: 'relative', overflow: 'hidden'}}>
+      <div
+        className={className}
+        style={Object.assign({position: 'relative', overflow: 'hidden'}, style)}
+      >
         <div
           ref={this.initializeCanvasContainer}
-          style={Object.assign({overflow: 'auto'}, style)}
+          style={{overflow: 'auto', width: '100%', height: '100%'}}
         >
           <canvas
             style={{
@@ -395,7 +401,8 @@ HcsControlGrid.propTypes = {
   dataCells: PropTypes.arrayOf(PropTypes.shape({
     row: PropTypes.number,
     column: PropTypes.number
-  }))
+  })),
+  style: PropTypes.object
 };
 
 export default HcsControlGrid;

@@ -15,12 +15,26 @@
  */
 
 import React from 'react';
-import HcsImage from './hcs-image';
 import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
+import HcsImage from './hcs-image';
 import styles from './hcs-image.css';
 
+@inject((stores, params) => {
+  const {location = {}} = params;
+  const {query = {}} = location;
+  return {
+    storageId: query.storage,
+    hcsImagePath: query.path
+  };
+})
+@observer
 class HcsImagePage extends React.Component {
   render () {
+    const {
+      storageId,
+      hcsImagePath
+    } = this.props;
     return (
       <HcsImage
         className={
@@ -30,6 +44,8 @@ class HcsImagePage extends React.Component {
             'no-image'
           )
         }
+        storageId={storageId}
+        path={hcsImagePath}
       />
     );
   }

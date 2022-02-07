@@ -21,3 +21,48 @@
   overflow: auto;
   padding: 10px;
 }
+
+.hcs-image-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+}
+
+.alert-container {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  z-index: 1;
+}
+
+.hcs-image-renderer {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.hcs-image {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.hcs-image-controls {
+  overflow: auto;
+  z-index: 1;
+  padding: 5px;
+  min-width: 210px;
+}
+
+.selector {
+  width: 200px;
+  height: 200px;
+}
+
+.selector-title {
+  margin: 5px 0;
+  font-weight: bold;
+}
