@@ -67,7 +67,6 @@ import {
 import Metadata from '../../special/metadata/Metadata';
 import PreviewModal from '../../search/preview/preview-modal';
 import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
-import {getHcsInfo} from '../../search/preview/hcs-preview';
 import UploadButton from '../../special/UploadButton';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -94,6 +93,7 @@ import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../special/sample-sheet/utilities';
+import fetchHCSInfo from '../../special/hcs-image/utilities/fetch-hcs-info';
 
 const PAGE_SIZE = 40;
 
@@ -1112,14 +1112,28 @@ export default class DataStorage extends React.Component {
     if (!file) {
       return;
     }
-    // this is temporal plug for showing empty preview modal
-    const info = getHcsInfo(file.path);
-    if (info) {
-      this.setState({
-        previewPending: false,
-        previewAvailable: true
-      });
-    }
+    const {storageId} = this.props;
+    this.setState({
+      previewPending: true
+    }, async () => {
+      let error;
+      try {
+        const info = await fetchHCSInfo({path: file.path, storageId});
+        if (info && info.sequences && info.sequences.length) {
+          const [sequence] = info.sequences;
+          await sequence.fetch();
+        } else {
+          throw new Error('HCS preview not available');
+        }
+      } catch (e) {
+        error = true;
+      } finally {
+        this.setState({
+          previewPending: false,
+          previewAvailable: !error
+        });
+      }
+    });
   };
 
   getStorageItemsTable = () => {

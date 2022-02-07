@@ -90,6 +90,9 @@ export default function fetchHCSInfo (options = {}) {
         ? new S3Storage({...s3StorageInfo, write: false, read: true})
         : undefined;
       const sequences = Object.keys(timeSeriesDetails);
+      if (sequences.length === 0) {
+        throw new Error('No sequences found');
+      }
       resolve({
         storageId: Number.isNaN(Number(previewStorageId))
           ? previewStorageId

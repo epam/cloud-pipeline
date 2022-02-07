@@ -41,6 +41,7 @@ class HcsImageWellsSelector extends React.Component {
       <div
         className={
           classNames(
+            styles.selectorContainer,
             className
           )
         }

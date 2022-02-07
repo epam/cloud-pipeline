@@ -281,7 +281,8 @@ class HcsImage extends React.PureComponent {
   render () {
     const {
       className,
-      style
+      style,
+      showWellSelectors
     } = this.props;
     const {
       error,
@@ -332,36 +333,41 @@ class HcsImage extends React.PureComponent {
             {'\u00A0'}
           </div>
         </div>
-        <div
-          className={
-            classNames(
-              styles.hcsImageControls,
-              'cp-content-panel'
-            )
-          }
-        >
-          <HcsImageWellsSelector
-            style={{
-              minWidth: 200
-            }}
-            wells={wells}
-            onChange={this.changeWell}
-            selectedWell={wellId}
-            width={plateWidth}
-            height={plateHeight}
-          />
-          <HcsImageFieldSelector
-            style={{
-              minWidth: 200
-            }}
-            fields={fields}
-            onChange={this.changeWellImage}
-            selectedField={imageId}
-            width={wellWidth}
-            height={wellHeight}
-            wellName={selectedWell ? `Well ${selectedWell.x}_${selectedWell.y}` : undefined}
-          />
-        </div>
+        {
+          showWellSelectors && (
+            <div
+              className={
+                classNames(
+                  styles.hcsImageControls,
+                  'cp-content-panel'
+                )
+              }
+            >
+              <HcsImageWellsSelector
+                style={{
+                  minWidth: 200
+                }}
+                wells={wells}
+                onChange={this.changeWell}
+                selectedWell={wellId}
+                width={plateWidth}
+                height={plateHeight}
+              />
+              <HcsImageFieldSelector
+                style={{
+                  minWidth: 200
+                }}
+                fields={fields}
+                onChange={this.changeWellImage}
+                selectedField={imageId}
+                width={wellWidth}
+                height={wellHeight}
+                wellName={selectedWell ? `Well ${selectedWell.x}_${selectedWell.y}` : undefined}
+                wellRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
+              />
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -371,7 +377,12 @@ HcsImage.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  path: PropTypes.string
+  path: PropTypes.string,
+  showWellSelectors: PropTypes.bool
+};
+
+HcsImage.defaultProps = {
+  showWellSelectors: true
 };
 
 HcsImage.WellsSelector = HcsImageWellsSelector;

@@ -16,82 +16,37 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
-
 import HcsImage from '../../../special/hcs-image';
-import LoadingView from '../../../special/LoadingView';
-import styles from '../preview.css'; ;
 
-function getHcsInfo () {
-  return true;
-}
-@inject('dataStorageCache', 'dataStorages', 'preferences')
-@observer
 class HCSPreview extends React.Component {
-  state = {
-    items: [],
-    preview: undefined,
-    pending: false
-  };
-
   componentDidMount () {
-    this.fetchPreviewItems();
-    this.props.onHideInfo(true);
+    const {
+      onHideInfo,
+      onPreviewLoaded
+    } = this.props;
+    if (onHideInfo) {
+      onHideInfo(true);
+    }
+    if (onPreviewLoaded) {
+      onPreviewLoaded({requireMaximumSpace: true});
+    }
   }
-
-  componentWillUnmount () {}
-
-  componentDidUpdate (prevProps, prevState, snapshot) {}
-
-  fetchPreviewItems = () => {}
-
-  renderPreview = () => {
-    const {
-      preview,
-      pending,
-      items
-    } = this.state;
-    if (!preview || !items || !items.length) {
-      return null;
-    }
-    const {
-      pending: previewPending,
-      error,
-      url
-    } = preview;
-    let content;
-    if (pending || previewPending) {
-      content = (<i style={{color: '#999'}}>Loading...</i>);
-    } else if (error) {
-      content = (<span style={{color: '#999'}}>{error}</span>);
-    } else if (!url) {
-      content = (<span style={{color: '#999'}}>Preview not available</span>);
-    } else {
-      content = (
-        <HcsImage />
-      );
-    }
-    return (
-      <div className={styles.vsiContentPreview}>
-        {content}
-      </div>
-    );
-  };
 
   render () {
     const {
-      className
+      className,
+      storageId,
+      file
     } = this.props;
-    const {
-      pending
-    } = this.state;
     return (
-      <div
+      <HcsImage
         className={className}
-      >
-        {pending && (<LoadingView />)}
-        {!pending && this.renderPreview()}
-      </div>
+        path={file}
+        storageId={storageId}
+        style={{
+          height: 'calc(100vh - 150px)'
+        }}
+      />
     );
   };
 }
@@ -119,4 +74,3 @@ HCSPreview.defaultProps = {
 };
 
 export default HCSPreview;
-export {getHcsInfo};

@@ -1,0 +1,83 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.container {
+  display: grid;
+  grid-template-rows: [COLUMNS] 20px [DATA] 1fr;
+  grid-template-columns: [ROWS] 20px [DATA] 1fr;
+  width: 100%;
+  min-height: 100px;
+}
+
+.placeholder {
+  grid-row: COLUMNS;
+  grid-column: ROWS;
+}
+
+.columns {
+  grid-row: COLUMNS;
+  grid-column: DATA;
+}
+
+.rows {
+  grid-row: DATA;
+  grid-column: ROWS;
+}
+
+.columns,
+.rows {
+  overflow: hidden;
+  position: relative;
+}
+
+.data {
+  grid-row: DATA;
+  grid-column: DATA;
+  overflow: auto;
+}
+
+.rows .legend,
+.columns .legend {
+  display: inline-flex;
+  align-items: center;
+  position: absolute;
+}
+
+.rows .legend {
+  flex-direction: column;
+  width: 100%;
+}
+
+.columns .legend {
+  flex-direction: row;
+  height: 100%;
+}
+
+.legend .legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legend .legend-item.l span {
+  display: block;
+}
+
+.legend .legend-item.m:nth-child(2n + 1) span,
+.legend .legend-item.s:nth-child(3n + 2) span,
+.legend .legend-item.s:nth-child(3n + 3) span {
+  display: none;
+}

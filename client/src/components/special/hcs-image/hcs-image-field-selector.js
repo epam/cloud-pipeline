@@ -30,7 +30,8 @@ class HcsImageFieldSelector extends React.Component {
       onChange,
       width,
       height,
-      wellName
+      wellName,
+      wellRadius
     } = this.props;
     const selected = fields.find(o => o.id === selectedField);
     const onChangeField = ({row = 0, column = 0} = {}) => {
@@ -42,6 +43,7 @@ class HcsImageFieldSelector extends React.Component {
       <div
         className={
           classNames(
+            styles.selectorContainer,
             className
           )
         }
@@ -65,6 +67,9 @@ class HcsImageFieldSelector extends React.Component {
               : undefined
           }
           onClick={onChangeField}
+          cellShape={HcsControlGrid.Shapes.rect}
+          gridShape={HcsControlGrid.Shapes.circle}
+          gridRadius={wellRadius}
         />
       </div>
     );
@@ -79,7 +84,8 @@ HcsImageFieldSelector.propTypes = {
   selectedField: PropTypes.string,
   onChange: PropTypes.func,
   style: PropTypes.object,
-  wellName: PropTypes.string
+  wellName: PropTypes.string,
+  wellRadius: PropTypes.number
 };
 
 export default HcsImageFieldSelector;

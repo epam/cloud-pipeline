@@ -16,374 +16,533 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
+import {inject, observer} from 'mobx-react';
+import styles from './control-grid.css';
 
-const CANVAS_PADDING = 20;
-const ZOOM_TICK_PERCENT = 10 / 100;
-const CELL_DIAMETER_LIMITS = {
-  min: 5,
-  max: 25
-};
-const DEFAULTS = {
-  strokeStyle: '#595959',
-  dataColor: '#91d5ff',
-  selectedColor: '#ffc53d',
-  lineWidth: 1,
-  background: '#ececec'
+const DEFAULT_MINIMUM_CELL_SIZE = 5;
+const DEFAULT_MAXIMUM_CELL_SIZE = 30;
+
+function renderLegend (size, count, style) {
+  return (new Array(count))
+    .fill('o')
+    .map((o, i) => (
+      <div
+        key={i}
+        className={
+          classNames(
+            styles.legendItem,
+            {
+              [styles.s]: size < 10,
+              [styles.m]: size >= 10 && size < 14,
+              [styles.l]: size >= 14
+            }
+          )
+        }
+        style={style}
+      >
+        <span>{i + 1}</span>
+      </div>
+    ));
+}
+
+const Shapes = {
+  circle: 'circle',
+  rect: 'rect'
 };
 
+@inject('themes')
+@observer
 class HcsControlGrid extends React.Component {
-  canvasContainer;
-  canvas;
-  verticalLegendContainer;
-  verticalLegend;
-  horisontalLegendContainer;
-  horisontalLegend;
-  scrolling = false;
+  state = {
+    minimumSize: undefined,
+    cellSize: undefined,
+    widthPx: undefined,
+    heightPx: undefined,
+    widthWithScrollPx: undefined,
+    heightWithScrollPx: undefined,
+    hovered: false,
+    maxHeight: undefined
+  };
 
-  componentDidUpdate (prevProps) {
-    if (prevProps.selectedCell !== this.props.selectedCell) {
+  get verticalScrollerWidth () {
+    const {
+      widthPx,
+      widthWithScrollPx
+    } = this.state;
+    if (widthWithScrollPx && widthPx) {
+      return Math.max(widthWithScrollPx - widthPx, 0);
+    }
+    return 0;
+  }
+
+  get horizontalScrollerHeight () {
+    const {
+      heightPx,
+      heightWithScrollPx
+    } = this.state;
+    if (heightWithScrollPx && heightPx) {
+      return Math.max(heightWithScrollPx - heightPx, 0);
+    }
+    return 0;
+  }
+
+  componentDidMount () {
+    this.initializeSizeChecker();
+    this.initializeScrollerSynchronizer();
+    const {themes} = this.props;
+    if (themes) {
+      themes.addThemeChangedListener(this.draw);
+    }
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.columns !== this.props.columns ||
+      prevProps.rows !== this.props.rows
+    ) {
+      this.updateSize();
+    } else if (
+      prevProps.selectedCell !== this.props.selectedCell ||
+      prevProps.dataCells !== this.props.dataCells
+    ) {
       this.draw();
     }
   }
 
   componentWillUnmount () {
-    if (this.canvas) {
-      this.canvas.removeEventListener('wheel', this.handleZoom);
-      this.canvas.removeEventListener('click', this.handleClick);
-      this.canvasContainer.removeEventListener('scroll', this.handleScroll);
+    cancelAnimationFrame(this.rafHandle);
+    cancelAnimationFrame(this.scrollerRafHandle);
+    if (this.container) {
+      this.container.removeEventListener('wheel', this.handleZoom);
+    }
+    const {themes} = this.props;
+    if (themes) {
+      themes.removeThemeChangedListener(this.draw);
     }
   }
 
-  get bounds () {
-    if (this.canvas) {
-      return {
-        xFrom: CANVAS_PADDING + DEFAULTS.lineWidth,
-        xTo: this.canvas.width - CANVAS_PADDING,
-        yFrom: CANVAS_PADDING + DEFAULTS.lineWidth,
-        yTo: this.canvas.height - CANVAS_PADDING
-      };
+  initializeContainer = (container) => {
+    if (this.container) {
+      this.container.removeEventListener('wheel', this.handleZoom);
     }
-    return null;
+    this.container = container;
+    if (this.container) {
+      this.container.addEventListener('wheel', this.handleZoom);
+      this.setState({
+        widthPx: this.container.clientWidth,
+        heightPx: this.container.clientHeight,
+        widthWithScrollPx: this.container.offsetWidth,
+        heightWithScrollPx: this.container.offsetHeight
+      }, () => this.updateSize());
+    }
   };
 
-  get cellDiameter () {
-    const {columns} = this.props;
-    if (!this.bounds) {
-      return 0;
+  initializeLegend = (horizontal = false) => (container) => {
+    if (horizontal) {
+      this.horizontalLegend = container;
+    } else {
+      this.verticalLegend = container;
     }
-    return (this.bounds.xTo - this.bounds.xFrom) / columns;
-  }
+  };
 
   initializeCanvas = (canvas) => {
     this.canvas = canvas;
-    this.canvas.addEventListener('wheel', this.handleZoom);
-    this.canvas.addEventListener('click', this.handleClick);
     this.draw();
   };
 
-  initializeCanvasContainer = (canvas) => {
-    this.canvasContainer = canvas;
-    this.canvasContainer.addEventListener('scroll', this.handleScroll);
-  };
-
-  initializeLegends = (canvas, type) => {
-    if (type === 'vertical') {
-      this.verticalLegend = canvas;
-    } else if (type === 'horisontal') {
-      this.horisontalLegend = canvas;
+  updateSize = () => {
+    const {
+      allowEmptySpaces,
+      rows,
+      columns
+    } = this.props;
+    const {
+      widthPx,
+      heightPx
+    } = this.state;
+    if (
+      rows > 0 &&
+      columns > 0 &&
+      widthPx > 0 &&
+      heightPx > 0
+    ) {
+      const newCellSizeFn = o => Math.max(
+        DEFAULT_MINIMUM_CELL_SIZE,
+        Math.min(
+          DEFAULT_MAXIMUM_CELL_SIZE,
+          o
+        )
+      );
+      const width = widthPx;
+      const height = heightPx;
+      const offset = 5;
+      const columnCellSize = newCellSizeFn((width - offset) / columns);
+      const rowCellSize = newCellSizeFn((height - offset) / rows);
+      const newCellSize = Math.round(Math.max(columnCellSize, rowCellSize));
+      const minCellSize = allowEmptySpaces
+        ? Math.round(Math.min(columnCellSize, rowCellSize))
+        : newCellSize;
+      this.setState({
+        cellSize: newCellSize,
+        minimumSize: minCellSize,
+        maxHeight: Math.min(
+          newCellSize * rows,
+          width
+        )
+      }, () => this.draw());
     }
-    this.drawLegends();
-  };
+  }
 
-  getElementAtEvent = (event) => {
-    if (event && this.canvas) {
-      const rect = this.canvas.getBoundingClientRect();
-      const eventX = event.clientX - rect.left;
-      const eventY = event.clientY - rect.top;
+  initializeScrollerSynchronizer = () => {
+    const handler = () => {
       if (
-        eventX < this.bounds.xFrom ||
-        eventX > this.bounds.xTo ||
-        eventY < this.bounds.yFrom ||
-        eventY > this.bounds.yTo
+        this.container &&
+        this.verticalLegend &&
+        this.horizontalLegend
       ) {
-        return null;
+        const top = this.container.scrollTop;
+        const left = this.container.scrollLeft;
+        this.horizontalLegend.style.left = `-${left}px`;
+        this.verticalLegend.style.top = `-${top}px`;
       }
-      return {
-        column: Math.floor((eventX - this.bounds.xFrom) / this.cellDiameter),
-        row: Math.floor((eventY - this.bounds.yFrom) / this.cellDiameter)
-      };
-    }
-    return null;
+      this.scrollerRafHandle = requestAnimationFrame(handler);
+    };
+    handler();
   };
 
-  handleClick = (event) => {
+  initializeSizeChecker = () => {
+    const handler = () => {
+      const {widthPx, heightPx} = this.state;
+      if (
+        this.container &&
+        (
+          this.container.clientWidth !== widthPx ||
+          this.container.clientHeight !== heightPx
+        )
+      ) {
+        this.setState({
+          widthPx: this.container.clientWidth,
+          heightPx: this.container.clientHeight,
+          widthWithScrollPx: this.container.offsetWidth,
+          heightWithScrollPx: this.container.offsetHeight
+        });
+      }
+      this.rafHandle = requestAnimationFrame(handler);
+    };
+    handler();
+  };
+
+  handleZoom = (event) => {
+    const {
+      cellSize,
+      minimumSize
+    } = this.state;
+    if (event && event.shiftKey && cellSize) {
+      const zoomIn = event.deltaY < 0;
+      const delta = zoomIn ? 2 : -2;
+      const newCellSize = Math.max(
+        minimumSize,
+        Math.min(
+          DEFAULT_MAXIMUM_CELL_SIZE,
+          cellSize + delta
+        )
+      );
+      if (newCellSize !== cellSize) {
+        this.setState({
+          cellSize: newCellSize
+        }, () => this.draw());
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      return false;
+    }
+  };
+
+  getCellUnderEvent = event => {
+    const {
+      cellSize
+    } = this.state;
+    const {
+      offsetX,
+      offsetY
+    } = event.nativeEvent || {};
+    let cell;
+    if (offsetX !== undefined && offsetY !== undefined) {
+      const column = Math.floor(offsetX / cellSize);
+      const row = Math.floor(offsetY / cellSize);
+      const {
+        dataCells = []
+      } = this.props;
+      cell = (dataCells.find(o => o.row === row && o.column === column));
+    }
+    return cell;
+  };
+
+  handleMouseMove = event => {
+    const {
+      hovered: currentHovered
+    } = this.state;
+    let hovered = !!this.getCellUnderEvent(event);
+    if (hovered !== currentHovered) {
+      this.setState({hovered});
+    }
+  };
+
+  handleClick = event => {
+    const cell = this.getCellUnderEvent(event);
     const {onClick} = this.props;
-    if (event && this.canvas) {
-      onClick && onClick(this.getElementAtEvent(event));
+    if (cell && onClick) {
+      onClick(cell);
     }
   };
 
-  handleScroll = () => {
-    if (!this.scrolling) {
-      window.requestAnimationFrame(() => {
-        this.synchronizeScrolls();
-        this.scrolling = false;
-      });
-      this.scrolling = true;
+  unHover = () => {
+    const {hovered} = this.state;
+    if (hovered) {
+      this.setState({hovered: false});
     }
-  };
-
-  synchronizeScrolls = () => {
-    if (this.canvasContainer) {
-      const scrollWidth = this.canvasContainer.offsetWidth - this.canvasContainer.clientWidth;
-      if (this.horisontalLegendContainer) {
-        this.horisontalLegendContainer.scrollLeft = this.canvasContainer.scrollLeft;
-        this.horisontalLegendContainer.style.width = `${
-          this.canvasContainer.offsetWidth - scrollWidth}px`;
-      }
-      if (this.verticalLegendContainer) {
-        this.verticalLegendContainer.scrollTop = this.canvasContainer.scrollTop;
-        this.verticalLegendContainer.style.height = `${
-          this.canvasContainer.offsetHeight - scrollWidth}px`;
-      }
-    }
-  };
-
-  cleanUpCanvas = () => {
-    if (this.canvas) {
-      const ctx = this.canvas.getContext('2d');
-      this.canvas.width = this.canvas.offsetWidth;
-      this.canvas.height = this.canvas.offsetHeight;
-      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    }
-  };
-
-  zoomIn = () => {
-    if (this.canvas) {
-      const {offsetWidth, offsetHeight} = this.canvas;
-      this.canvas.style.width = `${
-        offsetWidth + (offsetWidth * ZOOM_TICK_PERCENT)}px`;
-      this.canvas.style.height = `${
-        offsetHeight + (offsetHeight * ZOOM_TICK_PERCENT)}px`;
-      this.horisontalLegend.style.width = `${
-        offsetWidth + (offsetWidth * ZOOM_TICK_PERCENT)}px`;
-      this.verticalLegend.style.height = `${
-        offsetHeight + (offsetHeight * ZOOM_TICK_PERCENT)}px`;
-      this.draw();
-    }
-  };
-
-  zoomOut = () => {
-    if (this.canvas) {
-      const {offsetWidth, offsetHeight} = this.canvas;
-      this.canvas.style.width = `${
-        offsetWidth - (offsetWidth * ZOOM_TICK_PERCENT)}px`;
-      this.canvas.style.height = `${
-        offsetHeight - (offsetHeight * ZOOM_TICK_PERCENT)}px`;
-      this.horisontalLegend.style.width = `${
-        offsetWidth + (offsetWidth * ZOOM_TICK_PERCENT)}px`;
-      this.verticalLegend.style.height = `${
-        offsetHeight + (offsetHeight * ZOOM_TICK_PERCENT)}px`;
-      this.draw();
-    }
-  };
-
-  handleZoom = (e) => {
-    if (e && e.shiftKey && this.cellDiameter) {
-      const zoomIn = e.deltaY < 0;
-      const nextCellDiameter = zoomIn
-        ? this.cellDiameter + (this.cellDiameter * ZOOM_TICK_PERCENT)
-        : this.cellDiameter - (this.cellDiameter * ZOOM_TICK_PERCENT);
-      const furtherZoomPossible = zoomIn
-        ? nextCellDiameter < CELL_DIAMETER_LIMITS.max
-        : nextCellDiameter > CELL_DIAMETER_LIMITS.min;
-      if (!furtherZoomPossible) {
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      return zoomIn ? this.zoomIn() : this.zoomOut();
-    }
-  };
-
-  drawLegends = () => {
-    const {columns, rows} = this.props;
-    if (this.horisontalLegend && this.verticalLegend) {
-      const verticalCtx = this.verticalLegend.getContext('2d');
-      const horisontalCtx = this.horisontalLegend.getContext('2d');
-      this.verticalLegend.width = this.verticalLegend.offsetWidth;
-      this.verticalLegend.height = this.verticalLegend.offsetHeight;
-      this.horisontalLegend.height = this.horisontalLegend.offsetHeight;
-      this.horisontalLegend.width = this.horisontalLegend.offsetWidth;
-      this.drawVerticalLegend(verticalCtx, rows);
-      this.drawHorisontalLegend(horisontalCtx, columns);
-    }
-  };
-
-  drawHorisontalLegend = (ctx, columns) => {
-    ctx.clearRect(0, 0, this.horisontalLegend.width, this.horisontalLegend.height);
-    ctx.fillStyle = DEFAULTS.background;
-    ctx.fillRect(0, 0, this.horisontalLegend.width, this.horisontalLegend.height);
-    ctx.fillStyle = DEFAULTS.strokeStyle;
-    ctx.beginPath();
-    ctx.moveTo(CANVAS_PADDING, CANVAS_PADDING);
-    ctx.lineTo(this.horisontalLegend.width, CANVAS_PADDING);
-    ctx.stroke();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    for (let column = 0; column < columns; column++) {
-      ctx.fillText(
-        column + 1,
-        (this.bounds.xFrom + (this.cellDiameter / 2)) + column * this.cellDiameter,
-        CANVAS_PADDING - 2
-      );
-    }
-  };
-
-  drawVerticalLegend = (ctx, rows) => {
-    ctx.clearRect(0, 0, this.verticalLegend.width, this.verticalLegend.height);
-    ctx.fillStyle = DEFAULTS.background;
-    ctx.fillRect(0, 0, this.verticalLegend.width, this.verticalLegend.height);
-    ctx.fillStyle = DEFAULTS.strokeStyle;
-    ctx.beginPath();
-    ctx.moveTo(CANVAS_PADDING, CANVAS_PADDING);
-    ctx.lineTo(CANVAS_PADDING, this.verticalLegend.height);
-    ctx.stroke();
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    for (let row = 0; row < rows; row++) {
-      ctx.fillText(
-        row + 1,
-        CANVAS_PADDING / 2,
-        (this.bounds.yFrom + (this.cellDiameter / 2)) + row * this.cellDiameter
-      );
-    }
-  };
+  }
 
   draw = () => {
-    if (this.canvas && this.canvas.getContext) {
-      const {rows, columns} = this.props;
-      if (rows && columns) {
-        const ctx = this.canvas.getContext('2d');
-        this.cleanUpCanvas();
-        this.drawCells(ctx, rows, columns);
-        this.drawLegends();
+    if (this.canvas) {
+      const context = this.canvas.getContext('2d');
+      context.clearRect(
+        0,
+        0,
+        this.canvas.width,
+        this.canvas.height
+      );
+      const {
+        cellSize
+      } = this.state;
+      const {
+        rows = 0,
+        columns = 0,
+        themes,
+        dataCells = [],
+        selectedCell,
+        gridShape = Shapes.rect,
+        gridRadius = 0
+      } = this.props;
+      let {
+        cellShape = Shapes.circle
+      } = this.props;
+      if (cellSize < 15) {
+        cellShape = Shapes.rect;
       }
-    }
-  };
-
-  getCellColor = (row, column) => {
-    const {dataCells, selectedCell} = this.props;
-    const isSelected = selectedCell &&
-      selectedCell.row === row &&
-      selectedCell.column === column;
-    if (isSelected) {
-      return DEFAULTS.selectedColor;
-    }
-    const hasData = dataCells && dataCells
-      .some(cell => cell.row === row && cell.column === column);
-    if (hasData) {
-      return DEFAULTS.dataColor;
-    }
-    return undefined;
-  };
-
-  drawCells = (ctx, rows, columns) => {
-    if (this.bounds) {
-      const radius = this.cellDiameter / 2;
-      for (let row = 0; row < rows; row++) {
-        for (let column = 0; column < columns; column++) {
-          this.drawCircle(
-            ctx,
-            (this.bounds.xFrom + radius) + column * this.cellDiameter,
-            (this.bounds.yFrom + radius) + row * this.cellDiameter,
-            this.cellDiameter,
-            this.getCellColor(row, column)
-          );
+      if (rows && columns && cellSize) {
+        if (this.drawHandle) {
+          cancelAnimationFrame(this.drawHandle);
         }
+        const correctPixels = o => o * window.devicePixelRatio;
+        this.drawHandle = requestAnimationFrame(() => {
+          let color = 'rgba(0, 0, 0, 0.65)';
+          let dataColor = '#108ee9';
+          let selectedColor = '#ff8818';
+          if (themes && themes.currentThemeConfiguration) {
+            color = themes.currentThemeConfiguration['@application-color-faded'] ||
+              color;
+            dataColor = themes.currentThemeConfiguration['@primary-color'] ||
+              dataColor;
+            selectedColor = themes.currentThemeConfiguration['@color-warning'] ||
+              selectedColor;
+          }
+          context.save();
+          const radius = Math.floor(cellSize / 2) - 1;
+          const renderCell = (column, row) => {
+            if (cellShape === Shapes.circle) {
+              context.arc(
+                Math.round(correctPixels((column + 0.5) * cellSize)),
+                Math.round(correctPixels((row + 0.5) * cellSize)),
+                correctPixels(radius),
+                0,
+                Math.PI * 2
+              );
+            }
+            if (cellShape === Shapes.rect) {
+              context.rect(
+                Math.round(correctPixels(column * cellSize)),
+                Math.round(correctPixels(row * cellSize)),
+                Math.round(correctPixels(cellSize)),
+                Math.round(correctPixels(cellSize))
+              );
+            }
+          };
+          context.save();
+          context.fillStyle = dataColor;
+          for (let dataCell of dataCells) {
+            const {
+              row,
+              column
+            } = dataCell;
+            if (selectedCell && selectedCell.column === column && selectedCell.row === row) {
+              continue;
+            }
+            context.beginPath();
+            renderCell(column, row);
+            context.fill();
+          }
+          context.restore();
+          context.save();
+          context.fillStyle = selectedColor;
+          if (selectedCell) {
+            const {
+              row,
+              column
+            } = selectedCell;
+            context.beginPath();
+            renderCell(column, row);
+            context.fill();
+          }
+          context.restore();
+          context.save();
+          context.strokeStyle = color;
+          context.lineWidth = 1;
+          if (cellShape === Shapes.circle) {
+            for (let c = 0; c < columns; c += 1) {
+              for (let r = 0; r < rows; r += 1) {
+                context.beginPath();
+                renderCell(c, r);
+                context.stroke();
+              }
+            }
+          }
+          if (cellShape === Shapes.rect) {
+            context.beginPath();
+            for (let c = 1; c <= columns; c += 1) {
+              context.moveTo(
+                correctPixels(c * cellSize),
+                0
+              );
+              context.lineTo(
+                correctPixels(c * cellSize),
+                this.canvas.height
+              );
+            }
+            for (let r = 1; r <= rows; r += 1) {
+              context.moveTo(
+                0,
+                correctPixels(r * cellSize)
+              );
+              context.lineTo(
+                this.canvas.width,
+                correctPixels(r * cellSize)
+              );
+            }
+            context.stroke();
+          }
+          context.restore();
+          if (gridShape === Shapes.circle && gridRadius) {
+            context.save();
+            context.beginPath();
+            context.strokeStyle = color;
+            context.lineWidth = 2;
+            context.arc(
+              Math.round(correctPixels(columns / 2.0 * cellSize)),
+              Math.round(correctPixels(rows / 2.0 * cellSize)),
+              Math.round(correctPixels(cellSize * gridRadius)),
+              0,
+              Math.PI * 2
+            );
+            context.stroke();
+            context.restore();
+          }
+        });
       }
-    }
-  };
-
-  drawCircle = (ctx, x, y, diameter, fillColor) => {
-    ctx.beginPath();
-    ctx.arc(x, y, diameter / 2, 0, Math.PI * 2);
-    ctx.stroke();
-    if (fillColor) {
-      ctx.fillStyle = fillColor;
-      ctx.fill();
     }
   };
 
   render () {
     const {
       className,
-      style
+      style,
+      rows,
+      columns,
+      controlledHeight
     } = this.props;
+    const {
+      cellSize,
+      hovered,
+      maxHeight
+    } = this.state;
     return (
       <div
-        className={className}
-        style={Object.assign({position: 'relative', overflow: 'hidden'}, style)}
+        className={
+          classNames(
+            className,
+            styles.container
+          )
+        }
+        style={style}
       >
+        <div className={styles.placeholder}>{'\u00A0'}</div>
         <div
-          ref={this.initializeCanvasContainer}
-          style={{overflow: 'auto', width: '100%', height: '100%'}}
+          className={
+            classNames(
+              styles.rows,
+              'cp-divider',
+              'right'
+            )
+          }
         >
-          <canvas
-            style={{
-              width: '100%',
-              height: '100%'
-            }}
-            ref={this.initializeCanvas}
-          />
+          <div className={styles.legend} ref={this.initializeLegend()}>
+            {
+              cellSize && renderLegend(cellSize, rows, {height: cellSize})
+            }
+          </div>
+        </div>
+        <div
+          className={
+            classNames(
+              styles.columns,
+              'cp-divider',
+              'bottom'
+            )
+          }
+        >
+          <div className={styles.legend} ref={this.initializeLegend(true)}>
+            {
+              cellSize && renderLegend(cellSize, columns, {width: cellSize})
+            }
+          </div>
+        </div>
+        <div
+          className={
+            classNames(
+              styles.data
+            )
+          }
+          ref={this.initializeContainer}
+          style={
+            Object.assign(
+              cellSize || !this.container ? {} : {overflow: 'scroll'},
+              controlledHeight ? {} : {height: maxHeight}
+            )
+          }
+        >
           <div
             style={{
-              width: '100%',
-              height: CANVAS_PADDING,
-              overflow: 'hidden',
-              position: 'absolute',
-              top: 0,
-              left: 0
+              width: cellSize ? columns * cellSize : 0,
+              height: cellSize ? rows * cellSize : 0
             }}
-            ref={(canvas) => { this.horisontalLegendContainer = canvas; }}
           >
             <canvas
+              width={(cellSize ? columns * cellSize : 0) * window.devicePixelRatio}
+              height={(cellSize ? rows * cellSize : 0) * window.devicePixelRatio}
               style={{
                 width: '100%',
-                height: CANVAS_PADDING
+                height: '100%',
+                cursor: hovered ? 'pointer' : 'default'
               }}
-              ref={(canvas) => this.initializeLegends(canvas, 'horisontal')}
-            />
+              ref={this.initializeCanvas}
+              onMouseMove={this.handleMouseMove}
+              onMouseLeave={this.unHover}
+              onClick={this.handleClick}
+            >
+              {'\u00A0'}
+            </canvas>
           </div>
-          <div
-            style={{
-              width: CANVAS_PADDING,
-              height: '100%',
-              overflow: 'hidden',
-              position: 'absolute',
-              top: 0,
-              left: 0
-            }}
-            ref={(canvas) => { this.verticalLegendContainer = canvas; }}
-          >
-            <canvas
-              style={{
-                width: CANVAS_PADDING,
-                height: '100%'
-              }}
-              ref={(canvas) => this.initializeLegends(canvas, 'vertical')}
-            />
-          </div>
-          <span
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: CANVAS_PADDING,
-              height: CANVAS_PADDING,
-              background: DEFAULTS.background
-            }}
-          />
         </div>
       </div>
     );
@@ -391,9 +550,10 @@ class HcsControlGrid extends React.Component {
 }
 
 HcsControlGrid.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
   rows: PropTypes.number,
   columns: PropTypes.number,
-  onClick: PropTypes.func,
   selectedCell: PropTypes.shape({
     row: PropTypes.number,
     column: PropTypes.number
@@ -402,7 +562,25 @@ HcsControlGrid.propTypes = {
     row: PropTypes.number,
     column: PropTypes.number
   })),
-  style: PropTypes.object
+  onClick: PropTypes.func,
+  cellShape: PropTypes.oneOf([
+    Shapes.circle,
+    Shapes.rect
+  ]),
+  gridShape: PropTypes.oneOf([
+    Shapes.circle,
+    Shapes.rect
+  ]),
+  gridRadius: PropTypes.number,
+  controlledHeight: PropTypes.bool,
+  allowEmptySpaces: PropTypes.bool
 };
+
+HcsControlGrid.defaultProps = {
+  cellShape: Shapes.circle,
+  gridShape: Shapes.rect
+};
+
+HcsControlGrid.Shapes = Shapes;
 
 export default HcsControlGrid;
