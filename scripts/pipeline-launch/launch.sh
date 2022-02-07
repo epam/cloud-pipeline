@@ -1483,10 +1483,10 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
             localize_inputs_from_files "${LOCALIZATION_TASK_NAME}"
             if [ $? -ne 0 ]; then
                   echo "Failed to localize data from the config files"
-                  if [ "$CP_LOCALIZE_FROM_FILES_KEEP_JON_ON_FAILURE" != "true" ]; then
-                        exit 1
-                  else
+                  if [ "$CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE" == "true" ]; then
                         echo "--> It is requested to continue running on config files based localization failure"
+                  else
+                        exit 1
                   fi
             fi
             echo

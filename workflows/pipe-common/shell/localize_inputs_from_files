@@ -36,9 +36,9 @@ pipe_log_info "--> RE pattern: $CP_LOCALIZE_FROM_FILES_RE_PATTERN" "$LOCALIZE_FR
 
 # Collect files, which may contain "localizable" values
 pipe_log_info "Collecting files, which may contain 'localizable' values" "$LOCALIZE_FROM_FILES_TASK_NAME"
-_env_var_list="${$CP_LOCALIZE_FROM_FILES//,/ }"
+_env_var_list="${CP_LOCALIZE_FROM_FILES//,/ }"
 _files_to_localize=()
-for _x in $CP_LOCALIZE_FROM_FILES; do
+for _x in $_env_var_list; do
     _param_value=${!_x}
     _paths_list=$(sed -E 's/[,;]+/ /g' <<< "$_param_value")
     for _path in $_paths_list; do
@@ -126,6 +126,8 @@ for _path in ${_files_to_localize[@]}; do
             break
         fi
 
+        # Escape any special symbols (e.g. asterisk) as they confuse 'sed'
+        _remote_path=$(printf '%s\n' "$_remote_path" | sed -e 's/[]\/$*.^[]/\\&/g')
         sed -i "s|$_remote_path|$_local_path|g" "$_path"
 
         i=$((i+1))

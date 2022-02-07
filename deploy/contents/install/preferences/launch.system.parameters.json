@@ -426,6 +426,13 @@
         "passToWorkers": false
     },
     {
+        "name": "CP_PARALLEL_TRANSFER_MODE",
+        "type": "string",
+        "description": "Can run CP_PARALLEL_TRANSFER in 'threaded' or a 'multiprocessing' (default) mode",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
         "name": "CP_TRANSFER_THREADS",
         "type": "int",
         "description": "A number of CPUs to use for the InputData/OutputData task",
@@ -438,5 +445,12 @@
         "description": "A divider for the CPUs count to determine a number of threads for the InputData/OutputData task",
         "defaultValue": "4",
         "passToWorkers": false
+    },
+    {
+     "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
+     "type": "boolen",
+     "description": "Whether fail or keep a job running if a config file based localization fails",
+     "defaultValue": "true",
+     "passToWorkers": false
     }
 ]
