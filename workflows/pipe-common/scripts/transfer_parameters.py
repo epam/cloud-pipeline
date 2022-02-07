@@ -262,6 +262,7 @@ class InputDataTask:
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.is_upload = upload
         self.env_suffix = env_suffix
+        self.extra_args = os.getenv('CP_TRANSFER_PIPE_INPUT_ARGS') if self.is_upload else os.getenv('CP_TRANSFER_PIPE_OUTPUT_ARGS')
 
     def run(self):
         Logger.info('Starting localization of remote data...', task_name=self.task_name)
@@ -463,9 +464,9 @@ class InputDataTask:
         Logger.info('Uploading files from {} to {} using local pipe'.format(source, destination), self.task_name)
         threads = Cluster.get_slots_per_node() if ParallelType.current() == ParallelType.Threaded else None
         if self.is_upload or self.rules is None:
-            S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS, threads=threads)
+            S3Bucket().pipe_copy(source, destination, TRANSFER_ATTEMPTS, threads=threads, extra_args=self.extra_args)
         else:
-            S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules, threads=threads)
+            S3Bucket().pipe_copy_with_rules(source, destination, TRANSFER_ATTEMPTS, self.rules, threads=threads, extra_args=self.extra_args)
 
     def perform_cluster_file_transfer(self, files, cluster, rules=None):
         Logger.info('Uploading {} files using cluster'.format(len(files)), self.task_name)
