@@ -67,6 +67,7 @@ import {
 import Metadata from '../../special/metadata/Metadata';
 import PreviewModal from '../../search/preview/preview-modal';
 import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
+import {getHcsInfo} from '../../search/preview/hcs-preview';
 import UploadButton from '../../special/UploadButton';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
@@ -1041,7 +1042,7 @@ export default class DataStorage extends React.Component {
       .split('.')
       .pop()
       .toLowerCase();
-    if (extension === 'vsi' || extension === 'mrxs') {
+    if (extension === 'vsi' || extension === 'mrxs' || extension === 'hcs') {
       return (
         <Row
           key="preview body"
@@ -1081,7 +1082,7 @@ export default class DataStorage extends React.Component {
     this.setState({previewModal: null});
   };
 
-  checkPreviewAvailability = (file) => {
+  checkWsiPreviewAvailability = (file) => {
     if (!file) {
       return;
     }
@@ -1103,6 +1104,20 @@ export default class DataStorage extends React.Component {
               });
             }
           });
+      });
+    }
+  };
+
+  checkHcsPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    // this is temporal plug for showing empty preview modal
+    const info = getHcsInfo(file.path);
+    if (info) {
+      this.setState({
+        previewPending: false,
+        previewAvailable: true
       });
     }
   };
@@ -1193,6 +1208,9 @@ export default class DataStorage extends React.Component {
           vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
             i.path.toLowerCase().endsWith('.vsi') ||
             i.path.toLowerCase().endsWith('.mrxs')
+          ),
+          hcs: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
+            i.path.toLowerCase().endsWith('.hcs')
           )
         };
       }));
@@ -1205,7 +1223,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew || item.vsi) {
+      if (item.miew || item.vsi || item.hcs) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -1301,6 +1319,17 @@ export default class DataStorage extends React.Component {
             </div>
           );
         }
+        if (item.hcs) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openPreviewModal(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/hcs.png" />
+            </div>
+          );
+        }
         return apps;
       }
     };
@@ -1392,8 +1421,15 @@ export default class DataStorage extends React.Component {
         selectedFile: item,
         metadata: true
       }, () => {
-        if (extension === 'vsi' || extension === 'mrxs') {
-          this.checkPreviewAvailability(item);
+        switch (extension) {
+          case 'vsi':
+          case 'mrxs':
+            this.checkWsiPreviewAvailability(item);
+            break;
+          case 'hcs':
+            this.checkHcsPreviewAvailability(item);
+            break;
+          default: return false;
         }
       });
     }
