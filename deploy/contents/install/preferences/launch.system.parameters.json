@@ -447,10 +447,24 @@
         "passToWorkers": false
     },
     {
-     "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
-     "type": "boolen",
-     "description": "Whether fail or keep a job running if a config file based localization fails",
-     "defaultValue": "true",
-     "passToWorkers": false
+        "name": "CP_TRANSFER_PIPE_INPUT_ARGS",
+        "type": "int",
+        "description": "Specifies additional args to the pipe for the InputData task (effective for 'local' and 'threaded' modes)",
+        "defaultValue": "1",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_TRANSFER_PIPE_OUTPUT_ARGS",
+        "type": "int",
+        "description": "Specifies additional args to the pipe for the OutputData task (effective for 'local' and 'threaded' modes)",
+        "defaultValue": "1",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
+        "type": "boolen",
+        "description": "Whether fail or keep a job running if a config file based localization fails",
+        "defaultValue": "true",
+        "passToWorkers": false
     }
 ]
