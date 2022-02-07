@@ -32,6 +32,7 @@ import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import Papa from 'papaparse';
 import Markdown from '../../special/markdown';
 import VSIPreview from './vsi-preview';
+import HCSPreview from './hcs-preview';
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
@@ -327,6 +328,20 @@ export default class S3FilePreview extends React.Component {
     );
   };
 
+  renderHCSPreview = () => {
+    return (
+      <HCSPreview
+        className={styles.contentPreview}
+        file={this.props.item.id}
+        storageId={this.props.item.parentId}
+        onPreviewLoaded={this.props.onPreviewLoaded}
+        fullscreen={this.props.fullscreen}
+        onFullScreenChange={this.props.onFullScreenChange}
+        fullScreenAvailable={this.props.fullScreenAvailable}
+      />
+    );
+  }
+
   renderPDBPreview = () => {
     const onError = (message) => {
       this.setState({
@@ -370,7 +385,8 @@ export default class S3FilePreview extends React.Component {
       pdf: this.renderImagePreview,
       md: this.renderMDPreview,
       vsi: this.renderVSIPreview,
-      mrxs: this.renderVSIPreview
+      mrxs: this.renderVSIPreview,
+      hcs: this.renderHCSPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();

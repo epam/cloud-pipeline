@@ -1041,7 +1041,7 @@ export default class DataStorage extends React.Component {
       .split('.')
       .pop()
       .toLowerCase();
-    if (extension === 'vsi' || extension === 'mrxs') {
+    if (extension === 'vsi' || extension === 'mrxs' || extension === 'hcs') {
       return (
         <Row
           key="preview body"
@@ -1193,6 +1193,9 @@ export default class DataStorage extends React.Component {
           vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
             i.path.toLowerCase().endsWith('.vsi') ||
             i.path.toLowerCase().endsWith('.mrxs')
+          ),
+          hcs: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
+            i.path.toLowerCase().endsWith('.hcs')
           )
         };
       }));
@@ -1205,7 +1208,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew || item.vsi) {
+      if (item.miew || item.vsi || item.hcs) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -1298,6 +1301,17 @@ export default class DataStorage extends React.Component {
               key={item.key}
             >
               <img src="icons/file-extensions/vsi.png" />
+            </div>
+          );
+        }
+        if (item.hcs) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openPreviewModal(item, event)}
+              key={item.key}
+            >
+              <span>HCS</span>
             </div>
           );
         }
