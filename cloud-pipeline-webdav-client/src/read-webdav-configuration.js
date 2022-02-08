@@ -4,6 +4,7 @@ const https = require('https');
 const URL = require('url');
 const {log, error} = require('./application/models/log');
 const localSettingsPath = require('./local-settings-path');
+const getUserName = require('./read-os-user-name');
 
 const DEFAULT_APP_NAME = 'Cloud Data';
 
@@ -187,6 +188,21 @@ module.exports = async function () {
     ...(custom || {}),
     version: getAppVersion()
   };
+  const osUserName = await getUserName();
+  const serverCorrected = osUserName && config.server
+    ? (config.server || '').replace(/<USER_ID>/ig, osUserName)
+    : config.server;
+  const userNameCorrected = osUserName && (!config.username || /^<USER_ID>$/i.test(config.username))
+    ? osUserName
+    : config.username;
+  if (serverCorrected !== config.server) {
+    log(`WEBDAV Server corrected: ${serverCorrected}`);
+  }
+  if (userNameCorrected !== config.username) {
+    log(`WEBDAV username corrected: ${userNameCorrected}`);
+  }
+  config.server = serverCorrected;
+  config.username = userNameCorrected;
   config.name = (custom ? custom.name : undefined) || DEFAULT_APP_NAME;
   config.version = getAppVersion();
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
