@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
+import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {
   Alert
@@ -25,6 +25,8 @@ import {
 import fetchHCSInfo from './utilities/fetch-hcs-info';
 import HcsImageWellsSelector from './hcs-image-wells-selector';
 import HcsImageFieldSelector from './hcs-image-field-selector';
+import ViewerState from './utilities/viewer-state';
+import HcsImageControls from './hcs-image-controls';
 import HcsSequenceSelector from './hcs-sequence-selector';
 import styles from './hcs-image.css';
 
@@ -51,6 +53,7 @@ class HcsImage extends React.PureComponent {
 
   @observable hcsInfo;
   @observable container;
+  @observable hcsViewerState = new ViewerState();
   hcsImageViewer;
 
   componentDidMount () {
@@ -169,10 +172,14 @@ class HcsImage extends React.PureComponent {
     if (timepoint === timepointId && sequence === sequenceId) {
       return;
     }
-    return this.setState({timepointId: timepoint});
+    if (sequence !== sequenceId) {
+      this.changeSequence(sequence, timepoint);
+    } else {
+      this.setState({timepointId: timepoint});
+    }
   };
 
-  changeSequence = (sequenceId) => {
+  changeSequence = (sequenceId, timepointId) => {
     const {sequenceId: currentSequenceId} = this.state;
     if (currentSequenceId !== sequenceId) {
       if (this.hcsInfo) {
@@ -194,7 +201,7 @@ class HcsImage extends React.PureComponent {
                   sequencePending: false,
                   error: undefined,
                   sequenceId,
-                  timepointId: timeSeries[0],
+                  timepointId: timepointId || timeSeries[0],
                   wells
                 }, () => {
                   const firstWell = wells[0];
@@ -296,6 +303,7 @@ class HcsImage extends React.PureComponent {
           height: '100%'
         }
       });
+      this.hcsViewerState.attachToViewer(this.hcsImageViewer);
       this.loadImage();
     }
   };
@@ -324,81 +332,84 @@ class HcsImage extends React.PureComponent {
     const pending = hcsImagePending || sequencePending;
     const selectedWell = wells.find(o => o.id === wellId);
     return (
-      <div
-        className={
-          classNames(
-            className,
-            styles.hcsImageContainer
-          )
-        }
-        style={style}
-      >
+      <Provider hcsViewerState={this.hcsViewerState}>
         <div
           className={
-            styles.hcsImageRenderer
+            classNames(
+              className,
+              styles.hcsImageContainer
+            )
           }
+          style={style}
         >
+          <div
+            className={
+              styles.hcsImageRenderer
+            }
+          >
+            {
+              error && (
+                <div
+                  className={styles.alertContainer}
+                >
+                  <Alert
+                    type="error"
+                    message={error}
+                  />
+                </div>
+              )
+            }
+            <div
+              className={styles.hcsImage}
+              ref={this.init}
+            >
+              {'\u00A0'}
+            </div>
+          </div>
           {
-            error && (
+            showWellSelectors && (
               <div
-                className={styles.alertContainer}
+                className={
+                  classNames(
+                    styles.hcsImageControls,
+                    'cp-content-panel'
+                  )
+                }
               >
-                <Alert
-                  type="error"
-                  message={error}
+                <HcsImageControls />
+                <HcsSequenceSelector
+                  sequences={this.sequences}
+                  selectedSequence={sequenceId}
+                  selectedTimepoint={timepointId}
+                  onChangeTimepoint={this.changeTimepoint}
+                />
+                <HcsImageWellsSelector
+                  style={{
+                    minWidth: 200
+                  }}
+                  wells={wells}
+                  onChange={this.changeWell}
+                  selectedWell={wellId}
+                  width={plateWidth}
+                  height={plateHeight}
+                />
+                <HcsImageFieldSelector
+                  style={{
+                    minWidth: 200
+                  }}
+                  fields={fields}
+                  onChange={this.changeWellImage}
+                  selectedField={imageId}
+                  width={wellWidth}
+                  height={wellHeight}
+                  wellName={selectedWell ? `Well ${selectedWell.x}_${selectedWell.y}` : undefined}
+                  wellRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
                 />
               </div>
             )
           }
-          <div
-            className={styles.hcsImage}
-            ref={this.init}
-          >
-            {'\u00A0'}
-          </div>
         </div>
-        {
-          showWellSelectors && (
-            <div
-              className={
-                classNames(
-                  styles.hcsImageControls,
-                  'cp-content-panel'
-                )
-              }
-            >
-              <HcsSequenceSelector
-                sequences={this.sequences}
-                selectedSequence={sequenceId}
-                selectedTimepoint={timepointId}
-                onChangeTimepoint={this.changeTimepoint}
-              />
-              <HcsImageWellsSelector
-                style={{
-                  minWidth: 200
-                }}
-                wells={wells}
-                onChange={this.changeWell}
-                selectedWell={wellId}
-                width={plateWidth}
-                height={plateHeight}
-              />
-              <HcsImageFieldSelector
-                style={{
-                  minWidth: 200
-                }}
-                fields={fields}
-                onChange={this.changeWellImage}
-                selectedField={imageId}
-                width={wellWidth}
-                height={wellHeight}
-                wellName={selectedWell ? `Well ${selectedWell.x}_${selectedWell.y}` : undefined}
-                wellRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
-              />
-            </div>
-          )
-        }
-      </div>
+      </Provider>
     );
   }
 }

@@ -14,42 +14,18 @@
  *  limitations under the License.
  */
 
-.container {
-  display: flex;
-  flex-direction: column;
-  padding: 5px;
+import React from 'react';
+import Channels from './channels';
+import ColorMap from './color-map';
+import styles from './hcs-image-controls.css';
+
+function HcsImageControls () {
+  return (
+    <div className={styles.container}>
+      <ColorMap />
+      <Channels />
+    </div>
+  );
 }
 
-.header {
-  margin: 5px 0;
-}
-
-.active-badge {
-  margin-left: 15px;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.timepoints-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-left: -5px;
-}
-
-.timepoint {
-  width: 25px;
-  height: 25px;
-  display: inline-flex;
-  margin-left: 5px;
-  margin-bottom: 5px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.timepoint.active {
-  cursor: default;
-}
-
+export default HcsImageControls;

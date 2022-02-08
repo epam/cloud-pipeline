@@ -124,7 +124,7 @@ class HcsSequenceSelector extends React.Component {
 }
 
 HcsSequenceSelector.propTypes = {
-  sequences: PropTypes.object,
+  sequences: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   selectedSequence: PropTypes.string,
   selectedTimepoint: PropTypes.string,
   onChangeTimepoint: PropTypes.func

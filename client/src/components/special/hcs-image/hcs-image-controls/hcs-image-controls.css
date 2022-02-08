@@ -15,41 +15,54 @@
  */
 
 .container {
-  display: flex;
-  flex-direction: column;
   padding: 5px;
 }
 
-.header {
+.color-map {
   margin: 5px 0;
-}
-
-.active-badge {
-  margin-left: 15px;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.timepoints-container {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
   align-items: center;
-  margin-left: -5px;
 }
 
-.timepoint {
-  width: 25px;
-  height: 25px;
-  display: inline-flex;
-  margin-left: 5px;
-  margin-bottom: 5px;
+.color-map .header {
+  font-weight: bold;
+  margin-right: 5px;
+}
+
+.color-map .color-map-selector {
+  flex: 1;
+}
+
+.channels .header {
+  margin: 5px 0;
+  font-weight: bold;
+}
+
+.channel {
+  margin: 5px 0;
+  padding: 5px;
+}
+
+.channel .header {
+  display: flex;
   align-items: center;
-  justify-content: center;
+}
+
+.channel .configuration {
+  display: flex;
+  align-items: center;
+}
+
+.color-presenter {
   cursor: pointer;
+  width: 2em;
+  height: 1.5em;
+  display: inline-block;
+  border: 1px solid currentColor;
 }
 
-.timepoint.active {
-  cursor: default;
+.color-presenter .fill {
+  background-color: currentColor;
+  width: 100%;
+  height: 100%;
 }
-
