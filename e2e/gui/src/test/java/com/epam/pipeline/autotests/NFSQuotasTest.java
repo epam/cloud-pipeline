@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.BucketPermission;
@@ -27,7 +28,10 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
+import java.util.stream.Stream;
 
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NOTIFICATION;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
@@ -38,11 +42,10 @@ import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
-import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements Authorization, Navigation {
@@ -53,6 +56,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     private static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
     private final String nfsPrefix = C.NFS_PREFIX.replace(":/", "");
     private final String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
+    private final String storage2 = "epmcmbi-test-nfs-" + Utils.randomSuffix();
+    private final String folder = "epmcmbi-test-folder-" + Utils.randomSuffix();
     private final String registry = C.DEFAULT_REGISTRY;
     private final String tool = C.TESTING_TOOL_NAME;
     private final String group = C.DEFAULT_GROUP;
@@ -77,19 +82,27 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 BucketPermission.allow(READ, storage),
                 BucketPermission.allow(WRITE, storage));
         tools()
-                .perform(registry, group, tool, tool -> tool.run(this));
-        commonRunId = getLastRunId();
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(storage)
+                .selectStorage(storage)
+                .ok()
+                .launch(this)
+                .showLog(commonRunId = getLastRunId());
     }
 
     @AfterClass(alwaysRun = true)
     public void removeStorage() {
-        navigationMenu()
-                .library()
-                .selectStorage(storage)
-                .clickEditStorageButton()
-                .editForNfsMount()
-                .clickDeleteStorageButton()
-                .clickDelete();
+        Stream.of(storage, storage2)
+                .forEach(s -> navigationMenu()
+                        .library()
+                        .selectStorage(s)
+                        .clickEditStorageButton()
+                        .editForNfsMount()
+                        .clickDeleteStorageButton()
+                        .clickDelete());
     }
 
     @Test
@@ -198,7 +211,6 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .rmFile(fileName)
                 .validateElementNotPresent(fileName);
-//        sleep(5, MINUTES);
         checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
         String lastRunId = checkStorageReadOnlyStatusInNewRun(fileName);
         runsMenu()
@@ -240,6 +252,12 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         checkStorageReadOnlyStatusInActiveRun(userRunId, fileName2);
         userRunId2 = checkStorageReadOnlyStatusInNewRun(fileName2);
         logout();
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage)
+                .rmFile(fileName)
+                .validateElementNotPresent(fileName);
     }
 
     @Test(dependsOnMethods = {"validateReadOnlyQuota"})
@@ -274,7 +292,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
-        checkStorageReadOnlyStatusInActiveRun(commonRunId, fileName);
+        checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
         logout();
 
         navigationMenu()
@@ -301,10 +319,55 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         new StorageContentAO()
                 .ensureVisible(CREATE, UPLOAD);
 
-        checkFileCreationViaSSH(commonRunId, fileName);
+        checkFileCreationViaSSH(userRunId, fileName);
         checkFileCreationViaSSH(userRunId2, fileName2);
         logout();
     }
+
+    @Test
+    @TestCase(value = {"2182_6"})
+    public void validateQuotasViaUI() throws IOException {
+        navigationMenu()
+                .library()
+                .createNfsMount("/" + storage2, storage2);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage2)
+                .showMetadata()
+                .configureNotification()
+                .addRecipient(user.login)
+                .addNotification("0.001", "Make read-only")
+                .addNotification("0.002", "Disable mount")
+                .ok()
+                .checkConfiguredNotificationsLink(2, 1);
+
+        // Create a 1.5 MB file
+        final File file = Utils.createTempFileWithSpecificSize(1572864);
+        library()
+                .selectStorage(storage2)
+                .uploadFile(file);
+
+        navigationMenu()
+                .library()
+                .selectStorage(storage2)
+                .showMetadata()
+                .waitUntilStatusUpdated(READ_ONLY_MOUNT_STATUS)
+                .checkWarningStatusIcon()
+                .checkStorageSize(format("%s Mb", "1.50"))
+                .checkStorageStatus(READ_ONLY_MOUNT_STATUS);
+
+        library()
+                .selectStorage(storage2)
+                .createFolder(folder)
+                .cd(folder)
+                .uploadFile(file)
+                .showMetadata()
+                .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
+                .checkStorageSize(format("%s Mb", "3.00"))
+                .checkStorageStatus(DISABLED_MOUNT_STATUS);
+    }
+
 
     private void checkFileCreationViaSSH(String runId, String fileName) {
         runsMenu()

@@ -29,6 +29,7 @@ import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.matchText;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -193,7 +194,11 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkStorageSize(final String sizeWithUnit) {
-        ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
+        if ("0".equals(sizeWithUnit)) {
+            ensure(byClassName("torage-size__storage-size"), not(visible));
+        } else {
+            ensure(byClassName("torage-size__storage-size"), matchText(format("Storage size: %s", sizeWithUnit)));
+        }
         return this;
     }
 
@@ -210,12 +215,14 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO checkWarningStatusIconNotVisible() {
         for (int i = 0; i < 5; i++) {
-            if (!$(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
+            if (!$(byClassName("estricted-images-info__container")).isDisplayed()) {
                 break;
             }
             sleep(1, MINUTES);
             refresh();
+            sleep(5, SECONDS);
         }
+        $(byClassName("estricted-images-info__container")).shouldNotBe(visible);
         return this;
     }
 
@@ -227,12 +234,11 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
                         .has(text(format("Storage status is: %s", status)))) {
                     break;
                 }
-//                else {
-//                    continue;
-//                }
             }
             sleep(1, MINUTES);
             refresh();
+            sleep(5, SECONDS);
+
         }
         return this;
     }
