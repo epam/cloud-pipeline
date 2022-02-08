@@ -56,7 +56,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             entry(REMOVE_ALL_KEYS, $(byId("remove-all-keys-button"))),
             entry(ENLARGE, $(PipelineSelectors.buttonByIconClass("anticon-arrows-alt"))),
             entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea")),
-            entry(CONFIGURE_NOTIFICATION, $(byId("value-column-fs_notifications")))
+            entry(CONFIGURE_NOTIFICATION, $(byId("value-column-fs_notifications"))),
             entry(FILE_SYSTEM_ACCESS, $(byId("value-column-dav-mount")).$(byXpath(".//span"))),
             entry(DISABLE, $(byClassName("equest-dav-access__disable-button"))),
             entry(INFORMATION_ICON, $(byClassName("anticon-info-circle")))
