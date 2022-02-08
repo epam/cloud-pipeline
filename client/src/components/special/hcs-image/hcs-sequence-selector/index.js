@@ -25,6 +25,20 @@ class HcsSequenceSelector extends React.Component {
     expandedKeys: []
   }
 
+  componentDidMount () {
+    const {selectedSequence} = this.props;
+    if (selectedSequence) {
+      this.onTogglePanel(selectedSequence);
+    }
+  }
+
+  componentDidUpdate (prevProps) {
+    const {selectedSequence} = this.props;
+    if (!prevProps.selectedSequence && prevProps.selectedSequence !== selectedSequence) {
+      this.onTogglePanel(selectedSequence);
+    }
+  }
+
   onTogglePanel = (keys) => {
     return this.setState({expandedKeys: keys});
   };
@@ -86,7 +100,6 @@ class HcsSequenceSelector extends React.Component {
         <Collapse
           onChange={this.onTogglePanel}
           activeKey={expandedKeys}
-          defaultActiveKey={[selectedSequence]}
         >
           {sequences.map(sequence => (
             <Collapse.Panel
