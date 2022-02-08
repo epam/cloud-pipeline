@@ -306,7 +306,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
         public ConfigureNotificationAO addNotification(final String volumeThresholdInGb, final String action) {
             click(ADD_NOTIFICATION);
             final SelenideElement threshold = $$(inputOf(byClassName("s-notifications__notification")))
-                    .filter(cssClass("s-notifications__error"))
+                    .filter(cssClass("s-notifications__input"))
                     .last();
             setValue(threshold, volumeThresholdInGb);
             final SelenideElement actionElement = $$(byText("Do nothing")).last().parent();
