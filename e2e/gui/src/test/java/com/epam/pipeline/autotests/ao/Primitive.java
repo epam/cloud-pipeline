@@ -302,5 +302,6 @@ public enum Primitive {
     SPECIFY_IP,
     RESOLVE,
     DISABLE_MOUNT,
-    ALLOW_MOUNT
+    ALLOW_MOUNT,
+    SHOW_USERS
 }
