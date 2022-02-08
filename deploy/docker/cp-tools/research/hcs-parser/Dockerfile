@@ -38,6 +38,8 @@ RUN yum install -y curl \
                    unzip && \
     curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
 
+ARG CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
+
 # Install HCS-tools and their dependencies
 RUN yum install -y -q epel-release && \
     yum update -y && \
@@ -66,7 +68,7 @@ RUN yum install -y -q epel-release && \
     make altinstall && \
     cd .. && \
     rm -rf Python-* && \
-    pip3.9 install generate-tiff-offsets
+    python3.9 -m pip install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7
 
 ENV PATH="$HCS_TOOLS_HOME/bftools:$HCS_TOOLS_HOME/bioformats2raw/bin:$HCS_TOOLS_HOME/raw2ometiff/bin:$PATH"
 
