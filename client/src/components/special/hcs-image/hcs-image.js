@@ -18,13 +18,14 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {observable} from 'mobx';
+import {computed, observable} from 'mobx';
 import {
   Alert
 } from 'antd';
 import fetchHCSInfo from './utilities/fetch-hcs-info';
 import HcsImageWellsSelector from './hcs-image-wells-selector';
 import HcsImageFieldSelector from './hcs-image-field-selector';
+import HcsSequenceSelector from './hcs-sequence-selector';
 import styles from './hcs-image.css';
 
 const HCSImageViewer = window.HcsImageViewer;
@@ -36,6 +37,7 @@ class HcsImage extends React.PureComponent {
     sequencePending: false,
     error: undefined,
     sequenceId: undefined,
+    timepointId: undefined,
     wells: [],
     fields: [],
     wellId: undefined,
@@ -66,6 +68,14 @@ class HcsImage extends React.PureComponent {
 
   componentWillUnmount () {
     this.container = undefined;
+  }
+
+  @computed
+  get sequences () {
+    if (!this.hcsInfo) {
+      return [];
+    }
+    return (this.hcsInfo.sequences || []).map(s => s);
   }
 
   prepare = () => {
@@ -151,6 +161,17 @@ class HcsImage extends React.PureComponent {
     }
   };
 
+  changeTimepoint = (sequence, timepoint) => {
+    const {
+      timepointId,
+      sequenceId
+    } = this.state;
+    if (timepoint === timepointId && sequence === sequenceId) {
+      return;
+    }
+    return this.setState({timepointId: timepoint});
+  };
+
   changeSequence = (sequenceId) => {
     const {sequenceId: currentSequenceId} = this.state;
     if (currentSequenceId !== sequenceId) {
@@ -168,11 +189,12 @@ class HcsImage extends React.PureComponent {
                 sequenceInfo.generateOffsetsJsonURL()
               ]))
               .then(() => {
-                const {wells = []} = sequenceInfo;
+                const {wells = [], timeSeries = []} = sequenceInfo;
                 this.setState({
                   sequencePending: false,
                   error: undefined,
                   sequenceId,
+                  timepointId: timeSeries[0],
                   wells
                 }, () => {
                   const firstWell = wells[0];
@@ -288,6 +310,8 @@ class HcsImage extends React.PureComponent {
       error,
       pending: hcsImagePending,
       sequencePending,
+      sequenceId,
+      timepointId,
       wellId,
       imageId,
       wells = [],
@@ -343,6 +367,12 @@ class HcsImage extends React.PureComponent {
                 )
               }
             >
+              <HcsSequenceSelector
+                sequences={this.sequences}
+                selectedSequence={sequenceId}
+                selectedTimepoint={timepointId}
+                onChangeTimepoint={this.changeTimepoint}
+              />
               <HcsImageWellsSelector
                 style={{
                   minWidth: 200

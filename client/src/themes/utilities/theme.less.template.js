@@ -1464,6 +1464,14 @@ export default `
 @THEME .cp-close-button:hover {
   color: @application-color;
 }
+@THEME .cp-timepoint-button {
+  background-color: fade(@primary-color, 40%);
+  border: 1px solid @primary-color;
+}
+@THEME .cp-timepoint-button-active {
+  background-color: fade(@color-warning, 40%);
+  border: 1px solid @color-warning;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
