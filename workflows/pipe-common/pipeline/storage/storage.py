@@ -135,15 +135,15 @@ class S3Bucket:
             upload_file_command += " --exclude " + exclude
         self.execute_command(upload_file_command, max_attempts)
 
-    def pipe_copy_with_rules(self, source, target, max_attempts, datastorage_rules_file, threads=None):
+    def pipe_copy_with_rules(self, source, target, max_attempts, datastorage_rules_file, threads=None, extra_args=None):
         allowed_rules = ""
         rules = pipeline.api.DataStorageRule.read_from_file(datastorage_rules_file)
         for rule in rules:
             if rule.move_to_sts:
                 allowed_rules += " --include \"{}\"".format(rule.file_mask)
-        upload_file_command = '{} "{}" "{}" {} {} --recursive --force --quiet {}'.format(
+        upload_file_command = '{} "{}" "{}" {} {} {} --recursive --force --quiet {}'.format(
             PIPE_STORAGE_CP, source, target, allowed_rules, self.__build_tags_command(), 
-            self.__build_threads_option(threads))
+            self.__build_threads_option(threads), extra_args if extra_args else '')
         self.execute_command(upload_file_command, max_attempts)
 
     def build_pipe_cp_command(self, source, target, exclude=None, include=None, file_list=None, extra_args=None):
