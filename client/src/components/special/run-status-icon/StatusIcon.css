@@ -14,26 +14,6 @@
  * limitations under the License.
  */
 
-.icon-green {
-  font-size: 20px;
-  color: #116118;
-}
-
-.icon-blue {
-  font-size: 20px;
-  color: #2282bf;
-}
-
-.icon-red {
-  font-size: 20px;
-  color: #ae1726;
-}
-
-.icon-yellow {
-  font-size: 20px;
-  color: #f79e2c;
-}
-
 .link-action {
   text-transform: uppercase;
 }

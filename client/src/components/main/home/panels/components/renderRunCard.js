@@ -127,7 +127,9 @@ function renderEstimatedPrice (run) {
     return null;
   }
   const diff = evaluateRunDuration(run) * run.pricePerHour;
-  const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
+  // const price = (Math.ceil(diff * 100.0) / 100.0) * (run.nodeCount ? (run.nodeCount + 1) : 1);
+  const masterPrice = Math.ceil(diff * 100.0) / 100.0;
+  const price = masterPrice + (run.workersPrice || 0);
   return (
     <JobEstimatedPriceInfo>
       , estimated price: <b>{price.toFixed(2)}$</b>
@@ -140,7 +142,6 @@ function renderRegion (run) {
     const {cloudProvider, cloudRegionId} = run.instance;
     return (
       <AWSRegionTag
-        darkMode
         key="region"
         style={{fontSize: 'medium'}}
         provider={cloudProvider}
@@ -159,7 +160,7 @@ export default function renderRunCard (run) {
     <Row key="title" style={{fontSize: 'smaller'}}>
       {renderTitle(run)}
       {run.sensitive ? ',' : null}
-      {run.sensitive ? (<span style={{whiteSpace: 'pre', color: '#ff5c33'}}> sensitive</span>) : null}
+      {run.sensitive ? (<span className="cp-sensitive" style={{whiteSpace: 'pre'}}> sensitive</span>) : null}
     </Row>,
     <Row key="time" style={{fontSize: 'smaller'}}>
       {renderTime(run)}{renderEstimatedPrice(run)}

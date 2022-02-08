@@ -23,6 +23,7 @@ import 'rc-dropdown/assets/index.css';
 import 'rc-menu/assets/index.css';
 import './index.css';
 import './staticStyles/rc-menu.css';
+import './staticStyles/antd-extensions.css';
 
 ReactDOM.render(
   <Root />,

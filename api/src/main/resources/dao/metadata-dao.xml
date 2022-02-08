@@ -204,6 +204,38 @@
                 ]]>
             </value>
         </property>
+        <property name="searchMetadataEntriesByClassAndKeyValueQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        m.entity_id,
+                        m.entity_class,
+                        m.data
+                    FROM
+                        pipeline.metadata m
+                    WHERE
+                        m.entity_class = ?
+                    AND
+                        m.data @> CAST(? AS jsonb)
+                ]]>
+            </value>
+        </property>
+        <property name="searchMetadataEntriesByClassAndKeyQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        m.entity_id,
+                        m.entity_class,
+                        m.data
+                    FROM
+                        pipeline.metadata m
+                    WHERE
+                        m.entity_class = :ENTITY_CLASS
+                    AND
+                        m.data ?? :KEY
+                ]]>
+            </value>
+        </property>
         <property name="loadUniqueValuesFromEntitiesAttributes">
             <value>
                 <![CDATA[

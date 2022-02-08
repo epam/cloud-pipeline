@@ -27,18 +27,12 @@ const StatusIcon = (props) => {
   const status = getStatus(props);
   const icon = getRunStatusIcon(status, props.iconSet);
   const className = [props.className, DefaultStyles[status]].filter(Boolean).join(' ');
-
-  let iconStyle = {verticalAlign: 'middle', fontWeight: 'normal'};
+  let iconStyle = {verticalAlign: 'middle', fontWeight: 'normal', fontSize: 'large'};
   if (props.small) {
     iconStyle.fontSize = 'small';
   }
   if (props.additionalStyle) {
     iconStyle = Object.assign(iconStyle, props.additionalStyle);
-  }
-  if (props.additionalStyleByStatus &&
-    props.additionalStyleByStatus.hasOwnProperty(status) &&
-    !!props.additionalStyleByStatus[status]) {
-    iconStyle = Object.assign(iconStyle, props.additionalStyleByStatus[status]);
   }
 
   const result = (
@@ -72,7 +66,6 @@ const StatusIcon = (props) => {
 
 StatusIcon.propTypes = {
   additionalStyle: PropTypes.object,
-  additionalStyleByStatus: PropTypes.object,
   className: PropTypes.string,
   displayTooltip: PropTypes.bool,
   iconSet: PropTypes.object,

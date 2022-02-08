@@ -17,9 +17,7 @@
 package com.epam.pipeline.assertions.datastorage;
 
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import org.apache.commons.collections4.CollectionUtils;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -46,21 +44,5 @@ public abstract class AbstractS3StorageAssert<S extends AbstractS3StorageAssert<
                     allowedCidrs, actual.getAllowedCidrs());
         }
         return myself;
-    }
-
-    public static boolean equalCollections(Collection<?> first, Collection<?> second) {
-        if (first == second) {
-            return true;
-        }
-        if (first == null) {
-            return second.isEmpty();
-        }
-        if (second == null) {
-            return first.isEmpty();
-        }
-        if (first.size() != second.size()) {
-            return false;
-        }
-        return CollectionUtils.disjunction(first, second).isEmpty();
     }
 }

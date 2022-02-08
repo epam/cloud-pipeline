@@ -45,7 +45,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
 
 @Service
 @Slf4j
@@ -58,11 +57,6 @@ public class RunScheduleManager {
     private final AuthManager authManager;
     private final ScheduleProviderManager scheduleProviderManager;
     private final PipelineRunManager runManager;
-
-    @PostConstruct
-    public void init() {
-        loadAllSchedules().forEach(scheduler::scheduleRunSchedule);
-    }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public List<RunSchedule> createSchedules(final Long schedulableId, final ScheduleType scheduleType,

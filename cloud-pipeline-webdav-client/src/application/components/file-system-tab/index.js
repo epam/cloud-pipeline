@@ -65,7 +65,7 @@ function FileSystemTab (
     onDropCommand,
     sorting,
     setSorting,
-    lastSelectionIndex,
+    lastSelectionIndex
   }
 ) {
   const [columnSizes, onSetColumnSizes] = useSplitPanel([undefined, 100, 150]);

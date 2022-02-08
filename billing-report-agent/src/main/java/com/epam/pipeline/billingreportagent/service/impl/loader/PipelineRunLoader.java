@@ -141,7 +141,7 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
     }
 
     private Optional<String> getBillingOwner(final PipelineRun run) {
-        return run.getPipelineRunParameters().stream()
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
                 .filter(parameter -> billingOwnerParameter.equals(parameter.getName()))
                 .map(PipelineRunParameter::getValue)
                 .findFirst();

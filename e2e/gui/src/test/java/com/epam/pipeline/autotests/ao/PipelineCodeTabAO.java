@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.interactions.Actions;
 import static com.codeborne.selenide.Condition.appear;
@@ -218,20 +217,6 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             return this;
         }
 
-        private FileEditingPopupAO deleteExtraBrackets() {
-            return deleteExtraBrackets(100);
-        }
-
-        public FileEditingPopupAO deleteExtraBrackets(int number) {
-            Actions action = actions().moveToElement($(byClassName("CodeMirror-line")));
-            sleep(500, MILLISECONDS);
-            for (int i = 0; i < number; i++) {
-                action.sendKeys(Keys.DELETE);
-            }
-            action.perform();
-            return this;
-        }
-
         private FileEditingPopupAO fillWith(String newText) {
             Utils.clickAndSendKeysWithSlashes($(byClassName("CodeMirror-line")), newText);
             return this;
@@ -268,13 +253,19 @@ public class PipelineCodeTabAO extends AbstractPipelineTabAO<PipelineCodeTabAO> 
             sleep(1, SECONDS);
             editor.click();
             final List<String> lines = $(className("CodeMirror")).findAll(className("CodeMirror-line")).texts();
-            final String code = lines.stream().collect(Collectors.joining());
+            final String code = String.join("", lines);
             final String edited = action.apply(code);
-            if (!code.equals(edited)) {
-                clear();
-                fillWith(edited);
-                deleteExtraBrackets();
+            if (code.equals(edited)) {
+                return this;
             }
+            clear()
+                    .fillWith(edited)
+                    .deleteExtraBrackets(100);
+            return this;
+        }
+
+        public FileEditingPopupAO deleteExtraBrackets(int num) {
+            deleteExtraBrackets($(byClassName("CodeMirror-line")), num);
             return this;
         }
 

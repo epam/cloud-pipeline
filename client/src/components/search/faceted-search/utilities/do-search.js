@@ -15,19 +15,22 @@
  */
 
 import {FacetedSearch} from '../../../../models/search';
+import {getSortingPayload} from './sorting';
 
-function doSearch (
+function doSearch ({
   query,
   filters,
+  sortingOrder,
   metadataFields,
   pageSize,
   facets,
   scrollingParameters,
   abortSignal
-) {
+}) {
   const payload = {
     query: query || '*',
     filters: {...filters},
+    sorts: getSortingPayload(sortingOrder),
     metadataFields,
     facets,
     pageSize,

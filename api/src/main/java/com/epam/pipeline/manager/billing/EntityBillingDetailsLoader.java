@@ -34,6 +34,10 @@ public interface EntityBillingDetailsLoader {
      */
     Map<String, String> loadInformation(String entityIdentifier, boolean loadDetails);
 
+    default Map<String, String> loadDetails(String entityIdentifier) {
+        return loadInformation(entityIdentifier, true);
+    }
+
     Map<String, String> getEmptyDetails();
 
 }

@@ -22,6 +22,7 @@ import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
 import com.epam.pipeline.dao.cluster.ClusterDao;
 import com.epam.pipeline.dao.cluster.InstanceOfferDao;
+import com.epam.pipeline.dao.cluster.NatGatewayDao;
 import com.epam.pipeline.dao.cluster.NodeDiskDao;
 import com.epam.pipeline.dao.cluster.pool.NodePoolDao;
 import com.epam.pipeline.dao.cluster.pool.NodeScheduleDao;
@@ -29,6 +30,7 @@ import com.epam.pipeline.dao.configuration.RunConfigurationDao;
 import com.epam.pipeline.dao.contextual.ContextualPreferenceDao;
 import com.epam.pipeline.dao.datastorage.DataStorageDao;
 import com.epam.pipeline.dao.datastorage.FileShareMountDao;
+import com.epam.pipeline.dao.datastorage.StorageQuotaTriggersDao;
 import com.epam.pipeline.dao.datastorage.rules.DataStorageRuleDao;
 import com.epam.pipeline.dao.datastorage.tags.DataStorageTagDao;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
@@ -68,7 +70,9 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
+import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
+import com.epam.pipeline.manager.ldap.LdapTemplateProvider;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
@@ -88,12 +92,18 @@ import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
+import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
+import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
+import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
+import com.epam.pipeline.repository.quota.QuotaActionRepository;
+import com.epam.pipeline.repository.quota.QuotaRepository;
 import com.epam.pipeline.repository.role.RoleRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
+import com.epam.pipeline.repository.user.OnlineUsersRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -385,4 +395,34 @@ public class AspectTestBeans {
 
     @MockBean
     protected CacheManager cacheManager;
+
+    @MockBean
+    protected NatGatewayDao natGatewayDao;
+
+    @MockBean
+    protected LdapTemplateProvider ldapTemplateProvider;
+
+    @MockBean
+    protected QuotaRepository quotaRepository;
+
+    @MockBean
+    protected QuotaActionRepository quotaActionRepository;
+
+    @MockBean
+    protected QuotaMapper quotaMapper;
+
+    @MockBean
+    protected AppliedQuotaRepository appliedQuotaRepository;
+
+    @MockBean
+    protected StorageQuotaTriggersDao storageQuotaTriggersDao;
+
+    @MockBean
+    protected StorageQuotaTriggersManager storageQuotaTriggersManager;
+
+    @MockBean
+    protected OnlineUsersRepository onlineUsersRepository;
+
+    @MockBean
+    protected OnlineUsersMapper onlineUsersMapper;
 }

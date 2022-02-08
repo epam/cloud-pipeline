@@ -9,7 +9,7 @@
         },
         "id": { "type": "keyword", "store": true },
         "parentId": { "type": "keyword", "store": true },
-        "name": { "type": "text", "store": true },
+        "name": { "type": "text", "store": true, "fields": { "keyword": { "type": "keyword" } } },
         "description": { "type": "text", "store": true },
         "pipelineId": { "type": "keyword" },
         "pipelineName": { "type": "text"},

@@ -20,11 +20,11 @@ import {observer, inject} from 'mobx-react';
 import {computed} from 'mobx';
 import PipelineRunCmd from '../../../../../models/pipelines/PipelineRunCmd';
 import {Alert, Modal, Row, Select, Tabs} from 'antd';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
+import {applyCustomCapabilitiesParameters} from './run-capabilities';
 import styles from './launch-command.css';
 import {API_PATH, SERVER} from '../../../../../config';
 import {getOS, OperationSystems} from '../../../../../utils/OSDetection';
+import BashCode from '../../../../special/bash-code';
 
 const OSFamily = {
   windows: 'WINDOWS',
@@ -53,19 +53,6 @@ function generateRunMethodUrl () {
   const el = document.createElement('div');
   el.innerHTML = '<a href="' + (SERVER + API_PATH) + '/run"></a>';
   return el.firstChild.href;
-}
-
-function processBashScript (script) {
-  let command = hljs.highlight('bash', script).value;
-  const r = /\[URL\](.+)\[\/URL\]/ig;
-  let e = r.exec(command);
-  while (e) {
-    command = command.substring(0, e.index) +
-      `<a href="${e[1]}" target="_blank">${e[1]}</a>` +
-      command.substring(e.index + e[0].length);
-    e = r.exec(command);
-  }
-  return command;
 }
 
 class LaunchCommand extends React.Component {
@@ -105,13 +92,23 @@ class LaunchCommand extends React.Component {
   }
 
   rebuild = (payload) => {
+    const {preferences} = this.props;
     LaunchCommand.requestIdentifier += 1;
     const identifier = LaunchCommand.requestIdentifier;
     this.setState({pending: true}, async () => {
+      await preferences.fetchIfNeededOrWait();
       const {osType} = this.state;
       const request = new PipelineRunCmd();
+      const {
+        params = {},
+        ...payloadRest
+      } = payload || {};
+      const pipelineStart = {
+        ...payloadRest,
+        params: applyCustomCapabilitiesParameters(params, preferences)
+      };
       await request.send({
-        pipelineStart: payload,
+        pipelineStart,
         quite: false,
         yes: true,
         showParams: false,
@@ -120,9 +117,19 @@ class LaunchCommand extends React.Component {
       });
       if (identifier === LaunchCommand.requestIdentifier) {
         if (request.error) {
-          this.setState({pending: false, code: null, error: request.error, payload});
+          this.setState({
+            pending: false,
+            code: null,
+            error: request.error,
+            payload: pipelineStart
+          });
         } else {
-          this.setState({pending: false, code: request.value, error: false, payload});
+          this.setState({
+            pending: false,
+            code: request.value,
+            error: false,
+            payload: pipelineStart
+          });
         }
       }
     });
@@ -159,19 +166,15 @@ class LaunchCommand extends React.Component {
             </Select.Option>
           </Select>
         </div>
-        <Row type="flex" className={styles.mdPreview}>
-          <pre style={{width: '100%', fontSize: 'smaller'}}>
-            <code
-              id="launch-command"
-              dangerouslySetInnerHTML={{
-                __html: processBashScript(
-                  wrapNewLines(
-                    wrapCommand(code, this.launchCommandTemplate)
-                  )
-                )
-              }} />
-          </pre>
-        </Row>
+        <BashCode
+          id="launch-command"
+          className={styles.launchCommandCode}
+          code={
+            wrapNewLines(
+              wrapCommand(code, this.launchCommandTemplate)
+            )
+          }
+        />
       </div>
     );
   }
@@ -184,19 +187,17 @@ class LaunchCommand extends React.Component {
       );
     }
     return (
-      <Row type="flex" className={styles.mdPreview}>
-        <Row className={styles.endpoint} type="flex" align="center">
+      <div className={styles.launchCommandCode}>
+        <Row className={styles.endpoint} type="flex">
           <span className={styles.method}>POST</span>
           <span className={styles.url}>{generateRunMethodUrl()}</span>
         </Row>
-        <pre style={{width: '100%', fontSize: 'smaller', maxHeight: '50vh', overflow: 'auto'}}>
-          <code
-            id="launch-command"
-            dangerouslySetInnerHTML={{
-              __html: processBashScript(JSON.stringify(payload, null, ' '))
-            }} />
-        </pre>
-      </Row>
+        <BashCode
+          id="launch-command"
+          code={JSON.stringify(payload, null, ' ')}
+          style={{maxHeight: '50vh', overflow: 'auto'}}
+        />
+      </div>
     );
   }
 

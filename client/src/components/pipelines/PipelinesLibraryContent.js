@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Card} from 'antd';
+import classNames from 'classnames';
 import styles from './PipelinesLibrary.css';
 
 export default class PipelinesLibraryContent extends React.Component {
@@ -36,7 +37,14 @@ export default class PipelinesLibraryContent extends React.Component {
     return (
       <Card
         id="pipelines-library-content"
-        className={styles.libraryCard}
+        className={
+          classNames(
+            styles.libraryCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={
           Object.assign(
             {

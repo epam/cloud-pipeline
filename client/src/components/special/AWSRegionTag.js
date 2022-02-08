@@ -18,15 +18,14 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import styles from './AWSRegionTag.css';
-import './AWSRegionTagFlags.less';
 
 @inject('awsRegions')
 @observer
 class AWSRegionTag extends React.Component {
   static propTypes = {
     className: PropTypes.string,
-    darkMode: PropTypes.bool,
     displayFlag: PropTypes.bool,
     displayName: PropTypes.bool,
     flagStyle: PropTypes.object,
@@ -40,7 +39,6 @@ class AWSRegionTag extends React.Component {
   };
 
   static defaultProps = {
-    darkMode: false,
     displayName: false,
     displayFlag: true,
     plainMode: false,
@@ -243,9 +241,12 @@ class AWSRegionTag extends React.Component {
         parts.push(
           <span
             className={
-              `${styles.provider} provider ${this.provider} ${this.props.darkMode && styles.dark}`
+              classNames(
+                styles.provider,
+                'provider',
+                this.provider.toLowerCase()
+              )
             }
-            data-provider={this.provider}
             key="provider"
             style={this.props.providerStyle}
           />
@@ -257,10 +258,16 @@ class AWSRegionTag extends React.Component {
       if (this.props.plainMode) {
         parts.push(info.zone);
       } else {
-        const flagClassName = `${styles.flag} flag ${info.result} ${info.zone.toLowerCase()}`;
         parts.push(
           <span
-            className={`${flagClassName} ${this.props.darkMode && styles.dark}`}
+            className={
+              classNames(
+                styles.flag,
+                'flag',
+                info.result,
+                info.zone.toLowerCase()
+              )
+            }
             key="flag"
             style={this.props.flagStyle}
           />
@@ -285,14 +292,19 @@ class AWSRegionTag extends React.Component {
     }
     if (parts.length > 0) {
       if (this.props.plainMode) {
-        return <span>{parts.join('/')}</span>;
+        return <div className={styles.container}>{parts.join('/')}</div>;
       } else {
         return (
-          <span
+          <div
             style={this.props.style}
-            className={`${styles.container} ${this.props.className || ''}`}>
+            className={
+              classNames(
+                styles.container,
+                this.props.className
+              )
+            }>
             {parts}
-          </span>
+          </div>
         );
       }
     }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -180,7 +180,9 @@
                       u.default_profile_id as user_default_profile_id,
                       u.registration_date,
                       u.first_login_date,
+                      u.last_login_date,
                       u.blocked as user_blocked,
+                      u.block_date as user_block_date,
                       g.blocked as group_blocked
                     FROM pipeline.role r
                     LEFT JOIN pipeline.user_roles m ON r.id = m.role_id
@@ -206,8 +208,10 @@
                       u.default_storage_id as user_default_storage_id,
                       u.default_profile_id as user_default_profile_id,
                       u.blocked as user_blocked,
+                      u.block_date as user_block_date,
                       u.registration_date,
                       u.first_login_date,
+                      u.last_login_date,
                       g.blocked as group_blocked
                     FROM pipeline.role r
                     LEFT JOIN pipeline.user_roles m ON r.id = m.role_id

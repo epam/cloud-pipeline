@@ -41,7 +41,7 @@ export default class PipelineGraph extends Component {
         className={parentStyles.fullHeightContainer}>
         <Row className={parentStyles.fullHeightContainer}>
           <WorkflowGraph
-            canEdit={true}
+            canEdit
             onGraphUpdated={this.onGraphUpdated}
             pipelineId={this.props.pipelineId}
             configurations={this.props.configurations}

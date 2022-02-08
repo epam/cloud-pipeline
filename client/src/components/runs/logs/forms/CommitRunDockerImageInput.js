@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Input, Row, AutoComplete, Select} from 'antd';
+import classNames from 'classnames';
 import roleModel from '../../../../utils/roleModel';
 import RegistrySelector from '../../../tools/selectors/RegistrySelector';
 import ToolGroupSelector from '../../../tools/selectors/ToolGroupSelector';
@@ -278,19 +279,21 @@ export default class CommitRunDockerImageInput extends React.Component {
     if (this.state.value === undefined) {
       return (
         <Input
-          disabled={true}
-          size="large" />
+          disabled
+          size="large"
+        />
       );
     }
     return (
       <Row type="flex">
         <div
-          style={{
-            backgroundColor: '#eee',
-            border: '1px solid #ccc',
-            borderRadius: '4px 0px 0px 4px',
-            height: 32
-          }}>
+          className={
+            classNames(
+              styles.addon,
+              'cp-input-group-addon'
+            )
+          }
+        >
           <RegistrySelector
             disabled={this.props.disabled}
             value={this.state.registry}

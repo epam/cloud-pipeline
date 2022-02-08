@@ -70,6 +70,7 @@ nav:
     - 10.6. Tool security check: 'manual/10_Manage_Tools/10.6._Tool_security_check.md'
     - 10.7. Tool version menu: 'manual/10_Manage_Tools/10.7._Tool_version_menu.md'
     - 10.8. "Symlinked" tools: 'manual/10_Manage_Tools/10.8._Symlinks_between_tools.md'
+    - 10.9. Run capabilities: 'manual/10_Manage_Tools/10.9._Run_capabilities.md'
   - 11. Manage Runs:
     - 11.0. Overview: 'manual/11_Manage_Runs/11._Manage_Runs.md'
     - 11.1. Manage runs lifecycles: 'manual/11_Manage_Runs/11.1._Manage_runs_lifecycles.md'
@@ -91,6 +92,7 @@ nav:
     - 12.11. Advanced features: 'manual/12_Manage_Settings/12.11._Advanced_features.md'
     - 12.12. System logs: 'manual/12_Manage_Settings/12.12._System_logs.md'
     - 12.13. System dictionaries: 'manual/12_Manage_Settings/12.13._System_dictionaries.md'
+    - 12.14. NAT gateway: 'manual/12_Manage_Settings/12.14._NAT_gateway.md'
   - 13. Permissions: 'manual/13_Permissions/13._Permissions.md'
   - 14. CLI interface:
     - 14.0. Overview: 'manual/14_CLI/14._Command-line_interface.md'

@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Tool;
@@ -35,12 +36,14 @@ import com.epam.pipeline.entity.pipeline.ToolGroup;
 import com.epam.pipeline.entity.pipeline.ToolVersionFingerprint;
 import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AwsRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.MockS3Helper;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.docker.DockerClient;
 import com.epam.pipeline.manager.docker.DockerClientFactory;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
@@ -48,6 +51,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
+import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
@@ -64,11 +68,15 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
@@ -102,6 +110,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     private static final Long TEST_SIZE = 123L;
     private static final Date TEST_LAST_MODIFIED_DATE = new Date();
     public static final String PLATFORM = "linux";
+    public static final String DAV_MOUNT_TAG = "dav-mount";
+    public static final long SECS_IN_HOUR = 3600L;
+    public static final long SECS_IN_MIN = 60L;
 
 
     @Mock
@@ -140,6 +151,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Autowired
     private ToolGroupManager toolGroupManager;
+
+    @Autowired
+    private MetadataManager metadataManager;
 
     @Before
     public void setUp() {
@@ -357,6 +371,85 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void requestDavMountByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertFalse(metadataEntries.isEmpty());
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+    }
+
+    @Test(expected = IllegalStateException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void failToRequestForSmallerTimeDavMountIfAlreadyExistsTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+
+        storageManager.requestDataStorageDavMount(saved.getId(),
+                SECS_IN_MIN);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void successToRequestForBiggerTimeDavMountIfAlreadyExistsTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        long firstValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
+
+        storageManager.requestDataStorageDavMount(saved.getId(), 2 * SECS_IN_HOUR);
+        metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertEquals(saved.getId(), metadataEntries.get(0).getEntity().getEntityId());
+        long secondValue = Long.parseLong(metadataEntries.get(0).getData().get(DAV_MOUNT_TAG).getValue());
+
+        Assert.assertTrue(secondValue > firstValue);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void callOffRequestDavMountByIdsDataStorageTest() throws Exception {
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        storageManager.requestDataStorageDavMount(saved.getId(), SECS_IN_HOUR);
+
+        List<MetadataEntry> metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertFalse(metadataEntries.isEmpty());
+
+        storageManager.callOffDataStorageDavMount(saved.getId());
+
+        metadataEntries = metadataManager.searchMetadataEntriesByClassAndKeyValue(
+                AclClass.DATA_STORAGE, DAV_MOUNT_TAG, null);
+        Assert.assertTrue(metadataEntries.isEmpty());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void updateDataStorageTest() throws Exception {
 
         Folder folder = new Folder();
@@ -525,6 +618,42 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                                                             TEST_MOUNT_OPTIONS);
         storageManager.create(storageVO, false, false, false);
         Assert.assertFalse(storageManager.createDefaultStorageForUser(NAME).isPresent());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void testResolveSizeMasks() {
+        final String firstStorageName = "storage1";
+        final String secondStorageName = "storage2";
+        final String thirdStorageName = "anotherStorage";
+
+        final String mask1 = "mask1";
+        final String mask2 = "mask2";
+        final String mask3 = "mask3";
+        final String mask4 = "mask4";
+        final String mask5 = "mask5";
+
+        final Map<String, Set<String>> sizeMasks = new HashMap<>();
+        final String wildcardRegex = "*";
+        final String firstAndSecondPrefixRegex = "storage*";
+        sizeMasks.put(wildcardRegex, Sets.newHashSet(mask1, mask2));
+        sizeMasks.put(firstStorageName, Sets.newHashSet(mask3, mask4));
+        sizeMasks.put(firstAndSecondPrefixRegex, Sets.newHashSet(mask4, mask5));
+
+        assertResolvedSizeMasks(sizeMasks, firstStorageName, mask1, mask2, mask3, mask4, mask5);
+        assertResolvedSizeMasks(sizeMasks, secondStorageName, mask1, mask2, mask4, mask5);
+        assertResolvedSizeMasks(sizeMasks, thirdStorageName, mask1, mask2);
+    }
+
+    private void assertResolvedSizeMasks(final Map<String, Set<String>> masksMapping, final String storageName,
+                                         final String... expectedMasks) {
+        final AbstractDataStorage storage = new NFSDataStorage();
+        storage.setName(storageName);
+        final int initialMappingSize = masksMapping.size();
+        assertThat(storageManager.resolveSizeMasks(masksMapping, storage))
+            .hasSize(expectedMasks.length)
+            .containsOnly(expectedMasks);
+        assertThat(masksMapping).hasSize(initialMappingSize);
     }
 
     private void assertDataStorageAccordingToUpdateStorageVO(DataStorageVO updateStorageVO,

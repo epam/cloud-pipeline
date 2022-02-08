@@ -17,10 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Input, InputNumber, Modal, Row, Select} from 'antd';
+import classNames from 'classnames';
 import BucketBrowser from '../../launch/dialogs/BucketBrowser';
 
 export default class UploadToDatastorageForm extends React.Component {
-
   static propTypes = {
     visible: PropTypes.bool,
     onClose: PropTypes.func,
@@ -133,7 +133,11 @@ export default class UploadToDatastorageForm extends React.Component {
             <Button
               onClick={this.onTransfer}
               type="primary"
-              disabled={!this.state.destination || this.state.pathFields.length === 0 || !this.state.threadsCountValid}
+              disabled={
+                !this.state.destination ||
+                this.state.pathFields.length === 0 ||
+                !this.state.threadsCountValid
+              }
               style={{marginRight: 5}}>
               Start download
             </Button>
@@ -144,7 +148,7 @@ export default class UploadToDatastorageForm extends React.Component {
         <Row type="flex" align="middle" style={{marginTop: 5}}>
           <span style={{fontWeight: 'bold', marginRight: 5}}>
             Destination
-            <span style={{color: 'red'}}>*</span>
+            <span className="cp-danger">*</span>
             :
           </span>
           <div style={{flex: 1}}>
@@ -162,7 +166,7 @@ export default class UploadToDatastorageForm extends React.Component {
         <Row type="flex" align="middle" style={{marginTop: 5}}>
           <span style={{fontWeight: 'bold', marginRight: 5}}>
             Select path fields
-            <span style={{color: 'red'}}>*</span>
+            <span className="cp-danger">*</span>
             :
           </span>
           <div style={{flex: 1}}>
@@ -211,11 +215,15 @@ export default class UploadToDatastorageForm extends React.Component {
             <InputNumber
               value={this.state.threadsCount}
               onChange={this.onMaxThreadsCountChange}
-              style={
-                this.state.threadsCountValid
-                  ? {width: '100%'}
-                  : {width: '100%', border: '1px solid red', color: 'red'}
-              } />
+              className={
+                classNames(
+                  {
+                    'cp-error': !this.state.threadsCountValid
+                  }
+                )
+              }
+              style={{width: '100%'}}
+            />
           </div>
         </Row>
         <Row type="flex" align="middle" style={{marginTop: 5}}>

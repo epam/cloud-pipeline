@@ -44,18 +44,28 @@ add_worker() {
 
 create_hostlist() {
         echo -e "group_name @allhosts\nhostlist NONE" > ./grid
-         qconf -Ahgrp ./grid
+        qconf -Ahgrp ./grid
         rm -f ./grid
 }
 
 configure_global() {
     _MAX_PROCS_LIMIT="${MAX_PROCS_LIMIT:-65536}"
     _MAX_NOPEN_LIMIT="${MAX_NOPEN_LIMIT:-65536}"
+    _SHELL_START_MODE="${CP_CAP_SGE_SHELL_START_MODE:-unix_behavior}"
+    _SGE_REPORTING_PARAMS="${CP_CAP_SGE_REPORTING_PARAMS:-"accounting=true reporting=true flush_time=00:01:00 joblog=true sharelog=00:00:00"}"
 
     qconf -sconf global > ./global
+    # Some of the long values (reporting_params, execd_params, etc.) are split into several line with a backslash. E.g.:
+    # reporting_params accounting=true reporting=false \
+    #                  flush_time=00:00:15 joblog=false sharelog=00:00:00
+    # To replace the value - we need to merge all these line into one
+    # The next "magic" line reads a file line-by-line and removes all "backslash + newline" (\\n)
+    sed -i ':a;N;$!ba;s/\\\n//g' ./global
     sed -i '/min_uid/c\min_uid 0' ./global
     sed -i '/min_gid/c\min_gid 0' ./global
     sed -i "/execd_params/c\execd_params S_DESCRIPTORS=${_MAX_PROCS_LIMIT},H_DESCRIPTORS=${_MAX_PROCS_LIMIT},S_MAXPROC=${_MAX_NOPEN_LIMIT},H_MAXPROC=${_MAX_NOPEN_LIMIT}" ./global
+    sed -i "/shell_start_mode/c\shell_start_mode $_SHELL_START_MODE" ./global
+    sed -i "/reporting_params/c\reporting_params $_SGE_REPORTING_PARAMS" ./global
 
     qconf -Mconf ./global
     rm -f ./global
@@ -181,6 +191,28 @@ delete_pe() {
     done
 }
 
+create_pe_from_file() {
+    local pe_spec_file="$1"
+    local pe_queue_name="${2:-$CP_CAP_SGE_QUEUE_NAME}"
+    if [ -z "$pe_spec_file" ]; then
+        echo "PE spec file is not provided"
+        return 1
+    fi
+    if [ ! -f "$pe_spec_file" ]; then
+        echo "PE spec file is not found at ${pe_spec_file}"
+        return 1
+    fi
+
+    local pe_name=$(echo $(cat "$pe_spec_file" | grep pe_name) | cut -f2 -d' ')
+    if [ -z "$pe_name" ]; then
+        echo "Cannot get PE name from $pe_spec_file"
+        return 1
+    fi
+
+    qconf -Ap "$pe_spec_file"
+    qconf -mattr queue pe_list "$pe_name" "$pe_queue_name"
+}
+
 configure_pe() {
     local pe_name="${1:-local}"
     local pe_alloc_rule="${2:-\$pe_slots}"
@@ -190,7 +222,7 @@ configure_pe() {
     if [ -z "$pe_slots" ]; then
         pe_slots=${CLOUD_PIPELINE_CLUSTER_CORES:-999999}
     fi
-    
+
     cat > pe.conf <<EOL
         pe_name            $pe_name
         slots              $pe_slots
@@ -295,7 +327,9 @@ export SGE_CELL="default"
 export SGE_CLUSTER_NAME="CLOUD_PIPELINE"
 export CP_CAP_SGE_QUEUE_NAME="${CP_CAP_SGE_QUEUE_NAME:-main.q}"
 export CP_CAP_SGE_PE_NAME="${CP_CAP_SGE_PE_NAME:-local}"
+export CP_CAP_SGE_PE_SLOTS="${CP_CAP_SGE_PE_SLOTS:-999999}"
 export CP_CAP_SGE_PE_MPI_NAME="${CP_CAP_SGE_PE_MPI_NAME:-mpi}"
+export CP_CAP_SGE_PE_MPI_SLOTS="${CP_CAP_SGE_PE_MPI_SLOTS:-999999}"
 export CP_CAP_SGE_WORKER_FREE_CORES="${CP_CAP_SGE_WORKER_FREE_CORES:-0}"
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
@@ -312,7 +346,9 @@ echo "export SGE_CELL=$SGE_CELL" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export SGE_CLUSTER_NAME=$SGE_CLUSTER_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_QUEUE_NAME=$CP_CAP_SGE_QUEUE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_NAME=$CP_CAP_SGE_PE_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_SLOTS=$CP_CAP_SGE_PE_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_PE_MPI_NAME=$CP_CAP_SGE_PE_MPI_NAME" >> $CP_CAP_SGE_MASTER_ENV_FILE
+echo "export CP_CAP_SGE_PE_MPI_SLOTS=$CP_CAP_SGE_PE_MPI_SLOTS" >> $CP_CAP_SGE_MASTER_ENV_FILE
 echo "export CP_CAP_SGE_WORKER_FREE_CORES=$CP_CAP_SGE_WORKER_FREE_CORES" >> $CP_CAP_SGE_MASTER_ENV_FILE
 cat $CP_CAP_SGE_MASTER_ENV_FILE >> /etc/cp_env.sh
 
@@ -351,7 +387,7 @@ if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
         # Install Grid Engine
         # Configure the master hostname for Grid Engine
         CP_CAP_SGE_VERSION="${CP_CAP_SGE_VERSION:-8.1.9+dfsg-4*}"
-        
+
         # First install SGE, and fail if error occurs
         DEBIAN_FRONTEND=noninteractive apt-get install -y --allow-unauthenticated -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" gridengine-exec="$CP_CAP_SGE_VERSION" \
             gridengine-client="$CP_CAP_SGE_VERSION" \
@@ -406,8 +442,9 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
                             perl-XML-Simple.noarch jemalloc munge-libs hwloc lesstif csh \
                             ruby xorg-x11-fonts xterm java xorg-x11-fonts-ISO8859-1-100dpi \
                             xorg-x11-fonts-ISO8859-1-75dpi mailx libdb4 libdb4-utils \
-                            compat-db-headers compat-db47 libpipeline man-db \
-        && yum install -y -q gridengine \
+                            compat-db-headers compat-db47 libpipeline man-db
+
+        yum install -y -q gridengine \
                             gridengine-debuginfo \
                             gridengine-devel \
                             gridengine-drmaa4ruby \
@@ -483,11 +520,23 @@ delete_pe all
 # - Add a "threaded/smp" PE, which schedules all threads to a single machine
 configure_pe "$CP_CAP_SGE_PE_NAME" \
              "\$pe_slots" \
-             "TRUE"
-# Add an "mpi" PE, which allows to spread processes across nodes
+             "TRUE" \
+             "$CP_CAP_SGE_PE_SLOTS"
+# - Add an "mpi" PE, which allows to spread processes across nodes
 configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "\$fill_up" \
-             "FALSE"
+             "FALSE" \
+             "$CP_CAP_SGE_PE_MPI_SLOTS"
+# - Add any other user-provided PEs
+if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
+    pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up" "$SGE_MASTER_SETUP_TASK"
+    for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
+        pipe_log_info "-> Configuring PE from $_pe_spec_file" "$SGE_MASTER_SETUP_TASK"
+        create_pe_from_file "$_pe_spec_file"
+    done
+else
+    pipe_log_info "No extra PEs are provided, skipping setup" "$SGE_MASTER_SETUP_TASK"
+fi
 
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"

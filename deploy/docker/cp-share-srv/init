@@ -105,7 +105,7 @@ SHARE_RUN_TIME_LOG=$CP_SHARE_HOME/logs/runtime.log
 mkdir -p $(dirname $SHARE_RUN_TIME_LOG)
 touch $SHARE_RUN_TIME_LOG
 
-nohup java $CP_SHARE_SRV_JAVA_OPTS -jar data-sharing-service.jar &> $SHARE_RUN_TIME_LOG &
+nohup java $CP_SHARE_SRV_JAVA_OPTS -jar data-sharing-service.jar $CP_SHARE_SRV_JAVA_SPRING_OPTS &> $SHARE_RUN_TIME_LOG &
 APP_PID="$!"
 
 sleep 5

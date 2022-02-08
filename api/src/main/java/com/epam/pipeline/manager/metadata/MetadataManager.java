@@ -303,6 +303,16 @@ public class MetadataManager {
         }
     }
 
+    public List<MetadataEntry> searchMetadataEntriesByClassAndKeyValue(final AclClass entityClass, final String key,
+                                                           final String value) {
+        if (value == null) {
+            return metadataDao.searchMetadataEntriesByClassAndKey(entityClass, key);
+        } else {
+            final Map<String, PipeConfValue> indicator = Collections.singletonMap(key, new PipeConfValue(null, value));
+            return metadataDao.searchMetadataEntriesByClassAndKeyValue(entityClass, indicator);
+        }
+    }
+
     @Transactional(propagation = Propagation.REQUIRED)
     public void syncWithCategoricalAttributes() {
         final List<CategoricalAttribute> fullMetadataDict = buildFullMetadataDict();

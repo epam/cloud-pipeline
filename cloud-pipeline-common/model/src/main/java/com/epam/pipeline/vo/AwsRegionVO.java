@@ -37,4 +37,5 @@ public class AwsRegionVO {
     private String policy;
     private String kmsKeyId;
     private String kmsKeyArn;
+    private String iamRole;
 }

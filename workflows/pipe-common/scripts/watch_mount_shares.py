@@ -18,6 +18,7 @@ from distutils.spawn import find_executable
 import errno
 import logging
 import os
+import psutil
 import re
 import subprocess
 import shutil
@@ -28,6 +29,7 @@ from pipeline import PipelineAPI
 from watchdog.observers.inotify import InotifyObserver
 from watchdog.events import FileSystemEventHandler, FileMovedEvent
 from watchdog.observers.api import ObservedWatch
+from logging.handlers import RotatingFileHandler
 
 NFS_UNMOUNT_CMD_PATTERN = "umount -l -f \"{}\""
 NFS_MOUNT_CMD_PATTERN = 'mount -t {} -o \"{}\" \"{}\" \"{}\"'
@@ -35,6 +37,7 @@ READ_WRITE_OPTION = 'rw'
 READ_ONLY_OPTION = 'ro'
 MODIFIED_MNT_SEPARATOR = '|'
 LNET_SPLIT = '@tcp:/'
+WRITE_MASK = 1 << 1
 
 MOUNT_STATUS_DISABLED = 'MOUNT_DISABLED'
 MOUNT_STATUS_READ_ONLY = 'READ_ONLY'
@@ -57,10 +60,18 @@ MOVED_FROM_EVENT = 'mf'
 MOVED_TO_EVENT = 'mt'
 DELETE_EVENT = 'd'
 
+WATCHER_MEM_CONSUMPTION_BYTES = 1024
+WATCHERS_USAGE_MEMORY_RATE = int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_WATCHERS_MEM_CONSUMPTION_MAX_RATE', 100))
+INOTIFY_MAX_WATCHERS = 'fs.inotify.max_user_instances'
+INOTIFY_MAX_WATCHED_DIRS = 'fs.inotify.max_user_watches'
+INOTIFY_MAX_QUEUED_EVENTS = 'fs.inotify.max_queued_events'
+
 EVENTS_LIMIT = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENTS_LIMIT', 1000))
 MNT_RESYNC_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_MNT_RESYNC_TIMEOUT_SEC', 10))
 EVENT_DUMPING_TIMEOUT_SEC = int(os.getenv('CP_CAP_NFS_OBSERVER_DUMPING_TIMEOUT_SEC', 30))
 TARGET_FS_TYPES = os.getenv('CP_CAP_NFS_OBSERVER_TARGET_FS_TYPES', 'nfs4,lustre')
+EVENT_FILES_LIMIT_MB = int(os.getenv('CP_CAP_NFS_OBSERVER_EVENT_FILES_LIMIT_MB', 155))
+EVENT_FILES_BACKUP_COUNT = max(1, int(os.getenv('CP_CAP_NFS_OBSERVER_EVENT_FILES_BACKUP_COUNT', 30)))
 
 logging_format = os.getenv('CP_CAP_NFS_OBSERVER__LOGGING_FORMAT', '%(message)s')
 logging_level = os.getenv('CP_CAP_NFS_OBSERVER_LOGGING_LEVEL', 'WARNING')
@@ -79,6 +90,10 @@ def mkdir(path):
             pass
         else:
             raise
+
+
+def configure_kernel_param(key, value):
+    execute_cmd_command_and_get_stdout_stderr('sysctl -w {}={} && sysctl -p'.format(key, value), silent=True)
 
 
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
@@ -155,6 +170,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
         self._activity_logging_bucket_dir = self._configure_logging_bucket_dir()
         self._transfer_template = self._get_available_transfer_template()
         self.last_dump_time = current_utc_time()
+        self._init_events_logger()
 
     @staticmethod
     def _get_available_transfer_template():
@@ -170,7 +186,7 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
 
     @staticmethod
     def _configure_logging_bucket_dir():
-        bucket_dir = os.path.join(os.getenv('CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET'),
+        bucket_dir = os.path.join(os.getenv('CP_CAP_NFS_MNT_OBSERVER_TARGET_BUCKET', ''),
                                   CloudBucketDumpingEventHandler._get_service_name())
         logging.info(format_message('Destination bucket location is [{}]'.format(bucket_dir)))
         return bucket_dir
@@ -193,6 +209,18 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
         logging.info(format_message('Local storage directory is [{}]'.format(local_logging_dir)))
         mkdir(local_logging_dir)
         return local_logging_dir
+
+    def _init_events_logger(self):
+        self._events_local_file = os.path.join(self._activity_logging_local_dir, 'nfs_events')
+        single_event_file_size_limit_mb = EVENT_FILES_LIMIT_MB / (EVENT_FILES_BACKUP_COUNT + 1)
+        events_logging_handler = RotatingFileHandler(self._events_local_file, mode='a',
+                                                     backupCount=EVENT_FILES_BACKUP_COUNT,
+                                                     maxBytes=single_event_file_size_limit_mb * 1024 * 1024)
+        events_logging_handler.setFormatter(logging.Formatter('%(message)s'))
+        self._events_logger = logging.getLogger('nfs_events')
+        self._events_logger.addHandler(events_logging_handler)
+        self._events_logger.setLevel(logging.INFO)
+        self._events_logger.propagate = False
 
     def _convert_event_to_str(self, event):
         for mnt_dest, mnt_src in self._target_path_mapping.items():
@@ -236,31 +264,42 @@ class CloudBucketDumpingEventHandler(FileSystemEventHandler):
             self.dump_to_storage()
 
     def dump_to_storage(self):
-        if len(self._active_events) == 0:
-            return
-        filename = 'events-' + current_utc_time_str().replace(' ', '_')
-        local_file = os.path.join(self._activity_logging_local_dir, filename)
-        logging.info(format_message('Saving events to {} '.format(local_file)))
-        with open(local_file, 'w') as outfile:
+        if len(self._active_events) != 0:
+            logging.info(format_message('Saving events to {} '.format(self._events_local_file)))
             # TODO sorting might be skipped in case events will be sorted in the consuming service
             sorted_events = sorted(self._active_events.values(), key=lambda e: e.timestamp)
-            outfile.write(NEWLINE.join(map(self._convert_event_to_str, sorted_events)))
-        bucket_file = os.path.join(self._activity_logging_bucket_dir, filename)
-        logging.info(format_message('Dumping events to {} '.format(bucket_file)))
-        _, result = execute_command(self._transfer_template.format(local_file, bucket_file))
-        if result:
+            for event in sorted_events:
+                self._events_logger.info(self._convert_event_to_str(event))
             logging.info(format_message('Cleaning activity list'))
-            self.last_dump_time = current_utc_time()
             self._active_events.clear()
+        for rollover_backup in range(EVENT_FILES_BACKUP_COUNT, 0, -1):
+            self._dump_event_file('{}.{}'.format(self._events_local_file, rollover_backup))
+        self._dump_event_file(self._events_local_file)
+
+    def _dump_event_file(self, local_event_file):
+        if not os.path.exists(local_event_file) or os.stat(local_event_file).st_size == 0:
+            return
+        bucket_filename = 'events-' + current_utc_time_str().replace(' ', '_')
+        bucket_file = os.path.join(self._activity_logging_bucket_dir, bucket_filename)
+        logging.info(format_message('Dumping events to {} '.format(bucket_file)))
+        _, result = execute_command(self._transfer_template.format(local_event_file, bucket_file))
+        if result:
+            self.last_dump_time = current_utc_time()
+            with open(local_event_file, 'w'):
+                pass
 
 
 class NFSMountWatcher:
+
+    WATCHER_LIMIT_FILE = '/tmp/.inotify_limit'
 
     def __init__(self, target_paths=None):
         self._target_path_mapping = dict()
         self._event_handler = CloudBucketDumpingEventHandler()
         self._event_observer = InotifyObserver()
         self._set_signal_handlers()
+        self._watchers_limit = self._configure_watchers_limit()
+        self._terminated = False
         if target_paths:
             self._target_paths = target_paths.split(COMMA)
             self._update_static_paths_mapping()
@@ -268,9 +307,43 @@ class NFSMountWatcher:
             self._target_paths = None
             self._update_target_mount_points()
 
+    @staticmethod
+    def _calculate_max_allowed_watchers():
+        return psutil.virtual_memory().total / WATCHER_MEM_CONSUMPTION_BYTES / 100 * WATCHERS_USAGE_MEMORY_RATE
+
+    @staticmethod
+    def _get_watchers_limit():
+        if os.path.exists(NFSMountWatcher.WATCHER_LIMIT_FILE):
+            logging.info('Reading watchers configuration from the file...')
+            try:
+                with open(NFSMountWatcher.WATCHER_LIMIT_FILE, "r") as persistent_conf_file:
+                    content = persistent_conf_file.readlines()
+                    if len(content) > 0:
+                        return int(content[0])
+            except BaseException as e:
+                logging.error('Error during limit retrieval from the file: {}'.format(e.message))
+        logging.info('Reading watchers configuration from the env var...')
+        return int(os.getenv('CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS', 65535))
+
+    def _configure_watchers_limit(self):
+        watchers_limit = self._get_watchers_limit()
+        logging.info(format_message('Watchers configuration: [{}]'.format(watchers_limit)))
+        configure_kernel_param(INOTIFY_MAX_WATCHERS, watchers_limit)
+        configure_kernel_param(INOTIFY_MAX_WATCHED_DIRS, watchers_limit)
+        configure_kernel_param(INOTIFY_MAX_QUEUED_EVENTS, 2 * watchers_limit)
+        return watchers_limit
+
     def _set_signal_handlers(self):
         for signal_code in [signal.SIGTERM, signal.SIGINT]:
-            signal.signal(signal_code, self._event_handler.dump_to_storage)
+            signal.signal(signal_code, self._shutdown_and_exit)
+
+    def is_terminated(self):
+        return self._terminated
+
+    def _shutdown_and_exit(self, signal_code, frame):
+        self.release_resources()
+        self._terminated = True
+        exit(0)
 
     def _process_active_target_path(self, mnt_dest, mnt_src):
         if mnt_dest not in self._target_path_mapping:
@@ -319,7 +392,8 @@ class NFSMountWatcher:
 
     def try_to_remove_path_from_observer(self, mnt_dest):
         try:
-            self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
+            if len(self._target_path_mapping.items()) > 1:
+                self._event_observer.unschedule(ObservedWatch(mnt_dest, True))
             return True
         except OSError as e:
             logging.error(
@@ -339,7 +413,6 @@ class NFSMountWatcher:
 
     @staticmethod
     def _get_target_mount_points():
-        mount_points = dict()
         available_storages_dict = NFSMountWatcher._get_available_storages_dict()
         is_admin = NFSMountWatcher._is_admin()
         out, res = execute_command(MNT_LISTING_COMMAND.format(TARGET_FS_TYPES))
@@ -352,13 +425,17 @@ class NFSMountWatcher:
                     if len(mnt_details) == 4:
                         mount_details = MountPointDetails.from_array(mnt_details)
                         mount_attributes = mount_details.mount_attributes.split(COMMA)
-                        active_mount_status = NFSMountWatcher._get_mount_status(available_storages_dict, mount_details,
-                                                                                is_admin, default=MOUNT_STATUS_ACTIVE)
                         if READ_WRITE_OPTION in mount_attributes:
-                            NFSMountWatcher.process_active_mounts_found(active_mount_status, mount_details,
-                                                                        mount_points)
-        NFSMountWatcher._process_modified_mounts(available_storages_dict, mount_points, is_admin)
+                            NFSMountWatcher.save_details_status_active(mount_details)
+                        else:
+                            NFSMountWatcher.save_details_status_readonly(mount_details)
+            NFSMountWatcher.move_mount_statuses_from_tmp_file()
+        mount_points = NFSMountWatcher._process_modified_mounts(available_storages_dict, is_admin)
         return mount_points
+
+    @staticmethod
+    def is_permission_set(storage, mask):
+        return storage.mask & mask == mask
 
     @staticmethod
     def _get_mount_status(available_storages_dict, mount_details, is_admin, default):
@@ -371,7 +448,9 @@ class NFSMountWatcher:
         matching_storage = NFSMountWatcher._find_matching_storage(available_storages_dict, mount_details)
         if matching_storage:
             status = matching_storage.mount_status
-            if status == MOUNT_STATUS_DISABLED:
+            if status == MOUNT_STATUS_DISABLED \
+                    or (status == MOUNT_STATUS_ACTIVE
+                        and not NFSMountWatcher.is_permission_set(matching_storage, WRITE_MASK)):
                 return MOUNT_STATUS_READ_ONLY
             else:
                 return status
@@ -404,18 +483,18 @@ class NFSMountWatcher:
             logging.warning(format_message('Unable to load current user: {}'.format(str(e))))
             return None
 
-
     @staticmethod
-    def _process_modified_mounts(available_storages_dict, mount_points, is_admin):
+    def _process_modified_mounts(available_storages_dict, is_admin):
+        mount_points = dict()
         modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path()
         if not os.path.exists(modified_mounts_file):
             logging.info(format_message('No modified mounts to check...'))
-            return
+            return mount_points
         with open(modified_mounts_file, "r") as modified_mounts:
             lines = modified_mounts.readlines()
         if len(lines) < 1:
             logging.info(format_message('No modified mounts to check...'))
-            return
+            return mount_points
         else:
             logging.info(format_message('Processing modified mounts'))
         for line in lines:
@@ -429,14 +508,24 @@ class NFSMountWatcher:
                                                                  is_admin, default=current_mount_status)
             if new_mount_status:
                 if current_mount_status == new_mount_status \
-                        or current_mount_status == MOUNT_STATUS_UNKNOWN:
+                        or new_mount_status == MOUNT_STATUS_UNKNOWN:
+                    if current_mount_status == MOUNT_STATUS_ACTIVE:
+                        mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                     NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details,
                                                                                current_mount_status)
                 else:
                     NFSMountWatcher._process_modified_mount(current_mount_status, new_mount_status,
                                                             modified_mount_details, mount_points)
             else:
+                if current_mount_status == MOUNT_STATUS_ACTIVE:
+                    mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                 NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details, current_mount_status)
+        NFSMountWatcher.move_mount_statuses_from_tmp_file()
+        return mount_points
+
+    @staticmethod
+    def move_mount_statuses_from_tmp_file():
+        modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path()
         tmp_modified_mounts_file = NFSMountWatcher.get_modified_mounts_file_path(use_tmp_file=True)
         if not os.path.exists(tmp_modified_mounts_file):
             os.mknod(tmp_modified_mounts_file)
@@ -449,6 +538,8 @@ class NFSMountWatcher:
             NFSMountWatcher.process_currently_disabled_mount(modified_mount_details, mount_points, new_mount_status)
         elif current_mount_status == MOUNT_STATUS_READ_ONLY:
             NFSMountWatcher.process_currently_ro_mount(modified_mount_details, mount_points, new_mount_status)
+        elif current_mount_status == MOUNT_STATUS_ACTIVE:
+            NFSMountWatcher.process_currently_active_mount(modified_mount_details, mount_points, new_mount_status)
         else:
             logging.warning(format_message('Unknown mount status [{}]'.format(new_mount_status)))
             NFSMountWatcher.save_mount_details_to_modified_mounts_file(modified_mount_details, current_mount_status)
@@ -457,15 +548,16 @@ class NFSMountWatcher:
     def process_currently_ro_mount(modified_mount_details, mount_points, new_mount_status):
         if new_mount_status == MOUNT_STATUS_DISABLED:
             if NFSMountWatcher.try_to_unmount(modified_mount_details):
-                NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                NFSMountWatcher.save_details_status_disabled(modified_mount_details)
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         elif new_mount_status == MOUNT_STATUS_ACTIVE:
             if NFSMountWatcher.try_to_unmount(modified_mount_details):
                 if NFSMountWatcher._try_mount_storage(modified_mount_details, False):
+                    NFSMountWatcher.save_details_status_active(modified_mount_details)
                     mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
                 else:
-                    NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                    NFSMountWatcher.save_details_status_disabled(modified_mount_details)
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         else:
@@ -478,36 +570,37 @@ class NFSMountWatcher:
             if NFSMountWatcher._try_mount_storage(modified_mount_details, True):
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
             else:
-                NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                NFSMountWatcher.save_details_status_disabled(modified_mount_details)
         elif new_mount_status == MOUNT_STATUS_ACTIVE:
             if NFSMountWatcher._try_mount_storage(modified_mount_details, False):
+                NFSMountWatcher.save_details_status_active(modified_mount_details)
                 mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
             else:
-                NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+                NFSMountWatcher.save_details_status_disabled(modified_mount_details)
         else:
             logging.warning(format_message('Unknown mount status [{}]'.format(new_mount_status)))
-            NFSMountWatcher.save_mount_details_status_disabled(modified_mount_details)
+            NFSMountWatcher.save_details_status_disabled(modified_mount_details)
 
     @staticmethod
-    def process_active_mounts_found(active_mount_status, mount_details, mount_points):
-        if active_mount_status == MOUNT_STATUS_DISABLED:
+    def process_currently_active_mount(mount_details, mount_points, new_mount_status):
+        if new_mount_status == MOUNT_STATUS_DISABLED:
             if NFSMountWatcher.try_to_unmount(mount_details):
-                NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
+                NFSMountWatcher.save_details_status_disabled(mount_details, use_tmp_file=False)
                 return
-        elif active_mount_status == MOUNT_STATUS_READ_ONLY:
+        elif new_mount_status == MOUNT_STATUS_READ_ONLY:
             if NFSMountWatcher.try_to_unmount(mount_details):
                 if NFSMountWatcher._try_mount_storage(mount_details, True):
                     NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
                 else:
-                    NFSMountWatcher.save_mount_details_status_disabled(mount_details, use_tmp_file=False)
+                    NFSMountWatcher.save_details_status_disabled(mount_details, use_tmp_file=False)
                 return
-        elif active_mount_status != MOUNT_STATUS_ACTIVE:
-                logging.info(format_message('Received unknown status [{}] for [{}]'.format(active_mount_status,
+        elif new_mount_status != MOUNT_STATUS_ACTIVE:
+                logging.info(format_message('Received unknown status [{}] for [{}]'.format(new_mount_status,
                                                                                            mount_details.mount_point)))
         mount_points[mount_details.mount_point] = mount_details.mount_source
 
     @staticmethod
-    def save_mount_details_status_disabled(mount_details, use_tmp_file=True):
+    def save_details_status_disabled(mount_details, use_tmp_file=True):
         NFSMountWatcher.save_mount_details_to_modified_mounts_file(mount_details, MOUNT_STATUS_DISABLED,
                                                                    use_tmp_file=use_tmp_file)
 
@@ -538,6 +631,8 @@ class NFSMountWatcher:
         mount_options = mount_details.mount_attributes.split(COMMA)
         if read_only:
             mount_options = [READ_ONLY_OPTION if option == READ_WRITE_OPTION else option for option in mount_options]
+        else:
+            mount_options = [READ_WRITE_OPTION if option == READ_ONLY_OPTION else option for option in mount_options]
         mount_options = COMMA.join(mount_options)
         mkdir(mount_details.mount_point)
         mount_command = NFS_MOUNT_CMD_PATTERN.format(
@@ -596,24 +691,51 @@ class NFSMountWatcher:
             resync_timeout = MNT_RESYNC_TIMEOUT_SEC
         return resync_timeout
 
+    def try_increase_watchers_limit(self):
+        new_limit = 2 * self._watchers_limit
+        max_allowed_watchers = self._calculate_max_allowed_watchers()
+        if new_limit > max_allowed_watchers:
+            logging.warning(format_message('Unable to increase limit up to [{}], maximum allowed is [{}]'
+                                           .format(new_limit, max_allowed_watchers)))
+            return
+        logging.warning(format_message('Updating watchers limit in `{}` with [{}]'
+                                       .format(NFSMountWatcher.WATCHER_LIMIT_FILE, new_limit)))
+        with open(NFSMountWatcher.WATCHER_LIMIT_FILE, "w") as out:
+            out.write(str(new_limit))
+
+    def release_resources(self):
+        self._event_observer.stop()
+        if len(self._target_path_mapping.items()) > 1:
+            self._event_observer.unschedule_all()
+        self._event_handler.dump_to_storage()
+
     def start(self):
         logging.info(format_message('Start monitoring shares state...'))
         self._event_observer.start()
-        try:
-            resync_timeout = self._get_mnt_resync_timeout()
-            while True:
-                time.sleep(resync_timeout)
-                if self._target_paths:
-                    self._update_static_paths_mapping()
-                else:
-                    self._update_target_mount_points()
-                self._event_handler.check_timeout_and_dump()
-
-        finally:
-            self._event_observer.stop()
-            self._event_observer.join()
-            self._event_handler.dump_to_storage()
+        resync_timeout = self._get_mnt_resync_timeout()
+        while True:
+            time.sleep(resync_timeout)
+            if self._target_paths:
+                self._update_static_paths_mapping()
+            else:
+                self._update_target_mount_points()
+            self._event_handler.check_timeout_and_dump()
 
 
 if __name__ == '__main__':
-    NFSMountWatcher(target_paths=os.getenv('CP_CAP_NFS_OBSERVER_TARGET_PATHS')).start()
+    while True:
+        watcher = NFSMountWatcher(target_paths=os.getenv('CP_CAP_NFS_OBSERVER_TARGET_PATHS'))
+        try:
+            watcher.start()
+        except BaseException as e:
+            if watcher.is_terminated():
+                logging.warning(format_message('Termination signal received, exiting.'))
+                exit(0)
+            error_message = str(e)
+            logging.error(format_message('An exception occurred in the observer: {}'.format(error_message)))
+            if 'inotify' in error_message:
+                logging.error(format_message('Error is considered related to inotify, trying to increase limits...'))
+                watcher.try_increase_watchers_limit()
+            logging.error(format_message('Restarting the observer...'))
+        finally:
+            watcher.release_resources()

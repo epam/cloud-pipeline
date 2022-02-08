@@ -16,22 +16,31 @@
 
 package com.epam.pipeline.manager.datastorage.providers.nfs;
 
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.MountType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AbstractCloudRegionCredentials;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+@Slf4j
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public final class NFSHelper {
 
     /**
@@ -67,9 +76,15 @@ public final class NFSHelper {
      * */
     private static final Pattern NFS_PATTERN_WITH_HOME_DIR = Pattern.compile("(.+:)[^\\/]+");
 
+    private static final String IP_ADDRESS_REGEX =
+            "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)";
+    private static final Pattern IP_ADDRESS_PATTERN = Pattern.compile(IP_ADDRESS_REGEX);
+
     private static final String SMB_SCHEME = "//";
     private static final String PATH_SEPARATOR = "/";
     private static final String NFS_HOST_DELIMITER = ":/";
+    private static final String LUSTRE_HOST_DELIMITER = "@";
+    private static final String LUSTRE_MOUNTS_DELIMITER = "_";
 
     private NFSHelper() {
 
@@ -98,6 +113,27 @@ public final class NFSHelper {
         } else {
             throw new IllegalArgumentException("Invalid path");
         }
+    }
+
+    public static String normalizeMountPath(final MountType mountType, final String mountPath) {
+        return MountType.LUSTRE == mountType
+                ? normalizeLustrePath(mountPath)
+                : normalizePath(mountPath);
+    }
+
+    public static List<String> findIpAddresses(final FileShareMount fileShareMount) {
+        return determineHosts(fileShareMount).stream()
+                .flatMap(mountRootPart -> determineIpAddresses(mountRootPart).stream())
+                .collect(Collectors.toList());
+    }
+
+    static List<String> determineHosts(final FileShareMount fileShareMount) {
+        final MountType mountType = fileShareMount.getMountType();
+        final String mountRoot = StringUtils.stripStart(normalizeMountPath(mountType, fileShareMount.getMountRoot()),
+                SMB_SCHEME);
+        return Arrays.stream(mountRoot.split(LUSTRE_MOUNTS_DELIMITER))
+                .map(mountRootPart -> determineHost(mountType, mountRootPart))
+                .collect(Collectors.toList());
     }
 
     static String getNFSMountOption(final AbstractCloudRegion cloudRegion,
@@ -141,5 +177,37 @@ public final class NFSHelper {
         if (ArrayUtils.isEmpty(files)) {
             FileUtils.deleteDirectory(folder);
         }
+    }
+
+    private static String normalizePath(final String nfsPath) {
+        return nfsPath.replace(":", "/");
+    }
+
+    private static String normalizeLustrePath(final String nfsPath) {
+        return nfsPath.replaceAll(":/", "/").replace(":", LUSTRE_MOUNTS_DELIMITER);
+    }
+
+    private static List<String> determineIpAddresses(final String mountRoot) {
+        final Matcher matcher = IP_ADDRESS_PATTERN.matcher(mountRoot);
+        if (matcher.matches()) {
+            return Collections.singletonList(matcher.group());
+        }
+        try {
+            final InetAddress[] address = InetAddress.getAllByName(mountRoot);
+            return Arrays.stream(address)
+                    .map(InetAddress::getHostAddress)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("An error occurred during extracting IP addresses from dns name", e);
+            return Collections.emptyList();
+        }
+    }
+
+    private static String determineHost(final MountType mountType, final String mountPath) {
+        return mountPath.split(determineHostDelimiter(mountType))[0];
+    }
+
+    private static String determineHostDelimiter(final MountType mountType) {
+        return MountType.LUSTRE.equals(mountType) ? LUSTRE_HOST_DELIMITER : PATH_SEPARATOR;
     }
 }

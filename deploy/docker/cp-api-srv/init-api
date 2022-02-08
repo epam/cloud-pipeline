@@ -126,13 +126,33 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
-function extract_nfs_observing_script {
-    local jar_path="$1"
-    local output_dir="$2"
-    unzip -p "$jar_path" BOOT-INF/classes/static/pipe-common.tar.gz >pipe-common.tar.gz
-    tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
-    mv watch_mount_shares.py $output_dir && \
-    rm -rf pipe-common.tar.gz
+function configure_and_publish_cloud_data_win_distribution() {
+    local _jar_path="$1"
+    local _output_dir="$2"
+    local _cloud_data_name="cloud-data"
+    if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
+        local _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
+        _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
+    fi
+    
+    unzip -p "$_jar_path" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
+    unzip -qq cloud-data-win64.zip
+    rm -f cloud-data-win64.zip
+
+    
+cat > cloud-data-win32-x64/settings.json <<EOF
+{
+ "certificates": [],
+ "ignoreCertificateErrors": true,
+ "api": "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/",
+ "server": "https://${CP_EDGE_EXTERNAL_HOST}:${CP_EDGE_EXTERNAL_PORT}/webdav/<USER_ID>",
+ "username": "<USER_ID>" $_cloud_data_name_json
+}
+EOF
+    mv cloud-data-win32-x64/cloud-data.exe cloud-data-win32-x64/${_cloud_data_name}.exe
+    mv cloud-data-win32-x64 ${_cloud_data_name}-win32-x64
+    zip -q -r "$_output_dir/${_cloud_data_name}-win64.zip" ${_cloud_data_name}-win32-x64
+    rm -rf ${_cloud_data_name}-win32-x64
 }
 
 # Validate SSO and SSL certificates
@@ -244,6 +264,13 @@ openssl dgst -sha256 -hex -r -sign "$CP_API_SRV_CERT_DIR/ssl-private-key.pem" \
 echo "Copying DTS windows bundle to static resources"
 cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
 
+# Add a deployment specific configuration to the "cloud data" application:
+# - API URL
+# - DAV URL
+# - Application name
+echo "Configuring Cloud Data with the deployment specific settings"
+configure_and_publish_cloud_data_win_distribution "$CP_API_HOME/pipeline.jar" "$CP_API_SRV_STATIC_DIR"
+
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
@@ -278,7 +305,7 @@ API_RUN_TIME_LOG=$CP_API_HOME/logs/runtime.log
 mkdir -p $(dirname $API_RUN_TIME_LOG)
 touch $API_RUN_TIME_LOG
 
-nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar &> $API_RUN_TIME_LOG &
+nohup java $CP_API_SRV_JAVA_OPTS -jar pipeline.jar $CP_API_SRV_JAVA_SPRING_OPTS  &> $API_RUN_TIME_LOG &
 APP_PID="$!"
 
 sleep 5
@@ -293,16 +320,6 @@ if [ "$CP_CLOUD_PLATFORM" == "az" ] && [ -f /root/.cloud/azureProfile.json ] && 
   cp /root/.cloud/* /root/.azure/
 fi
 
-if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
-  WATCHER_HOME="$CP_API_HOME/nfs-watcher"
-  WATCHER_LOG_HOME="/var/log/nfs-watcher"
-  mkdir -p "$WATCHER_LOG_HOME" "$WATCHER_HOME"
-  extract_nfs_observing_script "$CP_API_HOME/pipeline.jar" "$WATCHER_HOME"
-  inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_API_WATCHERS:-131071}
-  sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
-  sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
-  nohup python -u $WATCHER_HOME/watch_mount_shares.py 1>/dev/null 2>$WATCHER_LOG_HOME/.nohup.nfswatcher.log &
-fi
 
 # Workaround the container hanging when being terminated
 function sig_handler {

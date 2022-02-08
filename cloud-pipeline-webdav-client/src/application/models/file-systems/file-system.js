@@ -118,6 +118,10 @@ class FileSystem {
     }
     return Promise.resolve();
   }
+
+  diagnose () {
+    return Promise.resolve();
+  }
 }
 
 export default FileSystem;

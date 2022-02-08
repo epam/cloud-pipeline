@@ -402,18 +402,11 @@ class AddDockerRegistryControl extends React.Component {
         style={style}
       >
         <div
-          className={
-            classNames(
-              styles.container,
-              {
-                [styles.duplicate]: duplicate
-              }
-            )
-          }
+          className={classNames(styles.container)}
           style={containerStyle}
         >
           <Select
-            className={styles.select}
+            className={classNames({'cp-error': duplicate})}
             showSearch
             disabled={pending || disabled}
             value={docker}

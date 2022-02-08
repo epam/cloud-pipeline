@@ -18,35 +18,22 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
-import {Alert, Icon, Spin} from 'antd';
+import {Alert, Checkbox, Icon, Spin, Tooltip} from 'antd';
 import PreviewModal from '../preview/preview-modal';
 import {InfiniteScroll, PresentationModes} from '../faceted-search/controls';
 import DocumentListPresentation from './document-presentation/list';
-import {DocumentColumns, parseExtraColumns} from './utilities/document-columns';
+import {ExcludedSortingKeys} from './utilities';
 import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import compareArrays from '../../../utils/compareArrays';
+import SearchItemTypes from '../../../models/search/search-item-types';
 
 const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
 const TABLE_HEADER_HEIGHT = 28;
 const RESULT_ITEM_MARGIN = 2;
 const PREVIEW_TIMEOUT = 1000;
-
-function compareDocumentTypes (prev, next) {
-  const a = (prev || []).sort();
-  const b = (next || []).sort();
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
 
 function cellStringWithDivider (column) {
   if (!column || !column.key) {
@@ -55,14 +42,16 @@ function cellStringWithDivider (column) {
   return `${column.key.replaceAll(' ', '___')} .`;
 }
 
+function getColumnNames (columns = []) {
+  return columns.map(column => column.key);
+}
+
 class SearchResults extends React.Component {
   state = {
     resultsAreaHeight: undefined,
     preview: undefined,
     resizingColumn: undefined,
-    columnWidths: {},
-    columns: DocumentColumns.map(column => column.key),
-    extraColumnsConfiguration: []
+    columnWidths: {}
   };
 
   dividerRefs = [];
@@ -71,22 +60,18 @@ class SearchResults extends React.Component {
   tableWidth = undefined;
   animationFrame;
   infiniteScroll;
+  currentDocumentId;
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (!compareDocumentTypes(prevProps.documentTypes, this.props.documentTypes)) {
-      this.updateDocumentTypes();
-    }
     if (
       prevState.columnWidths !== this.state.columnWidths ||
       prevState.resizingColumn !== this.state.resizingColumn ||
-      prevState.columns !== this.state.columns
+      !compareArrays(getColumnNames(this.props.columns), getColumnNames(prevProps.columns)) ||
+      prevProps.selectedItems !== this.props.selectedItems
     ) {
       if (this.infiniteScroll) {
         this.infiniteScroll.forceUpdate();
       }
-    }
-    if (!compareArrays(prevProps.extraColumns, this.props.extraColumns)) {
-      this.updateExtraColumns();
     }
   }
 
@@ -94,25 +79,7 @@ class SearchResults extends React.Component {
     window.addEventListener('mousemove', this.onResize);
     window.addEventListener('mouseup', this.stopResizing);
     window.addEventListener('keydown', this.onKeyDown);
-    this.updateDocumentTypes();
-    this.updateExtraColumns();
   }
-
-  updateExtraColumns = () => {
-    const {extraColumns = []} = this.props;
-    parseExtraColumns(this.props.preferences)
-      .then(extra => {
-        const extraColumnsConfiguration = extraColumns.map(key => ({key, name: key}));
-        if (extra && extra.length) {
-          extra.forEach(column => {
-            if (!extraColumnsConfiguration.find(c => c.key === column.key)) {
-              extraColumnsConfiguration.push(column);
-            }
-          });
-        }
-        this.setState({extraColumnsConfiguration}, this.updateDocumentTypes);
-      });
-  };
 
   componentWillUnmount () {
     if (this.animationFrame) {
@@ -123,42 +90,44 @@ class SearchResults extends React.Component {
     window.removeEventListener('keydown', this.onKeyDown);
   }
 
-  get columnsConfiguration () {
-    const {extraColumnsConfiguration = []} = this.state;
-    return [...DocumentColumns, ...extraColumnsConfiguration];
+  setCurrentDocument = (currentDocumentId) => {
+    this.currentDocumentId = currentDocumentId;
   }
-
-  get columns () {
-    const {columns} = this.state;
-    if (!columns || !columns.size) {
-      return this.columnsConfiguration;
-    }
-    return this.columnsConfiguration.filter(k => columns.has(k.key));
-  }
-
-  updateDocumentTypes = () => {
-    const {documentTypes} = this.props;
-    if (!documentTypes || !documentTypes.length) {
-      this.setState({columns: new Set(this.columnsConfiguration.map(column => column.key))});
-    } else {
-      const columns = this.columnsConfiguration
-        .filter(column => !column.types || documentTypes.find(type => column.types.has(type)))
-        .map(column => column.key);
-      this.setState({columns: new Set(columns)});
-    }
-  };
 
   onInitializeInfiniteScroll = (infiniteScroll) => {
     this.infiniteScroll = infiniteScroll;
   };
 
   renderResultsItemActions = (resultItem) => {
+    const {disabled} = this.props;
     return (
-      <div className={styles.actionsContainer}>
+      <div className="cp-search-result-item-actions">
+        <Icon
+          type="info-circle-o"
+          className={
+            classNames(
+              'cp-search-result-item-action',
+              'cp-icon-larger'
+            )
+          }
+          onClick={(e) => {
+            if (!disabled) {
+              e && e.stopPropagation();
+              e && e.preventDefault();
+              this.setPreview(resultItem);
+            }
+          }}
+        />
+        {this.renderRowSelectionCheckbox(resultItem)}
         <OpenInToolAction
           file={resultItem.path}
           storageId={resultItem.parentId}
-          className={classNames(styles.previewBtn, styles.action)}
+          className={
+            classNames(
+              'cp-search-result-item-action',
+              'cp-icon-larger'
+            )
+          }
           style={{
             borderRadius: '0px',
             borderLeft: 'none',
@@ -170,38 +139,33 @@ class SearchResults extends React.Component {
   };
 
   renderSearchResultItem = (resultItem) => {
-    const {disabled} = this.props;
-    const {extraColumnsConfiguration} = this.state;
+    const {disabled, extraColumns} = this.props;
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
         key={resultItem.elasticId}
-        className={styles.resultItemContainer}
+        className={
+          classNames(
+            styles.resultItemContainer,
+            'cp-panel-card',
+            'cp-search-result-item',
+            'cp-search-result-list-item',
+            {
+              disabled
+            }
+          )
+        }
         onClick={this.navigate(resultItem)}
       >
-        <Icon
-          type="info-circle-o"
-          className={styles.previewBtn}
-          onClick={(e) => {
-            e && e.stopPropagation();
-            e && e.preventDefault();
-            this.setPreview(resultItem);
-          }}
-        />
         {this.renderResultsItemActions(resultItem)}
         <div
           id={`search-result-item-${resultItem.elasticId}`}
-          className={
-            classNames(
-              styles.resultItem,
-              {[styles.disabled]: disabled}
-            )
-          }
+          className={styles.resultItem}
         >
           <DocumentListPresentation
             className={styles.title}
             document={resultItem}
-            extraColumns={extraColumnsConfiguration}
+            extraColumns={extraColumns}
           />
         </div>
       </a>
@@ -260,7 +224,6 @@ class SearchResults extends React.Component {
     }
     return (
       <PreviewModal
-        lightMode
         preview={preview}
         onClose={this.closePreview}
       />
@@ -277,7 +240,8 @@ class SearchResults extends React.Component {
       showResults,
       onLoadData,
       onPageSizeChanged,
-      pageSize
+      pageSize,
+      resetPositionToken
     } = this.props;
     if (error) {
       return (
@@ -317,6 +281,10 @@ class SearchResults extends React.Component {
             rowMargin={RESULT_ITEM_MARGIN}
             rowHeight={RESULT_ITEM_HEIGHT}
             onInitialized={this.onInitializeInfiniteScroll}
+            reportCurrentDocument={this.setCurrentDocument}
+            initialTopDocument={this.currentDocumentId}
+            resetPositionToken={resetPositionToken}
+            headerHeight={0}
           />
         </div>
       </div>
@@ -324,15 +292,16 @@ class SearchResults extends React.Component {
   };
 
   getGridTemplate = (headerTemplate) => {
+    const {columns = []} = this.props;
     const {columnWidths} = this.state;
     const rowHeight = headerTemplate
       ? TABLE_HEADER_HEIGHT
       : TABLE_ROW_HEIGHT;
     const cellDefault = '100px';
     const divider = '4px';
-    const columnString = `'${this.columns
+    const columnString = `'${columns
       .map(cellStringWithDivider).join(' ')}' ${rowHeight}px /`;
-    const widthString = `${this.columns
+    const widthString = `${columns
       .map(c => `${columnWidths[c.key] || c.width || cellDefault} ${divider}`)
       .join(' ')}`;
     return columnString.concat(widthString);
@@ -378,8 +347,79 @@ class SearchResults extends React.Component {
     }
   };
 
+  itemSelected = (item) => {
+    const {selectedItems = []} = this.props;
+
+    return this.itemSelectionAvailable(item) && selectedItems.length > 0 && selectedItems
+      .some(i => i.elasticId === item.elasticId);
+  }
+
+  itemSelectionAvailable = (item) => {
+    const {selectionAvailable} = this.props;
+
+    return selectionAvailable && item.type === SearchItemTypes.s3File;
+  };
+
+  itemSelectionDisabled = (item) => {
+    const {selectedItems = []} = this.props;
+
+    return selectedItems.length > 0 && !selectedItems.some(i => i.parentId === item.parentId);
+  };
+
+  onRowSelectionChange = (item, event) => {
+    const {onSelectItem, onDeselectItem} = this.props;
+    if (event.target.checked) {
+      onSelectItem && onSelectItem(item);
+    } else if (!event.target.checked) {
+      onDeselectItem && onDeselectItem(item);
+    }
+    if (this.infiniteScroll) {
+      this.infiniteScroll.forceUpdate();
+    }
+  };
+
+  renderRowSelectionCheckbox = (item) => {
+    if (!this.itemSelectionAvailable(item)) {
+      return null;
+    }
+    const disabled = this.itemSelectionDisabled(item);
+    const handleClick = e => e.stopPropagation();
+    const checkbox = (
+      <Checkbox
+        checked={this.itemSelected(item)}
+        disabled={disabled}
+        onChange={e => this.onRowSelectionChange(item, e)}
+        onClick={handleClick}
+        style={disabled ? {pointerEvents: 'none'} : {}}
+      />
+    );
+    return (
+      <div
+        style={{padding: '10px 5px'}}
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        }}
+      >
+        {
+          disabled
+            ? (
+              <Tooltip
+                title="Only files from single storage could be selected at a time"
+              >
+                <span style={{cursor: 'not-allowed'}}>
+                  {checkbox}
+                </span>
+              </Tooltip>
+            )
+            : checkbox
+        }
+      </div>
+    );
+  };
+
   renderTableRow = (resultItem, rowIndex) => {
-    const {disabled} = this.props;
+    const {disabled, columns = []} = this.props;
     const {columnWidths, resizingColumn} = this.state;
     if (!resultItem) {
       return null;
@@ -387,27 +427,48 @@ class SearchResults extends React.Component {
     return (
       <a
         href={!disabled && resultItem.url ? `${PUBLIC_URL || ''}/#${resultItem.url}` : undefined}
-        className={styles.tableRow}
+        className={
+          classNames(
+            'cp-search-result-item',
+            'cp-search-result-table-item',
+            {
+              disabled
+            }
+          )
+        }
         style={{gridTemplate: this.getGridTemplate()}}
         key={rowIndex}
         onClick={this.navigate(resultItem)}
       >
-        {this.columns.map(({key, renderFn}, index) => (
+        {columns.map(({key, className, renderFn}, index) => (
           [
             <div
-              className={styles.tableCell}
+              className={classNames('cp-search-results-table-cell', 'cp-search-result-item-main')}
               key={index}
               style={{width: columnWidths[key], minWidth: '0px'}}
             >
               {renderFn
-                ? renderFn(resultItem[key], resultItem, this.setPreview)
-                : <span className={styles.cellValue}>{resultItem[key]}</span>
+                ? renderFn(
+                  resultItem[key],
+                  resultItem,
+                  this.setPreview,
+                  this.renderRowSelectionCheckbox
+                )
+                : (
+                  <span
+                    className={classNames('cp-ellipsis-text', className)}
+                  >
+                    {resultItem[key]}
+                  </span>
+                )
               }
             </div>,
             <div
               className={classNames(
-                styles.tableDivider,
-                {[styles.dividerActive]: resizingColumn === key}
+                'cp-search-results-table-divider',
+                {
+                  active: resizingColumn === key
+                }
               )}
             />
           ]
@@ -417,30 +478,83 @@ class SearchResults extends React.Component {
     );
   };
 
+  onHeaderCellClick = (key, event) => {
+    const {onChangeSortingOrder, pending} = this.props;
+    event && event.stopPropagation();
+    if (ExcludedSortingKeys.includes(key) || pending) {
+      return;
+    }
+    return onChangeSortingOrder && onChangeSortingOrder(key, true);
+  };
+
   renderTableHeader = () => {
     const {columnWidths, resizingColumn} = this.state;
+    const {sortingOrder, columns = []} = this.props;
+    const renderSortingIcon = (key) => {
+      const currentIndex = sortingOrder
+        .findIndex(sorting => sorting.field === key);
+      const currentSorting = sortingOrder[currentIndex];
+      if (!currentSorting) {
+        return null;
+      }
+      return (
+        <span
+          className={styles.sortingContainer}
+        >
+          <Icon
+            className={styles.sortingIcon}
+            type={
+              currentSorting.asc
+                ? 'caret-up'
+                : 'caret-down'
+            }
+          />
+          {sortingOrder.length > 1 ? (
+            <sup className={styles.sortingNumber}>
+              {currentIndex + 1}
+            </sup>
+          ) : null}
+        </span>
+      );
+    };
     return (
       <div
         className={classNames(
-          styles.tableRow,
-          styles.tableHeader
+          'cp-search-result-item',
+          'cp-search-result-table-item',
+          'cp-search-results-table-header'
         )}
         style={{gridTemplate: this.getGridTemplate(true)}}
         ref={header => (this.headerRef = header)}
       >
-        {this.columns.map(({key, name}, index) => ([
+        {columns.map(({key, name}, index) => ([
           <div
             key={index}
-            className={styles.headerCell}
+            className={
+              classNames(
+                'cp-ellipsis-text',
+                'cp-search-results-table-header-cell'
+              )
+            }
             ref={ref => (this.dividerRefs[key] = ref)}
-            style={{width: columnWidths[key], minWidth: '0px'}}
+            style={{
+              width: columnWidths[key],
+              minWidth: '0px',
+              cursor: ExcludedSortingKeys.includes(key)
+                ? 'default'
+                : 'pointer'
+            }}
+            onClick={(event) => this.onHeaderCellClick(key, event)}
           >
+            {renderSortingIcon(key)}
             {name}
           </div>,
           <div
             className={classNames(
-              styles.tableDivider,
-              {[styles.dividerActive]: resizingColumn === key}
+              'cp-search-results-table-divider',
+              {
+                active: resizingColumn === key
+              }
             )}
             onMouseDown={e => this.initResizing(e, key)}
           />
@@ -459,7 +573,8 @@ class SearchResults extends React.Component {
       onPageSizeChanged,
       onLoadData,
       pageSize,
-      showResults
+      showResults,
+      resetPositionToken
     } = this.props;
     if (error) {
       return (
@@ -473,7 +588,7 @@ class SearchResults extends React.Component {
     }
     return (
       <div
-        className={styles.tableContainer}
+        className={classNames(styles.tableContainer, 'cp-panel')}
         onBlur={this.stopResizing}
       >
         <InfiniteScroll
@@ -490,7 +605,11 @@ class SearchResults extends React.Component {
           rowRenderer={this.renderTableRow}
           rowMargin={0}
           rowHeight={TABLE_ROW_HEIGHT}
+          headerHeight={TABLE_HEADER_HEIGHT}
           onInitialized={this.onInitializeInfiniteScroll}
+          reportCurrentDocument={this.setCurrentDocument}
+          initialTopDocument={this.currentDocumentId}
+          resetPositionToken={resetPositionToken}
         />
       </div>
     );
@@ -540,25 +659,34 @@ SearchResults.propTypes = {
   error: PropTypes.string,
   hasElementsAfter: PropTypes.bool,
   hasElementsBefore: PropTypes.bool,
+  resetPositionToken: PropTypes.string,
   onLoadData: PropTypes.func,
   loading: PropTypes.bool,
   disabled: PropTypes.bool,
   onPageSizeChanged: PropTypes.func,
   onNavigate: PropTypes.func,
+  onSelectItem: PropTypes.func,
+  onDeselectItem: PropTypes.func,
+  selectedItems: PropTypes.array,
+  selectionAvailable: PropTypes.bool,
   pageSize: PropTypes.number,
   showResults: PropTypes.bool,
   style: PropTypes.object,
   onChangeDocumentType: PropTypes.func,
   onChangeBottomOffset: PropTypes.func,
   mode: PropTypes.oneOf([PresentationModes.list, PresentationModes.table]),
-  documentTypes: PropTypes.array,
-  extraColumns: PropTypes.array
+  columns: PropTypes.array,
+  extraColumns: PropTypes.array,
+  onChangeSortingOrder: PropTypes.func,
+  sortingOrder: PropTypes.arrayOf(PropTypes.shape({
+    field: PropTypes.string,
+    order: PropTypes.string
+  }))
 };
 
 SearchResults.defaultProps = {
   documents: [],
-  pageSize: 20,
-  documentTypes: []
+  pageSize: 20
 };
 
 export default inject('preferences')(observer(SearchResults));

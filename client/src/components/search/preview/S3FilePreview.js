@@ -30,32 +30,8 @@ import {SearchItemTypes} from '../../../models/search';
 import styles from './preview.css';
 import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import Papa from 'papaparse';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
+import Markdown from '../../special/markdown';
 import VSIPreview from './vsi-preview';
-
-const MarkdownRenderer = new Remarkable('commonmark', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
@@ -100,7 +76,6 @@ export default class S3FilePreview extends React.Component {
       name: PropTypes.string,
       description: PropTypes.string
     }),
-    lightMode: PropTypes.bool,
     onPreviewLoaded: PropTypes.func,
     fullscreen: PropTypes.bool,
     onFullScreenChange: PropTypes.func,
@@ -141,7 +116,9 @@ export default class S3FilePreview extends React.Component {
   @computed
   get structuredTableData () {
     if (this.filePreview && this.filePreview.preview &&
-      this.props.item && this.props.item.id.split('.').pop().toLowerCase() === 'csv') {
+      this.props.item && this.props.item.id &&
+      this.props.item.id.split('.').pop().toLowerCase() === 'csv'
+    ) {
       const result = {};
       const parseRes = Papa.parse(this.filePreview.preview);
       if (parseRes.errors.length) {
@@ -168,7 +145,7 @@ export default class S3FilePreview extends React.Component {
       );
     }
     if (this.props.dataStorageInfo.error) {
-      return <span style={{color: '#ff556b'}}>{this.props.dataStorageInfo.error}</span>;
+      return <span className={'cp-search-preview-error'}>{this.props.dataStorageInfo.error}</span>;
     }
     const path = this.props.item.type !== SearchItemTypes.NFSFile
       ? [this.props.dataStorageInfo.value.pathMask, ...this.props.item.id.split('/')]
@@ -180,9 +157,8 @@ export default class S3FilePreview extends React.Component {
             <tr>
               <td style={{whiteSpace: 'nowrap', verticalAlign: 'top'}}>Storage:</td>
               <td style={{paddingLeft: 5}}>
-                {this.props.dataStorageInfo.value.name}
+                <span style={{paddingRight: '5px'}}>{this.props.dataStorageInfo.value.name}</span>
                 <AWSRegionTag
-                  darkMode
                   regionId={this.props.dataStorageInfo.value.regionId}
                 />
               </td>
@@ -224,7 +200,7 @@ export default class S3FilePreview extends React.Component {
     if (this.filePreview.error) {
       return (
         <div className={styles.contentPreview}>
-          <span style={{color: '#ff556b'}}>{this.filePreview.error}</span>
+          <span className={'cp-search-preview-error'}>{this.filePreview.error}</span>
         </div>
       );
     }
@@ -242,13 +218,13 @@ export default class S3FilePreview extends React.Component {
         {
           this.state.pdbError &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .pdb visualization: {this.state.pdbError}</span>
+            <span className={'cp-search-preview-error'}>Error loading .pdb visualization: {this.state.pdbError}</span>
           </div>
         }
         {
           this.structuredTableData && this.structuredTableData.error &&
           <div style={{marginBottom: 5}}>
-            <span style={{color: '#ff556b'}}>Error loading .csv visualization: {this.structuredTableData.message}</span>
+            <span className={'cp-search-preview-error'}>Error loading .csv visualization: {this.structuredTableData.message}</span>
           </div>
         }
         {
@@ -268,7 +244,7 @@ export default class S3FilePreview extends React.Component {
     if (this.structuredTableData && !this.structuredTableData.error) {
       return (
         <div className={styles.contentPreview}>
-          <table className={styles.csvTable}>
+          <table className={classNames(styles.csvTable, 'cp-search-csv-table')}>
             {
               this.structuredTableData.data.map((row, rowIndex) => {
                 return (
@@ -276,7 +252,9 @@ export default class S3FilePreview extends React.Component {
                     {
                       row.map((cell, columnIndex) => {
                         return (
-                          <td className={styles.csvCell} key={`col-${columnIndex}`}>{cell}</td>
+                          <td className={classNames(
+                            styles.csvCell, 'cp-search-csv-table-cell'
+                          )} key={`col-${columnIndex}`}>{cell}</td>
                         );
                       })
                     }
@@ -294,10 +272,7 @@ export default class S3FilePreview extends React.Component {
     if (this.filePreview && this.filePreview.preview) {
       return (
         <div className={styles.contentPreview}>
-          <div className={styles.mdPreview}>
-            <div
-              dangerouslySetInnerHTML={{__html: MarkdownRenderer.render(this.filePreview.preview)}} />
-          </div>
+          <Markdown md={this.filePreview.preview} />
         </div>
       );
     }
@@ -382,7 +357,7 @@ export default class S3FilePreview extends React.Component {
     ) {
       return null;
     }
-    const extension = this.props.item.id.split('.').pop().toLowerCase();
+    const extension = this.props.item.id && this.props.item.id.split('.').pop().toLowerCase();
     const previewRenderers = {
       pdb: this.renderPDBPreview,
       csv: this.renderCSVPreview,
@@ -419,25 +394,23 @@ export default class S3FilePreview extends React.Component {
         className={
           classNames(
             styles.container,
-            {
-              [styles.light]: this.props.lightMode
-            }
+            'cp-search-container'
           )
         }
       >
         <div className={styles.header}>
-          <Row className={styles.title}>
+          <Row className={classNames(styles.title, 'cp-search-header-title')}>
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
           </Row>
           {
             this.props.item.description &&
-            <Row className={styles.description}>
+            <Row className={classNames(styles.description, 'cp-search-header-description')}>
               {this.props.item.description}
             </Row>
           }
         </div>
-        <div className={styles.content}>
+        <div className={classNames(styles.content, 'cp-search-content')}>
           {highlights && renderSeparator()}
           {highlights}
           {info && renderSeparator()}

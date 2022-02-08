@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
+import classNames from 'classnames';
 import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -321,9 +322,18 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
           gutter={16}
           type="flex"
           justify="center"
-          className={`${styles.rowMenu} ${styles[activeTab] || ''}`}
+          className={
+            classNames(
+              styles.rowMenu,
+              styles[activeTab]
+            )
+          }
         >
-          <TabMenu mode="horizontal" selectedKeys={[activeTab]} className={styles.tabsMenu}>
+          <TabMenu
+            mode="horizontal"
+            selectedKeys={[activeTab]}
+            className={styles.tabsMenu}
+          >
             <TabMenu.Item key="documents">
               <AdaptedLink
                 to={`/${id}/${version}/documents`}

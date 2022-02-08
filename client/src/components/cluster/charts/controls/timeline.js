@@ -25,7 +25,7 @@ import attachZoomHandler from './utilities/attach-zoom-handler';
 
 const SizePerTickPx = 100;
 
-@inject('plot', 'data')
+@inject('plot', 'data', 'themes')
 @observer
 class Timeline extends React.PureComponent {
   state = {
@@ -40,6 +40,33 @@ class Timeline extends React.PureComponent {
 
   detachMoveHandler;
   detachZoomHandler;
+
+  @computed
+  get backgroundColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@card-header-background'] || '#ccc';
+    }
+    return '#ccc';
+  }
+
+  @computed
+  get lineColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-color'] || 'rgba(0, 0, 0, 0.65)';
+    }
+    return 'rgba(0, 0, 0, 0.65)';
+  }
+
+  @computed
+  get tickColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-color-faded'] || '#777';
+    }
+    return '#777';
+  }
 
   @computed
   get dataRange () {
@@ -178,7 +205,7 @@ class Timeline extends React.PureComponent {
   };
 
   renderTick = (tick) => {
-    const {plot, tickColor} = this.props;
+    const {plot} = this.props;
     const {chartArea, height} = plot.props;
     const tickSize = tick.isBase ? 6 : 4;
     const x = this.getCanvasCoordinate(tick.tick);
@@ -189,7 +216,7 @@ class Timeline extends React.PureComponent {
         y1={height - chartArea.bottom}
         x2={x}
         y2={height - chartArea.bottom + tickSize}
-        stroke={tickColor}
+        stroke={this.tickColor}
         strokeWidth={1}
       />
     );
@@ -223,7 +250,7 @@ class Timeline extends React.PureComponent {
     if (!tick.isBase) {
       return null;
     }
-    const {plot, fontColor, fontSize} = this.props;
+    const {plot, fontSize} = this.props;
     const {chartArea, height} = plot.props;
     const x = this.getCanvasCoordinate(tick.tick);
     const y = height - chartArea.bottom + 6 + fontSize;
@@ -243,7 +270,7 @@ class Timeline extends React.PureComponent {
         y={y}
         textAnchor={'middle'}
         stroke={'none'}
-        fill={fontColor}
+        fill={this.tickColor}
         style={{fontSize}}
       >
         {tick.display}
@@ -253,7 +280,7 @@ class Timeline extends React.PureComponent {
 
   renderZoomArea = () => {
     const {zoom} = this.state;
-    const {plot, fontColor, fontSize} = this.props;
+    const {plot, fontSize} = this.props;
     const {chartArea, height, width} = plot.props;
     if (zoom && zoom.start && zoom.end && this.baseTickRule) {
       const from = Math.min(zoom.start, zoom.end);
@@ -267,7 +294,7 @@ class Timeline extends React.PureComponent {
             width={x2 - x1}
             y={chartArea.top}
             height={height - chartArea.top - chartArea.bottom}
-            fill={`#333`}
+            fill={this.backgroundColor}
             opacity={0.1}
           />
           <line
@@ -275,7 +302,7 @@ class Timeline extends React.PureComponent {
             x2={x1}
             y1={chartArea.top}
             y2={height - chartArea.bottom}
-            stroke={'#999'}
+            stroke={this.tickColor}
             strokeWidth={1}
           />
           <line
@@ -283,7 +310,7 @@ class Timeline extends React.PureComponent {
             x2={x2}
             y1={chartArea.top}
             y2={height - chartArea.bottom}
-            stroke={'#999'}
+            stroke={this.lineColor}
             strokeWidth={1}
           />
           <text
@@ -291,7 +318,7 @@ class Timeline extends React.PureComponent {
             y={height / 2.0}
             textAnchor={'end'}
             stroke={'none'}
-            fill={fontColor}
+            fill={this.tickColor}
             style={{fontSize}}
           >
             {this.baseTickRule.getFullDescription(moment.unix(from))}
@@ -301,7 +328,7 @@ class Timeline extends React.PureComponent {
             y={height / 2.0}
             textAnchor={'start'}
             stroke={'none'}
-            fill={fontColor}
+            fill={this.tickColor}
             style={{fontSize}}
           >
             {this.baseTickRule.getFullDescription(moment.unix(to))}
@@ -313,7 +340,7 @@ class Timeline extends React.PureComponent {
   };
 
   render () {
-    const {children, plot, tickColor} = this.props;
+    const {children, plot} = this.props;
     if (!plot) {
       return null;
     }
@@ -329,7 +356,7 @@ class Timeline extends React.PureComponent {
             y1={height - chartArea.bottom}
             x2={width - chartArea.right}
             y2={height - chartArea.bottom}
-            stroke={tickColor}
+            stroke={this.tickColor}
             strokeWidth={1}
           />
           {this.ticks.map(this.renderTick)}
@@ -346,16 +373,12 @@ Timeline.propTypes = {
   maximum: PropTypes.number,
   minimum: PropTypes.number,
   to: PropTypes.number,
-  tickColor: PropTypes.string,
-  fontColor: PropTypes.string,
   fontSize: PropTypes.number,
   interactiveArea: PropTypes.object,
   onRangeChanged: PropTypes.func
 };
 
 Timeline.defaultProps = {
-  tickColor: '#777',
-  fontColor: '#777',
   fontSize: 11
 };
 

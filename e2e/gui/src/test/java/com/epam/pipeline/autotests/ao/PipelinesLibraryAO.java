@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CREATE, context().find(byId("create-button"))),
             entry(CREATE_PIPELINE, $(byClassName("create-pipeline-sub-menu-button"))),
-            entry(CREATE_FOLDER, $(byClassName("rc-dropdown-placement-bottomRight"))
-                    .find(byText("Folder"))),
+            entry(CREATE_FOLDER, $(byClassName("create-folder-button"))),
             entry(CREATE_STORAGE, $(byClassName("create-storage-sub-menu"))),
             entry(CREATE_CONFIGURATION, $(byClassName("create-configuration-button"))),
             entry(ADD_EXISTING_STORAGE, $(byClassName("add-existing-storage-button"))),
@@ -231,6 +230,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
+        $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
     }
 

@@ -72,6 +72,7 @@ class RestoreButtonComponent extends React.Component {
         className={[
           styles.button,
           className,
+          'cp-billing-button-link',
           disabled ? styles.disabled : false
         ].filter(Boolean).join(' ')}
         onClick={this.onRestoreClick}

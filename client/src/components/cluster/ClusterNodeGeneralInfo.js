@@ -133,7 +133,7 @@ export default class ClusterNodeGeneralInfo extends Component {
         showHeader={tableData.showHeader}
         pagination={false}
         loading={tableData.isLoading}
-        rowClassName={(row, index) => index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd}
+        rowClassName={() => 'cp-even-odd-element'}
         size="small" />
     );
   }

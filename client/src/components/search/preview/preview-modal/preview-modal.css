@@ -22,11 +22,11 @@
   top: 0;
   right: 100%;
   z-index: 3;
-  background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: center;
   align-items: center;
   cursor: pointer;
+
 }
 
 .preview {
@@ -34,9 +34,7 @@
   max-height: calc(100vh - 135px);
   cursor: default;
   flex: 1;
-  border: 1px solid #ccc;
   border-radius: 5px;
-  background-color: white;
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -48,12 +46,7 @@
   right: 5px;
   top: 5px;
   cursor: pointer;
-  color: #666;
   font-size: large;
-}
-
-.preview .preview-button:hover {
-  color: #333;
 }
 
 .preview-button.close {

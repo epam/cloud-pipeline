@@ -21,7 +21,11 @@ const id = 'pie-chart-data-label';
 const plugin = {
   id,
   afterDatasetDraw: function (chart, dataset, pluginOptions) {
-    const {valueFormatter = costTickFormatter} = pluginOptions || {};
+    const {
+      valueFormatter = costTickFormatter,
+      background,
+      textColor
+    } = pluginOptions || {};
     const {config, ctx, chartArea: area} = chart;
     const {datasets} = config.data;
     const {meta} = dataset;
@@ -53,13 +57,20 @@ const plugin = {
         `${percentage}%`,
         {
           display: (size) => size < arcLength,
-          color
+          color,
+          textColor,
+          background
         }
       );
     }
   },
   drawLabel: function (ctx, x, y, label, subLabel, config) {
-    const {display, color} = config || {};
+    const {
+      display,
+      color,
+      textColor = 'rgb(0, 0, 0)',
+      background = 'rgba(255, 255, 255, 0.85)'
+    } = config || {};
     ctx.font = '9pt sans-serif';
     const {width: mainLabelWidth} = ctx.measureText(label);
     const {width: subLabelWidth} = ctx.measureText(subLabel);
@@ -74,7 +85,7 @@ const plugin = {
       ctx.beginPath();
       ctx.lineWidth = 2;
       ctx.strokeStyle = color || 'transparent';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillStyle = background;
       ctx.rect(
         x - lWidth / 2.0 - padding.x,
         y - lHeight - padding.y * 1.5,
@@ -83,7 +94,7 @@ const plugin = {
       );
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = 'rgb(0, 0, 0)';
+      ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
     };

@@ -28,9 +28,15 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.search.MultiSearchRequest;
+import org.elasticsearch.action.search.MultiSearchResponse;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -53,12 +59,13 @@ public class SearchManager {
 
     public SearchResult search(final ElasticSearchRequest searchRequest) {
         validateRequest(searchRequest);
-        try {
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields =
                     new HashSet<>(ListUtils.emptyIfNull(searchRequest.getMetadataFields()));
-            final SearchResponse searchResult = globalSearchElasticHelper.buildClient().search(
-                    requestBuilder.buildRequest(searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields));
+            final SearchRequest request = requestBuilder.buildRequest(
+                    searchRequest, typeFieldName, TYPE_AGGREGATION, metadataSourceFields);
+            final SearchResponse searchResult = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildResult(searchResult, TYPE_AGGREGATION, typeFieldName, getAclFilterFields(),
                     metadataSourceFields, searchRequest.getScrollingParameters());
         } catch (IOException e) {
@@ -67,16 +74,19 @@ public class SearchManager {
         }
     }
 
-    public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path) {
-        return getStorageUsage(dataStorage, path, false);
+    public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
+                                        final Set<String> storageSizeMasks) {
+        return getStorageUsage(dataStorage, path, false, storageSizeMasks);
     }
 
     public StorageUsage getStorageUsage(final AbstractDataStorage dataStorage, final String path,
-                                        final boolean allowNoIndex) {
-        try {
-            final SearchResponse searchResponse = globalSearchElasticHelper.buildClient().search(requestBuilder
-                    .buildSumAggregationForStorage(dataStorage.getId(), dataStorage.getType(), path, allowNoIndex));
-            return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path);
+                                        final boolean allowNoIndex, final Set<String> storageSizeMasks) {
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
+            final MultiSearchRequest request = requestBuilder.buildStorageSumRequest(
+                    dataStorage.getId(), dataStorage.getType(), path, allowNoIndex, storageSizeMasks);
+            final MultiSearchResponse searchResponse = client.msearch(request, RequestOptions.DEFAULT);
+            final int responsesExpected = CollectionUtils.isEmpty(storageSizeMasks) ? 1 : 2;
+            return resultConverter.buildStorageUsageResponse(searchResponse, dataStorage, path, responsesExpected);
         } catch (IOException e) {
             log.error(e.getMessage(), e);
             throw new SearchException(e.getMessage(), e);
@@ -88,12 +98,13 @@ public class SearchManager {
         if (Objects.isNull(searchRequest.getScrollingParameters()) && Objects.isNull(searchRequest.getOffset())) {
             searchRequest.setOffset(0);
         }
-        try {
+        try (RestHighLevelClient client = globalSearchElasticHelper.buildClient()) {
             final String typeFieldName = getTypeFieldName();
             final Set<String> metadataSourceFields =
                     new HashSet<>(ListUtils.emptyIfNull(searchRequest.getMetadataFields()));
-            final SearchResponse response = globalSearchElasticHelper.buildClient()
-                    .search(requestBuilder.buildFacetedRequest(searchRequest, typeFieldName, metadataSourceFields));
+            final SearchRequest request = requestBuilder.buildFacetedRequest(
+                    searchRequest, typeFieldName, metadataSourceFields);
+            final SearchResponse response = client.search(request, RequestOptions.DEFAULT);
             return resultConverter.buildFacetedResult(response, typeFieldName, getAclFilterFields(),
                     metadataSourceFields, searchRequest.getScrollingParameters());
         } catch (IOException e) {

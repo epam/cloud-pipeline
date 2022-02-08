@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -26,6 +27,7 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -34,6 +36,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,6 +55,9 @@ public class UserApiService {
 
     @Autowired
     private UserRunnersManager userRunnersManager;
+
+    @Autowired
+    private OnlineUsersService onlineUsersService;
 
     /**
      * Registers a new user
@@ -129,6 +135,11 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
     public List<PipelineUser> loadUsers() {
         return new ArrayList<>(userManager.loadAllUsers());
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    public List<PipelineUser> loadUsersWithActivityStatus() {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus());
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
@@ -233,5 +244,15 @@ public class UserApiService {
 
     public ImpersonationStatus getImpersonationStatus() {
         return userManager.getImpersonationStatus();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public OnlineUsers saveCurrentlyOnlineUsers() {
+        return onlineUsersService.saveCurrentlyOnlineUsers();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public boolean deleteExpiredOnlineUsers(final LocalDate date) {
+        return onlineUsersService.deleteExpired(date);
     }
 }

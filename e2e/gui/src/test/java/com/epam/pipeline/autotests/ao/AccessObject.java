@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.appears;
@@ -251,8 +252,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final By qualifier) {
         final SelenideElement selenideElement = $(qualifier);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
@@ -542,8 +547,21 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default void closeTab() {
         List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
+        if (tabs.size() <= 1 ) {
+            return;
+        }
         getWebDriver().close();
         switchTo().window(tabs.get(0));
+    }
+
+    default ELEMENT_TYPE deleteExtraBrackets(SelenideElement selenideElement, int number) {
+        Actions action = actions().moveToElement(selenideElement);
+        sleep(500, MILLISECONDS);
+        for (int i = 0; i < number; i++) {
+            action.sendKeys(Keys.DELETE);
+        }
+        action.perform();
+        return (ELEMENT_TYPE) this;
     }
 
     class Entry {

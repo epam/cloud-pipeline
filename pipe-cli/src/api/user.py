@@ -100,5 +100,4 @@ class User(API):
     @classmethod
     def whoami(cls):
         api = cls.instance()
-        query = '/whoami'
-        return api.retryable_call('GET', query) or {}
+        return api.retryable_call('GET', '/whoami') or {}

@@ -16,21 +16,22 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Provider as MobxProvider} from 'mobx-react';
+import {inject, observer, Provider as MobxProvider} from 'mobx-react';
 import {Button, Icon} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import ExportConsumer from './export-consumer';
 import ExportImageConsumer from './export-image-consumer';
 import exportStore from './export-store';
-import * as ExportComposers from './composers';
 import ExportFormat from './export-formats';
+import BillingNavigation from '../../navigation';
 
 const ExportFormatName = {
   [ExportFormat.csv]: 'As CSV',
   [ExportFormat.image]: 'As Image',
   [ExportFormat.csvCostCenters]: 'As CSV (Billing centers)',
-  [ExportFormat.csvUsers]: 'As CSV (Users)'
+  [ExportFormat.csvUsers]: 'As CSV (Users)',
+  [ExportFormat.rawCsv]: 'Export raw data'
 };
 
 class ExportReports extends React.Component {
@@ -45,7 +46,20 @@ class ExportReports extends React.Component {
   static ImageConsumer = ExportImageConsumer;
 
   onExport = (format) => {
-    const {documentName} = this.props;
+    const {
+      filters = {},
+      users,
+      cloudRegionsInfo,
+      discounts
+    } = this.props;
+    const {getDescription} = filters;
+    const documentName = typeof getDescription === 'function'
+      ? getDescription({
+        users,
+        cloudRegionsInfo,
+        discounts
+      })
+      : undefined;
     const title = typeof documentName === 'function' ? documentName() : documentName;
     switch (format) {
       case ExportFormat.image:
@@ -55,12 +69,25 @@ class ExportReports extends React.Component {
       case ExportFormat.csv:
       case ExportFormat.csvCostCenters:
       case ExportFormat.csvUsers:
+      case ExportFormat.rawCsv:
         exportStore.doCsvExport(title, {format});
         break;
     }
   };
 
-  renderExportMenu = (formats = [ExportFormat.csv, ExportFormat.image]) => {
+  renderExportMenu = () => {
+    const {filters: filterStore = {}} = this.props;
+    let formats = [ExportFormat.csv, ExportFormat.image];
+    if (/^general$/i.test(filterStore.report)) {
+      formats = [ExportFormat.csvCostCenters, ExportFormat.csvUsers, ExportFormat.image];
+    } else if (/^instances$/i.test(filterStore.report)) {
+      formats = [
+        ExportFormat.csv,
+        ExportFormat.image,
+        ExportFormat.divider,
+        ExportFormat.rawCsv
+      ];
+    }
     if (!formats || formats.length === 0) {
       return null;
     }
@@ -71,8 +98,10 @@ class ExportReports extends React.Component {
         selectedKeys={[]}
       >
         {
-          formats.map((format) => (
-            <MenuItem key={format}>{ExportFormatName[format]}</MenuItem>
+          formats.map((format, index) => (
+            format === ExportFormat.divider
+              ? (<Divider key={`${format}-${index}`} />)
+              : (<MenuItem key={format}>{ExportFormatName[format]}</MenuItem>)
           ))
         }
       </Menu>
@@ -80,10 +109,10 @@ class ExportReports extends React.Component {
   };
 
   render () {
-    const {className, formats} = this.props;
+    const {className} = this.props;
     return (
       <Dropdown
-        overlay={this.renderExportMenu(formats)}
+        overlay={this.renderExportMenu()}
         trigger={['click']}
       >
         <Button
@@ -99,14 +128,7 @@ class ExportReports extends React.Component {
 }
 
 ExportReports.propTypes = {
-  className: PropTypes.string,
-  documentName: PropTypes.oneOfType([PropTypes.func, PropTypes.string]),
-  formats: PropTypes.arrayOf(PropTypes.oneOf([
-    ExportFormat.csv,
-    ExportFormat.csvCostCenters,
-    ExportFormat.csvUsers,
-    ExportFormat.image
-  ]))
+  className: PropTypes.string
 };
 
 ExportReports.defaultProps = {
@@ -114,5 +136,9 @@ ExportReports.defaultProps = {
   formats: [ExportFormat.csv, ExportFormat.image]
 };
 
-export default ExportReports;
-export {ExportComposers, ExportFormat};
+export default inject('users', 'cloudRegionsInfo', 'discounts')(
+  BillingNavigation.attach(
+    observer(ExportReports)
+  )
+);
+export {ExportFormat};

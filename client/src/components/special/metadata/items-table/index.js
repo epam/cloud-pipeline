@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {computed} from 'mobx';
+import classNames from 'classnames';
 import {
   Modal,
   Row,
@@ -105,7 +106,12 @@ class ItemsTable extends React.Component {
         className={styles.tableContainer}
       >
         <table
-          className={styles.table}
+          className={
+            classNames(
+              styles.table,
+              'cp-metadata-item-json-table'
+            )
+          }
         >
           <tbody>
             <tr>
@@ -146,13 +152,17 @@ class ItemsTable extends React.Component {
     const onChange = (code) => {
       this.setState({value: code, valid: isJson(code)});
     };
-    const classNames = [styles.codeEditor];
-    if (!valid) {
-      classNames.push(styles.invalid);
-    }
     return (
       <CodeEditor
-        className={classNames.join(' ')}
+        className={
+          classNames(
+            styles.codeEditor,
+            {
+              'cp-error': !valid,
+              'border': !valid
+            }
+          )
+        }
         language="json"
         defaultCode={value}
         onChange={onChange}
@@ -233,7 +243,6 @@ class ItemsTable extends React.Component {
       >
         <a
           id="items-table-expand"
-          className={styles.link}
           onClick={this.toggleExpandMode(true)}
         >
           {plural(this.items.length, 'item')}

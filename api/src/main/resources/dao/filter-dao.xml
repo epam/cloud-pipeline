@@ -72,7 +72,8 @@
                         r.tags,
                         r.sensitive,
                         r.kube_service_enabled,
-                        r.pipeline_name
+                        r.pipeline_name,
+                        r.cluster_price
                     FROM
                         pipeline.pipeline_run r
                     WHERE @WHERE@

@@ -18,9 +18,8 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: #fff;
   padding: 10px;
-  overflow: auto;;
+  overflow: auto;
 }
 
 .table > div > div {
@@ -34,13 +33,11 @@
 }
 
 .row-menu {
-  border-bottom: 1px solid #e9e9e9;
   margin-bottom: 10px;
   display: block;
 }
 
 .tabs-menu {
-  border-bottom: none;
   text-transform: uppercase;
 }
 
@@ -53,8 +50,7 @@
   font-size: xx-small;
   border-radius: 5px;
   padding: 1px 5px;
-  border: 1px solid #cccccc;
-  background-color: #fafafa;
+  border: 1px solid transparent;
 }
 
 .main-info-part {
@@ -67,14 +63,6 @@
 
 .value-cell {
 
-}
-
-.table-row-even {
-
-}
-
-.table-row-odd {
-  background-color: #fafafa;
 }
 
 .table-title {
@@ -96,27 +84,12 @@
   flex: 0.5;
 }
 
-.chart-col {
-  display: flex;
-  flex-direction: column;
-  background-color: white;
-  padding: 1px;
-  height: 100%;
-}
-
-.chart-col > div {
-  border: 1px solid #f1f1f1;
-  box-shadow: 1px 1px 1px 0 #ddd;
-  height: 100%;
-}
-
 .chart-container {
   display: block;
 }
 
 .chart-container .wrapper {
-  border: 1px solid #f1f1f1;
-  background-color: #fafafa;
+  border: 1px solid transparent;
 }
 
 .chart-container-80 {
@@ -133,8 +106,5 @@
 }
 
 .divider {
-  width: 1px;
-  height: 100%;
-  background-color: #ccc;
   margin: 0 5px;
 }

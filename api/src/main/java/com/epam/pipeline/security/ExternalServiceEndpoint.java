@@ -19,6 +19,9 @@ package com.epam.pipeline.security;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+import java.util.Set;
+
 /**
  * Represents an external service, that can authenticate into Pipeline API via Proxy authentication.
  * Key fields are endpointID (e.g. https://localhost:9001/proxy)
@@ -34,4 +37,6 @@ public class ExternalServiceEndpoint {
      * Defines if service is exteranl to Pipeline and therefore will receive an external JWT token
      */
     private boolean external = true;
+    private List<String> authorities;
+    private Set<String> samlAttributes;
 }

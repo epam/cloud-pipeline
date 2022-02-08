@@ -29,5 +29,6 @@ public class StorageUsage {
     private DataStorageType type;
     private String path;
     private Long size;
+    private Long effectiveSize;
     private Long count;
 }

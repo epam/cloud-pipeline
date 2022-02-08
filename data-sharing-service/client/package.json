@@ -5,8 +5,10 @@
   "dependencies": {
     "ansi_up": "^2.0.2",
     "antd": "2.13.11",
-    "aws-sdk": "^2.282.1",
+    "aws-sdk": "^2.700.0",
+    "classnames": "^2.2.6",
     "history": "^3.3.0",
+    "html2canvas": "1.3.2",
     "less": "2.7.1",
     "less-loader": "4.1.0",
     "mobx": "^3.1.7",
@@ -39,6 +41,7 @@
     "chalk": "1.1.3",
     "connect-history-api-fallback": "1.3.0",
     "cross-spawn": "5.1.0",
+    "cross-env": "5.1.0",
     "css-loader": "0.27.3",
     "cssnext": "^1.8.4",
     "detect-port": "1.1.1",
@@ -85,7 +88,7 @@
   },
   "scripts": {
     "start": "node scripts/start.js",
-    "start:local": "cross-env SERVER=\"https://localhost:3000/proxy/\" npm start",
+    "start:local": "cross-env SERVER=\"https://18.196.127.194:31084/proxy/\" npm start",
     "build": "node scripts/build.js",
     "test": "node scripts/test.js --env=jsdom",
     "lint": "eslint src",

@@ -19,6 +19,7 @@ import com.epam.pipeline.elasticsearchagent.service.BulkRequestCreator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkResponse;
 
 import java.util.ArrayList;
@@ -55,13 +56,27 @@ public class IndexRequestContainer implements AutoCloseable {
     private void flush() {
         BulkResponse documents = bulkRequestCreator.sendRequest(requests);
         long successfulRequestsCount = 0L;
+        long unsuccessfulRequestsCount = 0L;
         if (documents != null && documents.getItems() != null) {
-            successfulRequestsCount = Arrays
-                    .stream(documents.getItems())
-                    .filter(response -> !response.isFailed())
-                    .count();
+            for (final BulkItemResponse response : documents.getItems()) {
+                if (response.isFailed()) {
+                    unsuccessfulRequestsCount += 1;
+                } else {
+                    successfulRequestsCount += 1;
+                }
+            }
         }
-        log.info("{} files has been uploaded", successfulRequestsCount);
+        if (unsuccessfulRequestsCount == 0) {
+            log.info("{} files have been uploaded", successfulRequestsCount);
+        } else {
+            log.info("{} files have been uploaded and {} files have not been uploaded",
+                    successfulRequestsCount, unsuccessfulRequestsCount);
+            Arrays.stream(documents.getItems())
+                    .filter(BulkItemResponse::isFailed)
+                    .findFirst()
+                    .ifPresent(response -> log.debug("One of the files has not been uploaded due to: {}",
+                            response.getFailureMessage()));
+        }
         requests.clear();
     }
 }

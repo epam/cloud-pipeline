@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Icon, Modal} from 'antd';
+import classNames from 'classnames';
 import {notificationArraysAreEqual} from './notifications-equal';
 import JobNotification from './job-notification';
 import notificationValidationError from './notification-validation-error';
@@ -148,7 +149,13 @@ class JobNotifications extends React.Component {
     }
     return (
       <div
-        className={styles.link}
+        className={
+          classNames(
+            'cp-text',
+            'underline',
+            styles.link
+          )
+        }
         onClick={this.openConfigurationDialog}
       >
         <Icon type="setting" />

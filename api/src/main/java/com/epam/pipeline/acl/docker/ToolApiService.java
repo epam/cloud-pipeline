@@ -179,9 +179,9 @@ public class ToolApiService {
     }
 
     @PreAuthorize(AclExpressions.TOOL_WRITE)
-    public ToolVersion createToolVersionSettings(final Long id, final String version,
+    public ToolVersion createToolVersionSettings(final Long id, final String version, final boolean allowCommit,
                                                  final List<ConfigurationEntry> settings) {
-        return toolVersionManager.createToolVersionSettings(id, version, settings);
+        return toolVersionManager.createToolVersionSettings(id, version, allowCommit, settings);
     }
 
     @PreAuthorize(AclExpressions.TOOL_READ)

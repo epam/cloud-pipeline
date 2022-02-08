@@ -24,13 +24,14 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import org.apache.http.HttpHost;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
@@ -68,7 +69,6 @@ public class MonitoringESDaoTest {
     public static void setUpClass() throws Exception {
         Settings settings = Settings.builder()
             .put("path.home", "target/elasticsearch")
-            .put("transport.type", "local")
             .put("http.enabled", true)
             .build();
 
@@ -138,10 +138,12 @@ public class MonitoringESDaoTest {
     @Before
     public void setUp() throws Exception {
         client = node.client();
-        RestClient lowLevelClient = RestClient.builder(
-            new HttpHost("localhost", ELASTICSEARCH_DEFAULT_PORT, "http")).build();
-        RestHighLevelClient highLevelClient = new RestHighLevelClient(lowLevelClient);
-        monitoringESDao = new MonitoringESDao(highLevelClient, lowLevelClient);
+        final RestClientBuilder lowLevelClientBuilder = RestClient.builder(
+                new HttpHost("localhost", ELASTICSEARCH_DEFAULT_PORT, "http"));
+        final HeapsterElasticRestHighLevelClient heapsterElasticHighLevelClient =
+                new HeapsterElasticRestHighLevelClient(lowLevelClientBuilder);
+        monitoringESDao = new MonitoringESDao(heapsterElasticHighLevelClient,
+                heapsterElasticHighLevelClient.getLowLevelClient());
     }
 
     private static void tryDelete(String indexName, Client client) {
@@ -189,7 +191,12 @@ public class MonitoringESDaoTest {
 
     private static final class PluginConfigurableNode extends Node {
         private PluginConfigurableNode(Settings settings, Collection<Class<? extends Plugin>> classpathPlugins) {
-            super(InternalSettingsPreparer.prepareEnvironment(settings, null), classpathPlugins);
+            super(InternalSettingsPreparer.prepareEnvironment(settings, null), classpathPlugins, false);
+        }
+
+        @Override
+        protected void registerDerivedNodeNameWithLogger(String nodeName) {
+            //no op
         }
     }
 }

@@ -268,7 +268,7 @@ class FilterControl extends React.Component {
     const list = users.loaded ? (users.value || []) : [];
     if (users.error) {
       return (
-        <span style={{color: 'red'}}>Error fetching users: {users.error}</span>
+        <span className="cp-danger">Error fetching users: {users.error}</span>
       );
     }
     const description = user => {
@@ -322,7 +322,7 @@ class FilterControl extends React.Component {
     const list = roles.loaded ? (roles.value || []) : [];
     if (roles.error) {
       return (
-        <span style={{color: 'red'}}>Error fetching groups: {roles.error}</span>
+        <span className="cp-danger">Error fetching groups: {roles.error}</span>
       );
     }
     const splitRoleName = (name) => {
@@ -365,7 +365,7 @@ class FilterControl extends React.Component {
     const list = pipelines.loaded ? (pipelines.value || []) : [];
     if (pipelines.error) {
       return (
-        <span style={{color: 'red'}}>Error fetching pipelines: {pipelines.error}</span>
+        <span className="cp-danger">Error fetching pipelines: {pipelines.error}</span>
       );
     }
     return (
@@ -402,7 +402,7 @@ class FilterControl extends React.Component {
     const list = configurations.loaded ? (configurations.value || []) : [];
     if (configurations.error) {
       return (
-        <span style={{color: 'red'}}>Error fetching configurations: {configurations.error}</span>
+        <span className="cp-danger">Error fetching configurations: {configurations.error}</span>
       );
     }
     return (

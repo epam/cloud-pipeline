@@ -16,6 +16,21 @@ import platform
 import subprocess
 
 
+class CmdError(RuntimeError):
+    pass
+
+
+def execute(command, logger=None):
+    exit_code, out, err = execute_cmd_command_and_get_stdout_stderr(command, silent=True)
+    if out:
+        logger.info(out)
+    if err:
+        logger.warning(err)
+    if exit_code:
+        raise CmdError('Command has finished with exit code ' + str(exit_code))
+    return out, err
+
+
 def execute_cmd_command_and_get_stdout_stderr(command, silent=False, executable=None):
     stdout, stderr = _get_stdout_and_stderr()
     p = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr, executable=executable)

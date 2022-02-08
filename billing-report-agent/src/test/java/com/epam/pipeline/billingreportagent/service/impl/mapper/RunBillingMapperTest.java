@@ -23,6 +23,7 @@ import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.billing.PipelineRunBillingInfo;
 import com.epam.pipeline.billingreportagent.service.impl.TestUtils;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -31,9 +32,13 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -52,7 +57,19 @@ public class RunBillingMapperTest {
     private static final BigDecimal TEST_PRICE = BigDecimal.ONE;
     private static final Long TEST_USAGE_MINUTES = 600L;
     private static final List<String> TEST_GROUPS = Arrays.asList(TEST_GROUP_1, TEST_GROUP_2);
-    private static final LocalDate TEST_DATE = LocalDate.now();
+    private static final LocalDate TEST_DATE = LocalDate.of(2021, 11, 18);
+    private static final Date TEST_STARTED_DATE = toDate(TEST_DATE.atStartOfDay());
+    private static final String TEST_STARTED_DATE_STR = toString(TEST_STARTED_DATE);
+    private static final Date TEST_FINISHED_DATE = toDate(TEST_DATE.plusDays(1L).atStartOfDay());
+    private static final String TEST_FINISHED_DATE_STR = toString(TEST_FINISHED_DATE);
+
+    private static Date toDate(final LocalDateTime localDateTime) {
+        return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
+    }
+
+    private static String toString(final Date date) {
+        return new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE).format(date);
+    }
 
     private final RunBillingMapper mapper = new RunBillingMapper(BILLING_CENTER_KEY);
     private final PipelineUser testUser = PipelineUser.builder()
@@ -70,6 +87,8 @@ public class RunBillingMapperTest {
         final PipelineRun run =
             TestUtils.createTestPipelineRun(TEST_RUN_ID, TEST_PIPELINE_ID, TEST_TOOL_IMAGE, TEST_PRICE,
                                             TestUtils.createTestInstance(TEST_REGION_ID, TEST_NODE_TYPE));
+        run.setStartDate(TEST_STARTED_DATE);
+        run.setEndDate(TEST_FINISHED_DATE);
         final PipelineRunBillingInfo billing = PipelineRunBillingInfo.builder()
             .run(new PipelineRunWithType(run, Collections.emptyList(), ComputeType.CPU))
             .date(TEST_DATE)
@@ -96,6 +115,8 @@ public class RunBillingMapperTest {
         Assert.assertEquals(run.getPricePerHour().intValue(), mappedFields.get("run_price"));
         Assert.assertEquals(TEST_REGION_ID.intValue(), mappedFields.get("cloudRegionId"));
         Assert.assertEquals(TEST_USER_NAME, mappedFields.get("owner"));
+        Assert.assertEquals(TEST_STARTED_DATE_STR, mappedFields.get("started_date"));
+        Assert.assertEquals(TEST_FINISHED_DATE_STR, mappedFields.get("finished_date"));
         TestUtils.verifyStringArray(TEST_GROUPS, mappedFields.get("groups"));
     }
 }

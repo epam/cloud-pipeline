@@ -17,6 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import codeEditorStyles from './FilterInput.css';
 
 import CodeMirror from 'codemirror';
@@ -155,9 +156,12 @@ export default class FilterInput extends React.Component {
       return;
     }
     this.codeMirrorInstance.setSize('100%', '100%');
-    this.codeMirrorInstance.display.wrapper.style.backgroundColor = this.props.isError ? '#fff9f9' : 'white';
     this.codeMirrorInstance.display.wrapper.style.borderRadius = '4px';
-    this.codeMirrorInstance.display.wrapper.style.border = this.props.isError ? '1px solid #f00' : '1px solid #ddd';
+    this.codeMirrorInstance.display.wrapper.style.overflow = 'hidden';
+    this.codeMirrorInstance.display.wrapper.className = classNames(
+      {'cp-runs-advanced-filter-input': !this.props.isError},
+      {'cp-runs-advanced-filter-input-error': this.props.isError}
+    );
     this.codeMirrorInstance.off('change', this._onCodeChange);
     this.codeMirrorInstance.off('keyHandled', this._keyHandled);
     this.codeMirrorInstance.off('blur', this._onBlur);

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-bkp_dir="${1:-/opt/api/logs/bkp/bkp-worker-wd}"
+bkp_dir="${1:-/var/log/cp-api/bkp/bkp-worker-wd}"
 mkdir -p "$bkp_dir"
 settings_bkp_file="$bkp_dir/cp-bkp-api-settings-dump-$(date +%Y%m%d).tgz"
 

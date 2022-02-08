@@ -81,7 +81,7 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 cat > /tmp/pipe-win-version-info.txt <<< "$(envsubst < /pipe-cli/res/pipe-win-version-info.txt)" && \
 pip install --upgrade 'setuptools<=45.1.0' && \
 pip install -r /pipe-cli/requirements.txt && \
-pip install pywin32 && \
+pip install pywin32==300 && \
 cd /pipe-cli/mount && \
 cp libfuse/dokanfuse1.dll.1.5.0.3000 libfuse/dokanfuse1.dll.frozen && \
 pip install -r /pipe-cli/mount/requirements.txt && \

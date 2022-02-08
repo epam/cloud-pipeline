@@ -14,11 +14,36 @@
  * limitations under the License.
  */
 
-export default [
-  '#0e77ca',
-  '#aa2222',
-  '#00a854',
-  '#fd9135',
-  '#32cecd',
-  '#814cfb'
-];
+const blue = '#0e77ca';
+const red = '#aa2222';
+const green = '#00a854';
+const yellow = '#fd9135';
+const aqua = '#32cecd';
+const violet = '#814cfb';
+
+export default function getThemedPlotColors (Component) {
+  if (
+    Component &&
+    Component.props &&
+    Component.props.themes &&
+    Component.props.themes.currentThemeConfiguration
+  ) {
+    const {themes} = Component.props;
+    return [
+      themes.currentThemeConfiguration['@primary-color'] || blue,
+      themes.currentThemeConfiguration['@color-red'] || red,
+      themes.currentThemeConfiguration['@color-green'] || green,
+      themes.currentThemeConfiguration['@color-yellow'] || yellow,
+      themes.currentThemeConfiguration['@color-aqua'] || aqua,
+      themes.currentThemeConfiguration['@color-violet'] || violet
+    ];
+  }
+  return [
+    blue,
+    red,
+    green,
+    yellow,
+    aqua,
+    violet
+  ];
+}

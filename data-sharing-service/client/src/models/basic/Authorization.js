@@ -17,11 +17,11 @@
 class Authorization {
   authStatus = true;
 
-  isAuthorized() {
+  isAuthorized () {
     return this.authStatus;
   }
 
-  setAuthorized(authorized) {
+  setAuthorized (authorized) {
     this.authStatus = authorized;
   }
 }

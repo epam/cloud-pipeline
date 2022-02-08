@@ -274,15 +274,16 @@ public class CloudFacadeImpl implements CloudFacade {
         return getInstanceService(region).getInstanceState(region, String.valueOf(runId));
     }
 
+    @Override
     public InstanceDNSRecord createDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
         final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(dnsRecord);
+        return getInstanceService(cloudRegion).getOrCreateInstanceDNSRecord(cloudRegion, dnsRecord);
     }
 
     @Override
     public InstanceDNSRecord removeDNSRecord(final Long regionId, final InstanceDNSRecord dnsRecord) {
         final AbstractCloudRegion cloudRegion = regionManager.loadOrDefault(regionId);
-        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(dnsRecord);
+        return getInstanceService(cloudRegion).deleteInstanceDNSRecord(cloudRegion, dnsRecord);
     }
 
     @Override

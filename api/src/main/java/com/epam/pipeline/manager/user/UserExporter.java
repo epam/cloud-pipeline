@@ -17,6 +17,7 @@
 
 package com.epam.pipeline.manager.user;
 
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
@@ -42,7 +43,7 @@ public class UserExporter {
 
     private static final String LIST_DELIMITER = "|";
     private static final DateTimeFormatter USER_DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            DateTimeFormatter.ofPattern(Constants.EXPORT_DATE_TIME_FORMAT);
     public static final String SPACE = " ";
 
     public String exportUsers(final PipelineUserExportVO exportSettings,

@@ -1,0 +1,134 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.theme-card {
+  cursor: pointer;
+  width: 225px;
+  height: 175px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  margin: 10px;
+}
+
+.theme-card.read-only {
+  cursor: default;
+}
+
+.theme-visualization {
+  flex: 1;
+}
+
+.preview-article {
+  display: flex;
+  justify-content: stretch;
+  width: 100%;
+  min-height: 100px;
+  border-radius: 6px 6px 0 0;
+  flex: 1 1 auto;
+}
+
+.preview-aside {
+  width: 10%;
+  border-radius: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-content: flex-start;
+}
+
+.preview-aside > * {
+  margin: 2px 0;
+}
+
+.preview-logo {
+  width: 15px;
+  height: 15px;
+}
+
+.preview-panels-box {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+}
+
+.preview-main {
+  flex: 1 1 auto;
+  margin-right: 5px;
+  height: 80%;
+  width: 50%;
+}
+
+.preview-panel {
+  flex: 1 1 auto;
+  margin-right: 5px;
+  height: 80%;
+  width: 45%;
+}
+
+.preview-top-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preview-btn-container {
+  display: flex;
+  margin: 6px;
+  justify-content: flex-end;
+}
+
+.preview-btn {
+  height: 10px;
+  width: 20px;
+  margin: 4px;
+  border-radius: 6px;
+}
+
+.preview-section {
+  margin: 6px;
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+}
+
+.preview-text {
+  height: 6px;
+  width: 20%;
+  margin: 6px;
+  border-radius: 6px;
+}
+
+.preview-text-short {
+  height: 6px;
+  width: 10%;
+  margin: 6px;
+  border-radius: 6px;
+}
+
+.action-container {
+  padding: 0 10px;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  height: 34px;
+}
+
+.tag {
+  margin-left: 5px;
+  padding: 2px 4px;
+  font-size: smaller;
+}

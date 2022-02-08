@@ -38,6 +38,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
@@ -218,7 +219,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
-    private SelenideElement elementRow(String elementName) {
+    public SelenideElement elementRow(String elementName) {
         return $$(className("ant-table-row")).findBy(textCaseSensitive(elementName));
     }
 
@@ -704,7 +705,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 entry(ENABLE_VERSIONING, $(withText("Enable versioning"))),
                 entry(MOUNT_POINT, $(byId("mountPoint"))),
                 entry(MOUNT_OPTIONS, $(byId("mountOptions"))),
-                entry(BACKUP_DURATION, $(byId("backupDuration")))
+                entry(BACKUP_DURATION, $(byId("backupDuration"))),
+                entry(DISABLE_MOUNT, context().find(byText("Disable mount"))
+                        .parent().find(byClassName("ant-checkbox"))),
+                entry(ALLOW_MOUNT, $(byValue("All available docker images")))
         );
 
         public AbstractEditStoragePopUpAO(PARENT_AO parentAO) {
@@ -791,7 +795,9 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public EditStoragePopUpAO editForNfsMount() {
-            $(byClassName("edit-storage-button")).shouldBe(enabled).click();
+            if (!filesAndFolderElements().isEmpty()) {
+                $(byClassName("edit-storage-button")).shouldBe(enabled).click();
+            }
             return this;
         }
 

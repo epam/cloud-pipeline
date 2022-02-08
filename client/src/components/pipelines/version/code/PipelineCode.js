@@ -54,7 +54,6 @@ import UploadButton from '../../../special/UploadButton';
 })
 @observer
 export default class PipelineCode extends Component {
-
   state = {
     createFileDialog: false,
     editFileDialog: false,
@@ -101,25 +100,41 @@ export default class PipelineCode extends Component {
       if (item.type.toLowerCase() === 'tree') {
         return (
           <Row type="flex" justify="end">
-            <Button className={styles.sourceItemAction}
-                    onClick={(event) => this.openRenameFolderDialog(item.name, event)}
-                    size="small">Rename</Button>
-            <Button className={styles.sourceItemAction}
-                    onClick={(event) => this.deleteFolderConfirm(item, event)}
-                    type="danger"
-                    size="small"><Icon type="delete" /> Delete</Button>
+            <Button
+              className={styles.sourceItemAction}
+              onClick={(event) => this.openRenameFolderDialog(item.name, event)}
+              size="small"
+            >
+              Rename
+            </Button>
+            <Button
+              className={styles.sourceItemAction}
+              onClick={(event) => this.deleteFolderConfirm(item, event)}
+              type="danger"
+              size="small"
+            >
+              <Icon type="delete" /> Delete
+            </Button>
           </Row>
         );
       } else {
         return (
           <Row type="flex" justify="end">
-            <Button className={styles.sourceItemAction}
-                    onClick={(event) => this.openRenameFileDialog(item.name, event)}
-                    size="small">Rename</Button>
-            <Button className={styles.sourceItemAction}
-                    onClick={(event) => this.deleteFileConfirm(item, event)}
-                    type="danger"
-                    size="small"><Icon type="delete" /> Delete</Button>
+            <Button
+              className={styles.sourceItemAction}
+              onClick={(event) => this.openRenameFileDialog(item.name, event)}
+              size="small"
+            >
+              Rename
+            </Button>
+            <Button
+              className={styles.sourceItemAction}
+              onClick={(event) => this.deleteFileConfirm(item, event)}
+              type="danger"
+              size="small"
+            >
+              <Icon type="delete" /> Delete
+            </Button>
           </Row>
         );
       }
@@ -246,7 +261,7 @@ export default class PipelineCode extends Component {
     });
   };
 
-  deleteFile = async({name}) => {
+  deleteFile = async ({name}) => {
     const fileFullName = this.props.path ? `src/${this.props.path}/${name}` : `src/${name}`;
     const request = new PipelineFileDelete(this.props.pipelineId);
     const hide = message.loading(`Deleting file '${name}'...`, 0);
@@ -268,7 +283,7 @@ export default class PipelineCode extends Component {
     }
   };
 
-  createFile = async({name, comment}) => {
+  createFile = async ({name, comment}) => {
     this.closeCreateFileDialog();
     const fileFullName = this.props.path ? `src/${this.props.path}/${name}` : `src/${name}`;
     const request = new PipelineFileUpdate(this.props.pipelineId);
@@ -398,7 +413,7 @@ export default class PipelineCode extends Component {
     }
   };
 
-  deleteFolder = async({name}) => {
+  deleteFolder = async ({name}) => {
     const folderFullName = this.props.path ? `src/${this.props.path}/${name}` : `src/${name}`;
     const request = new PipelineFolderDelete(this.props.pipelineId);
     const hide = message.loading(`Deleting folder '${name}'...`, 0);
@@ -497,16 +512,17 @@ export default class PipelineCode extends Component {
 
   navigateToLastPipelineVersion = async () => {
     await this.props.pipeline.fetch();
-    let rootPath = `${this.props.pipeline.value.id}/${this.props.pipeline.value.currentVersion.name}/code`;
-    if (this.props.path) {
-      this.props.routing.push(`${rootPath}?path=${this.props.path}`);
-    } else {
-      this.props.routing.push(rootPath);
-    }
+    this.navigateToNewVersion();
   };
 
   navigateToNewVersion = () => {
-    let rootPath = `${this.props.pipeline.value.id}/${this.props.pipeline.value.currentVersion.name}/code`;
+    const {
+      currentVersion = {}
+    } = this.props.pipeline.value || {};
+    const {
+      name
+    } = currentVersion;
+    const rootPath = `${this.props.pipelineId}/${name}/code`;
     if (this.props.path) {
       this.props.routing.push(`${rootPath}?path=${this.props.path}`);
     } else {
@@ -553,12 +569,17 @@ export default class PipelineCode extends Component {
                 <Icon type="plus" />NEW FILE
               </Button>
               <UploadButton
-                multiple={true}
-                synchronous={true}
+                multiple
+                synchronous
                 validate={this.validateUploadFiles}
                 onRefresh={this.navigateToLastPipelineVersion}
                 title={'Upload'}
-                action={PipelineFileUpdate.uploadUrl(this.props.pipelineId, this.props.path ? `src/${this.props.path}` : 'src')} />
+                action={
+                  PipelineFileUpdate.uploadUrl(
+                    this.props.pipelineId,
+                    this.props.path ? `src/${this.props.path}` : 'src')
+                }
+              />
             </Row>
           }
         </Col>
@@ -584,37 +605,47 @@ export default class PipelineCode extends Component {
           rowClassName={() => styles.sourceItemRow}
           title={() => header}
           size="small" />
-        <PipelineCodeForm file={this.state.editFile}
-                          pipeline={this.props.pipeline}
-                          version={this.props.version}
-                          cancel={this.closeEditFileForm}
-                          save={this.saveEditableFile} />
-        <PipelineCodeSourceNameDialog visible={this.state.createFileDialog}
-                                      title="Create new file"
-                                      sources={sources}
-                                      onSubmit={this.createFile}
-                                      onCancel={this.closeCreateFileDialog}
-                                      pending={false}/>
-        <PipelineCodeSourceNameDialog visible={this.state.createFolderDialog}
-                                      title="Create new folder"
-                                      sources={sources}
-                                      onSubmit={this.createFolder}
-                                      onCancel={this.closeCreateFolderDialog}
-                                      pending={false} />
-        <PipelineCodeSourceNameDialog visible={this.state.renameFolder !== null}
-                                      title="Rename folder"
-                                      sources={sources}
-                                      name={this.state.renameFolder}
-                                      onSubmit={this.renameFolder}
-                                      onCancel={this.closeRenameFolderDialog}
-                                      pending={false} />
-        <PipelineCodeSourceNameDialog visible={this.state.renameFile !== null}
-                                      title="Rename file"
-                                      sources={sources}
-                                      name={this.state.renameFile}
-                                      onSubmit={this.renameFile}
-                                      onCancel={this.closeRenameFileDialog}
-                                      pending={false} />
+        <PipelineCodeForm
+          file={this.state.editFile}
+          pipeline={this.props.pipeline}
+          version={this.props.version}
+          cancel={this.closeEditFileForm}
+          save={this.saveEditableFile}
+        />
+        <PipelineCodeSourceNameDialog
+          visible={this.state.createFileDialog}
+          title="Create new file"
+          sources={sources}
+          onSubmit={this.createFile}
+          onCancel={this.closeCreateFileDialog}
+          pending={false}
+        />
+        <PipelineCodeSourceNameDialog
+          visible={this.state.createFolderDialog}
+          title="Create new folder"
+          sources={sources}
+          onSubmit={this.createFolder}
+          onCancel={this.closeCreateFolderDialog}
+          pending={false}
+        />
+        <PipelineCodeSourceNameDialog
+          visible={this.state.renameFolder !== null}
+          title="Rename folder"
+          sources={sources}
+          name={this.state.renameFolder}
+          onSubmit={this.renameFolder}
+          onCancel={this.closeRenameFolderDialog}
+          pending={false}
+        />
+        <PipelineCodeSourceNameDialog
+          visible={this.state.renameFile !== null}
+          title="Rename file"
+          sources={sources}
+          name={this.state.renameFile}
+          onSubmit={this.renameFile}
+          onCancel={this.closeRenameFileDialog}
+          pending={false}
+        />
       </div>
     );
   }

@@ -17,6 +17,7 @@
 import {computed, observable} from 'mobx';
 import Remote from '../basic/Remote';
 import {SERVER} from '../../config';
+import invalidateEdgeTokens from '../../utils/invalidate-edge-tokens';
 
 class ImpersonateUser extends Remote {
   constructor (userName) {
@@ -79,8 +80,8 @@ class Impersonation {
   impersonate (userName) {
     return new Promise((resolve) => {
       const request = new ImpersonateUser(userName);
-      request
-        .fetch()
+      invalidateEdgeTokens()
+        .then(() => request.fetch())
         .then(() => {
           if (request.error) {
             resolve(request.error);

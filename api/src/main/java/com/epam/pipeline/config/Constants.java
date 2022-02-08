@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.epam.pipeline.config;
 public final class Constants {
     public static final String FMT_ISO_LOCAL_DATE = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String TIME_FORMAT = "HH:mm:ss";
+    public static final String ELASTIC_DATE_TIME_FORMAT = FMT_ISO_LOCAL_DATE;
+    public static final String EXPORT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
     public static final String SECURITY_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     public static final String SIMPLE_DATE_FORMAT = "yyyyMMdd";
     public static final String SIMPLE_TIME_FORMAT = "HHmmss";
@@ -26,6 +28,9 @@ public final class Constants {
     public static final String PATH_DELIMITER = "/";
     public static final String X509_BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
     public static final String X509_END_CERTIFICATE = "-----END CERTIFICATE-----";
+    public static final String COMMA = ",";
+    public static final String NEWLINE = "\n";
+    public static final String DOT = ".";
 
     public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
 

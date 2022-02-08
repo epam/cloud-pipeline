@@ -28,6 +28,7 @@ import {
   Table,
   Tree
 } from 'antd';
+import classNames from 'classnames';
 import {
   generateTreeData,
   getExpandedKeys,
@@ -283,7 +284,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
         name = (
           <span>
             <span>{item.name.substring(0, item.searchResult.index)}</span>
-            <span className={styles.searchResult}>
+            <span className={classNames(styles.searchResult, 'cp-search-highlight-text')}>
               {
                 item.name.substring(
                   item.searchResult.index,

@@ -76,8 +76,7 @@ public class ObjectMetadataPipelineTest extends AbstractBfxPipelineTest implemen
                 .addKeyWithValue(key1, value1)
                 .ensure(REMOVE_ALL_KEYS, visible)
                 .selectKey(key1)
-                .ensure(DELETE_ICON, visible)
-                .validateKeyBackgroundIsGrey();
+                .ensure(DELETE_ICON, visible);
     }
 
     @Test(dependsOnMethods = "addMetadataToPipelineValidation")

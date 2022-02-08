@@ -17,8 +17,7 @@
 .container {
   position: fixed;
   width: 300px;
-  background-color: white;
-  border: 1px solid #ccc;
+  border: 1px solid transparent;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
@@ -28,9 +27,6 @@
   right: 0;
   top: 0;
   text-align: justify;
-  -webkit-box-shadow: 0 0 1em #999;
-  -moz-box-shadow: 0 0 1em #999;
-  box-shadow: 0 0 1em #999;
   transition: all 250ms ease;
 }
 
@@ -63,19 +59,6 @@
   margin-right: 10px;
 }
 
-i.info {
-  color: green;
-}
-
-i.warning {
-  color: #ff8818;
-}
-
-i.critical {
-  color: #c01911;
-}
-
 .date {
-  color: #999;
   font-size: smaller;
 }

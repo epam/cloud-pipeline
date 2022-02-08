@@ -15,6 +15,13 @@
  */
 
 .storage-size {
-  padding: 4px 8px;
-  color: #333;
+  padding: 4px 6px;
+}
+
+.storage-size span + .refresh-button {
+  margin-left: 5px;
+}
+
+.storage-size .refresh-button:hover {
+  text-decoration: underline;
 }

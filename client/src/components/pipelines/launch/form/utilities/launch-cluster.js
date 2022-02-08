@@ -378,12 +378,9 @@ class ConfigureClusterDialog extends React.Component {
 
   getInputStyle = (field) => {
     if (this.state.validation[field]) {
-      return {
-        border: '1px solid red',
-        outline: 'none'
-      };
+      return 'cp-error';
     }
-    return {};
+    return undefined;
   };
 
   getValidationRow = (field) => {
@@ -393,7 +390,8 @@ class ConfigureClusterDialog extends React.Component {
           key={`${field} validation`}
           type="flex"
           align="middle"
-          style={{paddingLeft: 115, fontSize: 'smaller', color: 'red'}}>
+          className="cp-error"
+          style={{paddingLeft: 115, fontSize: 'smaller'}}>
           {this.state.validation[field]}
         </Row>
       );
@@ -459,7 +457,8 @@ class ConfigureClusterDialog extends React.Component {
           min={1}
           max={this.launchMaxScheduledNumber}
           disabled={this.props.disabled}
-          style={Object.assign({flex: 1}, this.getInputStyle('nodesCount'))}
+          className={this.getInputStyle('nodesCount')}
+          style={{flex: 1}}
           value={this.state.nodesCount}
           onChange={this.onChangeNodeCount} />
       </Row>,
@@ -529,7 +528,8 @@ class ConfigureClusterDialog extends React.Component {
               min={1}
               max={this.launchMaxScheduledNumber}
               disabled={this.props.disabled}
-              style={Object.assign({flex: 1}, this.getInputStyle('nodesCount'))}
+              className={this.getInputStyle('nodesCount')}
+              style={{flex: 1}}
               value={this.state.nodesCount}
               onChange={this.onChangeNodeCount} />
             {
@@ -540,7 +540,9 @@ class ConfigureClusterDialog extends React.Component {
             }
             <a
               onClick={onUnsetChildNodes}
-              style={{color: '#666', textDecoration: 'underline', marginLeft: 5}}>
+              className="cp-text underline"
+              style={{marginLeft: 5}}
+            >
               <Icon type="close" /> Reset
             </a>
           </Row>
@@ -551,7 +553,8 @@ class ConfigureClusterDialog extends React.Component {
             <span style={{marginLeft: LEFT_MARGIN, flex: 1}}>
               <a
                 onClick={onSetUpChildNodesClicked}
-                style={{color: '#666', textDecoration: 'underline'}}>
+                className="cp-text underline"
+              >
                 Setup default child nodes count
               </a>
               {
@@ -604,7 +607,8 @@ class ConfigureClusterDialog extends React.Component {
           min={this.state.setDefaultNodesCount ? 2 : 1}
           max={this.launchMaxAutoScaledNumber}
           disabled={this.props.disabled}
-          style={Object.assign({flex: 1}, this.getInputStyle('maxNodesCount'))}
+          className={this.getInputStyle('maxNodesCount')}
+          style={{flex: 1}}
           value={this.state.maxNodesCount}
           onChange={this.onChangeMaxNodeCount} />
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo, {marginLeft: 5})}

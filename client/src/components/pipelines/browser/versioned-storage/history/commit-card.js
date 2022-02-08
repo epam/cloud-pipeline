@@ -41,8 +41,11 @@ function CommitCard (
       className={
         classNames(
           styles.commit,
+          'cp-table-element',
+          'cp-even-odd-element',
           {
-            [styles.disabled]: disabled
+            [styles.disabled]: disabled,
+            'cp-table-element-disabled': disabled
           },
           className
         )
@@ -63,7 +66,7 @@ function CommitCard (
                 classNames(
                   styles.line,
                   styles.message,
-                  styles.accent
+                  'cp-accent'
                 )
               }
             >
@@ -88,7 +91,7 @@ function CommitCard (
             className={
               classNames(
                 styles.author,
-                styles.accent
+                'cp-accent'
               )
             }
             userName={commit.author}

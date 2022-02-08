@@ -243,6 +243,11 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                         "Tags": AWSInstanceProvider.get_tags(run_id)
                     }
                 ],
+                MetadataOptions={
+                    'HttpTokens': 'optional',
+                    'HttpPutResponseHopLimit': 2,
+                    'HttpEndpoint': 'enabled'
+                },
                 **additional_args
             )
         except ClientError as client_error:

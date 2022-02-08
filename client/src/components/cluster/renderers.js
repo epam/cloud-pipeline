@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
 import {
   nodeRoles,
@@ -33,7 +34,19 @@ export function renderNodeLabels (labels, config) {
     (label, value, role = 0) =>
       <span
         id={`label-${label}`}
-        className={className}
+        className={
+          classNames(
+            className,
+            'cp-node-tag',
+            {
+              'cp-node-tag-run': testRole(role, nodeRoles.run),
+              'cp-node-tag-master': testRole(role, nodeRoles.master),
+              'cp-node-tag-cp-role': testRole(role, nodeRoles.cloudPipelineRole),
+              'cp-node-tag-pipeline-info': testRole(role, nodeRoles.pipelineInfo),
+              'cp-node-tag-pool': testRole(role, nodeRoles.nodePoolRole)
+            }
+          )
+        }
         style={{...additionalStyle}}
         key={label}
         data-run={testRole(role, nodeRoles.run)}

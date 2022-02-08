@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.external.datastorage.manager.auth;
 
-import com.epam.pipeline.external.datastorage.controller.Result;
 import com.epam.pipeline.external.datastorage.entity.PipelineToken;
+import com.epam.pipeline.rest.Result;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;

@@ -47,8 +47,6 @@ import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
 import UsersInfo from '../../models/user/UsersInfo';
 import AppLocalization from '../../utils/localization';
-import IssuesRenderer from '../../components/special/issues/utilities/IssueRenderer';
-import NotificationRenderer from '../special/notifications/utilities/NotificationRenderer';
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
 import configurationSchedules from '../../models/configurationSchedule/ConfigurationSchedules';
@@ -62,19 +60,14 @@ import multiZoneManager from '../../utils/multizone';
 import UINavigation from '../../utils/ui-navigation';
 import {VsActionsAvailable} from '../versioned-storages/vs-actions';
 import impersonation from '../../models/user/impersonation';
+import CurrentUserAttributes, {CURRENT_USER_ATTRIBUTES_STORE} from '../../utils/current-user-attributes';
+import CloudPipelineThemes from '../../themes';
 
 const routing = new RouterStore();
 const history = syncHistoryWithStore(hashHistory, routing);
 const counter = new RunCount();
 const localization = new AppLocalization.Localization();
 const hiddenObjects = new HiddenObjects(preferences, authenticatedUserInfo);
-const issuesRenderer = new IssuesRenderer(
-  pipelinesLibrary,
-  dockerRegistries,
-  preferences,
-  hiddenObjects
-);
-const notificationsRenderer = new NotificationRenderer();
 const myIssues = new MyIssues();
 const googleApi = new GoogleApi(preferences);
 const fireCloudMethods = new FireCloudMethods(googleApi);
@@ -98,6 +91,11 @@ const uiNavigation = new UINavigation(authenticatedUserInfo, preferences);
 
 const vsActions = new VsActionsAvailable(pipelines);
 
+const currentUserAttributes = new CurrentUserAttributes(
+  authenticatedUserInfo,
+  dataStorageAvailable
+);
+
 (() => { return awsRegions.fetchIfNeededOrWait(); })();
 (() => { return cloudRegionsInfo.fetchIfNeededOrWait(); })();
 (() => { return allowedInstanceTypes.fetchIfNeededOrWait(); })();
@@ -106,6 +104,8 @@ const vsActions = new VsActionsAvailable(pipelines);
 (() => { return spotToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return onDemandToolInstanceTypes.fetchIfNeededOrWait(); })();
 (() => { return systemDictionaries.fetchIfNeededOrWait(); })();
+
+const themes = new CloudPipelineThemes();
 
 const Root = () =>
   <Provider
@@ -136,21 +136,19 @@ const Root = () =>
       onDemandToolInstanceTypes,
       notifications,
       authenticatedUserInfo,
+      [CURRENT_USER_ATTRIBUTES_STORE]: currentUserAttributes,
       impersonation,
       metadataCache: FolderLoadWithMetadata.metadataCache,
       dataStorageCache,
       dataStorageAvailable,
       dtsList,
       dockerRegistries,
-      issuesRenderer,
-      notificationsRenderer,
       myIssues,
       users,
       usersInfo,
       allowedInstanceTypes,
       searchEngine,
       configurationSchedules,
-      quotaTemplates: billing.quotas.templates.list,
       billingCenters: new billing.FetchBillingCenters(),
       systemDictionaries,
       userMetadataKeys,
@@ -158,7 +156,8 @@ const Root = () =>
       [HiddenObjects.injectionName]: hiddenObjects,
       multiZoneManager,
       uiNavigation,
-      vsActions
+      vsActions,
+      themes
     }}>
     <AppRouter />
   </Provider>;

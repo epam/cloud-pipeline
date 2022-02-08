@@ -19,41 +19,16 @@ import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import {Provider, inject} from 'mobx-react';
 import classNames from 'classnames';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
 import {
   Button,
   Icon,
   message
 } from 'antd';
+import {getMarkdownRenderer, processLinks} from '../../../markdown';
 import ToolJobLink from '../tool-job-link';
 import styles from './open-tool-info.css';
 
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
-
-function processLinks (html) {
-  return (html || '').replace(/<a href/ig, '<a target="_blank" href');
-}
+const markdownRenderer = getMarkdownRenderer();
 
 const STORAGE_PREFIX = 'cloud-data';
 const DEFAULT_TEMPLATE = `Copy file path: {FILE_PATH}
@@ -204,7 +179,7 @@ class OpenToolInfo extends React.Component {
       'APP_NAME': this.renderAppName,
       'APP_LINK': this.renderAppLink
     };
-    const html = processLinks(MarkdownRenderer.render(this.template));
+    const html = processLinks(markdownRenderer.render(this.template), '_blank');
     const {tool} = this.props;
     if (tool && tool.image) {
       html.replace(/\{app_name\}/g, tool.image);

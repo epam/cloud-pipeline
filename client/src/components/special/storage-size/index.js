@@ -17,13 +17,49 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {message, Tooltip, Icon} from 'antd';
+import {inject, observer} from 'mobx-react';
 import DataStoragePathUsage from '../../../models/dataStorage/DataStoragePathUsage';
+import DataStoragePathUsageUpdate from '../../../models/dataStorage/DataStoragePathUsageUpdate';
 import displaySize from '../../../utils/displaySize';
 import styles from './storage-size.css';
 
+const REFRESH_REQUESTED_MESSAGE =
+  'Storage size refresh has been requested. Please wait a couple of minutes.';
+
+function InfoTooltip ({size}) {
+  const {realSize, effectiveSize} = size;
+
+  if (!effectiveSize || effectiveSize === realSize) {
+    return null;
+  }
+
+  const tooltip = (
+    <div>
+      <div>Effective size: {displaySize(effectiveSize, effectiveSize > 1024)}</div>
+      <div>Real size: {displaySize(realSize, realSize > 1024)}</div>
+    </div>
+  );
+
+  return (
+    <Tooltip
+      title={tooltip}
+      placement="top"
+    >
+      <Icon
+        type="info-circle"
+        className="cp-text"
+        style={{marginRight: 5, marginLeft: 5}}
+      />
+    </Tooltip>
+  );
+}
+@inject('preferences')
+@observer
 class StorageSize extends React.PureComponent {
   state = {
-    size: undefined
+    realSize: undefined,
+    effectiveSize: undefined
   };
 
   componentDidMount () {
@@ -54,41 +90,98 @@ class StorageSize extends React.PureComponent {
         .fetch()
         .then(() => {
           if (request.loaded && request.value && request.value.size) {
-            return Promise.resolve(request.value.size);
+            const size = {
+              realSize: request.value.size,
+              effectiveSize: request.value.effectiveSize
+            };
+            return Promise.resolve(size);
           }
           return Promise.resolve();
         })
         .then((size) => {
           this.setState({
-            size
+            realSize: size ? size.realSize : undefined,
+            effectiveSize: size ? size.effectiveSize : undefined
           });
         });
     } else {
       this.setState({
-        size: undefined
+        realSize: undefined,
+        effectiveSize: undefined
       });
     }
   }
 
+  refreshSize = async () => {
+    const {
+      storage,
+      storageId,
+      preferences
+    } = this.props;
+    let id = storageId;
+    if (id === undefined && typeof storage === 'object') {
+      id = storage.id;
+    }
+    if (id !== undefined) {
+      try {
+        const request = new DataStoragePathUsageUpdate(id);
+        await request.fetch();
+        await preferences.fetchIfNeededOrWait();
+        const disclaimer = preferences.storageSizeRequestDisclaimer || REFRESH_REQUESTED_MESSAGE;
+        message.info(disclaimer, 7);
+      } catch (e) {
+        message.error(e.message, 5);
+      }
+    }
+  };
+
   render () {
-    const {size} = this.state;
+    const {realSize, effectiveSize} = this.state;
     const {className, style} = this.props;
-    if (size) {
+    if (realSize) {
+      const size = effectiveSize || realSize;
       return (
         <div
           className={
             classNames(
               styles.storageSize,
+              'cp-text',
               className
             )
           }
           style={style}
         >
-          Storage size: {displaySize(size, size > 1024)}
+          <span>
+            Storage size: {displaySize(size, size > 1024)}
+          </span>
+          <InfoTooltip size={{realSize, effectiveSize}} />
+          <a
+            className={styles.refreshButton}
+            onClick={this.refreshSize}
+          >
+            Re-index
+          </a>
         </div>
       );
     }
-    return null;
+    return (
+      <div
+        className={
+          classNames(
+            styles.storageSize,
+            className
+          )
+        }
+        style={style}
+      >
+        <a
+          className={styles.refreshButton}
+          onClick={this.refreshSize}
+        >
+          Request storage re-index
+        </a>
+      </div>
+    );
   }
 }
 

@@ -17,23 +17,10 @@
 .container {
   margin: 10px 0;
   padding: 5px 10px;
-  border: 1px solid #ccc;
-  -webkit-box-shadow: 0 0 2px 2px #eee;
-  box-shadow: 0 0 2px 2px #eee;
+  border: 1px solid transparent;
   font-size: 12pt;
   line-height: 24px;
-  color: #666;
   cursor: pointer;
-  transition: box-shadow 250ms ease-in-out, border-color 250ms ease-in-out;
-}
-
-.container.pool-disabled {
-  color: #999;
-}
-
-.container:hover {
-  box-shadow: 0 0 2px 2px #ddd;
-  border-color: #aaa;
 }
 
 .header-container {
@@ -49,7 +36,6 @@
   padding: 10px;
   font-size: 9pt;
   position: relative;
-  color: #999;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -62,10 +48,6 @@
 
 .container.pool-disabled .header-container .info-block {
   display: none;
-}
-
-.header-container .info-block.has-runs {
-  color: rgb(61, 122, 20);
 }
 
 .header-container .info-block .progress {
@@ -113,8 +95,7 @@
 }
 
 .schedule {
-  font-size: 9pt;
-  color: #777;
+  font-size: smaller;
 }
 
 .header .actions > * {

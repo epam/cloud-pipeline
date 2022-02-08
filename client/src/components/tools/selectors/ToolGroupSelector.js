@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import {Row, Button, Dropdown, Input, Icon} from 'antd';
 import styles from './Selectors.css';
 import compareArrays from '../../../utils/compareArrays';
@@ -97,7 +98,14 @@ export default class ToolGroupSelector extends React.Component {
         key="group"
         trigger={['click']}
         overlay={
-          <div className={styles.navigationDropdownContainer}>
+          <div
+            className={
+              classNames(
+                styles.navigationDropdownContainer,
+                'rc-dropdown-menu'
+              )
+            }
+          >
             <Row type="flex">
               <Input.Search
                 value={this.state.groupSearch}

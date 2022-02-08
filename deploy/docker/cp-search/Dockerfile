@@ -40,8 +40,8 @@ RUN cd /tmp && \
 
 # API distribution
 ARG CP_API_DIST_URL=""
-ENV CP_SEARCH_HOME="/opt/search" \
-    CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
+ENV CP_SEARCH_HOME="/opt/search"
+ENV CP_SEARCH_MAPPINGS_LOCATION="$CP_SEARCH_HOME/search-mappings"
 RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \

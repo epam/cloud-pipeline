@@ -22,14 +22,12 @@ import java.util.Collections;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
-import com.coveo.saml.SamlResponse;
 import com.epam.pipeline.security.UserContext;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 public class SAMLProxyAuthentication implements Authentication {
     private String rawSamlResponse;
-    private SamlResponse samlResponse;
     private UserContext userContext;
 
     @Override
@@ -39,7 +37,7 @@ public class SAMLProxyAuthentication implements Authentication {
 
     @Override
     public Object getCredentials() {
-        return samlResponse;
+        return rawSamlResponse;
     }
 
     @Override

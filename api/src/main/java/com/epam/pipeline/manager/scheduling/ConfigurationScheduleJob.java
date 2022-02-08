@@ -25,14 +25,12 @@ import com.epam.pipeline.entity.pipeline.run.RunScheduledAction;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.security.UserContext;
-import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
@@ -54,34 +52,33 @@ public class ConfigurationScheduleJob implements Job {
     @Autowired
     private UserManager userManager;
 
+    @Autowired
+    private AuthManager authManager;
+
     @Override
     public void execute(final JobExecutionContext context) {
-        log.debug("Job " + context.getJobDetail().getKey().getName() + " fired " + context.getFireTime());
+        log.debug("Job {} fired {}", context.getJobDetail().getKey().getName(), context.getFireTime());
 
         final Long configurationId = context.getMergedJobDataMap().getLongValue("SchedulableId");
-        final String action = context.getMergedJobDataMap().getString("Action");
-        Assert.notNull(configurationId,
-                       messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND, configurationId));
+        Assert.notNull(configurationId, messageHelper.getMessage(MessageConstants.ERROR_RUN_PIPELINES_NOT_FOUND,
+                configurationId));
         final RunConfigurationWithEntitiesVO configuration = createConfigurationVOToRun(configurationId);
-        if (action.equals(RunScheduledAction.RUN.name())) {
-            log.debug("Execute a configuration with id: "+ configurationId);
 
-            setAuth(context.getMergedJobDataMap().getString("User"));
+        final String userName = context.getMergedJobDataMap().getString("User");
+        Assert.notNull(userName, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_REQUIRED, userName));
+        final PipelineUser user = userManager.loadUserByName(userName);
+        Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_NAME_NOT_FOUND, userName));
+        authManager.setCurrentUser(user);
 
+        final String action = context.getMergedJobDataMap().getString("Action");
+        if (RunScheduledAction.RUN.name().equals(action)) {
+            log.debug("Execute a configuration with id: {}", configurationId);
             configurationRunner.runConfiguration(null, configuration, null);
         } else {
-            log.error("Wrong type of action for scheduling configuration, allowed RUN, actual: " + action);
+            log.error("Wrong type of action for scheduling configuration, allowed RUN, actual: {}", action);
         }
-        log.debug("Next job scheduled " + context.getNextFireTime());
-    }
 
-    private void setAuth(final String userName) {
-        Assert.notNull(userName, "User is not provided!");
-        PipelineUser pipelineUser = userManager.loadUserByName(userName);
-        UserContext userContext = new UserContext(pipelineUser);
-        SecurityContextHolder.getContext().setAuthentication(
-                new JwtAuthenticationToken(userContext, userContext.getAuthorities())
-        );
+        log.debug("Next job scheduled {}", context.getNextFireTime());
     }
 
     private RunConfigurationWithEntitiesVO createConfigurationVOToRun(final Long configurationId) {

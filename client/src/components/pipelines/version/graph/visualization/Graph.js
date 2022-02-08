@@ -18,11 +18,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {observable} from 'mobx';
+import classNames from 'classnames';
 import {Row, Col, Icon, message} from 'antd';
 import styles from './Graph.css';
 import CodeFileCommitForm from '../../code/forms/CodeFileCommitForm';
 import PipelineFilesUpdate from '../../../../../models/pipelines/PipelineFilesUpdate';
-import PipelineConfigurationUpdate from '../../../../../models/pipelines/PipelineConfigurationUpdate';
+import PipelineConfigurationUpdate
+from '../../../../../models/pipelines/PipelineConfigurationUpdate';
 import roleModel from '../../../../../utils/roleModel';
 
 @observer
@@ -207,13 +209,17 @@ export default class Graph extends React.Component {
     }
     const getIconClassName = (enabled) => {
       if (enabled) {
-        return styles.graphInterfaceButtonIcon;
+        return classNames(styles.graphInterfaceButtonIcon, 'cp-primary');
       }
-      return styles.graphInterfaceButtonIconDisabled;
+      return classNames(styles.graphInterfaceButtonIconDisabled, 'cp-disabled');
     };
 
     return (
-      <Row type="flex" justify="end" className={styles.graphInterface}>
+      <Row
+        type="flex"
+        justify="end"
+        className={classNames(styles.graphInterface, 'cp-primary')}
+      >
         <Col className={styles.graphInterfaceButton}>
           <Icon
             onClick={() => this.zoomOut()}
@@ -235,14 +241,20 @@ export default class Graph extends React.Component {
   };
 
   render () {
-    let containerStyle = this.state.fullScreen
-      ? styles.graphContainerFullScreen
-      : styles.graphContainer;
+    let containerStyle = classNames(
+      'cp-content-panel',
+      styles.graphContainer,
+      {
+        [styles.graphContainerFullScreen]: this.state.fullScreen
+      }
+    );
     if (this.props.className) {
       containerStyle = this.props.className;
     }
     return (
-      <div className={containerStyle}>
+      <div
+        className={containerStyle}
+      >
         {this.renderGraph()}
         {this.renderBottomGraphControlls()}
         <CodeFileCommitForm

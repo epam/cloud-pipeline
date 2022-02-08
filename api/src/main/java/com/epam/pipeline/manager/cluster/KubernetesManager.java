@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.cluster;
 
+import static com.epam.pipeline.manager.cluster.KubernetesConstants.HYPHEN;
+
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
@@ -28,6 +30,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.EndpointAddress;
 import io.fabric8.kubernetes.api.model.EndpointPort;
@@ -45,6 +48,7 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretList;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.ServicePort;
+import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -56,6 +60,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +73,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -78,14 +84,17 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class KubernetesManager {
 
-    private static final String SERVICE_ROLE_LABEL = "cloud-pipeline/role";
+
+    private static final String SERVICE_ROLE_LABEL = KubernetesConstants.CP_LABEL_PREFIX + "role";
     private static final String DUMMY_EMAIL = "test@email.com";
     private static final String DOCKER_PREFIX = "docker://";
     private static final String EMPTY = "";
     private static final int NODE_READY_TIMEOUT = 5000;
-    private static final int CONNECTION_TIMEOUT_MS = 2 * 1000;
+    private static final int MILLIS_TO_SECONDS = 1000;
+    private static final int CONNECTION_TIMEOUT_MS = 2 * MILLIS_TO_SECONDS;
     private static final int ATTEMPTS_STATUS_NODE = 60;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesManager.class);
@@ -100,6 +109,9 @@ public class KubernetesManager {
     @Autowired
     private PreferenceManager preferenceManager;
 
+    @Autowired
+    private KubernetesDeploymentAPIClient deploymentAPIClient;
+
     @Value("${kube.namespace}")
     private String kubeNamespace;
 
@@ -109,9 +121,39 @@ public class KubernetesManager {
     @Value("${kube.current.pod.name}")
     private String kubePodName;
 
+    @Value("${kube.default.service.target.port:1000}")
+    private Integer defaultKubeServiceTargetPort;
+
+    @Value("${kube.deployment.refresh.timeout.sec:3}")
+    private Integer deploymentRefreshTimeoutSec;
+
+    @Value("${kube.deployment.refresh.retries:15}")
+    private Integer deploymentRefreshRetries;
+
+    @Value("${kube.annotation.value.length.limit:254}")
+    private Integer kubeAnnotationLengthLimit;
+
+    @Value("${kube.label.value.length.limit:63}")
+    private Integer kubeLabelValueSizeLimit;
+
+    @Value("${kube.label.long.value.suffix.length:5}")
+    private Integer kubeLabelLongValueRandomSuffixSize;
+
+    @Value("${kube.label.long.value.reducing.length:12}")
+    private Integer kubeLabelLongValueReducingSize;
+
     public List<Service> getServicesByLabel(final String label) {
+        return getServicesByLabel(SERVICE_ROLE_LABEL, label);
+    }
+
+    public List<Service> getCloudPipelineServiceInstances(final String serviceName) {
+        return getServicesByLabel(KubernetesConstants.CP_LABEL_PREFIX + serviceName,
+                                  KubernetesConstants.TRUE_LABEL_VALUE);
+    }
+
+    public List<Service> getServicesByLabel(final String labelName, final String labelValue) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return findServicesByLabel(client, SERVICE_ROLE_LABEL, label);
+            return findServicesByLabel(client, labelName, labelValue);
         }
     }
 
@@ -294,6 +336,212 @@ public class KubernetesManager {
         return new DefaultKubernetesClient(config);
     }
 
+    public boolean refreshDeployment(final String deploymentName, final Map<String, String> labelSelector) {
+        return refreshDeployment(kubeNamespace, deploymentName, labelSelector);
+    }
+
+    public boolean refreshDeployment(final String namespace, final String deploymentName,
+                                     final Map<String, String> labelSelector) {
+        Assert.isTrue(StringUtils.isNotBlank(namespace),
+                      messageHelper.getMessage(MessageConstants.ERROR_KUBE_NAMESPACE_NOT_SPECIFIED));
+        try {
+            deploymentAPIClient.updateDeployment(namespace, deploymentName);
+            try (KubernetesClient client = getKubernetesClient()) {
+                return waitForPodsStartup(client, namespace, labelSelector,
+                                          deploymentRefreshRetries, deploymentRefreshTimeoutSec);
+            }
+        } catch (RuntimeException e) {
+            log.warn(messageHelper.getMessage(MessageConstants.ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED,
+                                              namespace, deploymentName, e.getMessage()));
+            return false;
+        }
+    }
+
+    private boolean waitForPodsStartup(final KubernetesClient client, final String namespace,
+                                       final Map<String, String> labelSelector, final int retries,
+                                       final int retryTimeoutSeconds) {
+        long attempts = retries;
+        while (!podsAreReady(client, namespace, labelSelector)) {
+            LOGGER.debug("Waiting for pods in [{},{}] to be ready.", namespace, labelSelector);
+            attempts -= 1;
+            try {
+                Thread.sleep(retryTimeoutSeconds * MILLIS_TO_SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                log.error("Interruption occurred during [{},{}] refreshing, exiting...", namespace, labelSelector);
+                return false;
+            }
+            if (attempts <= 0) {
+                log.error("Unable to boot up pods in [{},{}] in {} reties", namespace, labelSelector, retries);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean podsAreReady(final KubernetesClient client, final String namespace,
+                                 final Map<String, String> labelSelector) {
+        final PodList allServicePods = client.pods()
+            .inNamespace(namespace)
+            .withLabels(labelSelector)
+            .list();
+        return allPodsAreReady(allServicePods);
+    }
+
+    public boolean updateAnnotationsOfExistingService(final String serviceName,
+                                                      final Map<String, String> annotationUpdate) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            client.services()
+                .inNamespace(kubeNamespace)
+                .withName(serviceName)
+                .edit()
+                .editMetadata()
+                .addToAnnotations(annotationUpdate)
+                .endMetadata()
+                .done();
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    public boolean removeAnnotationsFromExistingService(final String serviceName, final Set<String> annotations) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final Map<String, String> correspondingAnnotations = client.services()
+                .inNamespace(kubeNamespace)
+                .withName(serviceName)
+                .get()
+                .getMetadata()
+                .getAnnotations()
+                .entrySet()
+                .stream()
+                .filter(e -> annotations.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+            if (MapUtils.isNotEmpty(correspondingAnnotations)) {
+                client.services()
+                    .inNamespace(kubeNamespace)
+                    .withName(serviceName)
+                    .edit()
+                    .editMetadata()
+                    .removeFromAnnotations(correspondingAnnotations)
+                    .endMetadata()
+                    .done();
+            }
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    public Optional<ServicePort> addPortToExistingService(final String serviceName,
+                                                          final Integer externalPort, final Integer internalPort,
+                                                          final String protocol) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            final ServicePort newPortSpec = getTcpPortSpec(getServicePortName(serviceName, externalPort),
+                                                           externalPort, internalPort, protocol);
+            client.services()
+                .inNamespace(kubeNamespace)
+                .withName(serviceName)
+                .edit()
+                    .editSpec()
+                        .addToPorts(newPortSpec)
+                    .endSpec()
+                .done();
+            return Optional.of(newPortSpec);
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
+    public String buildProxyServiceName(final String prefix, final String externalName) {
+        final String fullName = prefix + HYPHEN + externalName.replaceAll("\\.", HYPHEN);
+        if (fullName.length() < kubeLabelValueSizeLimit) {
+            return fullName;
+        }
+        final String randomSuffix = RandomStringUtils.randomAlphanumeric(kubeLabelLongValueRandomSuffixSize)
+            .toLowerCase();
+        return fullName.substring(0, kubeLabelValueSizeLimit - kubeLabelLongValueReducingSize) + HYPHEN + randomSuffix;
+    }
+
+    public String getServicePortName(final String serviceName, final Integer externalPort) {
+        final String portSuffix = externalPort.toString();
+        final String fullName = serviceName + HYPHEN + portSuffix;
+        if (fullName.length() < kubeLabelValueSizeLimit) {
+            return fullName;
+        }
+        return fullName.substring(0, kubeLabelValueSizeLimit - portSuffix.length() - 1) + HYPHEN + portSuffix;
+    }
+
+    public boolean setPortsToService(final String serviceName, final List<ServicePort> portsUpdate) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            client.services()
+                .inNamespace(kubeNamespace)
+                .withName(serviceName)
+                .edit()
+                    .editSpec()
+                        .withPorts(portsUpdate)
+                    .endSpec()
+                .done();
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private ServicePort getTcpPortSpec(final String portName, final Integer externalPort, final Integer internalPort,
+                                       final String protocol) {
+        final ServicePort newServicePort = new ServicePort();
+        newServicePort.setProtocol(protocol);
+        newServicePort.setName(portName);
+        Optional.ofNullable(externalPort).ifPresent(newServicePort::setPort);
+        Optional.ofNullable(internalPort).map(IntOrString::new).ifPresent(newServicePort::setTargetPort);
+        return newServicePort;
+    }
+
+    public boolean updateValueInConfigMap(final String mapName, final String namespace,
+                                          final String key, final String value) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            client.configMaps()
+                .inNamespace(defaultNamespaceIfEmpty(namespace))
+                .withName(mapName)
+                .edit()
+                .addToData(key, value)
+                .done();
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    private String defaultNamespaceIfEmpty(final String namespace) {
+        return Optional.ofNullable(namespace).filter(StringUtils::isNotEmpty).orElse(kubeNamespace);
+    }
+
+    public boolean removeValueFromConfigMap(final String mapName, final String namespace, final String key) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            client.configMaps()
+                .inNamespace(defaultNamespaceIfEmpty(namespace))
+                .withName(mapName)
+                .edit()
+                .removeFromData(key)
+                .done();
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
+    public Optional<ConfigMap> findConfigMap(final String mapName, final String namespace) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return Optional.ofNullable(client.configMaps()
+                                           .inNamespace(defaultNamespaceIfEmpty(namespace))
+                                           .withName(mapName)
+                                           .get());
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
     public KubernetesClient getKubernetesClient(Config config) {
         return new DefaultKubernetesClient(config);
     }
@@ -458,6 +706,10 @@ public class KubernetesManager {
         if (list == null || CollectionUtils.isEmpty(list.getItems())) {
             return false;
         }
+        return allPodsAreReady(list);
+    }
+
+    private boolean allPodsAreReady(final PodList list) {
         return list.getItems().stream()
                 .map(pod -> pod.getStatus().getConditions())
                 .flatMap(Collection::stream)
@@ -621,6 +873,11 @@ public class KubernetesManager {
         }
     }
 
+    public boolean isValidAnnotation(final String annotation) {
+        return StringUtils.isNotBlank(annotation)
+               && annotation.length() < kubeAnnotationLengthLimit;
+    }
+
     private void updateStatus(StringBuilder status, NodeCondition condition) {
         if (!status.toString().isEmpty()) {
             status.append(", ");
@@ -701,7 +958,7 @@ public class KubernetesManager {
                 return;
             }
             final String serviceName = resolveNodeServiceName(instance.getNodeIP());
-            createServiceIfNotExists(serviceName, port, port);
+            createServiceIfNotExists(serviceName, port, port, false);
             createEndpointsIfNotExists(serviceName, instance.getNodeIP(), port);
         }
     }
@@ -718,52 +975,94 @@ public class KubernetesManager {
         return "ip-" + ip.replace(".", "-");
     }
 
-    private Service createServiceIfNotExists(final String name, final int port, final int targetPort) {
+    public Service createServiceIfNotExists(final String name, final int port, final int targetPort,
+                                            final boolean setPortName) {
         try (KubernetesClient client = getKubernetesClient()) {
             final Optional<Service> service = findServiceByName(client, name);
             if (service.isPresent()) {
                 LOGGER.debug("Service with name '{}' already exists", name);
                 return service.get();
             }
-            return createService(client, name, port, targetPort);
+            return createService(client, name, port, targetPort, setPortName);
         }
     }
 
     private Service createService(final KubernetesClient client, final String name, final int port, 
-                                  final int targetPort) {
+                                  final int targetPort, final boolean setPortName) {
         final ServicePort servicePort = new ServicePort();
         servicePort.setPort(port);
         servicePort.setTargetPort(new IntOrString(targetPort));
+        if(setPortName) {
+            servicePort.setName(getServicePortName(name, port));
+        }
         return createService(client, name, Collections.emptyMap(), Collections.singletonList(servicePort));
     }
-    
+
     public Service createService(final String serviceName, final Map<String, String> labels,
                                  final List<ServicePort> ports) {
+        return createService(serviceName, labels, Collections.emptyMap(), ports, labels);
+    }
+
+    public Service createService(final String serviceName, final Map<String, String> labels,
+                                 final Map<String, String> annotations, final List<ServicePort> ports,
+                                 final Map<String, String> selector) {
         try (KubernetesClient client = getKubernetesClient()) {
-            return createService(client, serviceName, labels, ports);
+            return createService(client, serviceName, labels, annotations, ports, selector);
         }
     }
 
-    private Service createService(final KubernetesClient client, final String serviceName, 
+    private Service createService(final KubernetesClient client, final String serviceName,
                                   final Map<String, String> labels, final List<ServicePort> ports) {
+        return createService(client, serviceName, labels, Collections.emptyMap(), ports, labels);
+    }
+
+    private Service createService(final KubernetesClient client, final String serviceName,
+                                  final Map<String, String> labels,
+                                  final Map<String, String> annotations,
+                                  final List<ServicePort> ports,
+                                  final Map<String, String> selector) {
         final Service service = client.services().createNew()
                 .withNewMetadata()
                 .withName(serviceName)
                 .withNamespace(kubeNamespace)
                 .withLabels(labels)
+                .withAnnotations(annotations)
                 .endMetadata()
                 .withNewSpec()
                 .withPorts(ports)
-                .withSelector(labels)
+                .withSelector(selector)
                 .endSpec()
                 .done();
         Assert.notNull(service, messageHelper.getMessage(MessageConstants.ERROR_KUBE_SERVICE_CREATE, serviceName));
         return service;
     }
 
+    public Optional<Integer> generateFreeTargetPort() {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return client.services().list().getItems().stream()
+                .map(Service::getSpec)
+                .map(ServiceSpec::getPorts)
+                .flatMap(Collection::stream)
+                .map(ServicePort::getTargetPort)
+                .map(IntOrString::getIntVal)
+                .max(Comparator.naturalOrder())
+                .map(value -> value + 1)
+                .map(Optional::of)
+                .orElse(Optional.of(defaultKubeServiceTargetPort));
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
+    }
+
     public Optional<Service> getService(final String labelName, final String labelValue) {
         try (KubernetesClient client = getKubernetesClient()) {
             return findServiceByLabel(client, labelName, labelValue);
+        }
+    }
+
+    public Optional<Service> findServiceByName(final String serviceName) {
+        try (KubernetesClient client = getKubernetesClient()) {
+            return findServiceByName(client, serviceName);
         }
     }
 
@@ -773,14 +1072,14 @@ public class KubernetesManager {
         }
     }
 
-    public void deleteServiceIfExists(final String name) {
+    public boolean deleteServiceIfExists(final String name) {
         try (KubernetesClient client = getKubernetesClient()) {
             final Optional<Service> service = findServiceByName(client, name);
             if (!service.isPresent()) {
                 LOGGER.debug("Failed to find service with name '{}'", name);
-                return;
+                return false;
             }
-            deleteService(client, service.get());
+            return deleteService(client, service.get());
         }
     }
 

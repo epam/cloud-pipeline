@@ -276,6 +276,7 @@ export function generateTreeData (
         mountPoint: childStoragesSorted[i].mountPoint,
         mountOptions: childStoragesSorted[i].mountOptions,
         sensitive: childStoragesSorted[i].sensitive,
+        sourceStorageId: childStoragesSorted[i].sourceStorageId,
         url () {
           return generateUrl(this);
         },

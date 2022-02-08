@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.app.ApplicationInfo;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -57,9 +58,11 @@ import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
 import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.vo.user.OnlineUsers;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.HTTP;
 import retrofit2.http.Multipart;
@@ -171,6 +174,12 @@ public interface CloudPipelineAPI {
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
 
+    @POST("users/online")
+    Call<Result<OnlineUsers>> saveOnlineUsers();
+
+    @DELETE("users/online")
+    Call<Result<Boolean>> deleteExpiredOnlineUsers(@Query("date") String date);
+
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);
 
@@ -259,6 +268,12 @@ public interface CloudPipelineAPI {
     @GET("preferences/{key}")
     Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
 
+    @GET("preferences")
+    Call<Result<List<Preference>>> loadAllPreference();
+
     @GET("filesharemount/{id}")
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
+
+    @GET("app/info")
+    Call<Result<ApplicationInfo>> fetchVersion();
 }

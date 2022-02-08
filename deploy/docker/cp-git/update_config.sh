@@ -67,28 +67,38 @@ GIT_PROXIES="gitlab_rails['env'] = {
 
 # If the smtp configuration is available - add it to gitlab as well
 if [ "$CP_NOTIFIER_SMTP_FROM" ] && \
-    [ "$CP_NOTIFIER_SMTP_PASS" ] && \
     [ "$CP_NOTIFIER_SMTP_SERVER_HOST" ] && \
-    [ "$CP_NOTIFIER_SMTP_SERVER_PORT" ] && \
-    [ "$CP_NOTIFIER_SMTP_USER" ]; then
+    [ "$CP_NOTIFIER_SMTP_SERVER_PORT" ]; then
     echo
     echo "SMTP configuration available:"
     echo "  Host: ${CP_NOTIFIER_SMTP_SERVER_HOST}:${CP_NOTIFIER_SMTP_SERVER_PORT}"
     echo "  User: $CP_NOTIFIER_SMTP_USER"
     echo "  From: $CP_NOTIFIER_SMTP_FROM"
     echo
+
+    if [ "$CP_NOTIFIER_SMTP_USER" ]; then
+      SMTP_SETTINGS_USERNAME="gitlab_rails['smtp_user_name'] = \"$CP_NOTIFIER_SMTP_USER\""
+      SMTP_SETTINGS_AUTH_TYPE="gitlab_rails['smtp_authentication'] = \"login\""
+    fi
+
+    if [ "$CP_NOTIFIER_SMTP_PASS" ]; then
+      SMTP_SETTINGS_PASS="gitlab_rails['smtp_password'] = \"$CP_NOTIFIER_SMTP_PASS\""
+      SMTP_SETTINGS_AUTH_TYPE="gitlab_rails['smtp_authentication'] = \"login\""
+    fi
+    
+
     SMTP_SETTINGS="gitlab_rails['smtp_enable'] = true
 gitlab_rails['smtp_address'] = \"$CP_NOTIFIER_SMTP_SERVER_HOST\"
 gitlab_rails['smtp_port'] = $CP_NOTIFIER_SMTP_SERVER_PORT
-gitlab_rails['smtp_user_name'] = \"$CP_NOTIFIER_SMTP_USER\"
-gitlab_rails['smtp_password'] = \"$CP_NOTIFIER_SMTP_PASS\"
 gitlab_rails['smtp_domain'] = \"$CP_NOTIFIER_SMTP_SERVER_HOST\"
-gitlab_rails['smtp_authentication'] = \"login\"
 gitlab_rails['smtp_enable_starttls_auto'] = ${CP_NOTIFIER_SMTP_START_TLS:-false}
-gitlab_rails['gitlab_email_from'] = \"$CP_NOTIFIER_SMTP_FROM\""
+gitlab_rails['gitlab_email_from'] = \"$CP_NOTIFIER_SMTP_FROM\"
+$SMTP_SETTINGS_USERNAME
+$SMTP_SETTINGS_PASS
+$SMTP_SETTINGS_AUTH_TYPE"
 fi
 
-cat >> /etc/gitlab/gitlab.rb <<-EOF
+cat > /etc/gitlab/gitlab.rb <<-EOF
 
 ${GIT_PROXIES}
 
@@ -139,3 +149,6 @@ gitlab_rails['omniauth_providers'] = [
 
 ${SMTP_SETTINGS}
 EOF
+
+# Start the gitlab runner
+/gitlab-runner-scripts/init-gitlab-runner.sh &

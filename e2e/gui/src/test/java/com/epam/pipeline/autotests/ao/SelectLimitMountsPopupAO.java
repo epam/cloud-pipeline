@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,19 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.SelenideElements;
-import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-import static com.codeborne.selenide.CollectionCondition.sizeGreaterThan;
-import static com.codeborne.selenide.CollectionCondition.texts;
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.not;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byTitle;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
@@ -40,8 +42,10 @@ import static com.epam.pipeline.autotests.ao.Primitive.SELECT_ALL_NON_SENSITIVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SENSITIVE_STORAGE;
 import static com.epam.pipeline.autotests.ao.Primitive.TABLE;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
-public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, PipelineRunFormAO> {
+public class SelectLimitMountsPopupAO<PARENT_TYPE>
+        extends PopupAO<SelectLimitMountsPopupAO<PARENT_TYPE>, PARENT_TYPE> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CANCEL, context().find(byText("Cancel")).parent()),
             entry(OK, context().find(byClassName("ant-btn-primary"))),
@@ -53,29 +57,31 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
             entry(SENSITIVE_STORAGE, context().find(byClassName("ant-alert-message")))
     );
 
-    public SelectLimitMountsPopupAO(PipelineRunFormAO parentAO) {
+    public static final String NEXT_PAGE = "Next Page";
+
+    public SelectLimitMountsPopupAO(PARENT_TYPE parentAO) {
         super(parentAO);
     }
 
     @Override
-    public PipelineRunFormAO cancel() {
+    public PARENT_TYPE cancel() {
         return click(CANCEL).parent();
     }
 
     @Override
-    public PipelineRunFormAO ok() {
+    public PARENT_TYPE ok() {
         return click(OK).parent();
     }
 
-    public SelectLimitMountsPopupAO clearSelection() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> clearSelection() {
         return click(CLEAR_SELECTION).sleep(1, SECONDS);
     }
 
-    public SelectLimitMountsPopupAO selectAllNonSensitive() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> selectAllNonSensitive() {
         return click(SELECT_ALL_NON_SENSITIVE).sleep(1, SECONDS);
     }
 
-    public SelectLimitMountsPopupAO selectAll() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> selectAll() {
         return click(SELECT_ALL).sleep(1, SECONDS);
     }
 
@@ -89,57 +95,63 @@ public class SelectLimitMountsPopupAO extends PopupAO<SelectLimitMountsPopupAO, 
         return elements;
     }
 
-    public SelectLimitMountsPopupAO clickSearch() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> clickSearch() {
         click(SEARCH_INPUT);
         return this;
     }
 
-    public SelectLimitMountsPopupAO pressEnter() {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> pressEnter() {
         actions().sendKeys(Keys.ENTER).perform();
         return this;
     }
 
-    public SelectLimitMountsPopupAO setSearchStorage(String storage) {
-        clear(SEARCH_INPUT);
-        setValue(SEARCH_INPUT, storage);
-        return this;
-    }
-
-    public SelectLimitMountsPopupAO searchStorage(String storage) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> searchStorage(String storage) {
         return clear(SEARCH_INPUT)
                 .setValue(SEARCH_INPUT, storage)
                 .pressEnter();
     }
 
-    public SelectLimitMountsPopupAO selectStorage(final String storage) {
+    public SelectLimitMountsPopupAO<PARENT_TYPE> selectStorage(final String storage) {
+        while (!elements().get(TABLE).find(byText(storage)).isDisplayed()
+                && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
+            click(byTitle(NEXT_PAGE));
+        }
         elements().get(TABLE).find(byText(storage)).closest("tr").find(byClassName("ant-checkbox")).click();
         return this;
     }
 
-    public SelectLimitMountsPopupAO storagesCountShouldBeGreaterThan(int size) {
-        $(byClassName("ant-table-tbody")).findAll("tr").shouldHave(sizeGreaterThan(size));
-        return this;
-    }
-
-    public SelectLimitMountsPopupAO validateFields(final String... names) {
-        By columnHeader = byXpath("//thead[@class='ant-table-thead']//th");
-        SelenideElements.of(columnHeader)
-                .shouldHave(texts(names));
+    public SelectLimitMountsPopupAO<PARENT_TYPE> storagesCountShouldBeGreaterThan(int size) {
+        List<SelenideElement> storagesList = new ArrayList <SelenideElement>();
+        while (true) {
+            storagesList.addAll($(byClassName("ant-modal-body")).find(byClassName("ant-table-tbody")).findAll("tr"));
+            if ($(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
+                break;
+            }
+            click(byTitle(NEXT_PAGE));
+        }
+        assertTrue(storagesList.size() >= size);
         return this;
     }
 
     public int countObjectStorages() {
-        return $$(byXpath("//tbody[@class='ant-table-tbody']//span[@class='ant-checkbox ant-checkbox-checked']")).size() -
-                            countStoragesWithType("NFS");
-    }
-
-    private int countStoragesWithType(String type) {
-        int listTypeSize = (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
-                .stream()
-                .map(e -> e.find(byXpath("./td[3]")))
-                .filter(e -> e.text().equals(type))
-                .count();
+        int listTypeSize = 0;
+        while (true) {
+            listTypeSize += (int) $(byClassName("ant-table-tbody")).$$(byClassName("ant-table-row"))
+                    .stream()
+                    .map(e -> e.find(byXpath("./td[3]")))
+                    .filter(e -> !e.text().equals("NFS"))
+                    .count();
+            if ($(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
+                break;
+            }
+            click(byTitle(NEXT_PAGE));
+        }
         click(CANCEL);
         return listTypeSize;
+    }
+
+    public SelectLimitMountsPopupAO<PARENT_TYPE> validateNotFoundStorage() {
+        get(TABLE).shouldHave(text("No data storages available"));
+        return this;
     }
 }

@@ -32,11 +32,6 @@
   flex-wrap: nowrap;
 }
 
-.popover-icon {
-  font-size: larger;
-  color: #f5222d;
-}
-
 .tool-row {
   display: inline-flex;
   flex-direction: row;

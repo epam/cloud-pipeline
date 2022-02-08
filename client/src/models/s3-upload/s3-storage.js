@@ -102,7 +102,12 @@ class S3Storage {
           return Promise.reject(error || new Error('credentials API is not available'));
         }
         return new Promise((resolve, reject) => {
-          fetchTempCredentials(this._storage.id, {read: true, write: true})
+          fetchTempCredentials(
+            this._storage.id,
+            {
+              read: true,
+              write: this._storage.write === undefined ? true : this._storage.write
+            })
             .then(resolve)
             .catch((e) => {
               updateCredentialsAttempt(attempt + 1, e)

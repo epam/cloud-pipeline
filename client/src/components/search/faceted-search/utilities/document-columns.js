@@ -28,47 +28,47 @@ import styles from '../search-results.css';
 import OpenInToolAction from '../../../special/file-actions/open-in-tool';
 
 function parseExtraColumns (preferences) {
+  const configuration = preferences.searchExtraFieldsConfiguration;
+  if (configuration) {
+    if (Array.isArray(configuration) || isObservableArray(configuration)) {
+      return configuration.map(field => ({
+        key: field,
+        name: field
+      }));
+    } else {
+      const result = [];
+      const types = Object.keys(configuration);
+      for (let t = 0; t < types.length; t++) {
+        const type = types[t];
+        const subConfiguration = configuration[type];
+        if (Array.isArray(subConfiguration) || isObservableArray(subConfiguration)) {
+          for (let f = 0; f < subConfiguration.length; f++) {
+            const field = subConfiguration[f];
+            let item = result.find(r => r.key === field);
+            if (!item) {
+              item = {
+                key: field,
+                name: field,
+                types: new Set()
+              };
+              result.push(item);
+            }
+            item.types.add(type);
+          }
+        }
+      }
+      return result;
+    }
+  } else {
+    return [];
+  }
+}
+
+function fetchAndParseExtraColumns (preferences) {
   return new Promise((resolve) => {
     preferences
       .fetchIfNeededOrWait()
-      .then(() => {
-        const configuration = preferences.searchExtraFieldsConfiguration;
-        if (configuration) {
-          if (Array.isArray(configuration) || isObservableArray(configuration)) {
-            resolve(
-              configuration.map(field => ({
-                key: field,
-                name: field
-              }))
-            );
-          } else {
-            const result = [];
-            const types = Object.keys(configuration);
-            for (let t = 0; t < types.length; t++) {
-              const type = types[t];
-              const subConfiguration = configuration[type];
-              if (Array.isArray(subConfiguration) || isObservableArray(subConfiguration)) {
-                for (let f = 0; f < subConfiguration.length; f++) {
-                  const field = subConfiguration[f];
-                  let item = result.find(r => r.key === field);
-                  if (!item) {
-                    item = {
-                      key: field,
-                      name: field,
-                      types: new Set()
-                    };
-                    result.push(item);
-                  }
-                  item.types.add(type);
-                }
-              }
-            }
-            resolve(result);
-          }
-        } else {
-          resolve([]);
-        }
-      })
+      .then(() => resolve(parseExtraColumns(preferences)))
       .catch(() => resolve([]));
   });
 }
@@ -77,7 +77,7 @@ const renderIcon = (resultItem) => {
   if (PreviewIcons[resultItem.type]) {
     return (
       <Icon
-        className={styles.icon}
+        className={classNames('cp-icon-larger', styles.icon, 'cp-search-result-item-main')}
         type={PreviewIcons[resultItem.type]} />
     );
   }
@@ -88,35 +88,59 @@ const DocumentColumns = [
   {
     key: 'name',
     name: 'Name',
-    renderFn: (value, document, onClick) => (
-      <span className={styles.cellValue}>
-        <Icon
-          type="info-circle-o"
-          className={classNames(
-            styles.previewBtn,
-            styles.previewBtnTable
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            e.preventDefault();
-            onClick && onClick(document);
-          }}
-        />
-        <OpenInToolAction
-          file={document.path}
-          storageId={document.parentId}
-          className={classNames(
-            styles.previewBtn,
-            styles.previewBtnTable,
-            styles.action
-          )}
-          titleStyle={{height: '1em'}}
-        />
+    renderFn: (value, document, onClick, renderCheckBox) => (
+      <div
+        style={{
+          display: 'flex',
+          width: '100%',
+          height: '100%',
+          alignItems: 'center',
+          flexWrap: 'nowrap'
+        }}
+      >
+        <div className="cp-search-result-item-actions">
+          <Icon
+            type="info-circle-o"
+            className={
+              classNames(
+                'cp-search-result-item-action',
+                'cp-icon-larger',
+                'cp-search-result-item-main'
+              )
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClick && onClick(document);
+            }}
+          />
+          {renderCheckBox && renderCheckBox(document)}
+          <OpenInToolAction
+            file={document.path}
+            storageId={document.parentId}
+            className={
+              classNames(
+                'cp-search-result-item-action',
+                'cp-icon-larger'
+              )
+            }
+            titleStyle={{height: '1em'}}
+          />
+        </div>
         {renderIcon(document)}
-        <b style={{marginLeft: '5px'}}>
-          {getDocumentName(document)}
-        </b>
-      </span>
+        <span
+          className={
+            classNames(
+              'cp-ellipsis-text',
+              'cp-search-result-item-main'
+            )
+          }
+        >
+          <b>
+            {getDocumentName(document)}
+          </b>
+        </span>
+      </div>
     ),
     width: '25%'
   },
@@ -156,7 +180,7 @@ const DocumentColumns = [
     name: 'Changed',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
@@ -188,7 +212,7 @@ const DocumentColumns = [
     name: 'Size',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displaySize(value, false)}
       </span>
     ),
@@ -204,7 +228,7 @@ const DocumentColumns = [
     name: 'Started',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
@@ -215,7 +239,7 @@ const DocumentColumns = [
     name: 'Finished',
     width: '15%',
     renderFn: value => (
-      <span className={styles.overflowEllipsis}>
+      <span className="cp-ellipsis-text">
         {displayDate(value, 'MMM D, YYYY, HH:mm')}
       </span>
     ),
@@ -223,4 +247,4 @@ const DocumentColumns = [
   }
 ];
 
-export {DocumentColumns, parseExtraColumns};
+export {DocumentColumns, fetchAndParseExtraColumns, parseExtraColumns};

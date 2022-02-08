@@ -1,6 +1,6 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import PropTypes from 'prop-types';
-import {FolderFilled, FileOutlined} from '@ant-design/icons';
+import {FolderFilled, FileOutlined, InboxOutlined} from '@ant-design/icons';
 import classNames from 'classnames';
 import displaySize from './display-size';
 import displayDate from './display-date';
@@ -9,7 +9,13 @@ import './file-system-element.css';
 import '../utilities/split-panel.css';
 
 function FileSystemElementIcon ({element}) {
-  const Icon = element.isDirectory ? FolderFilled : FileOutlined;
+  let Icon = FileOutlined;
+  if (element.isDirectory) {
+    Icon = FolderFilled;
+    if (element.isObjectStorage) {
+      Icon = InboxOutlined;
+    }
+  }
   return (
     <Icon className="icon" />
   );

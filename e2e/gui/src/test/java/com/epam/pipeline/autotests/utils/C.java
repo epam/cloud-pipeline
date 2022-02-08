@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package com.epam.pipeline.autotests.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -78,6 +80,7 @@ public class C {
         ANOTHER_INSTANCE = conf.getProperty("e2e.ui.another.instance.type");
         DEFAULT_INSTANCE_FAMILY_NAME = conf.getProperty("e2e.ui.default.instance.family.name");
         ANOTHER_TESTING_TOOL_NAME = conf.getProperty("e2e.ui.another.testing.tool");
+        LDAP_SERVER_TEST_TOOL = conf.getProperty("e2e.ui.ldap.server.test.tool");
         ANOTHER_GROUP = conf.getProperty("e2e.ui.another.group");
         PLATFORM_NAME = conf.getProperty("e2e.ui.platform.name");
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
@@ -106,6 +109,16 @@ public class C {
         EXTENSION_PATH = conf.getProperty("e2e.ui.extension.path");
         INVALID_EXTENSION_PATH = conf.getProperty("e2e.ui.invalid.extension.path");
         ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
+        ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
+        WEBDAV_ADDRESS = conf.getProperty("e2e.ui.webdav.address");
+        NAT_PROXY_SERVICE_PREFIX = conf.getProperty("e2e.ui.nat.proxy.service.prefix");
+        NAT_PROXY_SERVER_NAMES = Arrays.asList(conf.getProperty("e2e.ui.nat.proxy.service.names")
+                .split("\\s*,\\s*"));
+        LDAP_URLS = conf.getProperty("e2e.ui.ldap.server.urls");
+        LDAP_BASE_PATH = conf.getProperty("e2e.ui.ldap.server.base.path");
+        LDAP_USERNAME = conf.getProperty("e2e.ui.ldap.server.username");
+        LDAP_PASSWORD = conf.getProperty("e2e.ui.ldap.server.password");
+        SYSTEM_MONITOR_DELAY = conf.getProperty("e2e.ui.system.monitor.delay");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -124,6 +137,7 @@ public class C {
     public static final String DOWNLOAD_FOLDER;
 
     public static final String ROOT_ADDRESS;
+    public static final String WEBDAV_ADDRESS;
 
     public static final String ANOTHER_LOGIN;
     public static final String ANOTHER_PASSWORD;
@@ -139,6 +153,7 @@ public class C {
     public static final String TESTING_TOOL_NAME;
     public static final String TOOL_WITHOUT_DEFAULT_SETTINGS;
     public static final String ANOTHER_TESTING_TOOL_NAME;
+    public static final String LDAP_SERVER_TEST_TOOL;
 
     public static final String REGISTRY_PATH_FOR_TOOL;
     public static final String INVALID_REGISTRY_PATH_FOR_TOOL;
@@ -193,4 +208,14 @@ public class C {
     public static final String EXTENSION_PATH;
     public static final String INVALID_EXTENSION_PATH;
     public static final String ANONYM_EXTENSION_PATH;
+    public static final String ADMIN_TOKEN_IS_SERVICE;
+
+    public static final String NAT_PROXY_SERVICE_PREFIX;
+    public static final List<String> NAT_PROXY_SERVER_NAMES;
+
+    public static final String LDAP_URLS;
+    public static final String LDAP_BASE_PATH;
+    public static final String LDAP_USERNAME;
+    public static final String LDAP_PASSWORD;
+    public static final String SYSTEM_MONITOR_DELAY;
 }

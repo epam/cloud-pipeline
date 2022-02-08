@@ -27,6 +27,7 @@ import {
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
 import EditToolForm from '../../forms/EditToolForm';
+import LoadToolAttributes from '../../../../models/tools/LoadToolInfo';
 
 @inject('preferences')
 @inject((stores, {params}) => {
@@ -35,7 +36,8 @@ import EditToolForm from '../../forms/EditToolForm';
     version: params.version,
     tool: new LoadTool(params.id),
     settings: new LoadToolVersionSettings(params.id, params.version),
-    preferences: stores.preferences
+    preferences: stores.preferences,
+    versions: new LoadToolAttributes(params.id)
   };
 })
 
@@ -46,6 +48,34 @@ export default class ToolSetttings extends React.Component {
   };
 
   @observable versionSettingsForm;
+
+  @computed
+  get toolVersionOS () {
+    const {versions, version} = this.props;
+    if (versions.loaded) {
+      const {value = {}} = versions;
+      const {versions: versionsInfo = []} = value;
+      const versionInfo = versionsInfo
+        .find(o => o.version === version);
+      if (
+        versionInfo &&
+        versionInfo.scanResult.toolOSVersion &&
+        versionInfo.scanResult.toolOSVersion.distribution
+      ) {
+        const {
+          distribution,
+          version: distributionVersion = ''
+        } = versionInfo.scanResult.toolOSVersion;
+        return [
+          distribution,
+          distributionVersion
+        ]
+          .filter(Boolean)
+          .join(' ');
+      }
+    }
+    return undefined;
+  }
 
   operationWrapper = (fn) => (...opts) => {
     this.setState({
@@ -73,6 +103,18 @@ export default class ToolSetttings extends React.Component {
   }
 
   @computed
+  get allowCommit () {
+    const {settings} = this.props;
+    if (settings.loaded) {
+      if ((settings.value || []).length > 0) {
+        return settings.value[0].allowCommit;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  @computed
   get platform () {
     if (this.props.settings.loaded) {
       if ((this.props.settings.value || []).length > 0) {
@@ -82,9 +124,13 @@ export default class ToolSetttings extends React.Component {
     return undefined;
   }
 
-  updateTool = async (tool, configuration) => {
+  updateTool = async (tool, configuration, allowCommit) => {
     const hide = message.loading('Updating version settings...', 0);
-    const updateRequest = new UpdateToolVersionSettings(this.props.toolId, this.props.version);
+    const updateRequest = new UpdateToolVersionSettings(
+      this.props.toolId,
+      this.props.version,
+      allowCommit
+    );
     await updateRequest.send([{
       configuration,
       name: 'default',
@@ -124,6 +170,7 @@ export default class ToolSetttings extends React.Component {
       <EditToolForm
         mode="version"
         allowSensitive={this.props.tool.value.allowSensitive}
+        allowCommitVersion={this.allowCommit}
         toolId={this.props.toolId}
         onInitialized={form => { this.versionSettingsForm = form; }}
         readOnly={
@@ -135,6 +182,7 @@ export default class ToolSetttings extends React.Component {
         configuration={this.settings}
         platform={this.platform}
         onSubmit={this.operationWrapper(this.updateTool)}
+        dockerOSVersion={this.toolVersionOS}
       />
     );
   }

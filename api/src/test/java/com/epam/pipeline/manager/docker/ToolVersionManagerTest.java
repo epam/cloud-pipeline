@@ -160,8 +160,9 @@ public class ToolVersionManagerTest extends AbstractManagerTest {
 
     @Test
     public void testSymlinkModificationFails() {
-        assertThrows(IllegalArgumentException.class, () -> 
-                toolVersionManager.createToolVersionSettings(symlink.getId(), TEST_VERSION, Collections.emptyList()));
+        assertThrows(IllegalArgumentException.class, () ->
+                toolVersionManager.createToolVersionSettings(
+                    symlink.getId(), TEST_VERSION, true, Collections.emptyList()));
         assertThrows(IllegalArgumentException.class, () -> 
                 toolVersionManager.deleteToolVersion(symlink.getId(), TEST_VERSION));
         assertThrows(IllegalArgumentException.class, () -> 

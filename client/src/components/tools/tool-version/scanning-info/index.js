@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import LoadTool from '../../../../models/tools/LoadTool';
 import LoadToolAttributes from '../../../../models/tools/LoadToolAttributes';
 import {
@@ -244,7 +245,17 @@ export default class ToolScanningInfo extends React.Component {
             nameComponentWithDesciption = nameComponent;
           }
           if (item.fixedBy) {
-            return <span>{nameComponentWithDesciption} <span className={styles.fixedBy}>fixed by {item.fixedBy}</span></span>;
+            return (
+              <span>
+                {nameComponentWithDesciption}
+                <span
+                  className="cp-text-not-important"
+                  style={{marginLeft: 5, fontSize: 'smaller'}}
+                >
+                  fixed by {item.fixedBy}
+                </span>
+              </span>
+            );
           } else {
             return nameComponentWithDesciption;
           }
@@ -264,7 +275,13 @@ export default class ToolScanningInfo extends React.Component {
             </div>
           );
         } else if (severity) {
-          return <span className={styles[`vulnerabilitySeverity${severity}`]}>{severity}</span>;
+          return (
+            <span
+              className={classNames('cp-scan-result', severity).toLowerCase()}
+            >
+              {severity}
+            </span>
+          );
         } else {
           return null;
         }

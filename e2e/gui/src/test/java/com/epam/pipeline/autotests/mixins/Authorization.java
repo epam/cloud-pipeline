@@ -147,8 +147,16 @@ public interface Authorization extends Navigation {
                 .closeAll();
     }
 
+    default void addAccountToConfigurationPermissions(Account account, String configName) {
+        library()
+                .configurationWithin(configName, configuration ->
+                        configuration
+                                .edit(conf -> conf.permission().addNewUser(account.login).closeAll())
+                );
+    }
+
     default String getUserNameByAccountLogin(final String login) {
-        return login.replaceAll("_", " ").split("@")[0];
+        return login.split("@")[0];
     }
 
     default void validateErrorPage(final List<String> messages) {

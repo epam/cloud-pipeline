@@ -34,7 +34,6 @@
 
 .row .main .sub {
   width: 100%;
-  color: #777;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -109,16 +108,13 @@
 .row .main .tags .key-value .key,
 .row .main .tags .key-value .value {
   padding: 0 3px;
-  border: 1px solid #ddd;
 }
 
 .row .main .tags .key-value .key {
-  background-color: #eee;
   border-radius: 2px 0 0 2px;
 }
 
 .row .main .tags .key-value .value {
-  background-color: #fafafa;
   border-left: none;
   border-radius: 0 2px 2px 0;
 }

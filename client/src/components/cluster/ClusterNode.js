@@ -16,6 +16,7 @@
 
 import React, {Component} from 'react';
 import {Alert, Menu, Row, Col, Button, Modal, message} from 'antd';
+import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
 import {Link} from 'react-router';
 import clusterNodes from '../../models/cluster/ClusterNodes';
@@ -149,10 +150,9 @@ class ClusterNode extends Component {
     return generateNodeLabels(
       labels,
       {
-        className: parentStyles.nodeLabel,
+        className: classNames(parentStyles.nodeLabel, parentStyles.larger),
         onlyKnown: true,
         additionalStyle: {
-          fontSize: 'smaller',
           marginBottom: 2
         },
         location: this.props.router.location,
@@ -216,7 +216,14 @@ class ClusterNode extends Component {
     return (
       <div
         key={this.props.name}
-        className={styles.nodeCard}
+        className={
+          classNames(
+            styles.nodeCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
       >
         <Row align="middle">
           <Col span={1}>

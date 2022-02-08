@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import java.util.Map;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -55,12 +57,15 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             entry(ENLARGE, $(PipelineSelectors.buttonByIconClass("anticon-arrows-alt"))),
             entry(FILE_PREVIEW, $(byId("file-preview-container")).find("textarea")),
             entry(CONFIGURE_NOTIFICATION, $(byId("value-column-fs_notifications")))
+            entry(FILE_SYSTEM_ACCESS, $(byId("value-column-dav-mount")).$(byXpath(".//span"))),
+            entry(DISABLE, $(byClassName("equest-dav-access__disable-button"))),
+            entry(INFORMATION_ICON, $(byClassName("anticon-info-circle")))
     );
 
     private final String keyElementId = "key-column-%s";
     private final String valueElementId = "value-column-%s";
     private final String deleteButtonId = "delete-metadata-key-%s-button";
-    private final String keyFieldId = "metadata__key-row";
+    private final String keyFieldId = "cp-metadata-item-row";
 
     public MetadataSectionAO(AccessObject parentAO) {
         super(parentAO);
@@ -121,7 +126,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO assertNumberOfKeysIs(int expectedNumberOfKeys) {
-        $$(byClassName(keyFieldId)).shouldHaveSize(expectedNumberOfKeys);
+        $$(byClassName(keyFieldId)).filter(have(cssClass("key")))
+                .filter(not(have(cssClass("read-only")))).shouldHaveSize(expectedNumberOfKeys);
         return this;
     }
 
@@ -150,12 +156,24 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataKeyAO selectKey(final String key) {
-        final SelenideElement keyRow = $(byId(format(keyElementId, key))).closest(".metadata__key-row");
+        final SelenideElement keyRow = $(byId(String.format(keyElementId, key))).closest(".cp-metadata-item-row");
         return new MetadataKeyAO(
                 keyRow,
-                keyRow.find(byXpath("following-sibling::*[contains(@class, 'metadata__value-row')]")),
+                keyRow.find(byXpath("following-sibling::*[contains(@class, 'cp-metadata-item-row')]")),
                 this
         );
+    }
+
+    public MetadataSectionAO requestFileSystemAccess() {
+        click(FILE_SYSTEM_ACCESS);
+        return this;
+    }
+
+    public MetadataSectionAO disableFileSystemAccessIfNeeded() {
+        if (get(DISABLE).isDisplayed()) {
+            click(DISABLE);
+        }
+        return this;
     }
 
     public ConfigureNotificationAO configureNotification() {

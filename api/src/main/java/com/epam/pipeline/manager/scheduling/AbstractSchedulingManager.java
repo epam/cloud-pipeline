@@ -110,7 +110,8 @@ public abstract class AbstractSchedulingManager {
                 .subscribe(newRate -> scheduledFuture.updateAndGet(f -> {
                     log.info("Rescheduling {} at {}", taskName, newRate);
                     f.cancel(false);
-                    return scheduler.scheduleWithFixedDelay(secureRunnable, newRate);
+                    return scheduler.scheduleWithFixedDelay(secureRunnable,
+                            Optional.ofNullable(newRate).map(delayUnit::toMillis).orElse(0L));
                 }));
     }
 

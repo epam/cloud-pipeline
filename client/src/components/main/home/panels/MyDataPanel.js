@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Alert, Row} from 'antd';
+import classNames from 'classnames';
 import LoadingView from '../../../special/LoadingView';
 import highlightText from '../../../special/highlightText';
 import AWSRegionTag from '../../../special/AWSRegionTag';
@@ -28,7 +29,7 @@ import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'hiddenObjects')
+@inject('dataStorages', 'hiddenObjects', 'pipelinesLibrary')
 @observer
 export default class MyDataPanel extends React.Component {
   static propTypes = {
@@ -51,11 +52,14 @@ export default class MyDataPanel extends React.Component {
     if (
       this.props.dataStorages.loaded &&
       this.props.authenticatedUserInfo.loaded &&
-      this.props.hiddenObjects.loaded
+      this.props.hiddenObjects.loaded &&
+      this.props.pipelinesLibrary.loaded
     ) {
+      const folders = this.props.pipelinesLibrary.folders;
       const result = (this.props.dataStorages.value || [])
         .map(s => s)
         .filter(s => !this.props.hiddenObjects.isStorageHidden(s.id))
+        .filter(s => !this.props.hiddenObjects.isParentHidden(s, folders))
         .filter(s => roleModel.writeAllowed(s) || roleModel.readAllowed(s) || roleModel.isOwner(s));
       result.sort((sA, sB) => {
         const sAisOwner = sA.owner && sA.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();
@@ -85,10 +89,9 @@ export default class MyDataPanel extends React.Component {
         {
           storage.type.toUpperCase() === 'NFS' &&
           <span
-            className={styles.storageType}
-            type={storage.type.toUpperCase()}
+            className={classNames(styles.nfsStorageType, 'cp-nfs-storage-type')}
           >
-            {storage.type.toUpperCase()}
+            NFS
           </span>
         }
         <span type="main">
@@ -100,7 +103,7 @@ export default class MyDataPanel extends React.Component {
         {highlightText(storage.pathMask, search)}
         {
           storage.sensitive
-            ? (<span style={{marginLeft: 5, color: '#ff5c33'}}>sensitive</span>)
+            ? (<span className="cp-sensitive" style={{marginLeft: 5}}>sensitive</span>)
             : null
         }
       </Row>

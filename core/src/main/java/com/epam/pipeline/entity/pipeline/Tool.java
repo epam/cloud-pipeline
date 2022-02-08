@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ public class Tool extends AbstractSecuredEntity {
     private boolean hasIcon;
     private Long iconId;
     private boolean allowSensitive = false;
+    private boolean allowCommit = true;
 
     public void setIconId(Long iconId) {
         this.iconId = iconId;

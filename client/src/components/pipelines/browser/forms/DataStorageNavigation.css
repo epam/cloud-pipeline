@@ -20,11 +20,6 @@
   width: 100%;
 }
 
-.path-components-container:hover {
-  transition: background-color 0.5s ease;
-  background-color: #f6f6f6;
-}
-
 .breadcrumb-item {
   padding: 5px 0;
 }

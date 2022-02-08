@@ -18,6 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 import {Button, Icon, Row} from 'antd';
+import classNames from 'classnames';
 import {
   LockOptions,
   WDLItemPortFormItem,
@@ -233,14 +234,20 @@ export class WDLItemPortsFormItem extends React.Component {
 
   render () {
     return (
-      <div className={styles.portsContainer} style={{width: '100%'}}>
+      <div className={classNames(styles.portsContainer, 'cp-card-border')} style={{width: '100%'}}>
         <Row
-          className={styles.header}
+          className={
+            classNames(
+              styles.header,
+              'cp-divider',
+              'bottom'
+            )
+          }
           type="flex"
           align="middle">
           <a
             id={this.state.collapsed ? 'expand-panel-button' : 'collapse-panel-button'}
-            className={styles.portCollapsibleHeader}
+            className={classNames(styles.portCollapsibleHeader, 'cp-text')}
             style={{flex: 1}}
             onClick={this.toggleCollapse}>
             <Row type="flex" align="middle">
@@ -306,13 +313,21 @@ export class WDLItemPortsFormItem extends React.Component {
         }
         {
           this.state.error &&
-          <Row type="flex" justify="space-around" style={{color: 'red'}}>
+          <Row
+            type="flex"
+            justify="space-around"
+            className="cp-error"
+          >
             {this.state.error}
           </Row>
         }
         {
           !this.state.collapsed && this.state.ports.length === 0 &&
-          <Row type="flex" justify="space-around" style={{color: '#aaa'}}>
+          <Row
+            type="flex"
+            justify="space-around"
+            className="cp-text-not-important"
+          >
             No data
           </Row>
         }

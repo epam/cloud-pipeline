@@ -20,12 +20,14 @@ import {computed, observable} from 'mobx';
 import {Provider, observer} from 'mobx-react';
 import PropTypes from 'prop-types';
 import {Alert, Button, Checkbox, Icon, message, Modal, Row} from 'antd';
+import moment from 'moment-timezone';
 import CommitRunForm from '../logs/forms/CommitRunForm';
 import {PipelineRunCommitCheck} from '../../../models/pipelines/PipelineRunCommitCheck';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
-import moment from 'moment-timezone';
+import getCommitAllowedForTool from './get-commit-allowed-for-tool';
+import {MAINTENANCE_MODE_DISCLAIMER} from '../../../models/preferences/PreferencesLoad';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -43,6 +45,41 @@ export function runIsCommittable (run) {
 export function canCommitRun (run) {
   // Checks only run state, not user permissions
   return canStopRun(run) && runIsCommittable(run);
+}
+
+export function checkCommitAllowedForTool (dockerImage, dockerRegistries) {
+  if (!dockerRegistries) {
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    dockerRegistries
+      .fetchIfNeededOrWait()
+      .then(() => {
+        const [registry, group, toolAndVersion] = (dockerImage || '').split('/');
+        const [imageRegistry] = (dockerRegistries.value.registries || [])
+          .filter(r => r.path === registry);
+        if (imageRegistry) {
+          const [imageGroup] = (imageRegistry.groups || [])
+            .filter(g => g.name === group);
+          if (imageGroup) {
+            const [image] = toolAndVersion.split(':');
+            const [tool] = (imageGroup.tools || [])
+              .filter(i => i.image === `${group}/${image}`);
+            return Promise.resolve(tool);
+          }
+        }
+        return Promise.resolve(undefined);
+      })
+      .then((tool) => {
+        if (tool) {
+          const [, version = 'latest'] = (dockerImage || '').split('/').pop().split(':');
+          return getCommitAllowedForTool(tool.id, version);
+        }
+        return Promise.resolve(false);
+      })
+      .then(resolve)
+      .catch(() => resolve(false));
+  });
 }
 
 export function canPauseRun (run) {
@@ -67,10 +104,11 @@ export function stopRun (parent, callback) {
   const {
     localization,
     dockerRegistries,
-    hiddenObjects
+    hiddenObjects,
+    preferences
   } = parent.props;
   return function (run) {
-    return stopRunFn(run, callback, {localization, dockerRegistries, hiddenObjects});
+    return stopRunFn(run, callback, {preferences, localization, dockerRegistries, hiddenObjects});
   };
 }
 
@@ -128,6 +166,13 @@ async function commitRunAndStop (run, payload) {
 
 function stopRunFn (run, callback, stores) {
   let content;
+  const {
+    preferences
+  } = stores || {};
+  let maintenanceMode = false;
+  if (preferences && preferences.loaded) {
+    maintenanceMode = preferences.systemMaintenanceMode;
+  }
   const canCommitRunResult = canCommitRun(run);
   const onOkClicked = async (close, resolve) => {
     let validationResult = true;
@@ -136,7 +181,7 @@ function stopRunFn (run, callback, stores) {
     }
     if (validationResult) {
       let error;
-      if (validationResult.persistState && canCommitRunResult) {
+      if (validationResult.persistState && validationResult.canCommitRun) {
         error = await commitRunAndStop(run, validationResult.values);
       } else {
         error = await stopPipeline(run);
@@ -163,7 +208,10 @@ function stopRunFn (run, callback, stores) {
             }}
             runId={run.id}
             canCommitRun={canCommitRunResult}
-            dockerImage={run.dockerImage} />
+            dockerImage={run.dockerImage}
+            dockerRegistries={stores.dockerRegistries}
+            maintenanceMode={maintenanceMode}
+          />
         </Provider>
       ),
       onOk (close) {
@@ -239,8 +287,10 @@ class TerminateRunDialog extends React.Component {
           <Row style={{marginBottom: 10}} type="flex" align="middle">
             <Icon
               type="question-circle"
-              style={{color: '#ffbf00', fontSize: 'x-large', marginLeft: 20}} />
-            <b style={{marginLeft: 10, fontSize: 14, color: 'rgba(0, 0, 0, 0.65)'}}>Terminate {this.run.podId}?</b>
+              className="cp-stop-run-modal-confirm-icon"
+              style={{fontSize: 'x-large', marginLeft: 20}} />
+            <b
+              style={{marginLeft: 10, fontSize: 14}}>Terminate {this.run.podId}?</b>
           </Row>
           <Row type="flex" style={{marginBottom: 5, marginLeft: 55}}>
             <Alert
@@ -292,22 +342,30 @@ function terminateRunFn (run, callback) {
 
 @observer
 class StopRunConfirmation extends React.Component {
-
   static propTypes = {
     runId: PropTypes.number,
     canCommitRun: PropTypes.bool,
     dockerImage: PropTypes.string,
-    isTermination: PropTypes.bool
+    isTermination: PropTypes.bool,
+    dockerRegistries: PropTypes.object,
+    maintenanceMode: PropTypes.bool
   };
 
   state = {
-    persistState: false
+    persistState: false,
+    commitAllowed: false
   };
 
   _commitRunForm;
 
   @observable
   _commitCheck = null;
+
+  componentDidMount () {
+    const {dockerImage, dockerRegistries} = this.props;
+    checkCommitAllowedForTool(dockerImage, dockerRegistries)
+      .then(allowed => this.setState({commitAllowed: allowed}));
+  }
 
   fetchCommitCheck = async () => {
     this._commitCheck = new PipelineRunCommitCheck(this.props.runId);
@@ -334,12 +392,15 @@ class StopRunConfirmation extends React.Component {
   };
 
   validate = async () => {
+    const {canCommitRun} = this.props;
+    const {commitAllowed} = this.state;
     if (this.state.persistState) {
       if (this._commitRunForm) {
         const result = await this._commitRunForm.validate();
         if (result) {
           return {
             persistState: true,
+            canCommitRun: canCommitRun && commitAllowed,
             values: result
           };
         }
@@ -347,7 +408,8 @@ class StopRunConfirmation extends React.Component {
       return null;
     }
     return {
-      persistState: false
+      persistState: false,
+      canCommitRun: canCommitRun && commitAllowed
     };
   };
 
@@ -356,6 +418,8 @@ class StopRunConfirmation extends React.Component {
   };
 
   render () {
+    const {commitAllowed} = this.state;
+    const {maintenanceMode} = this.props;
     return (
       <div>
         <Row type="flex" style={{marginBottom: 5}}>
@@ -365,13 +429,21 @@ class StopRunConfirmation extends React.Component {
             message={`Once a run is ${this.props.isTermination ? 'terminated' : 'stopped'} - all local data will be deleted (that is not stored within shared data storages)`} />
         </Row>
         {
-          this.props.canCommitRun &&
+          this.props.canCommitRun && commitAllowed && !maintenanceMode &&
           <Row type="flex" style={{marginBottom: 5, fontWeight: 'bold'}}>
             Do you want to persist current docker image state?
           </Row>
         }
         {
-          this.props.canCommitRun &&
+          this.props.canCommitRun && commitAllowed && maintenanceMode &&
+          <Alert
+            type="info"
+            showIcon
+            message={MAINTENANCE_MODE_DISCLAIMER}
+          />
+        }
+        {
+          this.props.canCommitRun && commitAllowed && !maintenanceMode &&
           <Row type="flex" style={{marginBottom: 5}}>
             <Checkbox
               checked={this.state.persistState}
@@ -381,7 +453,7 @@ class StopRunConfirmation extends React.Component {
           </Row>
         }
         {
-          this.state.persistState && this.props.canCommitRun &&
+          this.state.persistState && this.props.canCommitRun && commitAllowed && !maintenanceMode &&
           <CommitRunForm
             onInitialized={this.onInitializeForm}
             visible={this.state.persistState}

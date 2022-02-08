@@ -55,7 +55,7 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
     public Map<String, String> loadInformation(final String entityIdentifier, final boolean loadDetails) {
         final Map<String, String> details = new HashMap<>();
         try {
-            final Pipeline pipeline = pipelineManager.loadByNameOrId(entityIdentifier);
+            final Pipeline pipeline = pipelineManager.loadByNameOrIdWithoutVersion(entityIdentifier);
             details.put(NAME, pipeline.getName());
             if (loadDetails) {
                 details.put(OWNER, pipeline.getOwner());

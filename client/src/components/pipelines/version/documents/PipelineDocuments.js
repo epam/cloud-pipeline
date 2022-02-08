@@ -17,6 +17,7 @@
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
+import classNames from 'classnames';
 import {Input, Row, Button, Icon, Table, message, Modal} from 'antd';
 import FileSaver from 'file-saver';
 import PipelineFile from '../../../../models/pipelines/PipelineFile';
@@ -26,35 +27,12 @@ import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate'
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import CodeFileCommitForm from '../code/forms/CodeFileCommitForm';
 import UploadButton from '../../../special/UploadButton';
-import * as styles from './PipelineDocuments.css';
 import WorkflowGraph from '../graph/WorkflowGraph';
 import LoadingView from '../../../special/LoadingView';
+import Markdown from '../../../special/markdown';
 import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDialog';
 import roleModel from '../../../../utils/roleModel';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
-
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import * as styles from './PipelineDocuments.css';
 
 @inject(({pipelines, routing}, {onReloadTree, params}) => ({
   onReloadTree,
@@ -221,7 +199,7 @@ export default class PipelineDocuments extends Component {
         title: 'Name',
         render: (name, file) => (
           <span
-            className={styles.documentName}>
+            className={classNames(styles.documentName, 'cp-primary')}>
             {name}
           </span>
         )
@@ -466,20 +444,31 @@ export default class PipelineDocuments extends Component {
               }
             }}
             autosize={{minRows: 25}}
-            style={{width: '100%', resize: 'none'}} />
+            style={{width: '100%', resize: 'none'}}
+            className={styles.markdownEditor}
+          />
         );
       } else {
         if (this._mdOriginalContent && this._mdOriginalContent.trim().length) {
           return (
-            <div
-              className={styles.mdPreview}
-              dangerouslySetInnerHTML={{
-                __html: MarkdownRenderer.render(this._mdOriginalContent)
-              }}
+            <Markdown
+              className={styles.markdown}
+              md={this._mdOriginalContent}
             />
           );
         } else {
-          return <span className={styles.noMdContent}>No content</span>;
+          return (
+            <span
+              className={
+                classNames(
+                  styles.noMdContent,
+                  'cp-text-not-important'
+                )
+              }
+            >
+              No content
+            </span>
+          );
         }
       }
     };
@@ -542,11 +531,16 @@ export default class PipelineDocuments extends Component {
             align="middle"
             justify="space-between"
             style={{marginTop: 10}}
-            className={styles.mdHeader}>
+            className={classNames(styles.mdHeader, 'cp-content-panel')}
+          >
             <span className={styles.mdTitle}>{this.state.managingMdFile.name}</span>
             {renderMarkdownControls()}
           </Row>
-          <Row type="flex" className={styles.mdBody} style={{flex: 1, overflowY: 'auto'}}>
+          <Row
+            type="flex"
+            className={classNames(styles.mdBody, 'cp-content-panel')}
+            style={{flex: 1, overflowY: 'auto'}}
+          >
             {renderMarkdown()}
           </Row>
           <CodeFileCommitForm

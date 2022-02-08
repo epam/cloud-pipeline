@@ -68,3 +68,7 @@
   flex-wrap: wrap;
   align-items: center;
 }
+
+.file-system-tab-header .ant-btn {
+  margin: 1px;
+}

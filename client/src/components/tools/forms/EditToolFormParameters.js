@@ -16,16 +16,20 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import {Button, Checkbox, Col, Icon, Input, Row, Select} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
+import classNames from 'classnames';
 import BucketBrowser from '../../pipelines/launch/dialogs/BucketBrowser';
 import SystemParametersBrowser from '../../pipelines/launch/dialogs/SystemParametersBrowser';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import roleModel from '../../../utils/roleModel';
 import styles from './EditToolFormParameters.css';
 
+@inject('runDefaultParameters')
+@roleModel.authenticationInfo
 @observer
 export default class EditToolFormParameters extends React.Component {
   static propTypes = {
@@ -34,7 +38,8 @@ export default class EditToolFormParameters extends React.Component {
     readOnly: PropTypes.bool,
     isSystemParameters: PropTypes.bool,
     getSystemParameterDisabledState: PropTypes.func,
-    skippedSystemParameters: PropTypes.array
+    skippedSystemParameters: PropTypes.array,
+    testSkipParameter: PropTypes.func
   };
 
   state = {
@@ -50,6 +55,32 @@ export default class EditToolFormParameters extends React.Component {
       return this.props.skippedSystemParameters;
     }
     return [];
+  }
+
+  @computed
+  get authenticatedUserRolesNames () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return [];
+    }
+    const {
+      roles = []
+    } = this.props.authenticatedUserInfo.value;
+    return roles.map(r => r.name);
+  }
+
+  @computed
+  get isAdmin () {
+    if (!this.props.authenticatedUserInfo.loaded) {
+      return false;
+    }
+    const {
+      admin
+    } = this.props.authenticatedUserInfo.value;
+    return admin;
+  }
+
+  get sectionName () {
+    return this.props.isSystemParameters ? 'systemParameters' : 'parameters';
   }
 
   openBucketBrowser = (index) => {
@@ -77,7 +108,11 @@ export default class EditToolFormParameters extends React.Component {
 
   addParameter = (parameter) => {
     const parameters = this.state.parameters;
-    parameters.push(parameter);
+    const id = Math.max(0, ...parameters.map(o => o.id)) + 1;
+    parameters.push({
+      ...parameter,
+      id
+    });
     const validation = this.validate(parameters);
     this.setState({
       parameters,
@@ -137,29 +172,41 @@ export default class EditToolFormParameters extends React.Component {
     );
   };
 
-  renderStringParameterInput = (parameter, index, onChange, isError) => {
+  renderStringParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Input
-        disabled={this.props.readOnly}
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
+        disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={onChange}
-        style={Object.assign(
-          {width: '100%', marginLeft: 5},
-          isError ? {borderColor: 'red'} : {}
-        )} />
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{width: '100%', marginLeft: 5}}
+      />
     );
   };
 
-  renderSelectParameterInput = (parameter, index, onChange, isError) => {
+  renderSelectParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Select
-        disabled={this.props.readOnly}
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
+        disabled={this.props.readOnly || readOnly}
         value={parameter.value}
         onChange={v => onChange({target: {value: v}})}
-        style={Object.assign(
-          {width: '100%', marginLeft: 5},
-          isError ? {borderColor: 'red'} : {}
-        )}>
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{width: '100%', marginLeft: 5}}
+      >
         {
           (parameter.enum || []).map(e => {
             return (
@@ -171,12 +218,20 @@ export default class EditToolFormParameters extends React.Component {
     );
   };
 
-  renderBooleanParameterInput = (parameter, index, onChange, isError) => {
+  renderBooleanParameterInput = (parameter, index, onChange, isError, readOnly) => {
     return (
       <Checkbox
-        disabled={this.props.readOnly}
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
+        disabled={this.props.readOnly || readOnly}
         checked={`${parameter.value}` === 'true'}
-        style={Object.assign({marginLeft: 5, marginTop: 4}, isError ? {color: 'red'} : {})}
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{marginLeft: 5, marginTop: 4}}
         onChange={onChange}
       >
         Enabled
@@ -184,7 +239,7 @@ export default class EditToolFormParameters extends React.Component {
     );
   };
 
-  renderPathParameterInput = (parameter, index, onChange, isError) => {
+  renderPathParameterInput = (parameter, index, onChange, isError, readOnly) => {
     let icon;
     switch (parameter.type) {
       case 'input': icon = 'download'; break;
@@ -194,11 +249,16 @@ export default class EditToolFormParameters extends React.Component {
     }
     return (
       <Input
-        disabled={this.props.readOnly}
-        style={Object.assign(
-          {width: '100%', marginLeft: 5, top: 0},
-          isError ? {borderColor: 'red'} : {}
-        )}
+        id={`${this.sectionName}.params.param_${parameter.id}.value`}
+        disabled={this.props.readOnly || readOnly}
+        className={
+          classNames(
+            {
+              'cp-error': isError
+            }
+          )
+        }
+        style={{width: '100%', marginLeft: 5, top: 0}}
         value={parameter.value}
         onChange={onChange}
         addonBefore={
@@ -215,7 +275,11 @@ export default class EditToolFormParameters extends React.Component {
       this.props.getSystemParameterDisabledState(parameter.name || '')) {
       return null;
     }
-
+    const {
+      id,
+      initial = false
+    } = parameter;
+    const readOnly = initial && this.isSystemParameterRestrictedByRole(parameter);
     const onChange = (property) => (e) => {
       const parameters = this.state.parameters;
       if ((parameters[index].type || '').toLowerCase() === 'boolean' && property === 'value') {
@@ -263,30 +327,75 @@ export default class EditToolFormParameters extends React.Component {
       valueError = this.state.validation[index].errorValue;
     }
     return (
-      <Row key={index} type="flex" style={{marginTop: 5, marginBottom: 5}} align="top">
-        <Col offset={3} span={3} style={{textAlign: 'right', display: 'flex', flexDirection: 'column'}}>
+      <Row
+        key={index}
+        id={`${this.sectionName}.params.param_${parameter.id}`}
+        type="flex"
+        style={{marginTop: 5, marginBottom: 5}}
+        align="top"
+      >
+        <Col
+          offset={3}
+          span={3}
+          style={{textAlign: 'right', display: 'flex', flexDirection: 'column'}}>
           <Input
-            disabled={this.props.readOnly || this.props.isSystemParameters}
-            className={`${styles.parameter} ${styles.parameterName} ${nameError ? styles.wrong : ''}`}
+            id={`${this.sectionName}.params.param_${parameter.id}.name`}
+            disabled={
+              this.props.readOnly ||
+              this.props.isSystemParameters ||
+              readOnly
+            }
+            className={
+              classNames(
+                styles.parameter,
+                styles.parameterName,
+                {
+                  [styles.wrong]: nameError,
+                  'cp-error': nameError,
+                  'cp-text-not-important': this.props.isSystemParameters
+                }
+              )
+            }
             value={parameter.name}
             onChange={onChange('name')}
-            style={Object.assign(
-              {width: '100%', marginRight: 5},
-              this.props.isSystemParameters ? {color: '#666'} : {}
-            )} />
+            style={{width: '100%', marginRight: 5}}
+          />
           {
-            nameError && <span className={styles.error}>{nameError}</span>
+            nameError && (
+              <span
+                className={classNames(styles.error, 'cp-error')}
+              >
+                {nameError}
+              </span>
+            )
           }
         </Col>
         <Col span={12} style={{display: 'flex', flexDirection: 'column'}}>
-          {renderParameterInputFn && renderParameterInputFn(parameter, index, onChange('value'), !!valueError)}
           {
-            valueError && <span className={styles.error} style={{marginLeft: 5}}>{valueError}</span>
+            renderParameterInputFn &&
+            renderParameterInputFn(
+              parameter,
+              index,
+              onChange('value'),
+              !!valueError,
+              readOnly
+            )
+          }
+          {
+            valueError && (
+              <span
+                className={classNames(styles.error, 'cp-error')}
+                style={{marginLeft: 5}}
+              >
+                {valueError}
+              </span>
+            )
           }
         </Col>
         <Col>
           {
             !this.props.readOnly &&
+            !readOnly &&
             <Icon
               id="remove-parameter-button"
               className="dynamic-delete-button"
@@ -341,11 +450,15 @@ export default class EditToolFormParameters extends React.Component {
           onCancel={this.closeSystemParameterBrowser}
           onSave={(parameters) => {
             const p = this.state.parameters;
-            p.push(...parameters.map(param => ({
-              name: param.name,
-              type: param.type,
-              value: param.defaultValue
-            })));
+            const id = Math.max(0, ...p.map(o => o.id)) + 1;
+            p.push(...parameters.map(param => {
+              return {
+                id,
+                name: param.name,
+                type: param.type,
+                value: param.defaultValue
+              };
+            }));
             const validation = this.validate(p);
             this.setState({
               parameters: p,
@@ -363,11 +476,52 @@ export default class EditToolFormParameters extends React.Component {
     );
   }
 
+  filterPropsParameter = (parameter) => {
+    const {testSkipParameter} = this.props;
+    return testSkipParameter
+      ? !testSkipParameter(parameter.name)
+      : true;
+  };
+
   reset = () => {
-    const mapParameter = p => ({name: p.name, value: p.value, type: p.type});
-    this.setState({
-      parameters: (this.props.value || []).map(mapParameter)
+    const mapParameter = (p, index) => ({
+      id: index,
+      name: p.name,
+      value: p.value,
+      type: p.type,
+      initial: true
     });
+    this.setState({
+      parameters: (this.props.value || [])
+        .filter(this.filterPropsParameter.bind(this))
+        .map(mapParameter)
+    });
+  };
+
+  isSystemParameter = (parameter) => {
+    if (this.props.runDefaultParameters.loaded && parameter && parameter.name) {
+      return (this.props.runDefaultParameters.value || [])
+        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase()).length > 0;
+    }
+    return false;
+  };
+
+  isSystemParameterRestrictedByRole = (parameter) => {
+    if (
+      parameter &&
+      this.isSystemParameter(parameter) &&
+      !this.isAdmin
+    ) {
+      const [systemParam] = (this.props.runDefaultParameters.value || [])
+        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase());
+      if (systemParam && systemParam.roles && systemParam.roles.length > 0) {
+        return !(
+          systemParam.roles
+            .some(roleName => this.authenticatedUserRolesNames.includes(roleName))
+        );
+      }
+    }
+    return false;
   };
 
   validate = (parameters, updateState = false) => {
@@ -378,7 +532,12 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < parameters.length; i++) {
       if (!parameters[i].name) {
         validation[i].error = 'Parameter name is required';
-      } else if ((parameters[i].name || '').toUpperCase() === CP_CAP_LIMIT_MOUNTS) {
+      } else if (!this.props.isSystemParameters &&
+        this.isSystemParameterRestrictedByRole({name: parameters[i].name || ''})
+      ) {
+        validation[i].error = 'This parameter is not allowed for use';
+      } else if (!this.props.isSystemParameters &&
+        this.isSystemParameter({name: parameters[i].name || ''})) {
         validation[i].error = 'Parameter name is reserved';
       } else if (parameters
         .map(p => (p.name || '').toLowerCase())
@@ -402,7 +561,9 @@ export default class EditToolFormParameters extends React.Component {
   }
 
   getValues = () => {
-    return this.state.parameters;
+    const mapParameter = ({id, ...param}) => ({...param});
+
+    return (this.state.parameters || []).map(mapParameter);
   };
 
   @computed
@@ -412,7 +573,7 @@ export default class EditToolFormParameters extends React.Component {
 
   @computed
   get modified () {
-    const propsValue = this.props.value || [];
+    const propsValue = (this.props.value || []).filter(this.filterPropsParameter.bind(this));
     const currentValue = this.state.parameters || [];
     if (propsValue.length !== currentValue.length) {
       return true;
@@ -420,7 +581,8 @@ export default class EditToolFormParameters extends React.Component {
     for (let i = 0; i < propsValue.length; i++) {
       const propsValueItem = propsValue[i];
       const currentValueItem = currentValue[i];
-      if (propsValueItem.name !== currentValueItem.name || propsValueItem.value !== currentValueItem.value) {
+      if (propsValueItem.name !== currentValueItem.name ||
+        propsValueItem.value !== currentValueItem.value) {
         return true;
       }
     }

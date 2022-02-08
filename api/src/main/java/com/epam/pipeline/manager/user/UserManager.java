@@ -36,6 +36,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
@@ -44,6 +45,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
@@ -69,8 +71,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -111,6 +115,9 @@ public class UserManager {
 
     @Autowired
     private GrantPermissionHandler permissionHandler;
+
+    @Autowired
+    private PipelineUserRepository userRepository;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -185,8 +192,24 @@ public class UserManager {
         return user;
     }
 
+    public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
+        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
+    public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
+        return userRepository.findByRoles_NameIn(roleNames);
+    }
+
     public Collection<PipelineUser> loadAllUsers() {
         return userDao.loadAllUsers();
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+        final PipelineUser currentUser = getCurrentUser();
+        return currentUser.isAdmin()
+                ? userDao.loadUsersWithActivityStatus()
+                : loadAllUsers();
     }
 
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
@@ -251,13 +274,14 @@ public class UserManager {
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
+        user.setBlockDate(blockStatus ? DateUtils.nowUTC() : null);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
-        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus);
+        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus, DateUtils.nowUTC());
         return groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus);
     }
 
@@ -377,6 +401,12 @@ public class UserManager {
         return userDao.loadUsersByGroup(group);
     }
 
+    public Collection<PipelineUser> loadUsersByGroupOrRole(final String name) {
+        Assert.isTrue(StringUtils.isNotBlank(name),
+                messageHelper.getMessage(MessageConstants.USER_GROUP_IS_REQUIRED));
+        return userDao.loadUsersByGroupOrRole(name);
+    }
+
     /**
      * Checks whether a specific user is a member of a specific group
      * @param userName a name of {@code UserContext}
@@ -422,6 +452,20 @@ public class UserManager {
         final List<String> sensitiveKeys = preferenceManager.getPreference(
                 SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    @Transactional
+    public void updateLastLoginDate(final PipelineUser user) {
+        if (Objects.isNull(user) || Objects.isNull(user.getId())) {
+            return;
+        }
+        final PipelineUser loadedUser = loadUserById(user.getId());
+        loadedUser.setLastLoginDate(DateUtils.nowUTC());
+        userDao.updateUser(loadedUser);
+    }
+
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userDao.loadOnlineUsers();
     }
 
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {

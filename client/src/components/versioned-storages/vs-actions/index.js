@@ -28,7 +28,6 @@ import Dropdown from 'rc-dropdown';
 import VSBrowseDialog from '../vs-browse-dialog';
 import GitDiffModal from './components/diff/modal';
 import VSList from '../../../models/versioned-storage/list';
-import styles from './vs-actions.css';
 import VSAbortMerge from '../../../models/versioned-storage/abort-merge';
 import VSClone from '../../../models/versioned-storage/clone';
 import VSCommit from '../../../models/versioned-storage/commit';
@@ -634,7 +633,6 @@ class VSActions extends React.Component {
       menuItems.push((
         <MenuItem
           disabled key="loading"
-          className={styles.menuItem}
         >
           <Icon type="loading" />
           <span>Fetching versioned storage info...</span>
@@ -645,7 +643,6 @@ class VSActions extends React.Component {
         <MenuItem
           disabled
           key="error"
-          className={styles.menuItem}
         >
           <i>VCS not configured</i>
         </MenuItem>
@@ -655,7 +652,6 @@ class VSActions extends React.Component {
         <MenuItem
           disabled
           key="error"
-          className={styles.menuItem}
         >
           <i>Error fetching versioned storages</i>
         </MenuItem>
@@ -665,7 +661,6 @@ class VSActions extends React.Component {
       menuItems.push((
         <MenuItem
           key="clone"
-          className={styles.menuItem}
         >
           <Icon type="cloud-download-o" />
           <span>Clone</span>
@@ -699,7 +694,6 @@ class VSActions extends React.Component {
         menuItems.push((
           <Container
             key={`-${storage.id}`}
-            className={styles.actionsSubMenu}
             title={(
               <span>
                 {storage.name}
@@ -717,7 +711,6 @@ class VSActions extends React.Component {
             <MenuItem
               key={`diff-${storage.id}`}
               disabled={!diffEnabled}
-              className={styles.menuItem}
             >
               <Icon type="exception" />
               <span> Diff</span>
@@ -725,7 +718,6 @@ class VSActions extends React.Component {
             <MenuItem
               key={`save-${storage.id}`}
               disabled={!saveEnabled}
-              className={styles.menuItem}
             >
               <Icon type="save" /> Save
               {
@@ -739,7 +731,6 @@ class VSActions extends React.Component {
             <MenuItem
               key={`refresh-${storage.id}`}
               disabled={!refreshEnabled}
-              className={styles.menuItem}
             >
               <Icon type="sync" /> Refresh
             </MenuItem>
@@ -747,7 +738,6 @@ class VSActions extends React.Component {
             <MenuItem
               key={`checkout-${storage.id}`}
               disabled={mergeInProgress || unsaved}
-              className={styles.menuItem}
             >
               <Icon type="fork" /> Checkout revision
             </MenuItem>
@@ -756,7 +746,6 @@ class VSActions extends React.Component {
               hasConflicts && (
                 <MenuItem
                   key={`resolve-${storage.id}`}
-                  className={styles.menuItem}
                 >
                   <Icon type="exclamation-circle" /> Resolve conflicts
                 </MenuItem>
@@ -802,15 +791,8 @@ class VSActions extends React.Component {
       };
     }
     return (
-      <div
-        style={{
-          minWidth: 200,
-          cursor: 'pointer'
-        }}
-        className={styles.menuContainer}
-      >
+      <div>
         <Menu
-          className={styles.menu}
           onClick={onChange}
           openTransition="none"
           subMenuOpenDelay={0.2}

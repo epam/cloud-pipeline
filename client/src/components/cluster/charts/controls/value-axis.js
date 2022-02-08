@@ -21,7 +21,7 @@ import {inject, observer, Provider} from 'mobx-react';
 import {AxisDataType} from './utilities';
 import tickGenerators from './ticks';
 
-@inject('plot', 'data')
+@inject('plot', 'data', 'themes')
 @observer
 class ValueAxis extends React.PureComponent {
   state = {
@@ -33,6 +33,15 @@ class ValueAxis extends React.PureComponent {
 
   startTick;
   endTick;
+
+  @computed
+  get tickColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-color-faded'] || '#777';
+    }
+    return '#777';
+  }
 
   @computed
   get offset () {
@@ -166,7 +175,7 @@ class ValueAxis extends React.PureComponent {
   };
 
   renderTick = (tick) => {
-    const {plot, tickColor, position} = this.props;
+    const {plot, position} = this.props;
     const {chartArea, width} = plot.props;
     const isLeft = position === 'left';
     const tickSize = tick.isBase ? 6 : 4;
@@ -178,7 +187,7 @@ class ValueAxis extends React.PureComponent {
         y1={y}
         x2={isLeft ? chartArea.left - tickSize : width - chartArea.right + tickSize}
         y2={y}
-        stroke={tickColor}
+        stroke={this.tickColor}
         strokeWidth={1}
       />
     );
@@ -212,7 +221,7 @@ class ValueAxis extends React.PureComponent {
     if (!tick.isBase) {
       return null;
     }
-    const {plot, fontColor, fontSize, position} = this.props;
+    const {plot, fontSize, position} = this.props;
     const isLeft = position === 'left';
     const {chartArea, width} = plot.props;
     const y = this.getCanvasCoordinate(tick.tick) + fontSize / 2.0 - 2;
@@ -234,7 +243,7 @@ class ValueAxis extends React.PureComponent {
         y={y}
         textAnchor={anchor}
         stroke={'none'}
-        fill={fontColor}
+        fill={this.tickColor}
         style={{fontSize}}
       >
         {tick.display}
@@ -243,7 +252,7 @@ class ValueAxis extends React.PureComponent {
   };
 
   render () {
-    const {children, dataGroup, plot, tickColor, position} = this.props;
+    const {children, dataGroup, plot, position} = this.props;
     if (!plot) {
       return null;
     }
@@ -261,7 +270,7 @@ class ValueAxis extends React.PureComponent {
             y1={chartArea.top}
             x2={isLeft ? chartArea.left : width - chartArea.right}
             y2={height - chartArea.bottom}
-            stroke={tickColor}
+            stroke={this.tickColor}
             strokeWidth={1}
           />
           {this.ticks.map(this.renderTick)}
@@ -286,17 +295,13 @@ ValueAxis.propTypes = {
   to: PropTypes.number,
   maximum: PropTypes.number,
   minimum: PropTypes.number,
-  tickColor: PropTypes.string,
   position: PropTypes.oneOf(['left', 'right']),
-  fontColor: PropTypes.string,
   fontSize: PropTypes.number
 };
 
 ValueAxis.defaultProps = {
   dataGroup: 'default',
   dataType: AxisDataType.number,
-  tickColor: '#777',
-  fontColor: '#777',
   fontSize: 11,
   position: 'left'
 };

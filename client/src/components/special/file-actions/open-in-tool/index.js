@@ -270,11 +270,11 @@ class OpenInToolAction extends React.Component {
     let content;
     if (!activeTool) {
       content = (
-        <div className={styles.toolTabContainer}>
+        <div className={classNames(styles.toolTabContainer)}>
           <Row
             type="flex"
             align="middle"
-            className={styles.tabHeaderRow}
+            className={classNames(styles.tabHeaderRow, 'cp-divider', 'bottom')}
           >
             <span
               className={styles.tabHeading}
@@ -284,7 +284,7 @@ class OpenInToolAction extends React.Component {
             </span>
             <Icon
               type="close"
-              className={styles.close}
+              className={classNames(styles.close, 'cp-close-button')}
               onClick={() => this.modalVisibilityChanged(false)}
             />
           </Row>
@@ -293,7 +293,7 @@ class OpenInToolAction extends React.Component {
               <div
                 key={tool.id}
                 onClick={() => this.onSelectTool(tool.id)}
-                className={styles.toolItem}
+                className={classNames(styles.toolItem, 'cp-table-element')}
               >
                 <ToolIcon
                   iconId={tool.iconId}
@@ -323,7 +323,7 @@ class OpenInToolAction extends React.Component {
             <Row
               type="flex"
               align="middle"
-              className={styles.tabHeaderRow}
+              className={classNames(styles.tabHeaderRow, 'cp-divider', 'bottom')}
             >
               <div style={{display: 'inline-flex'}}>
                 <div
@@ -346,7 +346,7 @@ class OpenInToolAction extends React.Component {
               </div>
               <Icon
                 type="close"
-                className={styles.close}
+                className={classNames(styles.close, 'cp-close-button')}
                 onClick={() => this.modalVisibilityChanged(false)}
               />
             </Row>
@@ -354,7 +354,7 @@ class OpenInToolAction extends React.Component {
           {this.filteredFileTools.length === 1 && (
             <Icon
               type="close"
-              className={classNames(styles.close, styles.absolute)}
+              className={classNames(styles.close, 'cp-close-button', styles.absolute)}
               onClick={() => this.modalVisibilityChanged(false)}
             />
           )}
@@ -376,10 +376,11 @@ class OpenInToolAction extends React.Component {
     const {
       className,
       style,
-      titleStyle
+      titleStyle,
+      file
     } = this.props;
     const {modalVisible} = this.state;
-    if (this.filteredFileTools.length === 0) {
+    if (this.filteredFileTools.length === 0 || !this.storage || !file) {
       return null;
     }
     return (
@@ -392,7 +393,6 @@ class OpenInToolAction extends React.Component {
         placement="left"
         overlayStyle={{
           width: '35vw',
-          height: '35vh',
           minWidth: 200
         }}
         overlayClassName={styles.modalOverlay}

@@ -44,10 +44,10 @@ public class ToolsPage implements Page<ToolsPage> {
         final Entry groupsList = entry(GROUPS_LIST, $(PipelineSelectors.visible(byClassName("tools__navigation-dropdown-container"))));
         final Entry metadata = entry(SHOW_METADATA, header.getElement().find(byId("show-metadata-button")));
         final Entry settings = entry(SETTINGS, header.getElement().find(byClassName("tools__current-folder-actions")).find(byClassName("anticon-setting")).closest(".ant-btn-sm"));
-        final Entry registrySettings = entry(REGISTRY_SETTINGS, $(PipelineSelectors.visible(byText("Registry"))).closest(".tools__actions-sub-menu"));
+        final Entry registrySettings = entry(REGISTRY_SETTINGS, $(PipelineSelectors.visible(byText("Registry"))).closest(".rc-menu-submenu"));
         final Entry createRegistry = entry(CREATE_REGISTRY, registrySettings.getElement().find(byText("Create")));
         final Entry editRegistry = entry(EDIT_REGISTRY, registrySettings.getElement().find(byText("Edit")));
-        final Entry groupSettings = entry(GROUP_SETTINGS, $(PipelineSelectors.visible(byText("Group"))).closest(".tools__actions-sub-menu"));
+        final Entry groupSettings = entry(GROUP_SETTINGS, $(PipelineSelectors.visible(byText("Group"))).closest(".rc-menu-submenu"));
         final Entry editGroup = entry(EDIT_GROUP, groupSettings.getElement().find(byText("Edit")));
         final Entry deleteGroup = entry(DELETE_GROUP, groupSettings.getElement().find(byText("Delete")));
         final Entry createGroup = entry(CREATE_GROUP, groupSettings.getElement().find(byText("Create")));

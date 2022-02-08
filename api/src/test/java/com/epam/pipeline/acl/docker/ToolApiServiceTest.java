@@ -587,19 +587,19 @@ public class ToolApiServiceTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldCreateToolVersionSettingsForAdmin() {
         doReturn(toolVersion).when(mockToolVersionManager)
-                .createToolVersionSettings(ID, TEST_STRING, CONFIG_LIST);
+                .createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST);
 
-        assertThat(toolApiService.createToolVersionSettings(ID, TEST_STRING, CONFIG_LIST)).isEqualTo(toolVersion);
+        assertThat(toolApiService.createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST)).isEqualTo(toolVersion);
     }
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
     public void shouldCreateToolVersionSettingsWhenPermissionIsGranted() {
         doReturn(toolVersion).when(mockToolVersionManager)
-                .createToolVersionSettings(ID, TEST_STRING, CONFIG_LIST);
+                .createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST);
         initAclEntity(tool, AclPermission.WRITE);
 
-        assertThat(toolApiService.createToolVersionSettings(ID, TEST_STRING, CONFIG_LIST)).isEqualTo(toolVersion);
+        assertThat(toolApiService.createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST)).isEqualTo(toolVersion);
     }
 
     @Test
@@ -608,7 +608,7 @@ public class ToolApiServiceTest extends AbstractAclTest {
         initAclEntity(tool);
 
         assertThrows(AccessDeniedException.class,
-            () -> toolApiService.createToolVersionSettings(ID, TEST_STRING, CONFIG_LIST));
+            () -> toolApiService.createToolVersionSettings(ID, TEST_STRING, true, CONFIG_LIST));
     }
 
     @Test

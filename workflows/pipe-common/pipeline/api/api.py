@@ -217,6 +217,8 @@ class PipelineAPI:
     LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
     LOAD_PROFILES = 'cloud/credentials'
     LOAD_CURRENT_USER = 'whoami'
+    LOAD_ROLES = 'role/loadAll?loadUsers={}'
+    LOAD_ROLE = 'role/{}'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -931,3 +933,16 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+
+    def load_roles(self, load_users=False):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
+        except Exception as e:
+            raise RuntimeError("Failed to load roles.", "Error message: {}".format(str(e.message)))
+
+    def load_role(self, role_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE.format(role_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
+                                                                                             str(e.message)))

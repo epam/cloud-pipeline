@@ -17,7 +17,7 @@ import errno
 import os
 
 
-def _mkdir(path):
+def mkdir(path):
     try:
         os.makedirs(path)
     except OSError as e:
@@ -29,7 +29,7 @@ def _mkdir(path):
 
 def _add_to_powershell_profile(path, profile_path):
     profile_dir_path = os.path.dirname(profile_path)
-    _mkdir(profile_dir_path)
+    mkdir(profile_dir_path)
     with open(profile_path, 'a') as f:
         f.write('$env:PATH = "$env:PATH;{path}"\n'.format(path=path))
 
@@ -38,7 +38,7 @@ def _add_to_batch_profile(path, profile_path):
     from .reg import set_local_machine_str_value
     set_local_machine_str_value('Software\\Microsoft\\Command Processor', 'AutoRun', profile_path)
     profile_dir_path = os.path.dirname(profile_path)
-    _mkdir(profile_dir_path)
+    mkdir(profile_dir_path)
     if os.path.exists(profile_path):
         with open(profile_path, 'a') as f:
             f.write('set PATH=%PATH%;{path}\n'.format(path=path))

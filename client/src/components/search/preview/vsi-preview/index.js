@@ -37,6 +37,7 @@ import styles from '../preview.css';
 import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
+import roleModel from '../../../../utils/roleModel';
 
 const {SA, SAM, $} = window;
 
@@ -104,7 +105,7 @@ function readStorageFileJson (storage, path) {
   });
 }
 
-function getTiles (storageId, folder) {
+function getTilesFromFolder (storageId, folder) {
   return new Promise((resolve) => {
     getFolderContents(storageId, folder)
       .then(tiles => {
@@ -126,15 +127,37 @@ function getTiles (storageId, folder) {
   });
 }
 
+function getTiles (storageId, folders) {
+  if (!folders || !folders.length) {
+    return Promise.resolve(undefined);
+  }
+  const [folder, ...restFolders] = folders;
+  return new Promise((resolve) => {
+    getTilesFromFolder(storageId, folder)
+      .then((tiles) => {
+        if (tiles) {
+          return Promise.resolve(tiles);
+        } else {
+          return getTiles(storageId, restFolders);
+        }
+      })
+      .then(resolve);
+  });
+}
+
 function getTilesInfo (file) {
   const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
   if (e && e.length === 4) {
+    const filePathWithoutExtension = `${e[1] || ''}${e[2]}`;
     return {
-      tilesFolder: `${e[1] || ''}${e[2]}.tiles`,
-      folder: `${e[1] || ''}${e[2]}`
+      tilesFolders: [
+        `${e[1] || ''}.wsiparser/${e[2] || ''}/tiles`,
+        `${filePathWithoutExtension}.tiles`
+      ],
+      folder: filePathWithoutExtension
     };
   }
-  return null;
+  return undefined;
 }
 
 @inject('dataStorageCache', 'dataStorages', 'preferences')
@@ -212,7 +235,8 @@ class VSIPreview extends React.Component {
             const storage = {
               id: storageId,
               path,
-              delimiter
+              delimiter,
+              write: roleModel.writeAllowed(this.storage)
             };
             return wrapCreateStorageCredentials(new S3Storage(storage));
           } else {
@@ -328,7 +352,7 @@ class VSIPreview extends React.Component {
         this.reportPreviewLoaded();
         const tilesInfo = getTilesInfo(file);
         if (tilesInfo) {
-          getTiles(storageId, tilesInfo.tilesFolder)
+          getTiles(storageId, tilesInfo.tilesFolders)
             .then(tiles => {
               if (tiles) {
                 const tagsRequest = dataStorageCache.getTags(storageId, file);
@@ -737,7 +761,10 @@ class VSIPreview extends React.Component {
         .each(function () {
           $(this).addClass(styles.vsiSaViewHidden);
         });
-      html2canvas(this.saViewer.GetDiv()[0])
+      html2canvas(this.saViewer.GetDiv()[0], {
+        allowTaint: true,
+        useCORS: true
+      })
         .then((canvas) => {
           const ctx = canvas.getContext('2d');
           const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -770,6 +797,10 @@ class VSIPreview extends React.Component {
       >
         {/* eslint-disable-next-line */}
         <div
+          className={classNames(
+            styles.vsiSaView,
+            {[styles.readOnly]: !roleModel.writeAllowed(this.storage)}
+          )}
           ref={initializeTiles}
           style={{
             width: '100%',

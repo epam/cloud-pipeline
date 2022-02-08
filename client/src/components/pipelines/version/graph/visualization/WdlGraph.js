@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import Graph from './Graph';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
@@ -322,6 +323,9 @@ export default class WdlGraph extends Graph {
       if (view && view.el && e.step.type !== 'workflow') {
         if (!view.el.classList.contains(styles.wdlTask)) {
           view.el.classList.add(styles.wdlTask);
+        }
+        if (!view.el.classList.contains('cp-wdl-task')) {
+          view.el.classList.add('cp-wdl-task');
         }
         if (!view.el.dataset) {
           view.el.dataset = {};
@@ -935,10 +939,15 @@ export default class WdlGraph extends Graph {
         type="flex"
         justify="space-between"
         align="middle"
+        className={
+          classNames(
+            'cp-divider',
+            'top',
+            'bottom',
+            'cp-content-panel-header'
+          )
+        }
         style={{
-          backgroundColor: '#efefef',
-          borderBottom: '1px solid #ddd',
-          borderTop: '1px solid #ddd',
           padding: '0px 5px'
         }}>
         <span>{title}</span>
@@ -1105,7 +1114,13 @@ export default class WdlGraph extends Graph {
 
     return (
       <ResizablePanel
-        className={`${styles.wdlGraphSidePanel} ${styles.right}`}
+        className={
+          classNames(
+            styles.wdlGraphSidePanel,
+            styles.right,
+            'cp-content-panel'
+          )
+        }
         resizeAnchors={[ResizeAnchors.left]}>
         {panelTitle}
         <Row type="flex" className={styles.wdlGraphSidePanelContentContainer}>
@@ -1120,7 +1135,15 @@ export default class WdlGraph extends Graph {
               itemDetails &&
               <Row
                 type="flex"
-                className={itemActions ? styles.wdlGraphSidePanelSection : ''}
+                className={
+                  classNames(
+                    {
+                      [styles.wdlGraphSidePanelSection]: itemActions,
+                      'cp-divider': itemActions,
+                      'top': itemActions
+                    }
+                  )
+                }
                 style={{paddingRight: 5, flex: 1, width: '100%'}}>
                 {itemDetails}
               </Row>
@@ -1244,7 +1267,12 @@ export default class WdlGraph extends Graph {
         </Row>
         {
           this.state.graphSearch && this.graphSearchDataSource.length === 0 ?
-            <Row type="flex" justify="space-around" style={{color: '#999', marginTop: 5}}>
+            <Row
+              className="cp-text-not-important"
+              type="flex"
+              justify="space-around"
+              style={{marginTop: 5}}
+            >
               <i>Elements not found</i>
             </Row>
             : undefined
@@ -1282,13 +1310,26 @@ export default class WdlGraph extends Graph {
 
   renderAppearancePanel = () => {
     return (
-      <div className={`${styles.wdlGraphSidePanel} ${styles.left}`}>
+      <div
+        className={
+          classNames(
+            styles.wdlGraphSidePanel,
+            styles.left,
+            'cp-pipeline-graph-side-panel'
+          )
+        }
+      >
         {
           this.canModifySources &&
           <Tooltip title="Save" placement="right">
             <Button
               id="wdl-graph-save-button"
-              className={`${styles.wdlAppearanceButton} ${styles.active} ${styles.noFade}`}
+              className={
+                classNames(
+                  styles.wdlAppearanceButton,
+                  styles.noFade
+                )
+              }
               disabled={!this.state.modified}
               type="primary"
               shape="circle"
@@ -1302,7 +1343,12 @@ export default class WdlGraph extends Graph {
           <Tooltip title="Revert changes" placement="right">
             <Button
               id="wdl-graph-revert-button"
-              className={`${styles.wdlAppearanceButton} ${styles.noFade}`}
+              className={
+                classNames(
+                  styles.wdlAppearanceButton,
+                  styles.noFade
+                )
+              }
               disabled={!this.state.modified}
               shape="circle"
               onClick={() => this.revertChanges()}>
@@ -1312,7 +1358,17 @@ export default class WdlGraph extends Graph {
         }
         {
           this.canModifySources &&
-          <div className={styles.separator}>{'\u00A0'}</div>
+          <div
+            className={
+              classNames(
+                styles.separator,
+                'cp-divider',
+                'horizontal'
+              )
+            }
+          >
+            {'\u00A0'}
+          </div>
         }
         <Tooltip title="Layout" placement="right">
           <Button
@@ -1336,7 +1392,7 @@ export default class WdlGraph extends Graph {
           title={this.state.showAllLinks ? 'Hide links' : 'Show links'}
           placement="right">
           <Button
-            className={`${styles.wdlAppearanceButton} ${this.state.showAllLinks ? styles.active : ''}`}
+            className={styles.wdlAppearanceButton}
             type={this.state.showAllLinks ? 'primary' : 'default'}
             id={`wdl-graph-${this.state.showAllLinks ? 'hide-links' : 'show-links'}-button`}
             shape="circle"
