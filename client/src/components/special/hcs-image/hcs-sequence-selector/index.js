@@ -98,6 +98,7 @@ class HcsSequenceSelector extends React.Component {
           Time series
         </span>
         <Collapse
+          className="cp-collapse-small"
           onChange={this.onTogglePanel}
           activeKey={expandedKeys}
         >
