@@ -76,4 +76,4 @@ ADD process_hcs_files.py "$HCS_TOOLS_HOME/scripts/process_hcs_files.py"
 ADD convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
 ADD start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
 
-RUN chmod +x "$HCS_TOOLS_HOME/scripts/*.sh"
+RUN chmod +x $HCS_TOOLS_HOME/scripts/*.sh
