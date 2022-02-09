@@ -121,19 +121,19 @@ public class NgsPreprocessingManager {
         unregisterSampleSheet(folderId, machineRunId, true);
         samples.forEach(metadataEntityManager::updateMetadataEntity);
 
-        final String sampleSheetFileFullPath = Paths.get(
-                storage.getPathMask(),
+        final String sampleSheetFileInternalPath = Paths.get(
                 dataFolderPath.getPath(),
                 machineRunMetadataEntity.getExternalId(),
                 preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME)
         ).toString();
 
-        final DataStorageLink sampleSheetFileLink = DataStorageUtils.constructDataStorageLink(
-                storage, sampleSheetFileFullPath, storage.getPathMask() + ProviderUtils.DELIMITER);
+        final DataStorageLink sampleSheetFileLink = DataStorageUtils.constructDataStorageFileLink(
+                storage, sampleSheetFileInternalPath);
 
-        storageManager.createDataStorageFile(dataFolderPath.getDataStorageId(), sampleSheetFileLink.getPath(), content);
+        storageManager.createDataStorageFile(dataFolderPath.getDataStorageId(), sampleSheetFileInternalPath, content);
 
-        linkSamplesToMachineRun(folderId, machineRunMetadataEntity, sampleMetadataClass, samples, sampleSheetFileLink);
+        linkSamplesToMachineRun(folderId, machineRunMetadataEntity, sampleMetadataClass,
+                samples, sampleSheetFileLink.getAbsolutePath());
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -172,8 +172,9 @@ public class NgsPreprocessingManager {
 
         final DataStorageLink linkedSampleSheetLink = Optional.ofNullable(
                 machineRunData.get(machineRunLinkedSampleSheetColumn)
-        ).map(PipeConfValue::getValue).map(path -> DataStorageUtils.constructDataStorageLink(storage, path,
-                storage.getPathMask() + ProviderUtils.DELIMITER)).orElse(null);
+        ).map(PipeConfValue::getValue)
+                .map(fullPath -> DataStorageUtils.constructDataStorageFileLink(storage, fullPath))
+                .orElse(null);
 
         machineRunData.put(machineRunToSampleColumn, null);
         machineRunData.put(machineRunLinkedSampleSheetColumn,
@@ -190,13 +191,13 @@ public class NgsPreprocessingManager {
         metadataEntityManager.updateMetadataEntity(metadataEntityVO);
 
         if (deleteFile && linkedSampleSheetLink != null) {
-            deleteStorageFileIfExists(dataFolderPath.getDataStorageId(), linkedSampleSheetLink);
+            deleteStorageFileIfExists(dataFolderPath.getDataStorageId(), linkedSampleSheetLink.getPath());
         }
     }
 
     private void linkSamplesToMachineRun(final Long folderId, final MetadataEntity machineRunMetadata,
                                          final MetadataClass sampleMetadataClass, final List<MetadataEntityVO> samples,
-                                         final DataStorageLink sampleSheetFileLink) {
+                                         final String absolutePath) {
         final String machineRunToSampleColumn = preferenceManager.getPreference(
                 SystemPreferences.PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN);
         machineRunMetadata.getData().put(
@@ -208,7 +209,7 @@ public class NgsPreprocessingManager {
                 ));
         machineRunMetadata.getData().put(
                 preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_LINK_COLUMN),
-                new PipeConfValue(PipeConfValueType.STRING.toString(), sampleSheetFileLink.getAbsolutePath())
+                new PipeConfValue(PipeConfValueType.STRING.toString(), absolutePath)
         );
         machineRunMetadata.getData().put(
                 UPDATED_DATE_COLUMN_NAME,
@@ -248,11 +249,11 @@ public class NgsPreprocessingManager {
         return machineRunMetadataEntity;
     }
 
-    private void deleteStorageFileIfExists(final Long storageId, final DataStorageLink sampleSheetStorageLink) {
+    private void deleteStorageFileIfExists(final Long storageId, final String internalPath) {
         final AbstractDataStorage dataStorage = storageManager.load(storageId);
-        if (checkPathExistence(dataStorage.getId(), sampleSheetStorageLink.getPath())) {
+        if (checkPathExistence(dataStorage.getId(), internalPath)) {
             final UpdateDataStorageItemVO sampleSheetItem = new UpdateDataStorageItemVO();
-            sampleSheetItem.setPath(sampleSheetStorageLink.getPath());
+            sampleSheetItem.setPath(internalPath);
             sampleSheetItem.setType(DataStorageItemType.File);
             storageManager.deleteDataStorageItems(
                     storageId,

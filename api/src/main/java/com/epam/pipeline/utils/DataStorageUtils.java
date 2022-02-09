@@ -53,4 +53,22 @@ public final class DataStorageUtils {
         return dataStorageLink;
     }
 
+    public static DataStorageLink constructDataStorageFileLink(final AbstractDataStorage dataStorage,
+                                                               final String path) {
+        final String relativePath;
+        if (path.startsWith(dataStorage.getPathMask())) {
+            relativePath = path.substring(dataStorage.getPathMask().length())
+                    .substring(ProviderUtils.DELIMITER.length());
+        } else {
+            relativePath = path.startsWith(ProviderUtils.DELIMITER)
+                    ? path.substring(1) : path;
+        }
+        final DataStorageLink dataStorageLink = new DataStorageLink();
+        dataStorageLink.setAbsolutePath(dataStorage.getPathMask()
+                + ProviderUtils.DELIMITER + relativePath);
+        dataStorageLink.setDataStorageId(dataStorage.getId());
+        dataStorageLink.setPath(relativePath);
+        return dataStorageLink;
+    }
+
 }
