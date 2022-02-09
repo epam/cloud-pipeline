@@ -446,6 +446,16 @@ class HcsControlGrid extends React.Component {
               Math.PI * 2
             );
             context.stroke();
+            context.beginPath();
+            context.arc(
+              correctPixels(columns / 2.0 * cellSize),
+              correctPixels(rows / 2.0 * cellSize),
+              correctPixels(3),
+              0,
+              Math.PI * 2
+            );
+            context.stroke();
+            context.fill();
             context.restore();
           }
         });
