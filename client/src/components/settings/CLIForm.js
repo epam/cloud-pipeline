@@ -23,19 +23,15 @@ import {
   Alert,
   Button,
   DatePicker,
-  Icon,
   message,
   Row,
-  Select,
-  Table
+  Select
 } from 'antd';
 import styles from './styles.css';
 import UserToken from '../../models/user/UserToken';
 import PipelineGitCredentials from '../../models/pipelines/PipelineGitCredentials';
 import Notifications from '../../models/notifications/Notifications';
 import moment from 'moment-timezone';
-import hljs from 'highlight.js';
-import 'highlight.js/styles/github.css';
 import LoadingView from '../special/LoadingView';
 import DriveMappingWindowsForm from './DriveMappingWindowsForm';
 import {getOS} from '../../utils/OSDetection';
@@ -51,17 +47,26 @@ const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
 const FILE_BROWSER_KEY = 'ui.pipe.file.browser.app';
 
-function processBashScript (script) {
-  let command = hljs.highlight('bash', script).value;
-  const r = /\[URL\](.+)\[\/URL\]/ig;
-  let e = r.exec(command);
-  while (e) {
-    command = command.substring(0, e.index) +
-      `<a href="${e[1]}" target="_blank">${e[1]}</a>` +
-      command.substring(e.index + e[0].length);
-    e = r.exec(command);
+function asArray (arrayLike) {
+  if (!arrayLike) {
+    return [];
   }
-  return command;
+  if (Array.isArray(arrayLike)) {
+    return arrayLike;
+  }
+  return [arrayLike];
+}
+
+function parseDriveMappingConfig (config) {
+  if (config) {
+    try {
+      const json = JSON.parse(config);
+      return asArray(json);
+    } catch (e) {
+      return asArray(config);
+    }
+  }
+  return [];
 }
 
 @inject('authenticatedUserInfo', 'dataStorages', 'preferences')
@@ -415,7 +420,7 @@ export default class CLIForm extends React.Component {
       })();
     }
 
-    const loadCode = (config, id) => {
+    const loadCode = (config, key) => {
       let code = this.props.preferences.replacePlaceholders(config);
       if (code && code.indexOf('{user.jwt.token}') >= 0) {
         code = code.replace(
@@ -426,18 +431,30 @@ export default class CLIForm extends React.Component {
       return (
         <BashCode
           id="drive-mapping-command"
+          key={key}
           loading={!code}
           className={styles.mdPreview}
           code={this.props.preferences.replacePlaceholders(code)}
         />
       );
     };
-
     if (driveMappingConfig) {
-      content = loadCode(driveMappingConfig, 'drive-mapping-configure-command');
-    } else if (/^windows$/i.test(operationSystem)) {
-      content = <DriveMappingWindowsForm />;
+      const renderSingleConfig = (instructions, index) => {
+        if (/^windows$/i.test(operationSystem) && /^<AUTH_TEMPLATE>$/i.test(instructions)) {
+          return (<DriveMappingWindowsForm key={`instructions-${index}`} />);
+        } else if (instructions) {
+          return loadCode(instructions, `drive-mapping-configure-command-${index}`);
+        }
+        return undefined;
+      };
+      content = parseDriveMappingConfig(driveMappingConfig)
+        .map(renderSingleConfig)
+        .filter(Boolean);
+      if (content.length === 0) {
+        content = undefined;
+      }
     }
+
     if (fileBrowserConfig) {
       fileBrowserContent = loadCode(fileBrowserConfig, 'file-browser-configure-command');
     }
