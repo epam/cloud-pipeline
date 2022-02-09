@@ -48,7 +48,7 @@ class HcsImage extends React.PureComponent {
     wellWidth: 0,
     wellHeight: 0,
     sequences: [],
-    showAttributes: false
+    showDetails: false
   };
 
   @observable hcsInfo;
@@ -308,7 +308,7 @@ class HcsImage extends React.PureComponent {
     }
   };
 
-  renderAttributesInfo = () => {
+  renderDetailsInfo = () => {
     if (this.props.children && !this.state.error) {
       return (
         <Button
@@ -316,8 +316,8 @@ class HcsImage extends React.PureComponent {
           shape="circle"
           icon="info"
           size="small"
-          className={styles.attributesInfoBtn}
-          onClick={this.showAttributes}
+          className={styles.detailsInfoBtn}
+          onClick={this.showDetails}
         />
       );
     } else {
@@ -325,25 +325,25 @@ class HcsImage extends React.PureComponent {
     }
   }
 
-  showAttributes = () => {
+  showDetails = () => {
     this.setState({
-      showAttributes: true
+      showDetails: true
     });
   }
 
-  hideAttributes = () => {
+  hideDetails = () => {
     this.setState({
-      showAttributes: false
+      showDetails: false
     });
   }
 
-  showAttributesPanel = () => {
+  showDetailsPanel = () => {
     return (
-      <div className={classNames(styles.attributesPanel, 'cp-panel-card')}>
+      <div className={classNames(styles.detailsPanel, 'cp-panel-card')}>
         <Icon
           type="close"
           size="small"
-          onClick={this.hideAttributes}
+          onClick={this.hideDetails}
         />
         {this.props.children}
       </div>
@@ -370,7 +370,7 @@ class HcsImage extends React.PureComponent {
       plateHeight,
       wellWidth,
       wellHeight,
-      showAttributes
+      showDetails
     } = this.state;
     const pending = hcsImagePending || sequencePending;
     const selectedWell = wells.find(o => o.id === wellId);
@@ -403,9 +403,9 @@ class HcsImage extends React.PureComponent {
               )
             }
             {
-              showAttributes
-                ? this.showAttributesPanel()
-                : this.renderAttributesInfo()
+              showDetails
+                ? this.showDetailsPanel()
+                : this.renderDetailsInfo()
             }
             <div
               className={styles.hcsImage}

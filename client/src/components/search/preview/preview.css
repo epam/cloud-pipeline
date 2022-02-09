@@ -23,6 +23,10 @@
 
 .header {
   font-size: x-large;
+  padding: 20px 10px;
+}
+
+.shrinked-header {
   padding: 10px 10px 5px 10px;
 }
 

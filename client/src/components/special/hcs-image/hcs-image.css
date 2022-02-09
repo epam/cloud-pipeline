@@ -73,7 +73,7 @@
   font-weight: bold;
 }
 
-.attributes-panel {
+.details-panel {
   position: absolute;
   top: 10px;
   left: 10px;
@@ -83,7 +83,7 @@
   border-radius: 2px;
 }
 
-.attributes-panel-content {
+.details-panel-content {
   display: flex;
   flex-direction: column;
   border-radius: 2px;
@@ -92,13 +92,14 @@
   margin: 0px;
 }
 
-.attributes-panel i {
+.details-panel i {
   position: absolute;
   top: 5px;
   right: 5px;
+  cursor: pointer;
 }
 
-.attributes-info-btn {
+.details-info-btn {
   position: absolute;
   top: 10px;
   left: 10px;

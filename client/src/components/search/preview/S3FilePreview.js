@@ -426,7 +426,7 @@ export default class S3FilePreview extends React.Component {
           )
         }
       >
-        <div className={styles.header}>
+        <div className={classNames(styles.header, {[styles.shrinkedHeader]: this.state.hideInfo})}>
           <Row className={classNames(styles.title, 'cp-search-header-title')}>
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>
