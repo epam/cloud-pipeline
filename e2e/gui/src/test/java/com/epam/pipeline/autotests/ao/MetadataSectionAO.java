@@ -60,7 +60,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
             entry(CONFIGURE_NOTIFICATION, $(byId("value-column-fs_notifications"))),
             entry(FILE_SYSTEM_ACCESS, $(byId("value-column-dav-mount")).$(byXpath(".//span"))),
             entry(DISABLE, $(byClassName("equest-dav-access__disable-button"))),
-            entry(INFORMATION_ICON, $(byClassName("anticon-info-circle")))
+            entry(INFORMATION_ICON, $(byClassName("anticon-info-circle"))),
+            entry(REINDEX, $(byClassName("torage-size__refresh-button")))
     );
 
     private final String keyElementId = "key-column-%s";
@@ -209,7 +210,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkWarningStatusIcon() {
-        ensure(byClassName("estricted-images-info__popover-icon"), cssClass("anticon-exclamation-circle-o"));
+        ensure(byClassName("browser__current-folder-actions"), cssClass("anticon-exclamation-circle-o"));
         return this;
     }
 
@@ -241,6 +242,10 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
         }
         return this;
+    }
+
+    public MetadataSectionAO reindexStorage() {
+        return click(REINDEX).sleep(1, MINUTES);
     }
 
     @Override
