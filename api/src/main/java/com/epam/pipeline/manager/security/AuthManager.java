@@ -134,7 +134,7 @@ public class AuthManager {
         return mapToPipelineUser(principal);
     }
 
-    private PipelineUser mapToPipelineUser(final Object principal) {
+    private Optional<PipelineUser> mapToPipelineUser(final Object principal) {
         if (principal instanceof UserContext) {
             return Optional.of(((UserContext)principal).toPipelineUser());
         } else if (principal instanceof User) {
@@ -166,7 +166,7 @@ public class AuthManager {
             .findAny()
             .map(SwitchUserGrantedAuthority::getSource)
             .map(Authentication::getPrincipal)
-            .map(this::mapToPipelineUser)
+            .flatMap(this::mapToPipelineUser)
             .map(originalUser -> new ImpersonationStatus(originalUser, activeUser))
             .orElseGet(() -> new ImpersonationStatus(activeUser, null));
     }
