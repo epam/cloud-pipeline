@@ -673,7 +673,8 @@ HcsControlGrid.propTypes = {
   controlledHeight: PropTypes.bool,
   allowEmptySpaces: PropTypes.bool,
   flipVertical: PropTypes.bool,
-  flipHorizontal: PropTypes.bool
+  flipHorizontal: PropTypes.bool,
+  title: PropTypes.string
 };
 
 HcsControlGrid.defaultProps = {
