@@ -109,13 +109,13 @@ public class DataStorageApiService {
         return dataStorageManager.load(id);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(returnObject, 'READ')")
+    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT)
     @AclMask
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         return dataStorageManager.loadByNameOrId(identifier);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(returnObject, 'READ')")
+    @PostAuthorize(AclExpressions.STORAGE_READ_ON_RETURN_OBJECT)
     @AclMask
     public AbstractDataStorage loadByPathOrId(final String identifier) {
         return dataStorageManager.loadByPathOrId(identifier);
