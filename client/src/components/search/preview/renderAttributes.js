@@ -80,7 +80,7 @@ export function renderAttributes (metadataRequest, isTags = false, isColumn = fa
       });
       return !isColumn
         ? (<Row type="flex" className={styles.attributes}>{attrs}</Row>)
-        : (<div className={classNames('cp-panel-card', styles.attributesPanelContent)}>{attrs}</div>);
+        : (<div className={classNames(styles.attributes, styles.attributesPanelContent)}>{attrs}</div>);
     }
   }
   return null;

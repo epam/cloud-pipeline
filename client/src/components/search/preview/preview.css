@@ -74,38 +74,6 @@
   padding: 10px;
 }
 
-.attributes-panel {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-  width: 100%;
-  max-width: 200px;
-  border-radius: 2px;
-}
-
-.attributes-panel-content {
-  display: flex;
-  flex-direction: column;
-  border-radius: 2px;
-  padding: 15px 10px;
-  width: 100%;
-  margin: 0px;
-}
-
-.attributes-panel i {
-  position: absolute;
-  top: 10px;
-  right: 5px;
-}
-
-.attributes-info-btn {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-}
-
 .attribute {
   display: flex;
   flex-direction: column;
@@ -114,7 +82,11 @@
   max-width: 33%;
 }
 
-.attributes-panel .attribute {
+.attributes-panel-content {
+  padding-top: 20px;
+}
+
+.attributes-panel-content .attribute {
   max-width: 90%;
 }
 

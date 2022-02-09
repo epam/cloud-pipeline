@@ -19,7 +19,8 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Alert} from 'antd';
+import {Alert, Button, Icon} from 'antd';
+
 import fetchHCSInfo from './utilities/fetch-hcs-info';
 import HcsImageWellsSelector from './hcs-image-wells-selector';
 import HcsImageFieldSelector from './hcs-image-field-selector';
@@ -46,7 +47,8 @@ class HcsImage extends React.PureComponent {
     plateHeight: 0,
     wellWidth: 0,
     wellHeight: 0,
-    sequences: []
+    sequences: [],
+    showAttributes: false
   };
 
   @observable hcsInfo;
@@ -306,12 +308,53 @@ class HcsImage extends React.PureComponent {
     }
   };
 
+  renderAttributesInfo = () => {
+    if (this.props.children && !this.state.error) {
+      return (
+        <Button
+          type="primary"
+          shape="circle"
+          icon="info"
+          size="small"
+          className={styles.attributesInfoBtn}
+          onClick={this.showAttributes}
+        />
+      );
+    } else {
+      return null;
+    }
+  }
+
+  showAttributes = () => {
+    this.setState({
+      showAttributes: true
+    });
+  }
+
+  hideAttributes = () => {
+    this.setState({
+      showAttributes: false
+    });
+  }
+
+  showAttributesPanel = () => {
+    return (
+      <div className={classNames(styles.attributesPanel, 'cp-panel-card')}>
+        <Icon
+          type="close"
+          size="small"
+          onClick={this.hideAttributes}
+        />
+        {this.props.children}
+      </div>
+    );
+  }
+
   render () {
     const {
       className,
       style,
-      showWellSelectors,
-      children
+      showWellSelectors
     } = this.props;
     const {
       error,
@@ -326,7 +369,8 @@ class HcsImage extends React.PureComponent {
       plateWidth,
       plateHeight,
       wellWidth,
-      wellHeight
+      wellHeight,
+      showAttributes
     } = this.state;
     const pending = hcsImagePending || sequencePending;
     const selectedWell = wells.find(o => o.id === wellId);
@@ -358,7 +402,11 @@ class HcsImage extends React.PureComponent {
                 </div>
               )
             }
-            {!error && children}
+            {
+              showAttributes
+                ? this.showAttributesPanel()
+                : this.renderAttributesInfo()
+            }
             <div
               className={styles.hcsImage}
               ref={this.init}
