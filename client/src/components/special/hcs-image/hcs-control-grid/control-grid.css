@@ -15,6 +15,34 @@
  */
 
 .container {
+  width: 100%;
+}
+
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+}
+
+.title {
+  font-weight: bold;
+}
+
+.zoom-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  margin-left: auto;
+}
+
+.zoom-control-btn {
+  padding: 0 3px;
+  font-size: larger;
+}
+
+.canvas-container {
   display: grid;
   grid-template-rows: [COLUMNS] 20px [DATA] 1fr;
   grid-template-columns: [ROWS] 20px [DATA] 1fr;

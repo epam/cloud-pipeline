@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {Icon} from 'antd';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
@@ -22,6 +23,7 @@ import styles from './control-grid.css';
 
 const DEFAULT_MINIMUM_CELL_SIZE = 5;
 const DEFAULT_MAXIMUM_CELL_SIZE = 30;
+const ZOOM_BUTTON_DELTA = 4;
 
 function renderLegend (size, count, style) {
   return (new Array(count))
@@ -233,25 +235,46 @@ class HcsControlGrid extends React.Component {
     handler();
   };
 
-  handleZoom = (event) => {
+  furtherZoomPossible = (delta) => {
     const {
       cellSize,
       minimumSize
     } = this.state;
+    const newCellSize = Math.max(
+      minimumSize,
+      Math.min(
+        DEFAULT_MAXIMUM_CELL_SIZE,
+        cellSize + delta
+      )
+    );
+    return newCellSize !== cellSize;
+  };
+
+  handleZoom = (event, delta) => {
+    const {cellSize} = this.state;
+    const correctNextCellSize = (nextCellSize) => {
+      const {minimumSize} = this.state;
+      let correctedSize = nextCellSize;
+      if (nextCellSize > DEFAULT_MAXIMUM_CELL_SIZE) {
+        correctedSize = DEFAULT_MAXIMUM_CELL_SIZE;
+      } else if (nextCellSize < minimumSize) {
+        correctedSize = minimumSize;
+      }
+      return correctedSize;
+    };
+    const zoom = delta => {
+      this.setState({
+        cellSize: correctNextCellSize(cellSize + delta)
+      }, () => this.draw());
+    };
+    if (delta !== undefined && this.furtherZoomPossible(delta)) {
+      return zoom(delta);
+    }
     if (event && event.shiftKey && cellSize) {
       const zoomIn = event.deltaY < 0;
-      const delta = zoomIn ? 2 : -2;
-      const newCellSize = Math.max(
-        minimumSize,
-        Math.min(
-          DEFAULT_MAXIMUM_CELL_SIZE,
-          cellSize + delta
-        )
-      );
-      if (newCellSize !== cellSize) {
-        this.setState({
-          cellSize: newCellSize
-        }, () => this.draw());
+      const eventDelta = zoomIn ? 2 : -2;
+      if (this.furtherZoomPossible(eventDelta)) {
+        zoom(eventDelta);
       }
       event.preventDefault();
       event.stopPropagation();
@@ -479,6 +502,36 @@ class HcsControlGrid extends React.Component {
     }
   };
 
+  renderZoomControls = () => {
+    const zoomInAvailable = this.furtherZoomPossible(ZOOM_BUTTON_DELTA);
+    const zoomOutAvailable = this.furtherZoomPossible(-ZOOM_BUTTON_DELTA);
+    if (!zoomInAvailable && !zoomOutAvailable) {
+      return null;
+    }
+    return (
+      <div className={styles.zoomControls}>
+        <Icon
+          type="minus-circle-o"
+          className={classNames(
+            'cp-hcs-zoom-button',
+            {'cp-disabled': !zoomOutAvailable},
+            styles.zoomControlBtn
+          )}
+          onClick={() => this.handleZoom(undefined, -ZOOM_BUTTON_DELTA)}
+        />
+        <Icon
+          type="plus-circle-o"
+          className={classNames(
+            'cp-hcs-zoom-button',
+            {'cp-disabled': !zoomInAvailable},
+            styles.zoomControlBtn
+          )}
+          onClick={() => this.handleZoom(undefined, ZOOM_BUTTON_DELTA)}
+        />
+      </div>
+    );
+  };
+
   render () {
     const {
       className,
@@ -487,7 +540,8 @@ class HcsControlGrid extends React.Component {
       columns,
       controlledHeight,
       flipHorizontal,
-      flipVertical
+      flipVertical,
+      title
     } = this.props;
     const {
       cellSize,
@@ -496,82 +550,96 @@ class HcsControlGrid extends React.Component {
     } = this.state;
     return (
       <div
+        style={style}
         className={
           classNames(
             className,
             styles.container
           )
         }
-        style={style}
       >
-        <div className={styles.placeholder}>{'\u00A0'}</div>
-        <div
-          className={
-            classNames(
-              styles.rows,
-              {
-                [styles.flip]: flipVertical
-              }
-            )
-          }
-        >
-          <div className={styles.legend} ref={this.initializeLegend()}>
-            {
-              cellSize && renderLegend(cellSize, rows, {height: cellSize})
-            }
-          </div>
-        </div>
-        <div
-          className={
-            classNames(
-              styles.columns,
-              {
-                [styles.flip]: flipHorizontal
-              }
-            )
-          }
-        >
-          <div className={styles.legend} ref={this.initializeLegend(true)}>
-            {
-              cellSize && renderLegend(cellSize, columns, {width: cellSize})
-            }
-          </div>
-        </div>
-        <div
-          className={
-            classNames(
-              styles.data
-            )
-          }
-          ref={this.initializeContainer}
-          style={
-            Object.assign(
-              cellSize || !this.container ? {} : {overflow: 'scroll'},
-              controlledHeight ? {} : {height: maxHeight}
-            )
-          }
-        >
-          <div
-            style={{
-              width: cellSize ? columns * cellSize : 0,
-              height: cellSize ? rows * cellSize : 0
-            }}
-          >
-            <canvas
-              width={(cellSize ? columns * cellSize : 0) * window.devicePixelRatio}
-              height={(cellSize ? rows * cellSize : 0) * window.devicePixelRatio}
-              style={{
-                width: '100%',
-                height: '100%',
-                cursor: hovered ? 'pointer' : 'default'
-              }}
-              ref={this.initializeCanvas}
-              onMouseMove={this.handleMouseMove}
-              onMouseLeave={this.unHover}
-              onClick={this.handleClick}
+        <div className={styles.header}>
+          {title ? (
+            <div
+              className={styles.title}
             >
-              {'\u00A0'}
-            </canvas>
+              {title}
+            </div>
+          ) : null}
+          {this.renderZoomControls()}
+        </div>
+        <div
+          className={styles.canvasContainer}
+        >
+          <div className={styles.placeholder}>{'\u00A0'}</div>
+          <div
+            className={
+              classNames(
+                styles.rows,
+                {
+                  [styles.flip]: flipVertical
+                }
+              )
+            }
+          >
+            <div className={styles.legend} ref={this.initializeLegend()}>
+              {
+                cellSize && renderLegend(cellSize, rows, {height: cellSize})
+              }
+            </div>
+          </div>
+          <div
+            className={
+              classNames(
+                styles.columns,
+                {
+                  [styles.flip]: flipHorizontal
+                }
+              )
+            }
+          >
+            <div className={styles.legend} ref={this.initializeLegend(true)}>
+              {
+                cellSize && renderLegend(cellSize, columns, {width: cellSize})
+              }
+            </div>
+          </div>
+          <div
+            className={
+              classNames(
+                styles.data
+              )
+            }
+            ref={this.initializeContainer}
+            style={
+              Object.assign(
+                cellSize || !this.container ? {} : {overflow: 'scroll'},
+                controlledHeight ? {} : {height: maxHeight}
+              )
+            }
+          >
+            <div
+              style={{
+                width: cellSize ? columns * cellSize : 0,
+                height: cellSize ? rows * cellSize : 0
+              }}
+            >
+              <canvas
+                width={(cellSize ? columns * cellSize : 0) * window.devicePixelRatio}
+                height={(cellSize ? rows * cellSize : 0) * window.devicePixelRatio}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  cursor: hovered ? 'pointer' : 'default'
+                }}
+                ref={this.initializeCanvas}
+                onMouseMove={this.handleMouseMove}
+                onMouseLeave={this.unHover}
+                onClick={this.handleClick}
+              >
+                {'\u00A0'}
+              </canvas>
+            </div>
           </div>
         </div>
       </div>

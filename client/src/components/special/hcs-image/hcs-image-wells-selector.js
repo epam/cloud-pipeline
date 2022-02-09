@@ -47,9 +47,6 @@ class HcsImageWellsSelector extends React.Component {
         }
         style={style}
       >
-        <div className={styles.selectorTitle}>
-          Plate
-        </div>
         <HcsControlGrid
           className={styles.selector}
           rows={height}
@@ -61,6 +58,7 @@ class HcsImageWellsSelector extends React.Component {
               : undefined
           }
           onClick={onChangeWell}
+          title="Plate"
         />
       </div>
     );

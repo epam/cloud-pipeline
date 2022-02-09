@@ -1671,3 +1671,18 @@ li.ant-time-picker-panel-select-option-selected {
   background-color: fade(@color-warning, 40%);
   border: 1px solid @color-warning;
 }
+
+.cp-hcs-zoom-button {
+  cursor: pointer;
+  color: @application-color;
+  transition: all 100ms ease;
+}
+
+.cp-hcs-zoom-button:not(.cp-disabled):hover {
+  color: @primary-hover-color;
+}
+
+.cp-hcs-zoom-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
+}

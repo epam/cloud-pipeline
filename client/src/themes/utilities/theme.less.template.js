@@ -1472,6 +1472,18 @@ export default `
   background-color: fade(@color-warning, 40%);
   border: 1px solid @color-warning;
 }
+@THEME .cp-hcs-zoom-button {
+  cursor: pointer;
+  color: @application-color;
+  transition: all 100ms ease;
+}
+@THEME .cp-hcs-zoom-button:not(.cp-disabled):hover {
+  color: @primary-hover-color;
+}
+@THEME .cp-hcs-zoom-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;
