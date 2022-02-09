@@ -5,6 +5,7 @@ import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntity;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionEntityId;
 import com.epam.pipeline.entity.datastorage.security.StoragePermissionPathTypeUserType;
+import com.epam.pipeline.mapper.PipelineRunMapper;
 import lombok.Value;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -42,6 +43,12 @@ public interface StoragePermissionRepository
             String datastoragePath,
             StoragePermissionPathType datastorageType
     );
+
+    default List<StoragePermissionEntity> findByRoot(Long root) {
+        return findByDatastorageRootId(root);
+    }
+
+    List<StoragePermissionEntity> findByDatastorageRootId(Long datastorageRootId);
 
     @Query(name = "StoragePermissionRepository.findPermissions", nativeQuery = true)
     List<StoragePermissionEntity> findPermissions(@Param(STORAGE_ROOT_ID) Long root,

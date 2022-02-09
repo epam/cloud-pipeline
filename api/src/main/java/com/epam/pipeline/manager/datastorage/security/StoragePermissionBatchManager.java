@@ -9,6 +9,7 @@ import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteBatchRe
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionInsertBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionInsertRequest;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadAllRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
@@ -116,6 +117,20 @@ public class StoragePermissionBatchManager {
         }
     }
 
+    public List<StoragePermission> loadAll(final StoragePermissionLoadAllRequest request) {
+        validate(request);
+        final Long root = getRoot(request.getId());
+        return repository.findByRoot(root)
+                .stream()
+                .map(mapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+    private void validate(final StoragePermissionLoadAllRequest request) {
+        validateId(request.getId());
+        validateKind(request.getType());
+    }
+
     private void validateId(final Long id) {
         Assert.notNull(id, messageHelper.getMessage(MessageConstants.ERROR_STORAGE_PERMISSION_STORAGE_ID_MISSING));
     }
@@ -152,5 +167,4 @@ public class StoragePermissionBatchManager {
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, storageId)));
     }
-
 }

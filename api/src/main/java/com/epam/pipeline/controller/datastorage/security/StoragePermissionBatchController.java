@@ -6,6 +6,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.datastorage.security.StoragePermission;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionInsertBatchRequest;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadAllRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadBatchRequest;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -58,5 +59,15 @@ public class StoragePermissionBatchController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<StoragePermission>> load(@RequestBody final StoragePermissionLoadBatchRequest request) {
         return Result.success(service.load(request));
+    }
+
+    @RequestMapping(value = "/storage/permission/batch/all", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(value = "Loads storage object permissions.",
+            notes = "Loads storage object permissions.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<StoragePermission>> load(@RequestBody final StoragePermissionLoadAllRequest request) {
+        return Result.success(service.loadAll(request));
     }
 }

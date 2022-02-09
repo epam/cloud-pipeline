@@ -3,6 +3,7 @@ package com.epam.pipeline.acl.datastorage.security;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionInsertBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermission;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadAllRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadBatchRequest;
 import com.epam.pipeline.manager.datastorage.security.StoragePermissionBatchManager;
 import com.epam.pipeline.security.acl.AclExpressions;
@@ -33,4 +34,8 @@ public class StoragePermissionBatchApiService {
         return manager.load(request);
     }
 
+    @PreAuthorize(AclExpressions.STORAGE_REQUEST_ID_READ)
+    public List<StoragePermission> loadAll(final StoragePermissionLoadAllRequest request) {
+        return manager.loadAll(request);
+    }
 }
