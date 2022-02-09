@@ -19,8 +19,12 @@ package com.epam.pipeline.utils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-public class DataStorageUtils {
+@SuppressWarnings("HideUtilityClassConstructor")
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class DataStorageUtils {
 
     public static DataStorageLink constructDataStorageLink(final AbstractDataStorage dataStorage,
                                                            final String path,

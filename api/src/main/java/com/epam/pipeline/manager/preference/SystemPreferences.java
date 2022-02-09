@@ -597,8 +597,8 @@ public class SystemPreferences {
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
                                                                                      "type=project", UI_GROUP, pass);
-    public static final StringPreference UI_NGS_PROJECT_INDICATOR = new StringPreference("ui.ngs.project.indicator",
-                                                                        "project-type=ngs-project", UI_GROUP, pass);
+    public static final StringPreference UI_NGS_PROJECT_INDICATOR =
+            new StringPreference("ui.ngs.project.indicator", "type=project,project-type=ngs", UI_GROUP, pass);
     public static final ObjectPreference<Map<String, String>> UI_CLI_CONFIGURE_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.configure.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
@@ -972,10 +972,10 @@ public class SystemPreferences {
 
     //NGS Preprocessing
     public static final StringPreference PREPROCESSING_MACHINE_RUN_CLASS = new StringPreference(
-            "ngs.preprocessing.machine.run.metadata.class", "MachineRun",
+            "ngs.preprocessing.machine.run.metadata.class.name", "MachineRun",
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLE_CLASS = new StringPreference(
-            "ngs.preprocessing.sample.metadata.class", "Sample",
+            "ngs.preprocessing.sample.metadata.class.name", "Sample",
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN = new StringPreference(
             "ngs.preprocessing.machinerun.to.sample.column", "Samples",
@@ -985,6 +985,12 @@ public class SystemPreferences {
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
     public static final StringPreference PREPROCESSING_DATA_FOLDER = new StringPreference(
             "ngs.preprocessing.data.folder", "ngs-data",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_SAMPLESHEET_LINK_COLUMN = new StringPreference(
+            "ngs.preprocessing.samplesheet.link.column", "Sample Sheet",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
+            "ngs.preprocessing.machine.run.column.name", "Machine Run",
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
