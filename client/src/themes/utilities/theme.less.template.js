@@ -1484,6 +1484,9 @@ export default `
   cursor: default;
   color: @application-color-disabled;
 }
+@THEME .cp-dark-background {
+  background-color: @application-dark-background-color;
+}
 
 @THEME .cp-panel {
   border: 1px solid @panel-border-color;

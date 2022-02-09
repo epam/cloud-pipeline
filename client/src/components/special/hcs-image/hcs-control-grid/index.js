@@ -61,32 +61,23 @@ class HcsControlGrid extends React.Component {
     cellSize: undefined,
     widthPx: undefined,
     heightPx: undefined,
-    widthWithScrollPx: undefined,
-    heightWithScrollPx: undefined,
     hovered: false,
     maxHeight: undefined
   };
 
-  get verticalScrollerWidth () {
+  get canZoomOut () {
     const {
-      widthPx,
-      widthWithScrollPx
+      minimumSize,
+      cellSize
     } = this.state;
-    if (widthWithScrollPx && widthPx) {
-      return Math.max(widthWithScrollPx - widthPx, 0);
-    }
-    return 0;
+    return cellSize && minimumSize && cellSize > minimumSize;
   }
 
-  get horizontalScrollerHeight () {
+  get canZoomIn () {
     const {
-      heightPx,
-      heightWithScrollPx
+      cellSize
     } = this.state;
-    if (heightWithScrollPx && heightPx) {
-      return Math.max(heightWithScrollPx - heightPx, 0);
-    }
-    return 0;
+    return cellSize && DEFAULT_MAXIMUM_CELL_SIZE && cellSize < DEFAULT_MAXIMUM_CELL_SIZE;
   }
 
   componentDidMount () {
@@ -133,9 +124,7 @@ class HcsControlGrid extends React.Component {
       this.container.addEventListener('wheel', this.handleZoom);
       this.setState({
         widthPx: this.container.clientWidth,
-        heightPx: this.container.clientHeight,
-        widthWithScrollPx: this.container.offsetWidth,
-        heightWithScrollPx: this.container.offsetHeight
+        heightPx: this.container.clientHeight
       }, () => this.updateSize());
     }
   };
@@ -225,9 +214,7 @@ class HcsControlGrid extends React.Component {
       ) {
         this.setState({
           widthPx: this.container.clientWidth,
-          heightPx: this.container.clientHeight,
-          widthWithScrollPx: this.container.offsetWidth,
-          heightWithScrollPx: this.container.offsetHeight
+          heightPx: this.container.clientHeight
         });
       }
       this.rafHandle = requestAnimationFrame(handler);
@@ -235,10 +222,10 @@ class HcsControlGrid extends React.Component {
     handler();
   };
 
-  furtherZoomPossible = (delta) => {
+  zoom = (delta) => {
     const {
-      cellSize,
-      minimumSize
+      minimumSize,
+      cellSize
     } = this.state;
     const newCellSize = Math.max(
       minimumSize,
@@ -247,35 +234,17 @@ class HcsControlGrid extends React.Component {
         cellSize + delta
       )
     );
-    return newCellSize !== cellSize;
+    if (newCellSize !== cellSize) {
+      this.setState({cellSize: newCellSize}, () => this.draw());
+    }
   };
 
-  handleZoom = (event, delta) => {
+  handleZoom = (event) => {
     const {cellSize} = this.state;
-    const correctNextCellSize = (nextCellSize) => {
-      const {minimumSize} = this.state;
-      let correctedSize = nextCellSize;
-      if (nextCellSize > DEFAULT_MAXIMUM_CELL_SIZE) {
-        correctedSize = DEFAULT_MAXIMUM_CELL_SIZE;
-      } else if (nextCellSize < minimumSize) {
-        correctedSize = minimumSize;
-      }
-      return correctedSize;
-    };
-    const zoom = delta => {
-      this.setState({
-        cellSize: correctNextCellSize(cellSize + delta)
-      }, () => this.draw());
-    };
-    if (delta !== undefined && this.furtherZoomPossible(delta)) {
-      return zoom(delta);
-    }
     if (event && event.shiftKey && cellSize) {
       const zoomIn = event.deltaY < 0;
       const eventDelta = zoomIn ? 2 : -2;
-      if (this.furtherZoomPossible(eventDelta)) {
-        zoom(eventDelta);
-      }
+      this.zoom(eventDelta);
       event.preventDefault();
       event.stopPropagation();
       return false;
@@ -503,8 +472,8 @@ class HcsControlGrid extends React.Component {
   };
 
   renderZoomControls = () => {
-    const zoomInAvailable = this.furtherZoomPossible(ZOOM_BUTTON_DELTA);
-    const zoomOutAvailable = this.furtherZoomPossible(-ZOOM_BUTTON_DELTA);
+    const zoomInAvailable = this.canZoomIn;
+    const zoomOutAvailable = this.canZoomOut;
     if (!zoomInAvailable && !zoomOutAvailable) {
       return null;
     }
@@ -517,7 +486,7 @@ class HcsControlGrid extends React.Component {
             {'cp-disabled': !zoomOutAvailable},
             styles.zoomControlBtn
           )}
-          onClick={() => this.handleZoom(undefined, -ZOOM_BUTTON_DELTA)}
+          onClick={() => this.zoom(-ZOOM_BUTTON_DELTA)}
         />
         <Icon
           type="plus-circle-o"
@@ -526,7 +495,7 @@ class HcsControlGrid extends React.Component {
             {'cp-disabled': !zoomInAvailable},
             styles.zoomControlBtn
           )}
-          onClick={() => this.handleZoom(undefined, ZOOM_BUTTON_DELTA)}
+          onClick={() => this.zoom(ZOOM_BUTTON_DELTA)}
         />
       </div>
     );

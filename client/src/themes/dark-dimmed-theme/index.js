@@ -23,6 +23,7 @@ export default {
   predefined: true,
   configuration: {
     '@application-background-color': 'rgb(40, 44, 50)',
+    '@application-dark-background-color': '@application-background-color',
     '@application-color': 'rgb(202, 202, 216)',
     '@application-color-faded': 'fadeout(@application-color, 20%)',
     '@application-color-disabled': 'fadeout(@application-color, 60%)',

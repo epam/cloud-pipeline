@@ -16,6 +16,18 @@
 
 import {action, observable} from 'mobx';
 
+function shallowCompareArrays (array1, array2) {
+  if (array1 && array2 && array1.length === array2.length) {
+    for (let i = 0; i < array1.length; i++) {
+      if (array1[i] !== array2[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
 class ChannelState {
   @observable identifier = 'Channel';
   @observable name = 'Channel';
@@ -185,6 +197,9 @@ class ViewerState {
       if (channelIndex >= 0 && channelIndex < this.channels.length) {
         const channelObj = this.channels[channelIndex];
         if (channelObj) {
+          if (visible === channelObj.visible) {
+            return;
+          }
           channelObj.visible = visible;
         }
         this.viewer.setChannelProperties(channelIndex, {channelsVisibility: visible});
@@ -199,6 +214,9 @@ class ViewerState {
       if (channelIndex >= 0 && channelIndex < this.channels.length) {
         const channelObj = this.channels[channelIndex];
         if (channelObj) {
+          if (shallowCompareArrays(contrastLimits, channelObj.contrastLimits)) {
+            return;
+          }
           channelObj.contrastLimits = contrastLimits;
         }
         this.viewer.setChannelProperties(channelIndex, {contrastLimits});
@@ -213,6 +231,9 @@ class ViewerState {
       if (channelIndex >= 0 && channelIndex < this.channels.length) {
         const channelObj = this.channels[channelIndex];
         if (channelObj) {
+          if (shallowCompareArrays(color, channelObj.color)) {
+            return;
+          }
           channelObj.color = color;
         }
         this.viewer.setChannelProperties(channelIndex, {colors: color});
