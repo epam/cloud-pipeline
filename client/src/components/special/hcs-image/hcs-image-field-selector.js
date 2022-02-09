@@ -65,6 +65,7 @@ class HcsImageFieldSelector extends React.Component {
           gridRadius={wellRadius}
           flipVertical
           title={wellName}
+          showLegend={false}
         />
       </div>
     );

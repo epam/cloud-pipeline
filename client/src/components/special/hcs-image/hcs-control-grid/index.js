@@ -510,7 +510,8 @@ class HcsControlGrid extends React.Component {
       controlledHeight,
       flipHorizontal,
       flipVertical,
-      title
+      title,
+      showLegend
     } = this.props;
     const {
       cellSize,
@@ -527,7 +528,10 @@ class HcsControlGrid extends React.Component {
           )
         }
       >
-        <div className={styles.header}>
+        <div className={classNames(
+          styles.header,
+          {[styles.noLegend]: !showLegend}
+        )}>
           {title ? (
             <div
               className={styles.title}
@@ -538,41 +542,52 @@ class HcsControlGrid extends React.Component {
           {this.renderZoomControls()}
         </div>
         <div
-          className={styles.canvasContainer}
+          className={classNames(
+            styles.canvasContainer,
+            {[styles.noLegend]: !showLegend}
+          )}
         >
-          <div className={styles.placeholder}>{'\u00A0'}</div>
-          <div
-            className={
-              classNames(
-                styles.rows,
-                {
-                  [styles.flip]: flipVertical
-                }
-              )
-            }
-          >
-            <div className={styles.legend} ref={this.initializeLegend()}>
-              {
-                cellSize && renderLegend(cellSize, rows, {height: cellSize})
-              }
+          {showLegend && (
+            <div className={styles.placeholder}>
+              {'\u00A0'}
             </div>
-          </div>
-          <div
-            className={
-              classNames(
-                styles.columns,
-                {
-                  [styles.flip]: flipHorizontal
-                }
-              )
-            }
-          >
-            <div className={styles.legend} ref={this.initializeLegend(true)}>
-              {
-                cellSize && renderLegend(cellSize, columns, {width: cellSize})
+          )}
+          {showLegend && (
+            <div
+              className={
+                classNames(
+                  styles.rows,
+                  {
+                    [styles.flip]: flipVertical
+                  }
+                )
               }
+            >
+              <div className={styles.legend} ref={this.initializeLegend()}>
+                {
+                  cellSize && renderLegend(cellSize, rows, {height: cellSize})
+                }
+              </div>
             </div>
-          </div>
+          )}
+          {showLegend && (
+            <div
+              className={
+                classNames(
+                  styles.columns,
+                  {
+                    [styles.flip]: flipHorizontal
+                  }
+                )
+              }
+            >
+              <div className={styles.legend} ref={this.initializeLegend(true)}>
+                {
+                  cellSize && renderLegend(cellSize, columns, {width: cellSize})
+                }
+              </div>
+            </div>
+          )}
           <div
             className={
               classNames(
@@ -643,12 +658,14 @@ HcsControlGrid.propTypes = {
   allowEmptySpaces: PropTypes.bool,
   flipVertical: PropTypes.bool,
   flipHorizontal: PropTypes.bool,
-  title: PropTypes.string
+  title: PropTypes.string,
+  showLegend: PropTypes.bool
 };
 
 HcsControlGrid.defaultProps = {
   cellShape: Shapes.circle,
-  gridShape: Shapes.rect
+  gridShape: Shapes.rect,
+  showLegend: true
 };
 
 HcsControlGrid.Shapes = Shapes;

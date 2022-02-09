@@ -26,6 +26,10 @@
   flex-wrap: nowrap;
 }
 
+.header.no-legend {
+  margin-bottom: 5px;
+}
+
 .title {
   font-weight: bold;
 }
@@ -48,6 +52,11 @@
   grid-template-columns: [ROWS] 20px [DATA] 1fr;
   width: 100%;
   min-height: 100px;
+}
+
+.canvas-container.no-legend {
+  grid-template-rows: [DATA] 1fr;
+  grid-template-columns: [DATA] 1fr;
 }
 
 .placeholder {
