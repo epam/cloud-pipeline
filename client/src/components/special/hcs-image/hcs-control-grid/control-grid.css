@@ -61,9 +61,17 @@
   width: 100%;
 }
 
+.rows.flip .legend {
+  flex-direction: column-reverse;
+}
+
 .columns .legend {
   flex-direction: row;
   height: 100%;
+}
+
+.columns.flip .legend {
+  flex-direction: row-reverse;
 }
 
 .legend .legend-item {

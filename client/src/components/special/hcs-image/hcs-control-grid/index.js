@@ -269,11 +269,21 @@ class HcsControlGrid extends React.Component {
     } = event.nativeEvent || {};
     let cell;
     if (offsetX !== undefined && offsetY !== undefined) {
-      const column = Math.floor(offsetX / cellSize);
-      const row = Math.floor(offsetY / cellSize);
+      let column = Math.floor(offsetX / cellSize);
+      let row = Math.floor(offsetY / cellSize);
       const {
-        dataCells = []
+        dataCells = [],
+        flipVertical,
+        flipHorizontal,
+        columns,
+        rows
       } = this.props;
+      if (flipHorizontal) {
+        column = columns - column;
+      }
+      if (flipVertical) {
+        row = rows - row;
+      }
       cell = (dataCells.find(o => o.row === row && o.column === column));
     }
     return cell;
@@ -323,7 +333,9 @@ class HcsControlGrid extends React.Component {
         dataCells = [],
         selectedCell,
         gridShape = Shapes.rect,
-        gridRadius = 0
+        gridRadius = 0,
+        flipVertical,
+        flipHorizontal
       } = this.props;
       let {
         cellShape = Shapes.circle
@@ -336,6 +348,10 @@ class HcsControlGrid extends React.Component {
           cancelAnimationFrame(this.drawHandle);
         }
         const correctPixels = o => o * window.devicePixelRatio;
+        const getX = column =>
+          correctPixels((flipHorizontal ? (columns - column) : column) * cellSize);
+        const getY = row =>
+          correctPixels((flipVertical ? (rows - row) : row) * cellSize);
         this.drawHandle = requestAnimationFrame(() => {
           let color = 'rgba(0, 0, 0, 0.65)';
           let dataColor = '#108ee9';
@@ -353,8 +369,8 @@ class HcsControlGrid extends React.Component {
           const renderCell = (column, row) => {
             if (cellShape === Shapes.circle) {
               context.arc(
-                Math.round(correctPixels((column + 0.5) * cellSize)),
-                Math.round(correctPixels((row + 0.5) * cellSize)),
+                Math.round(getX(column + 0.5)),
+                Math.round(getY(row + 0.5)),
                 correctPixels(radius),
                 0,
                 Math.PI * 2
@@ -362,8 +378,8 @@ class HcsControlGrid extends React.Component {
             }
             if (cellShape === Shapes.rect) {
               context.rect(
-                Math.round(correctPixels(column * cellSize)),
-                Math.round(correctPixels(row * cellSize)),
+                Math.round(getX(column)),
+                Math.round(getY(row)),
                 Math.round(correctPixels(cellSize)),
                 Math.round(correctPixels(cellSize))
               );
@@ -412,22 +428,22 @@ class HcsControlGrid extends React.Component {
             context.beginPath();
             for (let c = 1; c <= columns; c += 1) {
               context.moveTo(
-                correctPixels(c * cellSize),
+                getX(c),
                 0
               );
               context.lineTo(
-                correctPixels(c * cellSize),
+                getX(c),
                 this.canvas.height
               );
             }
             for (let r = 1; r <= rows; r += 1) {
               context.moveTo(
                 0,
-                correctPixels(r * cellSize)
+                getY(r)
               );
               context.lineTo(
                 this.canvas.width,
-                correctPixels(r * cellSize)
+                getY(r)
               );
             }
             context.stroke();
@@ -439,8 +455,8 @@ class HcsControlGrid extends React.Component {
             context.strokeStyle = color;
             context.lineWidth = 2;
             context.arc(
-              Math.round(correctPixels(columns / 2.0 * cellSize)),
-              Math.round(correctPixels(rows / 2.0 * cellSize)),
+              Math.round(getX(columns / 2.0)),
+              Math.round(getY(rows / 2.0)),
               Math.round(correctPixels(cellSize * gridRadius)),
               0,
               Math.PI * 2
@@ -448,8 +464,8 @@ class HcsControlGrid extends React.Component {
             context.stroke();
             context.beginPath();
             context.arc(
-              correctPixels(columns / 2.0 * cellSize),
-              correctPixels(rows / 2.0 * cellSize),
+              getX(columns / 2.0),
+              getY(rows / 2.0),
               correctPixels(3),
               0,
               Math.PI * 2
@@ -469,7 +485,9 @@ class HcsControlGrid extends React.Component {
       style,
       rows,
       columns,
-      controlledHeight
+      controlledHeight,
+      flipHorizontal,
+      flipVertical
     } = this.props;
     const {
       cellSize,
@@ -491,8 +509,9 @@ class HcsControlGrid extends React.Component {
           className={
             classNames(
               styles.rows,
-              'cp-divider',
-              'right'
+              {
+                [styles.flip]: flipVertical
+              }
             )
           }
         >
@@ -506,8 +525,9 @@ class HcsControlGrid extends React.Component {
           className={
             classNames(
               styles.columns,
-              'cp-divider',
-              'bottom'
+              {
+                [styles.flip]: flipHorizontal
+              }
             )
           }
         >
@@ -583,7 +603,9 @@ HcsControlGrid.propTypes = {
   ]),
   gridRadius: PropTypes.number,
   controlledHeight: PropTypes.bool,
-  allowEmptySpaces: PropTypes.bool
+  allowEmptySpaces: PropTypes.bool,
+  flipVertical: PropTypes.bool,
+  flipHorizontal: PropTypes.bool
 };
 
 HcsControlGrid.defaultProps = {

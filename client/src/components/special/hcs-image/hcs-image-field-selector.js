@@ -70,6 +70,7 @@ class HcsImageFieldSelector extends React.Component {
           cellShape={HcsControlGrid.Shapes.rect}
           gridShape={HcsControlGrid.Shapes.circle}
           gridRadius={wellRadius}
+          flipVertical
         />
       </div>
     );
