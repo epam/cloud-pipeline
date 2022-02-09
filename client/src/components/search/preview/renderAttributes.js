@@ -33,7 +33,7 @@ export function metadataLoad (params, entityClass, {metadataCache, dataStorageCa
   }
 }
 
-export function renderAttributes (metadataRequest, isTags = false) {
+export function renderAttributes (metadataRequest, isTags = false, isColumn = false) {
   if (metadataRequest) {
     if (metadataRequest.pending) {
       return <Row className={styles.attributes} type="flex" justify="center"><Icon type="loading" /></Row>;
@@ -70,20 +70,17 @@ export function renderAttributes (metadataRequest, isTags = false) {
       }
     }
     if (attributes.length > 0) {
-      return (
-        <Row type="flex" className={styles.attributes}>
-          {
-            attributes.map((attr, index) => {
-              return (
-                <div key={index} className={styles.attribute}>
-                  <div className={classNames(styles.attributeName, 'cp-search-attribute-name')}>{attr.key}</div>
-                  <div className={classNames(styles.attributeValue, 'cp-search-attribute-value')}>{attr.value}</div>
-                </div>
-              );
-            })
-          }
-        </Row>
-      );
+      const attrs = attributes.map((attr, index) => {
+        return (
+          <div key={index} className={styles.attribute}>
+            <div className={classNames(styles.attributeName, 'cp-search-attribute-name')}>{attr.key}</div>
+            <div className={classNames(styles.attributeValue, 'cp-search-attribute-value')}>{attr.value}</div>
+          </div>
+        );
+      });
+      return !isColumn
+        ? (<Row type="flex" className={styles.attributes}>{attrs}</Row>)
+        : (<div className={classNames('cp-panel-card', styles.attributesPanelContent)}>{attrs}</div>);
     }
   }
   return null;

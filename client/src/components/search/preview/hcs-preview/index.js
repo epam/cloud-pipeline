@@ -16,9 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {Button, Icon} from 'antd';
+
 import HcsImage from '../../../special/hcs-image';
+import styles from '../preview.css';
 
 class HCSPreview extends React.Component {
+  state = {
+    showAttributes: false
+  }
+
   componentDidMount () {
     const {
       onHideInfo,
@@ -30,6 +37,48 @@ class HCSPreview extends React.Component {
     if (onPreviewLoaded) {
       onPreviewLoaded({requireMaximumSpace: true});
     }
+  }
+
+  renderAttributesInfo = () => {
+    if (this.props.children) {
+      return (
+        <Button
+          type="primary"
+          shape="circle"
+          icon="info"
+          size="small"
+          className={styles.attributesInfoBtn}
+          onClick={this.showAttributes}
+        />
+      );
+    } else {
+      return null;
+    }
+  }
+
+  showAttributes = () => {
+    this.setState({
+      showAttributes: true
+    });
+  }
+
+  hideAttributes = () => {
+    this.setState({
+      showAttributes: false
+    });
+  }
+
+  showAttributesPanel = () => {
+    return (
+      <div className={styles.attributesPanel}>
+        <Icon
+          type="close"
+          size="small"
+          onClick={this.hideAttributes}
+        />
+        {this.props.children}
+      </div>
+    );
   }
 
   render () {
@@ -46,7 +95,13 @@ class HCSPreview extends React.Component {
         style={{
           height: 'calc(100vh - 150px)'
         }}
-      />
+      >
+        {
+          this.state.showAttributes
+            ? this.showAttributesPanel()
+            : this.renderAttributesInfo()
+        }
+      </HcsImage>
     );
   };
 }

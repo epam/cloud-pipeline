@@ -348,7 +348,9 @@ export default class S3FilePreview extends React.Component {
         onFullScreenChange={this.props.onFullScreenChange}
         fullScreenAvailable={this.props.fullScreenAvailable}
         onHideInfo={this.hideInfo}
-      />
+      >
+        {renderAttributes(this.props.metadata, true, true)}
+      </HCSPreview>
     );
   }
 

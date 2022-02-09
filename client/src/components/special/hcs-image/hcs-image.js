@@ -19,9 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {
-  Alert
-} from 'antd';
+import {Alert} from 'antd';
 import fetchHCSInfo from './utilities/fetch-hcs-info';
 import HcsImageWellsSelector from './hcs-image-wells-selector';
 import HcsImageFieldSelector from './hcs-image-field-selector';
@@ -312,7 +310,8 @@ class HcsImage extends React.PureComponent {
     const {
       className,
       style,
-      showWellSelectors
+      showWellSelectors,
+      children
     } = this.props;
     const {
       error,
@@ -359,6 +358,7 @@ class HcsImage extends React.PureComponent {
                 </div>
               )
             }
+            {!error && children}
             <div
               className={styles.hcsImage}
               ref={this.init}
