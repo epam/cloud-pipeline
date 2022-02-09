@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from threading import RLock
 
 DEFAULT_DELIMITER = '/'
 KB = 1024
@@ -69,3 +70,80 @@ def get_item_name(path, prefix, delimiter='/'):
         return os.path.basename(path.rstrip(delimiter)) + delimiter
     else:
         return path
+
+
+def synchronized(func):
+    def wrapper(*args, **kwargs):
+        lock = args[0]._lock
+        try:
+            lock.acquire()
+            return_value = func(*args, **kwargs)
+            return return_value
+        finally:
+            lock.release()
+    return wrapper
+
+
+def get_parent_paths(path, delimiter='/'):
+    current_parent_path = ''
+    for item in get_parent_dirs(path):
+        if current_parent_path:
+            current_parent_path += delimiter + item
+        else:
+            current_parent_path = item
+        yield current_parent_path
+
+
+def get_parent_dirs(path, delimiter='/'):
+    items = path.strip(delimiter).split(delimiter)
+    yield ''
+    for item in items[:-1]:
+        yield item
+
+
+class SimpleCache:
+
+    def __init__(self, cache):
+        """
+        Simple cache.
+
+        Stores key value pairs using the provided cache implementation.
+
+        :param cache: Cache implementation.
+        """
+        self._cache = cache
+
+    def get(self, key):
+        return self._cache.get(key, None)
+
+    def set(self, key, value):
+        self._cache[key] = value
+
+    def clear(self):
+        self._cache.clear()
+
+
+class ThreadSafeCache:
+
+    def __init__(self, inner):
+        """
+        Thread safe cache decorator.
+
+        Provides basic thread safety for the underlying cache.
+
+        :param inner: Not thread safe cache.
+        """
+        self._inner = inner
+        self._lock = RLock()
+
+    @synchronized
+    def get(self, key):
+        return self._inner.get(key)
+
+    @synchronized
+    def set(self, key, value):
+        self._inner.set(key, value)
+
+    @synchronized
+    def clear(self):
+        self._inner.clear()

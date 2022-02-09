@@ -13,14 +13,14 @@
 # limitations under the License.
 
 import argparse
-import errno
 import logging
 import os
-import platform
-import sys
 import traceback
 
+import errno
 import future.utils
+import platform
+import sys
 
 
 def is_windows():
@@ -43,16 +43,35 @@ libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse',
 if os.path.exists(libfuse_path):
     os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
+import ctypes
 
-from pipefuse.fuseutils import MB, GB
-from pipefuse.cache import CachingFileSystemClient, ListingCache, ThreadSafeListingCache
+import fuse
+from cachetools import TTLCache, Cache
+from fuse import FUSE, fuse_operations, fuse_file_info
+
+from pipefuse.access import AccessControlFileSystemClient, \
+    BasicPermissionManager,\
+    ExplicitPermissionManager,\
+    ExplainingTreePermissionManager, \
+    CachingPermissionManager,\
+    RefreshingPermissionManager, \
+    CloudPipelinePermissionProvider, \
+    BasicPermissionResolver
+from pipefuse.api import CloudPipelineClient, CloudType
 from pipefuse.buffread import BufferingReadAheadFileSystemClient
 from pipefuse.buffwrite import BufferingWriteFileSystemClient
+from pipefuse.cache import CachingFileSystemClient, ListingCache, ThreadSafeListingCache
+from pipefuse.fslock import get_lock
+from pipefuse.fuseutils import MB, GB, SimpleCache, ThreadSafeCache
+from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
+from pipefuse.path import PathExpandingStorageFileSystemClient
+from pipefuse.pipefs import PipeFS
+from pipefuse.record import RecordingFS, RecordingFileSystemClient
+from pipefuse.s3 import S3StorageLowLevelClient
+from pipefuse.storage import StorageHighLevelFileSystemClient
 from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
-from pipefuse.api import CloudPipelineClient, CloudType
-from pipefuse.gcp import GoogleStorageLowLevelFileSystemClient
 from pipefuse.webdav import CPWebDavClient
 from pipefuse.s3 import S3StorageLowLevelClient
 from pipefuse.storage import StorageHighLevelFileSystemClient
@@ -76,7 +95,9 @@ _info_logging_level = 'INFO'
 def start(mountpoint, webdav, bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
           write_buffer_size, trunc_buffer_size, chunk_size,
-          cache_ttl, cache_size, default_mode,
+          cache_ttl, cache_size,
+          acl_cache_ttl, acl_cache_size, acl_verbose,
+          default_mode,
           mount_options=None, threads=False, monitoring_delay=600, recording=False):
     if mount_options is None:
         mount_options = {}
@@ -99,6 +120,8 @@ def start(mountpoint, webdav, bucket,
         raise RuntimeError('Cloud Pipeline API_TOKEN should be specified.')
     if webdav:
         client = CPWebDavClient(webdav_url=webdav, bearer=bearer)
+        if recording:
+            client = RecordingFileSystemClient(client)
     else:
         if not api:
             raise RuntimeError('Cloud Pipeline API should be specified.')
@@ -116,8 +139,37 @@ def start(mountpoint, webdav, bucket,
         else:
             raise RuntimeError('Cloud storage type %s is not supported.' % bucket_object.type)
         client = StorageHighLevelFileSystemClient(client)
-    if recording:
-        client = RecordingFileSystemClient(client)
+        if recording:
+            client = RecordingFileSystemClient(client)
+
+        if not acl_verbose:
+            logging.info('Acl verbose logging is disabled.')
+
+        acl_provider = CloudPipelinePermissionProvider(pipe=pipe, bucket=bucket_object, verbose=acl_verbose)
+        acl_resolver = BasicPermissionResolver(is_read_allowed=bucket_object.is_read_allowed(),
+                                               is_write_allowed=bucket_object.is_write_allowed(),
+                                               verbose=acl_verbose)
+        acl_manager = BasicPermissionManager(provider=acl_provider, resolver=acl_resolver)
+        acl_manager = ExplicitPermissionManager(acl_manager, resolver=acl_resolver)
+        if acl_verbose:
+            acl_manager = ExplainingTreePermissionManager(acl_manager)
+        if acl_cache_size > 0:
+            acl_cache_implementation = Cache(maxsize=acl_cache_size)
+            acl_cache = SimpleCache(acl_cache_implementation)
+            if threads:
+                acl_cache = ThreadSafeCache(acl_cache)
+            acl_manager = CachingPermissionManager(acl_manager, cache=acl_cache)
+        else:
+            logging.info('Acl caching is disabled.')
+
+        if acl_cache_ttl:
+            acl_manager = RefreshingPermissionManager(acl_manager, refresh_delay=acl_cache_ttl)
+        else:
+            logging.info('Acl refreshing is disabled.')
+
+        acl_manager.refresh()
+        client = AccessControlFileSystemClient(client, manager=acl_manager)
+
     if bucket_type in [CloudType.S3, CloudType.GS]:
         client = PathExpandingStorageFileSystemClient(client, root_path=root_path)
     if cache_ttl > 0 and cache_size > 0:
@@ -272,13 +324,19 @@ if __name__ == '__main__':
                         help="Listing cache time to live, seconds")
     parser.add_argument("-s", "--cache-size", type=int, required=False, default=100,
                         help="Number of simultaneous listing caches")
+    parser.add_argument("--acl-cache-ttl", type=int, required=False, default=60,
+                        help="Acl cache time to live, seconds.")
+    parser.add_argument("--acl-cache-size", type=int, required=False, default=1000,
+                        help="Number of simultaneous acl caches.")
+    parser.add_argument("--acl-verbose", action="store_true",
+                        help="Enables acl verbose logging.")
     parser.add_argument("-m", "--mode", type=str, required=False, default="700",
                         help="Default mode for files")
     parser.add_argument("-o", "--options", type=str, required=False,
                         help="String with mount options supported by FUSE")
     parser.add_argument("-l", "--logging-level", type=str, required=False, default=_default_logging_level,
                         help="Logging level.")
-    parser.add_argument("-th", "--threads", action='store_true', help="Enables multithreading.")
+    parser.add_argument("-th", "--threads", action="store_true", help="Enables multithreading.")
     parser.add_argument("-d", "--monitoring-delay", type=int, required=False, default=600,
                         help="Delay between path lock monitoring cycles.")
     args = parser.parse_args()
@@ -290,7 +348,7 @@ if __name__ == '__main__':
     if args.logging_level not in _allowed_logging_levels:
         parser.error('Only the following logging level are allowed: %s.' % _allowed_logging_levels_string)
     recording = args.logging_level in [_info_logging_level, _debug_logging_level]
-    logging.basicConfig(format='[%(levelname)s] %(asctime)s %(filename)s - %(message)s',
+    logging.basicConfig(format='%(asctime)s [%(threadName)-9.9s] [%(filename)-9.9s] [%(levelname)-5.5s] %(message)s',
                         level=args.logging_level)
     logging.getLogger('botocore').setLevel(logging.ERROR)
 
@@ -307,6 +365,7 @@ if __name__ == '__main__':
               write_buffer_size=args.write_buffer_size, trunc_buffer_size=args.trunc_buffer_size,
               chunk_size=args.chunk_size,
               cache_ttl=args.cache_ttl, cache_size=args.cache_size,
+              acl_cache_ttl=args.acl_cache_ttl, acl_cache_size=args.acl_cache_size, acl_verbose=args.acl_verbose,
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
