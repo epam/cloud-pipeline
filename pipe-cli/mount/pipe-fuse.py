@@ -13,14 +13,16 @@
 # limitations under the License.
 
 import argparse
+import ctypes
 import logging
 import os
+import platform
 import traceback
 
 import errno
 import future.utils
-import platform
 import sys
+from cachetools import Cache, TTLCache
 
 
 def is_windows():
@@ -43,17 +45,15 @@ libfuse_path = os.path.abspath(os.path.join(source_path, 'libfuse',
 if os.path.exists(libfuse_path):
     os.environ["FUSE_LIBRARY_PATH"] = libfuse_path
 
-import ctypes
 
 import fuse
-from cachetools import TTLCache, Cache
-from fuse import FUSE, fuse_operations, fuse_file_info
+from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
 
 from pipefuse.access import AccessControlFileSystemClient, \
-    BasicPermissionManager,\
-    ExplicitPermissionManager,\
+    BasicPermissionManager, \
+    ExplicitPermissionManager, \
     ExplainingTreePermissionManager, \
-    CachingPermissionManager,\
+    CachingPermissionManager, \
     RefreshingPermissionManager, \
     CloudPipelinePermissionProvider, \
     BasicPermissionResolver
@@ -73,16 +73,7 @@ from pipefuse.trunc import CopyOnDownTruncateFileSystemClient, \
     WriteNullsOnUpTruncateFileSystemClient, \
     WriteLastNullOnUpTruncateFileSystemClient
 from pipefuse.webdav import CPWebDavClient
-from pipefuse.s3 import S3StorageLowLevelClient
-from pipefuse.storage import StorageHighLevelFileSystemClient
-from pipefuse.pipefs import PipeFS
-from pipefuse.record import RecordingFS, RecordingFileSystemClient
-from pipefuse.path import PathExpandingStorageFileSystemClient
-from pipefuse.fslock import get_lock
-import ctypes
-import fuse
-from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
-from cachetools import TTLCache
+
 
 _allowed_logging_level_names = ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG', 'NOTSET']
 _allowed_logging_levels = future.utils.lfilter(lambda name: isinstance(name, str), _allowed_logging_level_names)
