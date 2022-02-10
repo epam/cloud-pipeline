@@ -123,8 +123,7 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
     }
 
     public DataStorageFile moveFile(T storage, String oldPath, String newPath) {
-        assertFileReadAccess(storage, oldPath);
-        assertFileWriteAccess(storage, oldPath);
+        assertFileReadWriteAccess(storage, oldPath);
         assertFileWriteAccess(storage, newPath);
         final DataStorageFile file = provider.moveFile(storage, oldPath, newPath);
         permissionProviderManager.moveFilePermissions(storage, oldPath, newPath);
@@ -255,6 +254,18 @@ public class SecuredStorageProvider<T extends AbstractDataStorage> implements St
                                    DataStorageItemType type) {
         if (permissionProviderManager.isWriteNotAllowed(storage, path, StoragePermissionPathType.from(type))) {
             throw new AccessDeniedException(String.format("Data storage path %s write is not allowed.", path));
+        }
+    }
+
+    private void assertFileReadWriteAccess(T storage, String path) {
+        assertReadWriteAccess(storage, path, DataStorageItemType.File);
+    }
+
+    private void assertReadWriteAccess(T storage,
+                                       String path,
+                                       DataStorageItemType type) {
+        if (permissionProviderManager.isReadWriteNotAllowed(storage, path, StoragePermissionPathType.from(type))) {
+            throw new AccessDeniedException(String.format("Data storage path %s read and write is not allowed.", path));
         }
     }
 

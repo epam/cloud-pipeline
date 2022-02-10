@@ -4,6 +4,8 @@ import com.epam.pipeline.acl.datastorage.security.StoragePermissionBatchApiServi
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.datastorage.security.StoragePermission;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionMoveBatchRequest;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteAllBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionDeleteBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionInsertBatchRequest;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionLoadAllRequest;
@@ -40,6 +42,20 @@ public class StoragePermissionBatchController extends AbstractRestController {
         return Result.success();
     }
 
+    @RequestMapping(value = "/storage/permission/batch/move", method = RequestMethod.PUT)
+    @ResponseBody
+    @ApiOperation(
+            value = "Moves permissions from from one object to another.",
+            notes = "Moves permissions from from one object to another.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result move(@RequestBody final StoragePermissionMoveBatchRequest request) {
+        service.move(request);
+        return Result.success();
+    }
+
     @RequestMapping(value = "/storage/permission/batch/delete", method = RequestMethod.DELETE)
     @ResponseBody
     @ApiOperation(value = "Deletes storage object permissions.",
@@ -48,6 +64,17 @@ public class StoragePermissionBatchController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result delete(@RequestBody final StoragePermissionDeleteBatchRequest request) {
         service.delete(request);
+        return Result.success();
+    }
+
+    @RequestMapping(value = "/storage/permission/batch/deleteAll", method = RequestMethod.DELETE)
+    @ResponseBody
+    @ApiOperation(value = "Deletes all permissions for specified storage objects.",
+            notes = "Deletes all permissions for specified storage objects.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result deleteAll(@RequestBody final StoragePermissionDeleteAllBatchRequest request) {
+        service.deleteAll(request);
         return Result.success();
     }
 
@@ -61,7 +88,7 @@ public class StoragePermissionBatchController extends AbstractRestController {
         return Result.success(service.load(request));
     }
 
-    @RequestMapping(value = "/storage/permission/batch/all", method = RequestMethod.POST)
+    @RequestMapping(value = "/storage/permission/batch/loadAll", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(value = "Loads storage object permissions.",
             notes = "Loads storage object permissions.",

@@ -277,6 +277,8 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_MIRROR_DELETION = "error.datastorage.mirror.deletion";
 
     // Storage permission messages
+    public static final String ERROR_STORAGE_PERMISSION_MISSING =
+            "error.storage.permission.missing";
     public static final String ERROR_STORAGE_PERMISSION_STORAGE_ID_MISSING =
             "error.storage.permission.storage.id.missing";
     public static final String ERROR_STORAGE_PERMISSION_STORAGE_KIND_MISSING =

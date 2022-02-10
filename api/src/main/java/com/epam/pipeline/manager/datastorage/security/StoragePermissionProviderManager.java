@@ -1,12 +1,12 @@
 package com.epam.pipeline.manager.datastorage.security;
 
+import com.epam.pipeline.dto.datastorage.security.StoragePermission;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
+import com.epam.pipeline.dto.datastorage.security.StoragePermissionSid;
 import com.epam.pipeline.dto.datastorage.security.StoragePermissionSidType;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
-import com.epam.pipeline.dto.datastorage.security.StoragePermission;
-import com.epam.pipeline.dto.datastorage.security.StoragePermissionPathType;
-import com.epam.pipeline.dto.datastorage.security.StoragePermissionSid;
 import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageItemType;
 import com.epam.pipeline.entity.datastorage.DataStorageListing;
@@ -65,6 +65,18 @@ public class StoragePermissionProviderManager {
                                      final String path,
                                      final StoragePermissionPathType type) {
         return !isWriteAllowed(storage, path, type);
+    }
+
+    public boolean isReadWriteAllowed(final SecuredStorageEntity storage,
+                                      final String path,
+                                      final StoragePermissionPathType type) {
+        return isAllowed(storage, path, type, AclPermission.READ, AclPermission.WRITE);
+    }
+
+    public boolean isReadWriteNotAllowed(final SecuredStorageEntity storage,
+                                         final String path,
+                                         final StoragePermissionPathType type) {
+        return !isReadWriteAllowed(storage, path, type);
     }
 
     public boolean isAllowed(final SecuredStorageEntity storage,
@@ -347,5 +359,4 @@ public class StoragePermissionProviderManager {
     private boolean isAdminOrOwner(final SecuredStorageEntity storage, final PipelineUser user) {
         return user.isAdmin() || Objects.equals(user.getUserName(), storage.getOwner());
     }
-
 }
