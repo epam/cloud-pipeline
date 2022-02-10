@@ -19,9 +19,9 @@ import time
 from datetime import datetime
 from dateutil.tz import tzlocal
 
-import fuseutils
-from fsclient import File, FileSystemClientDecorator
-from fuseutils import synchronized
+from pipefuse import fuseutils
+from pipefuse.fsclient import File, FileSystemClientDecorator
+from pipefuse.fuseutils import synchronized
 
 _ANY_ERROR = BaseException
 

@@ -20,7 +20,7 @@ import errno
 import time
 from fuse import FuseOSError
 
-from fsclient import FileSystemClientDecorator
+from pipefuse.fsclient import FileSystemClientDecorator
 from pipefuse.fuseutils import get_parent_paths, get_parent_dirs
 
 FILE = 'FILE'
