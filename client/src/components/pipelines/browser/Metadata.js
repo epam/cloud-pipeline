@@ -1402,7 +1402,7 @@ export default class Metadata extends React.Component {
         row: index + dataItemFrom
       }));
       const columns = tableColumns
-        .filter(column => column.selected)
+        .filter(column => column.selected && !this.isSampleSheetColumn(column.key))
         .map((column, index) => ({key: mapColumnName(column), column: index}));
       const actions = autoFillEntities.buildAutoFillActions(
         elements,
