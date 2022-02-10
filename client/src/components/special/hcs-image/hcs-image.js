@@ -299,11 +299,16 @@ class HcsImage extends React.PureComponent {
       const {Viewer} = HCSImageViewer;
       this.hcsImageViewer = new Viewer({
         container,
-        verbose: true,
         className: 'hcs-image',
         style: {
           width: '100%',
           height: '100%'
+        },
+        minZoomBackOff: 0.25,
+        maxZoomBackOff: 0,
+        defaultZoomBackOff: 0.25,
+        overview: {
+          position: 'bottom-left'
         }
       });
       this.hcsViewerState.attachToViewer(this.hcsImageViewer);

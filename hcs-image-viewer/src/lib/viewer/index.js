@@ -18,6 +18,22 @@ const LOG_MESSAGE = Symbol('log message');
 const LOG_ERROR = Symbol('log error');
 const CALLBACKS = Symbol('callbacks');
 
+/**
+ * @typedef {Object} OverviewOptions
+ */
+
+/**
+ * @typedef {Object} HcsImageViewerOptions
+ * @property {Element} container
+ * @property {string} [className]
+ * @property {Object} [style]
+ * @property {number} [minZoomBackOff=0]
+ * @property {number} [maxZoomBackOff]
+ * @property {number} [defaultZoomBackOff=0]
+ * @property {OverviewOptions} [overview]
+ * @property {boolean|number} [verbose=1]
+ */
+
 const Verbosity = {
   none: 0,
   error: 1,
@@ -43,13 +59,6 @@ class Viewer {
     : undefined);
 
   /**
-     * @typedef {Object} HcsImageViewerOptions
-     * @property {Element} container
-     * @property {string} [className]
-     * @property {Object} [style]
-     * @property {boolean|number} [verbose=1]
-     */
-  /**
      *
      * @param {HcsImageViewerOptions} [options]
      */
@@ -59,6 +68,10 @@ class Viewer {
       className,
       style,
       verbose = Verbosity.error,
+      minZoomBackOff,
+      maxZoomBackOff,
+      defaultZoomBackOff,
+      overview,
     } = options;
     if (typeof verbose === 'boolean') {
       this.verbose = verbose ? Verbosity.all : Verbosity.none;
@@ -86,6 +99,10 @@ class Viewer {
             {
               className,
               style,
+              minZoomBackOff,
+              maxZoomBackOff,
+              defaultZoomBackOff,
+              overview,
             },
             {
               onStateChange: onStateChanged,

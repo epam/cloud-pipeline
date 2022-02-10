@@ -41,15 +41,19 @@
 import React, {
   useEffect,
   useRef,
+  useState,
 } from 'react';
 import PropTypes from 'prop-types';
 import {
   AdditiveColormapExtension,
   LensExtension,
   PictureInPictureViewer,
+  getDefaultInitialViewState,
+  DETAIL_VIEW_ID,
 } from '@hms-dbmi/viv';
 import { HCSImageContext, useHCSImageState } from '../state';
 import useElementSize from './utilities/use-element-size';
+import getZoomLevel from '../state/utilities/get-zoom-level';
 
 const additiveColorMapExtension = new AdditiveColormapExtension();
 const lensExtension = new LensExtension();
@@ -61,6 +65,10 @@ function HCSImageViewer(
     onRegisterStateActions,
     onViewerStateChanged,
     style,
+    minZoomBackOff = 0,
+    maxZoomBackOff = undefined,
+    defaultZoomBackOff = 0,
+    overview,
   },
 ) {
   const {
@@ -97,11 +105,39 @@ function HCSImageViewer(
     colorMap,
     loader,
   } = viewerState;
+  const [viewState, setViewState] = useState(undefined);
+  useEffect(() => {
+    if (loader && loader.length && size && size.width && size.height) {
+      const [first] = Array.isArray(loader) ? loader : [loader];
+      const last = Array.isArray(loader) ? loader[loader.length - 1] : loader;
+      const defaultViewState = [{
+        ...getDefaultInitialViewState(loader, size, defaultZoomBackOff),
+        id: DETAIL_VIEW_ID,
+        minZoom: minZoomBackOff !== undefined
+          ? getZoomLevel(first, size, minZoomBackOff)
+          : -Infinity,
+        maxZoom: maxZoomBackOff !== undefined
+          ? getZoomLevel(last, size, maxZoomBackOff)
+          : Infinity,
+      }];
+      setViewState(defaultViewState);
+    } else {
+      setViewState(undefined);
+    }
+  }, [
+    loader,
+    size,
+    setViewState,
+    minZoomBackOff,
+    maxZoomBackOff,
+    defaultZoomBackOff,
+  ]);
   const readyForRendering = loader
-        && ready
-        && size
-        && size.width
-        && size.height;
+    && ready
+    && size
+    && size.width
+    && size.height
+    && viewState;
   return (
     <HCSImageContext.Provider value={state}>
       <div
@@ -110,23 +146,24 @@ function HCSImageViewer(
         ref={containerRef}
       >
         {
-                    readyForRendering && (
-                    <PictureInPictureViewer
-                      contrastLimits={contrastLimits}
-                      colors={colors}
-                      channelsVisible={channelsVisibility}
-                      loader={loader}
-                      selections={selections}
-                      height={size.height}
-                      width={size.width}
-                      extensions={
-                                colorMap ? [additiveColorMapExtension] : [lensExtension]
-                            }
-                      colormap={colorMap || 'viridis'}
-                      onViewportLoad={setImageViewportLoaded}
-                    />
-                    )
-                }
+          readyForRendering && (
+            <PictureInPictureViewer
+              contrastLimits={contrastLimits}
+              colors={colors}
+              channelsVisible={channelsVisibility}
+              loader={loader}
+              selections={selections}
+              height={size.height}
+              width={size.width}
+              extensions={colorMap ? [additiveColorMapExtension] : [lensExtension]}
+              colormap={colorMap || 'viridis'}
+              onViewportLoad={setImageViewportLoaded}
+              viewStates={viewState}
+              overviewOn={!!overview}
+              overview={overview}
+            />
+          )
+        }
       </div>
     </HCSImageContext.Provider>
   );
@@ -139,6 +176,11 @@ HCSImageViewer.propTypes = {
   onViewerStateChanged: PropTypes.func,
   // eslint-disable-next-line react/forbid-prop-types
   style: PropTypes.object,
+  minZoomBackOff: PropTypes.number,
+  maxZoomBackOff: PropTypes.number,
+  defaultZoomBackOff: PropTypes.number,
+  // eslint-disable-next-line react/forbid-prop-types
+  overview: PropTypes.object,
 };
 
 HCSImageViewer.defaultProps = {
@@ -147,6 +189,10 @@ HCSImageViewer.defaultProps = {
   onRegisterStateActions: undefined,
   onViewerStateChanged: undefined,
   style: undefined,
+  minZoomBackOff: 0,
+  maxZoomBackOff: undefined,
+  defaultZoomBackOff: 0,
+  overview: undefined,
 };
 
 export default HCSImageViewer;
