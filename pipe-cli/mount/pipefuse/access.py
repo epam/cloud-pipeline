@@ -231,14 +231,14 @@ class CloudPipelinePermissionProvider(PermissionProvider):
             for raw_permission_parent_path in get_parent_paths(raw_permission_path):
                 if read_permission in [READ or SYNTHETIC_READ]:
                     permission_parent_permissions = \
-                        permissions[raw_permission_parent_path + self._delimiter] = \
-                        permissions.get(raw_permission_parent_path + self._delimiter, [])
+                        permissions[raw_permission_parent_path] = \
+                        permissions.get(raw_permission_parent_path, [])
                     if NO_READ in current_updated_permissions:
                         current_updated_permissions.remove(NO_READ)
                     if READ not in permission_parent_permissions and SYNTHETIC_READ not in permission_parent_permissions:
                         if self._verbose:
                             logging.debug('Resolved uplifted %s permission for %s',
-                                          SYNTHETIC_READ, raw_permission_parent_path + self._delimiter)
+                                          SYNTHETIC_READ, raw_permission_parent_path)
                         permission_parent_permissions.append(SYNTHETIC_READ)
 
         return permissions
@@ -262,8 +262,7 @@ class CloudPipelinePermissionProvider(PermissionProvider):
     def _group_permissions_by_path(self, permissions):
         permissions_dict = {}
         for permission in permissions:
-            permission_type = permission.get('type', FOLDER)
-            permission_path = (permission.get('path') + self._delimiter) if permission_type == FOLDER else permission.get('path')
+            permission_path = permission.get('path')
             permission_group = permissions_dict[permission_path] = permissions_dict.get(permission_path, [])
             permission_group.append(permission)
         return permissions_dict
@@ -313,7 +312,7 @@ class BasicPermissionResolver(PermissionResolver):
         self._delimiter = '/'
 
     def get(self, path, permissions):
-        path = path.lstrip(self._delimiter) or self._delimiter
+        path = path.strip(self._delimiter)
         if self._verbose:
             logging.debug('Resolving permissions for %s...', path)
 
@@ -339,7 +338,7 @@ class BasicPermissionResolver(PermissionResolver):
 
         if not read_permission or not write_permission:
             for parent_path in reversed(list(get_parent_paths(path))):
-                parent_path_permissions = permissions.get(parent_path + self._delimiter, [])
+                parent_path_permissions = permissions.get(parent_path, [])
                 if not read_permission:
                     if READ in parent_path_permissions:
                         read_permission = READ
@@ -468,19 +467,17 @@ class ExplainingTreePermissionManager(PermissionManager):
         self._explain_tree(self._build_tree(self._inner.get_all()))
 
     def _build_tree(self, permissions):
-        permissions_tree = PermissionTree(path=self._delimiter, permissions=permissions.get(self._delimiter, []))
+        permissions_tree = PermissionTree(path='', permissions=permissions.get('', []))
         for current_path, current_permissions in permissions.items():
-            current_item_name = current_path.strip(self._delimiter).split(self._delimiter)[-1]
-            if current_path.endswith(self._delimiter):
-                current_item_name += self._delimiter
-            if current_item_name == self._delimiter:
+            current_item_name = current_path.split(self._delimiter)[-1]
+            if current_item_name == '':
                 continue
             current_node = permissions_tree
             for parent_path in list(get_parent_dirs(current_path))[1:]:
-                if (parent_path + self._delimiter) not in current_node.children:
-                    child_node = current_node.children[parent_path + self._delimiter] = PermissionTree(path=parent_path + self._delimiter)
+                if parent_path not in current_node.children:
+                    child_node = current_node.children[parent_path] = PermissionTree(path=parent_path)
                 else:
-                    child_node = current_node.children[parent_path + self._delimiter]
+                    child_node = current_node.children[parent_path]
                 current_node = child_node
             if current_item_name in current_node.children:
                 existing_node = current_node.children[current_item_name]
