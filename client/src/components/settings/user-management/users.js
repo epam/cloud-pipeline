@@ -267,6 +267,10 @@ export default class UsersManagement extends React.Component {
         </MenuItem>
       </Menu>
     );
+    const isAdminFilter = (value) => (
+      value === USERS_FILTERS.online ||
+      value === USERS_FILTERS.offline
+    );
     return (
       <Row type="flex" style={{marginBottom: 10}}>
         <Input.Search
@@ -281,36 +285,17 @@ export default class UsersManagement extends React.Component {
           style={{width: 175, marginLeft: 5}}
           onChange={this.onChangeUsersFilters}
         >
-          <Select.Option
-            key={USERS_FILTERS.all}
-            value={USERS_FILTERS.all}
-          >
-            Show all users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.notBlocked}
-            value={USERS_FILTERS.notBlocked}
-          >
-            Show not blocked users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.blocked}
-            value={USERS_FILTERS.blocked}
-          >
-            Show blocked users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.online}
-            value={USERS_FILTERS.online}
-          >
-            Show online users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.offline}
-            value={USERS_FILTERS.offline}
-          >
-            Show offline users
-          </Select.Option>
+          {
+            Object.values(USERS_FILTERS)
+              .filter(value => this.isAdmin ? value : !isAdminFilter(value))
+              .map(filter => (
+                <Select.Option
+                  key={USERS_FILTERS[filter]}
+                  value={USERS_FILTERS[filter]}
+                >
+                  Show {filter} users
+                </Select.Option>)
+              )}
         </Select>
         {
           this.isAdmin && (
