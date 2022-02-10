@@ -16,13 +16,25 @@
 
 import {observable, computed} from 'mobx';
 
+const UI_NGS_PROJECT_MACHINE_RUN_PREFERENCE = 'ngs.preprocessing.machine.run.metadata.class.name';
 const MACHINE_RUN_METADATA_CLASS_NAME = 'MachineRun';
+const UI_NGS_PROJECT_SAMPLE_SHEET_COLUMN_PREFERENCE = 'ngs.preprocessing.samplesheet.link.column';
+const SAMPLE_SHEET_COLUMN_NAME = 'SampleSheet';
 
 export function getMachineRunMetadataClassName (preferences) {
   if (preferences && preferences.loaded) {
-    // todo: fetch machine run class name from preferences
+    return preferences.getPreferenceValue(UI_NGS_PROJECT_MACHINE_RUN_PREFERENCE) ||
+      MACHINE_RUN_METADATA_CLASS_NAME;
   }
   return MACHINE_RUN_METADATA_CLASS_NAME;
+}
+
+export function getSampleSheetColumnName (preferences) {
+  if (preferences && preferences.loaded) {
+    return preferences.getPreferenceValue(UI_NGS_PROJECT_SAMPLE_SHEET_COLUMN_PREFERENCE) ||
+      SAMPLE_SHEET_COLUMN_NAME;
+  }
+  return SAMPLE_SHEET_COLUMN_NAME;
 }
 
 class NgsProjectMachineRuns {
@@ -45,7 +57,8 @@ class NgsProjectMachineRuns {
   }
 
   isSampleSheetValue (column) {
-    return this.isMachineRunsMetadataClass && /^SampleSheet$/i.test(column);
+    return this.isMachineRunsMetadataClass &&
+      getSampleSheetColumnName(this.preferences) === column;
   }
 }
 

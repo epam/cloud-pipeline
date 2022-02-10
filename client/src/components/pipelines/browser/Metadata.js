@@ -77,7 +77,9 @@ import getDefaultColumns from './metadata-controls/get-default-columns';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
 import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
-import * as metadataFilterUtitilies from './metadata-controls/metadata-filters';
+import * as metadataFilterUtilities from './metadata-controls/metadata-filters';
+import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUpdateSampleSheet';
+import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -163,7 +165,7 @@ function makeCurrentOrderSort (array) {
     // Router renderer
     componentParameters = params.params;
     filters = routing && routing.location
-      ? metadataFilterUtitilies.parse(routing.location.query)
+      ? metadataFilterUtilities.parse(routing.location.query)
       : {};
   }
   return {
@@ -791,6 +793,51 @@ export default class Metadata extends React.Component {
     });
   };
 
+  onEditSampleSheet = async (machineRun, sampleSheet) => {
+    if (machineRun && machineRun.rowKey && machineRun.rowKey.value) {
+      const hide = message.loading('Updating sample sheet...', 0);
+      try {
+        const machineRunId = machineRun.rowKey.value;
+        const {folderId} = this.props;
+        const request = new NGSMetadataUpdateSampleSheet();
+        await request
+          .send({
+            folderId: Number(folderId),
+            machineRunId: Number(machineRunId),
+            content: sampleSheet ? btoa(sampleSheet) : btoa('')
+          });
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        await this.loadData();
+      } catch (e) {
+        message.error(e.message, 5);
+      } finally {
+        hide();
+      }
+    }
+  };
+
+  onRemoveSampleSheet = async (machineRun) => {
+    if (machineRun && machineRun.rowKey && machineRun.rowKey.value) {
+      const hide = message.loading('Removing sample sheet and associated samples...', 0);
+      try {
+        const machineRunId = machineRun.rowKey.value;
+        const {folderId} = this.props;
+        const request = new NGSMetadataDeleteSampleSheet(folderId, machineRunId);
+        await request.send({});
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        await this.loadData();
+      } catch (e) {
+        message.error(e.message, 5);
+      } finally {
+        hide();
+      }
+    }
+  };
+
   onArrayReferencesClick = (event, key, data, referenceType, item) => {
     const {
       ngsProjectInfo,
@@ -830,7 +877,7 @@ export default class Metadata extends React.Component {
               router,
               folderId
             } = this.props;
-            const query = metadataFilterUtitilies
+            const query = metadataFilterUtilities
               .build([{key: fieldName, values: [item.ID.value]}]);
             if (query) {
               router.push(`/folder/${folderId}/metadata/${className}?${query}`);
@@ -1644,7 +1691,21 @@ export default class Metadata extends React.Component {
               </div>
           }
           showPagination={false}
-          NoDataComponent={() => <div className={classNames(styles.noData, 'cp-library-metadata-panel-placeholder')}>No rows found</div>} />,
+          NoDataComponent={
+            () => (
+              <div
+                className={
+                  classNames(
+                    styles.noData,
+                    'cp-library-metadata-panel-placeholder'
+                  )
+                }
+              >
+                No rows found
+              </div>
+            )
+          }
+        />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
@@ -2109,6 +2170,8 @@ export default class Metadata extends React.Component {
               return (
                 <MetadataSampleSheetValue
                   value={data ? data.value : undefined}
+                  onChange={content => this.onEditSampleSheet(item, content)}
+                  onRemove={() => this.onRemoveSampleSheet(item)}
                 />
               );
             }
@@ -2530,7 +2593,7 @@ export default class Metadata extends React.Component {
   componentDidUpdate (prevProps, prevState, snapshot) {
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
     const folderChanged = prevProps.folderId !== this.props.folderId;
-    const filtersChanged = metadataFilterUtitilies
+    const filtersChanged = metadataFilterUtilities
       .filtersChanged(prevProps.filters, this.props.filters);
     if (
       metadataClassChanged ||

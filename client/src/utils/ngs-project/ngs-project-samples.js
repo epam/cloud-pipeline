@@ -17,11 +17,13 @@
 import {observable, computed} from 'mobx';
 import {getMachineRunMetadataClassName} from './ngs-project-machine-runs';
 
+const UI_NGS_PROJECT_SAMPLE_PREFERENCE = 'ngs.preprocessing.sample.metadata.class.name';
 const SAMPLE_METADATA_CLASS_NAME = 'Sample';
 
 export function getSampleMetadataClassName (preferences) {
   if (preferences && preferences.loaded) {
-    // todo: fetch sample class name from preferences
+    return preferences.getPreferenceValue(UI_NGS_PROJECT_SAMPLE_PREFERENCE) ||
+      SAMPLE_METADATA_CLASS_NAME;
   }
   return SAMPLE_METADATA_CLASS_NAME;
 }

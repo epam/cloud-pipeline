@@ -23,11 +23,13 @@ import {
 } from './ngs-project-samples';
 
 const UI_PROJECT_INDICATOR_PREFERENCE = 'ui.project.indicator';
-// todo: change NGS project indicator preference name when backend is ready
 const UI_NGS_PROJECT_INDICATOR_PREFERENCE = 'ui.ngs.project.indicator';
 
-const DEFAULT_PROJECT_INDICATOR = {key: 'type', value: 'project'};
-const DEFAULT_NGS_PROJECT_INDICATOR = {key: 'project-type', value: 'ngs-project'};
+const DEFAULT_PROJECT_INDICATORS = [{key: 'type', value: 'project'}];
+const DEFAULT_NGS_PROJECT_INDICATORS = [
+  DEFAULT_PROJECT_INDICATORS,
+  {key: 'project-type', value: 'ngs-project'}
+];
 
 function buildMetadataCheckFunction (key, value) {
   return function check (metadata) {
@@ -38,7 +40,7 @@ function buildMetadataCheckFunction (key, value) {
   };
 }
 
-function buildMetadataCondition (string, defaultOptions = {}) {
+function buildMetadataCondition (string) {
   if (string) {
     const e = /^[\s]*(.*)[\s]*=[\s]*(.*)[\s]*$/.exec(string);
     if (e && e.length >= 3) {
@@ -49,14 +51,21 @@ function buildMetadataCondition (string, defaultOptions = {}) {
       }
     }
   }
-  const {
-    key,
-    value
-  } = defaultOptions;
-  if (key && value) {
-    return buildMetadataCheckFunction(key, value);
-  }
   return () => false;
+}
+
+function buildMetadataConditions (string, defaultConditions = []) {
+  const conditions = string
+    ? string
+      .split(',')
+      .map(o => o.trim())
+      .filter(Boolean)
+      .filter(o => o.length)
+      .map(buildMetadataCondition)
+    : defaultConditions
+      .filter(o => o.key && o.type)
+      .map(o => buildMetadataCheckFunction(o.key, o.type));
+  return o => !conditions.some(condition => !condition(o));
 }
 
 class NgsProjectInfo {
@@ -99,13 +108,13 @@ class NgsProjectInfo {
         .getPreferenceValue(UI_PROJECT_INDICATOR_PREFERENCE);
       const uiNGSProjectIndicator = this.preferences
         .getPreferenceValue(UI_NGS_PROJECT_INDICATOR_PREFERENCE);
-      const folderIsProject = buildMetadataCondition(
+      const folderIsProject = buildMetadataConditions(
         uiProjectIndicator,
-        DEFAULT_PROJECT_INDICATOR
+        DEFAULT_PROJECT_INDICATORS
       );
-      const projectIsNGSProject = buildMetadataCondition(
+      const projectIsNGSProject = buildMetadataConditions(
         uiNGSProjectIndicator,
-        DEFAULT_NGS_PROJECT_INDICATOR
+        DEFAULT_NGS_PROJECT_INDICATORS
       );
       const {
         objectMetadata
