@@ -38,7 +38,7 @@ function cleanup_raw_dir() {
 }
 
 log_info "Converting to raw..."
-bioformats2raw "$BIOFORMATS2RAW_EXTRA_FLAGS" "$INDEX_FILE_PATH" "$RAW_IMAGE_DIR"
+bioformats2raw $BIOFORMATS2RAW_EXTRA_FLAGS "$INDEX_FILE_PATH" "$RAW_IMAGE_DIR"
 if [ $? -ne 0 ]; then
     log_warn "Errors during conversion to raw image, exiting..."
     cleanup_raw_dir
@@ -46,7 +46,7 @@ if [ $? -ne 0 ]; then
 fi
 
 log_info "Converting raw to ome.tiff..."
-raw2ometiff "$RAW2OMETIFF_EXTRA_FLAGS" "$RAW_IMAGE_DIR" "$OME_TIFF_IMAGE_PATH"
+raw2ometiff $RAW2OMETIFF_EXTRA_FLAGS "$RAW_IMAGE_DIR" "$OME_TIFF_IMAGE_PATH"
 if [ $? -ne 0 ]; then
     log_warn "Errors during conversion of raw to ome.tiff, exiting..."
     cleanup_raw_dir
