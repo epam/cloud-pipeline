@@ -61,6 +61,7 @@ import org.springframework.util.Assert;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -106,7 +107,7 @@ public class NgsPreprocessingManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_MACHINE_RUN_NOT_PROVIDED));
         final MetadataEntity machineRunMetadataEntity = fetchMachineRunMetadataEntity(dataFolderPath, machineRunId);
 
-        final byte[] content = registrationVO.getContent();
+        final byte[] content = Base64.getDecoder().decode(registrationVO.getContent());
         Assert.state(ArrayUtils.isNotEmpty(content),
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_SAMPLESHEET_CONTENT_NOT_PROVIDED));
         final SampleSheet sampleSheet = SampleSheetParser.parseSampleSheet(content);
