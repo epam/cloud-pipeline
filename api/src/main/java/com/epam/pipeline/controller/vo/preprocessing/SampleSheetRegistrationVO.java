@@ -24,9 +24,5 @@ import lombok.NoArgsConstructor;
 public class SampleSheetRegistrationVO {
     private Long folderId;
     private Long machineRunId;
-
-    /**
-     * base64 content string
-     * */
-    private String content;
+    private byte[] content;
 }
