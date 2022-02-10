@@ -133,7 +133,7 @@ public class NgsPreprocessingManager {
         final MetadataClass sampleMetadataClass = metadataEntityManager.getOrCreate(sampleMetadataClassName);
 
         final List<MetadataEntityVO> samples = mapSampleSheetToMetadataEntities(
-                folderId, machineRunMetadataEntity, sampleSheet, sampleSheetFileLink, sampleMetadataClass);
+                folderId, machineRunMetadataEntity, sampleSheet, sampleMetadataClass);
 
         unregisterSampleSheet(folderId, machineRunId, false);
         samples.forEach(metadataEntityManager::updateMetadataEntity);
@@ -345,7 +345,6 @@ public class NgsPreprocessingManager {
     private List<MetadataEntityVO> mapSampleSheetToMetadataEntities(final Long folderId,
                                                                     final MetadataEntity machineRun,
                                                                     final SampleSheet sampleSheet,
-                                                                    final DataStorageLink sampleSheetFileLink,
                                                                     final MetadataClass sampleMetadataClass) {
         final List<String> dataHeader = sampleSheet.getDataHeader();
         final int sampleIdIndex = dataHeader.indexOf(SampleSheetParser.SAMPLE_ID_COLUMN);
@@ -370,8 +369,7 @@ public class NgsPreprocessingManager {
                             NAME_DELIMITER, SAMPLE_PREFIX, Integer.toString(i), LANE_PREFIX, fields.get(laneIndex));
 
             entityVO.setExternalId(
-                    String.join(NAME_DELIMITER, getMachineRunSampleSheetPairName(machineRun, sampleSheetFileLink),
-                            fields.get(sampleIdIndex), sampleLineId)
+                    String.join(NAME_DELIMITER, machineRun.getExternalId(), fields.get(sampleIdIndex), sampleLineId)
             );
 
             final Map<String, PipeConfValue> data = new HashMap<>();
@@ -396,11 +394,6 @@ public class NgsPreprocessingManager {
         }
 
         return result;
-    }
-
-    private String getMachineRunSampleSheetPairName(final MetadataEntity machineRun,
-                                                    final DataStorageLink sampleSheetFileLink) {
-        return machineRun.getExternalId() + ":" + Paths.get(sampleSheetFileLink.getPath()).getFileName().toString();
     }
 
     private boolean checkPathExistence(final Long dataStorageId, final String path) {
