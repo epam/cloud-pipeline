@@ -212,7 +212,7 @@ public class NgsPreprocessingManager {
                                          final SampleSheetRegistrationVO registrationVO) {
         Assert.state(!(ArrayUtils.isNotEmpty(registrationVO.getContent())
                         && StringUtils.isNotBlank(registrationVO.getPath())),
-                "Only one of 'content' or 'path' could be provided to register sample sheet!");
+                "Only one of 'content' or 'path' should be provided to register sample sheet!");
         if (ArrayUtils.isNotEmpty(registrationVO.getContent())) {
             return registrationVO.getContent();
         } else if (StringUtils.isNotBlank(registrationVO.getPath())) {
@@ -365,8 +365,9 @@ public class NgsPreprocessingManager {
             entityVO.setParentId(folderId);
 
             final String sampleLineId = laneIndex < 0
-                ? SAMPLE_PREFIX + NAME_DELIMITER + i
-                : String.join(NAME_DELIMITER, SAMPLE_PREFIX, Integer.toString(i), LANE_PREFIX, fields.get(laneIndex));
+                    ? SAMPLE_PREFIX + NAME_DELIMITER + i
+                    : String.join(
+                            NAME_DELIMITER, SAMPLE_PREFIX, Integer.toString(i), LANE_PREFIX, fields.get(laneIndex));
 
             entityVO.setExternalId(
                     String.join(NAME_DELIMITER, getMachineRunSampleSheetPairName(machineRun, sampleSheetFileLink),
