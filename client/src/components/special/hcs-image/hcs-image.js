@@ -25,9 +25,11 @@ import fetchHCSInfo from './utilities/fetch-hcs-info';
 import HcsImageWellsSelector from './hcs-image-wells-selector';
 import HcsImageFieldSelector from './hcs-image-field-selector';
 import ViewerState from './utilities/viewer-state';
+import SourceState from './utilities/source-state';
 import HcsImageControls from './hcs-image-controls';
 import HcsSequenceSelector from './hcs-sequence-selector';
 import styles from './hcs-image.css';
+import LoadingView from "../LoadingView";
 
 const HCSImageViewer = window.HcsImageViewer;
 
@@ -54,7 +56,8 @@ class HcsImage extends React.PureComponent {
   @observable hcsInfo;
   @observable container;
   @observable hcsViewerState = new ViewerState();
-  hcsImageViewer;
+  @observable hcsSourceState = new SourceState();
+  @observable hcsImageViewer;
 
   componentDidMount () {
     this.prepare();
@@ -89,7 +92,7 @@ class HcsImage extends React.PureComponent {
     if (this.props.storageId && this.props.path) {
       this.setState({
         sequencePending: false,
-        pending: false,
+        pending: true,
         error: undefined,
         wells: [],
         fields: [],
@@ -291,7 +294,7 @@ class HcsImage extends React.PureComponent {
   };
 
   init = (container) => {
-    if (HCSImageViewer && container !== this.container) {
+    if (HCSImageViewer && container !== this.container && container) {
       this.container = container;
       const {Viewer} = HCSImageViewer;
       this.hcsImageViewer = new Viewer({
@@ -304,7 +307,12 @@ class HcsImage extends React.PureComponent {
         }
       });
       this.hcsViewerState.attachToViewer(this.hcsImageViewer);
+      this.hcsSourceState.attachToViewer(this.hcsImageViewer);
       this.loadImage();
+    } else {
+      this.hcsViewerState.detachFromViewer();
+      this.hcsSourceState.detachFromViewer();
+      this.hcsImageViewer = undefined;
     }
   };
 
@@ -372,10 +380,17 @@ class HcsImage extends React.PureComponent {
       wellHeight,
       showDetails
     } = this.state;
-    const pending = hcsImagePending || sequencePending;
+    const pending = hcsImagePending ||
+      sequencePending ||
+      !this.hcsImageViewer ||
+      this.hcsSourceState.pending ||
+      this.hcsViewerState.pending;
     const selectedWell = wells.find(o => o.id === wellId);
     return (
-      <Provider hcsViewerState={this.hcsViewerState}>
+      <Provider
+        hcsViewerState={this.hcsViewerState}
+        hcsSourceState={this.hcsSourceState}
+      >
         <div
           className={
             classNames(
@@ -387,9 +402,19 @@ class HcsImage extends React.PureComponent {
         >
           <div
             className={
-              styles.hcsImageRenderer
+              classNames(
+                styles.hcsImageRenderer,
+                'cp-dark-background'
+              )
             }
           >
+            {
+              pending && (
+                <LoadingView
+                  className={styles.loadingView}
+                />
+              )
+            }
             {
               error && (
                 <div
@@ -408,7 +433,14 @@ class HcsImage extends React.PureComponent {
                 : this.renderDetailsInfo()
             }
             <div
-              className={styles.hcsImage}
+              className={
+                classNames(
+                  styles.hcsImage,
+                  {
+                    [styles.pending]: pending
+                  }
+                )
+              }
               ref={this.init}
             >
               {'\u00A0'}

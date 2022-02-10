@@ -14,6 +14,15 @@
  *  limitations under the License.
  */
 
+.loading-view {
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
 .hcs-image-page {
   width: 100%;
   text-align: initial;

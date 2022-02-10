@@ -64,7 +64,12 @@ class HCSImageSequence {
 
   fetch () {
     if (!this._fetch) {
-      this._fetch = fetchSequenceWellsInfo(this);
+      this._fetch = new Promise((resolve, reject) => {
+        this.generateWellsMapURL()
+          .then(() => fetchSequenceWellsInfo(this))
+          .then(resolve)
+          .catch(reject);
+      });
       this._fetch
         .then((wells = []) => {
           this.wells = wells.slice();
@@ -74,6 +79,22 @@ class HCSImageSequence {
         });
     }
     return this._fetch;
+  }
+
+  generateWellsMapURL () {
+    const promise = generateHCSFileURLs({
+      s3Storage: this.s3Storage,
+      storageId: this.storageId,
+      path: this.wellsMapFileName
+    });
+    promise
+      .then((url) => {
+        this.wellsMap = url;
+      })
+      .catch((e) => {
+        this.error = e.message;
+      });
+    return promise;
   }
 
   generateOMETiffURL () {

@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import {Icon} from 'antd';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
@@ -22,6 +23,7 @@ import styles from './control-grid.css';
 
 const DEFAULT_MINIMUM_CELL_SIZE = 5;
 const DEFAULT_MAXIMUM_CELL_SIZE = 30;
+const ZOOM_BUTTON_DELTA = 4;
 
 function renderLegend (size, count, style) {
   return (new Array(count))
@@ -59,32 +61,23 @@ class HcsControlGrid extends React.Component {
     cellSize: undefined,
     widthPx: undefined,
     heightPx: undefined,
-    widthWithScrollPx: undefined,
-    heightWithScrollPx: undefined,
     hovered: false,
     maxHeight: undefined
   };
 
-  get verticalScrollerWidth () {
+  get canZoomOut () {
     const {
-      widthPx,
-      widthWithScrollPx
+      minimumSize,
+      cellSize
     } = this.state;
-    if (widthWithScrollPx && widthPx) {
-      return Math.max(widthWithScrollPx - widthPx, 0);
-    }
-    return 0;
+    return cellSize && minimumSize && cellSize > minimumSize;
   }
 
-  get horizontalScrollerHeight () {
+  get canZoomIn () {
     const {
-      heightPx,
-      heightWithScrollPx
+      cellSize
     } = this.state;
-    if (heightWithScrollPx && heightPx) {
-      return Math.max(heightWithScrollPx - heightPx, 0);
-    }
-    return 0;
+    return cellSize && DEFAULT_MAXIMUM_CELL_SIZE && cellSize < DEFAULT_MAXIMUM_CELL_SIZE;
   }
 
   componentDidMount () {
@@ -131,9 +124,7 @@ class HcsControlGrid extends React.Component {
       this.container.addEventListener('wheel', this.handleZoom);
       this.setState({
         widthPx: this.container.clientWidth,
-        heightPx: this.container.clientHeight,
-        widthWithScrollPx: this.container.offsetWidth,
-        heightWithScrollPx: this.container.offsetHeight
+        heightPx: this.container.clientHeight
       }, () => this.updateSize());
     }
   };
@@ -223,9 +214,7 @@ class HcsControlGrid extends React.Component {
       ) {
         this.setState({
           widthPx: this.container.clientWidth,
-          heightPx: this.container.clientHeight,
-          widthWithScrollPx: this.container.offsetWidth,
-          heightWithScrollPx: this.container.offsetHeight
+          heightPx: this.container.clientHeight
         });
       }
       this.rafHandle = requestAnimationFrame(handler);
@@ -233,26 +222,29 @@ class HcsControlGrid extends React.Component {
     handler();
   };
 
-  handleZoom = (event) => {
+  zoom = (delta) => {
     const {
-      cellSize,
-      minimumSize
+      minimumSize,
+      cellSize
     } = this.state;
+    const newCellSize = Math.max(
+      minimumSize,
+      Math.min(
+        DEFAULT_MAXIMUM_CELL_SIZE,
+        cellSize + delta
+      )
+    );
+    if (newCellSize !== cellSize) {
+      this.setState({cellSize: newCellSize}, () => this.draw());
+    }
+  };
+
+  handleZoom = (event) => {
+    const {cellSize} = this.state;
     if (event && event.shiftKey && cellSize) {
       const zoomIn = event.deltaY < 0;
-      const delta = zoomIn ? 2 : -2;
-      const newCellSize = Math.max(
-        minimumSize,
-        Math.min(
-          DEFAULT_MAXIMUM_CELL_SIZE,
-          cellSize + delta
-        )
-      );
-      if (newCellSize !== cellSize) {
-        this.setState({
-          cellSize: newCellSize
-        }, () => this.draw());
-      }
+      const eventDelta = zoomIn ? 2 : -2;
+      this.zoom(eventDelta);
       event.preventDefault();
       event.stopPropagation();
       return false;
@@ -269,11 +261,21 @@ class HcsControlGrid extends React.Component {
     } = event.nativeEvent || {};
     let cell;
     if (offsetX !== undefined && offsetY !== undefined) {
-      const column = Math.floor(offsetX / cellSize);
-      const row = Math.floor(offsetY / cellSize);
+      let column = Math.floor(offsetX / cellSize);
+      let row = Math.floor(offsetY / cellSize);
       const {
-        dataCells = []
+        dataCells = [],
+        flipVertical,
+        flipHorizontal,
+        columns,
+        rows
       } = this.props;
+      if (flipHorizontal) {
+        column = columns - column;
+      }
+      if (flipVertical) {
+        row = rows - row;
+      }
       cell = (dataCells.find(o => o.row === row && o.column === column));
     }
     return cell;
@@ -323,7 +325,9 @@ class HcsControlGrid extends React.Component {
         dataCells = [],
         selectedCell,
         gridShape = Shapes.rect,
-        gridRadius = 0
+        gridRadius = 0,
+        flipVertical,
+        flipHorizontal
       } = this.props;
       let {
         cellShape = Shapes.circle
@@ -336,6 +340,10 @@ class HcsControlGrid extends React.Component {
           cancelAnimationFrame(this.drawHandle);
         }
         const correctPixels = o => o * window.devicePixelRatio;
+        const getX = column =>
+          correctPixels((flipHorizontal ? (columns - column) : column) * cellSize);
+        const getY = row =>
+          correctPixels((flipVertical ? (rows - row) : row) * cellSize);
         this.drawHandle = requestAnimationFrame(() => {
           let color = 'rgba(0, 0, 0, 0.65)';
           let dataColor = '#108ee9';
@@ -353,8 +361,8 @@ class HcsControlGrid extends React.Component {
           const renderCell = (column, row) => {
             if (cellShape === Shapes.circle) {
               context.arc(
-                Math.round(correctPixels((column + 0.5) * cellSize)),
-                Math.round(correctPixels((row + 0.5) * cellSize)),
+                Math.round(getX(column + 0.5)),
+                Math.round(getY(row + 0.5)),
                 correctPixels(radius),
                 0,
                 Math.PI * 2
@@ -362,8 +370,8 @@ class HcsControlGrid extends React.Component {
             }
             if (cellShape === Shapes.rect) {
               context.rect(
-                Math.round(correctPixels(column * cellSize)),
-                Math.round(correctPixels(row * cellSize)),
+                Math.round(getX(column)),
+                Math.round(getY(row)),
                 Math.round(correctPixels(cellSize)),
                 Math.round(correctPixels(cellSize))
               );
@@ -412,22 +420,22 @@ class HcsControlGrid extends React.Component {
             context.beginPath();
             for (let c = 1; c <= columns; c += 1) {
               context.moveTo(
-                correctPixels(c * cellSize),
+                getX(c),
                 0
               );
               context.lineTo(
-                correctPixels(c * cellSize),
+                getX(c),
                 this.canvas.height
               );
             }
             for (let r = 1; r <= rows; r += 1) {
               context.moveTo(
                 0,
-                correctPixels(r * cellSize)
+                getY(r)
               );
               context.lineTo(
                 this.canvas.width,
-                correctPixels(r * cellSize)
+                getY(r)
               );
             }
             context.stroke();
@@ -439,18 +447,58 @@ class HcsControlGrid extends React.Component {
             context.strokeStyle = color;
             context.lineWidth = 2;
             context.arc(
-              Math.round(correctPixels(columns / 2.0 * cellSize)),
-              Math.round(correctPixels(rows / 2.0 * cellSize)),
+              Math.round(getX(columns / 2.0)),
+              Math.round(getY(rows / 2.0)),
               Math.round(correctPixels(cellSize * gridRadius)),
               0,
               Math.PI * 2
             );
             context.stroke();
+            context.beginPath();
+            context.arc(
+              getX(columns / 2.0),
+              getY(rows / 2.0),
+              correctPixels(3),
+              0,
+              Math.PI * 2
+            );
+            context.stroke();
+            context.fill();
             context.restore();
           }
         });
       }
     }
+  };
+
+  renderZoomControls = () => {
+    const zoomInAvailable = this.canZoomIn;
+    const zoomOutAvailable = this.canZoomOut;
+    if (!zoomInAvailable && !zoomOutAvailable) {
+      return null;
+    }
+    return (
+      <div className={styles.zoomControls}>
+        <Icon
+          type="minus-circle-o"
+          className={classNames(
+            'cp-hcs-zoom-button',
+            {'cp-disabled': !zoomOutAvailable},
+            styles.zoomControlBtn
+          )}
+          onClick={() => this.zoom(-ZOOM_BUTTON_DELTA)}
+        />
+        <Icon
+          type="plus-circle-o"
+          className={classNames(
+            'cp-hcs-zoom-button',
+            {'cp-disabled': !zoomInAvailable},
+            styles.zoomControlBtn
+          )}
+          onClick={() => this.zoom(ZOOM_BUTTON_DELTA)}
+        />
+      </div>
+    );
   };
 
   render () {
@@ -459,7 +507,11 @@ class HcsControlGrid extends React.Component {
       style,
       rows,
       columns,
-      controlledHeight
+      controlledHeight,
+      flipHorizontal,
+      flipVertical,
+      title,
+      showLegend
     } = this.props;
     const {
       cellSize,
@@ -468,80 +520,110 @@ class HcsControlGrid extends React.Component {
     } = this.state;
     return (
       <div
+        style={style}
         className={
           classNames(
             className,
             styles.container
           )
         }
-        style={style}
       >
-        <div className={styles.placeholder}>{'\u00A0'}</div>
-        <div
-          className={
-            classNames(
-              styles.rows,
-              'cp-divider',
-              'right'
-            )
-          }
-        >
-          <div className={styles.legend} ref={this.initializeLegend()}>
-            {
-              cellSize && renderLegend(cellSize, rows, {height: cellSize})
-            }
-          </div>
-        </div>
-        <div
-          className={
-            classNames(
-              styles.columns,
-              'cp-divider',
-              'bottom'
-            )
-          }
-        >
-          <div className={styles.legend} ref={this.initializeLegend(true)}>
-            {
-              cellSize && renderLegend(cellSize, columns, {width: cellSize})
-            }
-          </div>
-        </div>
-        <div
-          className={
-            classNames(
-              styles.data
-            )
-          }
-          ref={this.initializeContainer}
-          style={
-            Object.assign(
-              cellSize || !this.container ? {} : {overflow: 'scroll'},
-              controlledHeight ? {} : {height: maxHeight}
-            )
-          }
-        >
-          <div
-            style={{
-              width: cellSize ? columns * cellSize : 0,
-              height: cellSize ? rows * cellSize : 0
-            }}
-          >
-            <canvas
-              width={(cellSize ? columns * cellSize : 0) * window.devicePixelRatio}
-              height={(cellSize ? rows * cellSize : 0) * window.devicePixelRatio}
-              style={{
-                width: '100%',
-                height: '100%',
-                cursor: hovered ? 'pointer' : 'default'
-              }}
-              ref={this.initializeCanvas}
-              onMouseMove={this.handleMouseMove}
-              onMouseLeave={this.unHover}
-              onClick={this.handleClick}
+        <div className={classNames(
+          styles.header,
+          {[styles.noLegend]: !showLegend}
+        )}>
+          {title ? (
+            <div
+              className={styles.title}
             >
+              {title}
+            </div>
+          ) : null}
+          {this.renderZoomControls()}
+        </div>
+        <div
+          className={classNames(
+            styles.canvasContainer,
+            {[styles.noLegend]: !showLegend}
+          )}
+        >
+          {showLegend && (
+            <div className={styles.placeholder}>
               {'\u00A0'}
-            </canvas>
+            </div>
+          )}
+          {showLegend && (
+            <div
+              className={
+                classNames(
+                  styles.rows,
+                  {
+                    [styles.flip]: flipVertical
+                  }
+                )
+              }
+            >
+              <div className={styles.legend} ref={this.initializeLegend()}>
+                {
+                  cellSize && renderLegend(cellSize, rows, {height: cellSize})
+                }
+              </div>
+            </div>
+          )}
+          {showLegend && (
+            <div
+              className={
+                classNames(
+                  styles.columns,
+                  {
+                    [styles.flip]: flipHorizontal
+                  }
+                )
+              }
+            >
+              <div className={styles.legend} ref={this.initializeLegend(true)}>
+                {
+                  cellSize && renderLegend(cellSize, columns, {width: cellSize})
+                }
+              </div>
+            </div>
+          )}
+          <div
+            className={
+              classNames(
+                styles.data
+              )
+            }
+            ref={this.initializeContainer}
+            style={
+              Object.assign(
+                cellSize || !this.container ? {} : {overflow: 'scroll'},
+                controlledHeight ? {} : {height: maxHeight}
+              )
+            }
+          >
+            <div
+              style={{
+                width: cellSize ? columns * cellSize : 0,
+                height: cellSize ? rows * cellSize : 0
+              }}
+            >
+              <canvas
+                width={(cellSize ? columns * cellSize : 0) * window.devicePixelRatio}
+                height={(cellSize ? rows * cellSize : 0) * window.devicePixelRatio}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  cursor: hovered ? 'pointer' : 'default'
+                }}
+                ref={this.initializeCanvas}
+                onMouseMove={this.handleMouseMove}
+                onMouseLeave={this.unHover}
+                onClick={this.handleClick}
+              >
+                {'\u00A0'}
+              </canvas>
+            </div>
           </div>
         </div>
       </div>
@@ -573,12 +655,17 @@ HcsControlGrid.propTypes = {
   ]),
   gridRadius: PropTypes.number,
   controlledHeight: PropTypes.bool,
-  allowEmptySpaces: PropTypes.bool
+  allowEmptySpaces: PropTypes.bool,
+  flipVertical: PropTypes.bool,
+  flipHorizontal: PropTypes.bool,
+  title: PropTypes.string,
+  showLegend: PropTypes.bool
 };
 
 HcsControlGrid.defaultProps = {
   cellShape: Shapes.circle,
-  gridShape: Shapes.rect
+  gridShape: Shapes.rect,
+  showLegend: true
 };
 
 HcsControlGrid.Shapes = Shapes;

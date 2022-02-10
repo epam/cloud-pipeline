@@ -49,13 +49,6 @@ class HcsImageFieldSelector extends React.Component {
         }
         style={style}
       >
-        {
-          wellName && (
-            <div className={styles.selectorTitle}>
-              {wellName}
-            </div>
-          )
-        }
         <HcsControlGrid
           className={styles.selector}
           rows={height}
@@ -70,6 +63,9 @@ class HcsImageFieldSelector extends React.Component {
           cellShape={HcsControlGrid.Shapes.rect}
           gridShape={HcsControlGrid.Shapes.circle}
           gridRadius={wellRadius}
+          flipVertical
+          title={wellName}
+          showLegend={false}
         />
       </div>
     );

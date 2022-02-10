@@ -30,24 +30,37 @@ function parseCoordinates (key) {
 /**
  * @typedef {Object} HCSSequenceInfo
  * @property {string|number} storageId
- * @property {string} omeTiffFileName
- * @property {string} offsetsJsonFileName
+ * @property {string} wellsMap
  * @property {string} wellsMapFileName
  */
 
 /**
- *
- * @param {HCSSequenceInfo} sequence
- * @returns {Promise<unknown>}
+ * Fetches wells_map.json content as JSON object
+ * @param {HCSSequenceInfo} options
+ * @return {Promise<Object>}
  */
-export default function fetchSequenceWellsInfo (sequence) {
+function fetchWellsMapJSON (options = {}) {
   const {
     storageId,
+    wellsMap,
     wellsMapFileName
-  } = sequence;
-  if (!storageId || !wellsMapFileName) {
-    // eslint-disable-next-line
-    return Promise.reject(new Error('`storageId` and `wellsMapFileName` must be specified for HCS sequence'));
+  } = options;
+  if (wellsMap) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await fetch(wellsMap);
+        if (!response.ok) {
+          throw new Error(
+            response.statusText ||
+            `Error fetching wells map content for url "${wellsMap}"`
+          );
+        }
+        const json = await response.json();
+        resolve(json);
+      } catch (e) {
+        reject(e);
+      }
+    });
   }
   return new Promise(async (resolve, reject) => {
     const request = new DataStorageItemContent(storageId, wellsMapFileName);
@@ -59,6 +72,31 @@ export default function fetchSequenceWellsInfo (sequence) {
       }
       const text = atob(request.value.content);
       const json = JSON.parse(text);
+      resolve(json);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+/**
+ *
+ * @param {HCSSequenceInfo} sequence
+ * @returns {Promise<unknown>}
+ */
+export default function fetchSequenceWellsInfo (sequence) {
+  const {
+    storageId,
+    wellsMap,
+    wellsMapFileName
+  } = sequence;
+  if (!storageId || (!wellsMapFileName && !wellsMap)) {
+    // eslint-disable-next-line
+    return Promise.reject(new Error('`storageId` and `wellsMapFileName` must be specified for HCS sequence'));
+  }
+  return new Promise(async (resolve, reject) => {
+    try {
+      const json = await fetchWellsMapJSON(sequence);
       resolve(
         Object.keys(json || {})
           .map(key => ({
