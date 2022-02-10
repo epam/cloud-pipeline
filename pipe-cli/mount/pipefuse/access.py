@@ -45,23 +45,22 @@ NO_EXECUTE = 'NO_EXECUTE'
 SYNTHETIC_READ = 'SYNTHETIC_READ'
 
 
-class AccessControlFileSystemClient(FileSystemClientDecorator):
+class PermissionControlFileSystemClient(FileSystemClientDecorator):
 
-    def __init__(self, inner, manager):
+    def __init__(self, inner, read_manager):
         """
-        Access file system client decorator.
+        Permission control file system client decorator.
 
         Filters file system tree and restricts access to certain resources using permissions from permissions manager.
 
         Does not translate permissions to fuse POSIX ACLs.
 
         :param inner: Decorating file system client.
-        :param manager: Permissions manager.
+        :param read_manager: Permissions read manager.
         """
-        super(AccessControlFileSystemClient, self).__init__(inner)
+        super(PermissionControlFileSystemClient, self).__init__(inner)
         self._inner = inner
-        self._manager = manager
-        self._permissions = {}
+        self._read_manager = read_manager
 
     def exists(self, path):
         if not self._is_synthetic_read_allowed(path):
@@ -91,15 +90,13 @@ class AccessControlFileSystemClient(FileSystemClientDecorator):
         self._inner.upload(buf, path)
 
     def delete(self, path):
-        # todo: Delete permissions for a file
         if not self._is_write_allowed(path):
             self._access_denied(path)
         self._inner.delete(path)
 
     def mv(self, old_path, path):
-        # todo: Move permissions from an old directory to a new one with all permission items within
-        # todo: Move permissions from an old file to a new one
-        if not self._is_write_allowed(old_path):
+        # todo: Do not allow to move a directory if there are no WRITE permissions for some items within
+        if not self._is_read_write_allowed(old_path):
             self._access_denied(old_path)
         if not self._is_write_allowed(path):
             self._access_denied(path)
@@ -112,7 +109,6 @@ class AccessControlFileSystemClient(FileSystemClientDecorator):
 
     def rmdir(self, path):
         # todo: Do not allow to delete a directory if there are no WRITE permissions for some items within
-        # todo: Delete permissions for a directory and all items within
         if not self._is_write_allowed(path):
             self._access_denied(path)
         self._inner.rmdir(path)
@@ -127,24 +123,25 @@ class AccessControlFileSystemClient(FileSystemClientDecorator):
             self._access_denied(path)
         self._inner.upload_range(fh, buf, path, offset)
 
-    def flush(self, fh, path):
-        self._inner.flush(fh, path)
-
     def truncate(self, fh, path, length):
         if not self._is_write_allowed(path):
             self._access_denied(path)
         self._inner.truncate(fh, path, length)
 
     def _is_read_allowed(self, path):
-        permissions = self._manager.get(path)
+        permissions = self._read_manager.get(path)
         return READ in permissions
 
     def _is_write_allowed(self, path):
-        permissions = self._manager.get(path)
+        permissions = self._read_manager.get(path)
         return WRITE in permissions
 
+    def _is_read_write_allowed(self, path):
+        permissions = self._read_manager.get(path)
+        return READ in permissions and WRITE in permissions
+
     def _is_synthetic_read_allowed(self, path):
-        permissions = self._manager.get(path)
+        permissions = self._read_manager.get(path)
         return READ in permissions or SYNTHETIC_READ in permissions
 
     def _access_denied(self, path):
@@ -153,6 +150,35 @@ class AccessControlFileSystemClient(FileSystemClientDecorator):
 
     def _access_denied_warning(self, path):
         logging.debug('Access denied: %s.', path)
+
+
+class PermissionManagementFileSystemClient(FileSystemClientDecorator):
+
+    def __init__(self, inner, write_manager):
+        """
+        Permission management file system client decorator.
+
+        Updates permissions on certain file system operations.
+
+        :param inner: Decorating file system client.
+        :param write_manager: Permissions write manager.
+        """
+        super(PermissionManagementFileSystemClient, self).__init__(inner)
+        self._inner = inner
+        self._write_manager = write_manager
+
+    def delete(self, path):
+        self._inner.delete(path)
+        self._write_manager.delete_file(path)
+
+    def mv(self, old_path, path):
+        self._inner.mv(old_path, path)
+        self._write_manager.move_folder(old_path, path)
+        self._write_manager.move_file(old_path, path)
+
+    def rmdir(self, path):
+        self._inner.rmdir(path)
+        self._write_manager.delete_folder(path)
 
 
 class PermissionProvider:
@@ -370,7 +396,7 @@ class BasicPermissionResolver(PermissionResolver):
         return [read_permission, write_permission]
 
 
-class PermissionManager:
+class PermissionReadManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -386,11 +412,11 @@ class PermissionManager:
         pass
 
 
-class BasicPermissionManager(PermissionManager):
+class BasicPermissionReadManager(PermissionReadManager):
 
     def __init__(self, provider, resolver):
         """
-        Basic permissions manager.
+        Basic permissions read manager.
 
         Retrieves permissions from a provider and resolves permissions for specific paths using a resolver.
 
@@ -411,11 +437,11 @@ class BasicPermissionManager(PermissionManager):
         self._permissions = self._provider.get()
 
 
-class ExplicitPermissionManager(PermissionManager):
+class ExplicitPermissionReadManager(PermissionReadManager):
 
     def __init__(self, inner, resolver):
         """
-        Explicit permissions manager.
+        Explicit permissions read manager.
 
         Resolves implicit permissions for increased performance and further transparency.
 
@@ -442,11 +468,11 @@ class ExplicitPermissionManager(PermissionManager):
         self._permissions = explicit_permissions
 
 
-class ExplainingTreePermissionManager(PermissionManager):
+class ExplainingTreePermissionReadManager(PermissionReadManager):
 
     def __init__(self, inner):
         """
-        Explaining tree permissions manager.
+        Explaining tree permissions read manager.
 
         Logs permissions tree for further transparency.
 
@@ -500,11 +526,11 @@ class ExplainingTreePermissionManager(PermissionManager):
             self._explain_tree_recursively(subtree, depth=depth + 1)
 
 
-class CachingPermissionManager(PermissionManager):
+class CachingPermissionReadManager(PermissionReadManager):
 
     def __init__(self, inner, cache):
         """
-        Caching permissions manager.
+        Caching permissions read manager.
 
         Caches already resolved permissions in order to reduce a number of calls to an inner permissions manager.
 
@@ -533,11 +559,11 @@ class CachingPermissionManager(PermissionManager):
         self._cache.clear()
 
 
-class RefreshingPermissionManager(PermissionManager):
+class RefreshingPermissionReadManager(PermissionReadManager):
 
     def __init__(self, inner, refresh_delay):
         """
-        Refreshing permissions manager.
+        Refreshing permissions read manager.
 
         Constantly refreshes an inner permissions manager.
 
@@ -571,3 +597,75 @@ class RefreshingPermissionManager(PermissionManager):
                 self._inner.refresh()
             except RuntimeError:
                 logging.exception('Error occurred during storage permissions refreshing.')
+
+
+class PermissionWriteManager:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def delete_file(self, path):
+        pass
+
+    @abstractmethod
+    def delete_folder(self, path):
+        pass
+
+    @abstractmethod
+    def move_file(self, old_path, new_path):
+        pass
+
+    @abstractmethod
+    def move_folder(self, old_path, new_path):
+        pass
+
+
+class CloudPipelinePermissionWriteManager(PermissionWriteManager):
+
+    def __init__(self, pipe, bucket):
+        """
+        Cloud Pipeline permissions write manager.
+
+        Updates storage permissions in Cloud Pipeline.
+
+        :param pipe: Cloud Pipeline API client.
+        :param bucket: Cloud Pipeline bucket object.
+        """
+        self._pipe = pipe
+        self._bucket = bucket
+        self._delimiter = '/'
+
+    def delete_file(self, path):
+        self._pipe.delete_all_storage_object_permissions(self._bucket, requests=[{
+            'type': FILE,
+            'path': path.strip(self._delimiter)
+        }])
+
+    def delete_folder(self, path):
+        self._pipe.delete_all_storage_object_permissions(self._bucket, requests=[{
+            'type': FOLDER,
+            'path': path.strip(self._delimiter)
+        }])
+
+    def move_file(self, old_path, new_path):
+        self._pipe.move_storage_object_permissions(self._bucket, requests=[{
+            'source': {
+                'type': FILE,
+                'path': old_path.strip(self._delimiter)
+            },
+            'destination': {
+                'type': FILE,
+                'path': new_path.strip(self._delimiter)
+            }
+        }])
+
+    def move_folder(self, old_path, new_path):
+        self._pipe.move_storage_object_permissions(self._bucket, requests=[{
+            'source': {
+                'type': FOLDER,
+                'path': old_path.strip(self._delimiter)
+            },
+            'destination': {
+                'type': FOLDER,
+                'path': new_path.strip(self._delimiter)
+            }
+        }])

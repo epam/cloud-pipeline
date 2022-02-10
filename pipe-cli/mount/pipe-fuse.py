@@ -49,12 +49,14 @@ if os.path.exists(libfuse_path):
 import fuse
 from fuse import FUSE, fuse_operations, fuse_file_info, c_utimbuf
 
-from pipefuse.access import AccessControlFileSystemClient, \
-    BasicPermissionManager, \
-    ExplicitPermissionManager, \
-    ExplainingTreePermissionManager, \
-    CachingPermissionManager, \
-    RefreshingPermissionManager, \
+from pipefuse.access import PermissionControlFileSystemClient, \
+    PermissionManagementFileSystemClient, \
+    BasicPermissionReadManager, \
+    ExplicitPermissionReadManager, \
+    ExplainingTreePermissionReadManager, \
+    CachingPermissionReadManager, \
+    RefreshingPermissionReadManager, \
+    CloudPipelinePermissionWriteManager, \
     CloudPipelinePermissionProvider, \
     BasicPermissionResolver
 from pipefuse.api import CloudPipelineClient, CloudType
@@ -134,32 +136,35 @@ def start(mountpoint, webdav, bucket,
             client = RecordingFileSystemClient(client)
 
         if not acl_verbose:
-            logging.info('Acl verbose logging is disabled.')
+            logging.info('Permission verbose logging is disabled.')
 
-        acl_provider = CloudPipelinePermissionProvider(pipe=pipe, bucket=bucket_object, verbose=acl_verbose)
-        acl_resolver = BasicPermissionResolver(is_read_allowed=bucket_object.is_read_allowed(),
-                                               is_write_allowed=bucket_object.is_write_allowed(),
-                                               verbose=acl_verbose)
-        acl_manager = BasicPermissionManager(provider=acl_provider, resolver=acl_resolver)
-        acl_manager = ExplicitPermissionManager(acl_manager, resolver=acl_resolver)
+        permission_provider = CloudPipelinePermissionProvider(pipe=pipe, bucket=bucket_object, verbose=acl_verbose)
+        permission_resolver = BasicPermissionResolver(is_read_allowed=bucket_object.is_read_allowed(),
+                                                      is_write_allowed=bucket_object.is_write_allowed(),
+                                                      verbose=acl_verbose)
+        permission_read_manager = BasicPermissionReadManager(provider=permission_provider, resolver=permission_resolver)
+        permission_read_manager = ExplicitPermissionReadManager(permission_read_manager, resolver=permission_resolver)
         if acl_verbose:
-            acl_manager = ExplainingTreePermissionManager(acl_manager)
+            permission_read_manager = ExplainingTreePermissionReadManager(permission_read_manager)
         if acl_cache_size > 0:
             acl_cache_implementation = Cache(maxsize=acl_cache_size)
             acl_cache = SimpleCache(acl_cache_implementation)
             if threads:
                 acl_cache = ThreadSafeCache(acl_cache)
-            acl_manager = CachingPermissionManager(acl_manager, cache=acl_cache)
+            permission_read_manager = CachingPermissionReadManager(permission_read_manager, cache=acl_cache)
         else:
-            logging.info('Acl caching is disabled.')
+            logging.info('Permission caching is disabled.')
 
         if acl_cache_ttl:
-            acl_manager = RefreshingPermissionManager(acl_manager, refresh_delay=acl_cache_ttl)
+            permission_read_manager = RefreshingPermissionReadManager(permission_read_manager, refresh_delay=acl_cache_ttl)
         else:
-            logging.info('Acl refreshing is disabled.')
+            logging.info('Permission refreshing is disabled.')
 
-        acl_manager.refresh()
-        client = AccessControlFileSystemClient(client, manager=acl_manager)
+        permission_read_manager.refresh()
+        client = PermissionControlFileSystemClient(client, read_manager=permission_read_manager)
+
+        permission_write_manager = CloudPipelinePermissionWriteManager(pipe=pipe, bucket=bucket_object)
+        client = PermissionManagementFileSystemClient(client, write_manager=permission_write_manager)
 
     if bucket_type in [CloudType.S3, CloudType.GS]:
         client = PathExpandingStorageFileSystemClient(client, root_path=root_path)

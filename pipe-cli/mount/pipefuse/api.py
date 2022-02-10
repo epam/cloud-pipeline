@@ -183,10 +183,34 @@ class CloudPipelineClient:
             'type': 'DATA_STORAGE'
         }
         try:
-            response_payload = self._request('POST', 'storage/permission/batch/all', data=data)
+            response_payload = self._request('POST', 'storage/permission/batch/loadAll', data=data)
             return response_payload or []
         except ServerError:
             raise RuntimeError('Failed to load storage object permissions:\n%s' % traceback.format_exc())
+
+    def move_storage_object_permissions(self, bucket, requests):
+        logging.info('Moving storage object permissions...')
+        data = {
+            'id': bucket.id,
+            'type': 'DATA_STORAGE',
+            'requests': requests
+        }
+        try:
+            self._request('PUT', 'storage/permission/batch/move', data=data)
+        except ServerError:
+            raise RuntimeError('Failed to move storage object permissions:\n%s' % traceback.format_exc())
+
+    def delete_all_storage_object_permissions(self, bucket, requests):
+        logging.info('Deleting all storage object permissions...')
+        data = {
+            'id': bucket.id,
+            'type': 'DATA_STORAGE',
+            'requests': requests
+        }
+        try:
+            self._request('DELETE', 'storage/permission/batch/deleteAll', data=data)
+        except ServerError:
+            raise RuntimeError('Failed to delete all storage object permissions:\n%s' % traceback.format_exc())
 
     def get_temporary_credentials(self, bucket):
         logging.info('Loading temporary credentials for data storage #%s' % bucket.id)
