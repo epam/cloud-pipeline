@@ -1212,7 +1212,7 @@ export default class DataStorage extends React.Component {
               i.labels['StorageClass'].toLowerCase() !== 'glacier'
             ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-          shareAvailable: i.type.toLowerCase() !== 'file' && !i.deleteMarker && this.sharingEnabled,
+          shareAvailable: !i.deleteMarker && this.sharingEnabled,
           deletable: roleModel.writeAllowed(this.props.info.value),
           children: getChildList(i, i.versions, sensitive),
           selectable: !i.deleteMarker,
@@ -1723,7 +1723,10 @@ export default class DataStorage extends React.Component {
     );
     if (itemsAvailableForShare.length === 1) {
       buttonText = (
-        <span>
+        <span
+          className="cp-ellipsis-text"
+          style={{maxWidth: 300, display: 'block'}}
+        >
           Share <b>{itemsAvailableForShare[0].name}</b> {itemsAvailableForShare[0].type}
         </span>
       );
