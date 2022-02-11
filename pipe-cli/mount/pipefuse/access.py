@@ -23,6 +23,9 @@ from fuse import FuseOSError
 from pipefuse.fsclient import FileSystemClientDecorator
 from pipefuse.fuseutils import get_parent_paths, get_parent_dirs
 
+USER = 'USER'
+GROUP = 'GROUP'
+
 FILE = 'FILE'
 FOLDER = 'FOLDER'
 
@@ -223,60 +226,46 @@ class CloudPipelinePermissionProvider(PermissionProvider):
         self._delimiter = '/'
 
     def get(self):
-        logging.debug('Retrieving Cloud Pipeline storage permissions...')
-        raw_permissions = self._get_user_permissions()
-        logging.debug('Resolving Cloud Pipeline storage permissions...')
-        raw_permissions_dict = self._group_permissions_by_path(raw_permissions)
         permissions = {}
-        for permission_path in sorted(raw_permissions_dict.keys()):
-            raw_permissions = raw_permissions_dict[permission_path]
-            permission = INHERIT_MASK
-            for raw_permission_object in self._get_permissions_sorted_by_sids(raw_permissions):
-                raw_permission = raw_permission_object.get('mask', INHERIT_MASK)
-                if raw_permission & READ_MASK == READ_MASK:
-                    permission &= ~NO_READ_MASK
-                    permission |= READ_MASK
-                if raw_permission & NO_READ_MASK == NO_READ_MASK:
-                    permission &= ~READ_MASK
-                    permission |= NO_READ_MASK
-                if raw_permission & WRITE_MASK == WRITE_MASK:
-                    permission &= ~NO_WRITE_MASK
-                    permission |= WRITE_MASK
-                if raw_permission & NO_WRITE_MASK == NO_WRITE_MASK:
-                    permission &= ~WRITE_MASK
-                    permission |= NO_WRITE_MASK
+        raw_permissions = self._get_raw_permissions()
+        for permission_path in sorted(raw_permissions.keys()):
+            raw_permission = self._merge_raw_permissions(raw_permissions[permission_path])
             if self._verbose:
                 logging.debug('Resolved raw %s+%s permissions for %s',
+                              self._get_read_permission_name(raw_permission),
+                              self._get_write_permission_name(raw_permission),
+                              permission_path)
+
+            permission = permissions.get(permission_path, INHERIT_MASK)
+            if raw_permission & READ_MASK == READ_MASK:
+                permission |= READ_MASK
+                permission &= ~NO_READ_MASK
+                permission &= ~SYNTHETIC_READ_MASK
+            if raw_permission & NO_READ_MASK == NO_READ_MASK:
+                if permission & READ_MASK != READ_MASK and \
+                        permission & SYNTHETIC_READ_MASK != SYNTHETIC_READ_MASK:
+                    permission |= NO_READ_MASK
+            if raw_permission & WRITE_MASK == WRITE_MASK:
+                permission |= WRITE_MASK
+                permission &= ~NO_WRITE_MASK
+            if raw_permission & NO_WRITE_MASK == NO_WRITE_MASK:
+                if permission & WRITE_MASK != WRITE_MASK:
+                    permission |= NO_WRITE_MASK
+            if self._verbose:
+                logging.debug('Resolved effective %s+%s permissions for %s',
                               self._get_read_permission_name(permission),
                               self._get_write_permission_name(permission),
                               permission_path)
 
-            current_permission = permissions.get(permission_path, INHERIT_MASK)
-            if permission & READ_MASK == READ_MASK:
-                current_permission |= READ_MASK
-                current_permission &= ~NO_READ_MASK
-                current_permission &= ~SYNTHETIC_READ_MASK
-            if permission & NO_READ_MASK == NO_READ_MASK:
-                if current_permission & READ_MASK != READ_MASK and \
-                        current_permission & SYNTHETIC_READ_MASK != SYNTHETIC_READ_MASK:
-                    current_permission |= NO_READ_MASK
-            if permission & WRITE_MASK == WRITE_MASK:
-                current_permission |= WRITE_MASK
-                current_permission &= ~NO_WRITE_MASK
-            if permission & NO_WRITE_MASK == NO_WRITE_MASK:
-                if current_permission & WRITE_MASK != WRITE_MASK:
-                    current_permission |= NO_WRITE_MASK
-            if self._verbose:
-                logging.debug('Resolved effective %s+%s permissions for %s',
-                              self._get_read_permission_name(current_permission),
-                              self._get_write_permission_name(current_permission),
-                              permission_path)
-            permissions[permission_path] = current_permission
-
             for parent_path in get_parent_paths(permission_path):
                 parent_permission = permissions.get(parent_path, INHERIT_MASK)
-                if current_permission & READ_MASK == READ_MASK \
-                        or current_permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK:
+                if permission & READ_MASK != READ_MASK \
+                        and permission & NO_READ_MASK != NO_READ_MASK \
+                        and parent_permission & READ_MASK == READ_MASK:
+                    permission &= ~SYNTHETIC_READ_MASK
+                    permission |= READ_MASK
+                if permission & READ_MASK == READ_MASK \
+                        or permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK:
                     parent_permission &= ~NO_READ_MASK
                     if parent_permission & READ_MASK != READ_MASK \
                             and parent_permission & SYNTHETIC_READ_MASK != SYNTHETIC_READ_MASK:
@@ -284,17 +273,25 @@ class CloudPipelinePermissionProvider(PermissionProvider):
                             logging.debug('Resolved uplifted %s permission for %s',
                                           SYNTHETIC_READ, parent_path)
                         parent_permission |= SYNTHETIC_READ_MASK
-                if current_permission & NO_READ_MASK == NO_READ_MASK:
+                if permission & NO_READ_MASK == NO_READ_MASK:
                     parent_permission &= ~RECURSIVE_READ_MASK
                     parent_permission |= NO_RECURSIVE_READ_MASK
-                if current_permission & NO_WRITE_MASK == NO_WRITE_MASK:
+                if permission & NO_WRITE_MASK == NO_WRITE_MASK:
                     parent_permission &= ~RECURSIVE_WRITE_MASK
                     parent_permission |= NO_RECURSIVE_WRITE_MASK
                 permissions[parent_path] = parent_permission
 
+            permissions[permission_path] = permission
+
         return permissions
 
-    def _get_user_permissions(self):
+    def _get_raw_permissions(self):
+        logging.debug('Retrieving Cloud Pipeline storage permissions...')
+        all_raw_permissions = self._get_raw_user_permissions()
+        logging.debug('Resolving Cloud Pipeline storage permissions...')
+        return self._group_raw_permissions_by_path(all_raw_permissions)
+
+    def _get_raw_user_permissions(self):
         user = self._pipe.get_user()
         if user.is_admin:
             return [{'type': FOLDER, 'path': '', 'mask': (READ_MASK | WRITE_MASK)}]
@@ -303,14 +300,14 @@ class CloudPipelinePermissionProvider(PermissionProvider):
         for permission in permissions:
             sid = permission.get('sid', {})
             sid_name = sid.get('name', '')
-            sid_type = sid.get('type', '')
-            if sid_type == 'USER' and sid_name == user.name:
+            sid_type = sid.get('type', USER)
+            if sid_type == USER and sid_name == user.name:
                 user_permissions.append(permission)
-            if sid_type == 'GROUP' and (sid_name in user.groups or sid_name in user.roles):
+            if sid_type == GROUP and (sid_name in user.groups or sid_name in user.roles):
                 user_permissions.append(permission)
         return user_permissions
 
-    def _group_permissions_by_path(self, permissions):
+    def _group_raw_permissions_by_path(self, permissions):
         permissions_dict = {}
         for permission in permissions:
             permission_path = permission.get('path')
@@ -318,8 +315,26 @@ class CloudPipelinePermissionProvider(PermissionProvider):
             permission_group.append(permission)
         return permissions_dict
 
-    def _get_permissions_sorted_by_sids(self, permissions):
-        return sorted(permissions, key=lambda permission: permission.get('sid', {}).get('type', 'USER'))
+    def _merge_raw_permissions(self, permissions):
+        permission = INHERIT_MASK
+        for sid_permission_object in self._sort_raw_permissions_by_sid(permissions):
+            sid_permission = sid_permission_object.get('mask', INHERIT_MASK)
+            if sid_permission & READ_MASK == READ_MASK:
+                permission &= ~NO_READ_MASK
+                permission |= READ_MASK
+            if sid_permission & NO_READ_MASK == NO_READ_MASK:
+                permission &= ~READ_MASK
+                permission |= NO_READ_MASK
+            if sid_permission & WRITE_MASK == WRITE_MASK:
+                permission &= ~NO_WRITE_MASK
+                permission |= WRITE_MASK
+            if sid_permission & NO_WRITE_MASK == NO_WRITE_MASK:
+                permission &= ~WRITE_MASK
+                permission |= NO_WRITE_MASK
+        return permission
+
+    def _sort_raw_permissions_by_sid(self, permissions):
+        return sorted(permissions, key=lambda permission: permission.get('sid', {}).get('type', USER))
 
     def _get_read_permission_name(self, permission):
         return READ if permission & READ_MASK == READ_MASK \
@@ -380,16 +395,16 @@ class BasicPermissionResolver(PermissionResolver):
 
         if self._is_read_not_set(permission) or self._is_write_not_set(permission):
             for parent_path in reversed(list(get_parent_paths(path))):
-                parent_path_permissions = permissions.get(parent_path, INHERIT_MASK)
+                parent_permission = permissions.get(parent_path, INHERIT_MASK)
                 if self._is_read_not_set(permission):
-                    permission |= parent_path_permissions & READ_MASK
-                    permission |= parent_path_permissions & NO_READ_MASK
+                    permission |= parent_permission & READ_MASK
+                    permission |= parent_permission & NO_READ_MASK
                     if self._verbose and self._is_read_set(permission):
                         logging.debug('Resolved inherited %s permission for %s from %s',
                                       self._get_read_permission_name(permission), path, parent_path)
                 if self._is_write_not_set(permission):
-                    permission |= parent_path_permissions & WRITE_MASK
-                    permission |= parent_path_permissions & NO_WRITE_MASK
+                    permission |= parent_permission & WRITE_MASK
+                    permission |= parent_permission & NO_WRITE_MASK
                     if self._verbose and self._is_write_set(permission):
                         logging.debug('Resolved inherited %s permission for %s from %s',
                                       self._get_write_permission_name(permission), path, parent_path)
