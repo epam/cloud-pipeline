@@ -321,8 +321,8 @@ public interface CloudPipelineAPI {
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
 
     @POST("preprocessing/samplesheet")
-    Call<Result<Object>> registerSampleSheetFile(@Body final SampleSheetRegistrationVO registrationVO,
-                                                 @Query("overwrite") final boolean overwrite);
+    Call<Result<MetadataEntity>> registerSampleSheetFile(@Body final SampleSheetRegistrationVO registrationVO,
+                                                         @Query("overwrite") final boolean overwrite);
 
     @GET("app/info")
     Call<Result<ApplicationInfo>> fetchVersion();

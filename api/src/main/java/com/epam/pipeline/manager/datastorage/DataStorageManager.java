@@ -83,7 +83,6 @@ import com.epam.pipeline.manager.security.SecuredEntityManager;
 import com.epam.pipeline.manager.security.acl.AclSync;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.utils.DataStorageUtils;
 import com.epam.pipeline.utils.PipelineStringUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
@@ -1205,7 +1204,28 @@ public class DataStorageManager implements SecuredEntityManager {
         String paramDelimiter = paramValue.contains(",") ? "," : ";";
         for (String path : paramValue.split(paramDelimiter)) {
             if (path.toLowerCase().trim().startsWith(mask.toLowerCase())) {
-                links.add(DataStorageUtils.constructDataStorageLink(dataStorage, path, mask));
+                DataStorageLink dataStorageLink = new DataStorageLink();
+                dataStorageLink.setAbsolutePath(path.trim());
+                dataStorageLink.setDataStorageId(dataStorage.getId());
+                String relativePath = path.trim().substring(mask.length());
+                if (relativePath.startsWith(ProviderUtils.DELIMITER)) {
+                    relativePath = relativePath.substring(1);
+                }
+                String[] parts = relativePath.split(ProviderUtils.DELIMITER);
+                final String lastPart = parts[parts.length - 1];
+                if (lastPart.contains(".")) {
+                    String newPath = "";
+                    for (int i = 0; i < parts.length - 1; i++) {
+                        newPath = newPath.concat(parts[i] + ProviderUtils.DELIMITER);
+                    }
+                    if (newPath.endsWith(ProviderUtils.DELIMITER)) {
+                        newPath = newPath.substring(0, newPath.length() - 1);
+                    }
+                    dataStorageLink.setPath(newPath);
+                } else {
+                    dataStorageLink.setPath(relativePath);
+                }
+                links.add(dataStorageLink);
             }
         }
         return links;

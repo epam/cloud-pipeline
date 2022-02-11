@@ -24,7 +24,6 @@ import lombok.NoArgsConstructor;
 public class SampleSheetRegistrationVO {
     private Long folderId;
     private Long machineRunId;
-    private Boolean overwrite;
     private String path;
     private byte[] content;
 }

@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.utils.ProviderUtils;
 import com.epam.pipeline.exception.PipelineResponseApiException;
 import com.epam.pipeline.ngs.project.sync.api.client.CloudPipelineAPIClient;
 import com.epam.pipeline.ngs.project.sync.entity.NgsProjectSyncContext;
@@ -75,7 +76,7 @@ public class NGSProjectSynchronizer {
     public static final String NGS_PREPROCESSING_COMPLETION_MARK_METADATA_KEY_PREF =
             "ngs.preprocessing.completion.mark.metadata.key";
 
-    public static final String PATH_DELIMITER = "/";
+    public static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
     public static final String DATA_STORAGE_PROVIDER_MASK = "[A-Za-z0-9]+://";
     public static final String SAMPLESHEET_FILE_NAME_TEMPLATE = ".*samplesheet.*\\.csv";
     public static final String UPDATED_DATE_COLUMN = "Updated Date";
@@ -99,6 +100,9 @@ public class NGSProjectSynchronizer {
                 ).getChildFolders()
                 .forEach(folder -> {
                     try {
+                        if (!folder.getName().equals("ngs-project")) {
+                            return;
+                        }
                         syncProject(apiClient.getFolderWithMetadata(folder.getId()), syncContext);
                     } catch (Exception e) {
                         log.warn(String.format(
@@ -164,8 +168,11 @@ public class NGSProjectSynchronizer {
                 SampleSheetRegistrationVO registrationVO = new SampleSheetRegistrationVO();
                 registrationVO.setFolderId(project.getId());
                 registrationVO.setMachineRunId(machineRunEntity.getId());
-                registrationVO.setPath(Paths.get(storage.getPathMask(), sampleSheetFile.getKey().getPath()).toString());
-                apiClient.registerSampleSheet(registrationVO, true);
+
+                registrationVO.setPath(getFullStorageFilePath(storage, sampleSheetFile.getKey().getPath()));
+                final MetadataEntity updated = apiClient.registerSampleSheet(registrationVO, true);
+                log.info(String.format("Register sample sheet: %s for machine run: %s",
+                        sampleSheetFile.getKey().getName(), updated.getExternalId()));
             } else {
                 log.info(String.format("No need to sync %s, skipping.", machineRun));
             }
@@ -187,9 +194,10 @@ public class NGSProjectSynchronizer {
                     Paths.get(machineRunFolder.getPath(), completionMarkName).toString()
             ).stream().filter(item -> DataStorageItemType.File.equals(item.getType())).findFirst().orElse(null);
         } catch (PipelineResponseApiException e) {
+            log.debug(e.getMessage());
             log.debug(String.format(
                     "Can't load data sync completion file with name: %s, in machine run folder: %s",
-                    completionMarkName, machineRunFolder.getPath()), e);
+                    completionMarkName, machineRunFolder.getPath()));
             return null;
         }
     }
@@ -203,16 +211,18 @@ public class NGSProjectSynchronizer {
             final Date sampleSheetTimestamp;
             final Date lastUpdateTimestamp;
             try {
-                sampleSheetTimestamp = DateUtils.parseDate(sampleSheetFile.getChanged());
+                sampleSheetTimestamp = DateUtils.parseDate(sampleSheetFile.getChanged(), DATE_FORMAT);
                 lastUpdateTimestamp = DateUtils.parseDate(
                         Optional.ofNullable(machineRunData.get(UPDATED_DATE_COLUMN))
-                                .map(PipeConfValue::getValue).orElse(ZERO_TIME_POINT)
+                                .map(PipeConfValue::getValue).orElse(ZERO_TIME_POINT), DATE_FORMAT
                 );
             } catch (ParseException e) {
                 log.warn(String.format(
                         "Can't parse a date for machine run: %s", machineRunEntity.getExternalId()), e);
                 return false;
             }
+            log.info(String.format("Last update time of MachineRun Entity: %s, sample sheet file change time: %s",
+                    lastUpdateTimestamp, sampleSheetTimestamp));
             return sampleSheetTimestamp.after(lastUpdateTimestamp);
         } else {
             log.info(String.format(
@@ -232,10 +242,6 @@ public class NGSProjectSynchronizer {
             machineRunClass = apiClient.registerMetadataClass(machineRunClassName);
         }
         return machineRunClass;
-    }
-
-    private String getInternalStoragePath(final AbstractDataStorage storage, final String ngsDataPath) {
-        return ngsDataPath.replace(storage.getPathMask() + PATH_DELIMITER, StringUtils.EMPTY);
     }
 
     private Pair<DataStorageFile, byte[]> findSampleSheetFile(final AbstractDataStorage storage,
@@ -258,21 +264,23 @@ public class NGSProjectSynchronizer {
     private Pair<DataStorageFile, byte[]> fetchLatestSampleSheetFile(final AbstractDataStorage storage,
                                                                      final AbstractDataStorageItem machineRunFolder) {
         return ListUtils.emptyIfNull(
-                apiClient.listDataStorageItems(storage.getId(),
-                        getInternalStoragePath(storage, machineRunFolder.getPath()))
+                        apiClient.listDataStorageItems(storage.getId(),
+                                getInternalStoragePath(storage, machineRunFolder.getPath()))
                 ).stream()
                 .filter(item -> item.getType() == DataStorageItemType.File)
                 .filter(item -> item.getName().toLowerCase(Locale.ROOT).matches(SAMPLESHEET_FILE_NAME_TEMPLATE))
                 .map(item -> (DataStorageFile) item)
                 .map(item -> verifyAndGetSampleSheetContent(storage, item))
                 .filter(content -> ArrayUtils.isNotEmpty(content.getValue()))
-                .min((i1, i2) -> {
+                .max((i1, i2) -> {
                     // Sort with non-decreasing order
                     try {
-                        return -1 * DateUtils.parseDate(i1.getKey().getChanged())
-                                .compareTo(DateUtils.parseDate(i2.getKey().getChanged()));
+                        return DateUtils.parseDate(i1.getKey().getChanged(), DATE_FORMAT)
+                                .compareTo(DateUtils.parseDate(i2.getKey().getChanged(), DATE_FORMAT));
                     } catch (ParseException e) {
-                        return -1;
+                        log.warn(String.format("Can't parse changed dates for sample sheets: %s, %s",
+                                i1.getKey().getName(), i2.getKey().getName()));
+                        return 0;
                     }
                 }).orElse(ImmutablePair.of(null, new byte[0]));
     }
@@ -317,6 +325,20 @@ public class NGSProjectSynchronizer {
                 .orElseThrow(() -> new IllegalStateException("No preference value: " + name));
     }
 
+    @NotNull
+    private String getInternalStoragePath(final AbstractDataStorage storage, final String path) {
+        return path.replace(storage.getPathMask() + ProviderUtils.DELIMITER, StringUtils.EMPTY);
+    }
+
+    @NotNull
+    private String getFullStorageFilePath(final AbstractDataStorage storage,
+                                          final String path) {
+        if (!path.startsWith(storage.getPathMask())) {
+            return storage.getPathMask() + ProviderUtils.DELIMITER +
+                    (path.startsWith(ProviderUtils.DELIMITER) ? path.substring(1) : path);
+        }
+        return path;
+    }
 }
 
 

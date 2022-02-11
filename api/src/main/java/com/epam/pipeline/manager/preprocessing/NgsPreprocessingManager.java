@@ -36,7 +36,6 @@ import com.epam.pipeline.controller.vo.preprocessing.SampleSheetRegistrationVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
@@ -114,7 +113,7 @@ public class NgsPreprocessingManager {
         Assert.state(overwrite || linkedSampleSheet == null,
                 "Sample Sheet already registered for the project, to overwrite please specify overwrite=true");
 
-        final DataStorageLink sampleSheetFileLink = DataStorageUtils.constructDataStorageFileLink(
+        final DataStorageLink sampleSheetFileLink = DataStorageUtils.constructDataStorageLink(
                 storage,
                 StringUtils.isNotBlank(registrationVO.getPath())
                         ? registrationVO.getPath()
@@ -186,7 +185,7 @@ public class NgsPreprocessingManager {
         final DataStorageLink linkedSampleSheetLink = Optional.ofNullable(
                 machineRunData.get(machineRunLinkedSampleSheetColumn)
         ).map(PipeConfValue::getValue)
-                .map(fullPath -> DataStorageUtils.constructDataStorageFileLink(storage, fullPath))
+                .map(fullPath -> DataStorageUtils.constructDataStorageLink(storage, fullPath))
                 .orElse(null);
 
         machineRunData.put(machineRunToSampleColumn, null);
@@ -216,8 +215,8 @@ public class NgsPreprocessingManager {
         if (ArrayUtils.isNotEmpty(registrationVO.getContent())) {
             return registrationVO.getContent();
         } else if (StringUtils.isNotBlank(registrationVO.getPath())) {
-            DataStorageLink sampleSheetStorageLink = DataStorageUtils.constructDataStorageLink(storage,
-                    registrationVO.getPath(), storage.getPathMask() + ProviderUtils.DELIMITER);
+            final DataStorageLink sampleSheetStorageLink = DataStorageUtils.constructDataStorageLink(
+                    storage, registrationVO.getPath());
             return storageManager.getDataStorageItemContent(storage.getId(), sampleSheetStorageLink.getPath(),
                     null).getContent();
         } else {
@@ -306,7 +305,7 @@ public class NgsPreprocessingManager {
         final AbstractDataStorage dataStorage = storageManager.loadByPathOrId(pathWithOutStorageMask);
 
         final DataStorageLink dataStorageLink = DataStorageUtils.constructDataStorageLink(
-                dataStorage, dataPath.getValue(), dataStorage.getPathMask() + ProviderUtils.DELIMITER);
+                dataStorage, dataPath.getValue());
         if (!checkPathExistence(dataStorageLink.getDataStorageId(), dataStorageLink.getPath())) {
             throw new IllegalStateException(
                     messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_DATA_PATH,

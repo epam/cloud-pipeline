@@ -84,8 +84,8 @@ public class CloudPipelineAPIClient {
         return apiExecutor.execute(cloudPipelineAPI.saveMetadataEntity(entityVO));
     }
 
-    public void registerSampleSheet(final SampleSheetRegistrationVO registrationVO, final boolean overwrite) {
-        apiExecutor.execute(cloudPipelineAPI.registerSampleSheetFile(registrationVO, overwrite));
+    public MetadataEntity registerSampleSheet(final SampleSheetRegistrationVO registrationVO, final boolean overwrite) {
+        return apiExecutor.execute(cloudPipelineAPI.registerSampleSheetFile(registrationVO, overwrite));
     }
 
     public DataStorageDownloadFileUrl getStorageItemContent(final Long storageId, final String internalStoragePath) {

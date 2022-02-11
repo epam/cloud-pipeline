@@ -48,9 +48,9 @@ public class NgsPreprocessingController extends AbstractRestController {
             notes = "Registers a new or update an existing samplesheet.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public MetadataEntity registerSampleSheet(@RequestBody final SampleSheetRegistrationVO sheetRegistrationVO,
-                                              @RequestParam(defaultValue = "false") final boolean overwrite) {
-        return preprocessingApiService.registerSampleSheet(sheetRegistrationVO, overwrite);
+    public Result<MetadataEntity> registerSampleSheet(@RequestBody final SampleSheetRegistrationVO sheetRegistrationVO,
+                                                      @RequestParam(defaultValue = "false") final boolean overwrite) {
+        return Result.success(preprocessingApiService.registerSampleSheet(sheetRegistrationVO, overwrite));
     }
 
     @DeleteMapping(value = "/samplesheet")
