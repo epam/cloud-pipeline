@@ -19,6 +19,8 @@ import PropTypes from 'prop-types';
 import {Checkbox, Modal, Input, Button, Form, message, Spin, Select} from 'antd';
 import classNames from 'classnames';
 
+import protocols from '../protocols';
+import * as portUtilities from '../ports-utilities';
 import {ResolveIp} from '../../../../../models/nat';
 import {
   validateIP,
@@ -27,8 +29,6 @@ import {
   validateDescription
 } from '../helpers';
 import styles from './add-route-modal.css';
-
-const protocols = {TCP: 'TCP', UDP: 'UDP'};
 
 const FormItem = Form.Item;
 export default class AddRouteForm extends React.Component {
@@ -115,12 +115,15 @@ export default class AddRouteForm extends React.Component {
       .filter(route => useIP
         ? route.externalIp === ip
         : serverName === route.externalIp);
-    const portValues = Object
-      .values(ports)
-      .map(({value}) => value)
-      .filter(o => !Number.isNaN(Number(o)))
-      .map(o => Number(o))
-      .concat(currentIpRoutes.map(o => Number(o.externalPort)));
+    const getOtherPorts = identifier => Object
+      .keys(ports)
+      .filter(o => o !== identifier)
+      .map(o => (ports[o] || {}).value)
+      .concat(
+        currentIpRoutes
+          .map(o => o.externalPorts || [])
+          .reduce((r, c) => ([...r, ...c]), [])
+      );
     const errors = {
       serverName: validateServerName(serverName),
       ip: validateIP(ip, !useIP),
@@ -128,7 +131,9 @@ export default class AddRouteForm extends React.Component {
       ...(
         Object
           .entries(ports)
-          .map(([identifier, {value}]) => ({[identifier]: validatePort(value, portValues)}))
+          .map(([identifier, {value}]) => ({
+            [identifier]: validatePort(value, getOtherPorts(identifier))
+          }))
           .reduce((r, c) => ({...r, ...c}), {})
       )
     };
@@ -230,11 +235,18 @@ export default class AddRouteForm extends React.Component {
         ip,
         useIP
       } = this.state;
+      const portValues = [];
+      for (const entryValue of Object.values(ports)) {
+        const {value, protocol} = entryValue;
+        for (const port of portUtilities.parsePorts(value)) {
+          portValues.push({port, protocol});
+        }
+      }
       this.props.onAdd({
         ip: useIP ? ip : serverName,
         serverName,
         description,
-        ports: Object.values(ports)
+        ports: portValues
       });
       this.resetForm();
     }

@@ -15,28 +15,16 @@
  */
 
 import React from 'react';
-import {Button, Icon, Spin, Table, message, Tooltip} from 'antd';
+import {Button, Spin, Table, message, Tooltip} from 'antd';
 import classNames from 'classnames';
 
 import {NATRules, DeleteRules, SetRules} from '../../../../models/nat';
 import AddRouteForm from './add-route-modal/add-route-modal';
 import {columns} from './helpers';
+import * as portUtilities from './ports-utilities';
 import styles from './nat-getaway-configuration.css';
 
 const {Column, ColumnGroup} = Table;
-const NATRouteStatuses = {
-  CREATION_SCHEDULED: 'CREATION_SCHEDULED',
-  SERVICE_CONFIGURED: 'SERVICE_CONFIGURED',
-  DNS_CONFIGURED: 'DNS_CONFIGURED',
-  PORT_FORWARDING_CONFIGURED: 'PORT_FORWARDING_CONFIGURED',
-  ACTIVE: 'ACTIVE',
-  TERMINATION_SCHEDULED: 'TERMINATION_SCHEDULED',
-  TERMINATING: 'TERMINATING',
-  RESOURCE_RELEASED: 'RESOURCE_RELEASED',
-  TERMINATED: 'TERMINATED',
-  FAILED: 'FAILED',
-  UNKNOWN: 'UNKNOWN'
-};
 
 function getRouteIdentifier (route) {
   if (!route) {
@@ -44,15 +32,24 @@ function getRouteIdentifier (route) {
   }
   const {
     externalIp,
-    externalPort
+    internalIp,
+    grouped = false,
+    externalPort,
+    isNew
   } = route;
-  return `${externalIp}-${externalPort}`;
+  return [
+    externalIp,
+    isNew ? '' : internalIp,
+    grouped ? undefined : externalPort
+  ]
+    .filter(Boolean)
+    .join('|');
 }
 
 function routesSorter (a, b) {
-  const {externalName: nameA, externalPort: portA} = a;
-  const {externalName: nameB, externalPort: portB} = b;
-  return nameA.toString().localeCompare(nameB.toString()) || (portA - portB);
+  const {externalName: nameA} = a;
+  const {externalName: nameB} = b;
+  return nameA.toString().localeCompare(nameB.toString());
 }
 
 export default class NATGetaway extends React.Component {
@@ -61,7 +58,8 @@ export default class NATGetaway extends React.Component {
     removedRoutes: [],
     routes: [],
     addRouteModalIsOpen: false,
-    pending: false
+    pending: false,
+    expandedRowKeys: []
   }
 
   get sortedContent () {
@@ -69,9 +67,10 @@ export default class NATGetaway extends React.Component {
       routes = [],
       addedRoutes = []
     } = this.state;
-    return routes
+    const added = portUtilities.groupRoutes(addedRoutes);
+    return portUtilities.groupRoutes(routes)
       .sort(routesSorter)
-      .concat(addedRoutes.sort(routesSorter));
+      .concat(added.sort(routesSorter));
   }
 
   get tableContentChanged () {
@@ -114,138 +113,84 @@ export default class NATGetaway extends React.Component {
     });
   }
 
-  renderStatusIcon = (status) => {
-    switch (status) {
-      case NATRouteStatuses.ACTIVE:
-        return (
-          <Tooltip title={status}>
-            <Icon
-              className={
-                classNames(
-                  styles.routeStatus,
-                  'cp-nat-route-status',
-                  'cp-primary'
-                )
-              }
-              type="play-circle-o"
-            />
-          </Tooltip>
-        );
-      case NATRouteStatuses.CREATION_SCHEDULED:
-        return (
-          <Tooltip title={status}>
-            <Icon
-              type="hourglass"
-              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
-            />
-          </Tooltip>
-        );
-      case NATRouteStatuses.SERVICE_CONFIGURED:
-      case NATRouteStatuses.DNS_CONFIGURED:
-      case NATRouteStatuses.PORT_FORWARDING_CONFIGURED:
-        return (
-          <Tooltip title={status}>
-            <Icon
-              type="loading"
-              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
-            />
-          </Tooltip>
-        );
-      case NATRouteStatuses.TERMINATION_SCHEDULED:
-      case NATRouteStatuses.TERMINATING:
-      case NATRouteStatuses.RESOURCE_RELEASED:
-      case NATRouteStatuses.TERMINATED:
-        return (
-          <Tooltip title={status}>
-            <Icon
-              className={
-                classNames(
-                  styles.routeStatus,
-                  'cp-nat-route-status',
-                  'cp-warning',
-                  styles.blink
-                )
-              }
-              type="clock-circle-o"
-            />
-          </Tooltip>
-        );
-      case NATRouteStatuses.FAILED:
-        return (
-          <Tooltip title={status}>
-            <Icon
-              className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')}
-              type="exclamation-circle-o" />
-          </Tooltip>
-        );
-      case NATRouteStatuses.UNKNOWN:
-        return (
-          <Tooltip title={status}>
-            <Icon
-              className={
-                classNames(
-                  styles.routeStatus,
-                  'cp-nat-route-status',
-                  'cp-text-not-important'
-                )
-              }
-              type="question-circle-o" />
-          </Tooltip>
-        );
-      default:
-        return (
-          <Icon
-            className={
-              classNames(
-                styles.routeStatus,
-                'cp-nat-route-status',
-                'cp-text-not-important'
-              )
-            }
-            style={{display: 'none'}}
-            type="question-circle-o"
-          />
-        );
-    }
-  };
-
   removeRoute = (route) => {
-    const key = getRouteIdentifier(route);
     const {addedRoutes = [], removedRoutes = []} = this.state;
-    if (route.isNew) {
-      this.setState({
-        addedRoutes: addedRoutes.filter(r => getRouteIdentifier(r) !== key)
-      });
+    const {
+      externalIp,
+      externalPort,
+      isNew,
+      grouped,
+      routes = []
+    } = route;
+    if (isNew) {
+      const ports = grouped ? routes.map(o => o.externalPort) : [externalPort];
+      const state = {
+        addedRoutes: addedRoutes
+          .filter(r => !(r.externalIp === externalIp && ports.includes(r.externalPort)))
+      };
+      if (grouped) {
+        const {expandedRowKeys = []} = this.state;
+        state.expandedRowKeys = expandedRowKeys.filter(key => key !== getRouteIdentifier(route));
+      }
+      this.setState(state);
     } else {
+      const routesToRemove = grouped ? routes : [route];
       this.setState({
         removedRoutes: [
           ...removedRoutes,
-          key
+          ...routesToRemove
         ]
       });
     }
   }
 
   revertRoute = (route) => {
-    const key = getRouteIdentifier(route);
+    const {
+      externalIp,
+      externalPort,
+      grouped,
+      routes = []
+    } = route;
     const {removedRoutes = []} = this.state;
-    this.setState({
-      removedRoutes: removedRoutes.filter(o => o !== key)
-    });
+    if (grouped) {
+      const ports = routes.map(subRoute => subRoute.externalPort);
+      this.setState({
+        removedRoutes: removedRoutes
+          .filter(r => !(r.externalIp === externalIp && ports.includes(r.externalPort)))
+      });
+    } else {
+      this.setState({
+        removedRoutes: removedRoutes
+          .filter(r => !(r.externalIp === externalIp && r.externalPort === externalPort))
+      });
+    }
   }
 
   routeIsRemoved = (route) => {
+    const {
+      externalIp,
+      externalPort,
+      grouped,
+      routes = []
+    } = route;
+    if (grouped) {
+      const removed = routes
+        .filter(subRoute => this.routeIsRemoved(subRoute))
+        .length;
+      return removed === routes.length;
+    }
     const {removedRoutes = []} = this.state;
-    return removedRoutes.includes(getRouteIdentifier(route));
+    return !!removedRoutes
+      .find(r => r.externalIp === externalIp && r.externalPort === externalPort);
   }
 
   addNewDataToTable = async (formData) => {
     const {serverName, ip, ports = [], description} = formData;
-    const formattedData = ports.map(({value, protocol}) => ({
+    const formattedData = ports.map(({port, protocol}) => ({
       externalName: serverName,
       externalIp: ip,
-      externalPort: value,
-      protocol: protocol.toUpperCase(),
+      externalPort: port,
+      protocol,
       isNew: true,
       description
     }));
@@ -276,12 +221,10 @@ export default class NATGetaway extends React.Component {
     }, async () => {
       try {
         const {
-          routes = [],
           addedRoutes = [],
           removedRoutes = []
         } = this.state;
-        const routesToRemove = routes
-          .filter(route => removedRoutes.includes(getRouteIdentifier(route)))
+        const routesToRemove = removedRoutes
           .map(route => ({
             externalName: route.externalName,
             externalIp: route.externalIp,
@@ -333,8 +276,17 @@ export default class NATGetaway extends React.Component {
     this.loadRoutes();
   }
 
+  onChangeExpandedRows = (expandedRows) => {
+    this.setState({
+      expandedRowKeys: expandedRows
+    });
+  }
+
   render () {
-    const {pending} = this.state;
+    const {
+      pending,
+      expandedRowKeys = []
+    } = this.state;
     return (
       <div
         className={styles.container}
@@ -363,6 +315,7 @@ export default class NATGetaway extends React.Component {
           </div>
           <Spin spinning={pending}>
             <Table
+              indentSize={0}
               className={classNames(styles.table, 'cp-settings-nat-table')}
               dataSource={this.sortedContent}
               pagination={false}
@@ -373,21 +326,18 @@ export default class NATGetaway extends React.Component {
                 'cp-disabled': this.routeIsRemoved(record),
                 'cp-primary': !this.routeIsRemoved(record) && record.isNew
               })}
+              expandedRowKeys={expandedRowKeys}
+              onExpandedRowsChange={this.onChangeExpandedRows}
             >
               <ColumnGroup title="External resources">
                 {columns.external.map((col) => {
                   return (
                     <Column
-                      title={col.prettyName || col.name}
+                      title={col.prettyName}
                       dataIndex={col.name}
                       key={col.name}
-                      className={classNames('external-column', styles.column)}
-                      render={(text, record) => (
-                        <div>
-                          {col.name === 'externalName' && this.renderStatusIcon(record.status)}
-                          {text}
-                        </div>)
-                      }
+                      className={classNames('external-column', styles.column, col.className)}
+                      render={(col.renderer || (o => o))}
                     />);
                 })
                 }
@@ -398,7 +348,8 @@ export default class NATGetaway extends React.Component {
                     title={col.prettyName || col.name}
                     dataIndex={col.name}
                     key={col.name}
-                    className={classNames('internal-column', styles.column)}
+                    className={classNames('internal-column', styles.column, col.className)}
+                    render={(col.renderer || (o => o))}
                   />))
                 }
               </ColumnGroup>
