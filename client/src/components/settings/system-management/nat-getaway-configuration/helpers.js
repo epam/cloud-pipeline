@@ -92,8 +92,8 @@ export function validateIP (value, skip = false) {
 
 export function validateDescription (value) {
   const {messages} = validationConfig;
-  if (value) {
-    return {error: value.toString().length > 253, message: messages.lengthExceed};
+  if (value && value.toString().length > 253) {
+    return {error: true, message: messages.lengthExceed};
   } else {
     return {error: false};
   }
