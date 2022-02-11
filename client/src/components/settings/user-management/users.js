@@ -299,18 +299,22 @@ export default class UsersManagement extends React.Component {
           >
             Show blocked users
           </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.online}
-            value={USERS_FILTERS.online}
-          >
-            Show online users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.offline}
-            value={USERS_FILTERS.offline}
-          >
-            Show offline users
-          </Select.Option>
+          { this.isAdmin && (
+            <Select.Option
+              key={USERS_FILTERS.online}
+              value={USERS_FILTERS.online}
+            >
+              Show online users
+            </Select.Option>)
+          }
+          { this.isAdmin && (
+            <Select.Option
+              key={USERS_FILTERS.offline}
+              value={USERS_FILTERS.offline}
+            >
+              Show offline users
+            </Select.Option>)
+          }
         </Select>
         {
           this.isAdmin && (
