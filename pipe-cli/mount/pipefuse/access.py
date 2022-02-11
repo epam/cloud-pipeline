@@ -34,9 +34,9 @@ NO_WRITE_MASK = 0b1000
 EXECUTE_MASK = 0b10000
 NO_EXECUTE_MASK = 0b100000
 RECURSIVE_READ_MASK = 0b1000000
-RECURSIVE_NO_READ_MASK = 0b10000000
+NO_RECURSIVE_READ_MASK = 0b10000000
 RECURSIVE_WRITE_MASK = 0b100000000
-RECURSIVE_NO_WRITE_MASK = 0b1000000000
+NO_RECURSIVE_WRITE_MASK = 0b1000000000
 SYNTHETIC_READ_MASK = 0b10000000000
 
 INHERIT = 'INHERIT'
@@ -135,28 +135,30 @@ class PermissionControlFileSystemClient(FileSystemClientDecorator):
         self._inner.truncate(fh, path, length)
 
     def _is_read_allowed(self, path):
-        permissions = self._read_manager.get(path)
-        return READ in permissions
+        permission = self._read_manager.get(path)
+        return permission & READ_MASK == READ_MASK
 
     def _is_write_allowed(self, path):
-        permissions = self._read_manager.get(path)
-        return WRITE in permissions
+        permission = self._read_manager.get(path)
+        return permission & WRITE_MASK == WRITE_MASK
 
     def _is_read_write_allowed(self, path):
-        permissions = self._read_manager.get(path)
-        return READ in permissions and WRITE in permissions
+        permission = self._read_manager.get(path)
+        return permission & READ_MASK == READ_MASK and permission & WRITE_MASK == WRITE_MASK
 
     def _is_recursive_write_allowed(self, path):
-        permissions = self._read_manager.get(path)
-        return RECURSIVE_WRITE in permissions
+        permission = self._read_manager.get(path)
+        return permission & RECURSIVE_WRITE_MASK == RECURSIVE_WRITE_MASK
 
     def _is_recursive_read_write_allowed(self, path):
-        permissions = self._read_manager.get(path)
-        return RECURSIVE_READ in permissions and RECURSIVE_WRITE in permissions
+        permission = self._read_manager.get(path)
+        return permission & RECURSIVE_READ_MASK == RECURSIVE_READ_MASK \
+               and permission & RECURSIVE_WRITE_MASK == RECURSIVE_WRITE_MASK
 
     def _is_synthetic_read_allowed(self, path):
-        permissions = self._read_manager.get(path)
-        return READ in permissions or SYNTHETIC_READ in permissions
+        permission = self._read_manager.get(path)
+        return permission & READ_MASK == READ_MASK \
+               or permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK
 
     def _access_denied(self, path):
         self._access_denied_warning(path)
@@ -226,70 +228,69 @@ class CloudPipelinePermissionProvider(PermissionProvider):
         logging.debug('Resolving Cloud Pipeline storage permissions...')
         raw_permissions_dict = self._group_permissions_by_path(raw_permissions)
         permissions = {}
-        for raw_permission_path in sorted(raw_permissions_dict.keys()):
-            path_raw_permissions = raw_permissions_dict[raw_permission_path]
-            read_permission = INHERIT
-            write_permission = INHERIT
-            for raw_permission in self._get_permissions_sorted_by_sids(path_raw_permissions):
-                read_permission = READ if READ_MASK & raw_permission.get('mask', INHERIT_MASK) == READ_MASK else read_permission
-                read_permission = NO_READ if NO_READ_MASK & raw_permission.get('mask', INHERIT_MASK) == NO_READ_MASK else read_permission
-                write_permission = WRITE if WRITE_MASK & raw_permission.get('mask', INHERIT_MASK) == WRITE_MASK else write_permission
-                write_permission = NO_WRITE if NO_WRITE_MASK & raw_permission.get('mask', INHERIT_MASK) == NO_WRITE_MASK else write_permission
+        for permission_path in sorted(raw_permissions_dict.keys()):
+            raw_permissions = raw_permissions_dict[permission_path]
+            permission = INHERIT_MASK
+            for raw_permission_object in self._get_permissions_sorted_by_sids(raw_permissions):
+                raw_permission = raw_permission_object.get('mask', INHERIT_MASK)
+                if raw_permission & READ_MASK == READ_MASK:
+                    permission &= ~NO_READ_MASK
+                    permission |= READ_MASK
+                if raw_permission & NO_READ_MASK == NO_READ_MASK:
+                    permission &= ~READ_MASK
+                    permission |= NO_READ_MASK
+                if raw_permission & WRITE_MASK == WRITE_MASK:
+                    permission &= ~NO_WRITE_MASK
+                    permission |= WRITE_MASK
+                if raw_permission & NO_WRITE_MASK == NO_WRITE_MASK:
+                    permission &= ~WRITE_MASK
+                    permission |= NO_WRITE_MASK
             if self._verbose:
                 logging.debug('Resolved raw %s+%s permissions for %s',
-                              read_permission, write_permission, raw_permission_path)
+                              self._get_read_permission_name(permission),
+                              self._get_write_permission_name(permission),
+                              permission_path)
 
-            current_updated_permissions = permissions[raw_permission_path] = permissions.get(raw_permission_path, [])
-            if read_permission == READ:
-                if READ in current_updated_permissions:
-                    current_updated_permissions.remove(READ)
-                if NO_READ in current_updated_permissions:
-                    current_updated_permissions.remove(NO_READ)
-                if SYNTHETIC_READ in current_updated_permissions:
-                    current_updated_permissions.remove(SYNTHETIC_READ)
-                current_updated_permissions.append(READ)
-            if read_permission == NO_READ:
-                if READ not in current_updated_permissions and SYNTHETIC_READ not in current_updated_permissions:
-                    if NO_READ in current_updated_permissions:
-                        current_updated_permissions.remove(NO_READ)
-                    current_updated_permissions.append(NO_READ)
-            if write_permission == WRITE:
-                if WRITE in current_updated_permissions:
-                    current_updated_permissions.remove(WRITE)
-                if NO_WRITE in current_updated_permissions:
-                    current_updated_permissions.remove(NO_WRITE)
-                current_updated_permissions.append(WRITE)
-            if write_permission == NO_WRITE:
-                if WRITE not in current_updated_permissions:
-                    if NO_WRITE in current_updated_permissions:
-                        current_updated_permissions.remove(NO_WRITE)
-                    current_updated_permissions.append(NO_WRITE)
+            current_permission = permissions.get(permission_path, INHERIT_MASK)
+            if permission & READ_MASK == READ_MASK:
+                current_permission |= READ_MASK
+                current_permission &= ~NO_READ_MASK
+                current_permission &= ~SYNTHETIC_READ_MASK
+            if permission & NO_READ_MASK == NO_READ_MASK:
+                if current_permission & READ_MASK != READ_MASK and \
+                        current_permission & SYNTHETIC_READ_MASK != SYNTHETIC_READ_MASK:
+                    current_permission |= NO_READ_MASK
+            if permission & WRITE_MASK == WRITE_MASK:
+                current_permission |= WRITE_MASK
+                current_permission &= ~NO_WRITE_MASK
+            if permission & NO_WRITE_MASK == NO_WRITE_MASK:
+                if current_permission & WRITE_MASK != WRITE_MASK:
+                    current_permission |= NO_WRITE_MASK
             if self._verbose:
                 logging.debug('Resolved effective %s+%s permissions for %s',
-                              read_permission, write_permission, raw_permission_path)
+                              self._get_read_permission_name(current_permission),
+                              self._get_write_permission_name(current_permission),
+                              permission_path)
+            permissions[permission_path] = current_permission
 
-            for raw_permission_parent_path in get_parent_paths(raw_permission_path):
-                permission_parent_permissions = \
-                    permissions[raw_permission_parent_path] = \
-                    permissions.get(raw_permission_parent_path, [])
-                if read_permission in [READ or SYNTHETIC_READ]:
-                    if NO_READ in permission_parent_permissions:
-                        permission_parent_permissions.remove(NO_READ)
-                    if READ not in permission_parent_permissions and SYNTHETIC_READ not in permission_parent_permissions:
+            for parent_path in get_parent_paths(permission_path):
+                parent_permission = permissions.get(parent_path, INHERIT_MASK)
+                if current_permission & READ_MASK == READ_MASK \
+                        or current_permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK:
+                    parent_permission &= ~NO_READ_MASK
+                    if parent_permission & READ_MASK != READ_MASK \
+                            and parent_permission & SYNTHETIC_READ_MASK != SYNTHETIC_READ_MASK:
                         if self._verbose:
                             logging.debug('Resolved uplifted %s permission for %s',
-                                          SYNTHETIC_READ, raw_permission_parent_path)
-                        permission_parent_permissions.append(SYNTHETIC_READ)
-                if read_permission in [NO_READ]:
-                    if RECURSIVE_READ in permission_parent_permissions:
-                        permission_parent_permissions.remove(RECURSIVE_READ)
-                    if NO_RECURSIVE_READ not in permission_parent_permissions:
-                        permission_parent_permissions.append(NO_RECURSIVE_READ)
-                if write_permission in [NO_WRITE]:
-                    if RECURSIVE_WRITE in permission_parent_permissions:
-                        permission_parent_permissions.remove(RECURSIVE_WRITE)
-                    if NO_RECURSIVE_WRITE not in permission_parent_permissions:
-                        permission_parent_permissions.append(NO_RECURSIVE_WRITE)
+                                          SYNTHETIC_READ, parent_path)
+                        parent_permission |= SYNTHETIC_READ_MASK
+                if current_permission & NO_READ_MASK == NO_READ_MASK:
+                    parent_permission &= ~RECURSIVE_READ_MASK
+                    parent_permission |= NO_RECURSIVE_READ_MASK
+                if current_permission & NO_WRITE_MASK == NO_WRITE_MASK:
+                    parent_permission &= ~RECURSIVE_WRITE_MASK
+                    parent_permission |= NO_RECURSIVE_WRITE_MASK
+                permissions[parent_path] = parent_permission
 
         return permissions
 
@@ -319,6 +320,17 @@ class CloudPipelinePermissionProvider(PermissionProvider):
 
     def _get_permissions_sorted_by_sids(self, permissions):
         return sorted(permissions, key=lambda permission: permission.get('sid', {}).get('type', 'USER'))
+
+    def _get_read_permission_name(self, permission):
+        return READ if permission & READ_MASK == READ_MASK \
+            else SYNTHETIC_READ if permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK \
+            else NO_READ if permission & NO_READ_MASK == NO_READ_MASK \
+            else INHERIT
+
+    def _get_write_permission_name(self, current_permission):
+        return WRITE if current_permission & WRITE_MASK == WRITE_MASK \
+            else NO_WRITE if current_permission & NO_WRITE_MASK == NO_WRITE_MASK \
+            else INHERIT
 
 
 class PermissionResolver:
@@ -351,82 +363,112 @@ class BasicPermissionResolver(PermissionResolver):
         if self._verbose:
             logging.debug('Resolving permissions for %s...', path)
 
-        read_permission = None
-        write_permission = None
-        recursive_read_permission = None
-        recursive_write_permission = None
+        permission = permissions.get(path, INHERIT_MASK)
 
-        path_permissions = permissions.get(path, [])
-        if READ in path_permissions:
-            read_permission = READ
-        if SYNTHETIC_READ in path_permissions:
-            read_permission = SYNTHETIC_READ
-        if NO_READ in path_permissions:
-            read_permission = NO_READ
-        if WRITE in path_permissions:
-            write_permission = WRITE
-        if NO_WRITE in path_permissions:
-            write_permission = NO_WRITE
-        if RECURSIVE_READ in path_permissions:
-            recursive_read_permission = RECURSIVE_READ
-        if NO_RECURSIVE_READ in path_permissions:
-            recursive_read_permission = NO_RECURSIVE_READ
-        if RECURSIVE_WRITE in path_permissions:
-            recursive_write_permission = RECURSIVE_WRITE
-        if NO_RECURSIVE_WRITE in path_permissions:
-            recursive_write_permission = NO_RECURSIVE_WRITE
+        if self._verbose and self._is_read_set(permission):
+            logging.debug('Resolved direct %s permission for %s',
+                          self._get_read_permission_name(permission), path)
+        if self._verbose and self._is_write_set(permission):
+            logging.debug('Resolved direct %s permission for %s',
+                          self._get_write_permission_name(permission), path)
+        if self._verbose and self._is_recursive_read_set(permission):
+            logging.debug('Resolved direct %s permission for %s',
+                          self._get_recursive_read_permission_name(permission), path)
+        if self._verbose and self._is_recursive_write_set(permission):
+            logging.debug('Resolved direct %s permission for %s',
+                          self._get_recursive_write_permission_name(permission), path)
 
-        if self._verbose and read_permission:
-            logging.debug('Resolved direct %s permission for %s', read_permission, path)
-        if self._verbose and write_permission:
-            logging.debug('Resolved direct %s permission for %s', write_permission, path)
-        if self._verbose and recursive_read_permission:
-            logging.debug('Resolved direct %s permission for %s', recursive_read_permission, path)
-        if self._verbose and recursive_write_permission:
-            logging.debug('Resolved direct %s permission for %s', recursive_write_permission, path)
-
-        if not read_permission or not write_permission:
+        if self._is_read_not_set(permission) or self._is_write_not_set(permission):
             for parent_path in reversed(list(get_parent_paths(path))):
-                parent_path_permissions = permissions.get(parent_path, [])
-                if not read_permission:
-                    if READ in parent_path_permissions:
-                        read_permission = READ
-                    if NO_READ in parent_path_permissions:
-                        read_permission = NO_READ
-                    if self._verbose and read_permission:
+                parent_path_permissions = permissions.get(parent_path, INHERIT_MASK)
+                if self._is_read_not_set(permission):
+                    permission |= parent_path_permissions & READ_MASK
+                    permission |= parent_path_permissions & NO_READ_MASK
+                    if self._verbose and self._is_read_set(permission):
                         logging.debug('Resolved inherited %s permission for %s from %s',
-                                      read_permission, path, parent_path)
-                if not write_permission:
-                    if WRITE in parent_path_permissions:
-                        write_permission = WRITE
-                    if NO_WRITE in parent_path_permissions:
-                        write_permission = NO_WRITE
-                    if self._verbose and write_permission:
+                                      self._get_read_permission_name(permission), path, parent_path)
+                if self._is_write_not_set(permission):
+                    permission |= parent_path_permissions & WRITE_MASK
+                    permission |= parent_path_permissions & NO_WRITE_MASK
+                    if self._verbose and self._is_write_set(permission):
                         logging.debug('Resolved inherited %s permission for %s from %s',
-                                      write_permission, path, parent_path)
-                if read_permission and write_permission:
+                                      self._get_write_permission_name(permission), path, parent_path)
+                if self._is_read_set(permission) and self._is_write_set(permission):
                     break
 
-        if self._verbose and not read_permission:
-            read_permission = READ if self._is_read_allowed else NO_READ
-            logging.debug('Resolved default %s permission for %s', read_permission, path)
-        if self._verbose and not write_permission:
-            write_permission = WRITE if self._is_write_allowed else NO_WRITE
-            logging.debug('Resolved default %s permission for %s', write_permission, path)
-        if self._verbose and not recursive_read_permission:
-            recursive_read_permission = RECURSIVE_READ if read_permission == READ else NO_RECURSIVE_READ
-            logging.debug('Resolved default %s permission for %s', recursive_read_permission, path)
-        if self._verbose and not recursive_write_permission:
-            recursive_write_permission = RECURSIVE_WRITE if write_permission == WRITE else NO_RECURSIVE_WRITE
-            logging.debug('Resolved default %s permission for %s', recursive_write_permission, path)
+        if self._verbose and self._is_read_not_set(permission):
+            permission |= READ_MASK if self._is_read_allowed else NO_READ_MASK
+            logging.debug('Resolved default %s permission for %s',
+                          self._get_read_permission_name(permission), path)
+        if self._verbose and self._is_write_not_set(permission):
+            permission |= WRITE_MASK if self._is_write_allowed else NO_WRITE_MASK
+            logging.debug('Resolved default %s permission for %s',
+                          self._get_write_permission_name(permission), path)
+        if self._verbose and self._is_recursive_read_not_set(permission):
+            permission |= RECURSIVE_READ_MASK if permission & READ_MASK == READ_MASK else NO_RECURSIVE_READ_MASK
+            logging.debug('Resolved default %s permission for %s',
+                          self._get_recursive_read_permission_name(permission), path)
+        if self._verbose and self._is_recursive_write_not_set(permission):
+            permission |= RECURSIVE_WRITE_MASK if permission & WRITE_MASK == WRITE_MASK else NO_RECURSIVE_WRITE_MASK
+            logging.debug('Resolved default %s permission for %s',
+                          self._get_recursive_write_permission_name(permission), path)
 
         if self._verbose:
             logging.debug('Resolved effective %s+%s+%s+%s permissions for %s',
-                          read_permission, write_permission,
-                          recursive_read_permission, recursive_write_permission,
+                          self._get_read_permission_name(permission),
+                          self._get_write_permission_name(permission),
+                          self._get_recursive_read_permission_name(permission),
+                          self._get_recursive_write_permission_name(permission),
                           path)
-        return [read_permission, write_permission, NO_EXECUTE,
-                recursive_read_permission, recursive_write_permission, NO_EXECUTE]
+        return permission
+
+    def _is_read_set(self, permission):
+        return permission & READ_MASK == READ_MASK \
+               or permission & NO_READ_MASK == NO_READ_MASK \
+               or permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK
+
+    def _is_read_not_set(self, permission):
+        return permission & READ_MASK != READ_MASK \
+               and permission & NO_READ_MASK != NO_READ_MASK \
+               and permission & SYNTHETIC_READ_MASK != SYNTHETIC_READ_MASK
+
+    def _is_write_set(self, permission):
+        return permission & WRITE_MASK == WRITE_MASK \
+               or permission & NO_WRITE_MASK == NO_WRITE_MASK
+
+    def _is_write_not_set(self, permission):
+        return permission & WRITE_MASK != WRITE_MASK \
+               and permission & NO_WRITE_MASK != NO_WRITE_MASK
+
+    def _is_recursive_read_set(self, permission):
+        return permission & RECURSIVE_READ_MASK == RECURSIVE_READ_MASK \
+               or permission & NO_RECURSIVE_READ_MASK == NO_RECURSIVE_READ_MASK
+
+    def _is_recursive_read_not_set(self, permission):
+        return permission & RECURSIVE_READ_MASK != RECURSIVE_READ_MASK \
+               and permission & NO_RECURSIVE_READ_MASK != NO_RECURSIVE_READ_MASK
+
+    def _is_recursive_write_set(self, permission):
+        return permission & RECURSIVE_WRITE_MASK == RECURSIVE_WRITE_MASK \
+               or permission & NO_RECURSIVE_WRITE_MASK == NO_RECURSIVE_WRITE_MASK
+
+    def _is_recursive_write_not_set(self, permission):
+        return permission & RECURSIVE_WRITE_MASK != RECURSIVE_WRITE_MASK \
+               and permission & NO_RECURSIVE_WRITE_MASK != NO_RECURSIVE_WRITE_MASK
+
+    def _get_read_permission_name(self, permission):
+        return READ if permission & READ_MASK == READ_MASK \
+            else SYNTHETIC_READ if permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK \
+            else NO_READ
+
+    def _get_write_permission_name(self, permission):
+        return WRITE if permission & WRITE_MASK == WRITE_MASK else NO_WRITE
+
+    def _get_recursive_read_permission_name(self, permission):
+        return RECURSIVE_READ if permission & RECURSIVE_READ_MASK == RECURSIVE_READ_MASK else NO_RECURSIVE_READ
+
+    def _get_recursive_write_permission_name(self, permission):
+        return RECURSIVE_WRITE if permission & RECURSIVE_WRITE_MASK == RECURSIVE_WRITE_MASK else NO_RECURSIVE_WRITE
 
 
 class PermissionReadManager:
@@ -503,16 +545,16 @@ class ExplicitPermissionReadManager(PermissionReadManager):
 
 class PermissionTree:
 
-    def __init__(self, path, permissions=None, children=None):
+    def __init__(self, path, permission=INHERIT_MASK, children=None):
         """
         Permission tree node.
 
-        :param path: Absolute path.
-        :param permissions: Permissions.
-        :param children: Child permission tree nodes.
+        :param path: Node path.
+        :param permission: Node permission.
+        :param children: Child nodes.
         """
         self.path = path
-        self.permissions = permissions or []
+        self.permission = permission
         self.children = children or {}
 
 
@@ -528,19 +570,6 @@ class ExplainingTreePermissionReadManager(PermissionReadManager):
         """
         self._inner = inner
         self._delimiter = '/'
-        self._acronyms = {
-            READ: 'r',
-            NO_READ: '-',
-            WRITE: 'w',
-            NO_WRITE: '-',
-            EXECUTE: 'x',
-            NO_EXECUTE: '-',
-            RECURSIVE_READ: 'r',
-            NO_RECURSIVE_READ: '-',
-            RECURSIVE_WRITE: 'w',
-            NO_RECURSIVE_WRITE: '-',
-            SYNTHETIC_READ: '~'
-        }
 
     def get_all(self):
         return self._inner.get_all()
@@ -554,8 +583,8 @@ class ExplainingTreePermissionReadManager(PermissionReadManager):
         self._explain_tree(self._build_tree(self._inner.get_all()))
 
     def _build_tree(self, permissions):
-        permissions_tree = PermissionTree(path='', permissions=permissions.get('', []))
-        for current_path, current_permissions in permissions.items():
+        permissions_tree = PermissionTree(path='', permission=permissions.get('', INHERIT_MASK))
+        for current_path, current_permission in permissions.items():
             current_item_name = current_path.split(self._delimiter)[-1]
             if current_item_name == '':
                 continue
@@ -569,19 +598,31 @@ class ExplainingTreePermissionReadManager(PermissionReadManager):
             if current_item_name in current_node.children:
                 existing_node = current_node.children[current_item_name]
                 current_node.children[current_item_name] = PermissionTree(path=current_item_name,
-                                                                          permissions=current_permissions,
+                                                                          permission=current_permission,
                                                                           children=existing_node.children)
             else:
                 current_node.children[current_item_name] = PermissionTree(path=current_item_name,
-                                                                          permissions=current_permissions)
+                                                                          permission=current_permission)
         return permissions_tree
 
     def _explain_tree(self, tree):
         self._explain_tree_recursively(tree)
 
     def _explain_tree_recursively(self, tree, depth=0):
-        logging.debug('%s | %s%s',
-                      ''.join(self._acronyms[permission] for permission in tree.permissions),
+        logging.debug('%s%s- %s%s- | %s%s',
+                      'r' if tree.permission & READ_MASK == READ_MASK else
+                      '-' if tree.permission & NO_READ_MASK == NO_READ_MASK else
+                      '~' if tree.permission & SYNTHETIC_READ_MASK == SYNTHETIC_READ_MASK else
+                      '?',
+                      'w' if tree.permission & WRITE_MASK == WRITE_MASK else
+                      '-' if tree.permission & NO_WRITE_MASK == NO_WRITE_MASK else
+                      '?',
+                      'r' if tree.permission & RECURSIVE_READ_MASK == RECURSIVE_READ_MASK else
+                      '-' if tree.permission & NO_RECURSIVE_READ_MASK == NO_RECURSIVE_READ_MASK else
+                      '?',
+                      'w' if tree.permission & RECURSIVE_WRITE_MASK == RECURSIVE_WRITE_MASK else
+                      '-' if tree.permission & NO_RECURSIVE_WRITE_MASK == NO_RECURSIVE_WRITE_MASK else
+                      '?',
                       '  ' * depth, tree.path)
         for subtree in tree.children.values():
             self._explain_tree_recursively(subtree, depth=depth + 1)
