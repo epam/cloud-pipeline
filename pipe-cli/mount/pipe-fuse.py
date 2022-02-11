@@ -85,11 +85,26 @@ _debug_logging_level = 'DEBUG'
 _info_logging_level = 'INFO'
 
 
+def _extract_parameter(name, default='', default_provider=lambda: ''):
+    parameter = os.environ[name] = os.getenv(name, default) or default_provider() or default
+    return parameter
+
+
+def _extract_boolean_parameter(name, default='0', default_provider=lambda: '0'):
+    parameter = _extract_parameter(name, default=default, default_provider=default_provider)
+    return parameter.lower() == 'true'
+
+
+def _extract_int_parameter(name, default='false', default_provider=lambda: 'false'):
+    parameter = _extract_parameter(name, default=default, default_provider=default_provider)
+    return int(parameter)
+
+
 def start(mountpoint, webdav, bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
           write_buffer_size, trunc_buffer_size, chunk_size,
           cache_ttl, cache_size,
-          acl_cache_ttl, acl_cache_size, acl_verbose,
+          acl_cache_ttl, acl_cache_size, acl_read_only, acl_verbose,
           default_mode,
           mount_options=None, threads=False, monitoring_delay=600, recording=False):
     if mount_options is None:
@@ -100,13 +115,15 @@ def start(mountpoint, webdav, bucket,
         if e.errno != errno.EEXIST:
             raise
 
-    api = os.environ.get('API', '')
-    bearer = os.environ.get('API_TOKEN', '')
-    chunk_size = int(os.environ.get('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size))
-    read_ahead_min_size = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_MIN_SIZE', read_ahead_min_size))
-    read_ahead_max_size = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
-    read_ahead_size_multiplier = int(os.environ.get('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER',
-                                                    read_ahead_size_multiplier))
+    api = os.getenv('API', '')
+    bearer = os.getenv('API_TOKEN', '')
+    chunk_size = int(os.getenv('CP_PIPE_FUSE_CHUNK_SIZE', chunk_size))
+    read_ahead_min_size = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_MIN_SIZE', read_ahead_min_size))
+    read_ahead_max_size = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_MAX_SIZE', read_ahead_max_size))
+    read_ahead_size_multiplier = int(os.getenv('CP_PIPE_FUSE_READ_AHEAD_SIZE_MULTIPLIER', read_ahead_size_multiplier))
+    acl_read_only = str(os.getenv('CP_PIPE_FUSE_ACL_READ_ONLY', acl_read_only)).strip().lower() == 'true'
+    acl_verbose = str(os.getenv('CP_PIPE_FUSE_ACL_VERBOSE', acl_verbose)).strip().lower() == 'true'
+
     bucket_type = None
     root_path = None
     if not bearer:
@@ -135,8 +152,10 @@ def start(mountpoint, webdav, bucket,
         if recording:
             client = RecordingFileSystemClient(client)
 
-        if not acl_verbose:
-            logging.info('Permission verbose logging is disabled.')
+        if acl_verbose:
+            logging.info('Acl verbose logging is enabled.')
+        else:
+            logging.info('Acl verbose logging is disabled.')
 
         permission_provider = CloudPipelinePermissionProvider(pipe=pipe, bucket=bucket_object, verbose=acl_verbose)
         permission_resolver = BasicPermissionResolver(is_read_allowed=bucket_object.is_read_allowed(),
@@ -147,40 +166,49 @@ def start(mountpoint, webdav, bucket,
         if acl_verbose:
             permission_read_manager = ExplainingTreePermissionReadManager(permission_read_manager)
         if acl_cache_size > 0:
+            logging.info('Acl caching is enabled.')
             acl_cache_implementation = Cache(maxsize=acl_cache_size)
             acl_cache = SimpleCache(acl_cache_implementation)
             if threads:
                 acl_cache = ThreadSafeCache(acl_cache)
             permission_read_manager = CachingPermissionReadManager(permission_read_manager, cache=acl_cache)
         else:
-            logging.info('Permission caching is disabled.')
+            logging.info('Acl caching is disabled.')
 
         if acl_cache_ttl:
+            logging.info('Acl refreshing is enabled.')
             permission_read_manager = RefreshingPermissionReadManager(permission_read_manager, refresh_delay=acl_cache_ttl)
         else:
-            logging.info('Permission refreshing is disabled.')
+            logging.info('Acl refreshing is disabled.')
 
         permission_read_manager.refresh()
         client = PermissionControlFileSystemClient(client, read_manager=permission_read_manager)
 
-        permission_write_manager = CloudPipelinePermissionWriteManager(pipe=pipe, bucket=bucket_object)
-        client = PermissionManagementFileSystemClient(client, write_manager=permission_write_manager)
+        if acl_read_only:
+            logging.info('Acl read only is enabled.')
+        else:
+            permission_write_manager = CloudPipelinePermissionWriteManager(pipe=pipe, bucket=bucket_object)
+            client = PermissionManagementFileSystemClient(client, write_manager=permission_write_manager)
+            logging.info('Acl read only is disabled.')
 
     if bucket_type in [CloudType.S3, CloudType.GS]:
         client = PathExpandingStorageFileSystemClient(client, root_path=root_path)
     if cache_ttl > 0 and cache_size > 0:
+        logging.info('Listing caching is enabled.')
         cache_implementation = TTLCache(maxsize=cache_size, ttl=cache_ttl)
         cache = ListingCache(cache_implementation)
         if threads:
             cache = ThreadSafeListingCache(cache)
         client = CachingFileSystemClient(client, cache)
     else:
-        logging.info('Caching is disabled.')
+        logging.info('Listing caching is disabled.')
     if write_buffer_size > 0:
+        logging.info('Write buffering is enabled.')
         client = BufferingWriteFileSystemClient(client, capacity=write_buffer_size)
     else:
         logging.info('Write buffering is disabled.')
     if read_buffer_size > 0:
+        logging.info('Read buffering is enabled.')
         client = BufferingReadAheadFileSystemClient(client,
                                                     read_ahead_min_size=read_ahead_min_size,
                                                     read_ahead_max_size=read_ahead_max_size,
@@ -189,6 +217,7 @@ def start(mountpoint, webdav, bucket,
     else:
         logging.info('Read buffering is disabled.')
     if trunc_buffer_size > 0:
+        logging.info('Truncating support is enabled.')
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)
             client = WriteLastNullOnUpTruncateFileSystemClient(client)
@@ -204,7 +233,7 @@ def start(mountpoint, webdav, bucket,
     if recording:
         fs = RecordingFS(fs)
 
-    logging.info('Initializing file system.')
+    logging.info('Initializing file system...')
     enable_additional_operations()
     FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
 
@@ -324,6 +353,8 @@ if __name__ == '__main__':
                         help="Acl cache time to live, seconds.")
     parser.add_argument("--acl-cache-size", type=int, required=False, default=1000,
                         help="Number of simultaneous acl caches.")
+    parser.add_argument("--acl-read-only", action="store_true",
+                        help="Enables acl read only management.")
     parser.add_argument("--acl-verbose", action="store_true",
                         help="Enables acl verbose logging.")
     parser.add_argument("-m", "--mode", type=str, required=False, default="700",
@@ -361,7 +392,8 @@ if __name__ == '__main__':
               write_buffer_size=args.write_buffer_size, trunc_buffer_size=args.trunc_buffer_size,
               chunk_size=args.chunk_size,
               cache_ttl=args.cache_ttl, cache_size=args.cache_size,
-              acl_cache_ttl=args.acl_cache_ttl, acl_cache_size=args.acl_cache_size, acl_verbose=args.acl_verbose,
+              acl_cache_ttl=args.acl_cache_ttl, acl_cache_size=args.acl_cache_size,
+              acl_read_only=args.acl_read_only, acl_verbose=args.acl_verbose,
               default_mode=args.mode, mount_options=parse_mount_options(args.options),
               threads=args.threads, monitoring_delay=args.monitoring_delay, recording=recording)
     except BaseException as e:
