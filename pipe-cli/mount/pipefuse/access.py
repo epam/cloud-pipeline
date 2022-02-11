@@ -318,23 +318,48 @@ class CloudPipelinePermissionProvider(PermissionProvider):
     def _merge_raw_permissions(self, permissions):
         permission = INHERIT_MASK
         for sid_permission_object in self._sort_raw_permissions_by_sid(permissions):
+            sid_type = sid_permission_object.get('sid').get('type', USER)
             sid_permission = sid_permission_object.get('mask', INHERIT_MASK)
-            if sid_permission & READ_MASK == READ_MASK:
-                permission &= ~NO_READ_MASK
-                permission |= READ_MASK
-            if sid_permission & NO_READ_MASK == NO_READ_MASK:
-                permission &= ~READ_MASK
-                permission |= NO_READ_MASK
-            if sid_permission & WRITE_MASK == WRITE_MASK:
-                permission &= ~NO_WRITE_MASK
-                permission |= WRITE_MASK
-            if sid_permission & NO_WRITE_MASK == NO_WRITE_MASK:
-                permission &= ~WRITE_MASK
-                permission |= NO_WRITE_MASK
+            permission = self._merge_user_permissions(permission, sid_permission) if sid_type == USER \
+                else self._merge_group_permissions(permission, sid_permission)
+        return permission
+
+    def _merge_user_permissions(self, permission, merging_permission):
+        if merging_permission & READ_MASK == READ_MASK:
+            permission &= ~NO_READ_MASK
+            permission |= READ_MASK
+        if merging_permission & NO_READ_MASK == NO_READ_MASK:
+            permission &= ~READ_MASK
+            permission |= NO_READ_MASK
+        if merging_permission & WRITE_MASK == WRITE_MASK:
+            permission &= ~NO_WRITE_MASK
+            permission |= WRITE_MASK
+        if merging_permission & NO_WRITE_MASK == NO_WRITE_MASK:
+            permission &= ~WRITE_MASK
+            permission |= NO_WRITE_MASK
+        return permission
+
+    def _merge_group_permissions(self, permission, merging_permission):
+        if merging_permission & READ_MASK == READ_MASK:
+            permission &= ~NO_READ_MASK
+            permission |= READ_MASK
+        if merging_permission & NO_READ_MASK == NO_READ_MASK \
+                and permission & READ_MASK != READ_MASK \
+                and permission & NO_READ_MASK != NO_READ_MASK:
+            permission &= ~READ_MASK
+            permission |= NO_READ_MASK
+        if merging_permission & WRITE_MASK == WRITE_MASK:
+            permission &= ~NO_WRITE_MASK
+            permission |= WRITE_MASK
+        if merging_permission & NO_WRITE_MASK == NO_WRITE_MASK \
+                and permission & WRITE_MASK != WRITE_MASK \
+                and permission & NO_WRITE_MASK != NO_WRITE_MASK:
+            permission &= ~WRITE_MASK
+            permission |= NO_WRITE_MASK
         return permission
 
     def _sort_raw_permissions_by_sid(self, permissions):
-        return sorted(permissions, key=lambda permission: permission.get('sid', {}).get('type', USER))
+        return reversed(sorted(permissions, key=lambda permission: permission.get('sid', {}).get('type', USER)))
 
     def _get_read_permission_name(self, permission):
         return READ if permission & READ_MASK == READ_MASK \
