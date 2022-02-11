@@ -33,7 +33,11 @@ WRITE_MASK = 0b100
 NO_WRITE_MASK = 0b1000
 EXECUTE_MASK = 0b10000
 NO_EXECUTE_MASK = 0b100000
-SYNTHETIC_READ_MASK = 0b1000000
+RECURSIVE_READ_MASK = 0b1000000
+RECURSIVE_NO_READ_MASK = 0b10000000
+RECURSIVE_WRITE_MASK = 0b100000000
+RECURSIVE_NO_WRITE_MASK = 0b1000000000
+SYNTHETIC_READ_MASK = 0b10000000000
 
 INHERIT = 'INHERIT'
 READ = 'READ'
@@ -42,6 +46,10 @@ WRITE = 'WRITE'
 NO_WRITE = 'NO_WRITE'
 EXECUTE = 'EXECUTE'
 NO_EXECUTE = 'NO_EXECUTE'
+RECURSIVE_READ = 'RECURSIVE_READ'
+NO_RECURSIVE_READ = 'NO_RECURSIVE_READ'
+RECURSIVE_WRITE = 'RECURSIVE_WRITE'
+NO_RECURSIVE_WRITE = 'NO_RECURSIVE_WRITE'
 SYNTHETIC_READ = 'SYNTHETIC_READ'
 
 
@@ -95,10 +103,9 @@ class PermissionControlFileSystemClient(FileSystemClientDecorator):
         self._inner.delete(path)
 
     def mv(self, old_path, path):
-        # todo: Do not allow to move a directory if there are no WRITE permissions for some items within
-        if not self._is_read_write_allowed(old_path):
+        if not self._is_recursive_read_write_allowed(old_path):
             self._access_denied(old_path)
-        if not self._is_write_allowed(path):
+        if not self._is_recursive_write_allowed(path):
             self._access_denied(path)
         self._inner.mv(old_path, path)
 
@@ -108,8 +115,7 @@ class PermissionControlFileSystemClient(FileSystemClientDecorator):
         self._inner.mkdir(path)
 
     def rmdir(self, path):
-        # todo: Do not allow to delete a directory if there are no WRITE permissions for some items within
-        if not self._is_write_allowed(path):
+        if not self._is_recursive_write_allowed(path):
             self._access_denied(path)
         self._inner.rmdir(path)
 
@@ -139,6 +145,14 @@ class PermissionControlFileSystemClient(FileSystemClientDecorator):
     def _is_read_write_allowed(self, path):
         permissions = self._read_manager.get(path)
         return READ in permissions and WRITE in permissions
+
+    def _is_recursive_write_allowed(self, path):
+        permissions = self._read_manager.get(path)
+        return RECURSIVE_WRITE in permissions
+
+    def _is_recursive_read_write_allowed(self, path):
+        permissions = self._read_manager.get(path)
+        return RECURSIVE_READ in permissions and RECURSIVE_WRITE in permissions
 
     def _is_synthetic_read_allowed(self, path):
         permissions = self._read_manager.get(path)
@@ -195,7 +209,7 @@ class CloudPipelinePermissionProvider(PermissionProvider):
         """
         Cloud Pipeline permissions provider.
 
-        Downloads and resolves Cloud Pipeline storage permissions.
+        Provides Cloud Pipeline storage permissions.
 
         :param pipe: Cloud Pipeline API client.
         :param bucket: Cloud Pipeline bucket object.
@@ -255,17 +269,27 @@ class CloudPipelinePermissionProvider(PermissionProvider):
                               read_permission, write_permission, raw_permission_path)
 
             for raw_permission_parent_path in get_parent_paths(raw_permission_path):
+                permission_parent_permissions = \
+                    permissions[raw_permission_parent_path] = \
+                    permissions.get(raw_permission_parent_path, [])
                 if read_permission in [READ or SYNTHETIC_READ]:
-                    permission_parent_permissions = \
-                        permissions[raw_permission_parent_path] = \
-                        permissions.get(raw_permission_parent_path, [])
-                    if NO_READ in current_updated_permissions:
-                        current_updated_permissions.remove(NO_READ)
+                    if NO_READ in permission_parent_permissions:
+                        permission_parent_permissions.remove(NO_READ)
                     if READ not in permission_parent_permissions and SYNTHETIC_READ not in permission_parent_permissions:
                         if self._verbose:
                             logging.debug('Resolved uplifted %s permission for %s',
                                           SYNTHETIC_READ, raw_permission_parent_path)
                         permission_parent_permissions.append(SYNTHETIC_READ)
+                if read_permission in [NO_READ]:
+                    if RECURSIVE_READ in permission_parent_permissions:
+                        permission_parent_permissions.remove(RECURSIVE_READ)
+                    if NO_RECURSIVE_READ not in permission_parent_permissions:
+                        permission_parent_permissions.append(NO_RECURSIVE_READ)
+                if write_permission in [NO_WRITE]:
+                    if RECURSIVE_WRITE in permission_parent_permissions:
+                        permission_parent_permissions.remove(RECURSIVE_WRITE)
+                    if NO_RECURSIVE_WRITE not in permission_parent_permissions:
+                        permission_parent_permissions.append(NO_RECURSIVE_WRITE)
 
         return permissions
 
@@ -295,21 +319,6 @@ class CloudPipelinePermissionProvider(PermissionProvider):
 
     def _get_permissions_sorted_by_sids(self, permissions):
         return sorted(permissions, key=lambda permission: permission.get('sid', {}).get('type', 'USER'))
-
-
-class PermissionTree:
-
-    def __init__(self, path, permissions=None, children=None):
-        """
-        Permission tree node.
-
-        :param path: Absolute path.
-        :param permissions: Permissions.
-        :param children: Child permission tree nodes.
-        """
-        self.path = path
-        self.permissions = permissions or []
-        self.children = children or {}
 
 
 class PermissionResolver:
@@ -344,6 +353,8 @@ class BasicPermissionResolver(PermissionResolver):
 
         read_permission = None
         write_permission = None
+        recursive_read_permission = None
+        recursive_write_permission = None
 
         path_permissions = permissions.get(path, [])
         if READ in path_permissions:
@@ -356,11 +367,23 @@ class BasicPermissionResolver(PermissionResolver):
             write_permission = WRITE
         if NO_WRITE in path_permissions:
             write_permission = NO_WRITE
+        if RECURSIVE_READ in path_permissions:
+            recursive_read_permission = RECURSIVE_READ
+        if NO_RECURSIVE_READ in path_permissions:
+            recursive_read_permission = NO_RECURSIVE_READ
+        if RECURSIVE_WRITE in path_permissions:
+            recursive_write_permission = RECURSIVE_WRITE
+        if NO_RECURSIVE_WRITE in path_permissions:
+            recursive_write_permission = NO_RECURSIVE_WRITE
 
         if self._verbose and read_permission:
             logging.debug('Resolved direct %s permission for %s', read_permission, path)
         if self._verbose and write_permission:
             logging.debug('Resolved direct %s permission for %s', write_permission, path)
+        if self._verbose and recursive_read_permission:
+            logging.debug('Resolved direct %s permission for %s', recursive_read_permission, path)
+        if self._verbose and recursive_write_permission:
+            logging.debug('Resolved direct %s permission for %s', recursive_write_permission, path)
 
         if not read_permission or not write_permission:
             for parent_path in reversed(list(get_parent_paths(path))):
@@ -390,10 +413,20 @@ class BasicPermissionResolver(PermissionResolver):
         if self._verbose and not write_permission:
             write_permission = WRITE if self._is_write_allowed else NO_WRITE
             logging.debug('Resolved default %s permission for %s', write_permission, path)
+        if self._verbose and not recursive_read_permission:
+            recursive_read_permission = RECURSIVE_READ if read_permission == READ else NO_RECURSIVE_READ
+            logging.debug('Resolved default %s permission for %s', recursive_read_permission, path)
+        if self._verbose and not recursive_write_permission:
+            recursive_write_permission = RECURSIVE_WRITE if write_permission == WRITE else NO_RECURSIVE_WRITE
+            logging.debug('Resolved default %s permission for %s', recursive_write_permission, path)
 
         if self._verbose:
-            logging.debug('Resolved effective %s+%s permissions for %s', read_permission, write_permission, path)
-        return [read_permission, write_permission]
+            logging.debug('Resolved effective %s+%s+%s+%s permissions for %s',
+                          read_permission, write_permission,
+                          recursive_read_permission, recursive_write_permission,
+                          path)
+        return [read_permission, write_permission, NO_EXECUTE,
+                recursive_read_permission, recursive_write_permission, NO_EXECUTE]
 
 
 class PermissionReadManager:
@@ -468,6 +501,21 @@ class ExplicitPermissionReadManager(PermissionReadManager):
         self._permissions = explicit_permissions
 
 
+class PermissionTree:
+
+    def __init__(self, path, permissions=None, children=None):
+        """
+        Permission tree node.
+
+        :param path: Absolute path.
+        :param permissions: Permissions.
+        :param children: Child permission tree nodes.
+        """
+        self.path = path
+        self.permissions = permissions or []
+        self.children = children or {}
+
+
 class ExplainingTreePermissionReadManager(PermissionReadManager):
 
     def __init__(self, inner):
@@ -480,6 +528,19 @@ class ExplainingTreePermissionReadManager(PermissionReadManager):
         """
         self._inner = inner
         self._delimiter = '/'
+        self._acronyms = {
+            READ: 'r',
+            NO_READ: '-',
+            WRITE: 'w',
+            NO_WRITE: '-',
+            EXECUTE: 'x',
+            NO_EXECUTE: '-',
+            RECURSIVE_READ: 'r',
+            NO_RECURSIVE_READ: '-',
+            RECURSIVE_WRITE: 'w',
+            NO_RECURSIVE_WRITE: '-',
+            SYNTHETIC_READ: '~'
+        }
 
     def get_all(self):
         return self._inner.get_all()
@@ -520,7 +581,7 @@ class ExplainingTreePermissionReadManager(PermissionReadManager):
 
     def _explain_tree_recursively(self, tree, depth=0):
         logging.debug('%s | %s%s',
-                      ' : '.join(['{0: <14}'.format(permission) for permission in tree.permissions]),
+                      ''.join(self._acronyms[permission] for permission in tree.permissions),
                       '  ' * depth, tree.path)
         for subtree in tree.children.values():
             self._explain_tree_recursively(subtree, depth=depth + 1)
