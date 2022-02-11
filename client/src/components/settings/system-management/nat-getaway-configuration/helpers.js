@@ -14,10 +14,18 @@
  * limitations under the License.
  */
 
+import React from 'react';
+import {Icon, Popover, Tooltip} from 'antd';
+import classNames from 'classnames';
+import NATRouteStatuses from './route-statuses';
+import * as portUtilities from './ports-utilities';
+import styles from './nat-getaway-configuration.css';
+
 const validationConfig = {
   port: {
     min: 1,
-    message: rangeMessage
+    max: 65535,
+    total: 50
   },
   ip: new RegExp(/^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/),
   messages: {
@@ -28,40 +36,48 @@ const validationConfig = {
   }
 };
 
-function rangeMessage (min, max) {
-  if (min && !max) {
-    return `The value should be at least ${min}`;
-  }
-  if (max && !min) {
-    return `The value should be less than ${max}`;
-  }
-  if (max && min) {
-    return `The value should be between ${min} and ${max}`;
-  }
-}
-
-export function validatePort (value, portsDuplicates) {
-  const {port, messages} = validationConfig;
-
-  const portIsValid = value && Number(value) > 0 &&
-  (port.min ? Number(value) >= port.min : true) &&
-  (port.max ? Number(value) <= port.max : true);
-
-  if (!value) {
-    return {error: true, message: messages.required};
-  }
-  if (!portIsValid) {
+export function validatePort (value, otherPorts) {
+  const {port: portConfig} = validationConfig;
+  try {
+    const ports = portUtilities.parsePorts(
+      value,
+      {
+        throwError: true,
+        maxPorts: portConfig.total
+      });
+    if (ports.length === 0) {
+      throw new Error('Port is required');
+    }
+    const other = [];
+    for (const otherPortConfiguration of otherPorts) {
+      const parsed = portUtilities.parsePorts(
+        otherPortConfiguration,
+        {maxPorts: portConfig.total, throwError: {maxPorts: true}}
+      );
+      for (const otherPort of parsed) {
+        other.push(otherPort);
+      }
+    }
+    let total = 0;
+    for (const port of ports) {
+      total += 1;
+      if (total > portConfig.total) {
+        throw new Error(`${portConfig.total} total ports are allowed`);
+      }
+      if (port < portConfig.min || port > portConfig.max) {
+        throw new Error(`Port should be in range ${portConfig.min}-${portConfig.max}`);
+      }
+      if (other.find(o => o === port)) {
+        throw new Error(`Duplicate port ${port}`);
+      }
+    }
+    if (total + other.length > portConfig.total) {
+      throw new Error(`${portConfig.total} total ports are allowed`);
+    }
+  } catch (e) {
     return {
       error: true,
-      message: (port.min || port.max)
-        ? port.message(port.min, port.max)
-        : messages.invalid
-    };
-  }
-  if (portsDuplicates && portsDuplicates.filter(o => Number(o) === Number(value)).length > 1) {
-    return {
-      error: true,
-      message: messages.duplicate
+      message: e.message
     };
   }
   return {error: false};
@@ -99,16 +115,171 @@ export function validateDescription (value) {
   }
 }
 
+function renderStatusIcon (status) {
+  switch (status) {
+    case NATRouteStatuses.ACTIVE:
+      return (
+        <Tooltip title={status}>
+          <Icon
+            className={
+              classNames(
+                styles.routeStatus,
+                'cp-nat-route-status',
+                'cp-primary'
+              )
+            }
+            type="play-circle-o"
+          />
+        </Tooltip>
+      );
+    case NATRouteStatuses.CREATION_SCHEDULED:
+      return (
+        <Tooltip title={status}>
+          <Icon
+            type="hourglass"
+            className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
+          />
+        </Tooltip>
+      );
+    case NATRouteStatuses.PENDING:
+    case NATRouteStatuses.SERVICE_CONFIGURED:
+    case NATRouteStatuses.DNS_CONFIGURED:
+    case NATRouteStatuses.PORT_FORWARDING_CONFIGURED:
+      return (
+        <Tooltip title={status}>
+          <Icon
+            type="loading"
+            className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-primary')}
+          />
+        </Tooltip>
+      );
+    case NATRouteStatuses.TERMINATION_SCHEDULED:
+    case NATRouteStatuses.TERMINATING:
+    case NATRouteStatuses.RESOURCE_RELEASED:
+    case NATRouteStatuses.TERMINATED:
+      return (
+        <Tooltip title={status}>
+          <Icon
+            className={
+              classNames(
+                styles.routeStatus,
+                'cp-nat-route-status',
+                'cp-warning',
+                styles.blink
+              )
+            }
+            type="clock-circle-o"
+          />
+        </Tooltip>
+      );
+    case NATRouteStatuses.FAILED:
+      return (
+        <Tooltip title={status}>
+          <Icon
+            className={classNames(styles.routeStatus, 'cp-nat-route-status', 'cp-error')}
+            type="exclamation-circle-o" />
+        </Tooltip>
+      );
+    case NATRouteStatuses.UNKNOWN:
+      return (
+        <Tooltip title={status}>
+          <Icon
+            className={
+              classNames(
+                styles.routeStatus,
+                'cp-nat-route-status',
+                'cp-text-not-important'
+              )
+            }
+            type="question-circle-o" />
+        </Tooltip>
+      );
+    default:
+      return (
+        <Icon
+          className={
+            classNames(
+              styles.routeStatus,
+              'cp-nat-route-status',
+              'cp-text-not-important'
+            )
+          }
+          style={{display: 'none'}}
+          type="question-circle-o"
+        />
+      );
+  }
+};
+
+function renderPorts (value) {
+  if (Array.isArray(value)) {
+    const MAX_ITEMS_TO_DISPLAY = 5;
+    const slicedArray = value.slice(0, MAX_ITEMS_TO_DISPLAY);
+    const sliced = value.length > slicedArray.length;
+    const Wrapper = ({children}) => {
+      if (sliced) {
+        const totalSliced = slicedArray
+          .map(portUtilities.getPortsCount)
+          .reduce((total, current) => total + current.length, 0);
+        const all = value
+          .map(portUtilities.getPortsCount)
+          .reduce((total, current) => total + current.length, 0);
+        return (
+          <div>
+            {children}
+            <Popover
+              content={(
+                <div>
+                  {
+                    value.map(item => (
+                      <div key={item}>
+                        {item}
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
+            >
+              <a>
+                and {all - totalSliced} more...
+              </a>
+            </Popover>
+          </div>
+        );
+      }
+      return children;
+    };
+    return (
+      <Wrapper>
+        <div className={styles.ports}>
+          {
+            slicedArray.map(row => (
+              <span
+                className={styles.port}
+                key={row}
+              >
+                {row}
+              </span>
+            ))
+          }
+        </div>
+      </Wrapper>
+    );
+  }
+  return value;
+}
+
 export const columns = {
   external: [
+    {name: 'status', prettyName: '', renderer: renderStatusIcon, className: styles.statusColumn},
     {name: 'externalName', prettyName: 'name'},
     {name: 'externalIp', prettyName: 'ip'},
-    {name: 'externalPort', prettyName: 'port'},
+    {name: 'externalPortsPresentation', prettyName: 'ports', renderer: renderPorts},
     {name: 'protocol', prettyName: 'protocol'}
   ],
   internal: [
     {name: 'internalName', prettyName: 'service name'},
     {name: 'internalIp', prettyName: 'ip'},
-    {name: 'internalPort', prettyName: 'port'}
+    {name: 'internalPortsPresentation', prettyName: 'ports', renderer: renderPorts}
   ]
 };

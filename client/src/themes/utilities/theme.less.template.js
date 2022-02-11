@@ -2529,10 +2529,10 @@ export default `
 }
 @THEME .cp-settings-nat-table thead tr:first-child,
 @THEME .cp-settings-nat-table thead tr:first-child th:first-child,
-@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(4),
-@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(4),
-@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(7),
-@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(7) {
+@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(5),
+@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(5),
+@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(8),
+@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(8) {
   border-right: 2px solid @table-border-color;
 }
 @THEME .cp-settings-nat-table thead tr:first-child th {
