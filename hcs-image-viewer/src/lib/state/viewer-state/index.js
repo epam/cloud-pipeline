@@ -54,6 +54,8 @@ export const ViewerStateActions = {
   setError: 'set-error',
   setChannelProperties: 'set-channel-properties',
   setColorMap: 'set-color-map',
+  setLensChannel: 'set-lens-channel',
+  setLensEnabled: 'set-lens-enabled',
 };
 
 function init() {
@@ -69,6 +71,8 @@ function init() {
     useLens: false,
     useColorMap: false,
     colorMap: '',
+    lensEnabled: false,
+    lensChannel: 0,
     use3D: false,
     pixelValues: [],
     xSlice: [0, 1],
@@ -118,6 +122,25 @@ function reducer(state, action) {
       }
       return state;
     }
+    case ViewerStateActions.setLensChannel: {
+      const { lensChannel = 0 } = action;
+      const { lensEnabled, useLens } = state;
+      if (lensEnabled && useLens) {
+        return { ...state, lensChannel };
+      }
+      return state;
+    }
+    case ViewerStateActions.setLensEnabled: {
+      const { lensEnabled = false } = action;
+      const {
+        lensEnabled: currentLensEnabled,
+        useLens,
+      } = state;
+      if (useLens && !currentLensEnabled && lensEnabled) {
+        return { ...state, lensEnabled, lensChannel: 0 };
+      }
+      return { ...state, lensEnabled: false };
+    }
     case ViewerStateActions.setDefault: {
       const {
         identifiers = [],
@@ -129,6 +152,8 @@ function reducer(state, action) {
         useLens = false,
         useColorMap = false,
         colorMap = useColorMap ? state.colorMap : '',
+        lensEnabled = false,
+        lensChannel = 0,
         xSlice = [0, 1],
         ySlice = [0, 1],
         zSlice = [0, 1],
@@ -153,6 +178,8 @@ function reducer(state, action) {
         useLens,
         useColorMap,
         colorMap,
+        lensEnabled,
+        lensChannel,
         xSlice,
         ySlice,
         zSlice,

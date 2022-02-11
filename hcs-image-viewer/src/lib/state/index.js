@@ -53,18 +53,28 @@ function useHCSImageState() {
   const setColorMap = useCallback((colorMap) => {
     viewerDispatch({ type: ViewerStateActions.setColorMap, colorMap });
   }, [viewerDispatch]);
+  const setLensEnabled = useCallback((enabled) => {
+    viewerDispatch({ type: ViewerStateActions.setLensEnabled, lensEnabled: enabled });
+  }, [viewerDispatch]);
+  const setLensChannel = useCallback((channel) => {
+    viewerDispatch({ type: ViewerStateActions.setLensChannel, lensChannel: channel });
+  }, [viewerDispatch]);
   const callbacks = useMemo(() => ({
     setData,
     setImage,
     setImageViewportLoaded,
     setChannelProperties,
     setColorMap,
+    setLensEnabled,
+    setLensChannel,
   }), [
     setData,
     setImage,
     setImageViewportLoaded,
     setChannelProperties,
     setColorMap,
+    setLensEnabled,
+    setLensChannel,
   ]);
   return {
     callbacks,
