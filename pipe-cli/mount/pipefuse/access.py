@@ -577,7 +577,7 @@ class ExplicitPermissionReadManager(PermissionReadManager):
         self._inner.refresh()
         logging.debug('Resolving implicit permissions...')
         permissions = self._inner.get_all()
-        explicit_permissions = {}
+        explicit_permissions = {'': self._resolver.get('', permissions)}
         for permission_path in permissions.keys():
             explicit_permissions[permission_path] = self._resolver.get(permission_path, permissions)
         self._permissions = explicit_permissions
