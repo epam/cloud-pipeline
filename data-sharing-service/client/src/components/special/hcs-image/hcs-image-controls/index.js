@@ -17,12 +17,14 @@
 import React from 'react';
 import Channels from './channels';
 import ColorMap from './color-map';
+import Lens from './lens';
 import styles from './hcs-image-controls.css';
 
 function HcsImageControls () {
   return (
     <div className={styles.container}>
       <ColorMap />
+      <Lens />
       <Channels />
     </div>
   );

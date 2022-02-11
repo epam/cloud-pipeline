@@ -40,7 +40,7 @@
 
 .channel {
   margin: 5px 0;
-  padding: 5px;
+  padding: 5px 0;
 }
 
 .channel .header {
@@ -65,4 +65,9 @@
   background-color: currentColor;
   width: 100%;
   height: 100%;
+}
+
+.lens-container {
+  display: flex;
+  align-items: center;
 }

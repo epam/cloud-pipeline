@@ -29,6 +29,7 @@ function shallowCompareArrays (array1, array2) {
 }
 
 class ChannelState {
+  @observable index = 0;
   @observable identifier = 'Channel';
   @observable name = 'Channel';
   @observable visible = true;
@@ -39,6 +40,7 @@ class ChannelState {
 
   /**
    * @typedef {Object} ChannelOptions
+   * @property {number} index
    * @property {string} [identifier]
    * @property {string} [name]
    * @property {boolean} [visible=true]
@@ -62,6 +64,7 @@ class ChannelState {
   @action
   update (options) {
     const {
+      index = 0,
       identifier = 'Channel',
       name = 'Channel',
       visible = true,
@@ -70,6 +73,7 @@ class ChannelState {
       color = [255, 255, 255],
       pixels
     } = options;
+    this.index = index;
     this.identifier = identifier;
     this.name = name;
     this.visible = visible;
@@ -85,6 +89,8 @@ class ViewerState {
   @observable useLens = false;
   @observable useColorMap = false;
   @observable colorMap = '';
+  @observable lensEnabled = false;
+  @observable lensChannel = 0;
   @observable pending = false;
   @observable isRGB = false;
   @observable xSlice = [];
@@ -135,6 +141,8 @@ class ViewerState {
       domains = [],
       contrastLimits = [],
       useLens = false,
+      lensEnabled = false,
+      lensChannel,
       useColorMap = true,
       colorMap = '',
       xSlice = [],
@@ -150,7 +158,9 @@ class ViewerState {
     }
     this.use3D = use3D;
     this.useLens = useLens;
+    this.lensEnabled = lensEnabled;
     this.useColorMap = useColorMap;
+    this.lensChannel = lensChannel;
     this.colorMap = colorMap;
     this.isRGB = isRGB;
     this.xSlice = xSlice;
@@ -171,7 +181,8 @@ class ViewerState {
         domain: domains[c],
         contrastLimits: contrastLimits[c],
         color: colors[c],
-        pixels: pixelValues[c]
+        pixels: pixelValues[c],
+        index: c
       });
     }
     const existing = Math.min(this.channels.length, updatedChannels.length);
@@ -246,6 +257,29 @@ class ViewerState {
     if (this.viewer && typeof this.viewer.setColorMap === 'function') {
       this.colorMap = colorMap;
       this.viewer.setColorMap(colorMap);
+    }
+  };
+
+  @action
+  changeLensMode = (mode) => {
+    if (this.viewer && typeof this.viewer.setLensEnabled === 'function') {
+      this.lensEnabled = mode;
+      this.viewer.setLensEnabled(mode);
+    }
+  };
+
+  @action
+  changeLensChannel = (channelIndex) => {
+    if (
+      this.useLens &&
+      this.lensEnabled &&
+      this.viewer &&
+      this.lensChannel !== Number(channelIndex) &&
+      typeof this.viewer.setLensChannel === 'function' &&
+      Number(channelIndex) >= 0
+    ) {
+      this.lensChannel = Number(channelIndex);
+      this.viewer.setLensChannel(Number(channelIndex));
     }
   };
 }
