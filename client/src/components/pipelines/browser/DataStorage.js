@@ -75,7 +75,6 @@ import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
 import roleModel from '../../../utils/roleModel';
 import moment from 'moment-timezone';
-import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
 from '../../../models/dataStorage/DataStorageGenerateSharedLink';
@@ -93,7 +92,12 @@ import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../special/sample-sheet/utilities';
-import fetchHCSInfo from '../../special/hcs-image/utilities/fetch-hcs-info';
+import {
+  fastCheckPreviewAvailable as fastCheckHCSPreviewAvailable,
+  checkPreviewAvailable as checkHCSPreviewAvailable
+} from '../../special/hcs-image/utilities/check-preview-available';
+
+import styles from './Browser.css';
 
 const PAGE_SIZE = 40;
 
@@ -1118,11 +1122,8 @@ export default class DataStorage extends React.Component {
     }, async () => {
       let error;
       try {
-        const info = await fetchHCSInfo({path: file.path, storageId});
-        if (info && info.sequences && info.sequences.length) {
-          const [sequence] = info.sequences;
-          await sequence.fetch();
-        } else {
+        const available = await checkHCSPreviewAvailable({path: file.path, storageId});
+        if (!available) {
           throw new Error('HCS preview not available');
         }
       } catch (e) {
@@ -1223,9 +1224,9 @@ export default class DataStorage extends React.Component {
             i.path.toLowerCase().endsWith('.vsi') ||
             i.path.toLowerCase().endsWith('.mrxs')
           ),
-          hcs: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
-            i.path.toLowerCase().endsWith('.hcs')
-          )
+          hcs: !i.deleteMarker &&
+            i.type.toLowerCase() === 'file' &&
+            fastCheckHCSPreviewAvailable({path: i.path, storageId: this.props.storageId})
         };
       }));
       return items;

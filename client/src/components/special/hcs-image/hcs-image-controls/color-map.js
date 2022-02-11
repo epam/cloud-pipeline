@@ -17,10 +17,9 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {Select} from 'antd';
+import {constants} from '../hcs-image-viewer';
 import styles from './hcs-image-controls.css';
 
-const HcsImageViewer = window.HcsImageViewer || {};
-const {constants = {}} = HcsImageViewer;
 const {ColorMapProfiles = []} = constants;
 
 function ColorMap (

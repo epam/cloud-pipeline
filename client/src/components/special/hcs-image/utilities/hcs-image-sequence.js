@@ -19,15 +19,15 @@
  */
 
 import * as HCSConstants from './constants';
-import fetchSequenceWellsInfo from './fetch-sequence-wells-info';
-import generateHCSFileURLs from './generate-hcs-file-urls';
+import HCSImageWell from './hcs-image-well';
 
 /**
  * @typedef {Object} HCSImageSequenceOptions
+ * @property {HCSInfo} hcs
  * @property {string|number} storageId
  * @property {string} sequence
  * @property {string} directory
- * @property {S3Storage} s3Storage
+ * @property {ObjectStorage} objectStorage
  * @property {HCSTimeSeries[]} timeSeries
  */
 
@@ -38,23 +38,31 @@ class HCSImageSequence {
    */
   constructor (options = {}) {
     const {
+      hcs,
       storageId,
       sequence,
       directory,
-      s3Storage,
+      objectStorage,
       timeSeries = []
     } = options;
+    this.hcs = hcs;
     this.storageId = Number.isNaN(Number(storageId))
       ? storageId
       : Number(storageId);
     this.sequence = sequence;
     this.id = sequence;
     this.directory = directory;
-    this.s3Storage = s3Storage;
+    /**
+     * @type {ObjectStorage} object storage wrapper
+     */
+    this.objectStorage = objectStorage;
     this.timeSeries = timeSeries;
-    this.omeTiffFileName = [directory, HCSConstants.OME_TIFF_FILE_NAME].join('/');
-    this.offsetsJsonFileName = [directory, HCSConstants.OFFSETS_JSON_FILE_NAME].join('/');
-    this.wellsMapFileName = [directory, HCSConstants.WELLS_MAP_FILE_NAME].join('/');
+    this.omeTiffFileName = [directory, HCSConstants.OME_TIFF_FILE_NAME]
+      .join(objectStorage.delimiter || '/');
+    this.offsetsJsonFileName = [directory, HCSConstants.OFFSETS_JSON_FILE_NAME]
+      .join(objectStorage.delimiter || '/');
+    this.wellsMapFileName = [directory, HCSConstants.WELLS_MAP_FILE_NAME]
+      .join(objectStorage.delimiter);
     this._fetch = undefined;
     this.wells = [];
     this.error = undefined;
@@ -66,9 +74,12 @@ class HCSImageSequence {
     if (!this._fetch) {
       this._fetch = new Promise((resolve, reject) => {
         this.generateWellsMapURL()
-          .then(() => fetchSequenceWellsInfo(this))
+          .then(() => this.objectStorage.getFileContent(this.wellsMapFileName, {json: true}))
+          .then(json => HCSImageWell.parseWellsInfo(json, this.hcs))
           .then(resolve)
-          .catch(reject);
+          .catch(e => reject(
+            new Error(`Error fetching sequence ${this.id} info: ${e.message}`)
+          ));
       });
       this._fetch
         .then((wells = []) => {
@@ -82,11 +93,7 @@ class HCSImageSequence {
   }
 
   generateWellsMapURL () {
-    const promise = generateHCSFileURLs({
-      s3Storage: this.s3Storage,
-      storageId: this.storageId,
-      path: this.wellsMapFileName
-    });
+    const promise = this.objectStorage.generateFileUrl(this.wellsMapFileName);
     promise
       .then((url) => {
         this.wellsMap = url;
@@ -98,11 +105,7 @@ class HCSImageSequence {
   }
 
   generateOMETiffURL () {
-    const promise = generateHCSFileURLs({
-      s3Storage: this.s3Storage,
-      storageId: this.storageId,
-      path: this.omeTiffFileName
-    });
+    const promise = this.objectStorage.generateFileUrl(this.omeTiffFileName);
     promise
       .then((url) => {
         this.omeTiff = url;
@@ -114,11 +117,7 @@ class HCSImageSequence {
   }
 
   generateOffsetsJsonURL () {
-    const promise = generateHCSFileURLs({
-      s3Storage: this.s3Storage,
-      storageId: this.storageId,
-      path: this.offsetsJsonFileName
-    });
+    const promise = this.objectStorage.generateFileUrl(this.offsetsJsonFileName);
     promise
       .then((url) => {
         this.offsetsJson = url;

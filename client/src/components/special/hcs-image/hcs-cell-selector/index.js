@@ -521,6 +521,9 @@ class HcsCellSelector extends React.Component {
       hovered,
       maxHeight
     } = this.state;
+    if (!width || !height) {
+      return null;
+    }
     return (
       <div
         style={style}
