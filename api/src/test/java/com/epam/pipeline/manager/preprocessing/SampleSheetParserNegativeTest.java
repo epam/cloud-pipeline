@@ -1,3 +1,19 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.epam.pipeline.manager.preprocessing;
 
 import org.junit.Test;
@@ -28,7 +44,7 @@ public class SampleSheetParserNegativeTest {
             "A100503,Sample_C,A3,CAGATCGCA,A1,TGATACCTT,B,testb\\WholeGenomeFasta\n" +
             "A100104,Sample_D,A4,ACAAACGAG,A1,TGAACCTTT,B,testb\\WholeGenomeFasta";
 
-    private final static String SAMPLE_SHEET_WITHOUT_DATA_LINES = "[Header],,,,\n" +
+    private static final String SAMPLE_SHEET_WITHOUT_DATA_LINES = "[Header],,,,\n" +
             "Date,2017-04-05,,,,\n" +
             "Workflow,Test,,,,\n" +
             "Application,Test Amplicon,,,,\n" +
@@ -44,8 +60,7 @@ public class SampleSheetParserNegativeTest {
             "VariantFilterQualityCutoff,30,,,,\n" +
             "outputgenomevcf,FALSE,,,,\n";
 
-    private final static String NON_SAMPLE_SHEET_CONTENT = "Hi Mom!\n" +
-            "I'm a programmer!\n";
+    private static final String NON_SAMPLE_SHEET_CONTENT = "Hi Mom!\n I'm a programmer!\n";
 
     @Parameterized.Parameters
     public static Collection<Object[]> validSampleSheets() {

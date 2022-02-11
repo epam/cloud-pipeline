@@ -117,7 +117,7 @@ public class MetadataEntityManager implements SecuredEntityManager {
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public MetadataClass getOrCreate(final String name) {
+    public MetadataClass getOrCreateMetadataClass(final String name) {
         final MetadataClass metadataClass = metadataClassDao.loadMetadataClass(name);
         if (metadataClass == null) {
             return createMetadataClass(name);

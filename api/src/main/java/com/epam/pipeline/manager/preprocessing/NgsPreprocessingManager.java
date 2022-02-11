@@ -129,7 +129,8 @@ public class NgsPreprocessingManager {
 
         final String sampleMetadataClassName = preferenceManager.getPreference(
                 SystemPreferences.PREPROCESSING_SAMPLE_CLASS);
-        final MetadataClass sampleMetadataClass = metadataEntityManager.getOrCreate(sampleMetadataClassName);
+        final MetadataClass sampleMetadataClass = metadataEntityManager
+                .getOrCreateMetadataClass(sampleMetadataClassName);
 
         final List<MetadataEntityVO> samples = mapSampleSheetToMetadataEntities(
                 folderId, machineRunMetadataEntity, sampleSheet, sampleMetadataClass);
