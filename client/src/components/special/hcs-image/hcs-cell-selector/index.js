@@ -221,11 +221,12 @@ class HcsCellSelector extends React.Component {
     handler();
   };
 
-  zoom = (delta) => {
+  zoom = (delta, centered = false, event) => {
     const {
       minimumSize,
       cellSize
     } = this.state;
+    const cursor = this.getCursorPosition(event);
     const newCellSize = Math.max(
       minimumSize,
       Math.min(
@@ -234,7 +235,34 @@ class HcsCellSelector extends React.Component {
       )
     );
     if (newCellSize !== cellSize) {
-      this.setState({cellSize: newCellSize}, () => this.draw());
+      this.setState({cellSize: newCellSize}, () => {
+        this.draw();
+        if (centered) {
+          return this.scrollToPosition(0.5, 0.5);
+        }
+        return this.scrollToPosition(
+          cursor.xPercent,
+          cursor.yPercent
+        );
+      });
+    }
+  };
+
+  scrollToPosition = (xPercent = 0.5, yPercent = 0.5) => {
+    if (this.canvas && this.container) {
+      const canvasRect = this.canvas.getBoundingClientRect();
+      const visibleCanvas = {
+        width: Math.min(
+          this.container.clientWidth,
+          canvasRect.width
+        ),
+        height: Math.min(
+          this.container.clientHeight,
+          canvasRect.height
+        )
+      };
+      this.container.scrollLeft = (this.container.scrollWidth - visibleCanvas.width) * xPercent;
+      this.container.scrollTop = (this.container.scrollHeight - visibleCanvas.height) * yPercent;
     }
   };
 
@@ -243,7 +271,7 @@ class HcsCellSelector extends React.Component {
     if (event && event.shiftKey && cellSize) {
       const zoomIn = event.deltaY < 0;
       const eventDelta = zoomIn ? 2 : -2;
-      this.zoom(eventDelta);
+      this.zoom(eventDelta, false, event);
       event.preventDefault();
       event.stopPropagation();
       return false;
@@ -278,6 +306,21 @@ class HcsCellSelector extends React.Component {
       cell = (cells.find(o => o.y === y && o.x === x));
     }
     return cell;
+  };
+
+  getCursorPosition = (event) => {
+    const {clientX, clientY} = event || {};
+    let xPercent;
+    let yPercent;
+    if (clientX && clientY && this.canvas) {
+      const rect = this.canvas.getBoundingClientRect();
+      xPercent = (event.clientX - rect.left) / this.canvas.offsetWidth;
+      yPercent = (event.clientY - rect.top) / this.canvas.offsetHeight;
+    };
+    return {
+      xPercent,
+      yPercent
+    };
   };
 
   handleMouseMove = event => {
@@ -489,7 +532,7 @@ class HcsCellSelector extends React.Component {
             {'cp-disabled': !zoomOutAvailable},
             styles.zoomControlBtn
           )}
-          onClick={() => this.zoom(-ZOOM_BUTTON_DELTA)}
+          onClick={() => this.zoom(-ZOOM_BUTTON_DELTA, true)}
         />
         <Icon
           type="plus-circle-o"
@@ -498,7 +541,7 @@ class HcsCellSelector extends React.Component {
             {'cp-disabled': !zoomInAvailable},
             styles.zoomControlBtn
           )}
-          onClick={() => this.zoom(ZOOM_BUTTON_DELTA)}
+          onClick={() => this.zoom(ZOOM_BUTTON_DELTA, true)}
         />
       </div>
     );
