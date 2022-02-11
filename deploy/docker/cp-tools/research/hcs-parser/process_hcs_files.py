@@ -468,14 +468,25 @@ class HcsFileParser:
             self.log_processing_info('Cleaning up temporary dir: [{}]'.format(self.tmp_local_dir))
             shutil.rmtree(self.tmp_local_dir)
 
-    def _write_hcs_file(self, timepoints_count, plate_width, plate_height, comment=None):
+    def _write_hcs_file(self, time_series_details, plate_width, plate_height, comment=None):
+        if os.getenv('HCS_PARSING_USE_ABSOLUTE_PATH'):
+            source_dir = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
+            preview_dir = HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
+        else:
+            hcs_file_root_dir = os.path.dirname(self.hcs_img_path)
+            source_dir = os.path.relpath(self.hcs_root_dir, hcs_file_root_dir)
+            preview_dir = os.path.relpath(self.hcs_img_service_dir, hcs_file_root_dir)
+        ome_data_file_name = os.getenv('HCS_PARSER_OME_TIFF_FILE_NAME', 'data.ome.tiff')
+        ome_offsets_file_name = ome_data_file_name[:ome_data_file_name.find('.')] + '.offsets.json'
         details = {
-            'sourceDir': HcsParsingUtils.extract_cloud_path(self.hcs_root_dir),
-            'previewDir': HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir),
-            'time_series_details': timepoints_count,
+            'sourceDir': source_dir,
+            'previewDir': preview_dir,
+            'time_series_details': time_series_details,
             'plate_height': plate_height,
             'plate_width': plate_width,
-            'comment': comment
+            'comment': comment,
+            'ome_data_file_name': ome_data_file_name,
+            'ome_offsets_file_name': ome_offsets_file_name
         }
         self.log_processing_info('Saving preview info [source={}; preview={}] to [{}]'
                                  .format(self.hcs_root_dir, self.hcs_img_service_dir, self.hcs_img_path))
