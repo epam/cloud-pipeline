@@ -153,7 +153,7 @@ class S3StorageLowLevelClient(StorageLowLevelFileSystemClient):
                 secret_key=credentials.secret_key,
                 token=credentials.session_token,
                 expiry_time=credentials.expiration,
-                write_allowed=bucket_object.is_write_allowed())
+                write_allowed=bucket_object.is_synthetic_write_allowed())
 
         fresh_metadata = refresh()
 

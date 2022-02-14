@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import logging
-import time
-
-from datetime import datetime
 from threading import RLock
 
+import time
+from datetime import datetime
 from dateutil.tz import tzlocal
 
-from pipefuse.fsclient import File, FileSystemClientDecorator
 from pipefuse import fuseutils
-
+from pipefuse.fsclient import File, FileSystemClientDecorator
+from pipefuse.fuseutils import synchronized
 
 _ANY_ERROR = BaseException
 
@@ -96,18 +95,6 @@ class ListingCache:
             relative_path = fuseutils.without_prefix(cache_path, path)
             return not relative_path or relative_path.startswith(self._delimiter)
         return False
-
-
-def synchronized(func):
-    def wrapper(*args, **kwargs):
-        lock = args[0]._lock
-        try:
-            lock.acquire()
-            return_value = func(*args, **kwargs)
-            return return_value
-        finally:
-            lock.release()
-    return wrapper
 
 
 class ThreadSafeListingCache:

@@ -14,8 +14,22 @@
 
 import json
 import logging
+import traceback
 
 import requests
+import time
+
+
+class ServerError(RuntimeError):
+    pass
+
+
+class HTTPError(ServerError):
+    pass
+
+
+class APIError(ServerError):
+    pass
 
 
 class CloudType:
@@ -83,52 +97,66 @@ class DataStorage:
     def is_write_allowed(self):
         return not self.ro and self._is_allowed(self._WRITE_MASK)
 
+    def is_synthetic_read_allowed(self):
+        return True
+
+    def is_synthetic_write_allowed(self):
+        return True
+
     def _is_allowed(self, mask):
         return self.mask & mask == mask
 
 
+class User:
+
+    def __init__(self, id, name, roles, groups, is_admin):
+        self.id = id
+        self.name = name
+        self.roles = roles or []
+        self.groups = groups or []
+        self.is_admin = is_admin
+
+    @classmethod
+    def load(cls, json):
+        return User(id=json.get('id'),
+                    name=json.get('userName'),
+                    roles=[role.get('name') for role in json.get('roles', [])],
+                    groups=json.get('groups', []),
+                    is_admin=json.get('admin', False))
+
+
 class CloudPipelineClient:
 
-    def __init__(self, api, token):
+    def __init__(self, api, token, attempts=3, timeout=5, connection_timeout=10):
         self._api = api.strip('/')
         self._token = token
-        self.__headers__ = {'Content-Type': 'application/json',
-                            'Authorization': 'Bearer {}'.format(self._token)}
+        self._headers = {'Content-Type': 'application/json',
+                         'Authorization': 'Bearer {}'.format(self._token)}
+        self._attempts = attempts
+        self._timeout = timeout
+        self._connection_timeout = connection_timeout
+
+    def get_user(self):
+        logging.info('Loading current user...')
+        try:
+            response_payload = self._request('GET', 'whoami')
+            return User.load(response_payload)
+        except ServerError:
+            raise RuntimeError('Failed to load current user:\n%s' % traceback.format_exc())
 
     def get_storage(self, name):
-        logging.info('Getting data storage %s' % name)
-        response_data = self._get('datastorage/findByPath?id={}'.format(name))
-        if 'payload' in response_data:
-            bucket = DataStorage.load(response_data['payload'], self.get_region_info())
+        logging.info('Loading data storage %s...' % name)
+        try:
+            response_payload = self._request('GET', 'datastorage/findByPath?id={}'.format(name))
+            bucket = DataStorage.load(response_payload, self.get_region_info())
             # When regular bucket is mounted inside a sensitive run, the only way
             # check whether actual write will be allowed is to request write credentials
             # from API server and parse response
             if bucket.is_write_allowed():
                 bucket.ro = not self._check_write_allowed(bucket)
             return bucket
-        return None
-
-    def get_region_info(self):
-        logging.info('Getting region info')
-        response_data = self._get('cloud/region/info')
-        if 'payload' in response_data:
-            return response_data['payload']
-        if response_data['status'] == 'OK':
-            return []
-        if 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError("Failed to load regions info")
-
-    def get_temporary_credentials(self, bucket):
-        logging.info('Getting temporary credentials for data storage #%s' % bucket.id)
-        operation = {
-            'id': bucket.id,
-            'read': bucket.is_read_allowed(),
-            'write': bucket.is_write_allowed()
-        }
-        credentials = self._get_temporary_credentials([operation])
-        return credentials
+        except ServerError:
+            raise RuntimeError('Failed to load data storage %s:\n%s' % (name, traceback.format_exc()))
 
     def _check_write_allowed(self, bucket):
         try:
@@ -140,33 +168,85 @@ class CloudPipelineClient:
             else:
                 raise e
 
-    def _get_temporary_credentials(self, data):
-        response_data = self._post('datastorage/tempCredentials/', data=json.dumps(data))
-        if 'payload' in response_data:
-            return TemporaryCredentials.load(response_data['payload'])
-        elif 'message' in response_data:
-            raise RuntimeError(response_data['message'])
-        else:
-            raise RuntimeError('Failed to load credentials from server.')
+    def get_region_info(self):
+        logging.info('Load regions info...')
+        try:
+            response_payload = self._request('GET', 'cloud/region/info')
+            return response_payload or []
+        except ServerError:
+            raise RuntimeError('Failed to load regions info:\n%s' % traceback.format_exc())
 
-    def _get(self, method, *args, **kwargs):
-        return self._call(method, http_method='get', *args, **kwargs)
+    def get_storage_permissions(self, bucket):
+        logging.info('Loading storage object permissions...')
+        data = {
+            'id': bucket.id,
+            'type': 'DATA_STORAGE'
+        }
+        try:
+            response_payload = self._request('POST', 'storage/permission/batch/loadAll', data=data)
+            return response_payload or []
+        except ServerError:
+            raise RuntimeError('Failed to load storage object permissions:\n%s' % traceback.format_exc())
 
-    def _post(self, method, *args, **kwargs):
-        return self._call(method, http_method='post', *args, **kwargs)
+    def move_storage_object_permissions(self, bucket, requests):
+        logging.info('Moving storage object permissions...')
+        data = {
+            'id': bucket.id,
+            'type': 'DATA_STORAGE',
+            'requests': requests
+        }
+        try:
+            self._request('PUT', 'storage/permission/batch/move', data=data)
+        except ServerError:
+            raise RuntimeError('Failed to move storage object permissions:\n%s' % traceback.format_exc())
 
-    def _call(self, method, http_method, data=None, error_message=None):
-        url = '{}/{}'.format(self._api, method)
-        if http_method == 'get':
-            response = requests.get(url, headers=self.__headers__, verify=False)
-        else:
-            response = requests.post(url, data=data, headers=self.__headers__, verify=False)
-        response_data = json.loads(response.text)
-        message_text = error_message if error_message else 'Failed to fetch data from server'
-        if 'status' not in response_data:
-            raise RuntimeError('{}. Server responded with status: {}.'
-                               .format(message_text, str(response_data.status_code)))
-        if response_data['status'] != 'OK':
-            raise RuntimeError('{}. Server responded with message: {}'.format(message_text, response_data['message']))
-        else:
-            return response_data
+    def delete_all_storage_object_permissions(self, bucket, requests):
+        logging.info('Deleting all storage object permissions...')
+        data = {
+            'id': bucket.id,
+            'type': 'DATA_STORAGE',
+            'requests': requests
+        }
+        try:
+            self._request('DELETE', 'storage/permission/batch/deleteAll', data=data)
+        except ServerError:
+            raise RuntimeError('Failed to delete all storage object permissions:\n%s' % traceback.format_exc())
+
+    def get_temporary_credentials(self, bucket):
+        logging.info('Loading temporary credentials for data storage #%s' % bucket.id)
+        operation = {
+            'id': bucket.id,
+            'read': bucket.is_synthetic_read_allowed(),
+            'write': bucket.is_synthetic_write_allowed()
+        }
+        try:
+            response_payload = self._request('POST', 'datastorage/tempCredentials/', data=[operation])
+            return TemporaryCredentials.load(response_payload)
+        except ServerError:
+            raise RuntimeError('Failed to load temporary credentials for data storage #%s:\n%s'
+                               % (bucket.id, traceback.format_exc()))
+
+    def _request(self, http_method, endpoint, data=None):
+        url = '{}/{}'.format(self._api, endpoint)
+        count = 0
+        exceptions = []
+        while count < self._attempts:
+            count += 1
+            try:
+                response = requests.request(method=http_method, url=url, data=json.dumps(data),
+                                            headers=self._headers, verify=False,
+                                            timeout=self._connection_timeout)
+                if response.status_code != 200:
+                    raise HTTPError('API responded with http status %s.' % str(response.status_code))
+                response_data = response.json()
+                status = response_data.get('status') or 'ERROR'
+                message = response_data.get('message') or 'No message'
+                if status != 'OK':
+                    raise APIError('%s: %s' % (status, message))
+                return response_data.get('payload')
+            except APIError as e:
+                raise e
+            except Exception as e:
+                exceptions.append(e)
+            time.sleep(self._timeout)
+        raise exceptions[-1]

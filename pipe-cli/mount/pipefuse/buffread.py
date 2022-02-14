@@ -17,7 +17,6 @@ import logging
 
 from pipefuse.fsclient import FileSystemClientDecorator
 
-
 _ANY_ERROR = BaseException
 
 
@@ -125,7 +124,7 @@ class BufferingReadAheadFileSystemClient(FileSystemClientDecorator):
         except _ANY_ERROR:
             logging.exception('Downloading has failed for %d:%s. '
                               'Removing the corresponding buffer.' % (fh, path))
-            self._remove_read_buf(fh, path)
+            self._remove_buf(fh, path)
             raise
 
     def _new_read_buf(self, fh, path, file_size, offset, length):

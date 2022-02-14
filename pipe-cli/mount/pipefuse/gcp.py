@@ -232,7 +232,7 @@ class GoogleStorageLowLevelFileSystemClient(StorageLowLevelFileSystemClient):
 
     def _generate_gcp(self, pipe, storage_path):
         bucket_object = pipe.get_storage(storage_path)
-        self._is_read_only = not bucket_object.is_write_allowed()
+        self._is_read_only = not bucket_object.is_synthetic_write_allowed()
         return _RefreshingClient(lambda: pipe.get_temporary_credentials(bucket_object))
 
     def is_available(self):
