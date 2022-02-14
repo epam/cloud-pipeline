@@ -628,8 +628,9 @@ class HcsFileParser:
             well_viewer_radius = well_radius / field_cell_width
             well_view_height = int(math.ceil(well_viewer_radius) * 2)
             well_view_width = int(math.ceil(well_viewer_radius) * 2)
-            x_coord_padding = int(round((well_radius - x_coords[0]) / field_cell_width))
-            y_coord_padding = int(round((well_radius - y_coords[0]) / field_cell_width))
+            radius_rounding_padding = 1 if int(round(well_viewer_radius % 1)) == 0 else 0
+            x_coord_padding = int(round((well_radius + x_coords[0]) / field_cell_width)) + radius_rounding_padding
+            y_coord_padding = int(round((well_radius + y_coords[0]) / field_cell_width)) + radius_rounding_padding
         else:
             well_viewer_radius = None
             x_coord_padding = 0
@@ -638,8 +639,8 @@ class HcsFileParser:
             well_view_height = len(y_coords)
         to_ome_mapping = dict()
         for field in fields_list:
-            field_x_coord = x_coords.index(field.x) + x_coord_padding
-            field_y_coord = y_coords.index(field.y) + y_coord_padding
+            field_x_coord = x_coords.index(field.x) + 1 + x_coord_padding
+            field_y_coord = y_coords.index(field.y) + 1 + y_coord_padding
             to_ome_mapping[self.build_cartesian_coords_key(field_x_coord, field_y_coord)] = field.ome_image_id
         well_details = {
             "width": well_view_width,
