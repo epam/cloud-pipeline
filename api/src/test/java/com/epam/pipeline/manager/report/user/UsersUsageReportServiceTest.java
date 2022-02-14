@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.report;
+package com.epam.pipeline.manager.report.user;
 
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;

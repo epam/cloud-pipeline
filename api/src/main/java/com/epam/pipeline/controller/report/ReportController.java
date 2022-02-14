@@ -19,8 +19,9 @@ package com.epam.pipeline.controller.report;
 import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.dto.report.ReportFilter;
+import com.epam.pipeline.dto.report.NodePoolReportType;
 import com.epam.pipeline.dto.report.NodePoolUsageReport;
+import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
 import io.swagger.annotations.Api;
@@ -32,8 +33,13 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 @RestController
@@ -41,6 +47,10 @@ import java.util.List;
 @RequestMapping(value = "/report")
 @RequiredArgsConstructor
 public class ReportController extends AbstractRestController {
+    private static final String REPORT_NAME_TEMPLATE = "node_pool_report_%s-%s-%s.%s";
+    private static final char TIME_SEPARATION_CHAR = ':';
+    private static final char UNDERSCORE = '_';
+
     private final ReportApiService reportApiService;
 
     @PostMapping("/users")
@@ -55,5 +65,20 @@ public class ReportController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<NodePoolUsageReport>> loadNodePoolUsage(@RequestBody final ReportFilter filter) {
         return Result.success(reportApiService.loadNodePoolReport(filter));
+    }
+
+    @PostMapping("/pools/export")
+    @ResponseBody
+    @ApiOperation(value = "Downloads node pools usage report", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public void downloadUsageReport(@RequestBody final ReportFilter filter,
+                                    @RequestParam final Long poolId,
+                                    @RequestParam(defaultValue = "CSV") final NodePoolReportType type,
+                                    final HttpServletResponse response) throws IOException {
+        final InputStream inputStream = reportApiService.loadNodePoolUsageReportFile(filter, poolId, type);
+        final String reportName = String.format(REPORT_NAME_TEMPLATE, filter.getFrom(), filter.getTo(),
+                filter.getInterval(), type.name().toLowerCase())
+                .replace(TIME_SEPARATION_CHAR, UNDERSCORE);
+        writeStreamToResponse(response, inputStream, reportName);
     }
 }

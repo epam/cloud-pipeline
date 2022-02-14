@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.report;
+package com.epam.pipeline.manager.report.pool;
 
+import com.epam.pipeline.dto.report.NodePoolReportType;
 import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.NodePoolUsageReportRecord;
@@ -23,14 +24,18 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.epam.pipeline.manager.report.ReportUtils.buildTimeIntervals;
@@ -45,6 +50,14 @@ public class NodePoolReportService {
     private static final int TO_PERCENTS = 100;
 
     private final NodePoolUsageService nodePoolUsageService;
+
+    private Map<NodePoolReportType, AbstractNodePoolReportWriter> writers;
+
+    @Autowired
+    public void setWriters(final List<AbstractNodePoolReportWriter> writers) {
+        this.writers = writers.stream()
+                .collect(Collectors.toMap(AbstractNodePoolReportWriter::getType, Function.identity()));
+    }
 
     public List<NodePoolUsageReport> getReport(final ReportFilter filter) {
         prepareFilter(filter);
@@ -62,6 +75,16 @@ public class NodePoolReportService {
 
         throw new UnsupportedOperationException(String.format("Time interval '%s' is not supported for now",
                 filter.getInterval().name()));
+    }
+
+    public InputStream getReportFile(final ReportFilter filter, final Long targetPool, final NodePoolReportType type) {
+        return getWriter(type)
+                .writeToStream(getReport(filter), targetPool, filter.getInterval());
+    }
+
+    private AbstractNodePoolReportWriter getWriter(final NodePoolReportType type) {
+        return Optional.ofNullable(writers.get(type)).orElseThrow(() ->
+                new IllegalArgumentException(String.format("Report format '%s' is not supported", type.name())));
     }
 
     private List<NodePoolUsageReport> buildDailyUsageByPool(final ReportFilter filter,

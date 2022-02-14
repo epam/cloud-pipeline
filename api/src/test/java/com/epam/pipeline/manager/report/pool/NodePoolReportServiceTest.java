@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.report;
+package com.epam.pipeline.manager.report.pool;
 
 import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.NodePoolUsageReportRecord;
