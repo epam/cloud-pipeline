@@ -85,21 +85,6 @@ _debug_logging_level = 'DEBUG'
 _info_logging_level = 'INFO'
 
 
-def _extract_parameter(name, default='', default_provider=lambda: ''):
-    parameter = os.environ[name] = os.getenv(name, default) or default_provider() or default
-    return parameter
-
-
-def _extract_boolean_parameter(name, default='0', default_provider=lambda: '0'):
-    parameter = _extract_parameter(name, default=default, default_provider=default_provider)
-    return parameter.lower() == 'true'
-
-
-def _extract_int_parameter(name, default='false', default_provider=lambda: 'false'):
-    parameter = _extract_parameter(name, default=default, default_provider=default_provider)
-    return int(parameter)
-
-
 def start(mountpoint, webdav, bucket,
           read_buffer_size, read_ahead_min_size, read_ahead_max_size, read_ahead_size_multiplier,
           write_buffer_size, trunc_buffer_size, chunk_size,
