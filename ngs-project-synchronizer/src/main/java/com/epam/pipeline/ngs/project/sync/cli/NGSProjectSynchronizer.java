@@ -62,15 +62,19 @@ import java.util.stream.Collectors;
 @Slf4j
 @ShellComponent
 @RequiredArgsConstructor
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class NGSProjectSynchronizer {
 
     public static final String UI_NGS_PROJECT_INDICATOR_PREF = "ui.ngs.project.indicator";
     public static final String NGS_PREPROCESSING_DATA_FOLDER_PREF = "ngs.preprocessing.data.folder";
     public static final String NGS_PREPROCESSING_MACHINE_RUN_METADATA_CLASS_PREF =
             "ngs.preprocessing.machine.run.metadata.class.name";
-    public static final String NGS_PREPROCESSING_SAMPLE_METADATA_CLASS_PREF = "ngs.preprocessing.sample.metadata.class.name";
-    public static final String NGS_PREPROCESSING_SAMPLESHEET_FILE_NAME_PREF = "ngs.preprocessing.samplesheet.file.name";
-    public static final String NGS_PREPROCESSING_SAMPLESHEET_LINK_COLUMN_PREF = "ngs.preprocessing.samplesheet.link.column";
+    public static final String NGS_PREPROCESSING_SAMPLE_METADATA_CLASS_PREF =
+            "ngs.preprocessing.sample.metadata.class.name";
+    public static final String NGS_PREPROCESSING_SAMPLESHEET_FILE_NAME_PREF =
+            "ngs.preprocessing.samplesheet.file.name";
+    public static final String NGS_PREPROCESSING_SAMPLESHEET_LINK_COLUMN_PREF =
+            "ngs.preprocessing.samplesheet.link.column";
     public static final String NGS_PREPROCESSING_COMPLETION_MARK_NAME_PREF =
             "ngs.preprocessing.completion.mark.file.default.name";
     public static final String NGS_PREPROCESSING_COMPLETION_MARK_METADATA_KEY_PREF =
@@ -104,7 +108,7 @@ public class NGSProjectSynchronizer {
                     } catch (Exception e) {
                         log.warn(String.format(
                                 "Something went wrong with synchronization of the project: %s, skipping.",
-                                   folder.getName())
+                                   folder.getName()), e
                         );
                     }
                 });
@@ -119,7 +123,7 @@ public class NGSProjectSynchronizer {
                 .build();
     }
 
-    private void syncProject(final FolderWithMetadata project, final NgsProjectSyncContext syncContext) {
+    void syncProject(final FolderWithMetadata project, final NgsProjectSyncContext syncContext) {
         log.info(String.format("Synchronization of project: %s id: %d", project.getName(), project.getId()));
         final Map<String, PipeConfValue> folderMetadata = MapUtils.emptyIfNull(project.getData());
         final String ngsDataPathMetadataKey = getPreferenceValue(NGS_PREPROCESSING_DATA_FOLDER_PREF);
@@ -148,7 +152,7 @@ public class NGSProjectSynchronizer {
                     storage, machineRunFolder, folderMetadata);
             if (dataSyncCompleteMarkFile == null) {
                 log.info("MachineRun hasn't data sync complete mark file, skipping.");
-               return;
+                return;
             }
 
             if (ArrayUtils.isEmpty(sampleSheetFile.getValue())) {
@@ -177,11 +181,12 @@ public class NGSProjectSynchronizer {
 
     }
 
-    private AbstractDataStorageItem fetchDataSyncCompleteMarkFile(final AbstractDataStorage storage,
-                                                          final AbstractDataStorageItem machineRunFolder,
-                                                          @NotNull final Map<String, PipeConfValue> folderMetadata) {
+    AbstractDataStorageItem fetchDataSyncCompleteMarkFile(final AbstractDataStorage storage,
+                                                                  final AbstractDataStorageItem machineRunFolder,
+                                                                  final Map<String, PipeConfValue> folderMetadata) {
         final String completionMarkDefaultName = getPreferenceValue(NGS_PREPROCESSING_COMPLETION_MARK_NAME_PREF);
-        final String completionMarkMetadataKey = getPreferenceValue(NGS_PREPROCESSING_COMPLETION_MARK_METADATA_KEY_PREF);
+        final String completionMarkMetadataKey =
+                getPreferenceValue(NGS_PREPROCESSING_COMPLETION_MARK_METADATA_KEY_PREF);
 
         final String completionMarkName = Optional.ofNullable(folderMetadata.get(completionMarkMetadataKey))
                 .map(PipeConfValue::getValue).orElse(completionMarkDefaultName);
@@ -200,8 +205,8 @@ public class NGSProjectSynchronizer {
     }
 
     private boolean needToUpdateSampleSheet(final NgsProjectSyncContext syncContext,
-                                            final MetadataEntity machineRunEntity,
-                                            final DataStorageFile sampleSheetFile) {
+                                    final MetadataEntity machineRunEntity,
+                                    final DataStorageFile sampleSheetFile) {
 
         final Map<String, PipeConfValue> machineRunData = MapUtils.emptyIfNull(machineRunEntity.getData());
         if (machineRunData.containsKey(syncContext.getSampleSheetLinkColumn())) {
@@ -284,15 +289,24 @@ public class NGSProjectSynchronizer {
 
     private Pair<DataStorageFile, byte[]> verifyAndGetSampleSheetContent(final AbstractDataStorage storage,
                                                                          final DataStorageFile item) {
-        final DataStorageDownloadFileUrl url = apiClient.getStorageItemContent(
-                storage.getId(), getInternalStoragePath(storage, item.getPath()));
         try {
-            byte[] bytes = IOUtils.toByteArray(new URL(url.getUrl()));
+            final byte[] bytes = getStorageFileContent(storage, item);
             SampleSheetParser.parseSampleSheet(bytes);
             return ImmutablePair.of(item, bytes);
-        } catch (IOException | IllegalStateException e) {
+        } catch (IllegalStateException e) {
             log.warn("Can't parse sample sheet file content from URL: ", e);
-           return ImmutablePair.of(item, new byte[0]);
+            return ImmutablePair.of(item, new byte[0]);
+        }
+    }
+
+    byte[] getStorageFileContent(final AbstractDataStorage storage,
+                                         final DataStorageFile item) {
+        try {
+            final DataStorageDownloadFileUrl url = apiClient.getStorageItemContent(
+                    storage.getId(), getInternalStoragePath(storage, item.getPath()));
+            return IOUtils.toByteArray(new URL(url.getUrl()));
+        } catch (IOException e) {
+            throw new IllegalStateException("Can't load file content from URL.");
         }
     }
 
