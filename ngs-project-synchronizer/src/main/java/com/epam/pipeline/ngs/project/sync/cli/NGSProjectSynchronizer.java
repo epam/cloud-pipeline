@@ -100,13 +100,10 @@ public class NGSProjectSynchronizer {
                 ).getChildFolders()
                 .forEach(folder -> {
                     try {
-                        if (!folder.getName().equals("ngs-project")) {
-                            return;
-                        }
                         syncProject(apiClient.getFolderWithMetadata(folder.getId()), syncContext);
                     } catch (Exception e) {
                         log.warn(String.format(
-                                "Something went wrong with syncronization of the project: %s, skipping.",
+                                "Something went wrong with synchronization of the project: %s, skipping.",
                                    folder.getName())
                         );
                     }
