@@ -26,6 +26,8 @@ import traceback
 import urllib
 import xml.etree.ElementTree as ET
 
+from collections import OrderedDict
+from functools import cmp_to_key
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
 from pipeline.common import get_path_with_trailing_delimiter, get_path_without_trailing_delimiter
@@ -431,6 +433,30 @@ class HcsFileParser:
                 well_x = well_x_coord
         return well_x, well_y
 
+    @staticmethod
+    def compare_planar_2d_coords_key(coord_1, coord_2):
+        coord_dims_1 = coord_1[0].split(PLANE_COORDINATES_DELIMITER)
+        coord_dims_2 = coord_2[0].split(PLANE_COORDINATES_DELIMITER)
+        x_1 = int(coord_dims_1[0])
+        y_1 = int(coord_dims_1[1])
+        x_2 = int(coord_dims_2[0])
+        y_2 = int(coord_dims_2[1])
+        if x_1 < x_2:
+            return -1
+        elif x_1 > x_2:
+            return 1
+        elif y_1 < y_2:
+            return -1
+        elif y_1 > y_2:
+            return 1
+        else:
+            return 0
+
+    @staticmethod
+    def ordered_by_coords(dictionary):
+        return OrderedDict(sorted(dictionary.items(),
+                                  key=cmp_to_key(lambda c1, c2: HcsFileParser.compare_planar_2d_coords_key(c1, c2))))
+
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(HCS_PROCESSING_TASK_NAME, '[{}] {}'.format(self.hcs_root_dir, message), status=status)
 
@@ -453,10 +479,11 @@ class HcsFileParser:
     def create_stat_file(self):
         self.write_dict_to_file(self.stat_file_path, self.build_parsing_details())
 
-    def write_dict_to_file(self, file_path, dict):
-        self._mkdir(os.path.dirname(file_path))
+    @staticmethod
+    def write_dict_to_file(file_path, dictionary):
+        HcsFileParser._mkdir(os.path.dirname(file_path))
         with open(file_path, 'w') as output_file:
-            output_file.write(json.dumps(dict, indent=4))
+            output_file.write(json.dumps(dictionary, indent=4))
 
     def clear_tmp_stat_file(self):
         if os.path.exists(self.tmp_stat_file_path):
@@ -492,7 +519,8 @@ class HcsFileParser:
                                  .format(self.hcs_root_dir, self.hcs_img_service_dir, self.hcs_img_path))
         self.write_dict_to_file(self.hcs_img_path, details)
 
-    def _mkdir(self, path):
+    @staticmethod
+    def _mkdir(path):
         try:
             os.makedirs(path)
         except OSError as e:
@@ -610,7 +638,7 @@ class HcsFileParser:
         is_well_round, well_size = self.extract_well_configuration(hcs_xml_info_root)
         for well_key, fields_list in measured_wells.items():
             wells_mapping[well_key] = self.build_well_details(fields_list, well_size, is_well_round)
-        return wells_mapping
+        return HcsFileParser.ordered_by_coords(wells_mapping)
 
     def build_well_details(self, fields_list, well_size, is_well_round):
         x_coords = set()
@@ -643,10 +671,10 @@ class HcsFileParser:
             field_y_coord = y_coords.index(field.y) + 1 + y_coord_padding
             to_ome_mapping[self.build_cartesian_coords_key(field_x_coord, field_y_coord)] = field.ome_image_id
         well_details = {
-            "width": well_view_width,
-            "height": well_view_height,
-            "round_radius": round(well_viewer_radius, 2) if is_well_round else None,
-            "to_ome_wells_mapping": to_ome_mapping
+            'width': well_view_width,
+            'height': well_view_height,
+            'round_radius': round(well_viewer_radius, 2) if is_well_round else None,
+            'to_ome_wells_mapping': HcsFileParser.ordered_by_coords(to_ome_mapping)
         }
         return well_details
 
