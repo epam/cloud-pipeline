@@ -2612,7 +2612,8 @@ export default `
   border: 1px solid @card-border-color;
   border-radius: 4px;
 }
-@THEME .markdown pre {
+@THEME .markdown pre,
+@THEME .markdown code {
   color: @application-color;
   background-color: @code-background-color;
   border: 1px solid @card-border-color;
@@ -2621,10 +2622,11 @@ export default `
   margin: 5px 0;
   white-space: pre-line;
 }
+@THEME .markdown code.language-js {
+  border: none;
+}
 @THEME .code-highlight code,
 @THEME .markdown code {
-  color: @color-pink;
-  background-color: @color-pink-light;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 @THEME .markdown pre > code {
