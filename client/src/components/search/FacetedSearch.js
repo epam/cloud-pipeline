@@ -721,12 +721,12 @@ class FacetedSearch extends React.Component {
         <MenuItem
           key="share"
         >
-          Share selected items
+          <b>Share</b> selected
         </MenuItem>
         <MenuItem
           key="show selection"
         >
-          Show selected items
+          <b>Display</b> selected
         </MenuItem>
         <MenuDivider />
         <MenuItem
