@@ -389,5 +389,82 @@
         "description": "Enables NICE DCV Desktop environment.",
         "defaultValue": "true",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_LOCALIZE_FROM_FILES",
+        "type": "string",
+        "description": "Lists job parameter names, which are used to extend the InputData task",
+        "defaultValue": "",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_LOCALIZE_FROM_FILES_EXT",
+        "type": "string",
+        "description": "If CP_LOCALIZE_FROM_FILES defines a directory, allows to filter files by mask",
+        "defaultValue": "*",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX",
+        "type": "string",
+        "description": "How to name an isolated data localization process to CP_LOCALIZE_FROM_FILES",
+        "defaultValue": "_PARAM_TYPE_FROM_FILE",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_LOCALIZE_FROM_FILES_RE_PATTERN",
+        "type": "string",
+        "description": "How to match the remote URLs in the files, defined by CP_LOCALIZE_FROM_FILES",
+        "defaultValue": "((s3|gs|az):\/\/.*(,|;|$))",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_PARALLEL_TRANSFER",
+        "type": "boolean",
+        "description": "Enables multi-threaded InputData/OutputData task execution",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_PARALLEL_TRANSFER_MODE",
+        "type": "string",
+        "description": "Can run CP_PARALLEL_TRANSFER in 'threaded' or a 'multiprocessing' (default) mode",
+        "defaultValue": "false",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_TRANSFER_THREADS",
+        "type": "int",
+        "description": "A number of CPUs to use for the InputData/OutputData task",
+        "defaultValue": "1",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_TRANSFER_PROC_RATIO",
+        "type": "int",
+        "description": "A divider for the CPUs count to determine a number of threads for the InputData/OutputData task",
+        "defaultValue": "4",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_TRANSFER_PIPE_INPUT_ARGS",
+        "type": "int",
+        "description": "Specifies additional args to the pipe for the InputData task (effective for 'local' and 'threaded' modes)",
+        "defaultValue": "1",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_TRANSFER_PIPE_OUTPUT_ARGS",
+        "type": "int",
+        "description": "Specifies additional args to the pipe for the OutputData task (effective for 'local' and 'threaded' modes)",
+        "defaultValue": "1",
+        "passToWorkers": false
+    },
+    {
+        "name": "CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE",
+        "type": "boolen",
+        "description": "Whether fail or keep a job running if a config file based localization fails",
+        "defaultValue": "true",
+        "passToWorkers": false
     }
 ]

@@ -67,6 +67,7 @@ import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import {MetadataSampleSheetValue} from '../../special/sample-sheet';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
@@ -75,6 +76,10 @@ import parseSearchQuery from './metadata-controls/parse-search-query';
 import getDefaultColumns from './metadata-controls/get-default-columns';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
+import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
+import * as metadataFilterUtilities from './metadata-controls/metadata-filters';
+import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUpdateSampleSheet';
+import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -143,10 +148,25 @@ function makeCurrentOrderSort (array) {
 @inject('preferences', 'dataStorages')
 @HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
 @HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
-@inject(({folders, pipelinesLibrary, authenticatedUserInfo, preferences, dataStorages}, params) => {
+@inject((
+  {
+    folders,
+    pipelinesLibrary,
+    authenticatedUserInfo,
+    preferences,
+    dataStorages,
+    routing
+  },
+  params
+) => {
   let componentParameters = params;
+  let filters = {};
   if (params.params) {
+    // Router renderer
     componentParameters = params.params;
+    filters = routing && routing.location
+      ? metadataFilterUtilities.parse(routing.location.query)
+      : {};
   }
   return {
     folders,
@@ -159,9 +179,13 @@ function makeCurrentOrderSort (array) {
     authenticatedUserInfo,
     preferences,
     dataStorages,
-    pipelinesLibrary
+    pipelinesLibrary,
+    filters
   };
 })
+@ngsProject
+@ngsProjectMachineRuns
+@ngsProjectSamples
 @observer
 export default class Metadata extends React.Component {
   static propTypes = {
@@ -519,7 +543,7 @@ export default class Metadata extends React.Component {
   };
 
   renderFilterButton = (key) => {
-    if (this.state.selectedItemsAreShowing) {
+    if (this.state.selectedItemsAreShowing || this.isSampleSheetColumn(key)) {
       return null;
     }
     const handleControlVisibility = (visible) => {
@@ -769,11 +793,105 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onArrayReferencesClick = (event, key, data) => {
-    const selectedItem = {};
-    selectedItem[key] = {type: data.type, value: data.value};
-    this.setState({metadata: true, selectedItem: selectedItem});
+  onEditSampleSheet = async (machineRun, sampleSheet) => {
+    if (machineRun && machineRun.rowKey && machineRun.rowKey.value) {
+      const hide = message.loading('Updating sample sheet...', 0);
+      try {
+        const machineRunId = machineRun.rowKey.value;
+        const {folderId} = this.props;
+        const request = new NGSMetadataUpdateSampleSheet();
+        await request
+          .send({
+            folderId: Number(folderId),
+            machineRunId: Number(machineRunId),
+            content: sampleSheet ? btoa(sampleSheet) : btoa('')
+          });
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        await this.loadData();
+      } catch (e) {
+        message.error(e.message, 5);
+      } finally {
+        hide();
+      }
+    }
+  };
+
+  onRemoveSampleSheet = async (machineRun) => {
+    if (machineRun && machineRun.rowKey && machineRun.rowKey.value) {
+      const hide = message.loading('Removing sample sheet and associated samples...', 0);
+      try {
+        const machineRunId = machineRun.rowKey.value;
+        const {folderId} = this.props;
+        const request = new NGSMetadataDeleteSampleSheet(folderId, machineRunId);
+        await request.send({});
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        await this.loadData();
+      } catch (e) {
+        message.error(e.message, 5);
+      } finally {
+        hide();
+      }
+    }
+  };
+
+  onArrayReferencesClick = (event, key, data, referenceType, item) => {
+    const {
+      ngsProjectInfo,
+      ngsProjectMachineRuns,
+      ngsProjectSamples
+    } = this.props;
     event.stopPropagation();
+    const defaultAction = () => {
+      const selectedItem = {};
+      selectedItem[key] = {type: data.type, value: data.value};
+      this.setState({metadata: true, selectedItem: selectedItem});
+    };
+    if (
+      ngsProjectInfo.isNGSProject &&
+      ngsProjectMachineRuns.isMachineRunsMetadataClass &&
+      item &&
+      item.ID &&
+      item.ID.value
+    ) {
+      ngsProjectInfo
+        .fetchPreferences()
+        .then(() => {
+          if (
+            ngsProjectInfo.isSampleClassName(referenceType)
+          ) {
+            return ngsProjectSamples.getMachineRunField(referenceType);
+          }
+          return Promise.reject(new Error('Not a NGS project'));
+        })
+        .then(machineRunFieldInfo => {
+          if (machineRunFieldInfo) {
+            const {
+              className,
+              fieldName
+            } = machineRunFieldInfo;
+            const {
+              router,
+              folderId
+            } = this.props;
+            const query = metadataFilterUtilities
+              .build([{key: fieldName, values: [item.ID.value]}]);
+            if (query) {
+              router.push(`/folder/${folderId}/metadata/${className}?${query}`);
+            } else {
+              router.push(`/folder/${folderId}/metadata/${className}`);
+            }
+            return Promise.resolve();
+          }
+          return Promise.reject(new Error('Machine run field is missing'));
+        })
+        .catch(() => defaultAction());
+    } else {
+      defaultAction();
+    }
   };
 
   onReferenceTypesClick = async (event, data) => {
@@ -1203,6 +1321,11 @@ export default class Metadata extends React.Component {
       return;
     }
     const {e, rowInfo, column: columnInfo} = opts;
+    const selectable = columnInfo.selectable === undefined || columnInfo.selectable;
+    if (!selectable) {
+      // cell is not selectable, ignore it
+      return;
+    }
     if (columnInfo.index === undefined) {
       // selection cell, ignore it
       return;
@@ -1326,7 +1449,7 @@ export default class Metadata extends React.Component {
         row: index + dataItemFrom
       }));
       const columns = tableColumns
-        .filter(column => column.selected)
+        .filter(column => column.selected && !this.isSampleSheetColumn(column.key))
         .map((column, index) => ({key: mapColumnName(column), column: index}));
       const actions = autoFillEntities.buildAutoFillActions(
         elements,
@@ -1378,8 +1501,11 @@ export default class Metadata extends React.Component {
     const {cellsSelection: selection, hoveredCell} = this.state;
     const row = rowInfo.index;
     const column = columnInfo.index;
+    const selectable = columnInfo.selectable === undefined || columnInfo.selectable;
     if (!selection) {
-      if (
+      if (!selectable) {
+        this.setState({hoveredCell: undefined});
+      } else if (
         column !== undefined && (
           !hoveredCell ||
           hoveredCell.column !== column ||
@@ -1392,9 +1518,13 @@ export default class Metadata extends React.Component {
       }
       return;
     }
-    if ((!selection.selecting && !selection.spreading)) {
+    if (!selection.selecting && !selection.spreading) {
       const cellSelected = autoFillEntities.cellIsSelected(selection, column, row);
-      if (cellSelected && !!hoveredCell) {
+      if (!selectable) {
+        this.setState({
+          hoveredCell: undefined
+        });
+      } else if (cellSelected && !!hoveredCell) {
         this.setState({
           hoveredCell: undefined
         });
@@ -1524,7 +1654,12 @@ export default class Metadata extends React.Component {
           columns={this.tableColumns}
           data={this.state.currentMetadata}
           getTableProps={() => ({
-            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse', borderRadius: 5},
+            style: {
+              overflowY: 'hidden',
+              userSelect: 'none',
+              borderCollapse: 'collapse',
+              borderRadius: 5
+            },
             onMouseOut: this.clearHovering
           })}
           getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
@@ -1541,7 +1676,7 @@ export default class Metadata extends React.Component {
               }
               if (column.id === 'selection') {
                 this.onItemSelect(rowInfo.row._original);
-              } else {
+              } else if (column.selectable === undefined || column.selectable) {
                 this.onRowClick(rowInfo.row._original);
               }
               this.clearSelection();
@@ -1556,7 +1691,21 @@ export default class Metadata extends React.Component {
               </div>
           }
           showPagination={false}
-          NoDataComponent={() => <div className={classNames(styles.noData, 'cp-library-metadata-panel-placeholder')}>No rows found</div>} />,
+          NoDataComponent={
+            () => (
+              <div
+                className={
+                  classNames(
+                    styles.noData,
+                    'cp-library-metadata-panel-placeholder'
+                  )
+                }
+              >
+                No rows found
+              </div>
+            )
+          }
+        />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
@@ -1702,7 +1851,7 @@ export default class Metadata extends React.Component {
           this.props.onReloadTree(!this.props.folder.value.parentId);
         }
         hide();
-        this.props.router.push(`/metadataFolder/${this.props.folderId}`);
+        this.props.router.push(`/folder/${this.props.folderId}/metadata`);
       }
     };
     Modal.confirm({
@@ -1863,10 +2012,23 @@ export default class Metadata extends React.Component {
     );
   };
 
+  isSampleSheetColumn = (key) => {
+    const {
+      ngsProjectInfo,
+      ngsProjectMachineRuns
+    } = this.props;
+    return ngsProjectInfo.isNGSProject &&
+      ngsProjectMachineRuns.isMachineRunsMetadataClass &&
+      ngsProjectMachineRuns.isSampleSheetValue(key);
+  };
+
   get tableColumns () {
     const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
+      }
+      if (this.isSampleSheetColumn(key)) {
+        return;
       }
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       if (!orderBy) {
@@ -1880,7 +2042,7 @@ export default class Metadata extends React.Component {
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon, orderNumber;
-      if (orderBy) {
+      if (orderBy && !this.isSampleSheetColumn(key)) {
         let iconStyle = {fontSize: 10, marginRight: 5};
         if (this.state.filterModel.orderBy.length > 1) {
           const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
@@ -1934,7 +2096,10 @@ export default class Metadata extends React.Component {
       const item = props.original;
       const className = classNames(
         getCellClassName(item, styles.metadataColumnCell),
-        {'cp-library-metadata-table-cell-selected': getCellClassName(item, styles.metadataColumnCell).search('selected') > -1});
+        {
+          'cp-library-metadata-table-cell-selected':
+            getCellClassName(item, styles.metadataColumnCell).search('selected') > -1
+        });
       return (
         <div
           className={className}
@@ -1986,13 +2151,30 @@ export default class Metadata extends React.Component {
           accessor: key,
           index,
           style: {
-            cursor: this.props.readOnly ? 'default' : 'cell',
+            cursor: this.props.readOnly || this.isSampleSheetColumn(key)
+              ? 'default'
+              : 'cell',
             padding: 0
           },
+          ...(
+            this.isSampleSheetColumn(key)
+              ? {width: 280, resizable: false, selectable: false}
+              : {}
+          ),
           className: 'cp-library-metadata-table-cell',
           Header: () => renderTitle(key),
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
+            const item = props.original;
+            if (this.isSampleSheetColumn(key)) {
+              return (
+                <MetadataSampleSheetValue
+                  value={data ? data.value : undefined}
+                  onChange={content => this.onEditSampleSheet(item, content)}
+                  onRemove={() => this.onRemoveSampleSheet(item)}
+                />
+              );
+            }
             if (data) {
               if (data.type.toLowerCase().startsWith('array')) {
                 let referenceType = key;
@@ -2006,34 +2188,45 @@ export default class Metadata extends React.Component {
                   count = JSON.parse(data.value).length;
                 } catch (___) { }
                 let value = `${count} ${referenceType}(s)`;
-                return <a
-                  title={value}
-                  className={styles.actionLink}
-                  onClick={(e) => this.onArrayReferencesClick(e, key, data)}>
-                  {value}
-                </a>;
-              } else if (data.type.toLowerCase().endsWith(':id')) {
+                return (
+                  <a
+                    title={value}
+                    className={styles.actionLink}
+                    onClick={(e) => this.onArrayReferencesClick(
+                      e,
+                      key,
+                      data,
+                      referenceType,
+                      item
+                    )}
+                  >
+                    {value}
+                  </a>
+                );
+              }
+              if (data.type.toLowerCase().endsWith(':id')) {
                 return <a
                   title={data.value}
                   className={styles.actionLink}
                   onClick={(e) => this.onReferenceTypesClick(e, data)}>
                   {data.value}
                 </a>;
-              } else if (data.type.toLowerCase() === 'path') {
+              }
+              if (data.type.toLowerCase() === 'path') {
                 return this.renderDataStorageLinks(data);
-              } else if (/^date$/i.test(data.type)) {
+              }
+              if (/^date$/i.test(data.type)) {
                 return (
                   <span title={data.value}>
                     {displayDate(data.value)}
                   </span>
                 );
-              } else {
-                return (
-                  <span title={data.value}>
-                    {data.value}
-                  </span>
-                );
               }
+              return (
+                <span title={data.value}>
+                  {data.value}
+                </span>
+              );
             }
           })
         };
@@ -2400,7 +2593,13 @@ export default class Metadata extends React.Component {
   componentDidUpdate (prevProps, prevState, snapshot) {
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
     const folderChanged = prevProps.folderId !== this.props.folderId;
-    if (metadataClassChanged || folderChanged) {
+    const filtersChanged = metadataFilterUtilities
+      .filtersChanged(prevProps.filters, this.props.filters);
+    if (
+      metadataClassChanged ||
+      folderChanged ||
+      filtersChanged
+    ) {
       this.onFolderChanged(folderChanged);
     } else {
       this.fetchDefaultColumnsIfRequested();
@@ -2426,7 +2625,7 @@ export default class Metadata extends React.Component {
       selectedItems: [],
       selectedItemsAreShowing: false,
       filterModel: {
-        filters: [],
+        filters: (this.props.filters || []).slice(),
         folderId: parseInt(this.props.folderId),
         metadataClass: this.props.metadataClass,
         orderBy: [],

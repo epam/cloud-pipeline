@@ -47,6 +47,28 @@ const DRIVE_MAPPING_URL_PREFERENCE = 'base.dav.auth.url';
 const DRIVE_MAPPING_KEY = 'ui.pipe.drive.mapping';
 const FILE_BROWSER_KEY = 'ui.pipe.file.browser.app';
 
+function asArray (arrayLike) {
+  if (!arrayLike) {
+    return [];
+  }
+  if (Array.isArray(arrayLike)) {
+    return arrayLike;
+  }
+  return [arrayLike];
+}
+
+function parseDriveMappingConfig (config) {
+  if (config) {
+    try {
+      const json = JSON.parse(config);
+      return asArray(json);
+    } catch (e) {
+      return asArray(config);
+    }
+  }
+  return [];
+}
+
 @inject('authenticatedUserInfo', 'dataStorages', 'preferences')
 @inject(({authenticatedUserInfo, dataStorages, preferences}) => ({
   authenticatedUserInfo,
@@ -398,7 +420,7 @@ export default class CLIForm extends React.Component {
       })();
     }
 
-    const loadCode = (config, id) => {
+    const loadCode = (config, key) => {
       let code = this.props.preferences.replacePlaceholders(config);
       if (code && code.indexOf('{user.jwt.token}') >= 0) {
         code = code.replace(
@@ -409,18 +431,30 @@ export default class CLIForm extends React.Component {
       return (
         <BashCode
           id="drive-mapping-command"
+          key={key}
           loading={!code}
           className={styles.mdPreview}
           code={this.props.preferences.replacePlaceholders(code)}
         />
       );
     };
-
     if (driveMappingConfig) {
-      content = loadCode(driveMappingConfig, 'drive-mapping-configure-command');
-    } else if (/^windows$/i.test(operationSystem)) {
-      content = <DriveMappingWindowsForm />;
+      const renderSingleConfig = (instructions, index) => {
+        if (/^windows$/i.test(operationSystem) && /^<AUTH_TEMPLATE>$/i.test(instructions)) {
+          return (<DriveMappingWindowsForm key={`instructions-${index}`} />);
+        } else if (instructions) {
+          return loadCode(instructions, `drive-mapping-configure-command-${index}`);
+        }
+        return undefined;
+      };
+      content = parseDriveMappingConfig(driveMappingConfig)
+        .map(renderSingleConfig)
+        .filter(Boolean);
+      if (content.length === 0) {
+        content = undefined;
+      }
     }
+
     if (fileBrowserConfig) {
       fileBrowserContent = loadCode(fileBrowserConfig, 'file-browser-configure-command');
     }

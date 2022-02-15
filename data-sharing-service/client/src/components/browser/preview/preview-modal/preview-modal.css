@@ -44,6 +44,12 @@
   position: fixed;
 }
 
+.preview.large {
+  max-width: 80vw;
+  width: 80vw;
+  max-height: unset;
+}
+
 .preview .preview-button {
   position: absolute;
   right: 5px;

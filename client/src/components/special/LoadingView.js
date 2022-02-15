@@ -15,14 +15,31 @@
  */
 
 import React from 'react';
+import PropTypes from 'prop-types';
 import {Row, Spin} from 'antd';
 
-export default class LoadingView extends React.Component {
-  render () {
-    return (
-      <Row type="flex" justify="center" align="middle" style={{height: '100%', width: '100%'}}>
-        <Spin />
-      </Row>
-    );
+function LoadingView (
+  {
+    className,
+    style
   }
+) {
+  return (
+    <Row
+      className={className}
+      type="flex"
+      justify="center"
+      align="middle"
+      style={Object.assign({height: '100%', width: '100%'}, style || {})}
+    >
+      <Spin />
+    </Row>
+  );
 }
+
+LoadingView.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object
+};
+
+export default LoadingView;

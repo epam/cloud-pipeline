@@ -735,6 +735,28 @@ public final class MessageConstants {
     public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
     public static final String ERROR_BILLING_QUOTA_EXCEEDED_LAUNCH = "error.billing.quota.exceeded.launch";
 
+    // Ngs preprocessing
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =
+            "error.ngs.preprocessing.folder.id.is.not.provided";
+    public static final String ERROR_NGS_PREPROCESSING_MACHINE_RUN_NOT_PROVIDED =
+            "error.ngs.preprocessing.machine.run.id.is.not.provided";
+    public static final String ERROR_NGS_PREPROCESSING_SAMPLESHEET_CONTENT_NOT_PROVIDED =
+            "error.ngs.preprocessing.samplesheet.content.is.not.provided";
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_HAS_NO_METADATA =
+            "error.ngs.preprocessing.folder.has.no.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_NO_MACHINE_RUN_METADATA =
+            "error.ngs.preprocessing.folder.has.no.machine.run.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_MACHINE_RUN_WRONG_METADATA_CLASS =
+            "error.ngs.preprocessing.machine.run.metadata.wrong.class";
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA =
+            "error.ngs.preprocessing.folder.should.have.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_DATA_PATH =
+            "error.ngs.preprocessing.folder.should.have.data.path";
+    public static final String ERROR_NGS_PREPROCESSING_NO_FOLDER_METADATA =
+            "error.ngs.preprocessing.no.folder.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
+            "error.ngs.preprocessing.sampleid.is.not.found";
+
     private MessageConstants() {
         // no-op
     }

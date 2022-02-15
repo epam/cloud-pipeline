@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
+import com.epam.pipeline.autotests.ao.popups.ConfigureInternalDNSPopupAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -75,7 +76,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
-            entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button")))
+            entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button"))),
+            entry(CONFIGURE_DNS, context().find(byTitle("Internal DNS name")).parent()
+                    .closest(".launch-pipeline-form__form-item-row")
+                    .find(byClassName("hosted-app-configuration__configure")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -431,7 +435,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                         "No such node type with RAM {%s}.", minRAM)));
     }
 
-    public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
+    public PipelineRunFormAO doNotMountStoragesSelect(boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
             click(DO_NOT_MOUNT_STORAGES);
@@ -486,6 +490,14 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         }
         sleep(1, SECONDS);
         return this;
+    }
+
+    public PipelineRunFormAO configureInternalDNSName(final String dnsName, final String port) {
+        click(CONFIGURE_DNS);
+        return new ConfigureInternalDNSPopupAO(this)
+                .setServiceName(dnsName)
+                .setPort(port)
+                .save();
     }
 
     @Override

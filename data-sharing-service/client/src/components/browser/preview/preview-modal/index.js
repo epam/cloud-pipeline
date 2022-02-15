@@ -24,7 +24,8 @@ import styles from './preview-modal.css';
 class PreviewModal extends React.Component {
   state = {
     maximized: false,
-    maximizedAvailable: false
+    maximizedAvailable: false,
+    large: false
   };
 
   componentDidUpdate (prevProps) {
@@ -36,16 +37,19 @@ class PreviewModal extends React.Component {
   resetMaximized () {
     this.setState({
       maximized: false,
-      maximizedAvailable: false
+      maximizedAvailable: false,
+      large: false
     });
   }
 
   onPreviewLoaded = (options = {}) => {
     const {
-      maximizedAvailable = false
+      maximizedAvailable = false,
+      large = false
     } = options;
     this.setState({
-      maximizedAvailable
+      maximizedAvailable,
+      large
     });
   };
 
@@ -62,11 +66,15 @@ class PreviewModal extends React.Component {
     if (!preview) {
       return null;
     }
-    const {maximized, maximizedAvailable} = this.state;
+    const {
+      maximized,
+      maximizedAvailable,
+      large
+    } = this.state;
     const handleClosePreview = (event) => {
       if (event && event.target === event.currentTarget) {
         onClose && onClose();
-        this.setState({maximized: false, maximizedAvailable: false});
+        this.setState({maximized: false, maximizedAvailable: false, large: false});
       }
     };
     return (
@@ -75,7 +83,14 @@ class PreviewModal extends React.Component {
         onClick={handleClosePreview}
       >
         <div
-          className={styles.preview}
+          className={
+            classNames(
+              styles.preview,
+              {
+                [styles.large]: large
+              }
+            )
+          }
         >
           <Preview
             item={preview}
@@ -107,6 +122,7 @@ class PreviewModal extends React.Component {
 }
 
 PreviewModal.propTypes = {
+  large: PropTypes.bool,
   preview: PropTypes.object,
   onClose: PropTypes.func,
   lightMode: PropTypes.bool,

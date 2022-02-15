@@ -26,6 +26,8 @@ import {PreviewIcons} from './previewIcons';
 import ItemTypes from './itemTypes';
 import styles from './preview.css';
 import VSIPreview from './vsi-preview';
+import HCSPreview from './hcs-preview';
+import {fastCheckPreviewAvailable} from "../../special/hcs-image/utilities/check-preview-available";
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.storageId && params.item.path) {
@@ -82,6 +84,27 @@ export default class S3FilePreview extends React.Component {
     pdbError: null,
     imageError: null
   };
+
+  get fileExtension () {
+    const {
+      item
+    } = this.props;
+    if (item && item.path) {
+      return this.props.item.path.split('.').pop().toLowerCase();
+    }
+    return undefined;
+  }
+
+  get isHCS () {
+    const {
+      item,
+      storageId
+    } = this.props;
+    if (item && item.path) {
+      return fastCheckPreviewAvailable({path: item.path, storageId});
+    }
+    return false;
+  }
 
   @computed
   get filePreview () {
@@ -172,6 +195,29 @@ export default class S3FilePreview extends React.Component {
     );
   };
 
+  renderHCSPreview = () => {
+    return (
+      <HCSPreview
+        className={styles.contentPreview}
+        file={this.props.item.path}
+        storage={this.props.dataStorageInfo.value}
+        onPreviewLoaded={this.props.onPreviewLoaded}
+      >
+        {
+          renderAttributes(
+            this.props.metadata,
+            {
+              tags: true,
+              column: true,
+              showLoadingIndicator: false,
+              showError: false
+            }
+          )
+        }
+      </HCSPreview>
+    );
+  };
+
   renderPreview = () => {
     if (this.props.dataStorageInfo && !this.props.dataStorageInfo.loaded) {
       return;
@@ -183,10 +229,11 @@ export default class S3FilePreview extends React.Component {
     ) {
       return null;
     }
-    const extension = this.props.item.path.split('.').pop().toLowerCase();
+    const extension = this.fileExtension;
     const previewRenderers = {
       vsi: this.renderVSIPreview,
-      mrxs: this.renderVSIPreview
+      mrxs: this.renderVSIPreview,
+      hcs: this.renderHCSPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();
@@ -194,7 +241,7 @@ export default class S3FilePreview extends React.Component {
         return preview;
       }
     }
-    return this.renderTextFilePreview();
+    return null;
   };
 
   render () {
@@ -202,7 +249,7 @@ export default class S3FilePreview extends React.Component {
       return null;
     }
     const info = this.renderInfo();
-    const attributes = renderAttributes(this.props.metadata, true);
+    const attributes = renderAttributes(this.props.metadata, {tags: true});
     const preview = this.renderPreview();
     return (
       <div
@@ -210,7 +257,8 @@ export default class S3FilePreview extends React.Component {
           classNames(
             styles.container,
             {
-              [styles.light]: this.props.lightMode
+              [styles.light]: this.props.lightMode,
+              [styles.large]: this.isHCS
             }
           )
         }
@@ -229,10 +277,10 @@ export default class S3FilePreview extends React.Component {
         </div>
         <div className={styles.content}>
           {info && renderSeparator()}
-          {info}
-          {attributes && renderSeparator()}
-          {attributes}
-          {preview && renderSeparator()}
+          {!this.isHCS && info}
+          {!this.isHCS && attributes && renderSeparator()}
+          {!this.isHCS && attributes}
+          {!this.isHCS && preview && renderSeparator()}
           {preview}
         </div>
       </div>

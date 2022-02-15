@@ -49,7 +49,8 @@ function InputWrapper (
           className,
           styles.span,
           {
-            [styles.key]: isKey
+            [styles.key]: isKey,
+            [styles.notEmpty]: value && value.trim().length > 0
           }
         )
       }

@@ -27,7 +27,6 @@ import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
 import StopPipeline from '../../../models/pipelines/StopPipeline';
 import TerminatePipeline from '../../../models/pipelines/TerminatePipeline';
 import getCommitAllowedForTool from './get-commit-allowed-for-tool';
-import {MAINTENANCE_MODE_DISCLAIMER} from '../../../models/preferences/PreferencesLoad';
 
 export function canStopRun (run) {
   // Checks only run state, not user permissions
@@ -433,14 +432,6 @@ class StopRunConfirmation extends React.Component {
           <Row type="flex" style={{marginBottom: 5, fontWeight: 'bold'}}>
             Do you want to persist current docker image state?
           </Row>
-        }
-        {
-          this.props.canCommitRun && commitAllowed && maintenanceMode &&
-          <Alert
-            type="info"
-            showIcon
-            message={MAINTENANCE_MODE_DISCLAIMER}
-          />
         }
         {
           this.props.canCommitRun && commitAllowed && !maintenanceMode &&

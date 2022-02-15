@@ -49,6 +49,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class VMMonitor {
 
     private static final String POOL_RUN_ID_PREFIX = "p-";
@@ -90,14 +91,19 @@ public class VMMonitor {
 
     @SuppressWarnings("unchecked")
     private void checkVMs(final AbstractCloudRegion region) {
-        log.debug("Checking VMs in region {} {}", region.getRegionCode(), region.getProvider());
-        getVmService(region)
-                .ifPresent(service -> {
-                    final List<VirtualMachine> vms = ListUtils.emptyIfNull(service.fetchRunningVms(region));
-                    log.debug("Found {} running VM(s) in {} {}", vms.size(),
-                            region.getRegionCode(), region.getProvider());
-                    vms.forEach(this::checkVmState);
-                });
+        try {
+            log.debug("Checking VMs in region {} {}", region.getRegionCode(), region.getProvider());
+            getVmService(region)
+                    .ifPresent(service -> {
+                        final List<VirtualMachine> vms = ListUtils.emptyIfNull(service.fetchRunningVms(region));
+                        log.debug("Found {} running VM(s) in {} {}", vms.size(),
+                                region.getRegionCode(), region.getProvider());
+                        vms.forEach(this::checkVmState);
+                    });
+        } catch (Exception e) {
+            log.error("An error during region {} {} check.", region.getRegionCode(), region.getProvider());
+            log.error(e.getMessage(), e);
+        }
     }
 
     private Optional<VMMonitorService> getVmService(final AbstractCloudRegion region) {
@@ -109,7 +115,6 @@ public class VMMonitor {
         return Optional.of(services.get(provider));
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void checkVmState(final VirtualMachine vm) {
         try {
             final List<NodeInstance> nodes = apiClient.findNodes(vm.getPrivateIp());

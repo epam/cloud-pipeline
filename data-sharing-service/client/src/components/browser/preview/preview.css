@@ -31,6 +31,11 @@
   padding: 10px;
 }
 
+.container.large .header {
+  font-size: medium;
+  padding: 5px;
+}
+
 .header .title {
   white-space: nowrap;
   overflow-x: hidden;
@@ -89,6 +94,22 @@
   padding: 0 10px;
 }
 
+.attributes {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.attributes.column {
+  flex-direction: column;
+  padding: 5px;
+}
+
+.attributes.column .attribute {
+  width: 100%;
+  max-width: 100%;
+}
+
 .attribute {
   display: flex;
   flex-direction: column;
@@ -116,6 +137,7 @@
   cursor: default;
 }
 
+.attributes.column .attribute-value,
 .attribute-value:hover {
   background-color: rgba(255, 255, 255, 0.75);
   color: black;

@@ -73,6 +73,14 @@ a.cp-danger:focus,
   color: lighten(@color-red, 5%);
 }
 
+.cp-bordered {
+  border: 1px solid @panel-border-color;
+}
+
+.cp-outline-bordered {
+  outline: 1px solid @panel-border-color;
+}
+
 .cp-divider.top,
 .cp-divider.horizontal {
   border-top: 1px solid @panel-border-color;
@@ -217,6 +225,16 @@ a.cp-danger:focus,
 .ant-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
+}
+
+.app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+
+.app-background:not(.no-image) {
   background-image: @background-image;
   background-size: cover;
 }
@@ -1650,4 +1668,33 @@ li.ant-time-picker-panel-select-option-selected {
 
 .cp-close-button:hover {
   color: @application-color;
+}
+
+.cp-timepoint-button {
+  background-color: fade(@primary-color, 40%);
+  border: 1px solid @primary-color;
+}
+
+.cp-timepoint-button-active {
+  background-color: fade(@color-warning, 40%);
+  border: 1px solid @color-warning;
+}
+
+.cp-dark-background {
+  background-color: @application-dark-background-color;
+}
+
+.cp-hcs-zoom-button {
+  cursor: pointer;
+  color: @application-color;
+  transition: all 100ms ease;
+}
+
+.cp-hcs-zoom-button:not(.cp-disabled):hover {
+  color: @primary-hover-color;
+}
+
+.cp-hcs-zoom-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
 }
