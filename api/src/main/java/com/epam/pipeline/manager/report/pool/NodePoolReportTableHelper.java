@@ -72,7 +72,7 @@ public class NodePoolReportTableHelper {
                 Optional.ofNullable(report.get(0))
                         .orElseGet(NodePoolUsageReport::new)
                         .getRecords()).stream()
-                .map(NodePoolUsageReportRecord::getPeriodStart)
+                .map(NodePoolUsageReportRecord::getPeriodEnd)
                 .collect(Collectors.toList());
 
         for (int recordIndex = 0; recordIndex < timestamps.size(); recordIndex++) {
@@ -131,7 +131,7 @@ public class NodePoolReportTableHelper {
     private String[] buildPoolDataRow(final String[] header, final NodePoolUsageReportRecord targetRecord,
                                       final ChronoUnit interval) {
         final String[] row = new String[header.length];
-        row[TIMESTAMP_COLUMN_INDEX] = buildTimestampColumnValue(targetRecord.getPeriodStart(), interval);
+        row[TIMESTAMP_COLUMN_INDEX] = buildTimestampColumnValue(targetRecord.getPeriodEnd(), interval);
         row[TOTAL_NONES_COLUMN_INDEX] = stringValue(targetRecord.getNodesCount());
         row[OCCUPIED_NODES_COLUMN_INDEX] = stringValue(targetRecord.getOccupiedNodesCount());
         return row;
