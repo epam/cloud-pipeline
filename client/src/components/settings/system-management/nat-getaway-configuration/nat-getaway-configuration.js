@@ -35,10 +35,12 @@ function getRouteIdentifier (route) {
     internalIp,
     grouped = false,
     externalPort,
-    isNew
+    isNew,
+    protocol
   } = route;
   return [
     externalIp,
+    protocol,
     isNew ? '' : internalIp,
     grouped ? undefined : externalPort
   ]

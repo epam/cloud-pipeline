@@ -71,10 +71,8 @@ function * parsePortEntry (portEntry, options = {}) {
   } else if (typeof portEntry === 'string') {
     const e = /^([\d]+)[\s]*-[\s]*([\d]+)$/.exec(portEntry);
     if (e && e.length >= 3) {
-      const n1 = Number(e[1]);
-      const n2 = Number(e[2]);
-      const from = Math.min(n1, n2);
-      const to = Math.max(n1, n2);
+      const from = Number(e[1]);
+      const to = Number(e[2]);
       if (to - from + 1 > maxPorts) {
         if (throwMaxPorts) {
           throw new Error(`${maxPorts} total ports are allowed`);
@@ -104,7 +102,7 @@ function getPortEntryCount (portEntry) {
     if (e && e.length >= 3) {
       const n1 = Number(e[1]);
       const n2 = Number(e[2]);
-      return Math.abs(n1 - n2) + 1;
+      return Math.max(0, n1 - n2 + 1);
     }
   }
   return 1;
@@ -196,27 +194,36 @@ function processProtocolPorts (routes, mapPort = (o => o.externalPort)) {
 export function groupRoutes (routes) {
   const keys = [];
   for (const route of routes) {
-    const {externalIp, internalIp} = route;
-    if (!keys.find(o => o.externalIp === externalIp && o.internalIp === internalIp)) {
+    const {externalIp, internalIp, protocol} = route;
+    if (
+      !keys.find(o => o.externalIp === externalIp &&
+        o.internalIp === internalIp &&
+        o.protocol === protocol
+      )
+    ) {
       keys.push({
         externalIp,
-        internalIp
+        internalIp,
+        protocol
       });
     }
   }
   return keys.map(key => {
-    const {externalIp, internalIp} = key;
+    const {
+      externalIp,
+      internalIp,
+      protocol
+    } = key;
     const ipRoutes = routes
       .filter(o =>
+        o.protocol === protocol &&
         o.externalIp === externalIp &&
         o.internalIp === internalIp
       );
     const statuses = [...(new Set(ipRoutes.map(o => o.status)))];
     const [any] = ipRoutes;
-    const protocols = [...(new Set(ipRoutes.map(o => o.protocol)))];
     const {
       externalPort,
-      protocol,
       ...routeConfiguration
     } = any || {};
     const {
@@ -231,8 +238,7 @@ export function groupRoutes (routes) {
       status: statuses.length > 1
         ? NATRouteStatuses.PENDING
         : statuses.pop(),
-      protocols,
-      protocolsPresentation: protocols.map(o => protocolNames[o] || o).join(', '),
+      protocol: protocolNames[protocol] || protocol,
       externalPorts: externalPorts,
       externalPortsPresentation,
       internalPortsPresentation,
@@ -241,7 +247,7 @@ export function groupRoutes (routes) {
       children: ipRoutes.length > 1
         ? ipRoutes.map(o => ({
           ...o,
-          protocolsPresentation: protocolNames[o.protocol] || o.protocol,
+          protocol: protocolNames[protocol] || protocol,
           externalPortsPresentation: o.externalPort,
           internalPortsPresentation: o.internalPort
         }))
