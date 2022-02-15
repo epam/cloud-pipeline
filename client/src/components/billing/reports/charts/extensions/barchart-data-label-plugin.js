@@ -131,7 +131,8 @@ const plugin = {
       const {
         borderColor = 'black',
         textBold = false,
-        textColor
+        textColor,
+        flagColor
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
@@ -142,6 +143,19 @@ const plugin = {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
+        if (flagColor) {
+          ctx.beginPath();
+          ctx.arc(
+            position.x,
+            position.y + position.height / 2.0,
+            2.5,
+            0,
+            Math.PI * 2,
+            true
+          );
+          ctx.fillStyle = flagColor;
+          ctx.fill();
+        }
       }
     }
   },
