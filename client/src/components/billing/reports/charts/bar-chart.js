@@ -117,7 +117,8 @@ function BarChart (
         borderColor: reportThemes.blue,
         backgroundColor: reportThemes.blue,
         borderSkipped: '',
-        textColor: reportThemes.blue,
+        textColor: reportThemes.textColor,
+        flagColor: reportThemes.blue,
         textBold: false,
         showDataLabels: false,
         maxBarThickness: 70
@@ -129,7 +130,8 @@ function BarChart (
         borderColor: reportThemes.current,
         backgroundColor: reportThemes.lightCurrent,
         borderSkipped: '',
-        textColor: reportThemes.darkCurrent,
+        textColor: reportThemes.textColor,
+        flagColor: reportThemes.current,
         textBold: false,
         maxBarThickness: 70
       }
