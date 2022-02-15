@@ -41,7 +41,7 @@ function getRouteIdentifier (route) {
   return [
     externalIp,
     protocol,
-    isNew ? '' : internalIp,
+    isNew ? 'new' : (internalIp || ''),
     grouped ? undefined : externalPort
   ]
     .filter(Boolean)

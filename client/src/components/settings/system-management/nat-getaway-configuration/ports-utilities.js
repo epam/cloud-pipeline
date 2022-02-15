@@ -73,6 +73,9 @@ function * parsePortEntry (portEntry, options = {}) {
     if (e && e.length >= 3) {
       const from = Number(e[1]);
       const to = Number(e[2]);
+      if (from > to && throwFormat) {
+        throw new Error('Wrong port format');
+      }
       if (to - from + 1 > maxPorts) {
         if (throwMaxPorts) {
           throw new Error(`${maxPorts} total ports are allowed`);
