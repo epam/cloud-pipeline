@@ -342,25 +342,29 @@ public class ToolManager implements SecuredEntityManager {
      */
     public Tool resolveSymlinks(final String image) {
         final Tool tool = loadToolWithFullImageName(image);
-        return tool.isNotSymlink() ? tool : loadToolWithFullImageName(tool.getLink());
+        return tool.isNotSymlink() ? tool : loadToolWithFullImageName(tool.getLink(), image);
     }
 
     private Tool loadToolWithFullImageName(final String image) {
         final Tool tool = loadByNameOrId(image);
         validateToolNotNull(tool, image);
-        tool.setImage(getFullImageName(tool));
+        tool.setImage(getFullImageNameWithSameTag(tool, image));
         return tool;
     }
 
-    private Tool loadToolWithFullImageName(final Long id) {
+    private Tool loadToolWithFullImageName(final Long id, final String image) {
         final Tool tool = load(id);
         validateToolNotNull(tool, id);
-        tool.setImage(getFullImageName(tool));
+        tool.setImage(getFullImageNameWithSameTag(tool, image));
         return tool;
     }
 
-    private String getFullImageName(final Tool linkedTool) {
-        return linkedTool.getRegistry() + TOOL_DELIMETER + linkedTool.getImage();
+    private String getFullImageNameWithSameTag(final Tool tool, final String image) {
+        return tool.getRegistry()
+                + TOOL_DELIMETER
+                + getImageWithoutTag(tool.getImage())
+                + TAG_DELIMITER
+                + getTagFromImageName(image);
     }
 
     @Override
