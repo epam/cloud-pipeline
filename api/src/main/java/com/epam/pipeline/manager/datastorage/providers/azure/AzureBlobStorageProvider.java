@@ -39,7 +39,6 @@ import com.microsoft.azure.storage.blob.ContainerSASPermission;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -50,7 +49,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
 public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorage> {
 

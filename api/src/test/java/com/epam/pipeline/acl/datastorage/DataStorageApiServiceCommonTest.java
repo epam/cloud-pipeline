@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -311,16 +311,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
     @Test
     @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnAvailableStoragesWithShareMountWhenWritePermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
-        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        doReturn(mutableListOf(storageShareMount)).when(mockDataStorageManager).getDataStoragesWithShareMountObject(ID);
-
-        assertThat(dataStorageApiService.getAvailableStoragesWithShareMount(ID)).hasSize(1).contains(storageShareMount);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
     public void shouldReturnEmptyAvailableStoragesWithShareMountWhenPermissionIsNotGranted() {
         initAclEntity(s3bucket);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
@@ -348,19 +338,6 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
 
         assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
         assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(READ_PERMISSION);
-    }
-
-    @Test
-    @WithMockUser(username = SIMPLE_USER)
-    public void shouldReturnAvailableStoragesWhenWritePermissionIsGranted() {
-        initAclEntity(s3bucket, AclPermission.WRITE);
-        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
-        doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
-
-        final List<AbstractDataStorage> returnedDataStorages = dataStorageApiService.getAvailableStorages();
-
-        assertThat(returnedDataStorages).hasSize(1).contains(s3bucket);
-        assertThat(returnedDataStorages.get(0).getMask()).isEqualTo(WRITE_PERMISSION);
     }
 
     @Test
@@ -435,6 +412,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadByNameOrIdForAdmin() {
         doReturn(s3bucket).when(mockDataStorageManager).loadByNameOrId(TEST_STRING);
+        initUserAndEntityMocks(ADMIN_ROLE, s3bucket, context);
 
         assertThat(dataStorageApiService.loadByNameOrId(TEST_STRING)).isEqualTo(s3bucket);
     }
@@ -458,6 +436,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         initAclEntity(s3bucket);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         doReturn(s3bucket).when(mockDataStorageManager).loadByNameOrId(TEST_STRING);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.loadByNameOrId(TEST_STRING));
     }
@@ -466,6 +445,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadByPathOrIdForAdmin() {
         doReturn(s3bucket).when(mockDataStorageManager).loadByPathOrId(TEST_STRING);
+        initUserAndEntityMocks(ADMIN_ROLE, s3bucket, context);
 
         assertThat(dataStorageApiService.loadByPathOrId(TEST_STRING)).isEqualTo(s3bucket);
     }
@@ -476,6 +456,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         initAclEntity(s3bucket, AclPermission.READ);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         doReturn(s3bucket).when(mockDataStorageManager).loadByPathOrId(TEST_STRING);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
         final AbstractDataStorage returnedDataStorage = dataStorageApiService.loadByPathOrId(TEST_STRING);
 
@@ -489,6 +470,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         initAclEntity(s3bucket);
         initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
         doReturn(s3bucket).when(mockDataStorageManager).loadByPathOrId(TEST_STRING);
+        initUserAndEntityMocks(SIMPLE_USER, s3bucket, context);
 
         assertThrows(AccessDeniedException.class, () -> dataStorageApiService.loadByPathOrId(TEST_STRING));
     }
@@ -708,6 +690,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetStorageUsageForAdmin() {
         doReturn(storageUsage).when(mockDataStorageManager).getStorageUsage(TEST_STRING, TEST_STRING);
+        mockUserContext(context);
 
         assertThat(dataStorageApiService.getStorageUsage(TEST_STRING, TEST_STRING)).isEqualTo(storageUsage);
     }
@@ -719,6 +702,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(storageUsage).when(mockDataStorageManager).getStorageUsage(TEST_STRING, TEST_STRING);
         doReturn(s3bucket).when(mockEntityManager).loadByNameOrId(eq(AclClass.DATA_STORAGE), anyString());
         mockAuthUser(SIMPLE_USER);
+        mockUserContext(context);
 
         assertThat(dataStorageApiService.getStorageUsage(TEST_STRING, TEST_STRING)).isEqualTo(storageUsage);
     }
@@ -730,6 +714,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
         doReturn(storageUsage).when(mockDataStorageManager).getStorageUsage(TEST_STRING, TEST_STRING);
         doReturn(s3bucket).when(mockEntityManager).loadByNameOrId(eq(AclClass.DATA_STORAGE), anyString());
         mockAuthUser(ANOTHER_SIMPLE_USER);
+        mockUserContext(context);
 
         assertThrows(AccessDeniedException.class, () ->
                 dataStorageApiService.getStorageUsage(TEST_STRING, TEST_STRING));

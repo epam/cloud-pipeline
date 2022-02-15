@@ -56,10 +56,11 @@ public class PermissionsService {
     public boolean isPermissionSet(int mask, AclPermission permission) {
         int grantingMask = permission.getMask();
         int denyingMask = permission.getDenyPermission().getMask();
-        if (isMaskBitSet(mask, grantingMask) || isMaskBitSet(mask, denyingMask)) {
-            return true;
-        }
-        return false;
+        return isMaskBitSet(mask, grantingMask) || isMaskBitSet(mask, denyingMask);
+    }
+
+    public boolean allPermissionsSet(int mask) {
+        return allPermissionsSet(mask, AclPermission.getBasicPermissions());
     }
 
     public boolean allPermissionsSet(int mask, List<AclPermission> permissionToCollect) {
@@ -170,7 +171,36 @@ public class PermissionsService {
         return resultMask;
     }
 
-    public boolean isPermissionGranted(int mask, Permission permission) {
+    public int mergeExactUserMask(int currentMask, final int mergingMask) {
+        int resultMask = currentMask;
+        for (AclPermission permission: AclPermission.getBasicPermissions()) {
+            if (isPermissionGranted(mergingMask, permission)) {
+                resultMask |= permission.getMask();
+                resultMask &= ~permission.getDenyPermission().getMask();
+            } else if (isPermissionGranted(mergingMask, permission.getDenyPermission())) {
+                resultMask &= ~permission.getMask();
+                resultMask |= permission.getDenyPermission().getMask();
+            }
+        }
+        return resultMask;
+    }
+
+    public int mergeExactGroupMask(final int currentMask, final int mergingMask) {
+        int resultMask = currentMask;
+        for (AclPermission permission: AclPermission.getBasicPermissions()) {
+            if (isPermissionGranted(mergingMask, permission)) {
+                resultMask |= permission.getMask();
+                resultMask &= ~permission.getDenyPermission().getMask();
+            } else if (isPermissionGranted(mergingMask, permission.getDenyPermission())
+                    && !isPermissionSet(resultMask, permission)) {
+                resultMask &= ~permission.getMask();
+                resultMask |= permission.getDenyPermission().getMask();
+            }
+        }
+        return resultMask;
+    }
+
+    public boolean isPermissionGranted(final int mask, final Permission permission) {
         return isMaskBitSet(mask, permission.getMask());
     }
 }

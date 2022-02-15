@@ -27,6 +27,7 @@ import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
+import com.epam.pipeline.entity.SecuredStorageEntity;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
@@ -69,10 +70,12 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.security.metadata.MetadataPermissionManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
+import com.epam.pipeline.manager.datastorage.security.StoragePermissionAccessManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.AbstractEntityPermissionMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
+import com.epam.pipeline.repository.datastorage.security.StoragePermissionRepository;
 import com.epam.pipeline.security.UserContext;
 import com.epam.pipeline.security.acl.AclPermission;
 import com.epam.pipeline.security.acl.JdbcMutableAclServiceImpl;
@@ -119,6 +122,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -195,6 +199,8 @@ public class GrantPermissionManager {
     @Autowired private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
 
     @Autowired private MetadataPermissionManager metadataPermissionManager;
+
+    @Autowired private StoragePermissionAccessManager storagePermissionAccessManager;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -429,7 +435,9 @@ public class GrantPermissionManager {
         if (isAdmin(sids)) {
             return;
         }
-        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids);
+        final Set<StoragePermissionRepository.Storage> readAllowedStorages =
+                storagePermissionAccessManager.loadReadAllowedStorages();
+        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids, readAllowedStorages);
     }
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
@@ -460,51 +468,49 @@ public class GrantPermissionManager {
         return accessGranted;
     }
 
-    public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
-        return storagePermission((AbstractSecuredEntity)storage, permissionName);
+    public boolean storagePermission(final Long storageId, final String permissionName) {
+        final AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId);
+        return storagePermission(storage, permissionName);
     }
 
-    public boolean storagePermission(Long storageId, String permissionName) {
-        AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
+    public boolean storagePermission(final String identifier, final String permissionName) {
+        final AbstractDataStorage storage = (AbstractDataStorage) entityManager.loadByNameOrId(AclClass.DATA_STORAGE,
+                identifier);
         return storagePermission(storage, permissionName);
+    }
+
+    private boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
+        if (storage == null) {
+            return false;
+        }
+        if (forbiddenByMountStatus(storage, permissionName)) {
+            return false;
+        }
+        return permissionName.equals(OWNER)
+                ? isOwnerOrAdmin(storage.getOwner())
+                : permissionsHelper.isAllowed(permissionName, storage)
+                || permissionName.equals(AclPermission.READ_NAME)
+                && storagePermissionAccessManager.isReadAllowed(storage);
     }
 
     public boolean storagePermissions(Long storageId, List<String> permissionNames) {
         return Optional.ofNullable(permissionNames)
                 .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList(READ))
+                .orElseGet(() -> Collections.singletonList(AclPermission.READ_NAME))
                 .stream()
                 .allMatch(permissionName -> storagePermission(storageId, permissionName));
     }
 
-    public boolean storagePermissionByName(final String identifier, final String permissionName) {
-        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
-        return storagePermission(storage, permissionName);
-    }
-
-    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
-        if (forbiddenByMountStatus(storage, permissionName)) {
-            return false;
-        }
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(storage.getOwner());
-        } else {
-            return permissionsHelper.isAllowed(permissionName, storage);
-        }
-    }
-
     public boolean listedStoragePermissions(List<DataStorageAction> actions) {
         for (DataStorageAction action : actions) {
-            AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, action.getId());
+            AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE,
+                    action.getId());
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !permissionsHelper.isAllowed(READ, storage)
-                && !forbiddenByMountStatus(storage, READ)) {
-                return false;
-            }
-            if (action.isWrite() && !permissionsHelper.isAllowed(WRITE, storage)
-                && !forbiddenByMountStatus(storage, WRITE)) {
+            if ((action.isRead() || action.isWrite())
+                    && !storagePermission(storage, AclPermission.READ_NAME)
+                    && !forbiddenByMountStatus(storage, AclPermission.READ_NAME)) {
                 return false;
             }
         }
@@ -513,18 +519,29 @@ public class GrantPermissionManager {
 
     public boolean hasDataStoragePathsPermission(final List<PathDescription> paths, final String permissionName) {
         return ListUtils.emptyIfNull(paths).stream()
-                .allMatch(path -> permissionsHelper.isAllowed(permissionName,
-                        entityManager.load(AclClass.DATA_STORAGE, path.getDataStorageId())));
+                .allMatch(path -> storagePermission(path.getDataStorageId(), permissionName));
     }
 
     public boolean checkStorageShared(Long storageId) {
-        UserContext context = authManager.getUserContext();
-        if (context.isExternal()) {
-            AbstractDataStorage storage = (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId);
-            return storage.isShared();
-        }
+        return checkStorageShared(() -> (AbstractDataStorage) entityManager.load(AclClass.DATA_STORAGE, storageId));
+    }
 
-        return true;
+    public boolean checkStorageShared(String identifier) {
+        return checkStorageShared(() -> (AbstractDataStorage) entityManager.loadByNameOrId(AclClass.DATA_STORAGE,
+                identifier));
+    }
+
+    public boolean checkStorageShared(AbstractDataStorage storage) {
+        return checkStorageShared(() -> storage);
+    }
+
+    public boolean checkStorageShared(Supplier<AbstractDataStorage> supplier) {
+        UserContext context = authManager.getUserContext();
+        if (!context.isExternal()) {
+            return true;
+        }
+        final AbstractDataStorage storage = supplier.get();
+        return storage == null || storage.isShared();
     }
 
     /**
@@ -984,16 +1001,17 @@ public class GrantPermissionManager {
     }
 
     private void processHierarchicalEntity(int parentMask, AbstractHierarchicalEntity entity,
-            Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, boolean root,
-            List<Sid> sids) {
+                                           Map<AclClass, Set<Long>> entitiesToRemove, Permission permission,
+                                           boolean root, List<Sid> sids,
+                                           final Set<StoragePermissionRepository.Storage> readAllowedStorages) {
         int defaultMask = 0;
         int currentMask = entity.getId() != null ?
                 permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids),
                         parentMask) : defaultMask;
         entity.getChildren().forEach(
             leaf -> processHierarchicalEntity(currentMask, leaf, entitiesToRemove, permission,
-                        false, sids));
-        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids);
+                        false, sids, readAllowedStorages));
+        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids, readAllowedStorages);
         entity.filterLeaves(entitiesToRemove);
         entity.filterChildren(entitiesToRemove);
         boolean permissionGranted = permissionsService.isPermissionGranted(currentMask, permission);
@@ -1011,11 +1029,23 @@ public class GrantPermissionManager {
     }
 
     private void filterChildren(int parentMask, List<? extends AbstractSecuredEntity> children,
-            Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids) {
+                                Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids,
+                                final Set<StoragePermissionRepository.Storage> readAllowedStorages) {
         ListUtils.emptyIfNull(children).forEach(child -> {
             int mask = permissionsService
                     .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
+                if (permission == AclPermission.READ && child instanceof SecuredStorageEntity) {
+                    mask |= readAllowedStorages.contains(
+                            new StoragePermissionRepository.StorageImpl(child.getId(),
+                                    ((SecuredStorageEntity) child).getKind()))
+                            ? AclPermission.READ.getMask()
+                            : 0;
+                    if (permissionsService.isPermissionGranted(mask, permission)) {
+                        child.setMask(permissionsService.mergeMask(mask));
+                        return;
+                    }
+                }
                 addToEntitiesToBeRemoved(entitiesToRemove, child);
             }
             if (child instanceof NFSDataStorage) {

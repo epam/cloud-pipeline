@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,7 @@ abstract class AbstractDataStorageAclTest extends AbstractAclTest {
 
     protected void mockStorage(final AbstractDataStorage entity) {
         doReturn(entity).when(mockEntityManager).load(AclClass.DATA_STORAGE, entity.getId());
+        doReturn(entity).when(mockEntityManager).loadByNameOrId(AclClass.DATA_STORAGE, String.valueOf(entity.getId()));
     }
 
     @Override
