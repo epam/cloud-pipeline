@@ -1435,6 +1435,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private final By idleAction = getByField("system.idle.action");
             private final By ldapUserBlockMonitor = getByCheckbox("system.ldap.user.block.monitor.enable");
             private final By userMonitor = getByCheckbox("system.user.monitor.enable");
+            private final By systemMaintenanceMode = getByCheckbox("system.maintenance.mode");
+            private final By systemMaintenanceModeBanner = getByField("system.maintenance.mode.banner");
 
             SystemTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1470,6 +1472,20 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public String getIdleAction() {
                 return getSystemValue(idleAction);
+            }
+
+            public SystemTabAO setSystemMaintenanceModeBanner(final String value) {
+                return setSystemValue(systemMaintenanceModeBanner, value);
+            }
+
+            public String getSystemMaintenanceModeBanner() {
+                return getSystemValue(systemMaintenanceModeBanner);
+            }
+
+            public SystemTabAO setEmptySystemMaintenanceModeBanner() {
+                click(systemMaintenanceModeBanner);
+                PreferencesAO.this.clearByKey(systemMaintenanceModeBanner);
+                return this;
             }
 
             private SystemTabAO setSystemValue(final By systemVariable, final String value) {
@@ -1515,6 +1531,24 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             public SystemTabAO disableUserMonitor() {
                 if (getUserMonitor()) {
                     click(userMonitor);
+                }
+                return this;
+            }
+
+            public boolean getSystemMaintenanceMode() {
+                return $(systemMaintenanceMode).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"));
+            }
+
+            public SystemTabAO enableSystemMaintenanceMode() {
+                if (!getSystemMaintenanceMode()) {
+                    click(systemMaintenanceMode);
+                }
+                return this;
+            }
+
+            public SystemTabAO disableSystemMaintenanceMode() {
+                if (getSystemMaintenanceMode()) {
+                    click(systemMaintenanceMode);
                 }
                 return this;
             }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -351,6 +352,19 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .ensureTitleContains(format("Do you want to pause %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("PAUSE"));
+        return this;
+    }
+
+    public RunsMenuAO ensurePauseButtonDisabled(String runID) {
+        context().find(byId(format("run-%s-pause-button", runID)))
+                .shouldHave(Condition.cssClass("cp-disabled"));
+        return this;
+    }
+
+    public RunsMenuAO checkPauseButtonTooltip(String runID, String message) {
+        hover(By.cssSelector(format("#run-%s-pause-button", runID)));
+        $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
+                .shouldHave(Condition.text(message));
         return this;
     }
 
