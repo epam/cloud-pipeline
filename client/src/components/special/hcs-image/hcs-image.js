@@ -37,7 +37,7 @@ class HcsImage extends React.PureComponent {
     sequencePending: false,
     error: undefined,
     sequenceId: undefined,
-    timepointId: undefined,
+    timePointId: undefined, // zero-based
     wells: [],
     fields: [],
     wellId: undefined,
@@ -167,22 +167,29 @@ class HcsImage extends React.PureComponent {
     }
   };
 
-  changeTimepoint = (sequence, timepoint) => {
+  changeTimePoint = (sequence, timePoint) => {
     const {
-      timepointId,
+      timePointId: currentTimePointId,
       sequenceId
     } = this.state;
-    if (timepoint === timepointId && sequence === sequenceId) {
+    const timePointId = timePoint
+      ? timePoint.id
+      : undefined;
+    if (timePoint === currentTimePointId && sequence === sequenceId) {
       return;
     }
     if (sequence !== sequenceId) {
-      this.changeSequence(sequence, timepoint);
+      this.changeSequence(sequence, timePointId);
     } else {
-      this.setState({timepointId: timepoint});
+      this.setState({timePointId}, () => {
+        if (this.hcsImageViewer) {
+          this.hcsImageViewer.setGlobalTimePosition(timePointId);
+        }
+      });
     }
   };
 
-  changeSequence = (sequenceId, timepointId) => {
+  changeSequence = (sequenceId, timePointId) => {
     const {sequenceId: currentSequenceId} = this.state;
     if (currentSequenceId !== sequenceId) {
       if (this.hcsInfo) {
@@ -197,11 +204,16 @@ class HcsImage extends React.PureComponent {
               .then(() => sequenceInfo.resignDataURLs())
               .then(() => {
                 const {wells = [], timeSeries = []} = sequenceInfo;
+                const defaultTimePointId = timeSeries.length > 0
+                  ? timeSeries[0].id
+                  : 0;
                 this.setState({
                   sequencePending: false,
                   error: undefined,
                   sequenceId,
-                  timepointId: timepointId || timeSeries[0],
+                  timePointId: timePointId === undefined
+                    ? defaultTimePointId
+                    : timePointId,
                   wells
                 }, () => {
                   const firstWell = wells[0];
@@ -276,7 +288,8 @@ class HcsImage extends React.PureComponent {
   loadImage = () => {
     const {
       sequenceId,
-      imageId
+      imageId,
+      timePointId
     } = this.state;
     if (this.hcsImageViewer && this.hcsInfo) {
       const {sequences = []} = this.hcsInfo;
@@ -287,7 +300,7 @@ class HcsImage extends React.PureComponent {
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
-              this.hcsImageViewer.setImage({ID: imageId});
+              this.hcsImageViewer.setImage({ID: imageId, imageTimePoint: timePointId});
             }
           });
       }

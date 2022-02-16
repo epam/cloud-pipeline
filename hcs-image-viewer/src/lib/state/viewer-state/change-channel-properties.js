@@ -14,22 +14,18 @@
  *  limitations under the License.
  */
 
-export default {
-  url: undefined,
-  offsetsUrl: undefined,
-
-  source: undefined,
-  sourcePending: false,
-  sourceError: undefined,
-  sourceCallback: undefined,
-
-  loader: undefined,
-  metadata: undefined,
-
-  imageIndex: 0,
-  imagePending: false,
-  imageTimePosition: 0,
-
-  error: undefined,
-  pending: false,
+export default function changeChannelProperties(state, channelIndex, properties) {
+  const propertiesArray = Object
+    .entries(properties || {})
+    .filter(([property]) => state && state[property] && Array.isArray(state[property]));
+  if (propertiesArray.length > 0) {
+    const newState = { ...(state || {}) };
+    propertiesArray.forEach(([property, value]) => {
+      const propertyValue = newState[property];
+      newState[property] = [...propertyValue];
+      newState[property][channelIndex] = value;
+    });
+    return newState;
+  }
+  return state;
 };

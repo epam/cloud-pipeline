@@ -14,29 +14,35 @@
  *  limitations under the License.
  */
 
-export default function setDataAction(state, action) {
-  const { url, offsetsUrl, callback } = action;
-  const { url: currentUrl, offsetsUrl: currentOffsetsUrl } = state;
-  if (currentUrl === url && offsetsUrl === currentOffsetsUrl) {
-    if (callback) {
-      callback();
-    }
-    return state;
-  }
+export default function init() {
+  const selections = [];
   return {
-    ...state,
-    loader: undefined,
+    identifiers: [],
+    channels: [],
+    channelsVisibility: [],
+    selections,
+    builtForSelections: selections,
+    globalSelection: undefined,
+    colors: [],
+    domains: [],
+    contrastLimits: [],
+    useLens: false,
+    useColorMap: false,
+    colorMap: '',
+    lensEnabled: false,
+    lensChannel: 0,
+    use3D: false,
+    pixelValues: [],
+    xSlice: [0, 1],
+    ySlice: [0, 1],
+    zSlice: [0, 1],
+    ready: false,
+    isRGB: false,
+    shapeIsInterleaved: false,
+    pending: false,
+    globalDimensions: [],
     metadata: undefined,
-    imageIndex: 0,
-    imageTimePosition: 0,
-
-    source: undefined,
-    sourcePending: false,
-    sourceError: false,
-    sourceCallback: callback,
-
+    loader: [],
     error: undefined,
-    url,
-    offsetsUrl,
   };
-}
+};

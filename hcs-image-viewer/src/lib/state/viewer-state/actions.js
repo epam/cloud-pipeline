@@ -15,21 +15,12 @@
  */
 
 export default {
-  url: undefined,
-  offsetsUrl: undefined,
-
-  source: undefined,
-  sourcePending: false,
-  sourceError: undefined,
-  sourceCallback: undefined,
-
-  loader: undefined,
-  metadata: undefined,
-
-  imageIndex: 0,
-  imagePending: false,
-  imageTimePosition: 0,
-
-  error: undefined,
-  pending: false,
+  setDefault: 'set-default',
+  setLoading: 'set-loading',
+  setError: 'set-error',
+  setChannelProperties: 'set-channel-properties',
+  setColorMap: 'set-color-map',
+  setLensChannel: 'set-lens-channel',
+  setLensEnabled: 'set-lens-enabled',
+  setGlobalPosition: 'set-global-position',
 };

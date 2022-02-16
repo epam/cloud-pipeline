@@ -28,33 +28,33 @@ import { GlobalDimensionFields } from '../constants';
  */
 
 /**
- * Return the midpoint of the global dimensions.
+ * Return the initial point of the global dimensions.
  * @param {TiffPixelSource} tiffPixelSource
  * @param {String[]} [dimensions]
  * @returns {*}
  */
-function getShapeMidpoints(tiffPixelSource, dimensions = GlobalDimensionFields) {
-  const { labels, shape } = tiffPixelSource;
+function getShapeInitialPoints(tiffPixelSource, dimensions = GlobalDimensionFields) {
+  const { labels } = tiffPixelSource;
   return labels
-    .map((name, index) => ({
-      name,
-      midpoint: Math.floor((shape[index] || 0) / 2),
-    }))
-    .filter((d) => dimensions.includes(d.name))
-    .map(({ name, midpoint }) => ({ [name]: midpoint }))
+    .filter((label) => dimensions.includes(label))
+    .map((name) => ({ [name]: 0 }))
     .reduce((r, c) => ({ ...r, ...c }), {});
 }
 
 // source: https://github.com/hms-dbmi/viv/blob/master/avivator/src/utils.js
 /**
- * Create a default selection using the midpoint of the available global dimensions,
+ * Create a default selection using the initial point of the available global dimensions,
  * and then the first four available selections from the first selectable channel.
  * @param {TiffPixelSource} pixelSource
+ * @param {{ t: number, z: number}} globalPosition
  * @returns {[{[p: string]: *}]|*[]}
  */
-export function buildDefaultSelection(pixelSource) {
+export function buildDefaultSelection(pixelSource, globalPosition) {
   let selection = [];
-  const globalSelection = getShapeMidpoints(pixelSource);
+  const globalSelection = {
+    ...getShapeInitialPoints(pixelSource),
+    ...(globalPosition || {}),
+  };
   // First non-global dimension with some sort of selectable values.
   const firstNonGlobalDimension = pixelSource.labels
     .map((name, i) => ({ name, size: pixelSource.shape[i] }))

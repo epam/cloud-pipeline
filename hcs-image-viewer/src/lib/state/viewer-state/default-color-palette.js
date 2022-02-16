@@ -14,22 +14,23 @@
  *  limitations under the License.
  */
 
-export default {
-  url: undefined,
-  offsetsUrl: undefined,
+const red = [255, 0, 0];
+const green = [0, 255, 0];
+const blue = [0, 0, 255];
+const white = [255, 255, 255];
+const pink = [255, 0, 255];
+const violet = [154, 0, 255];
+const yellow = [255, 255, 0];
+const orange = [255, 60, 0];
 
-  source: undefined,
-  sourcePending: false,
-  sourceError: undefined,
-  sourceCallback: undefined,
-
-  loader: undefined,
-  metadata: undefined,
-
-  imageIndex: 0,
-  imagePending: false,
-  imageTimePosition: 0,
-
-  error: undefined,
-  pending: false,
-};
+export { red, green, blue, white };
+export default [
+  blue,
+  green,
+  pink,
+  yellow,
+  orange,
+  violet,
+  white,
+  red,
+];
