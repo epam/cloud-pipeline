@@ -301,7 +301,7 @@ class HcsImage extends React.PureComponent {
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
-              this.hcsImageViewer.setImage({ID: imageId, imageTimePoint: timePointId});
+              this.hcsImageViewer.setImage({ID: imageId, imageTimePosition: timePointId});
             }
           });
       }

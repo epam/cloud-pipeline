@@ -81,8 +81,6 @@ export default function reducer(state, action) {
         const newSelectionsPart = filtered
           .map(({ dimension, position: x }) => ({ [dimension]: x }))
           .reduce((r, c) => ({ ...r, ...c }), {});
-        console.log('set global position', position, 'state:', globalSelection, selections, globalDimensions);
-        console.log('new selection part', newSelectionsPart);
         const newGlobalSelection = {
           ...globalSelection,
           ...newSelectionsPart,
