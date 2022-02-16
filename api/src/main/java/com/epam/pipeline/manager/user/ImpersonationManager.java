@@ -51,6 +51,7 @@ public class ImpersonationManager implements UserDetailsChecker, UserDetailsServ
         final PipelineUser user = userManager.loadUserByName(impersonatedName);
         userAccessService.validateUserBlockStatus(user);
         userAccessService.validateUserGroupsBlockStatus(user);
+        userManager.updateLastLoginDate(user);
     }
 
     @Override
