@@ -55,6 +55,7 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import {SearchItemTypes} from '../../models/search';
+import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
@@ -675,7 +676,9 @@ class FacetedSearch extends React.Component {
   };
 
   onDeselectItem = (item) => {
-    const selectedItems = this.state.selectedItems.filter(i => i.elasticId !== item.elasticId);
+    const filterFn = filterNonMatchingItemsFn(item);
+    const selectedItems = this.state.selectedItems
+      .filter(filterFn);
 
     this.setState({selectedItems});
   };

@@ -27,7 +27,7 @@ import {PUBLIC_URL} from '../../../config';
 import styles from './search-results.css';
 import OpenInToolAction from '../../special/file-actions/open-in-tool';
 import compareArrays from '../../../utils/compareArrays';
-import SearchItemTypes from '../../../models/search/search-item-types';
+import * as elasticItemUtilities from '../utilities/elastic-item-utilities';
 
 const RESULT_ITEM_HEIGHT = 46;
 const TABLE_ROW_HEIGHT = 32;
@@ -349,21 +349,23 @@ class SearchResults extends React.Component {
 
   itemSelected = (item) => {
     const {selectedItems = []} = this.props;
+    const findItemFn = elasticItemUtilities.filterMatchingItemsFn(item);
 
-    return this.itemSelectionAvailable(item) && selectedItems.length > 0 && selectedItems
-      .some(i => i.elasticId === item.elasticId);
+    return this.itemSelectionAvailable(item) &&
+      selectedItems.length > 0 &&
+      selectedItems.some(findItemFn);
   }
 
   itemSelectionAvailable = (item) => {
     const {selectionAvailable} = this.props;
 
-    return selectionAvailable && item.type === SearchItemTypes.s3File;
+    return selectionAvailable && elasticItemUtilities.itemSelectionAvailable(item);
   };
 
   itemSelectionDisabled = (item) => {
     const {selectedItems = []} = this.props;
 
-    return selectedItems.length > 0 && !selectedItems.some(i => i.parentId === item.parentId);
+    return !elasticItemUtilities.canAppendItemToSelection(item, selectedItems);
   };
 
   onRowSelectionChange = (item, event) => {
