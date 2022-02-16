@@ -106,8 +106,6 @@
   top: 5px;
   max-height: calc(100% - 10px);
   z-index: 2;
-  display: flex;
-  overflow: auto;
 }
 
 .configuration {
@@ -119,32 +117,6 @@
   left: 5px;
   max-width: 300px;
   min-width: 200px;
-}
-
-.panel-content {
-  flex: 1;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  border-radius: 2px;
-}
-
-.panel-content .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 5px;
-}
-
-.panel-content .content {
-  flex: 1;
-  overflow: auto;
-}
-
-.details-panel .close-button,
-.configuration .close-button {
-  cursor: pointer;
 }
 
 .details-info-btn {

@@ -29,6 +29,7 @@ import SourceState from './utilities/source-state';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import styles from './hcs-image.css';
+import Panel from '../panel';
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -371,31 +372,13 @@ class HcsImage extends React.PureComponent {
       detailsTitle = 'Details'
     } = this.props;
     return (
-      <div
+      <Panel
+        title={detailsTitle}
         className={styles.detailsPanel}
+        onClose={this.hideDetails}
       >
-        <div
-          className={
-            classNames(
-              styles.panelContent,
-              'cp-panel-card'
-            )
-          }
-        >
-          <div className={styles.panelHeader}>
-            <b>{detailsTitle}</b>
-            <Icon
-              className={styles.closeButton}
-              type="close"
-              size="small"
-              onClick={this.hideDetails}
-            />
-          </div>
-          <div className={styles.content}>
-            {children}
-          </div>
-        </div>
-      </div>
+        {children}
+      </Panel>
     );
   }
 
@@ -431,31 +414,13 @@ class HcsImage extends React.PureComponent {
       );
     }
     return (
-      <div
+      <Panel
+        title="Settings"
         className={styles.configuration}
+        onClose={this.hideConfiguration}
       >
-        <div
-          className={
-            classNames(
-              styles.panelContent,
-              'cp-panel-card'
-            )
-          }
-        >
-          <div className={styles.panelHeader}>
-            <b>Settings</b>
-            <Icon
-              className={styles.closeButton}
-              type="close"
-              size="small"
-              onClick={this.hideConfiguration}
-            />
-          </div>
-          <div className={styles.content}>
-            <HcsImageControls />
-          </div>
-        </div>
-      </div>
+        <HcsImageControls />
+      </Panel>
     );
   };
 

@@ -27,7 +27,7 @@ import ItemTypes from './itemTypes';
 import styles from './preview.css';
 import VSIPreview from './vsi-preview';
 import HCSPreview from './hcs-preview';
-import {fastCheckPreviewAvailable} from "../../special/hcs-image/utilities/check-preview-available";
+import {fastCheckPreviewAvailable} from '../../special/hcs-image/utilities/check-preview-available';
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.storageId && params.item.path) {
@@ -104,6 +104,20 @@ export default class S3FilePreview extends React.Component {
       return fastCheckPreviewAvailable({path: item.path, storageId});
     }
     return false;
+  }
+
+  get isVSI () {
+    const {
+      item
+    } = this.props;
+    if (item && item.path) {
+      return /\.(vsi|mrxs)$/i.test(item.path);
+    }
+    return false;
+  }
+
+  get hideInfo () {
+    return this.isHCS || this.isVSI;
   }
 
   @computed
@@ -191,7 +205,19 @@ export default class S3FilePreview extends React.Component {
         fullscreen={this.props.fullscreen}
         onFullScreenChange={this.props.onFullScreenChange}
         fullScreenAvailable={this.props.fullScreenAvailable}
-      />
+      >
+        {
+          renderAttributes(
+            this.props.metadata,
+            {
+              tags: true,
+              column: true,
+              showLoadingIndicator: false,
+              showError: false
+            }
+          )
+        }
+      </VSIPreview>
     );
   };
 
@@ -258,7 +284,7 @@ export default class S3FilePreview extends React.Component {
             styles.container,
             {
               [styles.light]: this.props.lightMode,
-              [styles.large]: this.isHCS
+              [styles.large]: this.isHCS || this.isVSI
             }
           )
         }
@@ -277,10 +303,10 @@ export default class S3FilePreview extends React.Component {
         </div>
         <div className={styles.content}>
           {info && renderSeparator()}
-          {!this.isHCS && info}
-          {!this.isHCS && attributes && renderSeparator()}
-          {!this.isHCS && attributes}
-          {!this.isHCS && preview && renderSeparator()}
+          {!this.hideInfo && info}
+          {!this.hideInfo && attributes && renderSeparator()}
+          {!this.hideInfo && attributes}
+          {!this.hideInfo && preview && renderSeparator()}
           {preview}
         </div>
       </div>
