@@ -38,6 +38,7 @@ import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
 import roleModel from '../../../../utils/roleModel';
+import Panel from '../../../special/panel';
 
 const {SA, SAM, $} = window;
 
@@ -172,7 +173,8 @@ class VSIPreview extends React.Component {
     s3storageWrapperPending: true,
     s3storageWrapperError: undefined,
     shareUrl: undefined,
-    showShareUrlModal: false
+    showShareUrlModal: false,
+    showAttributes: false
   };
 
   @observable s3Storage;
@@ -182,6 +184,15 @@ class VSIPreview extends React.Component {
   componentDidMount () {
     this.createS3Storage();
     this.fetchPreviewItems();
+    const {onPreviewLoaded, onHideInfo} = this.props;
+    if (onPreviewLoaded) {
+      onPreviewLoaded({
+        requireMaximumSpace: true
+      });
+    }
+    if (onHideInfo) {
+      onHideInfo(true);
+    }
   }
 
   componentWillUnmount () {
@@ -313,12 +324,18 @@ class VSIPreview extends React.Component {
   };
 
   reportPreviewLoaded = () => {
-    const {onPreviewLoaded} = this.props;
+    const {onPreviewLoaded, onHideInfo} = this.props;
+    const {
+      tiles
+    } = this.state;
     if (onPreviewLoaded) {
-      const {
-        tiles
-      } = this.state;
-      onPreviewLoaded({maximizedAvailable: !!tiles});
+      onPreviewLoaded({
+        maximizedAvailable: !!tiles,
+        requireMaximumSpace: true
+      });
+    }
+    if (onHideInfo) {
+      onHideInfo(!!tiles);
     }
   };
 
@@ -339,7 +356,8 @@ class VSIPreview extends React.Component {
         tiles: false,
         active: undefined,
         preview: undefined,
-        pending: false
+        pending: false,
+        showAttributes: false
       }, this.reportPreviewLoaded);
     } else {
       this.setState({
@@ -347,9 +365,9 @@ class VSIPreview extends React.Component {
         tiles: false,
         active: undefined,
         preview: undefined,
-        pending: true
+        pending: true,
+        showAttributes: false
       }, () => {
-        this.reportPreviewLoaded();
         const tilesInfo = getTilesInfo(file);
         if (tilesInfo) {
           getTiles(storageId, tilesInfo.tilesFolders)
@@ -677,6 +695,37 @@ class VSIPreview extends React.Component {
     );
   };
 
+  showAttributesPanel = () => {
+    this.setState({
+      showAttributes: true
+    });
+  };
+
+  hideAttributesPanel = () => {
+    this.setState({
+      showAttributes: false
+    });
+  };
+
+  renderAttributesPanel = () => {
+    const {
+      children
+    } = this.props;
+    const {
+      showAttributes
+    } = this.state;
+    return (
+      <Panel
+        visible={showAttributes}
+        className={styles.vsiPreviewAttributesPanel}
+        title="Attributes"
+        onClose={this.hideAttributesPanel}
+      >
+        {children}
+      </Panel>
+    );
+  };
+
   renderTiles = () => {
     const {
       storageId,
@@ -687,7 +736,8 @@ class VSIPreview extends React.Component {
       y,
       zoom,
       roll,
-      fullscreen
+      fullscreen,
+      children
     } = this.props;
     const {
       tiles,
@@ -852,7 +902,19 @@ class VSIPreview extends React.Component {
               </Popover>
             )
           }
+          {
+            children && (
+              <Button
+                id="vsi-preview-show-attributes-button"
+                className={styles.vsiPreviewButton}
+                onClick={this.showAttributesPanel}
+              >
+                Show attributes
+              </Button>
+            )
+          }
         </div>
+        {this.renderAttributesPanel()}
       </div>
     );
   };
@@ -881,6 +943,7 @@ class VSIPreview extends React.Component {
 
 VSIPreview.propTypes = {
   className: PropTypes.string,
+  children: PropTypes.node,
   file: PropTypes.string,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   fullScreenAvailable: PropTypes.bool,
@@ -891,6 +954,7 @@ VSIPreview.propTypes = {
   roll: PropTypes.number,
   onCameraChanged: PropTypes.func,
   onPreviewLoaded: PropTypes.func,
+  onHideInfo: PropTypes.func,
   fullscreen: PropTypes.bool,
   onFullScreenChange: PropTypes.func
 };

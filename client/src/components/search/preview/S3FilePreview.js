@@ -333,7 +333,20 @@ export default class S3FilePreview extends React.Component {
         fullscreen={this.props.fullscreen}
         onFullScreenChange={this.props.onFullScreenChange}
         fullScreenAvailable={this.props.fullScreenAvailable}
-      />
+        onHideInfo={this.hideInfo}
+      >
+        {
+          renderAttributes(
+            this.props.metadata,
+            {
+              tags: true,
+              column: true,
+              showError: false,
+              showLoadingIndicator: false
+            }
+          )
+        }
+      </VSIPreview>
     );
   };
 
