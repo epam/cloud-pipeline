@@ -24,6 +24,7 @@ import {Alert, Button, Icon} from 'antd';
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
 import HcsCellSelector from './hcs-cell-selector';
+import HcsSequenceSelector from './hcs-sequence-selector';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
 import HcsImageControls from './hcs-image-controls';
@@ -175,7 +176,7 @@ class HcsImage extends React.PureComponent {
     const timePointId = timePoint
       ? timePoint.id
       : undefined;
-    if (timePoint === currentTimePointId && sequence === sequenceId) {
+    if (timePoint.id === currentTimePointId && sequence === sequenceId) {
       return;
     }
     if (sequence !== sequenceId) {
@@ -482,6 +483,7 @@ class HcsImage extends React.PureComponent {
       pending: hcsImagePending,
       sequencePending,
       sequenceId,
+      timePointId,
       wellId,
       imageId,
       wells = [],
@@ -604,6 +606,12 @@ class HcsImage extends React.PureComponent {
                   gridRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
                   flipVertical
                   showLegend={false}
+                />
+                <HcsSequenceSelector
+                  sequences={this.sequences}
+                  selectedSequence={sequenceId}
+                  selectedTimePoint={timePointId}
+                  onChangeTimePoint={this.changeTimePoint}
                 />
               </div>
             )
