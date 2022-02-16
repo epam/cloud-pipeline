@@ -65,7 +65,6 @@ class HCSImageSequence {
       id: index,
       name: time
     }));
-    console.log(this.timeSeries);
     this.omeTiffFileName = [directory, HCSConstants.OME_TIFF_FILE_NAME]
       .join(objectStorage.delimiter || '/');
     this.offsetsJsonFileName = [directory, HCSConstants.OFFSETS_JSON_FILE_NAME]
