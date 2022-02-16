@@ -242,6 +242,25 @@ class Viewer {
         .catch(reject);
     });
   }
+
+  setGlobalPosition(position) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setGlobalPosition')(position);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
+  setGlobalZPosition(z) {
+    return this.setGlobalPosition({ z });
+  }
+
+  setGlobalTimePosition(time) {
+    return this.setGlobalPosition({ t: time });
+  }
 }
 
 export default Viewer;

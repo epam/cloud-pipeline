@@ -14,19 +14,23 @@
  *  limitations under the License.
  */
 
-// source: https://github.com/hms-dbmi/viv/blob/master/avivator/src/utils.js
-export default function guessRgb({ Pixels }) {
-  const {
-    Channels = [],
-    SizeC = 0,
-    Interleaved = false,
-    Type,
-  } = Pixels || {};
-  const numChannels = Channels.length;
-  const { SamplesPerPixel = 0 } = Channels[0] || {};
+const red = [255, 0, 0];
+const green = [0, 255, 0];
+const blue = [0, 0, 255];
+const white = [255, 255, 255];
+const pink = [255, 0, 255];
+const violet = [154, 0, 255];
+const yellow = [255, 255, 0];
+const orange = [255, 60, 0];
 
-  const is3Channel8Bit = numChannels === 3 && Type === 'uint8';
-  const interleavedRgb = SizeC === 3 && numChannels === 1 && Interleaved;
-
-  return SamplesPerPixel === 3 || is3Channel8Bit || interleavedRgb;
-}
+export { red, green, blue, white };
+export default [
+  blue,
+  green,
+  pink,
+  yellow,
+  orange,
+  violet,
+  white,
+  red,
+];

@@ -18,7 +18,8 @@ import { useCallback, useMemo, useReducer } from 'react';
 import reducer from './reducer';
 import actions from './actions';
 import useSource from './utilities/use-source';
-import useViewerState, { ViewerStateActions } from './viewer-state';
+import useViewerState from './viewer-state';
+import ViewerStateActions from './viewer-state/actions';
 
 export { default as HCSImageContext } from './context';
 
@@ -59,6 +60,9 @@ function useHCSImageState() {
   const setLensChannel = useCallback((channel) => {
     viewerDispatch({ type: ViewerStateActions.setLensChannel, lensChannel: channel });
   }, [viewerDispatch]);
+  const setGlobalPosition = useCallback((position) => {
+    viewerDispatch({ type: ViewerStateActions.setGlobalPosition, position });
+  }, [viewerDispatch]);
   const callbacks = useMemo(() => ({
     setData,
     setImage,
@@ -67,6 +71,7 @@ function useHCSImageState() {
     setColorMap,
     setLensEnabled,
     setLensChannel,
+    setGlobalPosition,
   }), [
     setData,
     setImage,
@@ -75,6 +80,7 @@ function useHCSImageState() {
     setColorMap,
     setLensEnabled,
     setLensChannel,
+    setGlobalPosition,
   ]);
   return {
     callbacks,
