@@ -30,6 +30,7 @@ import SourceState from './utilities/source-state';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import styles from './hcs-image.css';
+import HcsZPositionSelector from './hcs-z-position-selector';
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -82,6 +83,21 @@ class HcsImage extends React.PureComponent {
       return [];
     }
     return (this.hcsInfo.sequences || []).map(s => s);
+  }
+
+  @computed
+  get availableZPositions () {
+    if (this.hcsViewerState) {
+      return this.hcsViewerState.availableZPositions;
+    }
+    return [];
+  }
+
+  @computed
+  get imageZPosition () {
+    if (this.hcsViewerState) {
+      return this.hcsViewerState.imageZPosition;
+    }
   }
 
   prepare = () => {
@@ -285,6 +301,10 @@ class HcsImage extends React.PureComponent {
       }
     }
   };
+
+  changeImageZPosition = (z) => {
+    this.hcsViewerState.changeGlobalZPosition(z);
+  }
 
   loadImage = () => {
     const {
@@ -612,6 +632,11 @@ class HcsImage extends React.PureComponent {
                   selectedSequence={sequenceId}
                   selectedTimePoint={timePointId}
                   onChangeTimePoint={this.changeTimePoint}
+                />
+                <HcsZPositionSelector
+                  positions={this.availableZPositions}
+                  selectedPosition={this.imageZPosition}
+                  onZPositionChange={this.changeImageZPosition}
                 />
               </div>
             )

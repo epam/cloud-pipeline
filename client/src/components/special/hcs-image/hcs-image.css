@@ -71,11 +71,14 @@
 }
 
 .hcs-image-controls {
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   z-index: 1;
   padding: 5px;
   width: 300px;
   border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
 }
 
 .selector-container {
