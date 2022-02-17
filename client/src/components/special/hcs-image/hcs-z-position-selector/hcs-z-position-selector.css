@@ -15,13 +15,14 @@
  */
 
 .container {
-  height: 30%;
-  padding: 5px;
+  flex: 1 1 auto;
+  margin: 5px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
+  min-height: 200px;
 }
 
 .slider {
@@ -30,4 +31,15 @@
 
 .title {
   font-weight: 700;
+  text-align: left;
+  width: inherit;
+  flex: 1 1 auto;
+  padding: 5px;
+}
+
+.scale {
+  text-align: center;
+  width: inherit;
+  margin-right: 30px;
+  padding: 5px;
 }

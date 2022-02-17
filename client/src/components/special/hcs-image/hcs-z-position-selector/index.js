@@ -58,6 +58,7 @@ function HcsZPositionSelector (props) {
           onChange={onZPositionChange}
           className={classNames('cp-hcs-z-position-slider', styles.slider)}
         />
+        <strong className={styles.scale}>m</strong>
       </div>
     );
   }
