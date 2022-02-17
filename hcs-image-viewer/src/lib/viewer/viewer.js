@@ -104,6 +104,9 @@ function HCSImageViewer(
     ready = false,
     colorMap,
     loader,
+    useLens,
+    lensEnabled,
+    lensChannel,
   } = viewerState;
   const [viewState, setViewState] = useState(undefined);
   useEffect(() => {
@@ -161,6 +164,8 @@ function HCSImageViewer(
               viewStates={viewState}
               overviewOn={!!overview}
               overview={overview}
+              lensSelection={useLens && lensEnabled ? lensChannel : undefined}
+              lensEnabled={useLens && lensEnabled}
             />
           )
         }

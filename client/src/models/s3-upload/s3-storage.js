@@ -150,6 +150,13 @@ class S3Storage {
     return success;
   };
 
+  refreshCredentialsIfNeeded = async () => {
+    this._credentials.get();
+    if (this._credentials.needsRefresh()) {
+      await this.updateCredentials();
+    }
+  }
+
   getSignedUrl = (file = '') => {
     const params = {
       Bucket: this._storage.path,

@@ -135,7 +135,7 @@
                     DELETE
                     FROM
                         pipeline.notification_timestamp
-                    WHERE run_id = ? AND notification_type = :NOTIFICATION_TYPE
+                    WHERE run_id = ? AND notification_type = ?
                 ]]>
             </value>
         </property>

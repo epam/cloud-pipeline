@@ -21,15 +21,15 @@ import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon} from 'antd';
 
-import fetchHCSInfo from './utilities/fetch-hcs-info';
+import HCSImageViewer from './hcs-image-viewer';
+import HCSInfo from './utilities/hcs-image-info';
 import HcsCellSelector from './hcs-cell-selector';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import styles from './hcs-image.css';
-
-const HCSImageViewer = window.HcsImageViewer;
+import Panel from "../panel";
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -65,6 +65,7 @@ class HcsImage extends React.PureComponent {
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (
       prevProps.storageId !== this.props.storageId ||
+      prevProps.storage !== this.props.storage ||
       prevProps.path !== this.props.path
     ) {
       this.prepare();
@@ -85,10 +86,11 @@ class HcsImage extends React.PureComponent {
 
   prepare = () => {
     const {
+      storage,
       storageId,
       path
     } = this.props;
-    if (this.props.storageId && this.props.path) {
+    if ((storageId || storage) && path) {
       this.setState({
         sequencePending: false,
         pending: true,
@@ -104,7 +106,7 @@ class HcsImage extends React.PureComponent {
         sequenceId: undefined,
         sequences: []
       }, () => {
-        fetchHCSInfo({storageId, path})
+        HCSInfo.fetch({storageInfo: storage, storageId, path})
           .then(info => {
             const {
               sequences = [],
@@ -296,8 +298,7 @@ class HcsImage extends React.PureComponent {
   init = (container) => {
     if (HCSImageViewer && container !== this.container && container) {
       this.container = container;
-      const {Viewer} = HCSImageViewer;
-      this.hcsImageViewer = new Viewer({
+      this.hcsImageViewer = new HCSImageViewer({
         container,
         className: 'hcs-image',
         style: {
@@ -330,12 +331,7 @@ class HcsImage extends React.PureComponent {
       return (
         <Button
           size="small"
-          className={
-            classNames(
-              className,
-              'cp-larger'
-            )
-          }
+          className={className}
           onClick={handleClick ? this.showDetails : undefined}
         >
           {detailsButtonTitle}
@@ -376,31 +372,13 @@ class HcsImage extends React.PureComponent {
       detailsTitle = 'Details'
     } = this.props;
     return (
-      <div
+      <Panel
+        title={detailsTitle}
         className={styles.detailsPanel}
+        onClose={this.hideDetails}
       >
-        <div
-          className={
-            classNames(
-              styles.panelContent,
-              'cp-panel-card'
-            )
-          }
-        >
-          <div className={styles.panelHeader}>
-            <b>{detailsTitle}</b>
-            <Icon
-              className={styles.closeButton}
-              type="close"
-              size="small"
-              onClick={this.hideDetails}
-            />
-          </div>
-          <div className={styles.content}>
-            {children}
-          </div>
-        </div>
-      </div>
+        {children}
+      </Panel>
     );
   }
 
@@ -436,31 +414,13 @@ class HcsImage extends React.PureComponent {
       );
     }
     return (
-      <div
+      <Panel
+        title="Settings"
         className={styles.configuration}
+        onClose={this.hideConfiguration}
       >
-        <div
-          className={
-            classNames(
-              styles.panelContent,
-              'cp-panel-card'
-            )
-          }
-        >
-          <div className={styles.panelHeader}>
-            <b>Settings</b>
-            <Icon
-              className={styles.closeButton}
-              type="close"
-              size="small"
-              onClick={this.hideConfiguration}
-            />
-          </div>
-          <div className={styles.content}>
-            <HcsImageControls />
-          </div>
-        </div>
-      </div>
+        <HcsImageControls />
+      </Panel>
     );
   };
 
@@ -473,6 +433,7 @@ class HcsImage extends React.PureComponent {
       error,
       pending: hcsImagePending,
       sequencePending,
+      sequenceId,
       wellId,
       imageId,
       wells = [],
@@ -488,6 +449,8 @@ class HcsImage extends React.PureComponent {
       !this.hcsImageViewer ||
       this.hcsSourceState.pending ||
       this.hcsViewerState.pending;
+    const {sequences = []} = this.hcsInfo || {};
+    const sequenceInfo = sequences.find(o => o.id === sequenceId);
     const selectedWell = wells.find(o => o.id === wellId);
     return (
       <Provider
@@ -559,40 +522,44 @@ class HcsImage extends React.PureComponent {
               {'\u00A0'}
             </div>
           </div>
-          <div
-            className={
-              classNames(
-                styles.hcsImageControls,
-                'cp-content-panel'
-              )
-            }
-          >
-            <HcsCellSelector
-              className={styles.selectorContainer}
-              cells={wells}
-              selectedId={wellId}
-              onChange={this.changeWell}
-              width={HcsCellSelector.widthCorrection(plateWidth, wells)}
-              height={HcsCellSelector.heightCorrection(plateHeight, wells)}
-              title="Plate"
-              cellShape={HcsCellSelector.Shapes.circle}
-              showLegend
-            />
-            <HcsCellSelector
-              className={styles.selectorContainer}
-              cells={fields}
-              onChange={this.changeWellImage}
-              selectedId={imageId}
-              width={HcsCellSelector.widthCorrection(wellWidth, fields)}
-              height={HcsCellSelector.heightCorrection(wellHeight, fields)}
-              title={selectedWell ? `Well ${selectedWell.x}_${selectedWell.y}` : undefined}
-              cellShape={HcsCellSelector.Shapes.rect}
-              gridShape={HcsCellSelector.Shapes.circle}
-              gridRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
-              flipVertical
-              showLegend={false}
-            />
-          </div>
+          {
+            sequenceInfo && !sequenceInfo.error && (
+              <div
+                className={
+                  classNames(
+                    styles.hcsImageControls,
+                    'cp-content-panel'
+                  )
+                }
+              >
+                <HcsCellSelector
+                  className={styles.selectorContainer}
+                  cells={wells}
+                  selectedId={wellId}
+                  onChange={this.changeWell}
+                  width={HcsCellSelector.widthCorrection(plateWidth, wells)}
+                  height={HcsCellSelector.heightCorrection(plateHeight, wells)}
+                  title="Plate"
+                  cellShape={HcsCellSelector.Shapes.circle}
+                  showLegend
+                />
+                <HcsCellSelector
+                  className={styles.selectorContainer}
+                  cells={fields}
+                  onChange={this.changeWellImage}
+                  selectedId={imageId}
+                  width={HcsCellSelector.widthCorrection(wellWidth, fields)}
+                  height={HcsCellSelector.heightCorrection(wellHeight, fields)}
+                  title={selectedWell ? selectedWell.id : undefined}
+                  cellShape={HcsCellSelector.Shapes.rect}
+                  gridShape={HcsCellSelector.Shapes.circle}
+                  gridRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
+                  flipVertical
+                  showLegend={false}
+                />
+              </div>
+            )
+          }
         </div>
       </Provider>
     );
@@ -603,6 +570,7 @@ HcsImage.propTypes = {
   className: PropTypes.string,
   children: PropTypes.node,
   style: PropTypes.object,
+  storage: PropTypes.object,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   path: PropTypes.string,
   detailsTitle: PropTypes.string,

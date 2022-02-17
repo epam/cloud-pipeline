@@ -220,6 +220,28 @@ class Viewer {
         .catch(reject);
     });
   }
+
+  setLensChannel(channel) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setLensChannel')(channel);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
+  setLensEnabled(enabled) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setLensEnabled')(enabled);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
 }
 
 export default Viewer;

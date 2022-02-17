@@ -107,7 +107,6 @@
 .attribute-value {
   padding: 1px 5px;
   font-family: Consolas, Menlo, Courier, monospace;
-  font-size: smaller;
 }
 
 .attribute-value {
@@ -192,6 +191,7 @@
 .vsi-content-preview {
   max-width: 100%;
   width: 50vw;
+  height: calc(100vh - 150px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -210,7 +210,6 @@
 .vsi-content-preview.tiles {
   width: auto;
   min-width: 50vw;
-  height: 50vh;
   position: relative;
 }
 
@@ -257,6 +256,16 @@
   position: absolute;
   left: 3px;
   top: 2px;
+  z-index: 301;
+}
+
+.vsi-preview-attributes-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 302;
+  width: 250px;
+  max-height: calc(100% - 5px);
 }
 
 .vsi-preview-button {
