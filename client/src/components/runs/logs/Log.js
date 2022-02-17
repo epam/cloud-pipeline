@@ -25,6 +25,7 @@ import {
   Card,
   Col,
   Collapse,
+  Dropdown,
   Icon,
   Menu,
   message,
@@ -84,6 +85,10 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
+import {
+  parametersToCSVString,
+  parametersToJSONString
+} from '../utilities/export-parameters';
 import RunTags from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
@@ -1356,6 +1361,36 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  onExportParameters = (extension = 'csv') => {
+    const {run} = this.props;
+    if (run && run.value && run.value.pipelineRunParameters) {
+      const {pipelineRunParameters} = run.value;
+      const options = {
+        excludedKeys: ['resolvedValue']
+      };
+      let content;
+      switch (extension) {
+        case 'csv':
+          content = parametersToCSVString(pipelineRunParameters, options);
+          break;
+        case 'json':
+          content = parametersToJSONString(pipelineRunParameters, options);
+          break;
+        default:
+          content = parametersToCSVString(pipelineRunParameters, options);
+          break;
+      }
+      try {
+        FileSaver.saveAs(
+          new Blob([content]),
+          `run_${run.value.id}_parameters.${extension.toLowerCase()}`
+        );
+      } catch (error) {
+        message.error('Failed to export parameters', 5);
+      }
+    }
+  };
+
   render () {
     if (this.props.run.error) {
       return <Alert type="error" message={this.props.run.error} />;
@@ -1711,10 +1746,37 @@ class Logs extends localization.LocalizedReactComponent {
             {this.state.resolvedValues ? 'SHOW ORIGINAL' : 'SHOW RESOLVED'}
           </a>
         );
+        const exportParametersMenu = (
+          <Menu
+            onClick={({key}) => this.onExportParameters(key)}
+          >
+            <Menu.Item key="csv">Export as CSV</Menu.Item>
+            <Menu.Item key="json">Export as JSON</Menu.Item>
+          </Menu>
+        );
+        const parametersCollapseHeader = (
+          <div style={{display: 'flex', justifyContent: 'space-between'}}>
+            <span>
+              Parameters
+            </span>
+            <div onClick={event => event.stopPropagation()}>
+              <Dropdown.Button
+                onClick={() => this.onExportParameters('csv')}
+                overlay={exportParametersMenu}
+                size="small"
+              >
+                Export parameters
+              </Dropdown.Button>
+            </div>
+          </div>
+        );
         Parameters = (
           <Collapse
-            bordered={false}>
-            <Collapse.Panel header="Parameters">
+            bordered={false}
+          >
+            <Collapse.Panel
+              header={parametersCollapseHeader}
+            >
               <Row type="flex" justify="end" style={{position: 'absolute', right: 0}}>
                 {switchResolvedValuesButton}
               </Row>
