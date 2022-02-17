@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -527,10 +527,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     super.elements(),
                     entry(TABLE, context().find(byClassName("user-management-form__container"))
                             .find(byClassName("ant-table-tbody"))),
-                    entry(SEARCH, context().find(byClassName("ant-input-search"))),
+                    entry(SEARCH, context().find(byId("search-users-input"))),
                     entry(CREATE_USER, context().find(button("Create user"))),
                     entry(EXPORT_USERS, context().find(button("Export users"))),
-                    entry(SHOW_USERS, context().find(byXpath("//*[contains(text(), 'Show all users')]")))
+                    entry(SHOW_USERS, context().find(byClassName("ant-select-selection-selected-value")))
             );
 
             public UsersTabAO(PipelinesLibraryAO parentAO) {
@@ -579,9 +579,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO searchUser(String name) {
                 sleep(1, SECONDS);
+                clear(SEARCH);
                 return clickSearch()
-                        .setSearchName(name)
-                        .pressEnter();
+                            .setSearchName(name)
+                            .pressEnter();
             }
 
             public UsersTabAO exportUsers() {
@@ -665,6 +666,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         .ensureTitleIs(format("Are you sure you want to delete user %s?", name.toUpperCase()))
                         .sleep(1, SECONDS)
                         .click(OK);
+                return this;
+            }
+
+            public UsersTabAO selectDropDownValue(Primitive combobox, String option) {
+                selectValue(combobox, option);
                 return this;
             }
 

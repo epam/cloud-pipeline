@@ -23,6 +23,7 @@ import org.testng.annotations.Test;
 
 import java.time.LocalDateTime;
 
+import static com.epam.pipeline.autotests.ao.Primitive.SEARCH;
 import static com.epam.pipeline.autotests.ao.Primitive.SHOW_USERS;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static java.time.format.DateTimeFormatter.ofPattern;
@@ -45,26 +46,24 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
         usersTabAO
                 .searchUserEntry(user.login)
                 .ensureNotVisible(STATUS);
-        usersTabAO
-                .checkValueIsNotInDropDown(SHOW_USERS, showOnlineUsers, showOfflineUsers);
+        usersTabAO.checkValueIsNotInDropDown(SHOW_USERS, showOnlineUsers, showOfflineUsers);
         logout();
         loginAs(admin);
-        final SettingsPageAO.UserManagementAO.UsersTabAO usersTabAO1 = navigationMenu()
+        navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers();
-        usersTabAO1
+        usersTabAO
                 .searchUserEntry(user.login)
                 .validateUserStatus("offline")
                 .hover(STATUS)
                 .validateTooltipText(lastVisited);
-        usersTabAO1
-                .selectValue(SHOW_USERS, showOfflineUsers);
-        usersTabAO1
-                .checkUserExist(user.login);
-        usersTabAO1
-                .selectValue(SHOW_USERS, showOnlineUsers);
-        usersTabAO1
+        usersTabAO
+                .selectDropDownValue(SHOW_USERS, showOfflineUsers)
+                .checkUserExist(user.login)
+                .clear(SEARCH);
+        usersTabAO
+                .selectDropDownValue(SHOW_USERS, showOnlineUsers)
                 .checkUserExist(admin.login);
     }
 }
