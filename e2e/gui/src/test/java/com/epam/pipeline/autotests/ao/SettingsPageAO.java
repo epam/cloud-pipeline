@@ -670,8 +670,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
-            public UsersTabAO selectDropDownValue(Primitive combobox, String option) {
-                selectValue(combobox, option);
+            public UsersTabAO selectDropDownValue(Primitive combo, String option) {
+                selectValue(combo, option);
                 return this;
             }
 
@@ -710,11 +710,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return this;
                 }
 
-                public UserEntry validateTooltipText(String tooltipText) {
+                public UsersTabAO validateStatusTooltipText(String tooltipText) {
+                    hover(STATUS);
                     $(PipelineSelectors.visible(byClassName("ant-tooltip")))
                             .find(byClassName("ant-tooltip-content"))
                             .shouldHave(Condition.text(tooltipText));
-                    return this;
+                    return parentAO;
                 }
 
                 public UserEntry validateBlockedStatus(final String username, final boolean blockedStatus) {

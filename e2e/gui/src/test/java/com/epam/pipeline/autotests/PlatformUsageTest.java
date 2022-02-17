@@ -15,7 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -39,7 +39,7 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
         logout();
         loginAs(user);
         String lastVisited  = LocalDateTime.now().format(ofPattern("d MMMM yyyy, HH:mm"));
-        final SettingsPageAO.UserManagementAO.UsersTabAO usersTabAO = navigationMenu()
+        final UsersTabAO usersTabAO = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers();
@@ -56,9 +56,7 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
         usersTabAO
                 .searchUserEntry(user.login)
                 .validateUserStatus("offline")
-                .hover(STATUS)
-                .validateTooltipText(lastVisited);
-        usersTabAO
+                .validateStatusTooltipText(lastVisited)
                 .selectDropDownValue(SHOW_USERS, showOfflineUsers)
                 .checkUserExist(user.login)
                 .clear(SEARCH);
