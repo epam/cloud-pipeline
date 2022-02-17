@@ -139,6 +139,7 @@ export default function useExtendedSettings () {
       extendedSettings.push({
         key: 'sensitive-storages',
         title: 'Mount sensitive data',
+        className: 'sensitive',
         type: 'multi-selection',
         values: sensitiveStorages,
         required: false,

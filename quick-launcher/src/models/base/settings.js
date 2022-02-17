@@ -49,8 +49,8 @@ const defaultUrlParser = {
   format: '^http[s]?:\\/\\/([^\\/]+)\\/([^\\/]+)\\/([^?]+)(.*)?$',
   map: {
     app: '[group4]',
-    redirectPathName: '[group2]/[group3][group4]',
-    user: '[group2]',
+    redirectPathName: '[group2:uppercased]/[group3][group4]',
+    user: '[group2:uppercased]',
     version: '[group3]',
     rest: '[group4]'
   }
@@ -131,6 +131,7 @@ const defaultSettings = {
   },
   checkDefaultUserStorageStatus: false,
   defaultUserStorageReadOnlyWarning: undefined,
+  jobContainsSensitiveStoragesWarning: undefined,
   persistSessionStateParameterName: 'CP_CAP_PERSIST_SESSION_STATE'
 };
 
@@ -153,18 +154,36 @@ function parseUrl(url, verbose = false) {
       for (let i = 1; i < exec.length; i++) {
         groups.push({
           value: exec[i] || '',
-          reg: new RegExp(`\\[GROUP${i}\\]`, 'ig'),
           process: function (o) {
-            return o.replace(this.reg, this.value);
+            const groupReg = new RegExp(`\\[GROUP${i}(:([^\\]]*))?\\]`, 'ig');
+            const e = groupReg.exec(o);
+            let replace = this.value;
+            if (e && e[2]) {
+              const modifiers = e[2].split(',').map(o => o.trim());
+              modifiers.forEach(modifier => {
+                switch (modifier.toLowerCase()) {
+                  case 'lower':
+                  case 'lowercase':
+                  case 'lowercased':
+                    replace = replace.toLowerCase();
+                    break;
+                  case 'upper':
+                  case 'uppercase':
+                  case 'uppercased':
+                    replace = replace.toUpperCase();
+                    break;
+                }
+              });
+            }
+            return o.replace(groupReg, replace);
           }
         });
       }
     }
     groups.push({
       value: '',
-      reg: /\[group[\d]+\]/ig,
       process: function (o) {
-        return o.replace(this.reg, this.value);
+        return o.replace(/\[group[\d]+\]/ig, this.value);
       }
     })
     const keys = Object.keys(config.map || {});
@@ -175,6 +194,16 @@ function parseUrl(url, verbose = false) {
         result[key] = groups.reduce((r, c) => c.process(r), value);
       } else {
         result[key] = value;
+      }
+      if (
+        /^(user|owner)$/i.test(key) &&
+        result[key] &&
+        result[key] !== result[key].toUpperCase()
+      ) {
+        result[key] = result[key].toUpperCase();
+        if (verbose) {
+          console.log(`URL map value uppercased for "${key}": ${result[key]}`);
+        }
       }
     }
   } else if (verbose) {

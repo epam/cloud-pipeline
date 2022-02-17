@@ -33,9 +33,9 @@ function ConfirmationModal(
       visible={visible}
       className="confirmation-window"
     >
-      <p>
+      <div>
         {body}
-      </p>
+      </div>
       <div className="confirmation-window-actions">
         <div
           className="confirmation-window-action"
@@ -54,6 +54,8 @@ function ConfirmationModal(
   );
 }
 
+let index = 0;
+
 export default function confirmation(options = {}) {
   const {
     title,
@@ -62,9 +64,11 @@ export default function confirmation(options = {}) {
     ok = 'Proceed',
     cancel = 'Cancel'
   } = options;
+  index += 1;
   return new Promise((resolve) => {
     ReactDOM.render(
       <ConfirmationModal
+        key={`confirmation-modal-${index}`}
         title={title}
         body={md ? (<Markdown>{md}</Markdown>) : body}
         onOk={() => resolve(true)}

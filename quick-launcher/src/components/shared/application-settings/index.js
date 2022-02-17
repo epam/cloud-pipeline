@@ -133,7 +133,12 @@ export default function ApplicationSettings (
     extendedOptionsPresentation.push((
       <span
         key={setting.key}
-        className="extended-setting-presentation"
+        className={
+          classNames(
+            'extended-setting-presentation',
+            setting.className
+          )
+        }
       >
         {title}: {valueStr} {dependencyValuePresentations}
       </span>

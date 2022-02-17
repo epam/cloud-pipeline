@@ -1,7 +1,9 @@
 import React, {useCallback} from 'react';
+import classNames from 'classnames';
 import useAppExtendedSettings from './utilities/use-app-extended-settings';
 import ApplicationSettings from './shared/application-settings';
 import './components.css';
+import {launchOptionsContainSensitiveMounts} from '../models/pre-run-checks/check-sensitive-storages';
 
 export default function ApplicationCard(
   {
@@ -18,12 +20,13 @@ export default function ApplicationCard(
     onDependencyChange,
     options: extendedOptions,
   } = useAppExtendedSettings(application);
+  const sensitive = launchOptionsContainSensitiveMounts(extendedOptions);
   const onLaunch = useCallback(() => {
     onClick && onClick(appendDefault(extendedOptions));
   }, [extendedOptions, appendDefault]);
   return (
     <div
-      className={`app ${DARK_MODE ? 'dark' : ''}`}
+      className={classNames('app', {dark: DARK_MODE, sensitive})}
       onClick={onLaunch}
     >
       {
