@@ -32,6 +32,7 @@ import EmbeddedMiew from '../../applications/miew/EmbeddedMiew';
 import Papa from 'papaparse';
 import Markdown from '../../special/markdown';
 import VSIPreview from './vsi-preview';
+import HCSPreview from './hcs-preview';
 
 const previewLoad = (params, dataStorageCache) => {
   if (params.item && params.item.parentId && params.item.id) {
@@ -84,7 +85,8 @@ export default class S3FilePreview extends React.Component {
 
   state = {
     pdbError: null,
-    imageError: null
+    imageError: null,
+    hideInfo: false
   };
 
   @computed
@@ -131,6 +133,14 @@ export default class S3FilePreview extends React.Component {
       return result;
     }
     return null;
+  }
+
+  hideInfo = (value) => {
+    if (value !== this.state.hideInfo) {
+      this.setState({
+        hideInfo: value
+      });
+    }
   }
 
   renderInfo = () => {
@@ -323,9 +333,51 @@ export default class S3FilePreview extends React.Component {
         fullscreen={this.props.fullscreen}
         onFullScreenChange={this.props.onFullScreenChange}
         fullScreenAvailable={this.props.fullScreenAvailable}
-      />
+        onHideInfo={this.hideInfo}
+      >
+        {
+          renderAttributes(
+            this.props.metadata,
+            {
+              tags: true,
+              column: true,
+              showError: false,
+              showLoadingIndicator: false
+            }
+          )
+        }
+      </VSIPreview>
     );
   };
+
+  renderHCSPreview = () => {
+    return (
+      <HCSPreview
+        className={styles.contentPreview}
+        file={this.props.item.id}
+        storageId={this.props.item.parentId}
+        onPreviewLoaded={this.props.onPreviewLoaded}
+        fullscreen={this.props.fullscreen}
+        onFullScreenChange={this.props.onFullScreenChange}
+        fullScreenAvailable={this.props.fullScreenAvailable}
+        onHideInfo={this.hideInfo}
+        detailsTitle="Attributes"
+        detailsButtonTitle="Show attributes"
+      >
+        {
+          renderAttributes(
+            this.props.metadata,
+            {
+              tags: true,
+              column: true,
+              showError: false,
+              showLoadingIndicator: false
+            }
+          )
+        }
+      </HCSPreview>
+    );
+  }
 
   renderPDBPreview = () => {
     const onError = (message) => {
@@ -370,7 +422,8 @@ export default class S3FilePreview extends React.Component {
       pdf: this.renderImagePreview,
       md: this.renderMDPreview,
       vsi: this.renderVSIPreview,
-      mrxs: this.renderVSIPreview
+      mrxs: this.renderVSIPreview,
+      hcs: this.renderHCSPreview
     };
     if (previewRenderers[extension]) {
       const preview = previewRenderers[extension]();
@@ -386,8 +439,10 @@ export default class S3FilePreview extends React.Component {
       return null;
     }
     const highlights = renderHighlights(this.props.item);
-    const info = this.renderInfo();
-    const attributes = renderAttributes(this.props.metadata, true);
+    const info = this.state.hideInfo ? null : this.renderInfo();
+    const attributes = this.state.hideInfo
+      ? null
+      : renderAttributes(this.props.metadata, {tags: true});
     const preview = this.renderPreview();
     return (
       <div
@@ -398,7 +453,7 @@ export default class S3FilePreview extends React.Component {
           )
         }
       >
-        <div className={styles.header}>
+        <div className={classNames(styles.header, {[styles.shrinkedHeader]: this.state.hideInfo})}>
           <Row className={classNames(styles.title, 'cp-search-header-title')}>
             <Icon type={PreviewIcons[this.props.item.type]} />
             <span>{this.props.item.name}</span>

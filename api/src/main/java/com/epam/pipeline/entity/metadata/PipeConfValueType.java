@@ -18,6 +18,7 @@ package com.epam.pipeline.entity.metadata;
 
 public enum PipeConfValueType {
     STRING("string"),
+    DATE("date"),
     JSON("json");
 
     private final String alias;

@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS run_pod_id_index ON pipeline.pipeline_run (pod_ip);

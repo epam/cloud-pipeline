@@ -14,12 +14,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+esc_env() {
+    printf '"%s";' "$(LC_ALL=C sed 's/["]/\\&/g' <<<"$1")"
+}
+
+save_env() {
+    for var in $(compgen -e); do
+        echo "export $var=$(esc_env "${!var}")"
+    done
+}
+
+
 echo "Install jq"
 curl -sL "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/jq/jq-1.6/jq-linux64" -o /usr/bin/jq
 chmod +x /usr/bin/jq
 
 echo "Install pipe cli"
-curl -k -s https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/pipe -o /pipe
+CP_BKP_PIPE_INSTALL_ATTEMPTS="${CP_BKP_PIPE_INSTALL_ATTEMPTS:-60}"
+for _pipe_install_attempt in $(seq 1 $CP_BKP_PIPE_INSTALL_ATTEMPTS); do
+    curl -k -s -f https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/pipe -o /pipe
+    if [ $? -eq 0 ] && [ -f /pipe ]; then
+        _pipe_installed="true"
+        echo "pipe cli has been installed"
+        break
+    else
+        echo "[WARN] Cannot download pipe cli. Attempt $_pipe_install_attempt out of $CP_BKP_PIPE_INSTALL_ATTEMPTS"
+    fi
+    sleep 10
+done
+
+if [ "$_pipe_installed" != "true" ]; then
+    echo "[ERROR] Cannot install pipe cli"
+    exit 1
+fi
+
 chmod +x /pipe
 /pipe configure  --auth-token "$CP_API_JWT_ADMIN" \
                  --api https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/ \
@@ -33,7 +61,7 @@ chmod +x /kubectl
 
 echo "Setup cron"
 export CP_BKP_SCHEDULE_CRON=${CP_BKP_SCHEDULE_CRON:-'0 8 * * *'} # Every day at 8 A.M.
-env > /backup.env
+save_env > /backup.env
 echo "$CP_BKP_SCHEDULE_CRON root flock -w 1 /var/run/backup.lock bash /backup.sh" > /etc/cron.d/cp-backup
 chmod 0644 /etc/cron.d/cp-backup
 

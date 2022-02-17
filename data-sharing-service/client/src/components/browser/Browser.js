@@ -43,6 +43,7 @@ import styles from './Browser.css';
 import {NoStorage} from '../main/App';
 import PreviewModal from './preview/preview-modal';
 import VSIPreviewPage from '../vsi-preview';
+import {fastCheckPreviewAvailable} from "../special/hcs-image/utilities/check-preview-available";
 
 const PAGE_SIZE = 40;
 
@@ -544,6 +545,9 @@ export default class Browser extends React.Component {
         item.name.toLowerCase().endsWith('.mrxs')
       );
     };
+    const hcsPreviewAvailable = (item) => {
+      return fastCheckPreviewAvailable({storageId: this.props.storageId, path: item.name});
+    };
     const typeColumn = {
       dataIndex: 'type',
       key: 'type',
@@ -569,6 +573,21 @@ export default class Browser extends React.Component {
               key={item.key}
             >
               <img src="vsi.png" />
+            </div>
+          );
+        }
+        if (hcsPreviewAvailable(item)) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(e) => {
+                e && e.stopPropagation();
+                e && e.preventDefault();
+                this.setPreview(item);
+              }}
+              key={item.key}
+            >
+              <img src="hcs.png" />
             </div>
           );
         }

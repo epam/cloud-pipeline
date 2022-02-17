@@ -427,8 +427,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
                 .query(loadRunByPodIPQuery, params, PipelineRunParameters.getRowMapper()))
                 .stream()
-                .findFirst()
-                .flatMap(this::buildRunWithServiceUrls);
+                .findFirst();
     }
 
     public List<PipelineRun> loadRunsByNodeName(final String nodeName) {

@@ -16,9 +16,15 @@
 
 import SampleSheet from './edit-form';
 import SampleSheetPreview from './preview';
+import MetadataSampleSheetValue from './metadata-sample-sheet-value';
 
 SampleSheet.Preview = SampleSheetPreview;
+SampleSheet.MetadataActions = MetadataSampleSheetValue;
 
 export * as utilities from './utilities';
-export {SampleSheetPreview, SampleSheet};
+export {
+  MetadataSampleSheetValue,
+  SampleSheetPreview,
+  SampleSheet
+};
 export default SampleSheet;

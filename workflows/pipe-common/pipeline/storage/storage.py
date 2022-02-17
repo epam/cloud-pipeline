@@ -126,24 +126,27 @@ class S3Bucket:
         if rules and pipeline.api.DataStorageRule.match_any(rules, path):
             self.sync_s3(run_dir + path, target, max_attempts, exclude)
 
-    def pipe_copy(self, source, target, max_attempts, exclude=None):
-        upload_file_command = '{} "{}" "{}" {} --recursive --force --quiet'.format(PIPE_STORAGE_CP, source, target,
-                                                                       self.__build_tags_command())
+    def pipe_copy(self, source, target, max_attempts, exclude=None, threads=None, extra_args=None):
+        upload_file_command = '{} "{}" "{}" {} --recursive --force --quiet {} {}'.format(PIPE_STORAGE_CP, source, target,
+                                                                       self.__build_tags_command(),
+                                                                       self.__build_threads_option(threads),
+                                                                       extra_args if extra_args else '')
         if exclude:
             upload_file_command += " --exclude " + exclude
         self.execute_command(upload_file_command, max_attempts)
 
-    def pipe_copy_with_rules(self, source, target, max_attempts, datastorage_rules_file):
+    def pipe_copy_with_rules(self, source, target, max_attempts, datastorage_rules_file, threads=None, extra_args=None):
         allowed_rules = ""
         rules = pipeline.api.DataStorageRule.read_from_file(datastorage_rules_file)
         for rule in rules:
             if rule.move_to_sts:
                 allowed_rules += " --include \"{}\"".format(rule.file_mask)
-        upload_file_command = '{} "{}" "{}" {} {} --recursive --force --quiet'.format(
-            PIPE_STORAGE_CP, source, target, allowed_rules, self.__build_tags_command())
+        upload_file_command = '{} "{}" "{}" {} {} {} --recursive --force --quiet {}'.format(
+            PIPE_STORAGE_CP, source, target, allowed_rules, self.__build_tags_command(), 
+            self.__build_threads_option(threads), extra_args if extra_args else '')
         self.execute_command(upload_file_command, max_attempts)
 
-    def build_pipe_cp_command(self, source, target, exclude=None, include=None, file_list=None):
+    def build_pipe_cp_command(self, source, target, exclude=None, include=None, file_list=None, extra_args=None):
         upload_file_command = '%s "%s" "%s" %s --recursive --force --quiet' % \
                               (PIPE_STORAGE_CP, source, target, self.__build_tags_command())
         if exclude:
@@ -154,6 +157,8 @@ class S3Bucket:
                 upload_file_command += ' --include \'%s\'' % glob
         if file_list:
             upload_file_command += ' --file-list "%s"' % file_list
+        if extra_args:
+            upload_file_command += ' ' + extra_args
         return upload_file_command
 
     def check_path_is_file(self, path):
@@ -174,6 +179,13 @@ class S3Bucket:
 
     def normalize_path(self, path):
         return path if self.check_path_is_file(path) else os.path.join(path, '')
+
+    @classmethod
+    def __build_threads_option(cls, threads):
+        if threads:
+            return '--threads {}'.format(threads)
+        else:
+            return ''
 
     @classmethod
     def __build_tags_command(cls):
