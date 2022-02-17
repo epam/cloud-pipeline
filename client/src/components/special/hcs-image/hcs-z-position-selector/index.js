@@ -18,47 +18,65 @@ import React from 'react';
 import classNames from 'classnames';
 import {Slider} from 'antd';
 
+import {Z_POSITIONS_LIMIT} from '../utilities/constants';
 import styles from './hcs-z-position-selector.css';
 
 function HcsZPositionSelector (props) {
   const {
     selectedPosition,
     positions = [],
-    onZPositionChange
+    onZPositionChange,
+    type
   } = props;
-
   if (positions.filter(p => p).length > 1) {
-    const marks = positions.reduce((points, {z, title}) => {
-      points[z] = title;
-      return points;
-    }, {});
-    const zValues = Object.keys(marks);
-    const maxZValue = zValues.reduce((max, mark) => {
-      if (mark > max) {
-        max = mark;
+    const sliderIsVertical = !type || type === 'vertical';
+    const maxZValue = positions.reduce((max, {z, title}) => {
+      if (z > max.z) {
+        max = {z, title};
       }
-      return Number(max);
-    }, zValues[0]);
-    const minZValue = zValues.reduce((min, mark) => {
-      if (mark < min) {
-        min = mark;
+      return max;
+    }, positions[0]);
+    const minZValue = positions.reduce((min, {z, title}) => {
+      if (z < min.z) {
+        min = {z, title};
       }
-      return Number(min);
-    }, zValues[0]);
+      return min;
+    }, positions[0]);
+
+    let marks;
+    if (positions.filter(p => p).length <= Z_POSITIONS_LIMIT) {
+      marks = positions.reduce((points, {z, title}) => {
+        points[z] = title;
+        return points;
+      }, {});
+    } else {
+      marks = {
+        [minZValue.z]: minZValue.title,
+        [maxZValue.z]: minZValue.title
+      };
+    }
 
     return (
-      <div className={classNames(styles.container, 'cp-bordered')}>
+      <div className={classNames(
+        'cp-bordered',
+        {
+          [styles.vertContainer]: sliderIsVertical,
+          [styles.horContainer]: !sliderIsVertical
+        }
+      )}>
         <h4 className={styles.title}>Stack</h4>
         <Slider
-          vertical
+          vertical={sliderIsVertical}
           defaultValue={selectedPosition}
           marks={marks}
-          max={maxZValue}
-          min={minZValue}
+          max={maxZValue.z}
+          min={minZValue.z}
           onChange={onZPositionChange}
-          className={classNames('cp-hcs-z-position-slider', styles.slider)}
+          className={classNames(
+            'cp-hcs-z-position-slider',
+            {[styles.slider]: sliderIsVertical}
+          )}
         />
-        <strong className={styles.scale}>m</strong>
       </div>
     );
   }

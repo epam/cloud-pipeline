@@ -14,15 +14,25 @@
  *  limitations under the License.
  */
 
-.container {
+.hor-container {
+  min-height: 100px;
+  padding: 5px 20px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 5px;
+}
+
+.vert-container {
   flex: 1 1 auto;
   margin: 5px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: stretch;
   min-height: 200px;
+  padding-bottom: 10px;
 }
 
 .slider {
@@ -33,13 +43,6 @@
   font-weight: 700;
   text-align: left;
   width: inherit;
-  flex: 1 1 auto;
-  padding: 5px;
-}
-
-.scale {
-  text-align: center;
-  width: inherit;
-  margin-right: 30px;
+  flex: 0 1 auto;
   padding: 5px;
 }

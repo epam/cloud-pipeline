@@ -17,3 +17,4 @@
 export const OME_TIFF_FILE_NAME = 'data.ome.tiff';
 export const OFFSETS_JSON_FILE_NAME = 'data.offsets.json';
 export const WELLS_MAP_FILE_NAME = 'wells_map.json';
+export const Z_POSITIONS_LIMIT = 6;
