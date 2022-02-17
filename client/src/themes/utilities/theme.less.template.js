@@ -1437,6 +1437,18 @@ export default `
 @THEME .ant-slider:hover .ant-slider-handle {
   border-color: @primary-hover-color;
 }
+@THEME .ant-slider-mark-text {
+  color: @application-color;
+}
+@THEME .cp-hcs-z-position-slider .ant-slider-track,
+@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
+  background-color: @color-yellow;
+}
+@THEME .cp-hcs-z-position-slider .ant-slider-handle,
+@THEME .cp-hcs-z-position-slider .ant-slider-dot-active,
+@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+  border-color: @color-yellow;
+}
 @THEME .cp-notification {
   background-color: @card-background-color;
   color: @application-color;
