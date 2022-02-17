@@ -14,7 +14,25 @@
  *  limitations under the License.
  */
 
-export const OME_TIFF_FILE_NAME = 'data.ome.tiff';
-export const OFFSETS_JSON_FILE_NAME = 'data.offsets.json';
-export const WELLS_MAP_FILE_NAME = 'wells_map.json';
-export const MAX_Z_POSITIONS_TO_DISPLAY = 5;
+.container {
+  padding: 5px;
+  overflow: hidden;
+}
+
+.container .slider-container {
+  max-height: 200px;
+  padding: 14px 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.container.horizontal .slider-container {
+  width: 100%;
+  display: block;
+  padding: 0 10px;
+}
+
+.title {
+  font-weight: bold;
+}

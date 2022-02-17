@@ -30,6 +30,7 @@ import SourceState from './utilities/source-state';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import styles from './hcs-image.css';
+import HcsZPositionSelector from './hcs-z-position-selector';
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -613,6 +614,7 @@ class HcsImage extends React.PureComponent {
                   selectedTimePoint={timePointId}
                   onChangeTimePoint={this.changeTimePoint}
                 />
+                <HcsZPositionSelector />
               </div>
             )
           }

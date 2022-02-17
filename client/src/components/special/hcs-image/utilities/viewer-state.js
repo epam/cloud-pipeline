@@ -321,6 +321,14 @@ class ViewerState {
       this.viewer.setLensChannel(Number(channelIndex));
     }
   };
+
+  @action
+  changeGlobalZPosition = (z) => {
+    if (this.viewer && typeof this.viewer.setGlobalZPosition === 'function') {
+      this.imageZPosition = Number(z);
+      this.viewer.setGlobalZPosition(Number(z));
+    }
+  };
 }
 
 export default ViewerState;
