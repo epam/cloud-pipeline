@@ -58,7 +58,7 @@ class GitTask(Task):
             self.pulling()
             self._check_pull_possibility(git_client, full_repo_path)
 
-            status_files = git_client.status(full_repo_path)
+            status_files = list(self._filter_ignored(git_client.status(full_repo_path)))
             if status_files:
                 self._prepare_for_pull(status_files, git_client, full_repo_path)
                 git_client.stash(full_repo_path)
@@ -142,3 +142,7 @@ class GitTask(Task):
         for status_file in status_files:
             if status_file.state_code & pygit2.GIT_STATUS_WT_NEW:
                 client.add(repo_path, status_file)
+
+    @staticmethod
+    def _filter_ignored(status_files):
+        return filter(lambda status_file: status_file.state != 'ignored', status_files)
