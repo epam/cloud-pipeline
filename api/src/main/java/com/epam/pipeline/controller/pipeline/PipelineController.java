@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
 import com.epam.pipeline.controller.vo.InstanceOfferParametersVO;
+import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
@@ -473,6 +474,21 @@ public class PipelineController extends AbstractRestController {
             @PathVariable(value = ID) Long id,
             @RequestBody PipelineSourceItemVO sourceItemVO) throws GitClientException {
         return Result.success(pipelineApiService.modifyFile(id, sourceItemVO));
+    }
+
+    @RequestMapping(value = "/pipeline/{id}/file/revert", method= RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Revert a given file to specific commit",
+            notes = "Revert a given file to specific commit",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<GitCommitEntry> revertPipelineFile(
+            @PathVariable(value = ID) Long id,
+            @RequestBody PipelineSourceItemRevertVO sourceItemRevertVO) throws GitClientException {
+        return Result.success(pipelineApiService.revertFile(id, sourceItemRevertVO));
     }
 
     @RequestMapping(value = "/pipeline/{id}/files", method= RequestMethod.POST)

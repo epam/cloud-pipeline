@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.git;
 import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
@@ -107,6 +108,7 @@ public class GitManager {
     private static final String COMMA = ",";
     private static final String ANY_SUB_PATH = "*";
     private static final String ROOT_PATH = "/";
+    public static final String REVERT_MESSAGE = "Revert %s to commit %s";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -503,6 +505,20 @@ public class GitManager {
                     sourceItemVO.getLastCommitId(),
                     sourceItemVO.getComment());
         }
+    }
+
+    public GitCommitEntry revertFile(final Pipeline pipeline,
+                                     final PipelineSourceItemRevertVO sourceItemRevertVO) {
+        Assert.hasLength(sourceItemRevertVO.getCommitToRevert(), "Commit to revert should be provided!");
+        Assert.hasLength(sourceItemRevertVO.getPath(), "Path to file should be provided!");
+        final String fileRevisionContent = new String(
+                getPipelineFileContents(pipeline, sourceItemRevertVO.getCommitToRevert(), sourceItemRevertVO.getPath()),
+                Charset.defaultCharset());
+        return this.updateFile(pipeline,
+                sourceItemRevertVO.getPath(),
+                fileRevisionContent,
+                sourceItemRevertVO.getLastCommitId(),
+                getRevertMessage(sourceItemRevertVO));
     }
 
     protected GitCommitEntry updateFile(Pipeline pipeline,
@@ -1162,6 +1178,11 @@ public class GitManager {
             LOGGER.debug("An error occurred during fork project initialization. ", e);
             return false;
         }
+    }
+
+    private String getRevertMessage(final PipelineSourceItemRevertVO sourceItemRevertVO) {
+        return Optional.ofNullable(sourceItemRevertVO.getComment()).orElse(
+                String.format(REVERT_MESSAGE, sourceItemRevertVO.getPath(), sourceItemRevertVO.getCommitToRevert()));
     }
 
     private void waitTimeout(final Integer waitTime) {
