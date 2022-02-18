@@ -28,9 +28,10 @@ def insecure(certificate, valid, host):
 
 class GitClient:
 
-    def __init__(self, token, user_name, logger):
+    def __init__(self, token, user_name, user_email, logger):
         self.token = token
         self.user_name = user_name
+        self.user_email = user_email
         self.logger = logger
 
     def get_repo(self, repo_path):
@@ -80,7 +81,7 @@ class GitClient:
 
     def stash(self, path):
         repo = self._repository(path)
-        return repo.stash(self._get_author(repo), 'pulling', include_untracked=True)
+        return repo.stash(self._get_author(), 'pulling', include_untracked=True)
 
     def unstash(self, path):
         repo = self._repository(path)
@@ -160,14 +161,14 @@ class GitClient:
         remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
         parent = [head_id, remote_master_id] if merge_in_progress else [head_id]
 
-        user = self._get_author(repo)
+        author = self._get_author()
         index = repo.index
         tree = index.write_tree()
 
         if merge_in_progress:
             message = self._build_merge_commit_message(head_id, remote_master_id)
 
-        commit = repo.create_commit('HEAD', user, user, message, tree, parent)
+        commit = repo.create_commit('HEAD', author, author, message, tree, parent)
         self.logger.log("Committed to repo '%s'" % repo_path)
         if merge_in_progress:
             self._finish_merge(repo)
@@ -274,7 +275,7 @@ class GitClient:
             return conflict_paths
 
         if commit_allowed:
-            user = self._get_author(repo)
+            user = self._get_author()
             tree = repo.index.write_tree()
             repo.create_commit('HEAD', user, user, self._build_merge_commit_message(head_id, remote_master_id),
                                tree, [head_id, remote_master_id])
@@ -317,9 +318,8 @@ class GitClient:
     def _set_mode(self, path, mode):
         os.chmod(path, os.stat(path).st_mode | mode)
 
-    @staticmethod
-    def _get_author(repo):
-        return repo.default_signature
+    def _get_author(self):
+        return pygit2.Signature(self.user_name, self.user_email)
 
     @staticmethod
     def _repository(repo_path):

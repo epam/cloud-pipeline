@@ -34,8 +34,8 @@ class GitManager:
         self.root_folder = vs_working_directory
         self._create_dir_if_needed(self.root_folder)
         self.api_client = CloudPipelineApiProvider()
-        git_token, git_user = self._parse_git_credentials()
-        self.git_client = GitClient(git_token, git_user, logger)
+        git_token, git_user, git_user_email = self._parse_git_credentials()
+        self.git_client = GitClient(git_token, git_user, git_user_email, logger)
 
     def clone(self, versioned_storage_id, revision=None):
         versioned_storage = self.api_client.get_pipeline(versioned_storage_id)
@@ -214,7 +214,7 @@ class GitManager:
 
     def _parse_git_credentials(self):
         git_credentials = self.api_client.get_git_credentials(duration=GIT_CREDENTIALS_DURATION_DAYS)
-        return git_credentials.get('token'), git_credentials.get('userName')
+        return git_credentials.get('token'), git_credentials.get('userName'), git_credentials.get('email')
 
     def _build_and_log_version_storage_error(self, item_name, item_path, error_message):
         self.logger.log(error_message)
