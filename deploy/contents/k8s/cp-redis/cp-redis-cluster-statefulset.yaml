@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cp-redis-ha
+  namespace: default
+spec:
+  serviceName: redis-ha
+  replicas: 3
+  selector:
+    matchLabels:
+      cloud-pipeline/cp-redis-cluster: "true"
+  template:
+    metadata:
+      namespace: default
+      labels:
+        cloud-pipeline/cp-redis-cluster: "true"
+    spec:
+      containers:
+        - name: redis
+          image: redis:6.0.5
+          ports:
+            - containerPort: 6379
+              name: client
+            - containerPort: 16379
+              name: cluster-port
+          command: ["redis-server", "/conf/redis.conf"]
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: cp-redis-cluster-config
+            defaultMode: 0755
