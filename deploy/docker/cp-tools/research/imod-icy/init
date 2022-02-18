@@ -46,5 +46,3 @@ Categories=Application;
 EOF
 
 chmod +x /home/$OWNER/Desktop/imod.desktop
-
-bash /etc/nomachine/nomachine_launcher.sh
