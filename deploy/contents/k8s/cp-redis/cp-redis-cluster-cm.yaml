@@ -10,4 +10,7 @@ data:
     cluster-require-full-coverage no
     cluster-node-timeout 20000
     cluster-config-file /data/nodes.conf
-    cluster-migration-barrier 1
+    cluster-migration-barrier 0
+    cluster-require-full-coverage no
+    cluster-allow-reads-when-down yes
+    protected-mode no

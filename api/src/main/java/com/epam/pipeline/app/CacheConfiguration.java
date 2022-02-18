@@ -93,6 +93,7 @@ public class CacheConfiguration {
     public RedisConnectionFactory redisConnectionFactory() {
         final Set<String> nodes = CollectionUtils.emptyIfNull(redisClusterNodes)
             .stream()
+            .map(StringUtils::trim)
             .filter(StringUtils::isNotBlank)
             .collect(Collectors.toSet());
         final JedisConnectionFactory jedisConnectionFactory;
