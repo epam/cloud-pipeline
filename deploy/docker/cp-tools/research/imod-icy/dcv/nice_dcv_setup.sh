@@ -74,5 +74,3 @@ EOF
 
 install_prerequisites && \
 install_dcv
-
-
