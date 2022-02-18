@@ -61,6 +61,8 @@ function install_dcv {
 
   usermod -aG video dcv
 
+sed -i 's|#authentication="none"|authentication="none"|g' /etc/dcv/dcv.conf
+
   cat <<EOF >>/etc/dcv/dcv.conf
 [clipboard]
 primary-selection-copy=true
