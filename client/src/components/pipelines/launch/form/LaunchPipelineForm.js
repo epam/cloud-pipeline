@@ -61,9 +61,9 @@ import localization from '../../../../utils/localization';
 
 import hints from './hints';
 import FireCloudMethodSnapshotConfigurationsRequest
-  from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
+from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
 import FireCloudMethodParameters
-  from '../../../../models/firecloud/FireCloudMethodParameters';
+from '../../../../models/firecloud/FireCloudMethodParameters';
 import LoadingView from '../../../special/LoadingView';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
 import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
@@ -137,6 +137,8 @@ const RUN_CLUSTER_KEY = 'run cluster';
 const CLOUD_PLATFORM_ENVIRONMENT = 'CLOUD_PLATFORM';
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
+
+const OTHER_PARAMETERS_GROUP = 'other';
 
 function getFormItemClassName (rootClass, key) {
   if (key) {
@@ -1261,7 +1263,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             enum: parameter.initialEnumeration,
             visible: parameter.visible,
             validation: parameter.validation,
-            no_override: parameter.noOverride
+            no_override: parameter.noOverride,
+            section: parameter.section
           };
         }
       }
@@ -1794,6 +1797,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let initialEnumeration;
           let visible;
           let validation;
+          let section;
           const parameter = this.props.parameters.parameters[key];
           if (parameter.value !== undefined ||
             parameter.type !== undefined ||
@@ -1815,6 +1819,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             visible = parameter.visible;
             validation = parameter.validation;
             noOverride = `${parameter.no_override}` === 'true';
+            section = parameter.section || OTHER_PARAMETERS_GROUP;
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
@@ -1846,7 +1851,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             readOnly: readOnly,
             system: system,
             noOverride,
-            initial: true
+            initial: true,
+            section: section
           };
         }
       }
@@ -1858,7 +1864,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     sectionName,
     {key, value, required, readOnly, validator},
     system,
-    visible,
+    visible
   ) => {
     const rules = [];
     if (validator) {
@@ -2513,7 +2519,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       type,
       name,
       required,
-      value: defaultValue
+      value: defaultValue,
+      section: !isSystemSection ? OTHER_PARAMETERS_GROUP : undefined
     };
     parametersValues.keys.push(newKeyIndex);
     this.props.form.setFieldsValue({[sectionName]: parametersValues});
@@ -2892,8 +2899,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return [];
       } else {
         const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
-        return parameters.keys.map(key => {
-          const parameter = (parameters.params ? parameters.params[key] : undefined) ||
+        const renderParametersGroup = (keys, params) => keys.map(key => {
+          const parameter = (params ? params[key] : undefined) ||
             this.addedParameters[key];
           let name = parameter ? parameter.name : '';
           let value = parameter ? parameter.value : '';
@@ -2914,6 +2921,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let enumeration = parameter ? parameter.enumeration : undefined;
           const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
           let description = parameter ? parameter.description : undefined;
+          let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
           let visible = parameter ? parameter.visible : undefined;
           let validation = parameter ? parameter.validation : undefined;
           const validator = validation
@@ -2972,6 +2980,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }
               break;
           }
+          const nameDisabled = (this.props.readOnly && !this.props.canExecute) ||
+            required || isSystemParametersSection ||
+            (!!this.state.pipeline && this.props.detached);
           return (
             <FormItem
               key={key}
@@ -3081,6 +3092,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
               </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.section`,
+                    {initialValue: section}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
               <Col
                 span={4}
                 className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}
@@ -3111,15 +3130,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     }
                   )(
                     <Input
-                      disabled={(this.props.readOnly && !this.props.canExecute) ||
-                      required || isSystemParametersSection ||
-                      (!!this.state.pipeline && this.props.detached)}
+                      disabled={nameDisabled}
                       placeholder="Name"
                       className={
                         classNames(
+                          'cp-parameter-name',
                           {
                             [styles.parameterName]: !isSystemParametersSection,
                             [styles.systemParameterName]: isSystemParametersSection,
+                            disabled: nameDisabled,
                             'cp-system-parameter-name-input': isSystemParametersSection
                           }
                         )
@@ -3174,6 +3193,65 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             </FormItem>
           );
         }).filter(parameter => !!parameter);
+        const {keys, params} = parameters;
+        if (isSystem) {
+          return renderParametersGroup(keys, params);
+        } else {
+          const sectionNames = keys.reduce((result, key) => {
+            const parameter = (params && params[key]) || this.addedParameters[key];
+            const section = parameter
+              ? parameter.section
+              : OTHER_PARAMETERS_GROUP;
+            if (result.includes(section)) {
+              return result;
+            }
+            return [...result, section];
+          }, []);
+          const paramsPerSection = keys.reduce((result, key) => {
+            const parameter = (params && params[key]) || this.addedParameters[key];
+            const section = parameter
+              ? parameter.section
+              : OTHER_PARAMETERS_GROUP;
+            result[section] = {...result[section], [key]: {...parameter}};
+            return result;
+          }, {});
+          const sectionVisible = section => {
+            const keys = Object.keys(paramsPerSection[section]);
+            const params = paramsPerSection[section];
+            return keys.some(key => {
+              const parameter = (params ? params[key] : undefined) ||
+                this.addedParameters[key];
+              return parameterUtilities.isVisible(parameter, normalizedParameters);
+            });
+          };
+          const containsOtherGroup = sectionNames.includes(OTHER_PARAMETERS_GROUP);
+          const sortedKeys = sectionNames.filter(key => key !== OTHER_PARAMETERS_GROUP);
+          const sections = sortedKeys
+            .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
+          return sections.length > 1
+            ? sections.map(section => {
+              return (
+                <div key={section}>
+                  {
+                    this.renderSeparator(
+                      section.toUpperCase(),
+                      0,
+                      'section',
+                      Object.assign(
+                        {marginTop: 20, marginBottom: 20},
+                        sectionVisible(section) ? {} : {display: 'none'}
+                      )
+                    )}
+                  {
+                    renderParametersGroup(
+                      Object.keys(paramsPerSection[section]),
+                      paramsPerSection[section])
+                  }
+                </div>
+              );
+            })
+            : renderParametersGroup(keys, params);
+        }
       }
     };
 
