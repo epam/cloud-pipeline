@@ -1928,6 +1928,11 @@ export default `
   border: none;
   background-color: transparent;
 }
+@THEME .ant-input.cp-parameter-name.disabled {
+  border-color: transparent;
+  background-color: transparent;
+  color: @application-color;
+}
 @THEME .cp-runs-autocomplete-menu.ant-menu {
   background-color: fade(@panel-background-color, 100%);
   border: 1px solid @panel-border-color;
