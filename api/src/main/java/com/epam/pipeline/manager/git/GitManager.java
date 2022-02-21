@@ -511,14 +511,23 @@ public class GitManager {
                                      final PipelineSourceItemRevertVO sourceItemRevertVO) {
         Assert.hasLength(sourceItemRevertVO.getCommitToRevert(), "Commit to revert should be provided!");
         Assert.hasLength(sourceItemRevertVO.getPath(), "Path to file should be provided!");
-        final String fileRevisionContent = new String(
-                getPipelineFileContents(pipeline, sourceItemRevertVO.getCommitToRevert(), sourceItemRevertVO.getPath()),
-                Charset.defaultCharset());
-        return this.updateFile(pipeline,
-                sourceItemRevertVO.getPath(),
-                fileRevisionContent,
-                sourceItemRevertVO.getLastCommitId(),
-                getRevertMessage(sourceItemRevertVO));
+
+        final byte[] content = getPipelineFileContents(
+                        pipeline,
+                        sourceItemRevertVO.getCommitToRevert(),
+                        sourceItemRevertVO.getPath()
+        );
+
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(getRevertMessage(sourceItemRevertVO));
+
+        final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+        gitPushCommitActionEntry.setFilePath(sourceItemRevertVO.getPath());
+        gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(content));
+        gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
+        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+
+        return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
 
     protected GitCommitEntry updateFile(Pipeline pipeline,
