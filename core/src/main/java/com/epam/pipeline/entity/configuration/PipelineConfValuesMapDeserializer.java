@@ -39,6 +39,7 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
 
     private static final String VALUE_FIELD = "value";
     private static final String TYPE_FIELD = "type";
+    private static final String SECTION_FIELD = "section";
     private static final String REQUIRED_FIELD = "required";
     private static final String NO_OVERRIDE_FIELD = "no_override";
     private static final String ENUM_FIELD = "enum";
@@ -74,6 +75,10 @@ public class PipelineConfValuesMapDeserializer extends JsonDeserializer<Map<Stri
                 JsonNode type = child.get(TYPE_FIELD);
                 if (hasValue(type)) {
                     parameter.setType(type.asText());
+                }
+                JsonNode section = child.get(SECTION_FIELD);
+                if (hasValue(section)) {
+                    parameter.setSection(section.asText());
                 }
                 JsonNode required = child.get(REQUIRED_FIELD);
                 if (hasValue(required)) {
