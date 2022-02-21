@@ -129,5 +129,15 @@
                 ]]>
             </value>
         </property>
+        <property name="deleteNotificationTimestampsByIdAndTypeQuery">
+            <value>
+                <![CDATA[
+                    DELETE
+                    FROM
+                        pipeline.notification_timestamp
+                    WHERE run_id = ? AND notification_type = ?
+                ]]>
+            </value>
+        </property>
     </bean>
 </beans>

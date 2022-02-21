@@ -56,6 +56,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     private String updateNotificationTimestampQuery;
     private String loadNotificationTimestampQuery;
     private String deleteNotificationTimestampsByRunIdQuery;
+    private String deleteNotificationTimestampsByIdAndTypeQuery;
     private String deleteNotificationsByUserIdQuery;
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -112,9 +113,9 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public Optional<NotificationTimestamp> loadNotificationTimestamp(final Long runId, final NotificationType type) {
+    public Optional<NotificationTimestamp> loadNotificationTimestamp(final Long id, final NotificationType type) {
         final MapSqlParameterSource param = new MapSqlParameterSource();
-        param.addValue(NotificationTimestampParameters.RUN_ID.name(), runId);
+        param.addValue(NotificationTimestampParameters.RUN_ID.name(), id);
         param.addValue(NotificationTimestampParameters.NOTIFICATION_TYPE.name(), type.name());
         final List<NotificationTimestamp> items = getNamedParameterJdbcTemplate().query(loadNotificationTimestampQuery,
                 param, NotificationTimestampParameters.getRowMapper());
@@ -122,8 +123,13 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void deleteNotificationTimestampsForRun(final Long runId) {
-        getJdbcTemplate().update(deleteNotificationTimestampsByRunIdQuery, runId);
+    public void deleteNotificationTimestampsForId(final Long id) {
+        getJdbcTemplate().update(deleteNotificationTimestampsByRunIdQuery, id);
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteNotificationTimestampsForIdAndType(final Long id, final NotificationType type) {
+        getJdbcTemplate().update(deleteNotificationTimestampsByIdAndTypeQuery, id, type.name());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -247,5 +253,11 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setDeleteNotificationsByUserIdQuery(final String deleteNotificationsByUserIdQuery) {
         this.deleteNotificationsByUserIdQuery = deleteNotificationsByUserIdQuery;
+    }
+
+    @Required
+    public void setDeleteNotificationTimestampsByIdAndTypeQuery(
+            final String deleteNotificationTimestampsByIdAndTypeQuery) {
+        this.deleteNotificationTimestampsByIdAndTypeQuery = deleteNotificationTimestampsByIdAndTypeQuery;
     }
 }

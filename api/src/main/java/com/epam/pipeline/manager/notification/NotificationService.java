@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.notification;
 
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.nfs.NFSQuotaNotificationEntry;
@@ -86,5 +87,8 @@ public interface NotificationService {
 
     default void notifyInactiveUsers(final List<PipelineUser> inactiveUsers,
                                      final List<PipelineUser> ldapBlockedUsers) {
+    }
+
+    default void notifyFullNodePools(List<NodePool> nodePools) {
     }
 }

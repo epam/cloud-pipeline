@@ -669,6 +669,8 @@ public class SystemPreferences {
             "system.user.monitor.blocked.days", 365, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_IDLE_DAYS = new IntPreference(
             "system.user.monitor.idle.days", 365, SYSTEM_GROUP, pass);
+    public static final IntPreference SYSTEM_NODE_POOL_MONITOR_DELAY = new IntPreference(
+            "system.node.pool.monitor.delay", 30000, SYSTEM_GROUP, pass);
     /**
      * Indicates difference between current timestamp and user's previous last login. If this threshold exceeded
      * update action shall be performed for user.
