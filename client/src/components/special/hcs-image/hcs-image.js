@@ -294,6 +294,9 @@ class HcsImage extends React.PureComponent {
       timePointId
     } = this.state;
     if (this.hcsImageViewer && this.hcsInfo) {
+      const z = this.hcsViewerState
+        ? this.hcsViewerState.imageZPosition
+        : 0;
       const {sequences = []} = this.hcsInfo;
       const sequence = sequences.find(s => s.id === sequenceId);
       if (sequence && sequence.omeTiff) {
@@ -302,7 +305,11 @@ class HcsImage extends React.PureComponent {
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
-              this.hcsImageViewer.setImage({ID: imageId, imageTimePosition: timePointId});
+              this.hcsImageViewer.setImage({
+                ID: imageId,
+                imageTimePosition: timePointId,
+                imageZPosition: z
+              });
             }
           });
       }

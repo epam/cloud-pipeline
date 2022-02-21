@@ -77,6 +77,7 @@ export function setImage(state, action) {
     Name,
     search,
     imageTimePosition = 0,
+    imageZPosition = 0,
   } = action;
   const { metadata = [] } = state;
   let metadataItem;
@@ -98,6 +99,7 @@ export function setImage(state, action) {
       imageIndex,
       imagePending: true,
       imageTimePosition,
+      imageZPosition,
     };
   }
   return state;

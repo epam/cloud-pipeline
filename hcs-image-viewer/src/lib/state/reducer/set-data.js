@@ -29,6 +29,7 @@ export default function setDataAction(state, action) {
     metadata: undefined,
     imageIndex: 0,
     imageTimePosition: 0,
+    imageZPosition: 0,
 
     source: undefined,
     sourcePending: false,

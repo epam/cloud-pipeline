@@ -29,6 +29,7 @@ function useImage(metadata, loader, dispatch, options = {}) {
     selections,
     cache,
     imageTimePosition = 0,
+    imageZPosition = 0,
   } = options;
   const asyncIdentifier = useRef(0);
   useEffect(() => {
@@ -50,7 +51,9 @@ function useImage(metadata, loader, dispatch, options = {}) {
         loader,
         metadata,
         selections,
-        imageTimePosition ? { t: imageTimePosition } : undefined,
+        imageTimePosition || imageZPosition
+          ? { t: imageTimePosition, z: imageZPosition }
+          : undefined,
       )
         .then((data) => {
           if (identifier === asyncIdentifier.current) {
@@ -75,6 +78,7 @@ function useImage(metadata, loader, dispatch, options = {}) {
     metadata,
     loader,
     imageTimePosition,
+    imageZPosition,
     selections,
     cache,
     asyncIdentifier,
@@ -88,6 +92,7 @@ export default function useViewerState(state) {
   const loader = useLoader(state);
   const {
     imageTimePosition = 0,
+    imageZPosition = 0,
   } = state;
   const {
     metadata: currentMetadata,
@@ -97,7 +102,8 @@ export default function useViewerState(state) {
   } = viewerState;
   const initialOptions = useMemo(() => ({
     imageTimePosition,
-  }), [imageTimePosition]);
+    imageZPosition,
+  }), [imageTimePosition, imageZPosition]);
   // fetching initial data
   useImage(metadata, loader, dispatch, initialOptions);
   const options = useMemo(() => ({
