@@ -30,7 +30,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.refresh;
@@ -50,8 +50,10 @@ import static com.epam.pipeline.autotests.ao.Primitive.RESUME;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertFalse;
 
 public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest implements Authorization {
 
@@ -62,8 +64,8 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String defaultInstance = C.DEFAULT_INSTANCE;
-    private final String customTag = "test_tag";
-    private final String poolName = format("test_pool-%s", Utils.randomSuffix());
+    private final String poolName = format("test_pool-%s", randomSuffix());
+    private final String version = format("version-%s", randomSuffix());
 
     private String defaultSystemMaintenanceModeBanner;
     private String run1ID = "";
@@ -95,13 +97,15 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToSystem()
                 .disableSystemMaintenanceMode()
                 .saveIfNeeded();
-        clusterMenu()
-                .switchToHotNodePool()
-                .searchForNodeEntry(poolName)
-                .deleteNode(poolName);
+        tools()
+                .perform(registry, group, tool, tool ->
+                    tool.versions()
+                        .viewUnscannedVersions()
+                        .performIf(hasOnPage(version), t -> t.deleteVersion(version))
+        );
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase(value = {"2423_1"})
     public void maintenanceModeNotification() {
         setSystemMaintenanceModeBanner(testSystemMaintenanceModeBanner);
@@ -121,41 +125,43 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         ensureNotificationIsAbsent(titleText);
     }
 
-    @Test(dependsOnMethods = {"maintenanceModeNotification"})
+    @Test(priority = 2, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_2"})
     public void checkLaunchRunInMaintenanceMode() {
-        navigationMenu()
-                .tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setPriceType("On-demand")
-                .doNotMountStoragesSelect(true)
-                .launch(this)
-                .waitUntilPauseButtonAppear(run1ID = getLastRunId())
-                .ensurePauseButtonDisabled(run1ID)
-                .checkPauseButtonTooltip(run1ID, maintenanceModeTooltip)
-                .showLog(run1ID)
-                .ensureButtonDisabled(PAUSE)
-                .ensureButtonDisabled(COMMIT)
-                .checkButtonTooltip(PAUSE, maintenanceModeTooltip)
-                .checkButtonTooltip(COMMIT, maintenanceModeTooltip);
-        home()
-                .checkPauseLinkIsDisabledOnActiveRunsPanel(run1ID)
-                .checkActiveRunPauseLinkTooltip(run1ID, maintenanceModeTooltip);
-        setDisableSystemMaintenanceMode();
-        navigationMenu()
-                .runs()
-                .showLog(run1ID)
-                .ensureAll(enabled, PAUSE, COMMIT);
+            navigationMenu()
+                    .tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .setPriceType("On-demand")
+                    .doNotMountStoragesSelect(true)
+                    .launch(this)
+                    .waitUntilPauseButtonAppear(run1ID = getLastRunId())
+                    .ensurePauseButtonDisabled(run1ID)
+                    .checkPauseButtonTooltip(run1ID, maintenanceModeTooltip)
+                    .showLog(run1ID)
+                    .ensureButtonDisabled(PAUSE)
+                    .ensureButtonDisabled(COMMIT)
+                    .checkButtonTooltip(PAUSE, maintenanceModeTooltip)
+                    .checkButtonTooltip(COMMIT, maintenanceModeTooltip);
+            home()
+                    .checkPauseLinkIsDisabledOnActiveRunsPanel(run1ID)
+                    .checkActiveRunPauseLinkTooltip(run1ID, maintenanceModeTooltip);
+            setDisableSystemMaintenanceMode();
+            navigationMenu()
+                    .runs()
+                    .showLog(run1ID)
+                    .ensureAll(enabled, PAUSE, COMMIT);
     }
 
-    @Test(dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
+    @Test(priority = 3, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
     @TestCase(value = {"2423_3"})
     public void checkSwitchToMaintenanceModeDuringTheRunCommittingOperation() {
+        setDisableSystemMaintenanceMode();
         runsMenu()
                 .log(run1ID, log ->
                         log.waitForCommitButton()
                                 .commit(commit ->
-                                        commit.setVersion(customTag)
+                                        commit.sleep(1, SECONDS)
+                                                .setVersion(version)
                                                 .sleep(1, SECONDS)
                                                 .ok())
                 );
@@ -167,7 +173,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .ensureButtonDisabled(COMMIT);
     }
 
-    @Test(dependsOnMethods = {"maintenanceModeNotification"})
+    @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_4"})
     public void checkSwitchToMaintenanceModeDuringTheRunPausingAndResumingOperation() {
         setDisableSystemMaintenanceMode();
@@ -208,52 +214,60 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .waitUntilPauseButtonAppear(run2ID);
     }
 
-    @Test(dependsOnMethods = {"maintenanceModeNotification"})
+    @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_5"})
     public void hotNodePoolInMaintenanceMode() {
-        String currentDay = new SimpleDateFormat("EEEE").format(new Date());
-        clusterMenu()
-                .switchToHotNodePool()
-                .clickCreatePool()
-                .setValue(POOL_NAME, poolName)
-                .selectValue(STARTS_ON, currentDay)
-                .setScheduleTime(STARTS_ON_TIME, "00:00")
-                .selectValue(ENDS_ON, currentDay)
-                .setScheduleTime(ENDS_ON_TIME, "23:59")
-                .selectValue(INSTANCE_TYPE, defaultInstance)
-                .selectValue(CLOUD_REGION, defaultRegion[0])
-                .setValue(DISK, "20")
-                .click(AUTOSCALED)
-                .setAutoscaledParameter("Min Size", 2)
-                .setAutoscaledParameter("Max Size", 4)
-                .setAutoscaledParameter("Scale Up Threshold", 70)
-                .setAutoscaledParameter("Scale Step", 1)
-                .addDockerImage(registry, group, tool)
-                .ok()
-                .waitUntilRunningNodesAppear(poolName,2);
-        launchTool();
-        clusterMenu()
-                .switchToHotNodePool()
-                .waitUntilActiveNodesAppear(poolName,1)
-                .switchToCluster()
-                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
-        launchTool();
-        clusterMenu()
-                .switchToHotNodePool()
-                .waitUntilActiveNodesAppear(poolName,2)
-                .waitUntilRunningNodesAppear(poolName,3)
-                .switchToCluster()
-                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
-        setEnableSystemMaintenanceMode();
-        launchTool();
-        clusterMenu()
-                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName)
-                .switchToHotNodePool()
-                .waitUntilActiveNodesAppear(poolName,3)
-                .waitUntilRunningNodesAppear(poolName,3);
-        launchTool();
-        clusterMenu()
-                .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        try {
+            setDisableSystemMaintenanceMode();
+            String currentDay = new SimpleDateFormat("EEEE").format(new Date());
+            clusterMenu()
+                    .switchToHotNodePool()
+                    .clickCreatePool()
+                    .setValue(POOL_NAME, poolName)
+                    .selectValue(STARTS_ON, currentDay)
+                    .setScheduleTime(STARTS_ON_TIME, "00:00")
+                    .selectValue(ENDS_ON, currentDay)
+                    .setScheduleTime(ENDS_ON_TIME, "23:59")
+                    .selectValue(INSTANCE_TYPE, defaultInstance)
+                    .selectValue(CLOUD_REGION, defaultRegion[0])
+                    .setValue(DISK, "20")
+                    .click(AUTOSCALED)
+                    .setAutoscaledParameter("Min Size", 2)
+                    .setAutoscaledParameter("Max Size", 4)
+                    .setAutoscaledParameter("Scale Up Threshold", 70)
+                    .setAutoscaledParameter("Scale Step", 1)
+                    .addDockerImage(registry, group, tool)
+                    .ok()
+                    .waitUntilRunningNodesAppear(poolName, 2);
+            launchTool();
+            clusterMenu()
+                    .switchToHotNodePool()
+                    .waitUntilActiveNodesAppear(poolName, 1)
+                    .switchToCluster()
+                    .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
+            launchTool();
+            clusterMenu()
+                    .switchToHotNodePool()
+                    .waitUntilActiveNodesAppear(poolName, 2)
+                    .waitUntilRunningNodesAppear(poolName, 3)
+                    .switchToCluster()
+                    .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
+            setEnableSystemMaintenanceMode();
+            launchTool();
+            clusterMenu()
+                    .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName)
+                    .switchToHotNodePool()
+                    .waitUntilActiveNodesAppear(poolName, 3)
+                    .waitUntilRunningNodesAppear(poolName, 3);
+            launchTool();
+            clusterMenu()
+                    .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        } finally {
+            clusterMenu()
+                    .switchToHotNodePool()
+                    .searchForNodeEntry(poolName)
+                    .deleteNode(poolName);
+        }
     }
 
     private SettingsPageAO.PreferencesAO setSystemMaintenanceModeBanner(String textBanner) {
@@ -284,8 +298,8 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     }
 
     private void ensureNotificationIsAbsent(String title) {
-        $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
-                .shouldNotBe(visible);
+        assertFalse($(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]",
+                title))).exists());
     }
 
     private void launchTool() {
@@ -297,5 +311,11 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForIP();
+    }
+
+    private boolean hasOnPage(String customTag) {
+        return $(byClassName("ant-table-tbody"))
+                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .exists();
     }
 }

@@ -150,7 +150,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO checkButtonTooltip(Primitive button, String message) {
         context().find(byXpath(format(".//span[.='%s']", button.name()))).hover();
         $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
-                .shouldHave(Condition.text(message));
+                .shouldHave(text(message));
         return this;
     }
 

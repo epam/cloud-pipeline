@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -44,6 +45,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
@@ -125,14 +127,6 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
             );
         }
 
-        public HotNodePoolsAO deleteNode(String node) {
-            click(DELETE);
-            new ConfirmationPopupAO(this)
-                    .ensureTitleIs(format("Are you sure you want to delete \"%s\" pool?", node))
-                    .ok();
-            return parentAO;
-        }
-
         public NodeEntry checkActiveNodesCount(String count) {
             assertTrue(getNodeCount(1).equals(count));
             return this;
@@ -142,6 +136,14 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
             return entry
                     .find(byXpath(format(".//div[@class='ool-card__header-container']//span[%s]", number)))
                     .getText();
+        }
+
+        public HotNodePoolsAO deleteNode(String node) {
+            click(DELETE);
+            new ConfirmationPopupAO(this)
+                    .ensureTitleIs(format("Are you sure you want to delete \"%s\" pool?", node))
+                    .ok();
+            return parentAO;
         }
 
         @Override
