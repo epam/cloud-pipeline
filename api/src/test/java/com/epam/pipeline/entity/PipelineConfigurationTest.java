@@ -31,6 +31,7 @@ import static org.junit.Assert.*;
 
 public class PipelineConfigurationTest {
 
+    private static final String GENERAL_SECTION = "General";
     private static final String WITH_TYPE_OF_PARAMS_JSON =
             "{" +
                 "\"parameters\": {" +
@@ -38,6 +39,7 @@ public class PipelineConfigurationTest {
                         "\"value\" : \"\"," +
                         "\"required\" : \"true\"," +
                         "\"type\" : \"string\"," +
+                        "\"section\" : \"" + GENERAL_SECTION + "\"," +
                         "\"enum\" : [{\"name\": \"v1\"}, {\"name\": \"v2\"}]" +
                     "}," +
                     "\"main_class\" : {" +
@@ -85,6 +87,7 @@ public class PipelineConfigurationTest {
         final PipeConfValueVO mainFile = pipelineConfiguration.getParameters().get("main_file");
         assertEquals(STRING_TYPE, mainFile.getType());
         assertTrue(mainFile.isRequired());
+        assertEquals(mainFile.getSection(), GENERAL_SECTION);
 
         final PipeConfValueVO mainClass = pipelineConfiguration.getParameters().get("main_class");
         assertEquals(CLASS_TYPE, mainClass.getType());
