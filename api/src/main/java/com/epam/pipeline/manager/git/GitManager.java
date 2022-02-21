@@ -100,6 +100,9 @@ public class GitManager {
     public static final String GIT_MASTER_REPOSITORY = "master";
     public static final String DRAFT_PREFIX = "draft-";
     private static final String ACTION_MOVE = "move";
+    private static final String ACTION_UPDATE = "update";
+    private static final String ACTION_DELETE = "delete";
+    private static final String ACTION_CREATE = "create";
     private static final String BASE64_ENCODING = "base64";
     public static final String EXCLUDE_MARK = ":!";
 
@@ -405,7 +408,7 @@ public class GitManager {
         gitPushCommitEntry.setCommitMessage(commitMessage);
         for (String file : filesToCreate) {
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setAction("create");
+            gitPushCommitActionEntry.setAction(ACTION_CREATE);
             gitPushCommitActionEntry.setFilePath(file);
             gitPushCommitActionEntry.setContent("");
             gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
@@ -479,7 +482,7 @@ public class GitManager {
                 continue;
             }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setAction("delete");
+            gitPushCommitActionEntry.setAction(ACTION_DELETE);
             gitPushCommitActionEntry.setFilePath(file.getPath());
             gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
         }
@@ -521,11 +524,12 @@ public class GitManager {
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(getRevertMessage(sourceItemRevertVO));
 
-        final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-        gitPushCommitActionEntry.setFilePath(sourceItemRevertVO.getPath());
-        gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(content));
-        gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
-        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        final GitPushCommitActionEntry revertGitAction = new GitPushCommitActionEntry();
+        revertGitAction.setFilePath(sourceItemRevertVO.getPath());
+        revertGitAction.setContent(Base64.getEncoder().encodeToString(content));
+        revertGitAction.setEncoding(BASE64_ENCODING);
+        revertGitAction.setAction(ACTION_UPDATE);
+        gitPushCommitEntry.getActions().add(revertGitAction);
 
         return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
@@ -589,9 +593,9 @@ public class GitManager {
                 action = ACTION_MOVE;
             } else {
                 if (fileExists(pipeline, sourcePath)) {
-                    action = "update";
+                    action = ACTION_UPDATE;
                 } else {
-                    action = "create";
+                    action = ACTION_CREATE;
                 }
             }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
@@ -686,12 +690,12 @@ public class GitManager {
             GitPushCommitActionEntry gitPushCommitActionEntry) {
         String message = commitMessage;
         if (fileExists) {
-            gitPushCommitActionEntry.setAction("update");
+            gitPushCommitActionEntry.setAction(ACTION_UPDATE);
             if (StringUtils.isNullOrEmpty(commitMessage)) {
                 message = String.format("Updating file %s", filePath);
             }
         } else {
-            gitPushCommitActionEntry.setAction("create");
+            gitPushCommitActionEntry.setAction(ACTION_CREATE);
             if (StringUtils.isNullOrEmpty(commitMessage)) {
                 message = String.format("Creating file %s", filePath);
             }
@@ -708,7 +712,7 @@ public class GitManager {
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
 
         GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-        gitPushCommitActionEntry.setAction("delete");
+        gitPushCommitActionEntry.setAction(ACTION_DELETE);
         gitPushCommitActionEntry.setFilePath(filePath);
 
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();

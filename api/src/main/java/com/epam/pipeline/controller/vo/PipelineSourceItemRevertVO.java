@@ -23,7 +23,6 @@ import lombok.Value;
 @Builder
 public class PipelineSourceItemRevertVO {
     String path;
-    String lastCommitId;
     String commitToRevert;
     String comment;
 }
