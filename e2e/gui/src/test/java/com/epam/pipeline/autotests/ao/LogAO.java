@@ -336,6 +336,13 @@ public class LogAO implements AccessObject<LogAO> {
         return this;
     }
 
+    public LogAO waitForIP() {
+        expandTab(INSTANCE);
+        new InstanceParameters().get(IP).waitUntil(exist, COMPLETION_TIMEOUT);
+        return this;
+    }
+
+
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
         return this;

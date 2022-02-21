@@ -21,9 +21,13 @@ import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
@@ -31,10 +35,20 @@ import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.PAUSED;
+import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOUD_REGION;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMIT;
+import static com.epam.pipeline.autotests.ao.Primitive.DISK;
+import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON;
+import static com.epam.pipeline.autotests.ao.Primitive.ENDS_ON_TIME;
 import static com.epam.pipeline.autotests.ao.Primitive.INFO;
+import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.PAUSE;
+import static com.epam.pipeline.autotests.ao.Primitive.POOL_NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RESUME;
+import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
+import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -47,13 +61,15 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
+    private final String defaultInstance = C.DEFAULT_INSTANCE;
     private final String customTag = "test_tag";
+    private final String poolName = format("test_pool-%s", Utils.randomSuffix());
 
     private String defaultSystemMaintenanceModeBanner;
     private String run1ID = "";
     private String run2ID = "";
     private String run3ID = "";
-
+    private String[] defaultRegion;
 
     @BeforeClass(alwaysRun = true)
     public void getDefaultPreferences() {
@@ -62,6 +78,11 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToPreferences()
                 .switchToSystem()
                 .getSystemMaintenanceModeBanner();
+        defaultRegion = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToCluster()
+                .getLinePreference("default.edge.region");
     }
 
     @AfterClass(alwaysRun = true)
@@ -74,6 +95,10 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToSystem()
                 .disableSystemMaintenanceMode()
                 .saveIfNeeded();
+        clusterMenu()
+                .switchToHotNodePool()
+                .searchForNodeEntry(poolName)
+                .deleteNode(poolName);
     }
 
     @Test
@@ -102,7 +127,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         navigationMenu()
                 .tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                        .setPriceType("On-demand")
+                .setPriceType("On-demand")
                 .doNotMountStoragesSelect(true)
                 .launch(this)
                 .waitUntilPauseButtonAppear(run1ID = getLastRunId())
@@ -131,8 +156,8 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                         log.waitForCommitButton()
                                 .commit(commit ->
                                         commit.setVersion(customTag)
-                                              .sleep(1, SECONDS)
-                                              .ok())
+                                                .sleep(1, SECONDS)
+                                                .ok())
                 );
         setEnableSystemMaintenanceMode();
         runsMenu()
@@ -145,42 +170,90 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @Test(dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_4"})
     public void checkSwitchToMaintenanceModeDuringTheRunPausingAndResumingOperation() {
-            setDisableSystemMaintenanceMode();
-            navigationMenu()
-                    .tools()
-                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                    .setPriceType("On-demand")
-                    .doNotMountStoragesSelect(true)
-                    .launch(this);
-            run2ID = getLastRunId();
-            navigationMenu()
-                    .tools()
-                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                    .setPriceType("On-demand")
-                    .doNotMountStoragesSelect(true)
-                    .launch(this)
-                    .waitUntilPauseButtonAppear(run3ID = getLastRunId())
-                    .pause(run3ID, nameWithoutGroup(tool))
-                    .waitUntilResumeButtonAppear(run3ID);
-            runsMenu()
-                    .pause(run2ID, nameWithoutGroup(tool))
-                    .resume(run3ID, nameWithoutGroup(tool));
-            setEnableSystemMaintenanceMode();
-            runsMenu()
-                    .showLog(run2ID)
-                    .waitForDisabledButton(RESUME)
-                    .ensureButtonDisabled(RESUME)
-                    .checkButtonTooltip(RESUME, maintenanceModeTooltip)
-                    .shouldHaveStatus(PAUSED);
-            runsMenu()
-                    .showLog(run3ID)
-                    .waitForDisabledButton(PAUSE)
-                    .ensureButtonDisabled(PAUSE)
-                    .ensureButtonDisabled(COMMIT);
-            setDisableSystemMaintenanceMode();
-            runsMenu()
-                    .resume(run2ID, nameWithoutGroup(tool))
-                    .waitUntilPauseButtonAppear(run2ID);
+        setDisableSystemMaintenanceMode();
+        navigationMenu()
+                .tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType("On-demand")
+                .doNotMountStoragesSelect(true)
+                .launch(this);
+        run2ID = getLastRunId();
+        navigationMenu()
+                .tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType("On-demand")
+                .doNotMountStoragesSelect(true)
+                .launch(this)
+                .waitUntilPauseButtonAppear(run3ID = getLastRunId())
+                .pause(run3ID, nameWithoutGroup(tool))
+                .waitUntilResumeButtonAppear(run3ID);
+        runsMenu()
+                .pause(run2ID, nameWithoutGroup(tool))
+                .resume(run3ID, nameWithoutGroup(tool));
+        setEnableSystemMaintenanceMode();
+        runsMenu()
+                .showLog(run2ID)
+                .waitForDisabledButton(RESUME)
+                .ensureButtonDisabled(RESUME)
+                .checkButtonTooltip(RESUME, maintenanceModeTooltip)
+                .shouldHaveStatus(PAUSED);
+        runsMenu()
+                .showLog(run3ID)
+                .waitForDisabledButton(PAUSE)
+                .ensureButtonDisabled(PAUSE)
+                .ensureButtonDisabled(COMMIT);
+        setDisableSystemMaintenanceMode();
+        runsMenu()
+                .resume(run2ID, nameWithoutGroup(tool))
+                .waitUntilPauseButtonAppear(run2ID);
+    }
+
+    @Test(dependsOnMethods = {"maintenanceModeNotification"})
+    @TestCase(value = {"2423_5"})
+    public void hotNodePoolInMaintenanceMode() {
+        String currentDay = new SimpleDateFormat("EEEE").format(new Date());
+        clusterMenu()
+                .switchToHotNodePool()
+                .clickCreatePool()
+                .setValue(POOL_NAME, poolName)
+                .selectValue(STARTS_ON, currentDay)
+                .setScheduleTime(STARTS_ON_TIME, "00:00")
+                .selectValue(ENDS_ON, currentDay)
+                .setScheduleTime(ENDS_ON_TIME, "23:59")
+                .selectValue(INSTANCE_TYPE, defaultInstance)
+                .selectValue(CLOUD_REGION, defaultRegion[0])
+                .setValue(DISK, "20")
+                .click(AUTOSCALED)
+                .setAutoscaledParameter("Min Size", 2)
+                .setAutoscaledParameter("Max Size", 4)
+                .setAutoscaledParameter("Scale Up Threshold", 70)
+                .setAutoscaledParameter("Scale Step", 1)
+                .addDockerImage(registry, group, tool)
+                .ok()
+                .waitUntilRunningNodesAppear(poolName,2);
+        launchTool();
+        clusterMenu()
+                .switchToHotNodePool()
+                .waitUntilActiveNodesAppear(poolName,1)
+                .switchToCluster()
+                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        launchTool();
+        clusterMenu()
+                .switchToHotNodePool()
+                .waitUntilActiveNodesAppear(poolName,2)
+                .waitUntilRunningNodesAppear(poolName,3)
+                .switchToCluster()
+                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        setEnableSystemMaintenanceMode();
+        launchTool();
+        clusterMenu()
+                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName)
+                .switchToHotNodePool()
+                .waitUntilActiveNodesAppear(poolName,3)
+                .waitUntilRunningNodesAppear(poolName,3);
+        launchTool();
+        clusterMenu()
+                .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
     }
 
     private SettingsPageAO.PreferencesAO setSystemMaintenanceModeBanner(String textBanner) {
@@ -194,11 +267,11 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
 
     private SettingsPageAO.PreferencesAO setEnableSystemMaintenanceMode() {
         return navigationMenu()
-                    .settings()
-                    .switchToPreferences()
-                    .switchToSystem()
-                    .enableSystemMaintenanceMode()
-                    .saveIfNeeded();
+                .settings()
+                .switchToPreferences()
+                .switchToSystem()
+                .enableSystemMaintenanceMode()
+                .saveIfNeeded();
     }
 
     private SettingsPageAO.PreferencesAO setDisableSystemMaintenanceMode() {
@@ -213,5 +286,16 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     private void ensureNotificationIsAbsent(String title) {
         $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]", title)))
                 .shouldNotBe(visible);
+    }
+
+    private void launchTool() {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setTypeValue(defaultInstance)
+                .setDisk("15")
+                .selectValue(PRICE_TYPE, "Spot")
+                .launchTool(this, Utils.nameWithoutGroup(tool))
+                .showLog(getLastRunId())
+                .waitForIP();
     }
 }

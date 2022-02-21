@@ -679,7 +679,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     this.login = login;
                     this.entry = entry;
                     this.elements = initialiseElements(
-                            entry(EDIT, entry.find(byId("edit-user-button")))
+                            entry(EDIT, entry.find(byClassName("edit-user-button")))
                     );
                 }
 
