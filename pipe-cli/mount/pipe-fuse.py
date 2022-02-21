@@ -149,7 +149,9 @@ def start(mountpoint, webdav, bucket,
 
     logging.info('Initializing file system.')
     enable_fallocate_support()
-    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=client.is_read_only(), **mount_options)
+    ro = client.is_read_only() or mount_options.get('ro', False)
+    mount_options.pop('ro', None)
+    FUSE(fs, mountpoint, nothreads=not threads, foreground=True, ro=ro, **mount_options)
 
 
 def enable_fallocate_support():
