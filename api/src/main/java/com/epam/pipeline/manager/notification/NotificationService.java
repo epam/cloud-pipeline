@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +79,8 @@ public interface NotificationService {
     default void notifyOnStorageQuotaExceeding(final NFSDataStorage storage,
                                                final NFSStorageMountStatus newStatus,
                                                final NFSQuotaNotificationEntry exceededQuota,
-                                               final List<NFSQuotaNotificationRecipient> recipients) {
+                                               final List<NFSQuotaNotificationRecipient> recipients,
+                                               final LocalDateTime activationTime) {
 
     }
 

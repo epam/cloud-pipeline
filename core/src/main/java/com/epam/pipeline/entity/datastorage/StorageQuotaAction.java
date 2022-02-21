@@ -17,7 +17,7 @@
 package com.epam.pipeline.entity.datastorage;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import lombok.Getter;
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @RequiredArgsConstructor
-@Getter
 public enum StorageQuotaAction {
     EMAIL("EMAIL"), READ_ONLY("READONLY"), DISABLE("DISABLE_MOUNT"), UNKNOWN(null);
 
@@ -34,6 +33,11 @@ public enum StorageQuotaAction {
 
     private static final Map<String, StorageQuotaAction> idMap = Stream.of(StorageQuotaAction.values())
         .collect(Collectors.toMap(StorageQuotaAction::getCode, Function.identity()));
+
+    @JsonValue
+    public String getCode() {
+        return code;
+    }
 
     @JsonCreator
     public static StorageQuotaAction fromCode(final String code) {
