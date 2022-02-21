@@ -15,6 +15,11 @@ spec:
       labels:
         cloud-pipeline/cp-redis-cluster: "true"
     spec:
+      nodeSelector:
+        cloud-pipeline/cp-redis: "true"
+      tolerations:
+      - key: node-role.kubernetes.io/master
+        effect: NoSchedule
       containers:
         - name: redis
           image: redis:6.0.5
