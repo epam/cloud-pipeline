@@ -1270,7 +1270,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             enum: parameter.initialEnumeration,
             visible: parameter.visible,
             validation: parameter.validation,
-            no_override: parameter.noOverride
+            no_override: parameter.noOverride,
+            section: parameter.section
           };
         }
       }
@@ -1785,6 +1786,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let initialEnumeration;
           let visible;
           let validation;
+          let section;
           const parameter = this.props.parameters.parameters[key];
           if (parameter.value !== undefined ||
             parameter.type !== undefined ||
@@ -1806,6 +1808,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             visible = parameter.visible;
             validation = parameter.validation;
             noOverride = `${parameter.no_override}` === 'true';
+            section = parameter.section || OTHER_PARAMETERS_GROUP;
             enumeration = parameterUtilities.parseEnumeration({enumeration});
             if (type.toLowerCase() === 'boolean') {
               value = getBooleanValue(value);
@@ -1837,7 +1840,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             readOnly: readOnly,
             system: system,
             noOverride,
-            initial: true
+            initial: true,
+            section: section
           };
         }
       }
@@ -2497,7 +2501,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       type,
       name,
       required,
-      value: defaultValue
+      value: defaultValue,
+      section: !isSystemSection ? OTHER_PARAMETERS_GROUP : undefined
     };
     parametersValues.keys.push(newKeyIndex);
     this.props.form.setFieldsValue({[sectionName]: parametersValues});
@@ -2878,8 +2883,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
         const renderParametersGroup = (keys, params) => {
           return keys.map(key => {
-            const parameter = (params ? params[key] : undefined) ||
-              this.addedParameters[key];
+            const parameter = (params ? params[key] : undefined) || this.addedParameters[key];
             let name = parameter ? parameter.name : '';
             let value = parameter ? parameter.value : '';
             const resolvedValue = parameter ? parameter.resolvedValue : '';
@@ -2899,6 +2903,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             let enumeration = parameter ? parameter.enumeration : undefined;
             const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
             let description = parameter ? parameter.description : undefined;
+            let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
             let visible = parameter ? parameter.visible : undefined;
             let validation = parameter ? parameter.validation : undefined;
             const validator = validation
@@ -2927,7 +2932,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               case 'common':
                 formItem = this.renderPathParameter(
                   sectionName,
-                  {key, value, required, readOnly, description, validator},
+                  {key, value, required, readOnly, description, section, validator},
                   type,
                   isSystemParametersSection,
                   parameterIsVisible
@@ -2936,21 +2941,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               case 'boolean':
                 formItem = this.renderBooleanParameter(
                   sectionName,
-                  {key, value, readOnly, description, validator}
+                  {key, value, readOnly, description, section, validator}
                 );
                 break;
               default:
                 if (enumeration) {
                   formItem = this.renderSelectionParameter(
                     sectionName,
-                    {key, value, required, readOnly, enumeration, description, validator},
+                    {key, value, required, readOnly, enumeration, description, section, validator},
                     isSystemParametersSection,
                     normalizedParameters
                   );
                 } else {
                   formItem = this.renderStringParameter(
                     sectionName,
-                    {key, value, required, readOnly, description, validator},
+                    {key, value, required, readOnly, description, section, validator},
                     isSystemParametersSection,
                     parameterIsVisible
                   );
@@ -3066,6 +3071,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                   }
                 </FormItem>
+                <FormItem className={styles.hiddenItem}>
+                  {
+                    this.getSectionFieldDecorator(sectionName)(
+                      `params.${key}.section`,
+                      {initialValue: section}
+                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  }
+                </FormItem>
                 <Col
                   span={4}
                   className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}
@@ -3167,7 +3180,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           const paramsPerSection = keys.reduce((result, key) => {
             const parameter = (params && params[key]) || this.addedParameters[key];
             const section = parameter
-              ? (parameter.section || (parameter.name && parameter.name.split('_')[1]) || OTHER_PARAMETERS_GROUP)
+              ? parameter.section
               : OTHER_PARAMETERS_GROUP;
             result[section] = {...result[section], [key]: {...parameter}};
             return result;
