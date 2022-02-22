@@ -57,7 +57,8 @@ public class CheckPermissionHelper {
             return true;
         }
         return permissionEvaluator
-                .hasPermission(authManager.getAuthentication(), entity, permissionName);
+                .hasPermission(authManager.getAuthentication(), entity.getId(),
+                        entity.getClass().getName(), permissionName);
     }
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity,

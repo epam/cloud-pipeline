@@ -59,23 +59,23 @@ public final class AclExpressions {
     public static final String STORAGE_SHARED = "@grantPermissionManager.checkStorageShared(#id)";
 
     public static final String STORAGE_ID_READ =
-            "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'READ')) "
+            "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'READ')) "
             + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_WRITE =
-            "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'WRITE')) "
+            "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'WRITE')) "
             + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_OWNER =
-            "(hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#id, 'OWNER')) "
+            "(hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#id, 'OWNER')) "
             + AND + STORAGE_SHARED;
 
     public static final String STORAGE_ID_PERMISSIONS =
             "("
                 + "hasRole('ADMIN') "
                     + "OR ("
-                        + "@grantPermissionManager.storagePermission(#id, 'READ') "
-                        + "AND @grantPermissionManager.storagePermissions(#id, #permissions) "
+                        + "@storagePermissionManager.storagePermissionById(#id, 'READ') "
+                        + "AND @storagePermissionManager.storagePermissions(#id, #permissions) "
                     + ") "
             + ") "
             + AND + STORAGE_SHARED;
