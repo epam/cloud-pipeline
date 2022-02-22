@@ -18,11 +18,15 @@ package com.epam.pipeline.exception;
 
 public class PipelineResponseException extends RuntimeException {
 
-    public PipelineResponseException(String message) {
+    public PipelineResponseException(final String message) {
         super(message);
     }
 
-    public PipelineResponseException(Throwable cause) {
+    public PipelineResponseException(final Throwable cause) {
         super(cause);
+    }
+
+    public PipelineResponseException(final String message, final Throwable cause) {
+        super(message, cause);
     }
 }

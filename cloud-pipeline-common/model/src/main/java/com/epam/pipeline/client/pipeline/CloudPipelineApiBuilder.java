@@ -18,7 +18,7 @@ package com.epam.pipeline.client.pipeline;
 
 import com.epam.pipeline.client.TokenInterceptor;
 import com.epam.pipeline.config.JsonMapper;
-import com.epam.pipeline.utils.QueryUtils;
+import com.epam.pipeline.utils.URLUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
@@ -49,7 +49,7 @@ public class CloudPipelineApiBuilder {
 
     public CloudPipelineAPI buildClient() {
         return new Retrofit.Builder()
-                .baseUrl(QueryUtils.normalizeUrl(apiHost))
+                .baseUrl(URLUtils.normalizeUrl(apiHost))
                 .addConverterFactory(CONVERTER)
                 .client(buildHttpClient())
                 .build()

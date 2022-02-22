@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.RunLog;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.ToolGroup;
+import com.epam.pipeline.entity.preference.Preference;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -50,9 +51,11 @@ import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.vo.user.OnlineUsers;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
@@ -150,6 +153,12 @@ public interface CloudPipelineAPI {
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
 
+    @POST("users/online")
+    Call<Result<OnlineUsers>> saveOnlineUsers();
+
+    @DELETE("users/online")
+    Call<Result<Boolean>> deleteExpiredOnlineUsers(@Query("date") String date);
+
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);
 
@@ -224,6 +233,12 @@ public interface CloudPipelineAPI {
 
     @GET("cluster/pool")
     Call<Result<List<NodePool>>> loadNodePools();
+
+    @GET("preferences/{key}")
+    Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
+
+    @GET("preferences")
+    Call<Result<List<Preference>>> loadAllPreference();
 
     @GET("filesharemount/{id}")
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);

@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
@@ -73,6 +74,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -113,6 +115,9 @@ public class UserManager {
 
     @Autowired
     private GrantPermissionHandler permissionHandler;
+
+    @Autowired
+    private PipelineUserRepository userRepository;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -185,6 +190,15 @@ public class UserManager {
         PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         return user;
+    }
+
+    public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
+        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
+    public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
+        return userRepository.findByRoles_NameIn(roleNames);
     }
 
     public Collection<PipelineUser> loadAllUsers() {
@@ -457,6 +471,10 @@ public class UserManager {
         final PipelineUser loadedUser = loadUserById(user.getId());
         loadedUser.setLastLoginDate(DateUtils.nowUTC());
         userDao.updateUser(loadedUser);
+    }
+
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userDao.loadOnlineUsers();
     }
 
     private Collection<PipelineUserWithStoragePath> filterUsers(final Collection<PipelineUserWithStoragePath> users,

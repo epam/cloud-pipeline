@@ -127,7 +127,7 @@ set -o pipefail
 export CP_KUBE_KUBEADM_TOKEN=$(kubeadm token list | tail -n 1 | cut -f1 -d' ')
 set +o pipefail
 if [ $? -ne 0 ]; then
-    print_err "Errors occured during retrieval of the kubeadm token. Please review any output above, exiting"
+    print_err "Errors occurred during retrieval of the kubeadm token. Please review any output above, exiting"
     exit 1
 else
     print_info "-> kubeadm token retrieved: $CP_KUBE_KUBEADM_TOKEN"
@@ -258,6 +258,11 @@ CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
 
+
+# Allow to schedule Monitoring Service to the master
+CP_MONITORING_SRV_KUBE_NODE_NAME=${CP_MONITORING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-monitoring-srv to $CP_MONITORING_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_MONITORING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-monitoring-srv="true" --overwrite
 
 echo
 
@@ -1182,6 +1187,25 @@ if is_service_requested cp-billing-srv; then
         wait_for_deployment "cp-billing-srv"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-billing-srv: http://$CP_BILLING_INTERNAL_HOST:$CP_BILLING_INTERNAL_PORT"
+    fi
+    echo
+fi
+
+# Monitoring Service
+if is_service_requested cp-monitoring-srv; then
+    print_ok "[Starting Monitoring service deployment]"
+
+    print_info "-> Deleting existing instance of Monitoring service"
+    delete_deployment_and_service   "cp-monitoring-srv" \
+                                    "/opt/monitoring"
+    if is_install_requested; then
+        print_info "-> Deploying Monitoring service"
+        create_kube_resource $K8S_SPECS_HOME/cp-monitoring-srv/cp-monitoring-srv-dpl.yaml
+
+        print_info "-> Waiting for Monitoring service to initialize"
+        wait_for_deployment "cp-monitoring-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-monitoring-srv: deployed"
     fi
     echo
 fi
