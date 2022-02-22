@@ -153,7 +153,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                     .ensureAll(enabled, PAUSE, COMMIT);
     }
 
-    @Test(priority = 3, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
+    @Test(priority = 4, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
     @TestCase(value = {"2423_3"})
     public void checkSwitchToMaintenanceModeDuringTheRunCommittingOperation() {
         try {
@@ -184,7 +184,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
 
     }
 
-    @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
+    @Test(priority = 4, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_4"})
     public void checkSwitchToMaintenanceModeDuringTheRunPausingAndResumingOperation() {
         setDisableSystemMaintenanceMode();
