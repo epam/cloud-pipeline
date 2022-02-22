@@ -100,6 +100,10 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         runsMenu()
                 .resume(run2ID, nameWithoutGroup(tool))
                 .waitUntilPauseButtonAppear(run2ID);
+        clusterMenu()
+                .switchToHotNodePool()
+                .searchForNodeEntry(poolName)
+                .deleteNode(poolName);
     }
 
     @Test(priority = 1)
@@ -221,7 +225,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_5"})
     public void hotNodePoolInMaintenanceMode() {
-        try {
             setDisableSystemMaintenanceMode();
             String currentDay = new SimpleDateFormat("EEEE").format(new Date());
             clusterMenu()
@@ -266,12 +269,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
             launchTool();
             clusterMenu()
                     .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
-        } finally {
-            clusterMenu()
-                    .switchToHotNodePool()
-                    .searchForNodeEntry(poolName)
-                    .deleteNode(poolName);
-        }
     }
 
     private SettingsPageAO.PreferencesAO setSystemMaintenanceModeBanner(String textBanner) {
