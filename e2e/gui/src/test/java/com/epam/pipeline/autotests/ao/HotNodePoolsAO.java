@@ -212,6 +212,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
         public HotNodePoolsAO ok() {
             sleep(1, SECONDS);
             click(CREATE);
+            sleep(2, SECONDS);
             return this.parent();
         }
 
