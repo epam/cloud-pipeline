@@ -97,12 +97,9 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToSystem()
                 .disableSystemMaintenanceMode()
                 .saveIfNeeded();
-        tools()
-                .perform(registry, group, tool, tool ->
-                    tool.versions()
-                        .viewUnscannedVersions()
-                        .performIf(hasOnPage(version), t -> t.deleteVersion(version))
-        );
+        runsMenu()
+                .resume(run2ID, nameWithoutGroup(tool))
+                .waitUntilPauseButtonAppear(run2ID);
     }
 
     @Test(priority = 1)
@@ -155,22 +152,32 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @Test(priority = 3, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
     @TestCase(value = {"2423_3"})
     public void checkSwitchToMaintenanceModeDuringTheRunCommittingOperation() {
-        setDisableSystemMaintenanceMode();
-        runsMenu()
-                .log(run1ID, log ->
-                        log.waitForCommitButton()
-                                .commit(commit ->
-                                        commit.sleep(1, SECONDS)
-                                                .setVersion(version)
-                                                .sleep(1, SECONDS)
-                                                .ok())
-                );
-        setEnableSystemMaintenanceMode();
-        runsMenu()
-                .showLog(run1ID)
-                .assertCommittingFinishedSuccessfully()
-                .ensureButtonDisabled(PAUSE)
-                .ensureButtonDisabled(COMMIT);
+        try {
+            setDisableSystemMaintenanceMode();
+            runsMenu()
+                    .log(run1ID, log ->
+                            log.waitForCommitButton()
+                                    .commit(commit ->
+                                            commit.sleep(1, SECONDS)
+                                                    .setVersion(version)
+                                                    .sleep(1, SECONDS)
+                                                    .ok())
+                    );
+            setEnableSystemMaintenanceMode();
+            runsMenu()
+                    .showLog(run1ID)
+                    .assertCommittingFinishedSuccessfully()
+                    .ensureButtonDisabled(PAUSE)
+                    .ensureButtonDisabled(COMMIT);
+        } finally {
+            tools()
+                    .perform(registry, group, tool, tool ->
+                            tool.versions()
+                                    .viewUnscannedVersions()
+                                    .performIf(hasOnPage(version), t -> t.deleteVersion(version))
+                    );
+        }
+
     }
 
     @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
@@ -209,9 +216,6 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .ensureButtonDisabled(PAUSE)
                 .ensureButtonDisabled(COMMIT);
         setDisableSystemMaintenanceMode();
-        runsMenu()
-                .resume(run2ID, nameWithoutGroup(tool))
-                .waitUntilPauseButtonAppear(run2ID);
     }
 
     @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
