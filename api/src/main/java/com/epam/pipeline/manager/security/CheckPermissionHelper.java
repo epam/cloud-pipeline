@@ -109,7 +109,7 @@ public class CheckPermissionHelper {
         return getSids(userName).stream().anyMatch(sid -> sid.equals(admin));
     }
 
-    private List<Sid> getSids() {
+    public List<Sid> getSids() {
         final Authentication authentication = authManager.getAuthentication();
         return sidRetrievalStrategy.getSids(authentication);
     }

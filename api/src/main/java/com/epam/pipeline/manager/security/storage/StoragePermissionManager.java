@@ -22,15 +22,20 @@ import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.security.PermissionsService;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
+import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +45,8 @@ public class StoragePermissionManager {
 
     private final GrantPermissionManager grantPermissionManager;
     private final EntityManager entityManager;
+    private final CheckPermissionHelper permissionHelper;
+    private final PermissionsService permissionsService;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -79,5 +86,28 @@ public class StoragePermissionManager {
     public boolean storagePermissionByName(final String identifier, final String permissionName) {
         final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
         return grantPermissionManager.storagePermission(storage, permissionName);
+    }
+
+    public void filterStorage(final List<AbstractDataStorage> storages,
+                              final List<String> permissionNames) {
+        if (permissionHelper.isAdmin()) {
+            return;
+        }
+        final List<Sid> sids = permissionHelper.getSids();
+        final List<AclPermission> permissions = permissionNames.stream()
+                .map(AclPermission::getAclPermissionByName)
+                .collect(Collectors.toList());
+        final List<AbstractDataStorage> filtered = ListUtils.emptyIfNull(storages)
+                .stream()
+                .peek(storage ->
+                        storage.setMask(grantPermissionManager.getPermissionsMask(storage, true, true, sids)))
+                .filter(storage -> permissions.stream()
+                        .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
+                                permission.getSimpleMask())))
+                .collect(Collectors.toList());
+        if (storages.size() != filtered.size()) {
+            storages.clear();
+            storages.addAll(filtered);
+        }
     }
 }
