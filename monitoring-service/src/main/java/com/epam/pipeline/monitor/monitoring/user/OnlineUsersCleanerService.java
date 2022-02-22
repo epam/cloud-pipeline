@@ -16,33 +16,45 @@
 
 package com.epam.pipeline.monitor.monitoring.user;
 
-import com.epam.pipeline.monitor.monitoring.AbstractSchedulingService;
+import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
-import com.epam.pipeline.monitor.service.preference.PreferencesService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import java.util.Objects;
 
 @Service
-public class OnlineUsersCleanerService extends AbstractSchedulingService {
-    private final OnlineUsersCleanerServiceCore core;
-    private final String monitorDelayPreferenceName;
+@Slf4j
+public class OnlineUsersCleanerService implements MonitoringService {
+    private final CloudPipelineAPIClient client;
+    private final String monitorEnabledPreferenceName;
+    private final String usersStorePeriodPreferenceName;
 
-    public OnlineUsersCleanerService(final TaskScheduler scheduler,
-                                     final OnlineUsersCleanerServiceCore core,
-                                     final CloudPipelineAPIClient client,
-                                     @Value("${preference.name.usage.users.clean.delay}")
-                                     final String monitorDelayPreferenceName,
-                                     final PreferencesService preferencesService) {
-        super(scheduler, client, preferencesService);
-        this.core = core;
-        this.monitorDelayPreferenceName = monitorDelayPreferenceName;
+    public OnlineUsersCleanerService(final CloudPipelineAPIClient client,
+                                     @Value("${preference.name.usage.users.clean.enable}")
+                                         final String monitorEnabledPreferenceName,
+                                     @Value("${preference.name.usage.users.store.period}")
+                                         final String usersStorePeriodPreferenceName) {
+        this.client = client;
+        this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
+        this.usersStorePeriodPreferenceName = usersStorePeriodPreferenceName;
     }
 
-    @PostConstruct
-    public void init() {
-        scheduleFixedDelay(core::monitor, monitorDelayPreferenceName, "UsageUserCleaner");
+    @Override
+    public void monitor() {
+        if (!client.getBooleanPreference(monitorEnabledPreferenceName)) {
+            log.debug("Users usage removal is not enabled");
+            return;
+        }
+
+        final Integer duration = client.getIntPreference(usersStorePeriodPreferenceName);
+        if (Objects.isNull(duration)) {
+            log.debug("Cannot remove expired online users statistic since period was not specified");
+            return;
+        }
+        client.deleteExpiredOnlineUsers(DateUtils.nowUTC().minusDays(duration).toLocalDate().toString());
+        log.debug("Finished online users removal service");
     }
 }

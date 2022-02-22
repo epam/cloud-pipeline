@@ -119,6 +119,7 @@ public class SystemPreferences {
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
+    private static final String MONITORING_GROUP = "Monitoring";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -992,6 +993,18 @@ public class SystemPreferences {
     public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
             "ngs.preprocessing.machine.run.column.name", "Machine Run",
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+
+    // Monitoring
+    public static final IntPreference MONITORING_POOL_USAGE_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.delay", 300000, MONITORING_GROUP, isGreaterThan(0));
+    public static final BooleanPreference MONITORING_POOL_USAGE_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.enable", false, MONITORING_GROUP, pass);
+    public static final BooleanPreference MONITORING_POOL_USAGE_CLEAN_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.clean.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_POOL_USAGE_CLEAN_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.clean.delay", 86400000, MONITORING_GROUP, isGreaterThan(0));
+    public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
+            "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

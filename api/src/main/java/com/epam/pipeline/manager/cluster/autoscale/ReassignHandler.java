@@ -181,6 +181,7 @@ public class ReassignHandler {
         final RunInstance instance = previousInstance.getInstance();
         final RunInstance reassignedInstance = StringUtils.isBlank(instance.getNodeId()) ?
                 cloudFacade.describeInstance(runId, instance) : instance;
+        reassignedInstance.setPoolId(instance.getPoolId());
         pipelineRunManager.updateRunInstance(runId, reassignedInstance);
         final List<InstanceDisk> disks = cloudFacade.loadDisks(reassignedInstance.getCloudRegionId(),
                 runId);

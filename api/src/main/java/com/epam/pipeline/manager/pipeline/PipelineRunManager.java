@@ -63,6 +63,7 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
@@ -208,6 +209,9 @@ public class PipelineRunManager {
 
     @Autowired
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
+
+    @Autowired
+    private NodePoolManager nodePoolManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -1128,6 +1132,11 @@ public class PipelineRunManager {
                         .tool(tools.get(trimToolVersion(run.getDockerImage())))
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
+        nodePoolManager.load(poolId);
+        return runCRUDService.loadRunsByPoolId(poolId);
     }
 
     private int getTotalSize(final List<InstanceDisk> disks) {
