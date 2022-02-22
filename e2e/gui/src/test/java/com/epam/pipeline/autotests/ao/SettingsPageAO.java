@@ -670,11 +670,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
-            public UsersTabAO selectDropDownValue(Primitive combo, String option) {
-                selectValue(combo, option);
-                return this;
-            }
-
             public class UserEntry implements AccessObject<SystemEventsEntry> {
                 private final UsersTabAO parentAO;
                 private SelenideElement entry;

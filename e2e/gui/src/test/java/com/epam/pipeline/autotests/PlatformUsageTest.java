@@ -57,11 +57,11 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
                 .searchUserEntry(user.login)
                 .validateUserStatus("offline")
                 .validateStatusTooltipText(lastVisited)
-                .selectDropDownValue(SHOW_USERS, showOfflineUsers)
+                .selectValue(SHOW_USERS, showOfflineUsers);
+        usersTabAO
                 .checkUserExist(user.login)
                 .clear(SEARCH);
-        usersTabAO
-                .selectDropDownValue(SHOW_USERS, showOnlineUsers)
-                .checkUserExist(admin.login);
+        usersTabAO.selectValue(SHOW_USERS, showOnlineUsers);
+        usersTabAO.checkUserExist(admin.login);
     }
 }
