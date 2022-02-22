@@ -282,9 +282,9 @@ public interface CloudPipelineAPI {
     @GET("app/info")
     Call<Result<ApplicationInfo>> fetchVersion();
 
-    @POST("cluster/pool/usages")
+    @POST("cluster/pool/usage")
     Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body final List<NodePoolUsage> records);
 
-    @DELETE("cluster/pool/usages")
+    @DELETE("cluster/pool/usage")
     Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);
 }
