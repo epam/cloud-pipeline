@@ -332,6 +332,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnAvailableStoragesForAdmin() {
+        mockSecurityContext();
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
 
         assertThat(dataStorageApiService.getAvailableStorages()).hasSize(1).contains(s3bucket);

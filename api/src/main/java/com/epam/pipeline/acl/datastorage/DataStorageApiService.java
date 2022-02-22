@@ -51,6 +51,7 @@ import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
 import com.epam.pipeline.manager.security.acl.AclMaskList;
+import com.epam.pipeline.manager.security.acl.StorageAcl;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
@@ -101,9 +102,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
-    @PostFilter("hasRole('ADMIN') OR (@storagePermissionManager.storagePermission(filterObject, 'READ') OR "
-            + "@storagePermissionManager.storagePermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    @StorageAcl
     public List<AbstractDataStorage> getAvailableStorages() {
         return dataStorageManager.getDataStorages();
     }
