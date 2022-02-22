@@ -144,9 +144,6 @@ public class NGSProjectSynchronizer {
 
         machineRunFolders.forEach(machineRunFolder -> {
             final String machineRun = machineRunFolder.getName();
-            final MetadataEntity machineRunEntity = getOrCreateMachineRunEntity(project, syncContext, machineRun);
-            final Pair<DataStorageFile, byte[]> sampleSheetFile = findSampleSheetFile(
-                    storage, machineRunFolder, machineRunEntity);
 
             final AbstractDataStorageItem dataSyncCompleteMarkFile = fetchDataSyncCompleteMarkFile(
                     storage, machineRunFolder, folderMetadata);
@@ -155,30 +152,45 @@ public class NGSProjectSynchronizer {
                 return;
             }
 
-            if (ArrayUtils.isEmpty(sampleSheetFile.getValue())) {
-                log.warn(String.format(
-                        "No sample sheet is found for machine run folder: %s It will be skipped!", machineRun));
-                return;
-            } else {
-                log.info(String.format("Found sample sheet: %s for machine run: %s",
-                        sampleSheetFile.getKey().getPath(), machineRun));
-            }
+            final List<DataStorageFile> sampleSheetFiles = listSampleSheetFiles(storage, machineRunFolder);
+            for (final DataStorageFile sampleSheetFile : sampleSheetFiles) {
+                final Pair<DataStorageFile, byte[]> dataStorageFileContent =
+                        verifyAndGetSampleSheetContent(storage, sampleSheetFile);
+                if (ArrayUtils.isEmpty(dataStorageFileContent.getValue())) {
+                    log.warn(String.format(
+                            "File: %s named as sample sheet but content can't be parsed as sample sheet.",
+                            sampleSheetFile.getName()));
+                    continue;
+                }
+                final MetadataEntity machineRunEntity = getOrCreateMachineRunEntity(
+                        project, syncContext, machineRun + ":" + sampleSheetFile.getName());
 
-            if (needToUpdateSampleSheet(syncContext, machineRunEntity, sampleSheetFile.getKey())) {
-                // update sample sheet metadata
-                SampleSheetRegistrationVO registrationVO = new SampleSheetRegistrationVO();
-                registrationVO.setFolderId(project.getId());
-                registrationVO.setMachineRunId(machineRunEntity.getId());
+                if (needToUpdateSampleSheet(syncContext, machineRunEntity, sampleSheetFile)) {
+                    // update sample sheet metadata
+                    SampleSheetRegistrationVO registrationVO = new SampleSheetRegistrationVO();
+                    registrationVO.setFolderId(project.getId());
+                    registrationVO.setMachineRunId(machineRunEntity.getId());
 
-                registrationVO.setPath(getFullStorageFilePath(storage, sampleSheetFile.getKey().getPath()));
-                final MetadataEntity updated = apiClient.registerSampleSheet(registrationVO, true);
-                log.info(String.format("Register sample sheet: %s for machine run: %s",
-                        sampleSheetFile.getKey().getName(), updated.getExternalId()));
-            } else {
-                log.info(String.format("No need to sync %s, skipping.", machineRun));
+                    registrationVO.setPath(getFullStorageFilePath(storage, sampleSheetFile.getPath()));
+                    final MetadataEntity updated = apiClient.registerSampleSheet(registrationVO, true);
+                    log.info(String.format("Register sample sheet: %s for machine run: %s",
+                            sampleSheetFile.getName(), updated.getExternalId()));
+                } else {
+                    log.info(String.format("No need to sync %s, skipping.", machineRun));
+                }
             }
         });
+    }
 
+    private List<DataStorageFile> listSampleSheetFiles(final AbstractDataStorage storage,
+                                                       final AbstractDataStorageItem machineRunFolder) {
+        return ListUtils.emptyIfNull(
+                        apiClient.listDataStorageItems(storage.getId(),
+                                getInternalStoragePath(storage, machineRunFolder.getPath()))
+                ).stream()
+                .filter(item -> item.getType() == DataStorageItemType.File)
+                .filter(item -> item.getName().toLowerCase(Locale.ROOT).matches(SAMPLESHEET_FILE_NAME_TEMPLATE))
+                .map(item -> (DataStorageFile) item).collect(Collectors.toList());
     }
 
     AbstractDataStorageItem fetchDataSyncCompleteMarkFile(final AbstractDataStorage storage,

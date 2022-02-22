@@ -232,7 +232,8 @@ class NGSProjectSynchronizerTest {
         }
         metadata.setData(data);
         Mockito.doReturn(metadata)
-                .when(client).getMetadata(project.getId(), MACHINE_RUN_CLASS_NAME, MACHINE_RUN_NAME);
+                .when(client).getMetadata(project.getId(), MACHINE_RUN_CLASS_NAME,
+                        MACHINE_RUN_NAME + ":" + SAMPLESHEET_CSV);
     }
 
     private DataStorageFile mockStorageFile(final String fileName,
