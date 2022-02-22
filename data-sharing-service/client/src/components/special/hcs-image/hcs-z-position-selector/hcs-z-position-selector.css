@@ -15,42 +15,24 @@
  */
 
 .container {
-  display: flex;
-  flex-direction: column;
   padding: 5px;
+  overflow: hidden;
 }
 
-.header {
-  margin-bottom: 5px;
-}
-
-.active-badge {
-  margin-left: 15px;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.timepoints-container {
+.container .slider-container {
+  max-height: 200px;
+  padding: 14px 0;
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-left: -5px;
-}
-
-.timepoint {
-  min-width: 25px;
-  padding: 0 3px;
-  height: 25px;
-  display: inline-flex;
-  margin-right: 2px;
-  margin-bottom: 2px;
-  align-items: center;
   justify-content: center;
-  cursor: pointer;
 }
 
-.timepoint.active {
-  cursor: default;
+.container.horizontal .slider-container {
+  width: 100%;
+  display: block;
+  padding: 0 10px;
 }
 
+.title {
+  font-weight: bold;
+}

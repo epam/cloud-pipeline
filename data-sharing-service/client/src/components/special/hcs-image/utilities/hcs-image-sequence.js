@@ -14,12 +14,14 @@
  *  limitations under the License.
  */
 
-/**
- * @typedef {string[]} HCSTimeSeries
- */
-
 import * as HCSConstants from './constants';
 import HCSImageWell from './hcs-image-well';
+
+/**
+ * @typedef {Object} HCSTimeSeries
+ * @property {string} id
+ * @property {string} name
+ */
 
 /**
  * @typedef {Object} HCSImageSequenceOptions
@@ -28,7 +30,7 @@ import HCSImageWell from './hcs-image-well';
  * @property {string} sequence
  * @property {string} directory
  * @property {ObjectStorage} objectStorage
- * @property {HCSTimeSeries[]} timeSeries
+ * @property {string[]} timeSeries
  */
 
 class HCSImageSequence {
@@ -56,7 +58,13 @@ class HCSImageSequence {
      * @type {ObjectStorage} object storage wrapper
      */
     this.objectStorage = objectStorage;
-    this.timeSeries = timeSeries;
+    /**
+     * @type {HCSTimeSeries[]}
+     */
+    this.timeSeries = timeSeries.map((time, index) => ({
+      id: index,
+      name: time
+    }));
     this.omeTiffFileName = [directory, HCSConstants.OME_TIFF_FILE_NAME]
       .join(objectStorage.delimiter || '/');
     this.offsetsJsonFileName = [directory, HCSConstants.OFFSETS_JSON_FILE_NAME]

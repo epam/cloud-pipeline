@@ -84,6 +84,26 @@ class ChannelState {
   }
 }
 
+function buildZPositionsArray (max, zSize, zUnit) {
+  const basePower = Math.floor(Math.log10(zSize || 1));
+  const base = 10 ** basePower;
+  const decimalDigits = 2;
+  const format = o => {
+    const rounded = Math.round(o / base * (10 ** decimalDigits)) / (10 ** decimalDigits);
+    const postfix = basePower !== 0 ? `e${basePower}` : '';
+    return [
+      `${rounded}${postfix}`,
+      zUnit
+    ].filter(Boolean).join('');
+  };
+  return (new Array(max))
+    .fill('')
+    .map((o, z) => ({
+      z,
+      title: format((z + 1) * zSize)
+    }));
+}
+
 class ViewerState {
   @observable use3D = false;
   @observable useLens = false;
@@ -103,6 +123,8 @@ class ViewerState {
    * @type {ChannelState[]}
    */
   @observable channels = [];
+  @observable imageZPosition = 0;
+  @observable availableZPositions = [];
 
   constructor (viewer) {
     this.attachToViewer(viewer);
@@ -150,7 +172,8 @@ class ViewerState {
       zSlice = [],
       use3D = false,
       isRGB,
-      pending = false
+      pending = false,
+      metadata
     } = newState || {};
     this.pending = pending;
     if (pending) {
@@ -168,6 +191,22 @@ class ViewerState {
     this.zSlice = zSlice;
     this.selection = globalSelection;
     this.dimensions = globalDimensions;
+    this.imageZPosition = globalSelection && globalSelection.z
+      ? globalSelection.z
+      : 0;
+    const zDimension = globalDimensions.find(o => /^z$/i.test(o.label));
+    const zSize = zDimension ? Math.max(zDimension.size || 0, 1) : 1;
+    let zPhysicalSize = 1;
+    let zPhysicalSizeUnit;
+    if (metadata && metadata.Pixels) {
+      const {
+        PhysicalSizeZ = 1,
+        PhysicalSizeZUnit
+      } = metadata.Pixels;
+      zPhysicalSize = PhysicalSizeZ;
+      zPhysicalSizeUnit = PhysicalSizeZUnit;
+    }
+    this.availableZPositions = buildZPositionsArray(zSize, zPhysicalSize, zPhysicalSizeUnit);
     /**
      * updated channels options
      * @type {ChannelOptions[]}
@@ -280,6 +319,14 @@ class ViewerState {
     ) {
       this.lensChannel = Number(channelIndex);
       this.viewer.setLensChannel(Number(channelIndex));
+    }
+  };
+
+  @action
+  changeGlobalZPosition = (z) => {
+    if (this.viewer && typeof this.viewer.setGlobalZPosition === 'function') {
+      this.imageZPosition = Number(z);
+      this.viewer.setGlobalZPosition(Number(z));
     }
   };
 }
