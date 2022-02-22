@@ -16,13 +16,13 @@
 package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
 import java.util.Arrays;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.enabled;
-import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -45,7 +45,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
-import static com.epam.pipeline.autotests.utils.PipelineSelectors.pipelineWithName;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
@@ -205,6 +204,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .findFirst()
                     .get()
                     .click();
+            context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
             return this;
         }
 
