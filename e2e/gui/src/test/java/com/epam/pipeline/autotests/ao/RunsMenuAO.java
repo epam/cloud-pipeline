@@ -362,7 +362,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public RunsMenuAO checkPauseButtonTooltip(String runID, String message) {
-        hover(By.cssSelector(format("#run-%s-pause-button", runID)));
+        hover(byId(format("run-%s-pause-button", runID)));
         $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
                 .shouldHave(Condition.text(message));
         return this;

@@ -26,8 +26,8 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -52,6 +52,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
 import static java.lang.String.format;
+import static java.time.format.TextStyle.FULL;
+import static java.util.Locale.getDefault;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertFalse;
 
@@ -129,28 +131,28 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @Test(priority = 2, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_2"})
     public void checkLaunchRunInMaintenanceMode() {
-            navigationMenu()
-                    .tools()
-                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                    .setPriceType("On-demand")
-                    .doNotMountStoragesSelect(true)
-                    .launch(this)
-                    .waitUntilPauseButtonAppear(run1ID = getLastRunId())
-                    .ensurePauseButtonDisabled(run1ID)
-                    .checkPauseButtonTooltip(run1ID, maintenanceModeTooltip)
-                    .showLog(run1ID)
-                    .ensureButtonDisabled(PAUSE)
-                    .ensureButtonDisabled(COMMIT)
-                    .checkButtonTooltip(PAUSE, maintenanceModeTooltip)
-                    .checkButtonTooltip(COMMIT, maintenanceModeTooltip);
-            home()
-                    .checkPauseLinkIsDisabledOnActiveRunsPanel(run1ID)
-                    .checkActiveRunPauseLinkTooltip(run1ID, maintenanceModeTooltip);
-            setDisableSystemMaintenanceMode();
-            navigationMenu()
-                    .runs()
-                    .showLog(run1ID)
-                    .ensureAll(enabled, PAUSE, COMMIT);
+        navigationMenu()
+                .tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType("On-demand")
+                .doNotMountStoragesSelect(true)
+                .launch(this)
+                .waitUntilPauseButtonAppear(run1ID = getLastRunId())
+                .ensurePauseButtonDisabled(run1ID)
+                .checkPauseButtonTooltip(run1ID, maintenanceModeTooltip)
+                .showLog(run1ID)
+                .ensureButtonDisabled(PAUSE)
+                .ensureButtonDisabled(COMMIT)
+                .checkButtonTooltip(PAUSE, maintenanceModeTooltip)
+                .checkButtonTooltip(COMMIT, maintenanceModeTooltip);
+        home()
+                .checkPauseLinkIsDisabledOnActiveRunsPanel(run1ID)
+                .checkActiveRunPauseLinkTooltip(run1ID, maintenanceModeTooltip);
+        setDisableSystemMaintenanceMode();
+        navigationMenu()
+                .runs()
+                .showLog(run1ID)
+                .ensureAll(enabled, PAUSE, COMMIT);
     }
 
     @Test(priority = 4, dependsOnMethods = {"checkLaunchRunInMaintenanceMode"})
@@ -225,15 +227,17 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @Test(priority = 3, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_5"})
     public void hotNodePoolInMaintenanceMode() {
-            setDisableSystemMaintenanceMode();
-            String currentDay = new SimpleDateFormat("EEEE").format(new Date());
+        DayOfWeek day = LocalDate.now().getDayOfWeek();
+        String currentDay = day.getDisplayName(FULL, getDefault());
+        String nextDay = day.plus(1).getDisplayName(FULL, getDefault());
+        setDisableSystemMaintenanceMode();
             clusterMenu()
                     .switchToHotNodePool()
                     .clickCreatePool()
                     .setValue(POOL_NAME, poolName)
                     .selectValue(STARTS_ON, currentDay)
                     .setScheduleTime(STARTS_ON_TIME, "00:00")
-                    .selectValue(ENDS_ON, currentDay)
+                    .selectValue(ENDS_ON, nextDay)
                     .setScheduleTime(ENDS_ON_TIME, "23:59")
                     .selectValue(INSTANCE_TYPE, defaultInstance)
                     .selectValue(CLOUD_REGION, defaultRegion[0])
