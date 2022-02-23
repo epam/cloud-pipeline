@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -282,7 +283,7 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public HotNodePoolsAO switchToHotNodePool() {
-        context().find(byText("Hot Node Pools")).click();
+        context().find(byText("Hot Node Pools")).waitUntil(exist, C.DEFAULT_TIMEOUT).click();
         return new HotNodePoolsAO();
     }
 
