@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import getApplications from '../models/applications';
+import {safePromise as fetchDataStorages} from "../models/cloud-pipeline-api/data-storage-available";
 
 const ApplicationsContext = React.createContext([]);
 const UserContext = React.createContext(undefined);
@@ -11,7 +12,8 @@ export function useApplications () {
   const [user, setUser] = useState(undefined);
   const [error, setError] = useState();
   useEffect(() => {
-    getApplications()
+    fetchDataStorages()
+      .then(() => getApplications())
       .then((payload) => {
         setPending(false);
         if (!payload || payload.error) {

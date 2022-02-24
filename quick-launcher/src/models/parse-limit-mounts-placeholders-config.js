@@ -20,20 +20,13 @@ function fetchMountsByTag(tag, value, storages) {
 
 let availableStoragesPromise;
 
-function getAvailableDataStoragesCached () {
-  if (!availableStoragesPromise) {
-    availableStoragesPromise = getAvailableDataStorages();
-  }
-  return availableStoragesPromise;
-}
-
 export default function fetchMountsForPlaceholders (placeholders) {
   const wrapper = (placeholder, storages) => new Promise(resolve => {
     fetchMountsByTag(placeholder.config.tagName, placeholder.config.tagValue, storages)
       .then(mounts => resolve(mounts.length ? {[placeholder.placeholder]: mounts} : []))
   });
   return new Promise((resolve) => {
-    getAvailableDataStoragesCached()
+    getAvailableDataStorages
       .then(storages => {
         Promise.all(placeholders.map(placeholder => wrapper(placeholder, storages)))
           .then(results => {

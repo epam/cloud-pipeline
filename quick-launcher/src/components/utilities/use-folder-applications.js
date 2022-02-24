@@ -1,6 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import fetchFolderApplications from '../../models/fetch-folder-applications';
 import {useSettings} from '../use-settings';
+import {safePromise as fetchDataStorages} from "../../models/cloud-pipeline-api/data-storage-available";
 
 export default function useFolderApplications(options, useServiceUser = true, ...users) {
   const [applications, setApplications] = useState([]);
@@ -26,11 +27,12 @@ export default function useFolderApplications(options, useServiceUser = true, ..
         .filter(Boolean)
         .concat(users)
         .filter(
-            (user, index, array) => array.findIndex(o => o.userName === user.userName) === index
+          (user, index, array) => array.findIndex(o => o.userName === user.userName) === index
         );
-      Promise.all(
-        uniqueUsers.map(user => fetchFolderApplications(settings, options, user))
-      )
+      fetchDataStorages()
+        .then(() => Promise.all(
+          uniqueUsers.map(user => fetchFolderApplications(settings, options, user))
+        ))
         .then((payloads) => {
           if (!ignore) {
             setApplications(payloads.reduce((r, c) => ([...r, ...c]), []));

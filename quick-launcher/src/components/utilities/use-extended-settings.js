@@ -29,7 +29,7 @@ export default function useExtendedSettings () {
   const [dependencies, setDependencies] = useState({});
   const [sensitiveStorages, setSensitiveStorages] = useState([]);
   useEffect(() => {
-    getAvailableDataStorages()
+    getAvailableDataStorages
       .then((storages) => {
         setSensitiveStorages((storages || []).filter(o => o.sensitive));
       })

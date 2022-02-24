@@ -28,7 +28,7 @@ export default function PickUpMountsModal (
   useEffect(() => {
     if (visible) {
       setPending(true);
-      getAvailableDataStorages()
+      getAvailableDataStorages
         .then((result) => {
           setDataStorages(result);
         })

@@ -497,7 +497,7 @@ export default function EditFolderApplication(
   const [storages, setStorages] = useState([]);
   useEffect(() => {
     console.log('FETCH STORAGES');
-    getAvailableDataStorages()
+    getAvailableDataStorages
       .then(setStorages)
       .catch(() => {});
   }, [application]);

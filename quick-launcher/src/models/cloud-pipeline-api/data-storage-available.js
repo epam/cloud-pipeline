@@ -1,6 +1,6 @@
 import apiGet from '../base/api-get';
 
-export default function getAvailableDataStorages() {
+function getAvailableDataStorages() {
   return new Promise((resolve, reject) => {
     apiGet('datastorage/available')
       .then(result => {
@@ -14,3 +14,14 @@ export default function getAvailableDataStorages() {
       .catch(reject);
   });
 }
+
+const promise = getAvailableDataStorages();
+
+const safePromise = () => new Promise(resolve => {
+  promise
+    .then(() => resolve())
+    .catch(() => resolve());
+})
+
+export {safePromise};
+export default promise;
