@@ -54,7 +54,6 @@ import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
 import static java.lang.String.format;
 import static java.time.format.TextStyle.FULL;
 import static java.util.Locale.getDefault;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertFalse;
 
@@ -232,49 +231,48 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         String currentDay = day.getDisplayName(FULL, getDefault());
         String nextDay = day.plus(1).getDisplayName(FULL, getDefault());
         setDisableSystemMaintenanceMode();
-            clusterMenu()
-                    .switchToHotNodePool()
-                    .clickCreatePool()
-                    .setValue(POOL_NAME, poolName)
-                    .selectValue(STARTS_ON, currentDay)
-                    .setScheduleTime(STARTS_ON_TIME, "02:59")
-                    .selectValue(ENDS_ON, nextDay)
-                    .setScheduleTime(ENDS_ON_TIME, "23:59")
-                    .click(AUTOSCALED)
-                    .sleep(10, SECONDS)
-                    .setAutoscaledParameter("Min Size", 2)
-                    .setAutoscaledParameter("Max Size", 4)
-                    .setAutoscaledParameter("Scale Up Threshold", 70)
-                    .setAutoscaledParameter("Scale Step", 1)
-                    .selectValue(INSTANCE_TYPE, defaultInstance)
-                    .selectValue(CLOUD_REGION, defaultRegion[0])
-                    .setValue(DISK, "20")
-                    .addDockerImage(registry, group, tool)
-                    .ok()
-                    .waitUntilRunningNodesAppear(poolName, 2);
-            launchTool();
-            clusterMenu()
-                    .switchToHotNodePool()
-                    .waitUntilActiveNodesAppear(poolName, 1)
-                    .switchToCluster()
-                    .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
-            launchTool();
-            clusterMenu()
-                    .switchToHotNodePool()
-                    .waitUntilActiveNodesAppear(poolName, 2)
-                    .waitUntilRunningNodesAppear(poolName, 3)
-                    .switchToCluster()
-                    .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
-            setEnableSystemMaintenanceMode();
-            launchTool();
-            clusterMenu()
-                    .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName)
-                    .switchToHotNodePool()
-                    .waitUntilActiveNodesAppear(poolName, 3)
-                    .waitUntilRunningNodesAppear(poolName, 3);
-            launchTool();
-            clusterMenu()
-                    .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        clusterMenu()
+                .switchToHotNodePool()
+                .clickCreatePool()
+                .setValue(POOL_NAME, poolName)
+                .selectValue(STARTS_ON, currentDay)
+                .setScheduleTime(STARTS_ON_TIME, "00:01")
+                .selectValue(ENDS_ON, nextDay)
+                .setScheduleTime(ENDS_ON_TIME, "23:59")
+                .click(AUTOSCALED)
+                .setAutoscaledParameter("Min Size", 2)
+                .setAutoscaledParameter("Max Size", 4)
+                .setAutoscaledParameter("Scale Up Threshold", 70)
+                .setAutoscaledParameter("Scale Step", 1)
+                .selectValue(INSTANCE_TYPE, defaultInstance)
+                .selectValue(CLOUD_REGION, defaultRegion[0])
+                .setValue(DISK, "20")
+                .addDockerImage(registry, group, tool)
+                .ok()
+                .waitUntilRunningNodesAppear(poolName, 2);
+        launchTool();
+        clusterMenu()
+                .switchToHotNodePool()
+                .waitUntilActiveNodesAppear(poolName, 1)
+                .switchToCluster()
+                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        launchTool();
+        clusterMenu()
+                .switchToHotNodePool()
+                .waitUntilActiveNodesAppear(poolName, 2)
+                .waitUntilRunningNodesAppear(poolName, 3)
+                .switchToCluster()
+                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName);
+        setEnableSystemMaintenanceMode();
+        launchTool();
+        clusterMenu()
+                .checkNodeContainsHotNodePoolsLabel(getLastRunId(), poolName)
+                .switchToHotNodePool()
+                .waitUntilActiveNodesAppear(poolName, 3)
+                .waitUntilRunningNodesAppear(poolName, 3);
+        launchTool();
+        clusterMenu()
+                .checkNodeNotContainsHotNodePoolsLabel(getLastRunId(), poolName);
     }
 
     private SettingsPageAO.PreferencesAO setSystemMaintenanceModeBanner(String textBanner) {
