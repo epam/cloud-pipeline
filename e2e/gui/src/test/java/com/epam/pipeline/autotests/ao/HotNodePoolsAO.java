@@ -205,13 +205,14 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .get()
                     .click();
             context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
-            sleep(10, SECONDS);
+            sleep(5, SECONDS);
             screenshot("add_docker_image");
             return this;
         }
 
         @Override
         public HotNodePoolsAO ok() {
+            screenshot("before_close_pop_up");
             sleep(1, SECONDS);
             click(CREATE);
             sleep(2, SECONDS);

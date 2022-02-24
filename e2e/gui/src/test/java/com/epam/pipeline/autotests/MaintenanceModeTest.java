@@ -66,7 +66,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String defaultInstance = C.DEFAULT_INSTANCE;
-    private final String poolName = "testpool2423"; //format("test_pool-%s", randomSuffix());
+    private final String poolName = format("test_pool-%s", randomSuffix());
     private final String version = format("version-%s", randomSuffix());
 
     private String defaultSystemMaintenanceModeBanner;
@@ -242,12 +242,12 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                     .selectValue(INSTANCE_TYPE, defaultInstance)
                     .selectValue(CLOUD_REGION, defaultRegion[0])
                     .setValue(DISK, "20")
+                    .addDockerImage(registry, group, tool)
                     .click(AUTOSCALED)
                     .setAutoscaledParameter("Min Size", 2)
                     .setAutoscaledParameter("Max Size", 4)
                     .setAutoscaledParameter("Scale Up Threshold", 70)
                     .setAutoscaledParameter("Scale Step", 1)
-                    .addDockerImage(registry, group, tool)
                     .ok()
                     .waitUntilRunningNodesAppear(poolName, 2);
             launchTool();
