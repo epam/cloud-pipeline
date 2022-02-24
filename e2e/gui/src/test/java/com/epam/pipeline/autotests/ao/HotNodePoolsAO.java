@@ -213,7 +213,6 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
         @Override
         public HotNodePoolsAO ok() {
             sleep(1, SECONDS);
-            hover(CREATE);
             screenshot("before_close_pop_up");
             click(CREATE);
             sleep(2, SECONDS);
