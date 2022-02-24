@@ -205,7 +205,8 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .get()
                     .click();
             context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
-            sleep(5, SECONDS);
+            sleep(10, SECONDS);
+            screenshot("add_docker_image");
             return this;
         }
 
@@ -214,6 +215,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
             sleep(1, SECONDS);
             click(CREATE);
             sleep(2, SECONDS);
+            screenshot("close_pop_up");
             return this.parent();
         }
 
