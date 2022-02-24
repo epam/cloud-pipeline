@@ -66,7 +66,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String defaultInstance = C.DEFAULT_INSTANCE;
-    private final String poolName = format("test_pool-%s", randomSuffix());
+    private final String poolName = "testpool2423"; //format("test_pool-%s", randomSuffix());
     private final String version = format("version-%s", randomSuffix());
 
     private String defaultSystemMaintenanceModeBanner;
