@@ -85,6 +85,7 @@ public class NGSProjectSynchronizer {
     public static final String SAMPLESHEET_FILE_NAME_TEMPLATE = ".*samplesheet.*\\.csv";
     public static final String UPDATED_DATE_COLUMN = "Updated Date";
     public static final String ZERO_TIME_POINT = "1970-01-01T00:00:00Z";
+    public static final String NAME_DELIMITER = ":";
 
     private final CloudPipelineAPIClient apiClient;
     private NgsProjectSyncContext syncContext;
@@ -163,7 +164,7 @@ public class NGSProjectSynchronizer {
                     continue;
                 }
                 final MetadataEntity machineRunEntity = getOrCreateMachineRunEntity(
-                        project, syncContext, machineRun + ":" + sampleSheetFile.getName());
+                        project, syncContext, String.join(NAME_DELIMITER, machineRun, sampleSheetFile.getName()));
 
                 if (needToUpdateSampleSheet(syncContext, machineRunEntity, sampleSheetFile)) {
                     // update sample sheet metadata
@@ -217,27 +218,28 @@ public class NGSProjectSynchronizer {
     }
 
     private boolean needToUpdateSampleSheet(final NgsProjectSyncContext syncContext,
-                                    final MetadataEntity machineRunEntity,
-                                    final DataStorageFile sampleSheetFile) {
+                                            final MetadataEntity machineRunEntity,
+                                            final DataStorageFile sampleSheetFile) {
 
         final Map<String, PipeConfValue> machineRunData = MapUtils.emptyIfNull(machineRunEntity.getData());
         if (machineRunData.containsKey(syncContext.getSampleSheetLinkColumn())) {
-            final Date sampleSheetTimestamp;
-            final Date lastUpdateTimestamp;
+            final Date sampleSheetFileUpdateTimestamp;
+            final Date lastSyncTimestamp;
             try {
-                sampleSheetTimestamp = DateUtils.parseDate(sampleSheetFile.getChanged(), DATE_FORMAT);
-                lastUpdateTimestamp = DateUtils.parseDate(
+                sampleSheetFileUpdateTimestamp = DateUtils.parseDate(sampleSheetFile.getChanged(), DATE_FORMAT);
+                lastSyncTimestamp = DateUtils.parseDate(
                         Optional.ofNullable(machineRunData.get(UPDATED_DATE_COLUMN))
                                 .map(PipeConfValue::getValue).orElse(ZERO_TIME_POINT), DATE_FORMAT
                 );
             } catch (ParseException e) {
                 log.warn(String.format(
-                        "Can't parse a date for machine run: %s", machineRunEntity.getExternalId()), e);
+                        "Can't parse a date for machine run: %s, will not proceed with synchronization.",
+                        machineRunEntity.getExternalId()), e);
                 return false;
             }
             log.info(String.format("Last update time of MachineRun Entity: %s, sample sheet file change time: %s",
-                    lastUpdateTimestamp, sampleSheetTimestamp));
-            return sampleSheetTimestamp.after(lastUpdateTimestamp);
+                    lastSyncTimestamp, sampleSheetFileUpdateTimestamp));
+            return sampleSheetFileUpdateTimestamp.after(lastSyncTimestamp);
         } else {
             log.info(String.format(
                     "For machine run %s there is no linked sample sheet yet, will proceed with sync",
