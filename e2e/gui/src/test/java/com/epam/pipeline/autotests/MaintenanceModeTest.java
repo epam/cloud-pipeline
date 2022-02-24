@@ -237,7 +237,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                     .clickCreatePool()
                     .setValue(POOL_NAME, poolName)
                     .selectValue(STARTS_ON, currentDay)
-                    .setScheduleTime(STARTS_ON_TIME, "04:00")
+                    .setScheduleTime(STARTS_ON_TIME, "02:59")
                     .selectValue(ENDS_ON, nextDay)
                     .setScheduleTime(ENDS_ON_TIME, "23:59")
                     .click(AUTOSCALED)
