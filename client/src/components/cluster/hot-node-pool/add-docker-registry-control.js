@@ -357,20 +357,26 @@ class AddDockerRegistryControl extends React.Component {
       imagesToExclude.includes(tool.dockerImage);
     };
     return (
-      group.tools.map(tool => (
-        <Select.Option
-          key={tool.id}
-          value={tool.dockerImage}
-          style={{
-            background: isDisabled(tool)
-              ? '#dfdfdf'
-              : 'none'
-          }}
-          disabled={isDisabled(tool)}
-        >
-          <DockerImageDetails docker={tool.dockerImage} />
-        </Select.Option>
-      ))
+      group.tools.map(tool => {
+        const [r, g, iv] = tool.dockerImage.split('/');
+        const registry = (tool.registry && tool.registry.description) || r;
+        const title = `${registry} > ${g} > ${iv}`;
+        return (
+          <Select.Option
+            key={tool.id}
+            value={tool.dockerImage}
+            style={{
+              background: isDisabled(tool)
+                ? '#dfdfdf'
+                : 'none'
+            }}
+            disabled={isDisabled(tool)}
+            title={title}
+          >
+            <DockerImageDetails docker={tool.dockerImage} />
+          </Select.Option>
+        );
+      })
     );
   };
 
@@ -420,7 +426,10 @@ class AddDockerRegistryControl extends React.Component {
           >
             {
               this.tools.map(group => (
-                <Select.OptGroup key={group.key} label={group.label}>
+                <Select.OptGroup
+                  key={group.key}
+                  label={group.label}
+                >
                   {this.renderSelectGroup(group)}
                 </Select.OptGroup>
               ))
