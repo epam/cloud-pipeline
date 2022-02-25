@@ -137,7 +137,7 @@ class GitManager:
             return None
         return git_file_diff.to_json()
 
-    def push(self, versioned_storage_id, message, files_to_add=None):
+    def push(self, versioned_storage_id, message, files_to_add=None, token=None):
         if self.is_head_detached(versioned_storage_id):
             raise RuntimeError('HEAD detached')
         if not message:
@@ -145,8 +145,10 @@ class GitManager:
         full_repo_path = self._build_path_to_repo(versioned_storage_id)
         task_id = str(uuid.uuid4().hex)
         task = GitTask(task_id, self.logger)
+        _, user_name, user_email = self._parse_git_credentials(token)
         self.tasks.update({task_id: task})
-        self.pool.apply_async(task.push, [self.git_client, full_repo_path, message, files_to_add])
+        self.pool.apply_async(task.push,
+                              [self.git_client, full_repo_path, message, files_to_add, user_name, user_email])
         return task_id
 
     def save_file(self, versioned_storage_id, path, content):
@@ -212,8 +214,8 @@ class GitManager:
         folder_name = versioned_storage.get(VERSION_STORAGE_IDENTIFIER)
         return os.path.join(self.root_folder, str(folder_name))
 
-    def _parse_git_credentials(self):
-        git_credentials = self.api_client.get_git_credentials(duration=GIT_CREDENTIALS_DURATION_DAYS)
+    def _parse_git_credentials(self, token=None):
+        git_credentials = self.api_client.get_git_credentials(duration=GIT_CREDENTIALS_DURATION_DAYS, token=token)
         return git_credentials.get('token'), git_credentials.get('userName'), git_credentials.get('email')
 
     def _build_and_log_version_storage_error(self, item_name, item_path, error_message):
