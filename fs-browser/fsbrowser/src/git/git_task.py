@@ -80,13 +80,13 @@ class GitTask(Task):
             self.logger.log(traceback.format_exc())
             self.failure(e)
 
-    def push(self, git_client, full_repo_path, message, files_to_add=None):
+    def push(self, git_client, full_repo_path, message, files_to_add=None, user_name=None, user_email=None):
         try:
             self.indexing()
             git_client.prepare_index(full_repo_path, files_to_add)
 
             self.committing()
-            git_client.commit(full_repo_path, message)
+            git_client.commit(full_repo_path, message, user_name, user_email)
 
             self.pulling()
             conflicts = git_client.pull(full_repo_path)

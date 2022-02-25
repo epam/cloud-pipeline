@@ -152,7 +152,7 @@ class GitClient:
             self.logger.log("File '%s' staged" % path_to_stage)
         index.write()
 
-    def commit(self, repo_path, message, remote_name=GitHelper.DEFAULT_REMOTE_NAME,
+    def commit(self, repo_path, message, user_name=None, user_email=None, remote_name=GitHelper.DEFAULT_REMOTE_NAME,
                branch=GitHelper.DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         head_id = repo.head.target
@@ -161,7 +161,7 @@ class GitClient:
         remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
         parent = [head_id, remote_master_id] if merge_in_progress else [head_id]
 
-        author = self._get_author()
+        author = self._get_author(user_name, user_email)
         index = repo.index
         tree = index.write_tree()
 
@@ -169,7 +169,7 @@ class GitClient:
             message = self._build_merge_commit_message(head_id, remote_master_id)
 
         commit = repo.create_commit('HEAD', author, author, message, tree, parent)
-        self.logger.log("Committed to repo '%s'" % repo_path)
+        self.logger.log("User '%s' committed to repo '%s'" % (author.name, repo_path))
         if merge_in_progress:
             self._finish_merge(repo)
         return commit
@@ -318,7 +318,9 @@ class GitClient:
     def _set_mode(self, path, mode):
         os.chmod(path, os.stat(path).st_mode | mode)
 
-    def _get_author(self):
+    def _get_author(self, user_name=None, user_email=None):
+        if user_name and user_email:
+            return pygit2.Signature(user_name, user_email)
         return pygit2.Signature(self.user_name, self.user_email)
 
     @staticmethod
