@@ -33,7 +33,8 @@ import {
   Popover,
   Row,
   Select,
-  Spin
+  Spin,
+  Upload
 } from 'antd';
 import styles from './LaunchPipelineForm.css';
 import Menu, {MenuItem} from 'rc-menu';
@@ -55,6 +56,10 @@ import MetadataEntityFields from '../../../../models/folderMetadata/MetadataEnti
 import ToolDefaultCommand from '../../../../models/tools/ToolDefaultCommand';
 
 import roleModel from '../../../../utils/roleModel';
+import {
+  parametersFromCSVString,
+  parametersFromJSONString
+} from '../../../../utils/read-parameters';
 import SystemParametersBrowser from '../dialogs/SystemParametersBrowser';
 import localization from '../../../../utils/localization';
 
@@ -1416,6 +1421,29 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return `${this.props.parameters[key]}`;
   };
 
+  getParameterKey = (parameter, section) => {
+    const sectionValues = this.getSectionValue(section);
+    if (parameter && sectionValues && sectionValues.params) {
+      const activeKeys = sectionValues.keys || [];
+      const {key} = Object.values(sectionValues.params)
+        .find(dataObject => dataObject.name === parameter.name &&
+          activeKeys.includes(dataObject.key)
+        ) || {};
+      return key;
+    }
+    return undefined;
+  };
+
+  getParameterSection = parameter => {
+    if (this.isSystemParameter(parameter)) {
+      if (parameter.name === CP_CAP_LIMIT_MOUNTS) {
+        return ADVANCED;
+      }
+      return SYSTEM_PARAMETERS;
+    }
+    return PARAMETERS;
+  };
+
   getInstanceTypes = (instanceTypesRequest) => {
     if (!instanceTypesRequest) {
       return [];
@@ -2501,6 +2529,79 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.props.form.setFieldsValue({[sectionName]: parametersValues});
   };
 
+  bulkAddParameters = (parameters) => {
+    if (!Array.isArray(parameters) || !parameters.length) {
+      return;
+    }
+    const formData = this.props.form.getFieldsValue();
+    const payload = {};
+    const updateAdvancedParameter = (parameter) => {
+      if (parameter.name === CP_CAP_LIMIT_MOUNTS) {
+        payload[`${ADVANCED}.limitMounts`] = parameter.value;
+      }
+    };
+    const updateParameter = (parameter, section, isSystemSection) => {
+      const newValues = {
+        type: parameter.type,
+        name: parameter.name,
+        required: parameter.required,
+        value: parameter.value
+      };
+      const key = this.getParameterKey(parameter, section);
+      if (key) {
+        if (!payload[section]) {
+          payload[section] = {params: {}};
+        }
+        const currentValues = formData[section].params[key] || {};
+        payload[section].params = {
+          ...payload[section].params,
+          ...{[key]: {...currentValues, ...newValues}}
+        };
+      } else {
+        const parameterIndexIdentifierKey = isSystemSection
+          ? 'system'
+          : 'nonSystem';
+        this.parameterIndexIdentifier[parameterIndexIdentifierKey] += 1;
+        const newKeyIndex = `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`;
+        this.addedParameters[newKeyIndex] = newValues;
+        formData[section].keys.push(newKeyIndex);
+      }
+    };
+    for (let parameter of parameters) {
+      const section = this.getParameterSection(parameter);
+      const isSystemParameter = this.isSystemParameter(parameter);
+      if (isSystemParameter) {
+        if (section === ADVANCED) {
+          updateAdvancedParameter(parameter);
+        } else {
+          updateParameter(parameter, SYSTEM_PARAMETERS, isSystemParameter);
+        }
+      } else {
+        updateParameter(parameter, PARAMETERS, isSystemParameter);
+      }
+    }
+    this.props.form.setFieldsValue(payload);
+  };
+
+  handleParametersImport = async (file) => {
+    if (!file || !file.name) {
+      return;
+    }
+    const hide = message.loading('Reading file contents...', 0);
+    const extension = (file.name.split('.').pop() || '').toLowerCase();
+    let parameters;
+    if (extension === 'csv') {
+      parameters = await parametersFromCSVString(file);
+    } else if (extension === 'json') {
+      parameters = await parametersFromJSONString(file);
+    }
+    hide();
+    if (parameters && parameters.error) {
+      return message.error(parameters.error, 5);
+    }
+    return this.bulkAddParameters(parameters);
+  };
+
   validateParameterName = (sectionName, key, isSystemParameter) => (rule, value, callback) => {
     const parametersValues = this.getSectionValue(sectionName);
     let error = false;
@@ -2796,6 +2897,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   ) : undefined
               }
             </Button.Group>
+            <Upload
+              disabled={(this.props.readOnly && !this.props.canExecute) ||
+              (!!this.state.pipeline && this.props.detached)}
+              id="import-parameter-button"
+              accept={'text/csv, application/json'}
+              multiple={false}
+              showUploadList={false}
+              beforeUpload={this.handleParametersImport}
+            >
+              <Button>
+                <Icon type="upload" />
+                Import parameters
+              </Button>
+            </Upload>
           </Row>
         );
       }

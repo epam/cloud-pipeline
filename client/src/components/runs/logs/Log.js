@@ -88,7 +88,7 @@ import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
 import {
   parametersToCSVString,
   parametersToJSONString
-} from '../utilities/export-parameters';
+} from '../../../utils/read-parameters';
 import RunTags from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
