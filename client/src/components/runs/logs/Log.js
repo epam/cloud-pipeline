@@ -115,7 +115,13 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
+@inject(
+  'preferences',
+  'dtsList',
+  'multiZoneManager',
+  'dockerRegistries',
+  'runDefaultParameters'
+)
 @VSActions.check
 @inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -163,7 +169,12 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
-    const {runTasks, runSchedule} = this.props;
+    const {
+      runTasks,
+      runSchedule,
+      runDefaultParameters
+    } = this.props;
+    runDefaultParameters.fetchIfNeededOrWait();
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
@@ -263,6 +274,23 @@ class Logs extends localization.LocalizedReactComponent {
     }
     return false;
   }
+
+  @computed
+  get runDefaultParameters () {
+    const {runDefaultParameters} = this.props;
+    if (runDefaultParameters && runDefaultParameters.loaded) {
+      return this.props.runDefaultParameters.value || [];
+    }
+    return undefined;
+  }
+
+  isSystemParameter = (parameter) => {
+    if (this.runDefaultParameters) {
+      return this.runDefaultParameters
+        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase()).length > 0;
+    }
+    return false;
+  };
 
   exportLog = async () => {
     const {runId} = this.props.params;
@@ -1361,29 +1389,36 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
-  onExportParameters = (extension = 'csv') => {
+  onExportParameters = (extension = 'csv', exportType = 'general') => {
     const {run} = this.props;
     if (run && run.value && run.value.pipelineRunParameters) {
       const {pipelineRunParameters} = run.value;
       const options = {
         excludedKeys: ['resolvedValue']
       };
+      let parametersToExport;
+      if (exportType === 'all') {
+        parametersToExport = pipelineRunParameters;
+      } else {
+        parametersToExport = pipelineRunParameters
+          .filter(param => !this.isSystemParameter(param));
+      }
       let content;
       switch (extension) {
         case 'csv':
-          content = parametersToCSVString(pipelineRunParameters, options);
+          content = parametersToCSVString(parametersToExport, options);
           break;
         case 'json':
-          content = parametersToJSONString(pipelineRunParameters, options);
+          content = parametersToJSONString(parametersToExport, options);
           break;
         default:
-          content = parametersToCSVString(pipelineRunParameters, options);
+          content = parametersToCSVString(parametersToExport, options);
           break;
       }
       try {
         FileSaver.saveAs(
           new Blob([content]),
-          `run_${run.value.id}_parameters.${extension.toLowerCase()}`
+          `run_${run.value.id}_${exportType}_parameters.${extension.toLowerCase()}`
         );
       } catch (error) {
         message.error('Failed to export parameters', 5);
@@ -1748,10 +1783,23 @@ class Logs extends localization.LocalizedReactComponent {
         );
         const exportParametersMenu = (
           <Menu
-            onClick={({key}) => this.onExportParameters(key)}
+            onClick={({key}) => {
+              const [extension, exportType] = key.split('|');
+              this.onExportParameters(extension, exportType);
+            }}
           >
-            <Menu.Item key="csv">Export as CSV</Menu.Item>
-            <Menu.Item key="json">Export as JSON</Menu.Item>
+            <Menu.Item key="csv|all">
+              Export all parameters to CSV
+            </Menu.Item>
+            <Menu.Item key="json|all">
+              Export all parameters to JSON
+            </Menu.Item>
+            <Menu.Item key="csv|general">
+              Export general parameters to CSV
+            </Menu.Item>
+            <Menu.Item key="json|general">
+              Export general parameters to JSON
+            </Menu.Item>
           </Menu>
         );
         const parametersCollapseHeader = (
