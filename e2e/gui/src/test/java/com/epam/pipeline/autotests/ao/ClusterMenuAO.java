@@ -284,10 +284,6 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     public HotNodePoolsAO switchToHotNodePool() {
         sleep(5, SECONDS);
-        if (!$(byText("Hot Node Pools")).parent().exists()) {
-            refresh();
-        }
-        sleep(5, SECONDS);
         context().find(byText("Hot Node Pools")).parent()
                 .waitUntil(exist, C.DEFAULT_TIMEOUT)
                 .shouldBe(enabled).click();
