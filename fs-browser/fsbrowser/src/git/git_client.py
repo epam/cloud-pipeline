@@ -14,6 +14,7 @@
 import os
 import stat
 import pygit2
+from pygit2 import GitError
 
 from fsbrowser.src.git.git_diff_helper import GitDiffHelper
 from fsbrowser.src.git.git_helper import GitHelper
@@ -74,6 +75,42 @@ class GitClient:
             raise RuntimeError('Unknown merge analysis result')
         self._fix_permissions(repo.workdir)
         return result
+
+    def fetch_and_merge(self, path, message,
+                        remote_name=GitHelper.DEFAULT_REMOTE_NAME, branch=GitHelper.DEFAULT_BRANCH_NAME):
+        callbacks = self._build_callback()
+        repo = self._repository(path)
+        remote = self._get_remote(repo, remote_name)
+        commit_required = True
+
+        if self._is_merge_in_progress(repo):
+            self.commit(path, message, remote_name, branch)
+            commit_required = False
+
+        remote.fetch(callbacks=callbacks)
+        remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
+        merge_result, _ = repo.merge_analysis(remote_master_id)
+        result = []
+        if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
+            # Up to date, do nothing
+            self.logger.log("Repository '%s' already up to date" % path)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL and \
+                merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+            try:
+                self._fast_forward_pull(repo, path, remote_master_id, branch)
+            except GitError as e:
+                self.logger.log("Fast-forward pull failed: %s" % str(e))
+                if not self._is_merge_in_progress(repo):
+                    self.commit(path, message, remote_name, branch)
+                result = self._merge(repo, remote_master_id)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+            self._fast_forward_pull(repo, path, remote_master_id, branch)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
+            result = self._merge(repo, remote_master_id, True)
+        else:
+            raise RuntimeError('Unknown merge analysis result')
+        self._fix_permissions(repo.workdir)
+        return result, commit_required
 
     def ahead_behind(self, repo_path):
         repo = self._repository(repo_path)

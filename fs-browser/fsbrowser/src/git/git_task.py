@@ -85,14 +85,15 @@ class GitTask(Task):
             self.indexing()
             git_client.prepare_index(full_repo_path, files_to_add)
 
-            self.committing()
-            git_client.commit(full_repo_path, message)
-
             self.pulling()
-            conflicts = git_client.pull(full_repo_path)
+            conflicts, commit_required = git_client.fetch_and_merge(full_repo_path, message)
             if conflicts:
                 self._conflicts_failure(conflicts)
                 return
+
+            if commit_required:
+                self.committing()
+                git_client.commit(full_repo_path, message)
 
             self.pushing()
             git_client.push(full_repo_path)
