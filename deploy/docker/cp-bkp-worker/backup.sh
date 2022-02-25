@@ -156,21 +156,21 @@ for _dest_bkp_storage_name in ${CP_BKP_STORAGE_ARRAY[@]}; do
         failure keep_running "[ERROR] An error occured while transferring backups from $CP_BKP_SERVICE_WD to $TARGET_STORAGE_LOCATION_DATE"
         _has_copy_errors=true
     fi
+
+    # Remove the outdated backup (keep last CP_BKP_FILES_COUNT)
+    export CP_BKP_FILES_COUNT="${CP_BKP_FILES_COUNT:-10}"
+    TARGET_STORAGE_BKP_FILES=($(/pipe storage ls $TARGET_STORAGE_LOCATION))
+    TARGET_STORAGE_BKP_FILES_COUNT=${#TARGET_STORAGE_BKP_FILES[@]}
+    echo "Cleaning the outdated backups from $TARGET_STORAGE_LOCATION ($TARGET_STORAGE_BKP_FILES_COUNT exists, $CP_BKP_FILES_COUNT shall be kept)"
+    while (( TARGET_STORAGE_BKP_FILES_COUNT > CP_BKP_FILES_COUNT )); do
+        TARGET_STORAGE_BKP_OUTDATED=${TARGET_STORAGE_BKP_FILES[0]}
+        TARGET_STORAGE_BKP_FILES=(${TARGET_STORAGE_BKP_FILES[@]:1})
+        TARGET_STORAGE_BKP_FILES_COUNT=${#TARGET_STORAGE_BKP_FILES[@]}
+        /pipe storage rm -r -y "${TARGET_STORAGE_LOCATION}${TARGET_STORAGE_BKP_OUTDATED}"
+    done
 done
 if [ "$_has_copy_errors" == true ]; then
     echo "Some of the data transfer operations has failed, see output above. Exiting"
     exit 1
 fi
 rm -rf $CP_BKP_SERVICE_WD/cp-bkp-*
-
-# Remove the outdated backup (keep last CP_BKP_FILES_COUNT)
-export CP_BKP_FILES_COUNT="${CP_BKP_FILES_COUNT:-10}"
-TARGET_STORAGE_BKP_FILES=($(/pipe storage ls $TARGET_STORAGE_LOCATION))
-TARGET_STORAGE_BKP_FILES_COUNT=${#TARGET_STORAGE_BKP_FILES[@]}
-echo "Cleaning the outdated backups from $TARGET_STORAGE_LOCATION ($TARGET_STORAGE_BKP_FILES_COUNT exists, $CP_BKP_FILES_COUNT shall be kept)"
-while (( TARGET_STORAGE_BKP_FILES_COUNT > CP_BKP_FILES_COUNT )); do
-    TARGET_STORAGE_BKP_OUTDATED=${TARGET_STORAGE_BKP_FILES[0]}
-    TARGET_STORAGE_BKP_FILES=(${TARGET_STORAGE_BKP_FILES[@]:1})
-    TARGET_STORAGE_BKP_FILES_COUNT=${#TARGET_STORAGE_BKP_FILES[@]}
-    /pipe storage rm -r -y "${TARGET_STORAGE_LOCATION}${TARGET_STORAGE_BKP_OUTDATED}"
-done
