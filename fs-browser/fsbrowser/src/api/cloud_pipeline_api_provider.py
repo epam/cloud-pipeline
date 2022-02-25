@@ -52,11 +52,6 @@ class CloudPipelineAPI:
         self._timeout = timeout
         self._connection_timeout = connection_timeout
         self._page_size = page_size
-        self._headers = {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer ' + self._api_token,
-            'Content-Type': 'application/json',
-        }
 
     def find_pipeline(self, id):
         result = self._get('/pipeline/find?id=%s' % str(id))
@@ -84,29 +79,30 @@ class CloudPipelineAPI:
         result = self._post(url, data)
         return result or {}
 
-    def get_git_credentials(self, duration):
+    def get_git_credentials(self, duration, token=None):
         url = '/pipeline/git/credentials'
         if duration:
             url += '?duration=%d' % duration
-        result = self._get('/pipeline/git/credentials')
+        result = self._get('/pipeline/git/credentials', token)
         return result or {}
 
-    def _get(self, url):
-        return self._execute_request(url, 'get')
+    def _get(self, url, token=None):
+        return self._execute_request(url, 'get', token=token)
 
-    def _post(self, url, data=None):
-        return self._execute_request(url, 'post', data=data)
+    def _post(self, url, data=None, token=None):
+        return self._execute_request(url, 'post', data=data, token=token)
 
-    def _execute_request(self, method_url, http_method, data=None):
+    def _execute_request(self, method_url, http_method, data=None, token=None):
         url = self._api + method_url
         logger.debug('Calling %s...', url)
         count = 0
         exceptions = []
+        headers = self._build_headers(token or self._api_token)
         while count < self._attempts:
             count += 1
             try:
                 response = requests.request(method=http_method, url=url, data=json.dumps(data) if data else None,
-                                            headers=self._headers, verify=False, timeout=self._connection_timeout)
+                                            headers=headers, verify=False, timeout=self._connection_timeout)
                 if response.status_code != self._RESPONSE_CODE_OK:
                     raise HTTPError('API responded with http status %s.' % str(response.status_code))
                 response_json = response.json()
@@ -126,6 +122,14 @@ class CloudPipelineAPI:
             time.sleep(self._timeout)
         logger.warning('Exceeded maximum retry count %s for API request.', self._attempts)
         raise exceptions[-1]
+
+    @staticmethod
+    def _build_headers(api_token):
+        return {
+            'Accept': 'application/json',
+            'Authorization': 'Bearer ' + api_token,
+            'Content-Type': 'application/json',
+        }
 
 
 class CloudPipelineApiProvider(object):
@@ -161,8 +165,8 @@ class CloudPipelineApiProvider(object):
     def log_event(self, run_id, data):
         self.api.log_event(run_id, data)
 
-    def get_git_credentials(self, duration):
-        result = self.api.get_git_credentials(duration)
+    def get_git_credentials(self, duration, token=None):
+        result = self.api.get_git_credentials(duration, token)
         if not result:
             raise RuntimeError("Failed to load git credentials for user")
         if 'userName' not in result:
