@@ -1879,18 +1879,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
-                  readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                  placeholder={'Value'}
-                  parameterKey={key}
-                  currentMetadataEntity={this.state.currentMetadataEntity.slice()}
-                  currentProjectMetadata={this.state.currentProjectMetadata}
-                  rootEntityId={this.state.rootEntityId}
-                  showWithButton
+                readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
+                placeholder={'Value'}
+                parameterKey={key}
+                currentMetadataEntity={this.state.currentMetadataEntity.slice()}
+                currentProjectMetadata={this.state.currentProjectMetadata}
+                rootEntityId={this.state.rootEntityId}
+                showWithButton
               />
               : <Input
-                  disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                  placeholder="Value"
-                  className={styles.parameterValue}
+                disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
+                placeholder="Value"
+                className={styles.parameterValue}
               />
           )
         }
@@ -1936,10 +1936,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 enumeration
                   .filter(e => e.isVisible(parameters))
                   .map(e => {
-                    return (
-                      <Select.Option key={e.name} value={e.name}>{e.name}</Select.Option>
-                    );
-                  })
+                  return (
+                    <Select.Option key={e.name} value={e.name}>{e.name}</Select.Option>
+                  );
+                })
               }
             </Select>
           )
@@ -1999,7 +1999,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     {key, value, required, readOnly, validator},
     type,
     system,
-    visible
+    visible,
   ) => {
     let icon;
     switch (type) {
@@ -2046,30 +2046,30 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           })(
             this.props.isDetachedConfiguration
               ? <AutoCompleteForParameter
-                  readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                  placeholder={'Path'}
-                  parameterKey={key}
-                  currentMetadataEntity={this.state.currentMetadataEntity.slice()}
-                  currentProjectMetadata={this.state.currentProjectMetadata}
-                  rootEntityId={this.state.rootEntityId}
-                  showWithButton={false}
-                  buttonIcon={icon}
-                  onButtonClick={(selectKey, selectValue) => {
+                readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
+                placeholder={'Path'}
+                parameterKey={key}
+                currentMetadataEntity={this.state.currentMetadataEntity.slice()}
+                currentProjectMetadata={this.state.currentProjectMetadata}
+                rootEntityId={this.state.rootEntityId}
+                showWithButton={false}
+                buttonIcon={icon}
+                onButtonClick={(selectKey, selectValue) => {
                   this.openBucketBrowser(sectionName, selectKey, selectValue, type);
                 }}
               />
               : <Input
-                  disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
-                  style={{width: '100%'}}
-                  addonBefore={
+                disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
+                style={{width: '100%'}}
+                addonBefore={
                   <div
-                      className={styles.pathType}
-                      onClick={() =>
+                    className={styles.pathType}
+                    onClick={() =>
                       !(this.props.readOnly && !this.props.canExecute) &&
                       this.openBucketBrowser(sectionName, key, value, type)}>
-                      <Icon type={icon} />
-                    </div>}
-                  placeholder="Path"
+                    <Icon type={icon} />
+                  </div>}
+                placeholder="Path"
               />
           )
         }
@@ -2881,302 +2881,314 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return [];
       } else {
         const normalizedParameters = parameterUtilities.normalizeParameters(parameters);
-        const renderParametersGroup = (keys, params) => {
-          return keys.map(key => {
-            const parameter = (params ? params[key] : undefined) || this.addedParameters[key];
-            let name = parameter ? parameter.name : '';
-            let value = parameter ? parameter.value : '';
-            const resolvedValue = parameter ? parameter.resolvedValue : '';
-            const hasResolvedValue = parameter ? parameter.hasResolvedValue : false;
-            let type = parameter ? parameter.type : 'string';
-            let readOnly = parameter ? parameter.readOnly : false;
-            const restrictedSystemParameter = this.isSystemParameterRestrictedByRole(parameter);
-            const removeAllowed = !isSystemParametersSection ||
-              !restrictedSystemParameter;
-            if (parameter && parameter.initial) {
-              readOnly = readOnly || restrictedSystemParameter;
-            }
-            const noOverride = parameter ? parameter.noOverride : false;
-            const systemParameterValueIsBlocked = isSystemParametersSection &&
-              getSystemParameterDisabledState(this, name);
-            let required = parameter ? `${parameter.required}` === 'true' : false;
-            let enumeration = parameter ? parameter.enumeration : undefined;
-            const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
-            let description = parameter ? parameter.description : undefined;
-            let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
-            let visible = parameter ? parameter.visible : undefined;
-            let validation = parameter ? parameter.validation : undefined;
-            const validator = validation
-              ? (rule, value, callback) => {
-                const formParameters = this.getSectionValue(sectionName) ||
-                  this.buildDefaultParameters(isSystemParametersSection);
-                const modifiedParameters = {
-                  ...parameterUtilities.normalizeParameters(formParameters)
-                };
-                if (modifiedParameters.hasOwnProperty(name)) {
-                  modifiedParameters[name].value = value;
-                }
-                callback(parameterUtilities.validate(parameter, modifiedParameters));
+        const renderParametersGroup = (keys, params) => keys.map(key => {
+          const parameter = (params ? params[key] : undefined) ||
+            this.addedParameters[key];
+          let name = parameter ? parameter.name : '';
+          let value = parameter ? parameter.value : '';
+          const resolvedValue = parameter ? parameter.resolvedValue : '';
+          const hasResolvedValue = parameter ? parameter.hasResolvedValue : false;
+          let type = parameter ? parameter.type : 'string';
+          let readOnly = parameter ? parameter.readOnly : false;
+          const restrictedSystemParameter = this.isSystemParameterRestrictedByRole(parameter);
+          const removeAllowed = !isSystemParametersSection ||
+            !restrictedSystemParameter;
+          if (parameter && parameter.initial) {
+            readOnly = readOnly || restrictedSystemParameter;
+          }
+          const noOverride = parameter ? parameter.noOverride : false;
+          const systemParameterValueIsBlocked = isSystemParametersSection &&
+            getSystemParameterDisabledState(this, name);
+          let required = parameter ? `${parameter.required}` === 'true' : false;
+          let enumeration = parameter ? parameter.enumeration : undefined;
+          const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
+          let description = parameter ? parameter.description : undefined;
+          let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
+          let visible = parameter ? parameter.visible : undefined;
+          let validation = parameter ? parameter.validation : undefined;
+          const validator = validation
+            ? (rule, value, callback) => {
+              const formParameters = this.getSectionValue(sectionName) ||
+                this.buildDefaultParameters(isSystemParametersSection);
+              const modifiedParameters = {
+                ...parameterUtilities.normalizeParameters(formParameters)
+              };
+              if (modifiedParameters.hasOwnProperty(name)) {
+                modifiedParameters[name].value = value;
               }
-              : undefined;
-            const parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
-            const systemParameter = this.getSystemParameter(parameter);
-            const parameterHint = systemParameter ? systemParameter.description : description;
-            const parameterHintFn = parameterHint
-              ? () => { return parameterHint; } : undefined;
-            let formItem;
-            switch (type.toLowerCase()) {
-              case 'path':
-              case 'output':
-              case 'input':
-              case 'common':
-                formItem = this.renderPathParameter(
+              callback(parameterUtilities.validate(parameter, modifiedParameters));
+            }
+            : undefined;
+          const parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
+          const systemParameter = this.getSystemParameter(parameter);
+          const parameterHint = systemParameter ? systemParameter.description : description;
+          const parameterHintFn = parameterHint
+            ? () => { return parameterHint; } : undefined;
+          let formItem;
+          switch (type.toLowerCase()) {
+            case 'path':
+            case 'output':
+            case 'input':
+            case 'common':
+              formItem = this.renderPathParameter(
+                sectionName,
+                {key, value, required, readOnly, description, section, validator},
+                type,
+                isSystemParametersSection,
+                parameterIsVisible
+              );
+              break;
+            case 'boolean':
+              formItem = this.renderBooleanParameter(
+                sectionName,
+                {key, value, readOnly, description, section, validator}
+              );
+              break;
+            default:
+              if (enumeration) {
+                formItem = this.renderSelectionParameter(
+                  sectionName,
+                  {key, value, required, readOnly, enumeration, description, section, validator},
+                  isSystemParametersSection,
+                  normalizedParameters
+                );
+              } else {
+                formItem = this.renderStringParameter(
                   sectionName,
                   {key, value, required, readOnly, description, section, validator},
-                  type,
                   isSystemParametersSection,
                   parameterIsVisible
                 );
-                break;
-              case 'boolean':
-                formItem = this.renderBooleanParameter(
-                  sectionName,
-                  {key, value, readOnly, description, section, validator}
-                );
-                break;
-              default:
-                if (enumeration) {
-                  formItem = this.renderSelectionParameter(
-                    sectionName,
-                    {key, value, required, readOnly, enumeration, description, section, validator},
-                    isSystemParametersSection,
-                    normalizedParameters
-                  );
-                } else {
-                  formItem = this.renderStringParameter(
-                    sectionName,
-                    {key, value, required, readOnly, description, section, validator},
-                    isSystemParametersSection,
-                    parameterIsVisible
-                  );
+              }
+              break;
+          }
+          const nameDisabled = (this.props.readOnly && !this.props.canExecute) ||
+            required || isSystemParametersSection ||
+            (!!this.state.pipeline && this.props.detached);
+          return (
+            <FormItem
+              key={key}
+              className={
+                getFormItemClassName(
+                  parameterIsVisible
+                    ? styles.formItemRow
+                    : `${styles.formItemRow} ${styles.hiddenItem}`,
+                  key
+                )
+              }
+              {...this.parameterItemLayout}
+              hasFeedback>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.readOnly`,
+                    {initialValue: readOnly}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
                 }
-                break;
-            }
-            return (
-              <FormItem
-                key={key}
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.noOverride`,
+                    {initialValue: noOverride}
+                  )(<Input disabled />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.key`,
+                    {initialValue: key}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.type`,
+                    {initialValue: type}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.enumeration`,
+                    {initialValue: enumeration}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.initialEnumeration`,
+                    {initialValue: initialEnumeration}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.visible`,
+                    {initialValue: visible}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.validation`,
+                    {initialValue: validation}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.required`,
+                    {initialValue: `${required}`}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.resolvedValue`,
+                    {initialValue: resolvedValue}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.hasResolvedValue`,
+                    {initialValue: hasResolvedValue}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.description`,
+                    {initialValue: description}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <FormItem className={styles.hiddenItem}>
+                {
+                  this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.section`,
+                    {initialValue: section}
+                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                }
+              </FormItem>
+              <Col
+                span={4}
+                className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}
+                offset={isSystemParametersSection ? 0 : 2}>
+                <FormItem
+                  className={styles.formItemRow}
+                  required={required && parameterIsVisible}>
+                  {this.getSectionFieldDecorator(sectionName)(
+                    `params.${key}.name`,
+                    {
+                      rules: [
+                        {
+                          required: parameterIsVisible,
+                          message: 'Required'
+                        },
+                        {
+                          pattern: /^[\da-zA-Z_]+$/,
+                          message: 'Name can contain only letters, digits and \'_\'.'
+                        },
+                        {
+                          validator: this.validateParameterName(
+                            sectionName,
+                            key,
+                            isSystemParametersSection
+                          )
+                        }],
+                      initialValue: name
+                    }
+                  )(
+                    <Input
+                      disabled={nameDisabled}
+                      placeholder="Name"
+                      className={
+                        classNames(
+                          'cp-parameter-name',
+                          {
+                            [styles.parameterName]: !isSystemParametersSection,
+                            [styles.systemParameterName]: isSystemParametersSection,
+                            disabled: nameDisabled,
+                            'cp-system-parameter-name-input': isSystemParametersSection
+                          }
+                        )
+                      } />
+                  )}
+                </FormItem>
+              </Col>
+              <Col
+                span={isSystemParametersSection ? 16 : 15}
+                className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}>
+                {formItem}
+              </Col>
+              <Col
+                span={3}
                 className={
-                  getFormItemClassName(
-                    parameterIsVisible
-                      ? styles.formItemRow
-                      : `${styles.formItemRow} ${styles.hiddenItem}`,
-                    key
+                  systemParameterValueIsBlocked
+                    ? styles.hiddenItem
+                    : styles.removeParameter
+                }>
+                {
+                  !required &&
+                  !(this.props.readOnly && !this.props.canExecute) &&
+                  !(this.state.pipeline && this.props.detached) &&
+                  removeAllowed
+                    ? (
+                      <Icon
+                        id="remove-parameter-button"
+                        className="dynamic-delete-button"
+                        type="minus-circle-o"
+                        onClick={() => this.removeParameter(sectionName, key)}
+                        style={{marginLeft: 15, width: 15}}
+                      />
+                    ) : (
+                      <div
+                        style={{
+                          marginLeft: 15,
+                          width: 15,
+                          display: 'inline-block'
+                        }}>{'\u00A0'}</div>
+                    )
+                }
+                {
+                  parameterHintFn &&
+                  hints.renderHint(
+                    this.localizedStringWithSpotDictionaryFn,
+                    parameterHintFn,
+                    null,
+                    {marginLeft: 15}
                   )
                 }
-                {...this.parameterItemLayout}
-                hasFeedback>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.readOnly`,
-                      {initialValue: readOnly}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.noOverride`,
-                      {initialValue: noOverride}
-                    )(<Input disabled />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.key`,
-                      {initialValue: key}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.type`,
-                      {initialValue: type}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.enumeration`,
-                      {initialValue: enumeration}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.initialEnumeration`,
-                      {initialValue: initialEnumeration}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.visible`,
-                      {initialValue: visible}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.validation`,
-                      {initialValue: validation}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.required`,
-                      {initialValue: `${required}`}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.resolvedValue`,
-                      {initialValue: resolvedValue}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.hasResolvedValue`,
-                      {initialValue: hasResolvedValue}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.description`,
-                      {initialValue: description}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <FormItem className={styles.hiddenItem}>
-                  {
-                    this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.section`,
-                      {initialValue: section}
-                    )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
-                  }
-                </FormItem>
-                <Col
-                  span={4}
-                  className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}
-                  offset={isSystemParametersSection ? 0 : 2}>
-                  <FormItem
-                    className={styles.formItemRow}
-                    required={required && parameterIsVisible}>
-                    {this.getSectionFieldDecorator(sectionName)(
-                      `params.${key}.name`,
-                      {
-                        rules: [
-                          {
-                            required: parameterIsVisible,
-                            message: 'Required'
-                          },
-                          {
-                            pattern: /^[\da-zA-Z_]+$/,
-                            message: 'Name can contain only letters, digits and \'_\'.'
-                          },
-                          {
-                            validator: this.validateParameterName(
-                              sectionName,
-                              key,
-                              isSystemParametersSection
-                            )
-                          }],
-                        initialValue: name
-                      }
-                    )(
-                      <Input
-                        disabled={(this.props.readOnly && !this.props.canExecute) ||
-                        required || isSystemParametersSection ||
-                        (!!this.state.pipeline && this.props.detached)}
-                        placeholder="Name"
-                        className={
-                          classNames(
-                            {
-                              [styles.parameterName]: !isSystemParametersSection,
-                              [styles.systemParameterName]: isSystemParametersSection,
-                              'cp-system-parameter-name-input': isSystemParametersSection
-                            }
-                          )
-                        } />
-                    )}
-                  </FormItem>
-                </Col>
-                <Col
-                  span={isSystemParametersSection ? 16 : 15}
-                  className={systemParameterValueIsBlocked ? styles.hiddenItem : undefined}>
-                  {formItem}
-                </Col>
-                <Col
-                  span={3}
-                  className={
-                    systemParameterValueIsBlocked
-                      ? styles.hiddenItem
-                      : styles.removeParameter
-                  }>
-                  {
-                    !required &&
-                    !(this.props.readOnly && !this.props.canExecute) &&
-                    !(this.state.pipeline && this.props.detached) &&
-                    removeAllowed
-                      ? (
-                        <Icon
-                          id="remove-parameter-button"
-                          className="dynamic-delete-button"
-                          type="minus-circle-o"
-                          onClick={() => this.removeParameter(sectionName, key)}
-                          style={{marginLeft: 15, width: 15}}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            marginLeft: 15,
-                            width: 15,
-                            display: 'inline-block'
-                          }}>{'\u00A0'}</div>
-                      )
-                  }
-                  {
-                    parameterHintFn &&
-                    hints.renderHint(
-                      this.localizedStringWithSpotDictionaryFn,
-                      parameterHintFn,
-                      null,
-                      {marginLeft: 15}
-                    )
-                  }
-                </Col>
-              </FormItem>
-            );
-          }).filter(parameter => !!parameter);
-        };
+              </Col>
+            </FormItem>
+          );
+        }).filter(parameter => !!parameter);
         const {keys, params} = parameters;
         if (isSystem) {
           return renderParametersGroup(keys, params);
         } else {
+          const sectionNames = keys.reduce((result, key) => {
+            const parameter = (params && params[key]) || this.addedParameters[key];
+            const section = parameter
+              ? parameter.section
+              : OTHER_PARAMETERS_GROUP;
+            if (result.includes(section)) {
+              return result;
+            }
+            return [...result, section];
+          }, []);
           const paramsPerSection = keys.reduce((result, key) => {
             const parameter = (params && params[key]) || this.addedParameters[key];
             const section = parameter
@@ -3185,11 +3197,19 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             result[section] = {...result[section], [key]: {...parameter}};
             return result;
           }, {});
-          const containsOtherGroup = Object.keys(paramsPerSection || {}).includes(OTHER_PARAMETERS_GROUP);
-          const sortedKeys = Object.keys(paramsPerSection || {}).filter(key => key !== OTHER_PARAMETERS_GROUP).sort();
-          const sections = containsOtherGroup
-            ? sortedKeys.concat(OTHER_PARAMETERS_GROUP)
-            : sortedKeys;
+          const sectionVisible = section => {
+            const keys = Object.keys(paramsPerSection[section]);
+            const params = paramsPerSection[section];
+            return keys.some(key => {
+              const parameter = (params ? params[key] : undefined) ||
+                this.addedParameters[key];
+              return parameterUtilities.isVisible(parameter, normalizedParameters);
+            });
+          };
+          const containsOtherGroup = sectionNames.includes(OTHER_PARAMETERS_GROUP);
+          const sortedKeys = sectionNames.filter(key => key !== OTHER_PARAMETERS_GROUP);
+          const sections = sortedKeys
+            .concat(containsOtherGroup ? [OTHER_PARAMETERS_GROUP] : []);
           return sections.length > 1
             ? sections.map(section => {
               return (
@@ -3199,7 +3219,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       section.toUpperCase(),
                       0,
                       'section',
-                      {marginTop: 20, marginBottom: 20}
+                      Object.assign(
+                        {marginTop: 20, marginBottom: 20},
+                        sectionVisible(section) ? {} : {display: 'none'}
+                      )
                     )}
                   {
                     renderParametersGroup(
