@@ -15,25 +15,25 @@
  */
 
 export default {
-  background: '#f0f0f0',
+  background: 'transparent',
   insertion: {
-    applied: '#ddffdd',
-    background: '#ddffdd',
+    applied: 'rgba(9, 171, 90, 0.4)',
+    background: 'rgba(9, 171, 90, 0.4)',
     color: '#b4e2b4'
   },
   deletion: {
     applied: '#d9d9d9',
-    background: '#d9d9d9',
-    color: '#cccccc'
+    background: 'rgba(217, 217, 217, 0.4)',
+    color: '#9e9e9e'
   },
   edition: {
-    applied: '#fdf2d0',
-    background: '#fdf2d0',
+    applied: 'rgba(252, 230, 162, 0.4)',
+    background: 'rgba(252, 230, 162, 0.4)',
     color: '#f5e3aa'
   },
   conflict: {
-    applied: '#fee8e9',
-    background: '#fee8e9',
+    applied: 'rgb(237, 75, 48, 0.4)',
+    background: 'rgba(237, 75, 48, 0.4)',
     color: '#e9aeae'
   }
 };

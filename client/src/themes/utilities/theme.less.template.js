@@ -2384,6 +2384,16 @@ export default `
   background-color: @deleted-row-accent;
   cursor: default;
 }
+@THEME .cp-branch-code-line-numbers {
+  background-color: fadeout(@application-background-color, 40%);
+}
+@THEME .cp-conflicts-resolve-area-container {
+  background-color: fadeout(@application-background-color, 40%);
+}
+@THEME .cp-conflicts-divider {
+  background-color:fadeout(@card-border-color, 40%);
+}
+
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;

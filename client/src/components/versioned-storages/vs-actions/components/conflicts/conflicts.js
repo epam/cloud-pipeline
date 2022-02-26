@@ -232,14 +232,14 @@ class Conflicts extends React.Component {
           {this.renderFiles()}
         </div>
         <div
-          className={styles.divider}
+          className={classNames(styles.divider, 'cp-conflicts-divider')}
           onMouseDown={this.startResize}
         >
           <div>{'\u00A0'}</div>
         </div>
         <Provider conflictsSession={this.session}>
           <div
-            className={styles.resolveAreaContainer}
+            className={classNames(styles.resolveAreaContainer, 'cp-conflicts-resolve-area-container')}
           >
             {
               current && (

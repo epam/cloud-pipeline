@@ -977,7 +977,7 @@ function BranchCodeLineNumbers (
   return (
     <BranchCode
       branch={branch}
-      className={styles.lineNumbers}
+      className={classNames(styles.lineNumbers, 'cp-branch-code-line-numbers')}
       file={file}
       modificationsBranch={modificationsBranch}
       lineHeight={lineHeight}
@@ -990,13 +990,7 @@ function BranchCodeLineNumbers (
         rtl,
         hideModificationActions
       }}
-      style={
-        Object.assign(
-          {
-            backgroundColor: modificationsRenderConfig.background
-          },
-          style || {}
-        )}
+      style={style}
       lineStyle={undefined}
       lineIdentifier={line => `line-numbers-${line.key}`}
     />

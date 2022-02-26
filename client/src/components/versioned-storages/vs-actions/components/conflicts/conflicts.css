@@ -32,7 +32,6 @@
 
 .conflicts-ide .divider {
   grid-column: DIVIDER;
-  background-color: #fafafa;
   cursor: col-resize;
   display: flex;
   flex-direction: row;
@@ -40,7 +39,6 @@
 }
 
 .conflicts-ide .divider > div {
-  background-color: #eee;
   width: 2px;
   height: 100%;
 }
@@ -73,7 +71,6 @@
 .resolve-changes {
   width: 100%;
   padding: 0 4px;
-  background-color: #fafafa;
 }
 
 .resolve-area {
@@ -86,7 +83,6 @@
 
 .resolve-area .header {
   grid-row: HEADER;
-  background-color: #fafafa;
   border-bottom: 1px solid #ccc;
   display: flex;
   flex-direction: row;
@@ -122,9 +118,6 @@
   display: none;
 }
 
-.selected-file {
-  background-color: #eef8ff;
-}
 
 .resolve-area .panel .sticky-placeholder {
   flex-shrink: 0;
