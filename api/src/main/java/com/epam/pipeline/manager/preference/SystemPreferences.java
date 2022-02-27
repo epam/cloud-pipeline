@@ -114,6 +114,8 @@ public class SystemPreferences {
     private static final String BILLING_GROUP = "Billing Reports";
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
+    private static final String MONITORING_GROUP = "Monitoring";
+
     public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
             "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
@@ -854,6 +856,19 @@ public class SystemPreferences {
             "ldap.blocked.user.name.attribute", "sAMAccountName", LDAP_GROUP, pass);
     public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
             "ldap.blocked.user.filter.page.size", 50, LDAP_GROUP, pass);
+
+    // Monitoring
+    public static final IntPreference MONITORING_POOL_USAGE_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.delay", 300000, MONITORING_GROUP, isGreaterThan(0));
+    public static final BooleanPreference MONITORING_POOL_USAGE_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.enable", false, MONITORING_GROUP, pass);
+    public static final BooleanPreference MONITORING_POOL_USAGE_CLEAN_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.clean.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_POOL_USAGE_CLEAN_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.clean.delay", 86400000, MONITORING_GROUP, isGreaterThan(0));
+    public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
+            "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
+
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

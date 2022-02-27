@@ -50,6 +50,7 @@ import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.vo.user.OnlineUsers;
 import okhttp3.MultipartBody;
@@ -63,6 +64,7 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface CloudPipelineAPI {
@@ -224,6 +226,9 @@ public interface CloudPipelineAPI {
 
     @GET("run/activity")
     Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
+
+    @GET("run/pools/{id}")
+    Call<Result<List<PipelineRun>>> loadRunsByPool(@Path(ID) Long poolId);
 
     @GET("cluster/instance/loadAll")
     Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);

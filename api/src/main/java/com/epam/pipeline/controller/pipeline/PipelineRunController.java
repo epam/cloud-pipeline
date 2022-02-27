@@ -568,4 +568,15 @@ public class PipelineRunController extends AbstractRestController {
     public Result<KubernetesService> getKubernetesService(@PathVariable final Long runId) {
         return Result.success(runApiService.getKubernetesService(runId));
     }
+
+    @GetMapping("/run/pools/{id}")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads runs associated with certain node pool ID",
+            notes = "Loads runs associated with certain node pool ID",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<PipelineRun>> loadRunsByPoolId(@PathVariable("id") final Long poolId) {
+        return Result.success(runApiService.loadRunsByPoolId(poolId));
+    }
 }

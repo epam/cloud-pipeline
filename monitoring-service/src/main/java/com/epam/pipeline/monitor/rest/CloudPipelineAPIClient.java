@@ -19,13 +19,17 @@ package com.epam.pipeline.monitor.rest;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.user.OnlineUsers;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
@@ -69,5 +73,21 @@ public class CloudPipelineAPIClient {
 
     public List<Preference> getAllPreferences() {
         return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadAllPreference()));
+    }
+
+    public List<NodePool> loadAllNodePools() {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadNodePools()));
+    }
+
+    public List<PipelineRun> loadRunsByPool(final Long poolId) {
+        return ListUtils.emptyIfNull(executor.execute(cloudPipelineAPI.loadRunsByPool(poolId)));
+    }
+
+    public List<NodePoolUsage> saveNodePoolUsage(final List<NodePoolUsage> records) {
+        return executor.execute(cloudPipelineAPI.saveNodePoolUsage(records));
+    }
+
+    public boolean deleteExpiredNodePoolUsage(final LocalDate date) {
+        return executor.execute(cloudPipelineAPI.deleteExpiredNodePoolUsage(date));
     }
 }

@@ -24,7 +24,7 @@ source ~/venv2.7.18/bin/activate
           -x :pipe-cli:test
 
 deactivate
-python3 -m pip install awscli
+python3 -m pip install awscli --user
 
 cd pipe-cli
 DIST_TGZ_NAME=pipe-osx-full.$APPVEYOR_BUILD_NUMBER.tar.gz

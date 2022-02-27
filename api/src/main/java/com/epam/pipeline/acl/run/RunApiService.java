@@ -331,4 +331,9 @@ public class RunApiService {
     public KubernetesService getKubernetesService(final Long runId) {
         return pipelineRunKubernetesManager.getKubernetesService(runId);
     }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
+        return runManager.loadRunsByPoolId(poolId);
+    }
 }
