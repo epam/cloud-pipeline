@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.security.acl;
+package com.epam.pipeline.manager.security.acl.storage;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -25,5 +25,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Inherited
 @Retention(RUNTIME)
 @Target(ElementType.METHOD)
-public @interface StorageAcl {
+public @interface StorageAclRead {
 }
