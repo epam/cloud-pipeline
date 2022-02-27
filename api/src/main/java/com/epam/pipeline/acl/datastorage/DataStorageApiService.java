@@ -50,8 +50,9 @@ import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
-import com.epam.pipeline.manager.security.acl.AclMaskList;
-import com.epam.pipeline.manager.security.acl.StorageAcl;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclRead;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclReadAndWrite;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclReadOrWrite;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
@@ -81,15 +82,12 @@ public class DataStorageApiService {
     private final RunMountService runMountService;
     private final Optional<StorageEventsService> eventsService;
 
-    @PostFilter("hasRole('ADMIN') OR @storagePermissionManager.storagePermission(filterObject, 'READ')")
-    @AclMaskList
+    @StorageAclRead
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN') OR (@storagePermissionManager.storagePermission(filterObject, 'READ') AND "
-            + "@storagePermissionManager.storagePermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    @StorageAclReadAndWrite
     public List<AbstractDataStorage> getWritableStorages() {
         return dataStorageManager.getDataStorages();
     }
@@ -102,7 +100,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
-    @StorageAcl
+    @StorageAclReadOrWrite
     public List<AbstractDataStorage> getAvailableStorages() {
         return dataStorageManager.getDataStorages();
     }
@@ -125,9 +123,7 @@ public class DataStorageApiService {
         return dataStorageManager.loadByPathOrId(identifier);
     }
 
-    @PostFilter("hasRole('ADMIN') OR (@storagePermissionManager.storagePermission(filterObject, 'READ') OR "
-                + "@storagePermissionManager.storagePermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    @StorageAclReadOrWrite
     public List<AbstractDataStorage> loadAllByPath(final String identifier) {
         return dataStorageManager.loadAllByPath(identifier);
     }
