@@ -69,8 +69,8 @@ public class StoragePermissionManager {
     }
 
     public boolean storagePermissionById(final Long storageId,
-                                     final String permissionName) {
-        AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
+                                         final String permissionName) {
+        final AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
@@ -83,13 +83,20 @@ public class StoragePermissionManager {
                 .allMatch(permissionName -> storagePermissionById(storageId, permissionName));
     }
 
-    public boolean storagePermissionByName(final String identifier, final String permissionName) {
+    public boolean storagePermissionByName(final String identifier,
+                                           final String permissionName) {
         final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
         return grantPermissionManager.storagePermission(storage, permissionName);
     }
 
     public void filterStorage(final List<AbstractDataStorage> storages,
                               final List<String> permissionNames) {
+        filterStorage(storages, permissionNames, false);
+    }
+
+    public void filterStorage(final List<AbstractDataStorage> storages,
+                              final List<String> permissionNames,
+                              final boolean allPermissions) {
         if (permissionHelper.isAdmin()) {
             return;
         }
@@ -101,13 +108,24 @@ public class StoragePermissionManager {
                 .stream()
                 .peek(storage ->
                         storage.setMask(grantPermissionManager.getPermissionsMask(storage, true, true, sids)))
-                .filter(storage -> permissions.stream()
-                        .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
-                                permission.getSimpleMask())))
+                .filter(storage -> checkPermissions(permissions, storage, allPermissions))
                 .collect(Collectors.toList());
         if (storages.size() != filtered.size()) {
             storages.clear();
             storages.addAll(filtered);
         }
+    }
+
+    private boolean checkPermissions(final List<AclPermission> permissions,
+                                     final AbstractDataStorage storage,
+                                     final boolean allPermissions) {
+        if (allPermissions) {
+            return permissions.stream()
+                    .allMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
+                            permission.getSimpleMask()));
+        }
+        return permissions.stream()
+                .anyMatch(permission -> permissionsService.isMaskBitSet(storage.getMask(),
+                        permission.getSimpleMask()));
     }
 }
