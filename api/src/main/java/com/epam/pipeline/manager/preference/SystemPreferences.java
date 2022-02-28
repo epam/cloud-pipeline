@@ -143,6 +143,9 @@ public class SystemPreferences {
             "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
     public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
             COMMIT_GROUP, isGreaterThan(0));
+    // List of ',' separated env vars to be cleaned up from docker image before commit
+    public static final StringPreference ADDITIONAL_ENVS_TO_CLEAN = new StringPreference(
+            "commit.additional.envs.to.clean", "CP_EXEC_TIMEOUT", COMMIT_GROUP, pass);
 
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
