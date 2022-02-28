@@ -20,6 +20,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import Root from './components/main/Root';
 import './index.css';
+import './staticStyles/cp-themes.css';
 
 ReactDOM.render(
   <Root />,

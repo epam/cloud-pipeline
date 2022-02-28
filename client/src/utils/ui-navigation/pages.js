@@ -25,5 +25,6 @@ export default {
   search: 'search',
   billing: 'billing',
   miew: 'miew',
-  wsi: 'wsi'
+  wsi: 'wsi',
+  hcs: 'hcs'
 };

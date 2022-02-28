@@ -77,14 +77,14 @@ public class NodePoolController extends AbstractRestController {
         return Result.success(apiService.delete(id));
     }
 
-    @PostMapping("/usages")
+    @PostMapping("/usage")
     @ApiOperation(value = "Persists node pool usage", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<NodePoolUsage>> saveUsage(final @RequestBody List<NodePoolUsage> records) {
         return Result.success(apiService.saveUsage(records));
     }
 
-    @DeleteMapping("/usages")
+    @DeleteMapping("/usage")
     @ApiOperation(value = "Deletes node pool usage records older than specified date",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})

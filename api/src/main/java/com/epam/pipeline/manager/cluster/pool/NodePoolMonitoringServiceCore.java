@@ -28,6 +28,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -63,6 +64,7 @@ public class NodePoolMonitoringServiceCore {
 
     private boolean isFull(final NodePool pool, final List<Node> availableNodes, final Set<String> activePodIds) {
         final long activeNodesCount = determineActiveNodesCount(availableNodes, activePodIds, pool.getId());
-        return activeNodesCount >= pool.getMaxSize();
+        return activeNodesCount >= Optional.ofNullable(pool.getMaxSize())
+                .orElse(pool.getCount());
     }
 }

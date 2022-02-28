@@ -83,7 +83,7 @@ class S3Storage {
   }
 
   get prefix () {
-    return this._prefix;
+    return this._prefix || '';
   }
 
   set prefix (value) {
@@ -149,6 +149,13 @@ class S3Storage {
     this._s3 = new AWS.S3({signatureVersion: 'v4'});
     return success;
   };
+
+  refreshCredentialsIfNeeded = async () => {
+    this._credentials.get();
+    if (this._credentials.needsRefresh()) {
+      await this.updateCredentials();
+    }
+  }
 
   getSignedUrl = (file = '') => {
     const params = {

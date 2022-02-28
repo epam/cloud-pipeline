@@ -19,13 +19,22 @@ import PropTypes from 'prop-types';
 import {Checkbox, Button, Modal} from 'antd';
 import classNames from 'classnames';
 import DocumentListPresentation from '../document-presentation/list';
+import * as elasticItemUtilities from '../../utilities/elastic-item-utilities';
 import styles from '../search-results.css';
 
 class SelectionPreview extends React.Component {
   state = {
     selection: [],
-    removedKeys: [],
+    removedItems: []
   };
+
+  get actualSelection () {
+    const {items = []} = this.props;
+    const {removedItems = []} = this.state;
+    return items.filter(o => !removedItems
+      .find(elasticItemUtilities.filterMatchingItemsFn(o))
+    );
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -41,25 +50,27 @@ class SelectionPreview extends React.Component {
     const {items = []} = this.props;
     this.setState({
       selection: items.slice(),
-      removedKeys: []
+      removedItems: []
     });
   };
 
   itemIsSelected = (item) => {
-    const {removedKeys = []} = this.state;
-    return !removedKeys.includes(item.elasticId);
+    const {removedItems = []} = this.state;
+    const findFn = elasticItemUtilities.filterMatchingItemsFn(item);
+    return !removedItems.find(findFn);
   };
 
   toggleSelection = (item) => e => {
-    const {removedKeys = []} = this.state;
+    const {removedItems = []} = this.state;
     const selected = this.itemIsSelected(item);
     if (e.target.checked && !selected) {
+      const filterNonMatching = elasticItemUtilities.filterNonMatchingItemsFn(item);
       this.setState({
-        removedKeys: removedKeys.filter(o => o !== item.elasticId)
+        removedItems: removedItems.filter(filterNonMatching)
       });
     } else if (!e.target.checked && selected) {
       this.setState({
-        removedKeys: [...removedKeys, item.elasticId]
+        removedItems: [...removedItems, item]
       });
     }
   };
@@ -67,8 +78,12 @@ class SelectionPreview extends React.Component {
   onShareClicked = () => {
     const {onShare, items = []} = this.props;
     if (onShare) {
-      const {removedKeys = []} = this.state;
-      onShare(items.filter(o => !removedKeys.includes(o.elasticId)));
+      const {removedItems = []} = this.state;
+      onShare(
+        items.filter(o => !removedItems
+          .find(elasticItemUtilities.filterMatchingItemsFn(o))
+        )
+      );
     }
   };
 
@@ -111,6 +126,7 @@ class SelectionPreview extends React.Component {
                 CLEAR SELECTION
               </Button>
               <Button
+                disabled={this.actualSelection.length === 0}
                 onClick={this.onShareClicked}
                 type="primary"
               >

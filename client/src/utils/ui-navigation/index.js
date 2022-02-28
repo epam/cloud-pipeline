@@ -177,12 +177,17 @@ function fetchAttributes (user, preferences) {
     roles = [],
     groups = []
   } = user;
-  const fetchRolesAttributesFn = roles => o => fetchRolesAttributes(roles, o);
-  const fetchGroupsAttributesFn = groups => o => fetchGroupsAttributes(preferences, groups, o);
+  const groupsAndRoles = [
+    ...(
+      new Set([...groups, ...roles.map(o => o.name)])
+    )
+  ];
+  const fetchRolesAttributesFn = o => fetchRolesAttributes(roles, o);
+  const fetchGroupsAttributesFn = o => fetchGroupsAttributes(preferences, groupsAndRoles, o);
   return new Promise((resolve) => {
     fetchUserAttributes(id)
-      .then(fetchRolesAttributesFn(roles))
-      .then(fetchGroupsAttributesFn(groups))
+      .then(fetchRolesAttributesFn)
+      .then(fetchGroupsAttributesFn)
       .then(resolve);
   });
 }

@@ -60,7 +60,7 @@ function getItemUrl (item) {
         return;
       case SearchItemTypes.metadataEntity:
         if (item.parentId) {
-          resolve(`/metadata/redirect/${item.parentId}/${item.id}`);
+          resolve(`/folder/${item.parentId}/metadata/${item.id}/redirect`);
           return;
         }
         break;

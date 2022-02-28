@@ -75,6 +75,7 @@ import ToolPackages from '../tools/tool-version/packages';
 import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import {FacetedSearchPage} from '../search';
+import {HcsImagePage} from '../special/hcs-image';
 
 @inject('history', 'preferences', 'uiNavigation')
 @observer
@@ -102,7 +103,7 @@ export default class AppRouter extends React.Component {
             component={PipelineLatestVersion}
           />
           <Route
-            path="/metadata/redirect/:folder/:entity"
+            path="/folder/:folder/metadata/:entity/redirect"
             component={MetadataClassEntityRedirection}
           />
           <Route path="search/advanced" component={FacetedSearchPage} />
@@ -160,6 +161,7 @@ export default class AppRouter extends React.Component {
           </Route>
           <Route path="/miew" component={MiewPage} />
           <Route path="/wsi" component={VSIPreviewPage} />
+          <Route path="/hcs" component={HcsImagePage} />
           <Route path="/library" component={PipelinesLibrary}>
             <IndexRoute component={FolderBrowser} />
           </Route>
@@ -172,18 +174,14 @@ export default class AppRouter extends React.Component {
           <Route path="/folder" component={PipelinesLibrary}>
             <Route path=":id" component={FolderBrowser} />
             <Route path=":id/history" component={ProjectHistory} />
+            <Route path=":id/metadata" component={MetadataFolderBrowser} />
+            <Route path=":id/metadata/:class" component={MetadataBrowser} />
           </Route>
           <Route path="/storage" component={PipelinesLibrary}>
             <Route path=":id" component={StorageBrowser} />
           </Route>
           <Route path="/configuration" component={PipelinesLibrary}>
             <Route path=":id(/:name)" component={DetachedConfiguration} />
-          </Route>
-          <Route path="/metadata" component={PipelinesLibrary}>
-            <Route path=":id/:class" component={MetadataBrowser} />
-          </Route>
-          <Route path="/metadataFolder" component={PipelinesLibrary}>
-            <Route path=":id" component={MetadataFolderBrowser} />
           </Route>
           <Route path="/vs/:id" component={PipelinesLibrary}>
             <IndexRoute component={VersionedStorageBrowser} />

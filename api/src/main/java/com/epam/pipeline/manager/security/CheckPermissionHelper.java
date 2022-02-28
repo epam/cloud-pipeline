@@ -57,7 +57,8 @@ public class CheckPermissionHelper {
             return true;
         }
         return permissionEvaluator
-                .hasPermission(authManager.getAuthentication(), entity, permissionName);
+                .hasPermission(authManager.getAuthentication(), entity.getId(),
+                        entity.getClass().getName(), permissionName);
     }
 
     public boolean isAllowed(final String permissionName, final AbstractSecuredEntity entity,
@@ -108,7 +109,7 @@ public class CheckPermissionHelper {
         return getSids(userName).stream().anyMatch(sid -> sid.equals(admin));
     }
 
-    private List<Sid> getSids() {
+    public List<Sid> getSids() {
         final Authentication authentication = authManager.getAuthentication();
         return sidRetrievalStrategy.getSids(authentication);
     }

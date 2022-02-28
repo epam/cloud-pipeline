@@ -118,6 +118,7 @@ import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.report.pool.NodePoolReportService;
@@ -543,6 +544,9 @@ public class AclTestBeans {
 
     @MockBean
     protected OnlineUsersService onlineUsersService;
+
+    @MockBean
+    protected NgsPreprocessingManager preprocessingManager;
 
     @MockBean
     protected NodePoolUsageService nodePoolUsageService;

@@ -50,7 +50,9 @@ import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
-import com.epam.pipeline.manager.security.acl.AclMaskList;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclRead;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclReadAndWrite;
+import com.epam.pipeline.manager.security.acl.storage.StorageAclReadOrWrite;
 import com.epam.pipeline.security.acl.AclExpressions;
 import com.epam.pipeline.security.acl.AclPermission;
 import lombok.RequiredArgsConstructor;
@@ -80,30 +82,25 @@ public class DataStorageApiService {
     private final RunMountService runMountService;
     private final Optional<StorageEventsService> eventsService;
 
-    @PostFilter("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(filterObject, 'READ')")
-    @AclMaskList
+    @StorageAclRead
     public List<AbstractDataStorage> getDataStorages() {
         return dataStorageManager.getDataStorages();
     }
 
-    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject, 'READ') AND "
-            + "@grantPermissionManager.storagePermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    @StorageAclReadAndWrite
     public List<AbstractDataStorage> getWritableStorages() {
         return dataStorageManager.getDataStorages();
     }
 
     @PostFilter("hasRole('ADMIN')"
-                + " OR @grantPermissionManager.storageWithSharePermission(filterObject, 'READ')"
-                + " OR @grantPermissionManager.storageWithSharePermission(filterObject, 'WRITE')")
+                + " OR @storagePermissionManager.storageWithSharePermission(filterObject, 'READ')"
+                + " OR @storagePermissionManager.storageWithSharePermission(filterObject, 'WRITE')")
     @AclMaskDelegateList
     public List<DataStorageWithShareMount> getAvailableStoragesWithShareMount(final Long fromRegionId) {
         return dataStorageManager.getDataStoragesWithShareMountObject(fromRegionId);
     }
 
-    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject, 'READ') OR "
-            + "@grantPermissionManager.storagePermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    @StorageAclReadOrWrite
     public List<AbstractDataStorage> getAvailableStorages() {
         return dataStorageManager.getDataStorages();
     }
@@ -114,21 +111,19 @@ public class DataStorageApiService {
         return dataStorageManager.load(id);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermission(returnObject, 'READ')")
     @AclMask
     public AbstractDataStorage loadByNameOrId(final String identifier) {
         return dataStorageManager.loadByNameOrId(identifier);
     }
 
-    @PostAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(returnObject, 'READ')")
+    @PostAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermission(returnObject, 'READ')")
     @AclMask
     public AbstractDataStorage loadByPathOrId(final String identifier) {
         return dataStorageManager.loadByPathOrId(identifier);
     }
 
-    @PostFilter("hasRole('ADMIN') OR (@grantPermissionManager.storagePermission(filterObject, 'READ') OR "
-                + "@grantPermissionManager.storagePermission(filterObject, 'WRITE'))")
-    @AclMaskList
+    @StorageAclReadOrWrite
     public List<AbstractDataStorage> loadAllByPath(final String identifier) {
         return dataStorageManager.loadAllByPath(identifier);
     }
@@ -228,19 +223,19 @@ public class DataStorageApiService {
         return dataStorageManager.create(dataStorageVO, proceedOnCloud, true, true, skipPolicy);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#dataStorageVO.id, 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'WRITE')")
     @AclMask
     public AbstractDataStorage update(DataStorageVO dataStorageVO) {
         return dataStorageManager.update(dataStorageVO);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermission(#dataStorageVO.id, 'OWNER')")
+    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionById(#dataStorageVO.id, 'OWNER')")
     public AbstractDataStorage updatePolicy(DataStorageVO dataStorageVO) {
         return dataStorageManager.updatePolicy(dataStorageVO);
     }
 
     @PreAuthorize("hasRole('ADMIN') OR (hasRole('STORAGE_MANAGER') AND "
-            + "@grantPermissionManager.storagePermission(#id, 'WRITE'))")
+            + "@storagePermissionManager.storagePermissionById(#id, 'WRITE'))")
     public AbstractDataStorage delete(Long id, boolean proceedOnCloud) {
         return dataStorageManager.delete(id, proceedOnCloud);
     }
@@ -350,7 +345,7 @@ public class DataStorageApiService {
         return dataStorageManager.getDataSizes(paths);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermissionByName(#id, 'READ')")
+    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'READ')")
     public StorageUsage getStorageUsage(final String id, final String path) {
         return dataStorageManager.getStorageUsage(id, path);
     }
@@ -370,7 +365,7 @@ public class DataStorageApiService {
         dataStorageManager.callOffDataStorageDavMount(id);
     }
 
-    @PreAuthorize("hasRole('ADMIN') OR @grantPermissionManager.storagePermissionByName(#id, 'WRITE')")
+    @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'WRITE')")
     public void updateStorageUsage(final String id) {
         eventsService.ifPresent(s -> s.addReindexEvent(id));
     }

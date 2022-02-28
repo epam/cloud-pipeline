@@ -55,6 +55,7 @@ import {
 import {SplitPanel} from '../special/splitPanel';
 import SharedItemInfo from '../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import {SearchItemTypes} from '../../models/search';
+import {filterNonMatchingItemsFn} from './utilities/elastic-item-utilities';
 import styles from './FacetedSearch.css';
 
 @inject('systemDictionaries', 'preferences', 'pipelines', 'uiNavigation')
@@ -675,7 +676,9 @@ class FacetedSearch extends React.Component {
   };
 
   onDeselectItem = (item) => {
-    const selectedItems = this.state.selectedItems.filter(i => i.elasticId !== item.elasticId);
+    const filterFn = filterNonMatchingItemsFn(item);
+    const selectedItems = this.state.selectedItems
+      .filter(filterFn);
 
     this.setState({selectedItems});
   };
@@ -721,12 +724,12 @@ class FacetedSearch extends React.Component {
         <MenuItem
           key="share"
         >
-          Share selected items
+          <b>Share</b> selected
         </MenuItem>
         <MenuItem
           key="show selection"
         >
-          Show selected items
+          <b>Display</b> selected
         </MenuItem>
         <MenuDivider />
         <MenuItem
@@ -955,11 +958,6 @@ class FacetedSearch extends React.Component {
                 mode={presentationMode}
               />
               {this.renderSortingControls()}
-              <SharedItemInfo
-                visible={this.state.shareDialogVisible}
-                shareItems={this.state.itemsToShare}
-                close={this.closeShareItemDialog}
-              />
             </div>
           )
         }
@@ -1032,6 +1030,11 @@ class FacetedSearch extends React.Component {
           onClose={this.closeSelectionPreview}
           onClear={this.clearSelection}
           onShare={this.openShareStorageItemsDialog}
+        />
+        <SharedItemInfo
+          visible={this.state.shareDialogVisible}
+          shareItems={this.state.itemsToShare}
+          close={this.closeShareItemDialog}
         />
       </div>
     );

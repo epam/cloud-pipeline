@@ -73,6 +73,14 @@ a.cp-danger:focus,
   color: lighten(@color-red, 5%);
 }
 
+.cp-bordered {
+  border: 1px solid @panel-border-color;
+}
+
+.cp-outline-bordered {
+  outline: 1px solid @panel-border-color;
+}
+
 .cp-divider.top,
 .cp-divider.horizontal {
   border-top: 1px solid @panel-border-color;
@@ -217,6 +225,16 @@ a.cp-danger:focus,
 .ant-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
+}
+
+.app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+
+.app-background:not(.no-image) {
   background-image: @background-image;
   background-size: cover;
 }
@@ -1577,6 +1595,11 @@ li.ant-time-picker-panel-select-option-selected {
   background-color: @application-color-disabled !important;
 }
 
+.ant-slider-dot {
+  border-color: @card-header-background;
+  background-color: @card-background-color;
+}
+
 .ant-slider-disabled .ant-slider-handle,
 .ant-slider-disabled .ant-slider-dot {
   border-color: @application-color-disabled !important;
@@ -1609,6 +1632,21 @@ li.ant-time-picker-panel-select-option-selected {
 
 .ant-slider:hover .ant-slider-handle {
   border-color: @primary-hover-color;
+}
+
+.ant-slider-mark-text {
+  color: @application-color;
+}
+
+.cp-hcs-z-position-slider .ant-slider-track,
+.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
+  background-color: @color-yellow;
+}
+
+.cp-hcs-z-position-slider .ant-slider-handle,
+.cp-hcs-z-position-slider .ant-slider-dot-active,
+.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+  border-color: @color-yellow;
 }
 
 .cp-notification {
@@ -1650,4 +1688,33 @@ li.ant-time-picker-panel-select-option-selected {
 
 .cp-close-button:hover {
   color: @application-color;
+}
+
+.cp-timepoint-button {
+  background-color: fade(@primary-color, 40%);
+  border: 1px solid @primary-color;
+}
+
+.cp-timepoint-button-active {
+  background-color: fade(@color-warning, 40%);
+  border: 1px solid @color-warning;
+}
+
+.cp-dark-background {
+  background-color: @application-dark-background-color;
+}
+
+.cp-hcs-zoom-button {
+  cursor: pointer;
+  color: @application-color;
+  transition: all 100ms ease;
+}
+
+.cp-hcs-zoom-button:not(.cp-disabled):hover {
+  color: @primary-hover-color;
+}
+
+.cp-hcs-zoom-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
 }

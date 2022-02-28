@@ -118,6 +118,8 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
+    private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
+    private static final String MONITORING_GROUP = "Monitoring";
     private static final String REPORTS_GROUP = "Reports";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
@@ -597,6 +599,8 @@ public class SystemPreferences {
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
                                                                                      "type=project", UI_GROUP, pass);
+    public static final StringPreference UI_NGS_PROJECT_INDICATOR =
+            new StringPreference("ui.ngs.project.indicator", "type=project,project-type=ngs", UI_GROUP, pass);
     public static final ObjectPreference<Map<String, String>> UI_CLI_CONFIGURE_TEMPLATE = new ObjectPreference<>(
         "ui.pipe.cli.configure.template", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
@@ -792,16 +796,6 @@ public class SystemPreferences {
             "system.usage.users.clean.delay", 86400000, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USAGE_NODE_POOL_DELAY = new IntPreference(
-            "system.usage.node.pool.delay", 300000, SYSTEM_GROUP, isGreaterThan(0));
-    public static final BooleanPreference SYSTEM_USAGE_NODE_POOL_ENABLE = new BooleanPreference(
-            "system.usage.node.pool.enable", false, SYSTEM_GROUP, pass);
-    public static final BooleanPreference SYSTEM_USAGE_NODE_POOL_CLEAN_ENABLE = new BooleanPreference(
-            "system.usage.node.pool.clean.enable", false, SYSTEM_GROUP, pass);
-    public static final IntPreference SYSTEM_USAGE_NODE_POOL_CLEAN_DELAY = new IntPreference(
-            "system.usage.node.pool.clean.delay", 86400000, SYSTEM_GROUP, isGreaterThan(0));
-    public static final IntPreference SYSTEM_USAGE_NODE_POOL_STORE_DAYS = new IntPreference(
-            "system.usage.node.pool.store.days", 365, SYSTEM_GROUP, pass);
 
     // FireCloud Integration
     public static final ObjectPreference<List<String>> FIRECLOUD_SCOPES = new ObjectPreference<>(
@@ -978,6 +972,42 @@ public class SystemPreferences {
     public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
             "ldap.blocked.user.filter.page.size", 50, LDAP_GROUP, pass);
 
+    //NGS Preprocessing
+    public static final StringPreference PREPROCESSING_MACHINE_RUN_CLASS = new StringPreference(
+            "ngs.preprocessing.machine.run.metadata.class.name", "MachineRun",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_SAMPLE_CLASS = new StringPreference(
+            "ngs.preprocessing.sample.metadata.class.name", "Sample",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN = new StringPreference(
+            "ngs.preprocessing.machinerun.to.sample.column", "Samples",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_SAMPLESHEET_FILE_NAME = new StringPreference(
+            "ngs.preprocessing.samplesheet.file.name", "samplesheet.csv",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_DATA_FOLDER = new StringPreference(
+            "ngs.preprocessing.data.folder", "ngs-data",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_SAMPLESHEET_LINK_COLUMN = new StringPreference(
+            "ngs.preprocessing.samplesheet.link.column", "Sample Sheet",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+    public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
+            "ngs.preprocessing.machine.run.column.name", "Machine Run",
+            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+
+    // Monitoring
+    public static final IntPreference MONITORING_POOL_USAGE_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.delay", 300000, MONITORING_GROUP, isGreaterThan(0));
+    public static final BooleanPreference MONITORING_POOL_USAGE_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.enable", false, MONITORING_GROUP, pass);
+    public static final BooleanPreference MONITORING_POOL_USAGE_CLEAN_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.clean.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_POOL_USAGE_CLEAN_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.clean.delay", 86400000, MONITORING_GROUP, isGreaterThan(0));
+    public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
+            "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
+
+    // Reports
     public static final StringPreference REPORTS_TIMESTAMP_COLUMN_NAME = new StringPreference(
             "reports.timestamp.column.name", "Timestamp", REPORTS_GROUP, pass);
     public static final StringPreference POOL_REPORTS_TOTAL_NODES_COLUMN_FORMAT = new StringPreference(

@@ -140,7 +140,7 @@ public class NodePoolReportTableHelperTest {
 
     private NodePoolUsageReportRecord record(final LocalDateTime timestamp) {
         return NodePoolUsageReportRecord.builder()
-                .periodStart(timestamp)
+                .periodEnd(timestamp)
                 .nodesCount(NODES_COUNT)
                 .occupiedNodesCount(OCCUPIED_NODES)
                 .utilization(UTILIZATION)

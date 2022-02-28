@@ -40,6 +40,9 @@ public class PipeConfValueVO {
     @JsonProperty(value = "type")
     private String type;
 
+    @JsonProperty(value = "section")
+    private String section;
+
     @JsonProperty(value = "required")
     private boolean required;
 

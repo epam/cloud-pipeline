@@ -17,6 +17,7 @@
     "moment": "^2.18.1",
     "prop-types": "^15.5.8",
     "react": "^15.4.2",
+    "react-color": "^2.19.3",
     "react-dom": "^15.4.2",
     "react-router": "3.0.2"
   },

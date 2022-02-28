@@ -30,3 +30,7 @@
 .ant-collapse > .ant-collapse-item.cp-collapse-body-no-padding > .ant-collapse-content {
   padding: 0;
 }
+
+.ant-popover.popover-overlay-content-no-padding .ant-popover-inner-content {
+  padding: 0;
+}

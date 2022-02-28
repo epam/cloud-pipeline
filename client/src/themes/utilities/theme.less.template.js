@@ -160,6 +160,12 @@ export default `
 @THEME .cp-link.cp-danger:focus {
   color: lighten(@color-red, 5%);
 }
+@THEME .cp-bordered {
+  border: 1px solid @panel-border-color;
+}
+@THEME .cp-outline-bordered {
+  outline: 1px solid @panel-border-color;
+}
 @THEME .cp-divider.top,
 @THEME .cp-divider.horizontal {
   border-top: 1px solid @panel-border-color;
@@ -275,6 +281,14 @@ export default `
 @THEME .ant-layout {
   background-color: @application-background-color;
   color: @application-color;
+  background-image: @background-image;
+  background-size: cover;
+}
+@THEME .app-background {
+  background-color: @application-background-color;
+  color: @application-color;
+}
+@THEME .app-background:not(.no-image) {
   background-image: @background-image;
   background-size: cover;
 }
@@ -1397,6 +1411,10 @@ export default `
 @THEME .ant-slider-disabled .ant-slider-track {
   background-color: @application-color-disabled !important;
 }
+@THEME .ant-slider-dot {
+  border-color: @card-header-background;
+  background-color: @card-background-color;
+}
 @THEME .ant-slider-disabled .ant-slider-handle,
 @THEME .ant-slider-disabled .ant-slider-dot {
   border-color: @application-color-disabled !important;
@@ -1422,6 +1440,18 @@ export default `
 }
 @THEME .ant-slider:hover .ant-slider-handle {
   border-color: @primary-hover-color;
+}
+@THEME .ant-slider-mark-text {
+  color: @application-color;
+}
+@THEME .cp-hcs-z-position-slider .ant-slider-track,
+@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
+  background-color: @color-yellow;
+}
+@THEME .cp-hcs-z-position-slider .ant-slider-handle,
+@THEME .cp-hcs-z-position-slider .ant-slider-dot-active,
+@THEME .cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+  border-color: @color-yellow;
 }
 @THEME .cp-notification {
   background-color: @card-background-color;
@@ -1455,6 +1485,29 @@ export default `
 }
 @THEME .cp-close-button:hover {
   color: @application-color;
+}
+@THEME .cp-timepoint-button {
+  background-color: fade(@primary-color, 40%);
+  border: 1px solid @primary-color;
+}
+@THEME .cp-timepoint-button-active {
+  background-color: fade(@color-warning, 40%);
+  border: 1px solid @color-warning;
+}
+@THEME .cp-dark-background {
+  background-color: @application-dark-background-color;
+}
+@THEME .cp-hcs-zoom-button {
+  cursor: pointer;
+  color: @application-color;
+  transition: all 100ms ease;
+}
+@THEME .cp-hcs-zoom-button:not(.cp-disabled):hover {
+  color: @primary-hover-color;
+}
+@THEME .cp-hcs-zoom-button.cp-disabled {
+  cursor: default;
+  color: @application-color-disabled;
 }
 
 @THEME .cp-panel {
@@ -2542,10 +2595,10 @@ export default `
 }
 @THEME .cp-settings-nat-table thead tr:first-child,
 @THEME .cp-settings-nat-table thead tr:first-child th:first-child,
-@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(4),
-@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(4),
-@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(7),
-@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(7) {
+@THEME .cp-settings-nat-table thead tr th.external-column:nth-child(5),
+@THEME .cp-settings-nat-table tbody tr td.external-column:nth-child(5),
+@THEME .cp-settings-nat-table thead tr th.internal-column:nth-child(8),
+@THEME .cp-settings-nat-table tbody tr td.internal-column:nth-child(8) {
   border-right: 2px solid @table-border-color;
 }
 @THEME .cp-settings-nat-table thead tr:first-child th {
@@ -2575,7 +2628,8 @@ export default `
   border: 1px solid @card-border-color;
   border-radius: 4px;
 }
-@THEME .markdown pre {
+@THEME .markdown pre,
+@THEME .markdown code {
   color: @application-color;
   background-color: @code-background-color;
   border: 1px solid @card-border-color;
@@ -2586,8 +2640,6 @@ export default `
 }
 @THEME .code-highlight code,
 @THEME .markdown code {
-  color: @color-pink;
-  background-color: @color-pink-light;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 @THEME .markdown pre > code {
@@ -2595,6 +2647,7 @@ export default `
   background-color: transparent;
   color: inherit;
   box-shadow: none;
+  border: none;
 }
 @THEME .markdown code {
   padding: 1px 4px;

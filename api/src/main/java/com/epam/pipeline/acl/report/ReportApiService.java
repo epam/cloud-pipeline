@@ -16,9 +16,9 @@
 
 package com.epam.pipeline.acl.report;
 
-import com.epam.pipeline.dto.report.NodePoolReportType;
-import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.ReportFilter;
+import com.epam.pipeline.dto.report.NodePoolUsageReport;
+import com.epam.pipeline.dto.report.NodePoolReportType;
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
 import com.epam.pipeline.manager.report.pool.NodePoolReportService;

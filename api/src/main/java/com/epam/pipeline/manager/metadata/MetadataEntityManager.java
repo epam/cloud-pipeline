@@ -111,6 +111,15 @@ public class MetadataEntityManager implements SecuredEntityManager {
         return metadataClass;
     }
 
+    @Transactional(propagation = Propagation.REQUIRED)
+    public MetadataClass getOrCreate(final String name) {
+        final MetadataClass metadataClass = metadataClassDao.loadMetadataClass(name);
+        if (metadataClass == null) {
+            return createMetadataClass(name);
+        }
+        return metadataClass;
+    }
+
     public MetadataClass loadClass(Long id) {
         MetadataClass metadataClass = metadataClassDao.loadMetadataClass(id);
         Assert.notNull(metadataClass,
@@ -150,7 +159,8 @@ public class MetadataEntityManager implements SecuredEntityManager {
                 metadataEntityDao.updateMetadataEntity(metadataEntity);
                 return metadataEntity;
             }
-            LOGGER.debug("Metadata entity with id %d was not found. A new one will be created.", entityId);
+            LOGGER.debug(String.format(
+                    "Metadata entity with id %d was not found. A new one will be created.", entityId));
         }
         String externalId = metadataEntity.getExternalId();
         if (StringUtils.isNotBlank(externalId)) {

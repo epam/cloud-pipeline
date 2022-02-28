@@ -71,8 +71,8 @@ function generateUrl (item) {
     case ItemTypes.versionedStorage: return `/vs/${item.id}`;
     case ItemTypes.storage: return `/storage/${item.id}`;
     case ItemTypes.configuration: return `/configuration/${item.id}`;
-    case ItemTypes.metadata: return `/metadata/${item.parent.parentId}/${item.name}`;
-    case ItemTypes.metadataFolder: return `/metadataFolder/${item.parentId}`;
+    case ItemTypes.metadata: return `/folder/${item.parent.parentId}/metadata/${item.name}`;
+    case ItemTypes.metadataFolder: return `/folder/${item.parentId}/metadata`;
     case ItemTypes.projectHistory: return `/folder/${item.id}/history`;
     default:
       return '/';

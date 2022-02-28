@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -526,7 +526,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     super.elements(),
                     entry(TABLE, context().find(byClassName("user-management-form__container"))
                             .find(byClassName("ant-table-tbody"))),
-                    entry(SEARCH, context().find(byClassName("ant-input-search"))),
+                    entry(SEARCH, context().find(byId("search-users-input"))),
                     entry(CREATE_USER, context().find(button("Create user"))),
                     entry(EXPORT_USERS, context().find(button("Export users")))
             );
@@ -567,6 +567,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO clickSearch() {
                 click(SEARCH);
+                clear(SEARCH);
                 return this;
             }
 
@@ -694,6 +695,21 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public EditUserPopup edit() {
                     click(EDIT);
                     return new EditUserPopup(parentAO);
+                }
+
+                public UserEntry validateBlockedStatus(final String username, final boolean blockedStatus) {
+                    final SelenideElement userWithStatus = entry.find(byClassName("user-management-form__line-break"));
+                    if (blockedStatus) {
+                        userWithStatus.shouldHave(text(format("%s- blocked", username)));
+                        return this;
+                    }
+                    userWithStatus.shouldHave(text(format("%s", username)));
+                    return this;
+                }
+
+                public boolean isBlockedUser(final String username) {
+                    return entry.find(byClassName("user-management-form__line-break"))
+                            .has(text(format("%s- blocked", username)));
                 }
 
                 public class EditUserPopup extends PopupAO<EditUserPopup, UsersTabAO> implements AccessObject<EditUserPopup> {
@@ -1146,6 +1162,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO searchPreference(String preference) {
+            clear(SEARCH);
             setValue(SEARCH, preference);
             enter();
             return this;
@@ -1220,10 +1237,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         public String[] getLinePreference(String preference) {
             searchPreference(preference);
             String[] prefValue = new String[2];
-            prefValue[0] = context().$(byClassName("preference-group__preference-row"))
-                    .$(byClassName("ant-input-sm")).attr("value");
-            prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
-                    .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
+            final SelenideElement selenideElement = context().$$(byClassName("preference-group__preference-row"))
+                    .filter(exactText(preference)).first();
+            prefValue[0] = selenideElement.$(byClassName("ant-input-sm")).attr("value");
+            prefValue[1] = String.valueOf(!selenideElement.$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
             return prefValue;
         }
 
@@ -1270,6 +1287,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .stream()
                             .filter(element -> exactText(preference).apply(element))
                             .map(e -> e.find(byCssSelector("i")))
+                            .collect(toList());
+                }
+            };
+        }
+
+        private By getByCheckbox(final String variable) {
+            return new By() {
+                @Override
+                public List<WebElement> findElements(final SearchContext context) {
+                    return $$(byClassName("preference-group__preference-row"))
+                            .stream()
+                            .filter(element -> text(variable).apply(element))
+                            .map(e -> e.find(".ant-checkbox-wrapper"))
                             .collect(toList());
                 }
             };
@@ -1324,6 +1354,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 save();
             }
             return this;
+        }
+
+        public PreferencesAO updatePreference(String preference, String value, boolean eyeIsChecked) {
+            return setPreference(preference, value, eyeIsChecked)
+                    .saveIfNeeded();
         }
 
         public class ClusterTabAO extends PreferencesAO {
@@ -1398,6 +1433,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private final By idleActionTimeout = getByField("system.idle.action.timeout.minutes");
             private final By idleCpuThreshold = getByField("system.idle.cpu.threshold");
             private final By idleAction = getByField("system.idle.action");
+            private final By ldapUserBlockMonitor = getByCheckbox("system.ldap.user.block.monitor.enable");
+            private final By userMonitor = getByCheckbox("system.user.monitor.enable");
 
             SystemTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1446,6 +1483,42 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return $(systemVariable).getValue();
             }
 
+            public boolean getLdapUserBlockMonitor() {
+                return $(ldapUserBlockMonitor).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"));
+            }
+
+            public SystemTabAO enableLdapUserBlockMonitor() {
+                if (!getLdapUserBlockMonitor()) {
+                    click(ldapUserBlockMonitor);
+                }
+                return this;
+            }
+
+            public SystemTabAO disableLdapUserBlockMonitor() {
+                if (getLdapUserBlockMonitor()) {
+                    click(ldapUserBlockMonitor);
+                }
+                return this;
+            }
+
+            public boolean getUserMonitor() {
+                return $(userMonitor).$(byXpath(".//span")).has(cssClass("ant-checkbox-checked"));
+            }
+
+            public SystemTabAO enableUserMonitor() {
+                if (!getUserMonitor()) {
+                    click(userMonitor);
+                }
+                return this;
+            }
+
+            public SystemTabAO disableUserMonitor() {
+                if (getUserMonitor()) {
+                    click(userMonitor);
+                }
+                return this;
+            }
+
             @Override
             public Map<Primitive, SelenideElement> elements() {
                 return elements;
@@ -1454,7 +1527,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public class DockerSecurityAO extends PreferencesAO {
 
-            private final By policyDenyNotScanned = getByDockerSecurityCheckbox("security.tools.policy.deny.not.scanned");
+            private final By policyDenyNotScanned = getByCheckbox("security.tools.policy.deny.not.scanned");
             private final By graceHours = getByField("security.tools.grace.hours");
 
             DockerSecurityAO(final PipelinesLibraryAO parentAO) {
@@ -1501,19 +1574,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             private String getDockerSecurityCheckbox(final By dockerSecurityVar) {
                 return $(dockerSecurityVar).getText();
-            }
-
-            private By getByDockerSecurityCheckbox(final String variable) {
-                return new By() {
-                    @Override
-                    public List<WebElement> findElements(final SearchContext context) {
-                        return $$(byClassName("preference-group__preference-row"))
-                                .stream()
-                                .filter(element -> text(variable).apply(element))
-                                .map(e -> e.find(".ant-checkbox-wrapper"))
-                                .collect(toList());
-                    }
-                };
             }
         }
 

@@ -15,7 +15,7 @@
  */
 
 import React from 'react';
-import {Icon, Row} from 'antd';
+import {Icon} from 'antd';
 import classNames from 'classnames';
 
 import styles from './preview.css';
@@ -33,12 +33,47 @@ export function metadataLoad (params, entityClass, {metadataCache, dataStorageCa
   }
 }
 
-export function renderAttributes (metadataRequest, isTags = false) {
+/**
+ * @typedef {Object} AttributesOptions
+ * @property {boolean} [tags=false]
+ * @property {boolean} [column=false]
+ * @property {boolean} [showLoadingIndicator=true]
+ * @property {boolean} [showError=true]
+ */
+
+/**
+ * Renders attributes
+ * @param {Object} metadataRequest
+ * @param {AttributesOptions} options
+ * @return {JSX.Element|null}
+ */
+export function renderAttributes (metadataRequest, options = {}) {
+  const {
+    tags = false,
+    column = false,
+    showLoadingIndicator = true,
+    showError = true
+  } = options;
   if (metadataRequest) {
     if (metadataRequest.pending) {
-      return <Row className={styles.attributes} type="flex" justify="center"><Icon type="loading" /></Row>;
+      if (!showLoadingIndicator) {
+        return null;
+      }
+      return (
+        <div
+          className={styles.attributes}
+          style={{
+            justifyContent: 'center'
+          }}
+        >
+          <Icon type="loading" />
+        </div>
+      );
     }
     if (metadataRequest.error) {
+      if (!showError) {
+        return null;
+      }
       return (
         <div className={styles.attributes}>
           <span className={'cp-search-preview-error'}>{metadataRequest.error}</span>
@@ -46,7 +81,7 @@ export function renderAttributes (metadataRequest, isTags = false) {
       );
     }
     const attributes = [];
-    if (isTags) {
+    if (tags) {
       if (metadataRequest.value) {
         for (let key in metadataRequest.value) {
           if (metadataRequest.value.hasOwnProperty(key)) {
@@ -70,19 +105,45 @@ export function renderAttributes (metadataRequest, isTags = false) {
       }
     }
     if (attributes.length > 0) {
+      const attrs = attributes.map((attr, index) => {
+        return (
+          <div key={index} className={styles.attribute}>
+            <div
+              className={
+                classNames(
+                  styles.attributeName,
+                  'cp-search-attribute-name'
+                )
+              }
+            >
+              {attr.key}
+            </div>
+            <div
+              className={
+                classNames(
+                  styles.attributeValue,
+                  'cp-search-attribute-value'
+                )
+              }
+            >
+              {attr.value}
+            </div>
+          </div>
+        );
+      });
       return (
-        <Row type="flex" className={styles.attributes}>
-          {
-            attributes.map((attr, index) => {
-              return (
-                <div key={index} className={styles.attribute}>
-                  <div className={classNames(styles.attributeName, 'cp-search-attribute-name')}>{attr.key}</div>
-                  <div className={classNames(styles.attributeValue, 'cp-search-attribute-value')}>{attr.value}</div>
-                </div>
-              );
-            })
+        <div
+          className={
+            classNames(
+              styles.attributes,
+              {
+                [styles.column]: column
+              }
+            )
           }
-        </Row>
+        >
+          {attrs}
+        </div>
       );
     }
   }

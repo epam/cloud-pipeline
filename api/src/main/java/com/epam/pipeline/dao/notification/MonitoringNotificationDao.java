@@ -129,7 +129,7 @@ public class MonitoringNotificationDao extends NamedParameterJdbcDaoSupport {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void deleteNotificationTimestampsForIdAndType(final Long id, final NotificationType type) {
-        getJdbcTemplate().update(deleteNotificationTimestampsByIdAndTypeQuery, id, type);
+        getJdbcTemplate().update(deleteNotificationTimestampsByIdAndTypeQuery, id, type.name());
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

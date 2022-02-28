@@ -15,6 +15,7 @@
  */
 
 @application-background-color: rgb(14, 17, 22);
+@application-dark-background-color: @application-background-color;
 @application-color: rgb(180, 188, 196);
 @application-color-faded: fadeout(@application-color, 20%);
 @application-color-disabled: fadeout(@application-color, 60%);
@@ -134,7 +135,7 @@
 @btn-disabled-color: lighten(@panel-background-color, 40%);
 @btn-disabled-background-color: lighten(@panel-background-color, 4%);
 
-@code-background-color: lighten(@card-background-color, 5%);
+@code-background-color: lighten(@card-background-color, 10%);
 
 @search-highlight-text-color: @application-color;
 @search-highlight-text-background-color: @navigation-panel-color-impersonated;

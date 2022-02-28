@@ -19,6 +19,6 @@
   border: 1px solid transparent;
 }
 
-.span.key::after {
+.span.key.not-empty::after {
   content: ':';
 }
