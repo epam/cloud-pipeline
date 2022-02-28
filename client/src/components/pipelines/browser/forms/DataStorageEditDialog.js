@@ -61,7 +61,12 @@ export class DataStorageEditDialog extends React.Component {
     dataStorage: PropTypes.object,
     addExistingStorageFlag: PropTypes.bool,
     isNfsMount: PropTypes.bool,
-    policySupported: PropTypes.bool
+    policySupported: PropTypes.bool,
+    versionControlsEnabled: PropTypes.bool
+  };
+
+  static defaultProps = {
+    versionControlsEnabled: true
   };
 
   state = {
@@ -483,8 +488,10 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
+                {!this.isNfsMount &&
+                this.props.policySupported &&
+                this.currentRegionSupportsPolicy &&
+                this.props.versionControlsEnabled && (
                   <Row>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
@@ -498,24 +505,26 @@ export class DataStorageEditDialog extends React.Component {
                       </Form.Item>
                     </Col>
                   </Row>
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported &&
-                  this.state.versioningEnabled && this.currentRegionSupportsPolicy &&
-                    <Form.Item
-                      className={styles.dataStorageFormItem}
-                      {...this.formItemLayout}
-                      label="Backup duration">
-                      {getFieldDecorator('backupDuration', {
-                        initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                          ? this.props.dataStorage.storagePolicy.backupDuration : undefined
-                      })(
-                        <InputNumber
-                          style={{width: '100%'}}
-                          disabled={this.props.pending || isReadOnly} />
-                      )}
-                    </Form.Item>
-                }
+                )}
+                {!this.isNfsMount &&
+                this.props.policySupported &&
+                this.state.versioningEnabled &&
+                this.currentRegionSupportsPolicy &&
+                this.props.versionControlsEnabled && (
+                  <Form.Item
+                    className={styles.dataStorageFormItem}
+                    {...this.formItemLayout}
+                    label="Backup duration">
+                    {getFieldDecorator('backupDuration', {
+                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
+                        ? this.props.dataStorage.storagePolicy.backupDuration : undefined
+                    })(
+                      <InputNumber
+                        style={{width: '100%'}}
+                        disabled={this.props.pending || isReadOnly} />
+                    )}
+                  </Form.Item>
+                )}
                 {
                   !this.state.mountDisabled && (
                     <Form.Item

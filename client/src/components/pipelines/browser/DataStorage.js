@@ -294,11 +294,13 @@ export default class DataStorage extends React.Component {
       info.value.storagePolicy &&
       info.value.storagePolicy.versioningEnabled
     ) {
-      // TODO: change .enableVersionControlsMock to valid preference name when API will be ready
-      const enableControls = preferences.enableVersionControlsMock === undefined
-        ? true
-        : preferences.enableVersionControlsMock;
-      return enableControls || authenticatedUserInfo.value.admin;
+      const isAdmin = authenticatedUserInfo.value.admin;
+      const preferenceValue = preferences
+        .getPreferenceValue('storage.policy.backup.visible.non.admins');
+      if (isAdmin || preferenceValue === undefined) {
+        return true;
+      }
+      return `${preferenceValue}` === 'true';
     }
     return false;
   }
@@ -2214,6 +2216,7 @@ export default class DataStorage extends React.Component {
           dataStorage={this.props.info.value}
           pending={this.props.info.pending}
           policySupported={this.props.info.value.policySupported}
+          versionControlsEnabled={this.versionControlsEnabled}
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />
