@@ -17,8 +17,6 @@ from random import getrandbits
 from threading import RLock
 from . import utils
 
-lock = RLock()
-
 
 class AbstractCluster(object):
     def submit_job(self, command, job_name, threads, common_logfile, work_directory, get_output=True):
@@ -29,19 +27,20 @@ class AbstractCluster(object):
 
 
 class SGECluster(AbstractCluster):
+
     def __init__(self):
-        pass
+        self._lock = RLock()
 
     def submit_job(self, command, job_name, threads, common_logfile, get_output=True, work_directory=os.getcwd()):
         if not command:
             raise ValueError("The job command is not set.")
         if not job_name:
             print("The job name is not set. The default one will be used.")
-        job_logfile = utils.get_log_filename(work_directory, job_name)
+        job_logfile = utils.get_log_filename(work_directory, job_name, lock=self._lock)
         job_command = self.build_job_command(command, job_name, threads, job_logfile, work_directory)
-        job_result = utils.run(job_command,get_output)
+        job_result = utils.run(job_command, get_output=get_output)
         if common_logfile and get_output:
-            utils.merge_log(common_logfile, job_logfile)
+            utils.merge_log(common_logfile, job_logfile, lock=self._lock)
         try:
             os.remove(job_logfile)
         except OSError as e:
@@ -53,7 +52,7 @@ class SGECluster(AbstractCluster):
         job_options = "-sync y {job_name} -V -j y -R y -o {standard_output_logfile} -pe local {threads} " \
             .format(standard_output_logfile=logfile, job_name="-N " + job_name if job_name else "",
                     threads=threads)
-        tmp_directory = utils.create_directory(work_directory, "tmp")
+        tmp_directory = utils.create_directory(work_directory, "tmp", lock=self._lock)
         bash_script = "{tmp_directory}/{job_name}.sh".format(tmp_directory=tmp_directory,
                                                              job_name=job_name + str(getrandbits(64)) if job_name
                                                              else str(getrandbits(64)))

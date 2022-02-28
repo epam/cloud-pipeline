@@ -15,32 +15,29 @@
 import os
 import subprocess
 from random import getrandbits
-from threading import RLock
-
-lock = RLock()
 
 
-def get_log_filename(work_directory, job_name):
-    logs_directory = create_directory(work_directory, "logs")
+def get_log_filename(work_directory, job_name, lock):
+    logs_directory = create_directory(work_directory, "logs", lock=lock)
     random_number = getrandbits(64)
     return os.path.join(logs_directory, "{job_name}_{number}_out.log"
                         .format(number=random_number, job_name=job_name if job_name else random_number))
 
 
-def merge_log(common_logfile, job_logfile):
+def merge_log(common_logfile, job_logfile, lock):
     piece_size = 4096
-    with open(common_logfile, 'ab+') as common_logfile, open(job_logfile, 'rb') as job_logfile:
-        while True:
-            piece = job_logfile.read(piece_size)
-            if piece == b'':
-                common_logfile.write("\n".encode())
-                common_logfile.seek(0)
-                job_logfile.seek(0)
-                break
-            common_logfile.write(piece)
+    with lock:
+        with open(common_logfile, 'ab+') as common_logfile, open(job_logfile, 'rb') as job_logfile:
+            while True:
+                piece = job_logfile.read(piece_size)
+                if piece == b'':
+                    common_logfile.write("\n".encode())
+                    break
+                common_logfile.write(piece)
 
 
-def create_directory(path, name):
+
+def create_directory(path, name, lock):
     directory = os.path.join(path, name)
     with lock:
         if not os.path.exists(directory):
