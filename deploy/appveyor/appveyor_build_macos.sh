@@ -24,13 +24,13 @@ source ~/venv2.7.18/bin/activate
           -x :pipe-cli:test
 
 deactivate
-python3 -m pip install --user awscli
+python3.8 -m pip install --user awscli
 
 cd pipe-cli
 DIST_TGZ_NAME=pipe-osx-full.$APPVEYOR_BUILD_NUMBER.tar.gz
 tar -zcf $DIST_TGZ_NAME dist
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
     if [ "$APPVEYOR_REPO_BRANCH" == "develop" ] || [ "$APPVEYOR_REPO_BRANCH" == "master" ] || [[ "$APPVEYOR_REPO_BRANCH" == "release/"* ]] || [[ "$APPVEYOR_REPO_BRANCH" == "stage/"* ]] ; then
-            aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
+            ~/Library/Python/3.8/bin/aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
     fi
 fi
