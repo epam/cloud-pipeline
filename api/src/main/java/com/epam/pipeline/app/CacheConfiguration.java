@@ -15,6 +15,8 @@
 
 package com.epam.pipeline.app;
 
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
@@ -24,6 +26,7 @@ import org.springframework.cache.support.NoOpCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -31,6 +34,8 @@ import redis.clients.jedis.JedisPoolConfig;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @EnableCaching
 public class CacheConfiguration {
@@ -57,6 +62,12 @@ public class CacheConfiguration {
     @Value("${redis.pool.timeout:20000}")
     private Integer poolTimeout;
 
+    @Value("${redis.cluster.max-redirects:3}")
+    private Integer redisClusterMaxRedirects;
+
+    @Value("#{'${redis.cluster.hosts:}'.split(',')}")
+    private Set<String> redisClusterNodes;
+
     @Bean
     @Primary
     public CacheManager cacheManager(final Optional<RedisCacheManager> redisCacheManager) {
@@ -80,9 +91,21 @@ public class CacheConfiguration {
     @Bean
     @ConditionalOnProperty(value = CACHE_TYPE, havingValue = REDIS)
     public RedisConnectionFactory redisConnectionFactory() {
-        final JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();
-        jedisConnectionFactory.setHostName(redisHost);
-        jedisConnectionFactory.setPort(redisPort);
+        final Set<String> nodes = CollectionUtils.emptyIfNull(redisClusterNodes)
+            .stream()
+            .map(StringUtils::trim)
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.toSet());
+        final JedisConnectionFactory jedisConnectionFactory;
+        if (CollectionUtils.isNotEmpty(nodes)) {
+            final RedisClusterConfiguration redisClusterConfiguration = new RedisClusterConfiguration(nodes);
+            redisClusterConfiguration.setMaxRedirects(redisClusterMaxRedirects);
+            jedisConnectionFactory = new JedisConnectionFactory(redisClusterConfiguration);
+        } else {
+            jedisConnectionFactory = new JedisConnectionFactory();
+            jedisConnectionFactory.setHostName(redisHost);
+            jedisConnectionFactory.setPort(redisPort);
+        }
         jedisConnectionFactory.setTimeout(poolTimeout);
         final JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setMaxTotal(redisPoolConnections);

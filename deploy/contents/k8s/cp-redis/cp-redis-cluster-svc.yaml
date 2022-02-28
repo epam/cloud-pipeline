@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-redis-cluster: "true"
+  name: redis-ha
+  namespace: default
+spec:
+  clusterIP: None
+  ports:
+    - protocol: TCP
+      port: 6379
+      targetPort: 6379
+      name: cp-redis-port-http
+    - protocol: TCP
+      port: 16379
+      targetPort: 16379
+      name: cp-redis-cluster-port
+  selector:
+    cloud-pipeline/cp-redis-cluster: "true"
