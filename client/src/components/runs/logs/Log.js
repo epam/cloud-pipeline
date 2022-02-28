@@ -25,6 +25,7 @@ import {
   Card,
   Col,
   Collapse,
+  Dropdown,
   Icon,
   Menu,
   message,
@@ -84,6 +85,10 @@ import CommitRunDialog from './forms/CommitRunDialog';
 import ShareWithForm from './forms/ShareWithForm';
 import DockerImageLink from './DockerImageLink';
 import mapResumeFailureReason from '../utilities/map-resume-failure-reason';
+import {
+  parametersToCSVString,
+  parametersToJSONString
+} from '../../../utils/read-parameters';
 import RunTags from '../run-tags';
 import RunSchedules from '../../../models/runSchedule/RunSchedules';
 import UpdateRunSchedules from '../../../models/runSchedule/UpdateRunSchedules';
@@ -110,7 +115,13 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
+@inject(
+  'preferences',
+  'dtsList',
+  'multiZoneManager',
+  'dockerRegistries',
+  'runDefaultParameters'
+)
 @VSActions.check
 @inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -158,7 +169,12 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   componentDidMount () {
-    const {runTasks, runSchedule} = this.props;
+    const {
+      runTasks,
+      runSchedule,
+      runDefaultParameters
+    } = this.props;
+    runDefaultParameters.fetchIfNeededOrWait();
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
@@ -258,6 +274,23 @@ class Logs extends localization.LocalizedReactComponent {
     }
     return false;
   }
+
+  @computed
+  get runDefaultParameters () {
+    const {runDefaultParameters} = this.props;
+    if (runDefaultParameters && runDefaultParameters.loaded) {
+      return this.props.runDefaultParameters.value || [];
+    }
+    return undefined;
+  }
+
+  isSystemParameter = (parameter) => {
+    if (this.runDefaultParameters) {
+      return this.runDefaultParameters
+        .filter(p => p.name.toUpperCase() === (parameter.name || '').toUpperCase()).length > 0;
+    }
+    return false;
+  };
 
   exportLog = async () => {
     const {runId} = this.props.params;
@@ -1356,6 +1389,43 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  onExportParameters = (extension = 'csv', exportType = 'general') => {
+    const {run} = this.props;
+    if (run && run.value && run.value.pipelineRunParameters) {
+      const {pipelineRunParameters} = run.value;
+      const options = {
+        excludedKeys: ['resolvedValue']
+      };
+      let parametersToExport;
+      if (exportType === 'all') {
+        parametersToExport = pipelineRunParameters;
+      } else {
+        parametersToExport = pipelineRunParameters
+          .filter(param => !this.isSystemParameter(param));
+      }
+      let content;
+      switch (extension) {
+        case 'csv':
+          content = parametersToCSVString(parametersToExport, options);
+          break;
+        case 'json':
+          content = parametersToJSONString(parametersToExport, options);
+          break;
+        default:
+          content = parametersToCSVString(parametersToExport, options);
+          break;
+      }
+      try {
+        FileSaver.saveAs(
+          new Blob([content]),
+          `run_${run.value.id}_${exportType}_parameters.${extension.toLowerCase()}`
+        );
+      } catch (error) {
+        message.error('Failed to export parameters', 5);
+      }
+    }
+  };
+
   render () {
     if (this.props.run.error) {
       return <Alert type="error" message={this.props.run.error} />;
@@ -1711,10 +1781,50 @@ class Logs extends localization.LocalizedReactComponent {
             {this.state.resolvedValues ? 'SHOW ORIGINAL' : 'SHOW RESOLVED'}
           </a>
         );
+        const exportParametersMenu = (
+          <Menu
+            onClick={({key}) => {
+              const [extension, exportType] = key.split('|');
+              this.onExportParameters(extension, exportType);
+            }}
+          >
+            <Menu.Item key="csv|all">
+              Export all parameters to CSV
+            </Menu.Item>
+            <Menu.Item key="json|all">
+              Export all parameters to JSON
+            </Menu.Item>
+            <Menu.Item key="csv|general">
+              Export general parameters to CSV
+            </Menu.Item>
+            <Menu.Item key="json|general">
+              Export general parameters to JSON
+            </Menu.Item>
+          </Menu>
+        );
+        const parametersCollapseHeader = (
+          <div style={{display: 'flex', justifyContent: 'space-between'}}>
+            <span>
+              Parameters
+            </span>
+            <div onClick={event => event.stopPropagation()}>
+              <Dropdown.Button
+                onClick={() => this.onExportParameters('csv')}
+                overlay={exportParametersMenu}
+                size="small"
+              >
+                Export parameters
+              </Dropdown.Button>
+            </div>
+          </div>
+        );
         Parameters = (
           <Collapse
-            bordered={false}>
-            <Collapse.Panel header="Parameters">
+            bordered={false}
+          >
+            <Collapse.Panel
+              header={parametersCollapseHeader}
+            >
               <Row type="flex" justify="end" style={{position: 'absolute', right: 0}}>
                 {switchResolvedValuesButton}
               </Row>
