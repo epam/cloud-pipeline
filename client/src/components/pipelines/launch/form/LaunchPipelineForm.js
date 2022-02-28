@@ -303,6 +303,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     showOnlyFolderInBucketBrowser: false,
     systemParameterBrowserVisible: false,
     systemParameters: [],
+    importedParameters: null,
     fireCloudMethodName: (this.props.fireCloudMethod &&
       this.props.fireCloudMethod.name) || null,
     fireCloudMethodNamespace: (this.props.fireCloudMethod &&
@@ -868,18 +869,29 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return {execEnvSelectValue, dtsId};
   };
 
+  updateParametersDependentState = () => {
+    this.setState({
+      autoScaledCluster: autoScaledClusterEnabled(this.parameters),
+      hybridAutoScaledClusterEnabled: hybridAutoScaledClusterEnabled(this.parameters),
+      gridEngineEnabled: gridEngineEnabled(this.parameters),
+      sparkEnabled: sparkEnabled(this.parameters),
+      slurmEnabled: slurmEnabled(this.parameters),
+      kubeEnabled: kubeEnabled(this.parameters),
+      autoScaledPriceType: getAutoScaledPriceTypeValue(this.parameters),
+      runCapabilities: getEnabledCapabilities(this.parameters)
+    }, () => this.formFieldsChanged);
+  };
+
   resetState = (keepPipeline) => {
     const {execEnvSelectValue, dtsId} = this.getExecEnvSelectValue();
-    const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
-    const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
-      this.props.parameters.parameters
-    );
-    const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
-    const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
-    const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
-    const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
-    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
-    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
+    const autoScaledCluster = autoScaledClusterEnabled(this.parameters);
+    const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(this.parameters);
+    const gridEngineEnabledValue = gridEngineEnabled(this.parameters);
+    const sparkEnabledValue = sparkEnabled(this.parameters);
+    const slurmEnabledValue = slurmEnabled(this.parameters);
+    const kubeEnabledValue = kubeEnabled(this.parameters);
+    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.parameters);
+    const runCapabilities = getEnabledCapabilities(this.parameters);
     if (keepPipeline) {
       this.setState({
         openedPanels: this.getDefaultOpenedPanels(),
@@ -901,9 +913,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
-        maxNodesCount: this.props.parameters.parameters &&
-        this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
-          ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
+        maxNodesCount: this.parameters &&
+        this.parameters[CP_CAP_AUTOSCALE_WORKERS]
+          ? +this.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
         bucketPath: null,
@@ -957,9 +969,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         runCapabilities,
         scheduleRules: null,
         nodesCount: +this.props.parameters.node_count,
-        maxNodesCount: this.props.parameters.parameters &&
-        this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
-          ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
+        maxNodesCount: this.parameters &&
+        this.parameters[CP_CAP_AUTOSCALE_WORKERS]
+          ? +this.parameters[CP_CAP_AUTOSCALE_WORKERS].value
           : 0,
         bucketBrowserVisible: false,
         bucketPath: null,
@@ -1421,29 +1433,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     return `${this.props.parameters[key]}`;
   };
 
-  getParameterKey = (parameter, section) => {
-    const sectionValues = this.getSectionValue(section);
-    if (parameter && sectionValues && sectionValues.params) {
-      const activeKeys = sectionValues.keys || [];
-      const {key} = Object.values(sectionValues.params)
-        .find(dataObject => dataObject.name === parameter.name &&
-          activeKeys.includes(dataObject.key)
-        ) || {};
-      return key;
-    }
-    return undefined;
-  };
-
-  getParameterSection = parameter => {
-    if (this.isSystemParameter(parameter)) {
-      if (parameter.name === CP_CAP_LIMIT_MOUNTS) {
-        return ADVANCED;
-      }
-      return SYSTEM_PARAMETERS;
-    }
-    return PARAMETERS;
-  };
-
   getInstanceTypes = (instanceTypesRequest) => {
     if (!instanceTypesRequest) {
       return [];
@@ -1523,10 +1512,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (!this.props.parameters) {
       return undefined;
     }
-    if (this.props.parameters.parameters) {
-      for (let pKey in this.props.parameters.parameters) {
-        if (this.props.parameters.parameters.hasOwnProperty(pKey) && pKey === key) {
-          return this.props.parameters.parameters[pKey].value;
+    if (this.parameters) {
+      for (let pKey in this.parameters) {
+        if (this.parameters.hasOwnProperty(pKey) && pKey === key) {
+          return this.parameters[pKey].value;
         }
       }
     }
@@ -1538,16 +1527,16 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   prepare = (updateFireCloud = false) => {
-    const autoScaledCluster = autoScaledClusterEnabled(this.props.parameters.parameters);
+    const autoScaledCluster = autoScaledClusterEnabled(this.parameters);
     const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
-      this.props.parameters.parameters
+      this.parameters
     );
-    const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
-    const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
-    const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
-    const kubeEnabledValue = kubeEnabled(this.props.parameters.parameters);
-    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.props.parameters.parameters);
-    const runCapabilities = getEnabledCapabilities(this.props.parameters.parameters);
+    const gridEngineEnabledValue = gridEngineEnabled(this.parameters);
+    const sparkEnabledValue = sparkEnabled(this.parameters);
+    const slurmEnabledValue = slurmEnabled(this.parameters);
+    const kubeEnabledValue = kubeEnabled(this.parameters);
+    const autoScaledPriceTypeValue = getAutoScaledPriceTypeValue(this.parameters);
+    const runCapabilities = getEnabledCapabilities(this.parameters);
     let state = {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
@@ -1559,9 +1548,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       autoScaledPriceType: autoScaledPriceTypeValue,
       runCapabilities,
       nodesCount: +this.props.parameters.node_count,
-      maxNodesCount: this.props.parameters.parameters &&
-      this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS]
-        ? +this.props.parameters.parameters[CP_CAP_AUTOSCALE_WORKERS].value
+      maxNodesCount: this.parameters &&
+      this.parameters[CP_CAP_AUTOSCALE_WORKERS]
+        ? +this.parameters[CP_CAP_AUTOSCALE_WORKERS].value
         : 0,
       pipeline: this.props.pipeline,
       version: this.props.version,
@@ -1768,6 +1757,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     nonSystem: 0
   };
 
+  get parameters () {
+    if (
+      this.state.importedParameters &&
+      !this.props.detached &&
+      !this.props.editConfigurationMode &&
+      !this.props.isDetachedConfiguration
+    ) {
+      return this.state.importedParameters;
+    }
+    return this.props.parameters.parameters;
+  }
+
   buildDefaultParameters = (system = false) => {
     const parameters = {
       keys: [],
@@ -1783,9 +1784,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         return `${value === 'true'}`;
       }
     };
-    if (this.props.parameters.parameters) {
-      for (let key in this.props.parameters.parameters) {
-        if (this.props.parameters.parameters.hasOwnProperty(key)) {
+    if (this.parameters) {
+      for (let key in this.parameters) {
+        if (this.parameters.hasOwnProperty(key)) {
           if (
             this.isSystemParameter({name: key}) !== system ||
             isCustomCapability(key, this.props.preferences)
@@ -1811,7 +1812,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           let initialEnumeration;
           let visible;
           let validation;
-          const parameter = this.props.parameters.parameters[key];
+          const parameter = this.parameters[key];
           if (parameter.value !== undefined ||
             parameter.type !== undefined ||
             parameter.required !== undefined) {
@@ -2529,60 +2530,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     this.props.form.setFieldsValue({[sectionName]: parametersValues});
   };
 
-  bulkAddParameters = (parameters) => {
-    if (!Array.isArray(parameters) || !parameters.length) {
-      return;
-    }
-    const formData = this.props.form.getFieldsValue();
-    const payload = {};
-    const updateAdvancedParameter = (parameter) => {
-      if (parameter.name === CP_CAP_LIMIT_MOUNTS) {
-        payload[`${ADVANCED}.limitMounts`] = parameter.value;
-      }
-    };
-    const updateParameter = (parameter, section, isSystemSection) => {
-      const newValues = {
-        type: parameter.type,
-        name: parameter.name,
-        required: parameter.required,
-        value: parameter.value
-      };
-      const key = this.getParameterKey(parameter, section);
-      if (key) {
-        if (!payload[section]) {
-          payload[section] = {params: {}};
-        }
-        const currentValues = formData[section].params[key] || {};
-        payload[section].params = {
-          ...payload[section].params,
-          ...{[key]: {...currentValues, ...newValues}}
-        };
-      } else {
-        const parameterIndexIdentifierKey = isSystemSection
-          ? 'system'
-          : 'nonSystem';
-        this.parameterIndexIdentifier[parameterIndexIdentifierKey] += 1;
-        const newKeyIndex = `param_${this.parameterIndexIdentifier[parameterIndexIdentifierKey]}`;
-        this.addedParameters[newKeyIndex] = newValues;
-        formData[section].keys.push(newKeyIndex);
-      }
-    };
-    for (let parameter of parameters) {
-      const section = this.getParameterSection(parameter);
-      const isSystemParameter = this.isSystemParameter(parameter);
-      if (isSystemParameter) {
-        if (section === ADVANCED) {
-          updateAdvancedParameter(parameter);
-        } else {
-          updateParameter(parameter, SYSTEM_PARAMETERS, isSystemParameter);
-        }
-      } else {
-        updateParameter(parameter, PARAMETERS, isSystemParameter);
-      }
-    }
-    this.props.form.setFieldsValue(payload);
-  };
-
   handleParametersImport = async (file) => {
     if (!file || !file.name) {
       return;
@@ -2596,10 +2543,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       parameters = await parametersFromJSONString(file);
     }
     hide();
-    if (parameters && parameters.error) {
+    if (!Array.isArray(parameters) && parameters.error) {
       return message.error(parameters.error, 5);
     }
-    return this.bulkAddParameters(parameters);
+    if (parameters && Object.keys(parameters).length) {
+      this.rebuildParameters = {
+        [PARAMETERS]: true,
+        [SYSTEM_PARAMETERS]: true
+      };
+      this.props.form.resetFields([
+        `${ADVANCED}.limitMounts`,
+        `${PARAMETERS}.keys`,
+        `${SYSTEM_PARAMETERS}.keys`
+      ]);
+      return this.setState({importedParameters: parameters}, () => {
+        this.updateParametersDependentState();
+      });
+    }
   };
 
   validateParameterName = (sectionName, key, isSystemParameter) => (rule, value, callback) => {
@@ -2897,20 +2857,24 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   ) : undefined
               }
             </Button.Group>
-            <Upload
-              disabled={(this.props.readOnly && !this.props.canExecute) ||
-              (!!this.state.pipeline && this.props.detached)}
-              id="import-parameter-button"
-              accept={'text/csv, application/json'}
-              multiple={false}
-              showUploadList={false}
-              beforeUpload={this.handleParametersImport}
-            >
-              <Button>
-                <Icon type="upload" />
-                Import parameters
-              </Button>
-            </Upload>
+            {!this.props.detached &&
+            !this.props.editConfigurationMode &&
+            !this.props.isDetachedConfiguration && (
+              <Upload
+                disabled={(this.props.readOnly && !this.props.canExecute) ||
+                (!!this.state.pipeline && this.props.detached)}
+                id="import-parameter-button"
+                accept={'text/csv, application/json'}
+                multiple={false}
+                showUploadList={false}
+                beforeUpload={this.handleParametersImport}
+              >
+                <Button>
+                  <Icon type="upload" />
+                  Import parameters
+                </Button>
+              </Upload>
+            )}
           </Row>
         );
       }
@@ -4161,9 +4125,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     } = this.props;
     if (dataStorageAvailable.loaded && currentUserAttributes.loaded) {
       const getDefaultValue = () => {
-        if (this.props.parameters.parameters &&
-          this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS]) {
-          return this.props.parameters.parameters[CP_CAP_LIMIT_MOUNTS].value;
+        if (this.parameters &&
+          this.parameters[CP_CAP_LIMIT_MOUNTS]) {
+          return this.parameters[CP_CAP_LIMIT_MOUNTS].value;
         }
         if (
           !this.props.isDetachedConfiguration &&

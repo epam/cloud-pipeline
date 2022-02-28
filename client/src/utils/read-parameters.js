@@ -51,16 +51,21 @@ function parametersFromJSONString (file) {
       const reader = new FileReader();
       reader.readAsText(file);
       reader.onload = () => {
-        try {
-          const json = JSON.parse(reader.result);
-          resolve(json);
-        } catch (error) {
-          reject(error);
+        const parsed = JSON.parse(reader.result);
+        if (Array.isArray(parsed)) {
+          resolve(parsed.reduce((acc, current) => {
+            acc[current.name] = current;
+            return acc;
+          }, {}));
+        } else {
+          resolve({error: new Error('Error reading file content')});
         }
       };
-      reader.onerror = error => reject(error);
+      reader.onerror = e => resolve({
+        error: new Error('Error reading file content')
+      });
     } catch (e) {
-      reject(e);
+      resolve({error: new Error('Error reading file content')});
     }
   });
 };
@@ -88,14 +93,15 @@ function parametersFromCSVString (file) {
             });
           });
         const [parameterKeys, ...rest] = data;
-        const parameters = rest.map(values => values
-          .reduce((acc, value, index) => {
+        const parameters = rest.reduce((acc, dataRow) => {
+          const dataObject = dataRow.reduce((acc, value, index) => {
             const key = parameterKeys[index];
-            if (key) {
-              acc[key] = value;
-            }
+            acc[key] = value;
             return acc;
-          }, {}));
+          }, {});
+          acc[dataObject.name] = dataObject;
+          return acc;
+        }, {});
         resolve(parameters);
       };
       reader.onerror = e => {
