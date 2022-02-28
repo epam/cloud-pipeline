@@ -247,5 +247,12 @@ public interface CloudPipelineAPI {
 
     @GET("filesharemount/{id}")
     Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
+
+
+    @POST("cluster/pool/usage")
+    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body final List<NodePoolUsage> records);
+
+    @DELETE("cluster/pool/usage")
+    Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);
 }
 
