@@ -14,5 +14,6 @@
 
 FROM library/python:3.6-alpine3.12
 
+RUN apk add g++ make
 RUN pip install pykube==0.15.0
 ADD sync-hosts.py /sync-hosts.py
