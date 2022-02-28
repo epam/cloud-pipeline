@@ -275,6 +275,44 @@ export default class DataStorage extends React.Component {
     return false;
   }
 
+  @computed
+  get versionControlsEnabled () {
+    const {
+      preferences,
+      authenticatedUserInfo,
+      info
+    } = this.props;
+    const loaded = info &&
+      info.loaded &&
+      preferences &&
+      preferences.loaded &&
+      authenticatedUserInfo &&
+      authenticatedUserInfo.loaded;
+    if (
+      loaded &&
+      info.value.type !== 'NFS' &&
+      info.value.storagePolicy &&
+      info.value.storagePolicy.versioningEnabled
+    ) {
+      // TODO: change .enableVersionControlsMock to valid preference name when API will be ready
+      const enableControls = preferences.enableVersionControlsMock === undefined
+        ? true
+        : preferences.enableVersionControlsMock;
+      return enableControls || authenticatedUserInfo.value.admin;
+    }
+    return false;
+  }
+
+  @computed
+  get showVersions () {
+    if (this.props.info.pending) {
+      return false;
+    }
+    return this.props.info.value.type !== 'NFS' &&
+      this.props.showVersions &&
+      roleModel.isOwner(this.props.info.value);
+  }
+
   onDataStorageEdit = async (storage) => {
     const dataStorage = {
       id: this.props.storageId,
@@ -366,16 +404,6 @@ export default class DataStorage extends React.Component {
       this.props.info.fetch();
     });
   };
-
-  @computed
-  get showVersions () {
-    if (this.props.info.pending) {
-      return false;
-    }
-    return this.props.info.value.type !== 'NFS' &&
-      this.props.showVersions &&
-      roleModel.isOwner(this.props.info.value);
-  }
 
   renameDataStorage = async (name) => {
     const dataStorage = {
@@ -916,7 +944,10 @@ export default class DataStorage extends React.Component {
         </a>
       );
     }
-    if (item.editable) {
+    if (item.isVersion
+      ? item.editable && this.versionControlsEnabled
+      : item.editable
+    ) {
       actions.push(
         <Button
           id={`edit ${item.name}`}
@@ -927,14 +958,17 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (this.canRestoreItem(item)) {
+    if (this.versionControlsEnabled && this.canRestoreItem(item)) {
       actions.push(
         <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
           <Icon type="reload" />
         </Button>
       );
     }
-    if (item.deletable) {
+    if (item.isVersion
+      ? item.deletable && this.versionControlsEnabled
+      : item.deletable
+    ) {
       actions.push(separator());
       actions.push(
         <Button
@@ -1808,10 +1842,7 @@ export default class DataStorage extends React.Component {
                 </Button>
               }
               {
-                roleModel.isOwner(this.props.info.value) &&
-                this.props.info.value.type !== 'NFS' &&
-                this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.versioningEnabled
+                this.versionControlsEnabled
                   ? (
                     <Checkbox
                       checked={this.showVersions}
