@@ -242,6 +242,12 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('ui.storage.refresh.request');
   }
 
+  @computed
+  get storagePolicyBackupVisibleNonAdmins () {
+    const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
+    return value === undefined || `${value}` !== 'false';
+  }
+
   get requestFileSystemAccessTooltip () {
     const value = this.getPreferenceValue('ui.pipe.file.browser.request');
     if (value) {
