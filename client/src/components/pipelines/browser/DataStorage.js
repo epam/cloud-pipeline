@@ -295,12 +295,7 @@ export default class DataStorage extends React.Component {
       info.value.storagePolicy.versioningEnabled
     ) {
       const isAdmin = authenticatedUserInfo.value.admin;
-      const preferenceValue = preferences
-        .getPreferenceValue('storage.policy.backup.visible.non.admins');
-      if (isAdmin || preferenceValue === undefined) {
-        return true;
-      }
-      return `${preferenceValue}` === 'true';
+      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
     }
     return false;
   }
