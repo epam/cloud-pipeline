@@ -31,7 +31,7 @@ commit_hook ${tmp_container} "post" ${CLEAN_UP} ${STOP_PIPELINE} ${POST_COMMIT_C
 pipe_log_info "[INFO] Clean up container with env vars and files ..." "$TASK_NAME"
 docker cp $SCRIPTS_DIR/cleanup_container.sh "${tmp_container}":/
 
-ENVS_TO_UNSET=`docker exec "${tmp_container}" sh -c "chmod +x /cleanup_container.sh && /cleanup_container.sh $CLEAN_UP && rm /cleanup_container.sh"`
+ENVS_TO_UNSET=`docker exec "${tmp_container}" sh -c "chmod +x /cleanup_container.sh && /cleanup_container.sh $CLEAN_UP $ADDITIONAL_ENVS_TO_CLEAN_UP && rm /cleanup_container.sh"`
 
 check_last_exit_code $? "[ERROR] There are some troubles while clean up pipeline's container." \
                         "[INFO] Clean up for pipeline's container was successfully performed." \
