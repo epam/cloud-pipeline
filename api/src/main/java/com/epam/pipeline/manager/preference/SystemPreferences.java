@@ -156,6 +156,8 @@ public class SystemPreferences {
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
             "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final BooleanPreference DATA_STORAGE_POLICY_BACKUP_VISIBLE_NON_ADMINS =
+        new BooleanPreference("storage.policy.backup.visible.non.admins", true, DATA_STORAGE_GROUP, pass);
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
