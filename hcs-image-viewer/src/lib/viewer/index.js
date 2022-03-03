@@ -261,6 +261,17 @@ class Viewer {
   setGlobalTimePosition(time) {
     return this.setGlobalPosition({ t: time });
   }
+
+  setLockChannels(lock) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setLockChannels')(lock);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
 }
 
 export default Viewer;

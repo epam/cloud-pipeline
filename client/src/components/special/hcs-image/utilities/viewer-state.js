@@ -123,6 +123,7 @@ class ViewerState {
    * @type {ChannelState[]}
    */
   @observable channels = [];
+  @observable channelsLocked = false;
   @observable imageZPosition = 0;
   @observable availableZPositions = [];
 
@@ -156,6 +157,7 @@ class ViewerState {
       identifiers = [],
       channels = [],
       channelsVisibility = [],
+      lockChannels,
       globalSelection = {},
       globalDimensions = [],
       pixelValues = [],
@@ -211,6 +213,9 @@ class ViewerState {
      * updated channels options
      * @type {ChannelOptions[]}
      */
+    if (lockChannels !== undefined) {
+      this.channelsLocked = lockChannels;
+    }
     const updatedChannels = [];
     for (let c = 0; c < identifiers.length; c++) {
       updatedChannels.push({
@@ -288,6 +293,14 @@ class ViewerState {
         }
         this.viewer.setChannelProperties(channelIndex, {colors: color});
       }
+    }
+  };
+
+  @action
+  setChannelsLocked = (channelsLocked) => {
+    if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
+      this.channelsLocked = channelsLocked;
+      this.viewer.setLockChannels(channelsLocked);
     }
   };
 
