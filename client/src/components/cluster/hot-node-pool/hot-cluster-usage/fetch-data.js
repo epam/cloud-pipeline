@@ -107,5 +107,6 @@ export default async function fetchData (periodType, period) {
       rawData,
       pools,
       {periodType, start, end}
-    ));
+    ))
+    .sort((a, b) => a.poolName.localeCompare(b.poolName));
 }
