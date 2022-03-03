@@ -16,7 +16,10 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {
+  Icon,
+  Checkbox
+} from 'antd';
 import Channel from './channel';
 import styles from './hcs-image-controls.css';
 
@@ -27,7 +30,8 @@ function HcsImageChannelsControl (
 ) {
   const {
     channels = [],
-    pending
+    pending,
+    channelsLocked
   } = hcsViewerState || {};
   if (pending && channels.length === 0) {
     return (
@@ -42,8 +46,16 @@ function HcsImageChannelsControl (
   return (
     <div className={styles.channels}>
       <div className={styles.header}>
-        Channels:
-        {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
+        <span>
+          Channels:
+          {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
+        </span>
+        <Checkbox
+          onChange={() => hcsViewerState.toggleChannelsLock(channelsLocked)}
+          checked={channelsLocked}
+        >
+          Lock channels
+        </Checkbox>
       </div>
       {
         channels.map(channel => (
