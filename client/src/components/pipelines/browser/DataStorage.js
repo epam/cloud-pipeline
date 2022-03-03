@@ -276,28 +276,31 @@ export default class DataStorage extends React.Component {
   }
 
   @computed
-  get versionControlsEnabled () {
+  get storageVersioningAllowed () {
     const {
       preferences,
-      authenticatedUserInfo,
-      info
+      authenticatedUserInfo
     } = this.props;
-    const loaded = info &&
-      info.loaded &&
-      preferences &&
+    const loaded = preferences &&
       preferences.loaded &&
       authenticatedUserInfo &&
       authenticatedUserInfo.loaded;
-    if (
-      loaded &&
-      info.value.type !== 'NFS' &&
-      info.value.storagePolicy &&
-      info.value.storagePolicy.versioningEnabled
-    ) {
+    if (loaded) {
       const isAdmin = authenticatedUserInfo.value.admin;
       return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
     }
     return false;
+  }
+
+  @computed
+  get versionControlsEnabled () {
+    const {info} = this.props;
+    return this.storageVersioningAllowed &&
+      info &&
+      info.loaded &&
+      info.value.type !== 'NFS' &&
+      info.value.storagePolicy &&
+      info.value.storagePolicy.versioningEnabled;
   }
 
   @computed
@@ -2211,7 +2214,6 @@ export default class DataStorage extends React.Component {
           dataStorage={this.props.info.value}
           pending={this.props.info.pending}
           policySupported={this.props.info.value.policySupported}
-          versionControlsEnabled={this.versionControlsEnabled}
           onDelete={this.deleteStorage}
           onCancel={this.closeEditDialog}
           onSubmit={this.onDataStorageEdit} />

@@ -48,10 +48,9 @@ export const ServiceTypes = {
 };
 
 @roleModel.authenticationInfo
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @Form.create()
 export class DataStorageEditDialog extends React.Component {
-
   static propTypes = {
     pending: PropTypes.bool,
     onCancel: PropTypes.func,
@@ -61,12 +60,7 @@ export class DataStorageEditDialog extends React.Component {
     dataStorage: PropTypes.object,
     addExistingStorageFlag: PropTypes.bool,
     isNfsMount: PropTypes.bool,
-    policySupported: PropTypes.bool,
-    versionControlsEnabled: PropTypes.bool
-  };
-
-  static defaultProps = {
-    versionControlsEnabled: true
+    policySupported: PropTypes.bool
   };
 
   state = {
@@ -89,6 +83,23 @@ export class DataStorageEditDialog extends React.Component {
       sm: {span: 18}
     }
   };
+
+  @computed
+  get storageVersioningAllowed () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    const loaded = preferences &&
+      preferences.loaded &&
+      authenticatedUserInfo &&
+      authenticatedUserInfo.loaded;
+    if (loaded) {
+      const isAdmin = authenticatedUserInfo.value.admin;
+      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
+    }
+    return false;
+  }
 
   openDeleteDialog = () => {
     this.setState({deleteDialogVisible: true});
@@ -491,7 +502,7 @@ export class DataStorageEditDialog extends React.Component {
                 {!this.isNfsMount &&
                 this.props.policySupported &&
                 this.currentRegionSupportsPolicy &&
-                this.props.versionControlsEnabled && (
+                this.storageVersioningAllowed && (
                   <Row>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
@@ -510,7 +521,7 @@ export class DataStorageEditDialog extends React.Component {
                 this.props.policySupported &&
                 this.state.versioningEnabled &&
                 this.currentRegionSupportsPolicy &&
-                this.props.versionControlsEnabled && (
+                this.storageVersioningAllowed && (
                   <Form.Item
                     className={styles.dataStorageFormItem}
                     {...this.formItemLayout}
