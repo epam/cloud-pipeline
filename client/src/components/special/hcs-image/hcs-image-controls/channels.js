@@ -51,7 +51,7 @@ function HcsImageChannelsControl (
           {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
         </span>
         <Checkbox
-          onChange={() => hcsViewerState.toggleChannelsLock(channelsLocked)}
+          onChange={(e) => hcsViewerState.setChannelsLocked(e.target.checked)}
           checked={channelsLocked}
         >
           Lock channels

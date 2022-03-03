@@ -19,7 +19,7 @@ import reducer from './reducer';
 import actions from './actions';
 import useSource from './utilities/use-source';
 import useViewerState from './viewer-state';
-import ViewerStateActions from './viewer-state/actions';
+import viewerActions from './viewer-state/actions';
 
 export { default as HCSImageContext } from './context';
 
@@ -47,40 +47,51 @@ function useHCSImageState() {
   }, [dispatch]);
   const setImageViewportLoaded = useCallback((options) => {
     dispatch({ type: actions.setImageViewportLoaded, ...options });
-  }, [dispatch]);
+    viewerDispatch({ type: viewerActions.setLoaded });
+  }, [dispatch, viewerDispatch]);
+  const setImageViewportLoading = useCallback(() => {
+    viewerDispatch({ type: viewerActions.setLoading });
+  }, [viewerDispatch]);
   const setChannelProperties = useCallback((channel, properties) => {
-    viewerDispatch({ type: ViewerStateActions.setChannelProperties, channel, properties });
+    viewerDispatch({ type: viewerActions.setChannelProperties, channel, properties });
   }, [viewerDispatch]);
   const setColorMap = useCallback((colorMap) => {
-    viewerDispatch({ type: ViewerStateActions.setColorMap, colorMap });
+    viewerDispatch({ type: viewerActions.setColorMap, colorMap });
   }, [viewerDispatch]);
   const setLensEnabled = useCallback((enabled) => {
-    viewerDispatch({ type: ViewerStateActions.setLensEnabled, lensEnabled: enabled });
+    viewerDispatch({ type: viewerActions.setLensEnabled, lensEnabled: enabled });
   }, [viewerDispatch]);
   const setLensChannel = useCallback((channel) => {
-    viewerDispatch({ type: ViewerStateActions.setLensChannel, lensChannel: channel });
+    viewerDispatch({ type: viewerActions.setLensChannel, lensChannel: channel });
   }, [viewerDispatch]);
   const setGlobalPosition = useCallback((position) => {
-    viewerDispatch({ type: ViewerStateActions.setGlobalPosition, position });
+    viewerDispatch({ type: viewerActions.setGlobalPosition, position });
+  }, [viewerDispatch]);
+  const setLockChannels = useCallback((lock) => {
+    viewerDispatch({ type: viewerActions.setLockChannels, lock });
   }, [viewerDispatch]);
   const callbacks = useMemo(() => ({
     setData,
     setImage,
+    setImageViewportLoading,
     setImageViewportLoaded,
     setChannelProperties,
     setColorMap,
     setLensEnabled,
     setLensChannel,
     setGlobalPosition,
+    setLockChannels,
   }), [
     setData,
     setImage,
+    setImageViewportLoading,
     setImageViewportLoaded,
     setChannelProperties,
     setColorMap,
     setLensEnabled,
     setLensChannel,
     setGlobalPosition,
+    setLockChannels,
   ]);
   return {
     callbacks,

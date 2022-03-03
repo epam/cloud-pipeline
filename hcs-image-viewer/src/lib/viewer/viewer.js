@@ -94,6 +94,7 @@ function HCSImageViewer(
     }
   }, [callbacks, onRegisterStateActions]);
   const {
+    setImageViewportLoading,
     setImageViewportLoaded,
   } = callbacks || {};
   const {
@@ -108,6 +109,11 @@ function HCSImageViewer(
     lensEnabled,
     lensChannel,
   } = viewerState;
+  useEffect(() => {
+    if (typeof setImageViewportLoading === 'function') {
+      setImageViewportLoading();
+    }
+  }, [selections, loader, setImageViewportLoading]);
   const [viewState, setViewState] = useState(undefined);
   useEffect(() => {
     if (loader && loader.length && size && size.width && size.height) {

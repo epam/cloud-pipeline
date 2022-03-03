@@ -157,7 +157,7 @@ class ViewerState {
       identifiers = [],
       channels = [],
       channelsVisibility = [],
-      channelsLocked,
+      lockChannels,
       globalSelection = {},
       globalDimensions = [],
       pixelValues = [],
@@ -213,8 +213,8 @@ class ViewerState {
      * updated channels options
      * @type {ChannelOptions[]}
      */
-    if (channelsLocked !== undefined) {
-      this.channelsLocked = channelsLocked;
+    if (lockChannels !== undefined) {
+      this.channelsLocked = lockChannels;
     }
     const updatedChannels = [];
     for (let c = 0; c < identifiers.length; c++) {
@@ -297,9 +297,10 @@ class ViewerState {
   };
 
   @action
-  toggleChannelsLock = (channelsLocked) => {
-    if (this.viewer) {
-      this.channelsLocked = !channelsLocked;
+  setChannelsLocked = (channelsLocked) => {
+    if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
+      this.channelsLocked = channelsLocked;
+      this.viewer.setLockChannels(channelsLocked);
     }
   };
 
