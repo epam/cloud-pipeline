@@ -87,9 +87,13 @@ export class DataStorageEditDialog extends React.Component {
   @computed
   get storageVersioningAllowed () {
     const {
+      dataStorage,
       preferences,
       authenticatedUserInfo
     } = this.props;
+    if (!dataStorage) {
+      return true;
+    }
     const loaded = preferences &&
       preferences.loaded &&
       authenticatedUserInfo &&
