@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
@@ -40,6 +41,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.IP;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
+import static com.epam.pipeline.autotests.ao.Primitive.PROTOCOL;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 import static com.epam.pipeline.autotests.ao.Primitive.RESOLVE;
 import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
@@ -69,6 +71,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     }
 
     private static final String FIELD_IS_REQUIRED_WARNING = "Field is required";
+    private static final String PORT_IS_REQUIRED_WARNING = "Port is required";
     private static final String SERVER_NAME_1;
     private static final String SERVER_NAME_2;
     private static final String SERVER_NAME_3;
@@ -141,13 +144,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .ensure(CANCEL, visible, enabled)
                 .ensure(ADD_PORT, visible, enabled)
                 .ensure(ADD, visible, disabled)
+                .ensure(PROTOCOL, text("TCP"))
                 .click(SPECIFY_IP)
                 .ensure(RESOLVE, visible, disabled)
                 .setServerName("test")
                 .click(COMMENT)
                 .messageShouldAppear("Unable to resolve the given hostname: test")
                 .checkFieldWarning(IP, FIELD_IS_REQUIRED_WARNING)
-                .checkFieldWarning(PORT, FIELD_IS_REQUIRED_WARNING)
+                .checkFieldWarning(PORT, PORT_IS_REQUIRED_WARNING)
                 .clear(SERVER_NAME)
                 .setServerName(SERVER_NAME_1)
                 .click(COMMENT)
@@ -327,7 +331,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .checkNoRouteRecord(externalIPAddress, PORT_443);
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"}, priority = 1)
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress", priority = 1)
     @TestCase(value = {"2232_7"})
     public void checkAddingRouteWithResolvedIPToExistingRoute() {
         navigationMenu()
@@ -340,13 +344,14 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .clear(IP)
                 .setValue(IP, server1Port80ExternalIPAddress)
                 .setValue(PORT, PORT_80)
-                .checkFieldWarning(PORT, "Value should be unique")
+                .checkFieldWarning(PORT, format("Duplicate port %s", PORT_80))
                 .clear(PORT)
                 .setValue(PORT, PORT_443)
                 .addRoute()
                 .click(SAVE)
                 .checkCreationScheduled(SERVER_NAME_1, PORT_443)
                 .waitRouteRecordCreationScheduled(SERVER_NAME_1, PORT_443)
+                .expandGroup(SERVER_NAME_1, PORT_443)
                 .checkActiveRouteRecord(server1Port80ExternalIPAddress, SERVER_NAME_1, "", PORT_443);
         runsMenu()
                 .showLog(getRunId())
