@@ -54,7 +54,7 @@ function HcsImageChannelsControl (
           onChange={(e) => hcsViewerState.setChannelsLocked(e.target.checked)}
           checked={channelsLocked}
         >
-          Lock channels
+          Persist channels state
         </Checkbox>
       </div>
       {
