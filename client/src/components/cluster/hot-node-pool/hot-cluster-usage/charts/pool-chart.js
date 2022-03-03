@@ -28,9 +28,19 @@ const extractDataSets = (
 ) => {
   const clusterData = rawData.find(item => Number(item.poolId) === Number(currentPoolId)) || {};
   const {records = []} = clusterData;
-  const labels = records.map(o => o.measureTime);
-  const poolLimitDataSet = records.map((dataItem) => dataItem.poolLimit);
-  const poolUsageDataSet = records.map((dataItem) => dataItem.poolUsage);
+  const labels = records.map(o => ({
+    label: o.measureTime,
+    display: o.displayTick,
+    tooltip: o.tooltip
+  }));
+  const poolLimitDataSet = records.map((dataItem, index) => ({
+    x: index,
+    y: dataItem.poolLimit
+  }));
+  const poolUsageDataSet = records.map((dataItem, index) => ({
+    x: index,
+    y: dataItem.poolUsage
+  }));
   const datasets = [
     {
       fill: true,

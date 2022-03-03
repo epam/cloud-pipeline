@@ -46,21 +46,42 @@ function processPoolUsage (poolId, data, pools = [], options = {}) {
   const format = periodType === Period.day ? 'YYYY-MM-DD HH:mm' : 'YYYY-MM-DD';
   const labelFormat = periodType === Period.day ? 'HH:mm' : 'D';
   const step = periodType === Period.day ? 'hour' : 'day';
+  const tooltip = record => {
+    if (record) {
+      if (periodType === Period.day) {
+        const f = d => displayDate(d, labelFormat);
+        return `${f(record.periodStart)}-${f(record.periodEnd)}`;
+      }
+      return displayDate(record.periodStart, 'MMMM D, YYYY');
+    }
+    return undefined;
+  };
   const ticks = [];
   let tick = moment(start);
   while (tick <= end) {
     ticks.push({
       tick: moment(tick),
+      show: true,
       display: tick.format(labelFormat)
     });
+    if (periodType === Period.day) {
+      ticks.push({
+        tick: moment(tick),
+        show: false,
+        display: moment(tick).add(0.5, step).format(labelFormat)
+      });
+    }
     tick = tick.add(1, step);
   }
   const processedRecords = ticks.map(tick => {
     const record = records
       .find(o => displayDate(o.periodStart, format) === tick.tick.format(format));
     return {
+      ...record,
       date: tick.tick,
       measureTime: tick.display,
+      displayTick: tick.show,
+      tooltip: tooltip(record),
       poolUtilization: record ? getNumber(record.utilization) : undefined,
       poolUsage: record ? getNumber(record.occupiedNodesCount) : undefined,
       poolLimit: record ? getNumber(record.nodesCount) : undefined

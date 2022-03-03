@@ -31,7 +31,11 @@ const extractDataSets = (
     color: getColor(index, colors)
   }));
   const labels = ((dataEntries[0] || {}).records || [])
-    .map(o => o.measureTime);
+    .map(o => ({
+      label: o.measureTime,
+      display: o.displayTick,
+      tooltip: o.tooltip
+    }));
   const isCurrentPool = poolId => Number(currentPoolId) === Number(poolId);
   const isHidden = poolId => (hiddenDatasets || []).includes(Number(poolId));
   const datasets = dataEntries.map(({poolId, poolName, records, color}) => ({
@@ -45,7 +49,7 @@ const extractDataSets = (
     borderColor: color,
     borderWidth: isCurrentPool(poolId)
       ? 4 : 1.5,
-    data: records.map(o => o.poolUtilization)
+    data: records.map((o, index) => ({y: o.poolUtilization, x: index}))
   }));
   return {
     labels,

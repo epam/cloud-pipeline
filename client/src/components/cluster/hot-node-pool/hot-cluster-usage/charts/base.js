@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
 import 'chart.js/dist/Chart.css';
-import { getPeriod, Period } from "../../../../special/periods";
+import {getPeriod, Period} from '../../../../special/periods';
 
 class BaseChart extends React.Component {
   chart;
@@ -80,7 +80,14 @@ class BaseChart extends React.Component {
               zeroLineColor: lineColor
             },
             ticks: {
-              fontColor: textColor
+              fontColor: textColor,
+              callback: function (value) {
+                const {display, label} = value;
+                if (display) {
+                  return label;
+                }
+                return null;
+              }
             },
             scaleLabel: {
               display: true,
@@ -93,6 +100,14 @@ class BaseChart extends React.Component {
           intersect: true,
           mode: 'point',
           callbacks: {
+            title: function (tooltipItems = []) {
+              const {xLabel} = tooltipItems[0];
+              const {tooltip} = xLabel || {};
+              if (tooltip) {
+                return tooltip;
+              }
+              return null;
+            },
             label: function (tooltipItem, data) {
               const {datasetIndex} = tooltipItem;
               const {label} = data.datasets[datasetIndex];
