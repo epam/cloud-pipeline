@@ -148,8 +148,7 @@ class BaseChart extends React.Component {
         style={{
           position: 'relative',
           width: '100%',
-          height: '100%',
-          padding: '4px'
+          height: '100%'
         }}
       />
     );
