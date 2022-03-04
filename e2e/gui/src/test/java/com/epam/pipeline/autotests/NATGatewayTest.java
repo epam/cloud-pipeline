@@ -24,6 +24,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.testng.internal.collections.Pair;
 
@@ -33,6 +34,7 @@ import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_PORT;
@@ -128,6 +130,11 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 Pair.of(SERVER_NAME_4, PORT_80),
                 Pair.of(SERVER_NAME_4, PORT_443)
         ).forEach(p -> deleteRoute(p.first(), p.second()));
+    }
+
+    @BeforeMethod
+    void openApplication() {
+        open(C.ROOT_ADDRESS);
     }
 
     @Test
