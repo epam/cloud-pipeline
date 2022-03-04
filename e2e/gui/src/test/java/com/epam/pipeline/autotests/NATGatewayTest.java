@@ -50,6 +50,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SERVER_NAME;
 import static com.epam.pipeline.autotests.ao.Primitive.SPECIFY_IP;
 import static com.epam.pipeline.autotests.ao.Primitive.SYSTEM_LOGS_TAB;
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
@@ -351,6 +352,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .click(SAVE)
                 .checkCreationScheduled(SERVER_NAME_1, PORT_443)
                 .waitRouteRecordCreationScheduled(SERVER_NAME_1, PORT_443)
+                .checkGroupPortsList(SERVER_NAME_1, PORT_443, asList(PORT_80, PORT_443))
                 .expandGroup(SERVER_NAME_1, PORT_443)
                 .checkActiveRouteRecord(server1Port80ExternalIPAddress, SERVER_NAME_1, "", PORT_443);
         runsMenu()
@@ -376,7 +378,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .addRoute()
                 .setServerName(SERVER_NAME_2)
                 .setValue(PORT, PORT_80)
-                .checkFieldWarning(PORT, "Value should be unique")
+                .checkFieldWarning(PORT, format("Duplicate port %s", PORT_80))
                 .clear(PORT)
                 .setValue(PORT, PORT_443)
                 .addRoute()

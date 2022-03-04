@@ -63,6 +63,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
 import static org.openqa.selenium.By.xpath;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class NATGatewayAO implements AccessObject<NATGatewayAO> {
@@ -150,6 +151,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
     public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName, final String port) {
         final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
+        expandGroup(ipAddressOrServerName, port);
         route
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
@@ -171,7 +173,6 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         final SelenideElement routeRecord = StringUtils.isBlank(ipAddress)
                 ? $(routeByName(serverName, port))
                 : $(route(ipAddress, port));
-        waitForRouteStatus(serverName, port, "anticon-play-circle-o");
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
                 .shouldHaveSize(3);
@@ -248,7 +249,6 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO waitRouteRecordCreationScheduled(final String ipAddressOrServerName, final String port) {
-        expandGroup(ipAddressOrServerName, port);
         return waitForRouteStatus(ipAddressOrServerName, port, "anticon-hourglass");
     }
 
@@ -263,9 +263,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         int attempt = 0;
         int maxAttempts = 60;
         final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
+        expandGroup(ipAddressOrServerName, port);
         while (route.findAll(".external-column").get(0).find(tagName("i"))
                 .has(cssClass(status))
                 && attempt < maxAttempts) {
+            expandGroup(ipAddressOrServerName, port);
             click(REFRESH);
             sleep(1, SECONDS);
             attempt++;
@@ -276,6 +278,19 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     public NATGatewayAO waitForRouteData() {
         $(byClassName("ub-settings__content")).waitUntil(visible, C.DEFAULT_TIMEOUT);
         get(ADD_ROUTE).shouldBe(enabled);
+        return this;
+    }
+
+    public List<String> getGroupExternalPortsList(final String serverName, final String port) {
+        final SelenideElement routeRecord = $(groupRouteByName(serverName, port));
+        return routeRecord.shouldBe(exist).findAll(".external-column")
+                .get(3).findAll(".at-getaway-configuration__port").texts();
+    }
+
+    public NATGatewayAO checkGroupPortsList(final String serverName, final String port, List<String> ports) {
+        List<String> actualPorts = getGroupExternalPortsList(serverName, port);
+        assertEquals(actualPorts, ports, format("Actual list of ports {%s} doesn't correspond expended {%s}",
+                actualPorts.toString(), ports.toString()));
         return this;
     }
 
