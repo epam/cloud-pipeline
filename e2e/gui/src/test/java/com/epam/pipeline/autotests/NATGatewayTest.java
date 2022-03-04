@@ -485,6 +485,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .addRoute()
                 .sleep(2, SECONDS)
                 .click(SAVE)
+                .expandGroup(SERVER_NAME_4, PORT_80)
                 .checkCreationScheduled(SERVER_NAME_4, PORT_80)
                 .checkCreationScheduled(SERVER_NAME_4, PORT_443)
                 .waitRouteRecordCreationScheduled(SERVER_NAME_4, PORT_80)

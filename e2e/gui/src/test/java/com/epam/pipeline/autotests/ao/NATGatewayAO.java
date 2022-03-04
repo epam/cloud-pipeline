@@ -355,7 +355,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
          }
 
          public NATAddRouteAO addMorePorts(final String port) {
-             context().findAll(byText("Port"))
+             context().findAll(byText("Port:"))
                      .filter(hidden).first()
                      .closest(".dd-route-modal__form-item-container")
                      .find(".dd-route-modal__form-item").find("input")
