@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import ResolveChanges from './controls/resolve-changes';
 import Scrollbar from './controls/scrollbar';
 import {ConflictedFile} from './utilities/conflicted-file';
@@ -128,7 +128,8 @@ class TextFileConflict extends React.PureComponent {
     window.addEventListener('mousemove', this.onResizeMove);
     window.addEventListener('mouseup', this.onFinishResizing);
     this.ideContainerSizeTimer = setInterval(this.updateIDEContainerSize, 100);
-    const {onInitialized} = this.props;
+    const {onInitialized, colorsConfig} = this.props;
+    colorsConfig.addListener(this.draw);
     onInitialized && onInitialized(this);
     this.draw();
     this.updateScrollBars();
@@ -142,7 +143,8 @@ class TextFileConflict extends React.PureComponent {
       clearInterval(this.ideContainerSizeTimer);
       this.ideContainerSizeTimer = undefined;
     }
-    const {onInitialized} = this.props;
+    const {onInitialized, colorsConfig} = this.props;
+    colorsConfig.removeListener(this.draw);
     onInitialized && onInitialized(undefined);
   }
 
@@ -582,7 +584,9 @@ class TextFileConflict extends React.PureComponent {
       };
       const renderCanvas = (branch) => (
         <canvas
-          className={styles.resize}
+          className={
+            classNames(styles.resize, 'cp-branch-code-resize')
+          }
           width={CANVAS_WIDTH * window.devicePixelRatio}
           height={
             Math.max(0, (ide.height || 0) - IDE_PANELS_HEADER_HEIGHT) * window.devicePixelRatio
@@ -732,7 +736,7 @@ class TextFileConflict extends React.PureComponent {
   };
 
   draw = () => {
-    const {conflictedFile} = this.props;
+    const {conflictedFile, colorsConfig} = this.props;
     renderChanges(
       this.canvases[HeadBranch],
       conflictedFile,
@@ -743,7 +747,8 @@ class TextFileConflict extends React.PureComponent {
         mergedTop: this.scrolls[Merged]
           ? this.scrolls[Merged].scrollTop
           : 0,
-        lineHeight: LINE_HEIGHT
+        lineHeight: LINE_HEIGHT,
+        colorsConfig
       }
     );
     renderChanges(
@@ -759,7 +764,8 @@ class TextFileConflict extends React.PureComponent {
           ? this.scrolls[Merged].scrollTop
           : 0,
         lineHeight: LINE_HEIGHT,
-        rtl: true
+        rtl: true,
+        colorsConfig
       }
     );
   };
@@ -810,7 +816,13 @@ class TextFileConflict extends React.PureComponent {
           }}
         >
           <div
-            className={styles.header}
+            className={
+              classNames(
+                styles.header,
+                'cp-divider',
+                'bottom'
+              )
+            }
             style={{
               gridColumn: `SCROLL-HEAD / MERGED`,
               paddingRight: getCalcPresentation(
@@ -826,7 +838,13 @@ class TextFileConflict extends React.PureComponent {
             </div>
           </div>
           <div
-            className={styles.header}
+            className={
+              classNames(
+                styles.header,
+                'cp-divider',
+                'bottom'
+              )
+            }
             style={{
               gridColumn: `MERGED / CANVAS-REMOTE`,
               paddingLeft: getCalcPresentation(
@@ -842,7 +860,13 @@ class TextFileConflict extends React.PureComponent {
             </div>
           </div>
           <div
-            className={styles.header}
+            className={
+              classNames(
+                styles.header,
+                'cp-divider',
+                'bottom'
+              )
+            }
             style={{
               gridColumn: `CANVAS-REMOTE / SCROLL-REMOTE`,
               paddingLeft: getCalcPresentation(
@@ -867,7 +891,8 @@ class TextFileConflict extends React.PureComponent {
 TextFileConflict.propTypes = {
   disabled: PropTypes.bool,
   conflictedFile: PropTypes.object,
-  onInitialized: PropTypes.func
+  onInitialized: PropTypes.func,
+  colorsConfig: PropTypes.object
 };
 
-export default observer(TextFileConflict);
+export default inject('colorsConfig')(observer(TextFileConflict));

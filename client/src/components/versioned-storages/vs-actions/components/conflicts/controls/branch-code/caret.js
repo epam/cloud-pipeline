@@ -126,6 +126,7 @@ class Caret extends React.PureComponent {
         viewBox={`0 0 2 ${lineHeight}`}
         className={
           classNames(
+            'cp-text',
             styles.caret,
             caretStyles.caret,
             {

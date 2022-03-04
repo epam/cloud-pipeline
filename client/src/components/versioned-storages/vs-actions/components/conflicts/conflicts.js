@@ -17,9 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observable} from 'mobx';
-import {observer, Provider} from 'mobx-react';
+import {inject, observer, Provider} from 'mobx-react';
 import {Icon, Table} from 'antd';
 import classNames from 'classnames';
+import ChangesDisplayConfig from './controls/changes-display-config';
 import ConflictsSession from './session';
 import Conflict from './conflict';
 import styles from './conflicts.css';
@@ -36,9 +37,15 @@ class Conflicts extends React.Component {
   };
 
   @observable session = new ConflictsSession();
+  @observable changesDisplayConfig;
   ideContainer;
   ide;
   resizeInfo;
+
+  constructor (props) {
+    super(props);
+    this.changesDisplayConfig = new ChangesDisplayConfig(this.props.themes);
+  }
 
   componentDidMount () {
     this.updateFromProps();
@@ -178,7 +185,7 @@ class Conflicts extends React.Component {
           if (resolved) {
             return (
               <Icon
-                className={styles.resolved}
+                className="cp-success"
                 type="check-circle"
               />
             );
@@ -237,9 +244,17 @@ class Conflicts extends React.Component {
         >
           <div>{'\u00A0'}</div>
         </div>
-        <Provider conflictsSession={this.session}>
+        <Provider
+          conflictsSession={this.session}
+          colorsConfig={this.changesDisplayConfig}
+        >
           <div
-            className={classNames(styles.resolveAreaContainer, 'cp-conflicts-resolve-area-container')}
+            className={
+              classNames(
+                styles.resolveAreaContainer,
+                'cp-conflicts-resolve-area-container'
+              )
+            }
           >
             {
               current && (
@@ -269,4 +284,4 @@ Conflicts.propTypes = {
   storage: PropTypes.object
 };
 
-export default observer(Conflicts);
+export default inject('themes')(observer(Conflicts));

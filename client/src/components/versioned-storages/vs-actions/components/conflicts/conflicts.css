@@ -55,10 +55,6 @@
   text-align: right;
 }
 
-.resolved-cell .resolved {
-  color: #399839;
-}
-
 .conflicts-ide .resolve-area-container {
   grid-column: IDE;
   min-width: 0;
@@ -83,7 +79,7 @@
 
 .resolve-area .header {
   grid-row: HEADER;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid transparent;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -117,7 +113,6 @@
 .resolve-area .panel::-webkit-scrollbar {
   display: none;
 }
-
 
 .resolve-area .panel .sticky-placeholder {
   flex-shrink: 0;
@@ -171,11 +166,11 @@
 }
 
 .panel .numbers-panel.left .line-numbers {
-  border-right: 1px solid #ccc;
+  border-right: 1px solid transparent;
 }
 
 .panel .numbers-panel.right .line-numbers {
-  border-left: 1px solid #ccc;
+  border-left: 1px solid transparent;
 }
 
 .resolve-area .line-numbers,
@@ -203,18 +198,11 @@
 
 .line .actions .action {
   cursor: pointer;
-  color: #555;
   padding: 3px;
-}
-
-.line .actions .action:hover {
-  color: #333;
-  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .line .number {
   padding: 0 5px;
-  color: #999;
 }
 
 .code .line {
@@ -249,7 +237,6 @@
   position: absolute;
   display: none;
   z-index: 1;
-  color: rgba(0, 0, 0, 0.65);
 }
 
 .code.focused .caret {

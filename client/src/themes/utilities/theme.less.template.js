@@ -2386,12 +2386,35 @@ export default `
 }
 @THEME .cp-branch-code-line-numbers {
   background-color: fadeout(@application-background-color, 40%);
+  border-color: @panel-border-color;
 }
-@THEME .cp-conflicts-resolve-area-container {
+@THEME .cp-branch-code-resize {
   background-color: fadeout(@application-background-color, 40%);
 }
+@THEME .cp-conflicts-resolve-area-container {
+  background-color: @card-background-color;
+}
 @THEME .cp-conflicts-divider {
-  background-color:fadeout(@card-border-color, 40%);
+  background-color: fadeout(@card-border-color, 40%);
+}
+@THEME .cp-conflict-action {
+  color: @application-color;
+}
+@THEME .cp-conflict-action:hover,
+@THEME .cp-conflict-action:focus,
+@THEME .cp-conflict-action:active {
+  color: @application-color-accent;
+}
+@THEME .cp-conflict-scroller {
+  background-color: fade(@application-color, 10%);
+}
+@THEME .cp-conflict-scroller .bar {
+  background-color: fade(@application-color, 25%);
+}
+@THEME .cp-conflict-scroller:hover .bar,
+@THEME .cp-conflict-scroller .bar:hover,
+@THEME .cp-conflict-scroller .bar.hovered {
+  background-color: fade(@application-color, 50%);
 }
 
 @THEME .cp-library-metadata-item-key {
