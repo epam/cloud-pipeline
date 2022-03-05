@@ -19,6 +19,8 @@ package com.epam.pipeline.controller.report;
 import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.dto.report.ReportFilter;
+import com.epam.pipeline.dto.report.NodePoolUsageReport;
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
 import io.swagger.annotations.Api;
@@ -44,7 +46,14 @@ public class ReportController extends AbstractRestController {
     @PostMapping("/users")
     @ApiOperation(value = "Reports users statistics", produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<List<UsersUsageInfo>> create(@RequestBody final UsersUsageReportFilterVO filter) {
+    public Result<List<UsersUsageInfo>> loadUsersUsage(@RequestBody final UsersUsageReportFilterVO filter) {
         return Result.success(reportApiService.loadUsersUsage(filter));
+    }
+
+    @PostMapping("/pools")
+    @ApiOperation(value = "Reports node pools usage statistics", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<NodePoolUsageReport>> loadNodePoolUsage(@RequestBody final ReportFilter filter) {
+        return Result.success(reportApiService.loadNodePoolReport(filter));
     }
 }

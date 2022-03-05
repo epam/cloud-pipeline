@@ -28,6 +28,8 @@ export default {
 
   imageIndex: 0,
   imagePending: false,
+  imageTimePosition: 0,
+  imageZPosition: 0,
 
   error: undefined,
   pending: false,

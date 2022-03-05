@@ -626,8 +626,9 @@ def commit_versioned_storage(vs_id):
     message = flask.request.args.get("message")
     files_to_add = flask.request.args.get("files", None)
     manager = app.config['git_manager']
+    token = flask.request.headers.get('token', None)
     try:
-        task_id = manager.push(vs_id, message, files_to_add)
+        task_id = manager.push(vs_id, message, files_to_add, token)
         return jsonify(success({"task": task_id}))
     except Exception as e:
         manager.logger.log(traceback.format_exc())

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.monitor.monitoring.user;
+package com.epam.pipeline.monitor.monitoring.pool;
 
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.monitor.monitoring.MonitoringService;
 import com.epam.pipeline.monitor.rest.CloudPipelineAPIClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,33 +27,34 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-public class OnlineUsersCleanerServiceCore {
+public class NodePoolUsageCleanerService implements MonitoringService {
     private final CloudPipelineAPIClient client;
     private final String monitorEnabledPreferenceName;
-    private final String usersStorePeriodPreferenceName;
+    private final String storePeriodPreferenceName;
 
-    public OnlineUsersCleanerServiceCore(final CloudPipelineAPIClient client,
-                                         @Value("${preference.name.usage.users.clean.enable}")
-                                         final String monitorEnabledPreferenceName,
-                                         @Value("${preference.name.usage.users.store.period}")
-                                         final String usersStorePeriodPreferenceName) {
+    public NodePoolUsageCleanerService(final CloudPipelineAPIClient client,
+                                       @Value("${preference.name.usage.node.pool.clean.enable}")
+                                           final String monitorEnabledPreferenceName,
+                                       @Value("${preference.name.usage.node.pool.store.period}")
+                                           final String storePeriodPreferenceName) {
         this.client = client;
         this.monitorEnabledPreferenceName = monitorEnabledPreferenceName;
-        this.usersStorePeriodPreferenceName = usersStorePeriodPreferenceName;
+        this.storePeriodPreferenceName = storePeriodPreferenceName;
     }
 
+    @Override
     public void monitor() {
         if (!client.getBooleanPreference(monitorEnabledPreferenceName)) {
-            log.debug("Users usage removal is not enabled");
+            log.debug("Node pool usage removal is not enabled");
             return;
         }
 
-        final Integer duration = client.getIntPreference(usersStorePeriodPreferenceName);
+        final Integer duration = client.getIntPreference(storePeriodPreferenceName);
         if (Objects.isNull(duration)) {
-            log.debug("Cannot remove expired online users statistic since period was not specified");
+            log.debug("Cannot remove expired node pools statistic since period was not specified");
             return;
         }
-        client.deleteExpiredOnlineUsers(DateUtils.nowUTC().minusDays(duration).toLocalDate().toString());
-        log.debug("Finished online users removal service");
+        client.deleteExpiredNodePoolUsage(DateUtils.nowUTC().minusDays(duration).toLocalDate());
+        log.debug("Finished node pool usage removal service");
     }
 }

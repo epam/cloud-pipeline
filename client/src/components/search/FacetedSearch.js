@@ -958,11 +958,6 @@ class FacetedSearch extends React.Component {
                 mode={presentationMode}
               />
               {this.renderSortingControls()}
-              <SharedItemInfo
-                visible={this.state.shareDialogVisible}
-                shareItems={this.state.itemsToShare}
-                close={this.closeShareItemDialog}
-              />
             </div>
           )
         }
@@ -1035,6 +1030,11 @@ class FacetedSearch extends React.Component {
           onClose={this.closeSelectionPreview}
           onClear={this.clearSelection}
           onShare={this.openShareStorageItemsDialog}
+        />
+        <SharedItemInfo
+          visible={this.state.shareDialogVisible}
+          shareItems={this.state.itemsToShare}
+          close={this.closeShareItemDialog}
         />
       </div>
     );

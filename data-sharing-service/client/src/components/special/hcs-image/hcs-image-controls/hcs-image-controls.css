@@ -36,6 +36,9 @@
 .channels .header {
   margin: 5px 0;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .channel {

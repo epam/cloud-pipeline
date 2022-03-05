@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.git;
 import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
@@ -99,6 +100,9 @@ public class GitManager {
     public static final String GIT_MASTER_REPOSITORY = "master";
     public static final String DRAFT_PREFIX = "draft-";
     private static final String ACTION_MOVE = "move";
+    private static final String ACTION_UPDATE = "update";
+    private static final String ACTION_DELETE = "delete";
+    private static final String ACTION_CREATE = "create";
     private static final String BASE64_ENCODING = "base64";
     public static final String EXCLUDE_MARK = ":!";
 
@@ -107,6 +111,7 @@ public class GitManager {
     private static final String COMMA = ",";
     private static final String ANY_SUB_PATH = "*";
     private static final String ROOT_PATH = "/";
+    public static final String REVERT_MESSAGE = "Revert %s to commit %s";
 
     private CmdExecutor cmdExecutor = new CmdExecutor();
 
@@ -403,7 +408,7 @@ public class GitManager {
         gitPushCommitEntry.setCommitMessage(commitMessage);
         for (String file : filesToCreate) {
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setAction("create");
+            gitPushCommitActionEntry.setAction(ACTION_CREATE);
             gitPushCommitActionEntry.setFilePath(file);
             gitPushCommitActionEntry.setContent("");
             gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
@@ -477,7 +482,7 @@ public class GitManager {
                 continue;
             }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setAction("delete");
+            gitPushCommitActionEntry.setAction(ACTION_DELETE);
             gitPushCommitActionEntry.setFilePath(file.getPath());
             gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
         }
@@ -503,6 +508,30 @@ public class GitManager {
                     sourceItemVO.getLastCommitId(),
                     sourceItemVO.getComment());
         }
+    }
+
+    public GitCommitEntry revertFile(final Pipeline pipeline,
+                                     final PipelineSourceItemRevertVO sourceItemRevertVO) {
+        Assert.hasLength(sourceItemRevertVO.getCommitToRevert(), "Commit to revert should be provided!");
+        Assert.hasLength(sourceItemRevertVO.getPath(), "Path to file should be provided!");
+
+        final byte[] content = getPipelineFileContents(
+                        pipeline,
+                        sourceItemRevertVO.getCommitToRevert(),
+                        sourceItemRevertVO.getPath()
+        );
+
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(getRevertMessage(sourceItemRevertVO));
+
+        final GitPushCommitActionEntry revertGitAction = new GitPushCommitActionEntry();
+        revertGitAction.setFilePath(sourceItemRevertVO.getPath());
+        revertGitAction.setContent(Base64.getEncoder().encodeToString(content));
+        revertGitAction.setEncoding(BASE64_ENCODING);
+        revertGitAction.setAction(ACTION_UPDATE);
+        gitPushCommitEntry.getActions().add(revertGitAction);
+
+        return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
 
     protected GitCommitEntry updateFile(Pipeline pipeline,
@@ -564,9 +593,9 @@ public class GitManager {
                 action = ACTION_MOVE;
             } else {
                 if (fileExists(pipeline, sourcePath)) {
-                    action = "update";
+                    action = ACTION_UPDATE;
                 } else {
-                    action = "create";
+                    action = ACTION_CREATE;
                 }
             }
             GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
@@ -661,12 +690,12 @@ public class GitManager {
             GitPushCommitActionEntry gitPushCommitActionEntry) {
         String message = commitMessage;
         if (fileExists) {
-            gitPushCommitActionEntry.setAction("update");
+            gitPushCommitActionEntry.setAction(ACTION_UPDATE);
             if (StringUtils.isNullOrEmpty(commitMessage)) {
                 message = String.format("Updating file %s", filePath);
             }
         } else {
-            gitPushCommitActionEntry.setAction("create");
+            gitPushCommitActionEntry.setAction(ACTION_CREATE);
             if (StringUtils.isNullOrEmpty(commitMessage)) {
                 message = String.format("Creating file %s", filePath);
             }
@@ -683,7 +712,7 @@ public class GitManager {
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
 
         GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-        gitPushCommitActionEntry.setAction("delete");
+        gitPushCommitActionEntry.setAction(ACTION_DELETE);
         gitPushCommitActionEntry.setFilePath(filePath);
 
         GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
@@ -1162,6 +1191,11 @@ public class GitManager {
             LOGGER.debug("An error occurred during fork project initialization. ", e);
             return false;
         }
+    }
+
+    private String getRevertMessage(final PipelineSourceItemRevertVO sourceItemRevertVO) {
+        return Optional.ofNullable(sourceItemRevertVO.getComment()).orElse(
+                String.format(REVERT_MESSAGE, sourceItemRevertVO.getPath(), sourceItemRevertVO.getCommitToRevert()));
     }
 
     private void waitTimeout(final Integer waitTime) {

@@ -76,8 +76,10 @@ export function setImage(state, action) {
     ID,
     Name,
     search,
+    imageTimePosition = 0,
+    imageZPosition = 0,
   } = action;
-  const { metadata = [], imageIndex: currentImageIndex } = state;
+  const { metadata = [] } = state;
   let metadataItem;
   if (index !== undefined && index !== null) {
     metadataItem = metadata[index];
@@ -92,13 +94,13 @@ export function setImage(state, action) {
   }
   if (metadataItem) {
     const imageIndex = metadata.indexOf(metadataItem);
-    if (imageIndex !== currentImageIndex) {
-      return {
-        ...state,
-        imageIndex,
-        imagePending: true,
-      };
-    }
+    return {
+      ...state,
+      imageIndex,
+      imagePending: true,
+      imageTimePosition,
+      imageZPosition,
+    };
   }
   return state;
 }

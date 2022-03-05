@@ -32,18 +32,16 @@ import HiddenObjects from '../../../../utils/hidden-objects';
 import LoadingView from '../../../special/LoadingView';
 import UpdatePipeline from '../../../../models/pipelines/UpdatePipeline';
 import PipelineFolderUpdate from '../../../../models/pipelines/PipelineFolderUpdate';
-import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import PipelineFolderDelete from '../../../../models/pipelines/PipelineFolderDelete';
 import VersionedStorageListWithInfo
-  from '../../../../models/versioned-storage/vs-contents-with-info';
+from '../../../../models/versioned-storage/vs-contents-with-info';
 import DeletePipeline from '../../../../models/pipelines/DeletePipeline';
 import PipelineGenerateReport from '../../../../models/pipelines/PipelineGenerateReport';
 import InfoPanel from './info-panel';
 import LaunchVSForm from './forms/launch-vs-form';
 import getToolLaunchingOptions from '../../launch/utilities/get-tool-launching-options';
-import PipelineCodeForm from '../../version/code/forms/PipelineCodeForm';
 import UpdatePipelineToken from '../../../../models/pipelines/UpdatePipelineToken';
 import {PipelineRunner} from '../../../../models/pipelines/PipelineRunner';
 import PipelineFileInfo from '../../../../models/pipelines/PipelineFileInfo';
@@ -52,6 +50,7 @@ import EditPipelineForm from '../../version/forms/EditPipelineForm';
 import GenerateReportDialog from './dialogs/generate-report';
 import TABLE_MENU_KEYS from './table/table-menu-keys';
 import DOCUMENT_TYPES from './document-types';
+import roleModel from '../../../../utils/roleModel';
 import styles from './versioned-storage.css';
 
 const PAGE_SIZE = 20;
@@ -79,7 +78,6 @@ function checkForBlobErrors (blob) {
     fr.onload = function () {
       try {
         const json = JSON.parse(this.result);
-        console.log(json);
         const {
           status,
           message
@@ -152,7 +150,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     pending: false,
     showHistoryPanel: false,
     selectedFile: null,
-    editSelectedFile: false,
     launchVSFormVisible: false
   };
 
@@ -184,6 +181,19 @@ class VersionedStorage extends localization.LocalizedReactComponent {
       return pipeline.value.currentVersion.commitId;
     }
     return null;
+  };
+
+  @computed
+  get writeAllowed () {
+    const {pipeline} = this.props;
+    if (
+      pipeline &&
+      pipeline.value &&
+      pipeline.loaded
+    ) {
+      return roleModel.writeAllowed(pipeline.value);
+    }
+    return false;
   };
 
   get filteredContents () {
@@ -757,26 +767,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  downloadSingleFile = async (document) => {
-    const {pipelineId} = this.props;
-    const pipelineFile = new PipelineFile(pipelineId, this.lastCommitId, document.path);
-    let res;
-    await pipelineFile.fetch();
-    res = pipelineFile.response;
-    if (!res) {
-      return;
-    }
-    if (res.type?.includes('application/json') && res instanceof Blob) {
-      checkForBlobErrors(res)
-        .then(error => error
-          ? message.error(error, 5)
-          : FileSaver.saveAs(res, document.name)
-        );
-    } else if (res) {
-      FileSaver.saveAs(res, document.name);
-    }
-  };
-
   afterUpload = async (files = []) => {
     const {
       pipeline,
@@ -893,40 +883,11 @@ class VersionedStorage extends localization.LocalizedReactComponent {
     }
   };
 
-  openEditFileForm = () => {
-    const {selectedFile} = this.state;
-    if (selectedFile) {
-      this.setState({editSelectedFile: true});
-    }
-  };
-
-  closeEditFileForm = () => {
-    this.setState({editSelectedFile: false});
-  };
-
-  saveEditFileForm = async (contents, comment) => {
-    const {pipelineId, pipeline} = this.props;
-    const {selectedFile} = this.state;
-    if (!selectedFile) {
-      return;
-    }
-    const request = new PipelineFileUpdate(pipelineId);
-    const hide = message.loading('Committing file changes...');
-    await request.send({
-      contents: contents,
-      comment,
-      path: selectedFile.path,
-      lastCommitId: this.lastCommitId
-    });
-    hide();
-    if (request.error) {
-      message.error(request.error, 5);
-    } else {
-      this.closeEditFileForm();
-      await pipeline.fetch();
-      this.pathWasChanged();
-      this.refreshSelectedFile();
-    }
+  onRefresh = async () => {
+    const {pipeline} = this.props;
+    await pipeline.fetch();
+    this.pathWasChanged();
+    this.refreshSelectedFile();
   };
 
   renderEditItemForm = () => {
@@ -963,21 +924,6 @@ class VersionedStorage extends localization.LocalizedReactComponent {
           documentType={documentType}
         />
       </div>
-    );
-  };
-
-  renderEditFileContent = () => {
-    const {editSelectedFile, selectedFile} = this.state;
-    const {pipeline} = this.props;
-    return (
-      <PipelineCodeForm
-        file={editSelectedFile ? selectedFile : undefined}
-        pipeline={pipeline}
-        version={this.lastCommitId}
-        cancel={this.closeEditFileForm}
-        save={this.saveEditFileForm}
-        vsStorage
-      />
     );
   };
 
@@ -1077,11 +1023,11 @@ class VersionedStorage extends localization.LocalizedReactComponent {
               onRowClick={this.onRowClick}
               showNavigateBack={path}
               pending={pending}
+              lastCommit={this.lastCommitId}
               controlsEnabled={this.lastCommitId && (pipeline.loaded && !pipeline.pending)}
               onTableActionClick={this.onTableActionClick}
               onDeleteDocument={this.onDeleteDocument}
               onRenameDocument={this.openRenameDocumentDialog}
-              onDownloadFile={this.downloadSingleFile}
               onNavigate={this.navigate}
               pipelineId={pipelineId}
               path={path}
@@ -1121,17 +1067,16 @@ class VersionedStorage extends localization.LocalizedReactComponent {
                   file={selectedFile}
                   path={path}
                   pipelineId={pipelineId}
+                  readOnly={!this.writeAllowed}
                   lastCommitId={this.lastCommitId}
                   pending={pending}
-                  onFileEdit={this.openEditFileForm}
-                  onFileDownload={this.downloadSingleFile}
+                  onRefresh={this.onRefresh}
                   onGoBack={this.clearSelectedFile}
                 />
               </div>
             )
           }
         </SplitPanel>
-        {this.renderEditFileContent()}
         <EditPipelineForm
           onSubmit={this.folderOperationWrapper(this.editVersionedStorage)}
           onCancel={this.closeEditStorageDialog}

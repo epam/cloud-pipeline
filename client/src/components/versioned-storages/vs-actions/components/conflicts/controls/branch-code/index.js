@@ -18,15 +18,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Icon} from 'antd';
+import {inject, observer} from 'mobx-react';
 import Caret from './caret';
 import getClassNameForChange from './utilities/class-name-for-change';
 import getStyleForChange from './utilities/style-for-change';
 import {
-  getBranchCodeFromSelection, getBranchCodeRangeFromSelection
+  getBranchCodeFromSelection,
+  getBranchCodeRangeFromSelection
 } from './utilities/branch-code-selection';
 import LineStates from '../../utilities/conflicted-file/line-states';
 import ChangeStatuses from '../../utilities/changes/statuses';
-import modificationsRenderConfig from '../changes-display-config';
 import inputOperation, {
   clearSelection,
   INSERT_TEXT_KEY,
@@ -596,7 +597,8 @@ class BranchCode extends React.PureComponent {
       lineStyle = {},
       modificationsBranch,
       renderContent = BranchCode.defaultContentRenderer,
-      renderOptions
+      renderOptions,
+      colorsConfig
     } = this.props;
     if (!file || line.meta.start) {
       return [];
@@ -633,7 +635,7 @@ class BranchCode extends React.PureComponent {
               height: 1,
               ...lineStyle
             },
-            getStyleForChange(modification, hidden)
+            getStyleForChange(modification, colorsConfig, hidden)
           )
         }
         className={
@@ -661,7 +663,7 @@ class BranchCode extends React.PureComponent {
               height: 1,
               ...lineStyle
             },
-            getStyleForChange(modification, hidden)
+            getStyleForChange(modification, colorsConfig, hidden)
           )
         }
         className={
@@ -701,7 +703,7 @@ class BranchCode extends React.PureComponent {
                 lineHeight: `${lineHeight}px`,
                 ...lineStyle
               },
-              getStyleForChange(modification, hidden)
+              getStyleForChange(modification, colorsConfig, hidden)
             )
           }
           onMouseDown={
@@ -878,7 +880,8 @@ BranchCode.propTypes = {
   renderContent: PropTypes.func,
   renderOptions: PropTypes.object,
   style: PropTypes.object,
-  verticalScroll: PropTypes.func
+  verticalScroll: PropTypes.func,
+  colorsConfig: PropTypes.object
 };
 
 BranchCode.defaultProps = {
@@ -915,7 +918,7 @@ function renderLineNumberWithActions (line, props) {
       ? [
         (
           <Icon
-            className={styles.action}
+            className={classNames(styles.action, 'cp-conflict-action')}
             key="apply"
             type={rtl ? 'double-left' : 'double-right'}
             onMouseDown={e => e.stopPropagation()}
@@ -925,7 +928,7 @@ function renderLineNumberWithActions (line, props) {
         ),
         (
           <Icon
-            className={styles.action}
+            className={classNames(styles.action, 'cp-conflict-action')}
             key="omit"
             type="close"
             onMouseDown={e => e.stopPropagation()}
@@ -941,7 +944,7 @@ function renderLineNumberWithActions (line, props) {
     const controls = [
       <div
         key="line number"
-        className={styles.number}
+        className={classNames(styles.number, 'cp-text-not-important')}
       >
         {index}
       </div>,
@@ -960,6 +963,8 @@ function renderLineNumberWithActions (line, props) {
   return '';
 }
 
+const BranchCodeWithInjection = inject('colorsConfig')(observer(BranchCode));
+
 function BranchCodeLineNumbers (
   {
     branch,
@@ -975,9 +980,14 @@ function BranchCodeLineNumbers (
   }
 ) {
   return (
-    <BranchCode
+    <BranchCodeWithInjection
       branch={branch}
-      className={styles.lineNumbers}
+      className={
+        classNames(
+          styles.lineNumbers,
+          'cp-branch-code-line-numbers'
+        )
+      }
       file={file}
       modificationsBranch={modificationsBranch}
       lineHeight={lineHeight}
@@ -990,19 +1000,12 @@ function BranchCodeLineNumbers (
         rtl,
         hideModificationActions
       }}
-      style={
-        Object.assign(
-          {
-            backgroundColor: modificationsRenderConfig.background
-          },
-          style || {}
-        )}
+      style={style}
       lineStyle={undefined}
-      lineIdentifier={line => `line-numbers-${line.key}`}
     />
   );
 }
 
-BranchCode.LineNumbers = BranchCodeLineNumbers;
+BranchCodeWithInjection.LineNumbers = BranchCodeLineNumbers;
 
-export default BranchCode;
+export default BranchCodeWithInjection;

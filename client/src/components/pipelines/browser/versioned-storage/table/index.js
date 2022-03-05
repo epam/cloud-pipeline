@@ -36,6 +36,7 @@ import checkFileExistence from '../utils';
 import COLUMNS from './columns';
 import TABLE_MENU_KEYS from './table-menu-keys';
 import DOCUMENT_TYPES from '../document-types';
+import downloadPipelineFile from '../../../version/utilities/download-pipeline-file';
 import styles from './table.css';
 import '../../../../../staticStyles/vs-storage.css';
 
@@ -91,13 +92,15 @@ class VersionedStorageTable extends React.Component {
 
   get actions () {
     const {
-      onRenameDocument,
-      onDownloadFile
+      pipelineId,
+      lastCommit,
+      onRenameDocument
     } = this.props;
+    const onDownloadFile = (record) => downloadPipelineFile(pipelineId, lastCommit, record.path);
     return {
       delete: (record) => this.showDeleteDialog(record),
       edit: (record) => onRenameDocument && onRenameDocument(record),
-      download: (record) => onDownloadFile && onDownloadFile(record)
+      download: onDownloadFile
     };
   };
 
@@ -270,62 +273,75 @@ class VersionedStorageTable extends React.Component {
       path,
       onNavigate
     } = this.props;
-    if (roleModel.writeAllowed(versionedStorage)) {
-      return (
-        <div className={classNames(styles.tableControlsContainer, 'cp-versioned-storage-table-header')}>
-          <VSTableNavigation
-            path={path}
-            onNavigate={onNavigate}
-          />
-          <div className={styles.tableControls}>
-            <Dropdown
-              placement="bottomRight"
-              trigger={['hover']}
-              overlay={
-                <Menu
-                  selectedKeys={[]}
-                  onClick={this.onCreateActionSelect}
-                  style={{width: 200}}>
-                  <MenuItem
-                    key={TABLE_MENU_KEYS.folder}
-                    disabled={!controlsEnabled}
-                  >
-                    <Icon type="folder" /> Folder
-                  </MenuItem>
-                  <MenuItem
-                    key={TABLE_MENU_KEYS.file}
-                    disabled={!controlsEnabled}
-                  >
-                    <Icon type="file" /> File
-                  </MenuItem>
-                </Menu>
-              }
-              key="create actions">
-              <Button
-                type="primary"
-                id="create-button"
-                size="small"
-                className={styles.tableControl}
-                disabled={!controlsEnabled}
-              >
-                <Icon type="plus" />
-                Create
-                <Icon type="down" />
-              </Button>
-            </Dropdown>
-            <UploadButton
-              multiple
-              synchronous
-              onRefresh={this.onUploadFinished}
-              validateAndFilter={this.validateAndFilter}
-              title={'Upload'}
-              action={this.uploadPath}
-            />
-          </div>
+    const writeAllowed = roleModel.writeAllowed(versionedStorage);
+    return (
+      <div
+        className={
+          classNames(
+            styles.tableControlsContainer,
+            'cp-versioned-storage-table-header'
+          )
+        }
+      >
+        <VSTableNavigation
+          path={path}
+          onNavigate={onNavigate}
+        />
+        <div className={styles.tableControls}>
+          {
+            writeAllowed && (
+              <Dropdown
+                placement="bottomRight"
+                trigger={['hover']}
+                overlay={
+                  <Menu
+                    selectedKeys={[]}
+                    onClick={this.onCreateActionSelect}
+                    style={{width: 200}}>
+                    <MenuItem
+                      key={TABLE_MENU_KEYS.folder}
+                      disabled={!controlsEnabled}
+                    >
+                      <Icon type="folder" /> Folder
+                    </MenuItem>
+                    <MenuItem
+                      key={TABLE_MENU_KEYS.file}
+                      disabled={!controlsEnabled}
+                    >
+                      <Icon type="file" /> File
+                    </MenuItem>
+                  </Menu>
+                }
+                key="create actions">
+                <Button
+                  type="primary"
+                  id="create-button"
+                  size="small"
+                  className={styles.tableControl}
+                  disabled={!controlsEnabled}
+                >
+                  <Icon type="plus" />
+                  Create
+                  <Icon type="down" />
+                </Button>
+              </Dropdown>
+            )
+          }
+          {
+            writeAllowed && (
+              <UploadButton
+                multiple
+                synchronous
+                onRefresh={this.onUploadFinished}
+                validateAndFilter={this.validateAndFilter}
+                title={'Upload'}
+                action={this.uploadPath}
+              />
+            )
+          }
         </div>
-      );
-    }
-    return null;
+      </div>
+    );
   };
 
   renderDeleteDialog = () => {
@@ -436,11 +452,11 @@ VersionedStorageTable.PropTypes = {
   onRowClick: PropTypes.func,
   showNavigateBack: PropTypes.bool,
   pending: PropTypes.bool,
+  lastCommit: PropTypes.string,
   controlsEnabled: PropTypes.bool,
   onTableActionClick: PropTypes.func,
   onDeleteDocument: PropTypes.func,
   onRenameDocument: PropTypes.func,
-  onDownloadFile: PropTypes.func,
   pipelineId: PropTypes.oneOfType([
     PropTypes.string,
     PropTypes.number

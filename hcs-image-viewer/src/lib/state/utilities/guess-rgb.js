@@ -16,11 +16,17 @@
 
 // source: https://github.com/hms-dbmi/viv/blob/master/avivator/src/utils.js
 export default function guessRgb({ Pixels }) {
-  const numChannels = Pixels.Channels.length;
-  const { SamplesPerPixel } = Pixels.Channels[0];
+  const {
+    Channels = [],
+    SizeC = 0,
+    Interleaved = false,
+    Type,
+  } = Pixels || {};
+  const numChannels = Channels.length;
+  const { SamplesPerPixel = 0 } = Channels[0] || {};
 
-  const is3Channel8Bit = numChannels === 3 && Pixels.Type === 'uint8';
-  const interleavedRgb = Pixels.SizeC === 3 && numChannels === 1 && Pixels.Interleaved;
+  const is3Channel8Bit = numChannels === 3 && Type === 'uint8';
+  const interleavedRgb = SizeC === 3 && numChannels === 1 && Interleaved;
 
   return SamplesPerPixel === 3 || is3Channel8Bit || interleavedRgb;
 }

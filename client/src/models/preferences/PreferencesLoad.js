@@ -335,6 +335,12 @@ class PreferencesLoad extends Remote {
     return this.getPreferenceValue('system.maintenance.mode.banner');
   }
 
+  @computed
+  get storagePolicyBackupVisibleNonAdmins () {
+    const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
+    return value === undefined || `${value}` !== 'false';
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }

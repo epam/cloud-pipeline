@@ -62,3 +62,24 @@
 .ant-popover.popover-overlay-content-no-padding .ant-popover-inner-content {
   padding: 0;
 }
+
+.cp-timepoint-button {
+  background-color: rgba(16, 142, 233, 0.6);
+  border: 1px solid #108ee9;
+}
+
+.cp-timepoint-button-active {
+  background-color: rgba(255, 136, 24, 0.6);
+  border: 1px solid #ff8818;
+}
+
+.cp-hcs-z-position-slider .ant-slider-track,
+.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-track {
+  background-color: #ff8818;
+}
+
+.cp-hcs-z-position-slider .ant-slider-handle,
+.cp-hcs-z-position-slider .ant-slider-dot-active,
+.cp-hcs-z-position-slider.ant-slider:hover .ant-slider-handle {
+  border-color: #ff8818;
+}

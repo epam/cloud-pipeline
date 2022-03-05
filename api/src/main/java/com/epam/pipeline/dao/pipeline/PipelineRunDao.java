@@ -130,6 +130,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     private String loadRunsByNodeNameQuery;
     private String updateClusterPriceQuery;
     private String loadRunsByParentRunsIdsQuery;
+    private String loadRunsByPoolIdQuery;
 
     // We put Propagation.REQUIRED here because this method can be called from non-transaction context
     // (see PipelineRunManager, it performs internal call for launchPipeline)
@@ -464,6 +465,20 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                 .query(loadRunsByParentRunsIdsQuery, params, PipelineRunParameters.getRowMapper());
     }
 
+    public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
+        final List<Long> activeStatuses = Arrays.asList(TaskStatus.RUNNING.getId(),
+                TaskStatus.PAUSING.getId(),
+                TaskStatus.PAUSED.getId(),
+                TaskStatus.RESUMING.getId());
+
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(PipelineRunParameters.NODE_POOL_ID.name(), poolId);
+        params.addValue(LIST_PARAMETER, activeStatuses);
+
+        return ListUtils.emptyIfNull(getNamedParameterJdbcTemplate()
+                .query(loadRunsByPoolIdQuery, params, PipelineRunParameters.getRowMapper()));
+    }
+
     private MapSqlParameterSource getPagingParameters(PagingRunFilterVO filter) {
         MapSqlParameterSource params = new MapSqlParameterSource();
         params.addValue("LIMIT", filter.getPageSize());
@@ -782,7 +797,8 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         TAGS,
         SENSITIVE,
         KUBE_SERVICE_ENABLED,
-        CLUSTER_PRICE;
+        CLUSTER_PRICE,
+        NODE_POOL_ID;
 
         public static final RunAccessType DEFAULT_ACCESS_TYPE = RunAccessType.ENDPOINT;
 
@@ -849,6 +865,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(NODE_CLOUD_PROVIDER.name(),
                     instance.map(RunInstance::getCloudProvider).map(CloudProvider::name).orElse(null));
             params.addValue(NODE_PLATFORM.name(), instance.map(RunInstance::getNodePlatform).orElse(null));
+            params.addValue(NODE_POOL_ID.name(), instance.map(RunInstance::getPoolId).orElse(null));
         }
 
         static ResultSetExtractor<Collection<PipelineRun>> getRunGroupExtractor() {
@@ -930,6 +947,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             instance.setCloudRegionId(rs.getLong(NODE_CLOUD_REGION.name()));
             instance.setCloudProvider(CloudProvider.valueOf(rs.getString(NODE_CLOUD_PROVIDER.name())));
             instance.setNodePlatform(rs.getString(NODE_PLATFORM.name()));
+            instance.setPoolId(rs.getLong(NODE_POOL_ID.name()));
 
             boolean spot = rs.getBoolean(IS_SPOT.name());
             if (!rs.wasNull()) {
@@ -1291,5 +1309,10 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     @Required
     public void setLoadRunsByParentRunsIdsQuery(final String loadRunsByParentRunsIdsQuery) {
         this.loadRunsByParentRunsIdsQuery = loadRunsByParentRunsIdsQuery;
+    }
+
+    @Required
+    public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
+        this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
     }
 }

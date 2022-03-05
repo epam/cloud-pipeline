@@ -21,7 +21,7 @@
 }
 
 .header {
-  margin: 5px 0;
+  margin-bottom: 5px;
 }
 
 .active-badge {
@@ -39,7 +39,8 @@
 }
 
 .timepoint {
-  width: 25px;
+  min-width: 25px;
+  padding: 0 3px;
   height: 25px;
   display: inline-flex;
   margin-right: 2px;

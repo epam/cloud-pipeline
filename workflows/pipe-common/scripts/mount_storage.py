@@ -164,6 +164,13 @@ class MountStorageTask:
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
                                               or x.file_share_mount.region_id == cloud_region_id]
 
+            # Filter out storages, which are requested to be skipped
+            # NOTE: Any storage, defined by CP_CAP_FORCE_MOUNTS will still be mounted
+            skip_storages = os.getenv('CP_CAP_SKIP_MOUNTS')
+            if skip_storages:
+                Logger.info('Storage(s) "{}" requested to be skipped'.format(skip_storages), task_name=self.task_name)
+                skip_storages_list = self.parse_storage_list(skip_storages)
+                available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id not in skip_storages_list ]
 
             # If the storages are limited by the user - we make sure that the "forced" storages are still available
             # This is useful for the tools, which require "databases" or other data from the File/Object storages

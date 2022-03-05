@@ -16,61 +16,72 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {
+  Icon,
+  Checkbox
+} from 'antd';
 import Channel from './channel';
 import styles from './hcs-image-controls.css';
 
-@inject('hcsViewerState')
-@observer
-class HcsImageChannelsControl extends React.Component {
-  render () {
-    const {hcsViewerState = {}} = this.props;
-    const {
-      channels = [],
-      pending
-    } = hcsViewerState;
-    if (pending && channels.length === 0) {
-      return (
-        <div className={styles.channels}>
-          <i className="cp-text-not-important">Loading channels...</i>
-        </div>
-      );
-    }
-    if (channels.length === 0) {
-      return null;
-    }
+function HcsImageChannelsControl (
+  {
+    hcsViewerState
+  }
+) {
+  const {
+    channels = [],
+    pending,
+    channelsLocked
+  } = hcsViewerState || {};
+  if (pending && channels.length === 0) {
     return (
       <div className={styles.channels}>
-        <div className={styles.header}>
-          Channels:
-          {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
-        </div>
-        {
-          channels.map(channel => (
-            <Channel
-              key={channel.identifier}
-              identifier={channel.identifier}
-              name={channel.name}
-              visible={channel.visible}
-              color={channel.color}
-              domain={channel.domain}
-              contrastLimits={channel.contrastLimits}
-              loading={pending}
-              onVisibilityChanged={
-                (visible) => hcsViewerState.changeChannelVisibility(channel, visible)
-              }
-              onContrastLimitsChanged={
-                (limits) => hcsViewerState.changeChannelContrastLimits(channel, limits)
-              }
-              onColorChanged={
-                (color) => hcsViewerState.changeChannelColor(channel, color)
-              }
-            />
-          ))
-        }
+        <i className="cp-text-not-important">Loading channels...</i>
       </div>
     );
   }
+  if (channels.length === 0) {
+    return null;
+  }
+  return (
+    <div className={styles.channels}>
+      <div className={styles.header}>
+        <span>
+          Channels:
+          {pending && (<Icon type="loading" style={{marginLeft: 5}} />)}
+        </span>
+        <Checkbox
+          onChange={(e) => hcsViewerState.setChannelsLocked(e.target.checked)}
+          checked={channelsLocked}
+        >
+          Persist channels state
+        </Checkbox>
+      </div>
+      {
+        channels.map(channel => (
+          <Channel
+            key={channel.identifier}
+            identifier={channel.identifier}
+            name={channel.name}
+            visible={channel.visible}
+            color={channel.color}
+            domain={channel.domain}
+            contrastLimits={channel.contrastLimits}
+            loading={pending}
+            onVisibilityChanged={
+              (visible) => hcsViewerState.changeChannelVisibility(channel, visible)
+            }
+            onContrastLimitsChanged={
+              (limits) => hcsViewerState.changeChannelContrastLimits(channel, limits)
+            }
+            onColorChanged={
+              (color) => hcsViewerState.changeChannelColor(channel, color)
+            }
+          />
+        ))
+      }
+    </div>
+  );
 }
 
-export default HcsImageChannelsControl;
+export default inject('hcsViewerState')(observer(HcsImageChannelsControl));

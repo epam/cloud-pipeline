@@ -45,6 +45,7 @@ import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
@@ -120,6 +121,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
 import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.report.NodePoolReportService;
 import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -545,6 +547,12 @@ public class AclTestBeans {
 
     @MockBean
     protected NgsPreprocessingManager preprocessingManager;
+
+    @MockBean
+    protected NodePoolUsageService nodePoolUsageService;
+
+    @MockBean
+    protected NodePoolReportService nodePoolReportService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

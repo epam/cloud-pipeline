@@ -21,6 +21,7 @@ function check_installed {
 }
 
 CLEANUP_USER=$1
+ADDITIONAL_ENVS_TO_CLEAN_UP=$2
 
 IFS="@" read -r -a owner_info <<< "$OWNER"
 
@@ -53,6 +54,13 @@ if [[ $ENV_TO_CLEAN_COUNT -ne 0 ]]; then
         PARAM_NAME=${PARAM_TYPE_NAME%$PARAM_TYPE_SUFFIX}
         ENVS_TO_UNSET="$ENVS_TO_UNSET $PARAM_TYPE_NAME= $PARAM_NAME= "
     done <<< "$(env | grep ${PARAM_TYPE_SUFFIX})"
+fi
+
+if [[ ! -z $ADDITIONAL_ENVS_TO_CLEAN_UP && $ADDITIONAL_ENVS_TO_CLEAN_UP != "NONE" ]] ; then
+  IFS=","
+  for env_value in $ADDITIONAL_ENVS_TO_CLEAN_UP; do
+    ENVS_TO_UNSET="$ENVS_TO_UNSET $env_value= "
+  done
 fi
 
 echo $ENVS_TO_UNSET

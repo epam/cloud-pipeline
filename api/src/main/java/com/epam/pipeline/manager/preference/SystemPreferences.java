@@ -119,6 +119,7 @@ public class SystemPreferences {
     private static final String LDAP_GROUP = "LDAP";
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
+    private static final String MONITORING_GROUP = "Monitoring";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -142,6 +143,9 @@ public class SystemPreferences {
             "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
     public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
             COMMIT_GROUP, isGreaterThan(0));
+    // List of ',' separated env vars to be cleaned up from docker image before commit
+    public static final StringPreference ADDITIONAL_ENVS_TO_CLEAN = new StringPreference(
+            "commit.additional.envs.to.clean", "CP_EXEC_TIMEOUT", COMMIT_GROUP, pass);
 
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
@@ -174,6 +178,8 @@ public class SystemPreferences {
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
             "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final BooleanPreference DATA_STORAGE_POLICY_BACKUP_VISIBLE_NON_ADMINS =
+        new BooleanPreference("storage.policy.backup.visible.non.admins", true, DATA_STORAGE_GROUP, pass);
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'
@@ -992,6 +998,18 @@ public class SystemPreferences {
     public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
             "ngs.preprocessing.machine.run.column.name", "Machine Run",
             NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+
+    // Monitoring
+    public static final IntPreference MONITORING_POOL_USAGE_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.delay", 300000, MONITORING_GROUP, isGreaterThan(0));
+    public static final BooleanPreference MONITORING_POOL_USAGE_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.enable", false, MONITORING_GROUP, pass);
+    public static final BooleanPreference MONITORING_POOL_USAGE_CLEAN_ENABLE = new BooleanPreference(
+            "monitoring.node.pool.usage.clean.enable", false, MONITORING_GROUP, pass);
+    public static final IntPreference MONITORING_POOL_USAGE_CLEAN_DELAY = new IntPreference(
+            "monitoring.node.pool.usage.clean.delay", 86400000, MONITORING_GROUP, isGreaterThan(0));
+    public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
+            "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

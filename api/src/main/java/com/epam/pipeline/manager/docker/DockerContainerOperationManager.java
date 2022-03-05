@@ -92,6 +92,7 @@ public class DockerContainerOperationManager {
     public static final String PAUSE_RUN_TASK = "PausePipelineRun";
     public static final String DELIMITER = "/";
     public static final int COMMAND_CANNOT_EXECUTE_CODE = 126;
+    public static final String NONE = "NONE";
 
     @Autowired
     private PipelineRunManager runManager;
@@ -184,6 +185,7 @@ public class DockerContainerOperationManager {
                     .runId(String.valueOf(run.getId()))
                     .containerId(containerId)
                     .cleanUp(String.valueOf(clearContainer))
+                    .additionalEnvsToClean(getEnvsToCleanUp())
                     .stopPipeline(String.valueOf(stopPipeline))
                     .timeout(String.valueOf(preferenceManager.getPreference(SystemPreferences.COMMIT_TIMEOUT)))
                     .registryToPush(registry.getPath())
@@ -267,6 +269,12 @@ public class DockerContainerOperationManager {
             failRunAndTerminateNode(run, e);
             throw new IllegalArgumentException(REJOIN_COMMAND_DESCRIPTION, e);
         }
+    }
+
+    private String getEnvsToCleanUp() {
+        return preferenceManager.getPreference(SystemPreferences.ADDITIONAL_ENVS_TO_CLEAN).equals(EMPTY)
+                ? NONE
+                : "\"" + preferenceManager.getPreference(SystemPreferences.ADDITIONAL_ENVS_TO_CLEAN) + "\"";
     }
 
     //method is synchronized to prevent double pod creation

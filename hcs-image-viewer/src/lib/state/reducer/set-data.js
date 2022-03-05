@@ -28,6 +28,8 @@ export default function setDataAction(state, action) {
     loader: undefined,
     metadata: undefined,
     imageIndex: 0,
+    imageTimePosition: 0,
+    imageZPosition: 0,
 
     source: undefined,
     sourcePending: false,

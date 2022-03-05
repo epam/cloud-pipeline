@@ -93,8 +93,8 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnDataStoragesForAdmin() {
+        mockSecurityContext();
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
-
         assertThat(dataStorageApiService.getDataStorages()).hasSize(1).contains(s3bucket);
     }
 
@@ -183,8 +183,8 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnWritableDataStoragesForAdmin() {
+        mockSecurityContext();
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
-
         assertThat(dataStorageApiService.getWritableStorages()).hasSize(1).contains(s3bucket);
     }
 
@@ -205,6 +205,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnFullPermissionOnDataStoragesForAdminWhenMountStatusDisabled() {
+        mockSecurityContext();
         final NFSDataStorage nfsDataStorage =
             DatastorageCreatorUtils.getNfsDataStorage(NFSStorageMountStatus.MOUNT_DISABLED, OWNER_USER);
         doReturn(mutableListOf(nfsDataStorage)).when(mockDataStorageManager).getDataStorages();
@@ -332,6 +333,7 @@ public class DataStorageApiServiceCommonTest extends AbstractDataStorageAclTest 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldReturnAvailableStoragesForAdmin() {
+        mockSecurityContext();
         doReturn(mutableListOf(s3bucket)).when(mockDataStorageManager).getDataStorages();
 
         assertThat(dataStorageApiService.getAvailableStorages()).hasSize(1).contains(s3bucket);
