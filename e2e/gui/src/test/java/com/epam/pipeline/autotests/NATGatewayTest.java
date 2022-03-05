@@ -82,6 +82,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     private static final String SERVER_NAME_4;
     private static final String PORT_80 = "80";
     private static final String PORT_443 = "443";
+    private static final String PROTOCOL_UDP = "UDP";
     private static final String COMMENT_1 = "port1";
     private static final String COMMENT_2 = "port2";
     private static final String COMMAND_1 = "unset http_proxy https_proxy";
@@ -391,6 +392,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .checkFieldWarning(PORT, format("Duplicate port %s", PORT_80))
                 .clear(PORT)
                 .setValue(PORT, PORT_443)
+                .selectValue(PROTOCOL, PROTOCOL_UDP)
                 .addRoute()
                 .click(SAVE)
                 .checkCreationScheduled(SERVER_NAME_2, PORT_443)
