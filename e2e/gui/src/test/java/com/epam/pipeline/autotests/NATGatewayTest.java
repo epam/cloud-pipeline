@@ -419,9 +419,10 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .setValue(PORT, PORT_80)
                 .click(ADD_PORT)
                 .ensure(ADD, disabled)
-                .addMorePorts(PORT_443)
+                .addMorePorts(PORT_443, 2)
                 .ensure(ADD, enabled)
                 .addRoute()
+                .expandGroup(SERVER_NAME_3, PORT_80)
                 .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_80)
                 .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_443)
                 .sleep(1, SECONDS);

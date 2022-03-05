@@ -150,8 +150,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName, final String port) {
-        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
+        sleep(3, SECONDS);
         expandGroup(ipAddressOrServerName, port);
+        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         route
                 .findAll(".external-column").get(0)
                 .find(tagName("i"))
@@ -160,6 +161,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO expandGroup(final String serverName, final String port) {
+        sleep(3, SECONDS);
         final SelenideElement routeRecord = $(groupRouteByName(serverName, port));
         if (routeRecord.exists() && routeRecord.find(By.className("ant-table-row-expand-icon"))
                 .has(cssClass("ant-table-row-collapsed"))) {
@@ -262,8 +264,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         sleep(1, MINUTES);
         int attempt = 0;
         int maxAttempts = 60;
-        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         expandGroup(ipAddressOrServerName, port);
+        final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         while (route.findAll(".external-column").get(0).find(tagName("i"))
                 .has(cssClass(status))
                 && attempt < maxAttempts) {
@@ -354,11 +356,10 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
              return parent();
          }
 
-         public NATAddRouteAO addMorePorts(final String port) {
-             context().findAll(byText("Port:"))
-                     .filter(hidden).first()
-                     .closest(".dd-route-modal__form-item-container")
-                     .find(".dd-route-modal__form-item").find("input")
+         public NATAddRouteAO addMorePorts(final String port, int portNumber) {
+             context().findAll(By.className("cp-nat-route-port-control")).get(portNumber-1)
+                     .find(".ant-form-item-control")
+                     .find("input")
                      .shouldBe(visible)
                      .setValue(port);
              return this;
