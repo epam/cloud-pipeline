@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.NATGatewayAO;
 import com.epam.pipeline.autotests.ao.SystemManagementAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -215,7 +216,9 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .waitRouteRecordCreationScheduled(server1Port80ExternalIPAddress, PORT_80)
                 .checkActiveRouteRecord(server1Port80ExternalIPAddress, SERVER_NAME_1, COMMENT_1, PORT_80)
                 .getInternalIP(server1Port80ExternalIPAddress, PORT_80);
-        tools().perform(registry, group, tool, tool -> tool.run(this))
+        tools().perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .doNotMountStoragesSelect(true)
+                .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
