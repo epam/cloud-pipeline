@@ -120,6 +120,7 @@ public class SystemPreferences {
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
+    private static final String REPORTS_GROUP = "Reports";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -1010,6 +1011,24 @@ public class SystemPreferences {
             "monitoring.node.pool.usage.clean.delay", 86400000, MONITORING_GROUP, isGreaterThan(0));
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
+
+    // Reports
+    public static final StringPreference REPORTS_TIMESTAMP_COLUMN_NAME = new StringPreference(
+            "reports.timestamp.column.name", "Timestamp", REPORTS_GROUP, pass);
+    public static final StringPreference POOL_REPORTS_TOTAL_NODES_COLUMN_FORMAT = new StringPreference(
+            "reports.pool.total.nodes.column.format", "%s_SIZE[nodes]", REPORTS_GROUP, pass);
+    public static final StringPreference POOL_REPORTS_OCCUPIED_NODES_COLUMN_FORMAT = new StringPreference(
+            "reports.pool.occupied.nodes.column.format", "%s_UTILIZATION[nodes]", REPORTS_GROUP, pass);
+    public static final StringPreference POOL_REPORTS_UTILIZATION_COLUMNS_FORMAT = new StringPreference(
+            "reports.pool.utilization.columns.format", "%s_UTILIZATION[%%]", REPORTS_GROUP, pass);
+    public static final StringPreference POOL_REPORT_DATA_SHEET_NAME = new StringPreference(
+            "reports.pool.xls.data.sheet.name", "POOL_DATA", REPORTS_GROUP, pass);
+    public static final StringPreference POOL_REPORT_UTILIZATION_SHEET_NAME = new StringPreference(
+            "reports.pool.xls.utilization.sheet.name", "UTILIZATION_DATA", REPORTS_GROUP, pass);
+    public static final IntPreference POOL_REPORT_UTILIZATION_TABLE_MAX_COLUMN = new IntPreference(
+            "reports.pool.xls.utilization.table.max.column", 27, REPORTS_GROUP, isGreaterThan(0));
+    public static final IntPreference POOL_REPORT_UTILIZATION_TABLE_MAX_ROW = new IntPreference(
+            "reports.pool.xls.utilization.table.max.row", 40, REPORTS_GROUP, isGreaterThan(0));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

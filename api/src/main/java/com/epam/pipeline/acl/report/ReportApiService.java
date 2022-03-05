@@ -18,14 +18,16 @@ package com.epam.pipeline.acl.report;
 
 import com.epam.pipeline.dto.report.ReportFilter;
 import com.epam.pipeline.dto.report.NodePoolUsageReport;
+import com.epam.pipeline.dto.report.NodePoolReportType;
 import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
-import com.epam.pipeline.manager.report.NodePoolReportService;
-import com.epam.pipeline.manager.report.UsersUsageReportService;
+import com.epam.pipeline.manager.report.pool.NodePoolReportService;
+import com.epam.pipeline.manager.report.user.UsersUsageReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
@@ -44,5 +46,11 @@ public class ReportApiService {
     @PreAuthorize(ADMIN_ONLY)
     public List<NodePoolUsageReport> loadNodePoolReport(final ReportFilter filter) {
         return nodePoolReportService.getReport(filter);
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public InputStream loadNodePoolUsageReportFile(final ReportFilter filter, final Long targetPool,
+                                                   final NodePoolReportType type) {
+        return nodePoolReportService.getReportFile(filter, targetPool, type);
     }
 }
