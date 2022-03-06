@@ -72,6 +72,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         SERVER_NAME_2 = C.NAT_PROXY_SERVER_NAMES.get(1);
         SERVER_NAME_3 = C.NAT_PROXY_SERVER_NAMES.get(2);
         SERVER_NAME_4 = C.NAT_PROXY_SERVER_NAMES.get(3);
+        SERVER_NAME_5 = C.NAT_PROXY_SERVER_NAMES.get(4);
     }
 
     private static final String FIELD_IS_REQUIRED_WARNING = "Field is required";
@@ -80,6 +81,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
     private static final String SERVER_NAME_2;
     private static final String SERVER_NAME_3;
     private static final String SERVER_NAME_4;
+    private static final String SERVER_NAME_5;
     private static final String PORT_80 = "80";
     private static final String PORT_443 = "443";
     private static final String PROTOCOL_UDP = "UDP";
@@ -533,7 +535,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
         final NATGatewayAO natGatewayAO = systemManagementAO
                 .switchToNATGateway()
                 .addRoute()
-                .setServerName(SERVER_NAME_3)
+                .setServerName(SERVER_NAME_5)
                 .setValue(PORT, PORT_80)
                 .selectValue(PROTOCOL, PROTOCOL_UDP)
                 .click(ADD_PORT)
@@ -541,19 +543,19 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .addMorePorts(PORT_443, 2)
                 .ensure(ADD, enabled)
                 .addRoute()
-                .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_80)
-                .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_443)
+                .checkRouteRecord(SERVER_NAME_5, SERVER_NAME_5, PORT_80)
+                .checkRouteRecord(SERVER_NAME_5, SERVER_NAME_5, PORT_443)
                 .sleep(1, SECONDS);
         final String internalIPPort80 = natGatewayAO
                 .click(SAVE)
-                .checkCreationScheduled(SERVER_NAME_3, PORT_80)
-                .checkCreationScheduled(SERVER_NAME_3, PORT_443)
-                .waitRouteRecordCreationScheduled(SERVER_NAME_3, PORT_80)
-                .waitRouteRecordCreationScheduled(SERVER_NAME_3, PORT_443)
-                .getInternalIP(SERVER_NAME_3, PORT_80);
-        final String internalIPPort443 = natGatewayAO.getInternalIP(SERVER_NAME_3, PORT_443);
-        final String internalPortPort80 = natGatewayAO.getInternalPort(SERVER_NAME_3, PORT_80);
-        final String internalPortPort443 = natGatewayAO.getInternalPort(SERVER_NAME_3, PORT_443);
+                .checkCreationScheduled(SERVER_NAME_5, PORT_80)
+                .checkCreationScheduled(SERVER_NAME_5, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_5, PORT_80)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_5, PORT_443)
+                .getInternalIP(SERVER_NAME_5, PORT_80);
+        final String internalIPPort443 = natGatewayAO.getInternalIP(SERVER_NAME_5, PORT_443);
+        final String internalPortPort80 = natGatewayAO.getInternalPort(SERVER_NAME_5, PORT_80);
+        final String internalPortPort443 = natGatewayAO.getInternalPort(SERVER_NAME_5, PORT_443);
         assertEquals(internalIPPort80, internalIPPort443);
         assertNotEquals(internalPortPort80, internalPortPort443);
         runsMenu()
@@ -562,15 +564,15 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .waitUntilTextAppears(getRunId())
                         .execute(COMMAND_1)
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_3, PORT_80)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_5, PORT_80)))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
-                                format(CONNECTED_FORMAT, SERVER_NAME_3, internalIPPort80, PORT_80))
+                                format(CONNECTED_FORMAT, SERVER_NAME_5, internalIPPort80, PORT_80))
                         .sleep(3, SECONDS)
-                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_3, PORT_443)))
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_5, PORT_443)))
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
-                                format(CONNECTED_FORMAT, SERVER_NAME_3, internalIPPort80, PORT_443))
+                                format(CONNECTED_FORMAT, SERVER_NAME_5, internalIPPort80, PORT_443))
                         .close());
     }
 
