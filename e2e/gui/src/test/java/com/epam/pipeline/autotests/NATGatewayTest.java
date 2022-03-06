@@ -379,7 +379,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .close());
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithoutSpecifiedIPAddress"}, priority = 2)
+    @Test(dependsOnMethods = "checkNewRouteCreationWithoutSpecifiedIPAddress", priority = 2)
     @TestCase(value = {"2232_8"})
     public void checkAddingRouteWithoutResolvedIPToExistingRoute() {
         navigationMenu()
@@ -397,7 +397,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                 .click(SAVE)
                 .checkCreationScheduled(SERVER_NAME_2, PORT_443)
                 .waitRouteRecordCreationScheduled(SERVER_NAME_2, PORT_443)
-                .checkActiveRouteRecord(server2Port80InternalIPAddress, SERVER_NAME_2, "", PORT_443);
+                .checkActiveRouteRecord(StringUtils.EMPTY, SERVER_NAME_2, "", PORT_443);
         runsMenu()
                 .showLog(getRunId())
                 .ssh(shell -> shell
@@ -411,7 +411,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .close());
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"}, priority = 1)
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress", priority = 1)
     @TestCase(value = {"2232_9"})
     public void checkAddingRouteWithSeveralPorts() {
         final SystemManagementAO systemManagementAO = navigationMenu()
@@ -467,7 +467,7 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .close());
     }
 
-    @Test(dependsOnMethods = {"checkNewRouteCreationWithSpecifiedIPAddress"}, priority = 1)
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress", priority = 1)
     @TestCase(value = {"2232_10"})
     public void checkAddingSeveralRoutesWithSameServerNameButDiffPorts() {
         final NATGatewayAO natGatewayAO = navigationMenu()
@@ -521,6 +521,56 @@ public class NATGatewayTest extends AbstractSinglePipelineRunningTest implements
                         .sleep(3, SECONDS)
                         .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
                                 format(CONNECTED_FORMAT, SERVER_NAME_4, internalIPPort80, PORT_443))
+                        .close());
+    }
+
+    @Test(dependsOnMethods = "checkNewRouteCreationWithSpecifiedIPAddress", priority = 1)
+    @TestCase(value = {"2444_1"})
+    public void checkAddingRouteWithSeveralPortsDifferentProtocols() {
+        final SystemManagementAO systemManagementAO = navigationMenu()
+                .settings()
+                .switchToSystemManagement();
+        final NATGatewayAO natGatewayAO = systemManagementAO
+                .switchToNATGateway()
+                .addRoute()
+                .setServerName(SERVER_NAME_3)
+                .setValue(PORT, PORT_80)
+                .selectValue(PROTOCOL, PROTOCOL_UDP)
+                .click(ADD_PORT)
+                .ensure(ADD, disabled)
+                .addMorePorts(PORT_443, 2)
+                .ensure(ADD, enabled)
+                .addRoute()
+                .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_80)
+                .checkRouteRecord(SERVER_NAME_3, SERVER_NAME_3, PORT_443)
+                .sleep(1, SECONDS);
+        final String internalIPPort80 = natGatewayAO
+                .click(SAVE)
+                .checkCreationScheduled(SERVER_NAME_3, PORT_80)
+                .checkCreationScheduled(SERVER_NAME_3, PORT_443)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_3, PORT_80)
+                .waitRouteRecordCreationScheduled(SERVER_NAME_3, PORT_443)
+                .getInternalIP(SERVER_NAME_3, PORT_80);
+        final String internalIPPort443 = natGatewayAO.getInternalIP(SERVER_NAME_3, PORT_443);
+        final String internalPortPort80 = natGatewayAO.getInternalPort(SERVER_NAME_3, PORT_80);
+        final String internalPortPort443 = natGatewayAO.getInternalPort(SERVER_NAME_3, PORT_443);
+        assertEquals(internalIPPort80, internalIPPort443);
+        assertNotEquals(internalPortPort80, internalPortPort443);
+        runsMenu()
+                .showLog(getRunId())
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getRunId())
+                        .execute(COMMAND_1)
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_3, PORT_80)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
+                                format(CONNECTED_FORMAT, SERVER_NAME_3, internalIPPort80, PORT_80))
+                        .sleep(3, SECONDS)
+                        .execute(format(COMMAND_2, format("%s:%s", SERVER_NAME_3, PORT_443)))
+                        .sleep(3, SECONDS)
+                        .assertOutputContains(format(TRYING_FORMAT, internalIPPort80),
+                                format(CONNECTED_FORMAT, SERVER_NAME_3, internalIPPort80, PORT_443))
                         .close());
     }
 
