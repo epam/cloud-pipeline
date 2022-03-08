@@ -40,7 +40,6 @@ TAGS_PROCESSING_ONLY = os.getenv('WSI_PARSING_TAGS_ONLY', 'false') == 'true'
 REFR_IND_CAT_ATTR_NAME = os.getenv('WSI_PARSING_REFR_IND_CAT_ATTR_NAME', 'Immersion liquid')
 EXTENDED_FOCUS_CAT_ATTR_NAME = os.getenv('WSI_PARSING_EXTENDED_FOCUS_CAT_ATTR_NAME', 'Extended Focus')
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('WSI_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
-STUDY_NAME_MATCHER = re.compile(os.getenv('WSI_PARSING_STUDY_NAME_REGEX', '([a-zA-Z]{3})(-|_)*(\\d{2})(-|_)*(\\d{3,5})'))
 STUDY_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STUDY_NAME_CAT_ATTR_NAME', 'Study name')
 SLIDE_NAME_CAT_ATTR_NAME = os.getenv('WSI_PARSING_SLIDE_NAME_CAT_ATTR_NAME', 'Slide Name')
 STAIN_CAT_ATTR_NAME = os.getenv('WSI_PARSING_STAIN_CAT_ATTR_NAME', 'Stain')
@@ -494,6 +493,12 @@ class WsiFileTagProcessor:
         self.api = PipelineAPI(os.environ['API'], 'logs')
         self.system_dictionaries_url = self.api.api_url + self.CATEGORICAL_ATTRIBUTE
         self.cloud_path = WsiParsingUtils.extract_cloud_path(file_path)
+        self.study_name_matchers = self._extract_study_name_matchers()
+
+    def _extract_study_name_matchers(self):
+        regex_rules_list = json.loads(os.getenv('WSI_PARSING_STUDY_NAME_REGEX_LIST',
+                                                '["([a-zA-Z]{3})(-|_)+(\\\\d{2})(-|_)+(\\\\d{3,5})"]'))
+        return [re.compile(rule.strip()) for rule in regex_rules_list]
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
         Logger.log_task_event(WSI_PROCESSING_TASK_NAME, '[{}] {}'.format(self.file_path, message), status=status)
@@ -585,31 +590,30 @@ class WsiFileTagProcessor:
         return tags
 
     def _try_extract_study_name(self, path):
-        matching_result = STUDY_NAME_MATCHER.findall(path)
-        if not matching_result:
-            self.log_processing_info('Unable to find match for study name in the file path...')
-            return {UNKNOWN_ATTRIBUTE_VALUE}
-        else:
-            study_names_found = set()
-            for match_tuple in matching_result:
-                study_names_found.add(self._extract_study_name_from_tuple(match_tuple).upper())
-            if UNKNOWN_ATTRIBUTE_VALUE in study_names_found:
-                study_names_found.remove(UNKNOWN_ATTRIBUTE_VALUE)
-            if len(study_names_found) != 1:
-                self.log_processing_info(
-                    'Unable to determine study name in the file path, matches found: [{}]'.format(study_names_found))
-                return {UNKNOWN_ATTRIBUTE_VALUE}
-            return study_names_found
+        for study_name_matcher in self.study_name_matchers:
+            matching_result = study_name_matcher.findall(path)
+            if matching_result:
+                study_names_found = set()
+                for match_tuple in matching_result:
+                    study_names_found.add(self._extract_study_name_from_tuple(match_tuple).upper())
+                if UNKNOWN_ATTRIBUTE_VALUE in study_names_found:
+                    study_names_found.remove(UNKNOWN_ATTRIBUTE_VALUE)
+                if len(study_names_found) != 1:
+                    self.log_processing_info('Unable to determine study name in the file path, matches found: [{}]'
+                                             .format(study_names_found))
+                    return {UNKNOWN_ATTRIBUTE_VALUE}
+                return study_names_found
+        self.log_processing_info('Unable to find match for study name in the file path...')
+        return {UNKNOWN_ATTRIBUTE_VALUE}
 
     def _extract_study_name_from_tuple(self, tuple):
-        study_group = tuple[0]
-        study_number = tuple[2]
-        study_code = tuple[4]
-        if study_group and study_number and study_code:
-            return HYPHEN.join([study_group, study_number, study_code])
+        name_chunks = list()
+        for i in range(0, len(tuple), 2):
+            name_chunks.append(tuple[i])
+        if name_chunks:
+            return HYPHEN.join(name_chunks)
         else:
-            self.log_processing_info(
-                'Unable to build full study name from: [{} {} {}]'.format(study_group, study_number, study_code))
+            self.log_processing_info('Unable to build full study name from: {}'.format(tuple))
             return UNKNOWN_ATTRIBUTE_VALUE
 
     def _get_refractive_index_substance(self, target_image_details):
