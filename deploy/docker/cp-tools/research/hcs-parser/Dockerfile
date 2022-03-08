@@ -45,6 +45,7 @@ RUN yum install -y -q epel-release && \
     yum update -y && \
     yum install -y -q blosc \
                       gcc \
+                      ImageMagick \
                       java-1.8.0-openjdk-devel \
                       make \
                       openssl-devel \
