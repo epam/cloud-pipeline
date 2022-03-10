@@ -59,7 +59,6 @@ import static java.lang.String.format;
 import static java.time.format.TextStyle.FULL;
 import static java.util.Locale.getDefault;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertFalse;
 
 public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest implements Authorization {
 
