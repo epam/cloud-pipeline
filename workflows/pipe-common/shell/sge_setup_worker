@@ -73,6 +73,14 @@ add_worker() {
     fi
 }
 
+remove_worker() {
+    local _QUEUE=$1
+    local _HOSTLIST=$2
+
+    qconf -purge queue slots "$_QUEUE@$HOSTNAME"
+    qconf -dattr hostgroup hostlist "$HOSTNAME" "$_HOSTLIST"
+}
+
 run_redhat_installation() {
     _SGE_ROLE=$1
 
@@ -252,8 +260,8 @@ _WORKER_CORES=$(($_WORKER_CORES - $CP_CAP_SGE_WORKER_FREE_CORES))
 if ! check_cp_cap CP_CAP_SGE_DISABLE_DEFAULT_QUEUE \
   || [[ "$cluster_role_type" == "additional" ]]; then
     add_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
-    check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
-                            "Fail to add host as worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
+    check_last_exit_code $? "Host was added to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
+                            "Fail to add host to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
 fi
 
 export _CP_CAP_SGE_DEFAULT_QUEUE_NAME="$CP_CAP_SGE_QUEUE_NAME"
@@ -263,13 +271,20 @@ for sge_profile_script in $CP_CAP_SCRIPTS_DIR/sge_profile_*.sh; do
     (
         # shellcheck source=/dev/null
         [[ -e "$sge_profile_script" ]] && source "$sge_profile_script"
-        if check_cp_cap "CP_CAP_SGE_STATIC" \
+        if check_cp_cap "CP_CAP_SGE_QUEUE_STATIC" \
           && [[ "$cluster_role_type" != "additional" ]] \
           && [[ "$CP_CAP_SGE_QUEUE_NAME" != "$_CP_CAP_SGE_DEFAULT_QUEUE_NAME" ]] \
           && [[ "$CP_CAP_SGE_HOSTLIST_NAME" != "$_CP_CAP_SGE_DEFAULT_HOSTLIST_NAME" ]]; then
             add_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME" "$_WORKER_CORES" $MASTER_NAME
-            check_last_exit_code $? "Host was added as a worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
-                                    "Fail to add host as worker to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
+            check_last_exit_code $? "Host was added to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
+                                    "Fail to add host to $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
+        fi
+        if [[ "$cluster_role_type" == "additional" ]] \
+          && [[ "$CP_CAP_SGE_QUEUE_NAME" != "$_CP_CAP_SGE_DEFAULT_QUEUE_NAME" ]] \
+          && [[ "$CP_CAP_SGE_HOSTLIST_NAME" != "$_CP_CAP_SGE_DEFAULT_HOSTLIST_NAME" ]]; then
+            remove_worker "$CP_CAP_SGE_QUEUE_NAME" "$CP_CAP_SGE_HOSTLIST_NAME"
+            check_last_exit_code $? "Host was removed from $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist" \
+                                    "Fail to remove host from $CP_CAP_SGE_QUEUE_NAME queue and $CP_CAP_SGE_HOSTLIST_NAME hostlist"
         fi
     )
 done
