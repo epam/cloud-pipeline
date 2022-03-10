@@ -172,7 +172,7 @@ async function launchTool(application, user, options) {
       prettyUrlObj = prettyUrlParsed ? JSON.parse(prettyUrlParsed) : undefined;
     }
     const prettyUrlString = prettyUrlObj
-      ? `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}`
+      ? `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}${options?.__validation__ ? ';validation' : ''}`
       : undefined;
     const userRuns = await getApplicationRun(
       application.id,
