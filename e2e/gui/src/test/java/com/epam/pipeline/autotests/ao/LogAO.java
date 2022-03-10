@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -149,7 +149,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO checkButtonTooltip(Primitive button, String message) {
         context().find(byXpath(format(".//span[.='%s']", button.name()))).hover();
-        $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
+        $(visible(byClassName("ant-popover-inner-content")))
                 .shouldHave(text(message));
         return this;
     }
@@ -188,7 +188,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO ensureButtonDisabled(Primitive button) {
         context().find(byXpath(format(".//span[.='%s']", button.name())))
                 .shouldBe(visible)
-                .shouldHave(Condition.cssClass("cp-disabled"));
+                .shouldBe(disabled);
         return this;
     }
 

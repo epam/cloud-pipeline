@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.utils.PipelineSelectors;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
@@ -66,7 +67,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
     public NodeEntry searchForNodeEntry(String node) {
         sleep(1, SECONDS);
         SelenideElement entry = getNode(node).shouldBe(visible);
-        return new NodeEntry(this, node, entry);
+        return new NodeEntry(this, entry);
     }
 
     private SelenideElement getNode(final String node) {
@@ -87,7 +88,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
         NodeEntry node = searchForNodeEntry(poolName);
         int attempt = 0;
         int maxAttempts = 10;
-        while (!node.getNodeCount(nodeType).equals(valueOf(count))) {
+        while (!node.getNodeCount(nodeType).equals(valueOf(count)) && attempt < maxAttempts) {
             sleep(30, SECONDS);
             click(REFRESH);
             attempt++;
@@ -114,21 +115,14 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
         private final HotNodePoolsAO parentAO;
         private SelenideElement entry;
         private final Map<Primitive, SelenideElement> elements;
-        private String node;
 
-        public NodeEntry(HotNodePoolsAO parentAO, String node, SelenideElement entry) {
+        public NodeEntry(HotNodePoolsAO parentAO, SelenideElement entry) {
             this.parentAO = parentAO;
-            this.node = node;
             this.entry = entry;
             this.elements = initialiseElements(
                     entry(EDIT, entry.find(byClassName("anticon-edit")).parent()),
                     entry(DELETE, entry.find(byClassName("anticon-delete")).parent())
             );
-        }
-
-        public NodeEntry checkActiveNodesCount(String count) {
-            assertTrue(getNodeCount(1).equals(count));
-            return this;
         }
 
         private String getNodeCount(int number) {
@@ -202,7 +196,7 @@ public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
                     .filter(el -> el.findAll(byXpath(".//div/span")).texts()
                             .containsAll(Arrays.asList(registry, group, nameWithoutGroup(tool))))
                     .findFirst()
-                    .get()
+                    .orElseThrow(NoSuchElementException::new)
                     .click();
             context().find(byXpath("//div[@title='latest']")).waitUntil(visible, C.DEFAULT_TIMEOUT);
             sleep(5, SECONDS);

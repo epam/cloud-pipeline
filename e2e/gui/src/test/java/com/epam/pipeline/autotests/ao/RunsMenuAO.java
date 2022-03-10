@@ -357,14 +357,14 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO ensurePauseButtonDisabled(String runID) {
         context().find(byId(format("run-%s-pause-button", runID)))
-                .shouldHave(Condition.cssClass("cp-disabled"));
+                .shouldBe(LogAO.disabled);
         return this;
     }
 
     public RunsMenuAO checkPauseButtonTooltip(String runID, String message) {
         hover(byId(format("run-%s-pause-button", runID)));
         $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
-                .shouldHave(Condition.text(message));
+                .shouldHave(text(message));
         return this;
     }
 

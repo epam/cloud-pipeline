@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.NotificationAO;
+import com.epam.pipeline.autotests.ao.RunsMenuAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -49,6 +50,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RESUME;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON;
 import static com.epam.pipeline.autotests.ao.Primitive.STARTS_ON_TIME;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.SPOT;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
 import static java.lang.String.format;
@@ -131,12 +134,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @Test(priority = 2, dependsOnMethods = {"maintenanceModeNotification"})
     @TestCase(value = {"2423_2"})
     public void checkLaunchRunInMaintenanceMode() {
-        navigationMenu()
-                .tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setPriceType("On-demand")
-                .doNotMountStoragesSelect(true)
-                .launch(this)
+        launchToolOnDemand()
                 .waitUntilPauseButtonAppear(run1ID = getLastRunId())
                 .ensurePauseButtonDisabled(run1ID)
                 .checkPauseButtonTooltip(run1ID, maintenanceModeTooltip)
@@ -190,19 +188,9 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     @TestCase(value = {"2423_4"})
     public void checkSwitchToMaintenanceModeDuringTheRunPausingAndResumingOperation() {
         setDisableSystemMaintenanceMode();
-        navigationMenu()
-                .tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setPriceType("On-demand")
-                .doNotMountStoragesSelect(true)
-                .launch(this);
+        launchToolOnDemand();
         run2ID = getLastRunId();
-        navigationMenu()
-                .tools()
-                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-                .setPriceType("On-demand")
-                .doNotMountStoragesSelect(true)
-                .launch(this)
+        launchToolOnDemand()
                 .waitUntilPauseButtonAppear(run3ID = getLastRunId())
                 .pause(run3ID, nameWithoutGroup(tool))
                 .waitUntilResumeButtonAppear(run3ID);
@@ -312,7 +300,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .setTypeValue(defaultInstance)
                 .setDisk("15")
-                .selectValue(PRICE_TYPE, "Spot")
+                .selectValue(PRICE_TYPE, SPOT)
                 .launchTool(this, Utils.nameWithoutGroup(tool))
                 .showLog(getLastRunId())
                 .waitForIP();
@@ -322,5 +310,14 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
         return $(byClassName("ant-table-tbody"))
                 .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .exists();
+    }
+
+    private RunsMenuAO launchToolOnDemand() {
+        return navigationMenu()
+                .tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType(ON_DEMAND)
+                .doNotMountStoragesSelect(true)
+                .launch(this);
     }
 }
