@@ -158,7 +158,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
                     .getMessage(MessageConstants.ERROR_MUTABLE_ACL_RETURN));
             return (MutableAcl) acl;
         } catch (NotFoundException e) {
-            log.error(e.getMessage(), e);
+            log.debug(e.getMessage());
             return null;
         }
     }
