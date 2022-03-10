@@ -355,6 +355,15 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public RunsMenuAO terminateRun(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-terminate-button").shouldBe(visible).click();
+        new ConfirmationPopupAO<>(this)
+                .ensureTitleContains(format("Terminate %s?", pipelineName))
+                .sleep(1, SECONDS)
+                .click(button("TERMINATE"));
+        return this;
+    }
+
     public RunsMenuAO ensurePauseButtonDisabled(String runID) {
         context().find(byId(format("run-%s-pause-button", runID)))
                 .shouldBe(LogAO.disabled);

@@ -31,6 +31,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
@@ -103,8 +104,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .disableSystemMaintenanceMode()
                 .saveIfNeeded();
         runsMenu()
-                .resume(run2ID, nameWithoutGroup(tool))
-                .waitUntilPauseButtonAppear(run2ID);
+                .terminateRun(run2ID, format("pipeline-%s", run2ID));
         clusterMenu()
                 .switchToHotNodePool()
                 .searchForNodeEntry(poolName)
@@ -291,8 +291,8 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
     }
 
     private void ensureNotificationIsAbsent(String title) {
-        assertFalse($(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]",
-                title))).exists());
+        $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]",
+                        title))).shouldBe(exist);
     }
 
     private void launchTool() {
@@ -308,7 +308,8 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
 
     private boolean hasOnPage(String customTag) {
         return $(byClassName("ant-table-tbody"))
-                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
+                .find(byXpath(String.format(".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]",
+                        customTag)))
                 .exists();
     }
 

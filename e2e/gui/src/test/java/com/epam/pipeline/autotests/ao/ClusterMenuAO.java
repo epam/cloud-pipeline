@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import static com.codeborne.selenide.Condition.*;
@@ -283,7 +282,6 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
     }
 
     public HotNodePoolsAO switchToHotNodePool() {
-        sleep(5, SECONDS);
         context().find(byText("Hot Node Pools")).parent()
                 .waitUntil(exist, C.DEFAULT_TIMEOUT)
                 .shouldBe(enabled).click();
@@ -308,11 +306,11 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
     private boolean hotPoolLabel(String runId, String poolName) {
         return nodeLine(runId)
-                    .shouldBe(visible)
-                    .find(byClassName("cluster__cluster-node-row-labels"))
-                    .find(byXpath(format(".//*[contains(@class, 'cp-node-tag-pool') and contains(., '%s')]",
+                .shouldBe(visible)
+                .find(byClassName("cluster__cluster-node-row-labels"))
+                .find(byXpath(format(".//*[contains(@class, 'cp-node-tag-pool') and contains(., '%s')]",
                             poolName.toUpperCase())))
-                    .exists();
+                .exists();
     }
 
     @Override
