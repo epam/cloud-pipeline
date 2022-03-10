@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.mixins.Authorization;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -528,7 +529,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .find(byClassName("ant-table-tbody"))),
                     entry(SEARCH, context().find(byId("search-users-input"))),
                     entry(CREATE_USER, context().find(button("Create user"))),
-                    entry(EXPORT_USERS, context().find(button("Export users")))
+                    entry(EXPORT_USERS, context().find(button("Export users"))),
+                    entry(SHOW_USERS, context().find(byClassName("ant-select-selection-selected-value")))
             );
 
             public UsersTabAO(PipelinesLibraryAO parentAO) {
@@ -578,6 +580,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO searchUser(String name) {
                 sleep(1, SECONDS);
+                clear(SEARCH);
                 return clickSearch()
                         .setSearchName(name)
                         .pressEnter();
@@ -667,7 +670,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
-
             public class UserEntry implements AccessObject<SystemEventsEntry> {
                 private final UsersTabAO parentAO;
                 private SelenideElement entry;
@@ -679,7 +681,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     this.login = login;
                     this.entry = entry;
                     this.elements = initialiseElements(
-                            entry(EDIT, entry.find(byClassName("edit-user-button")))
+                            entry(EDIT, entry.find(byId("edit-user-button"))),
+                            entry(STATUS, entry.find("circle") )
                     );
                 }
 
@@ -695,6 +698,19 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public EditUserPopup edit() {
                     click(EDIT);
                     return new EditUserPopup(parentAO);
+                }
+
+                public UserEntry validateUserStatus(final String status) {
+                    get(STATUS).shouldBe(visible).shouldHave(cssClass(format("cp-user-status-%s", status)));
+                    return this;
+                }
+
+                public UsersTabAO validateStatusTooltipText(String tooltipText) {
+                    hover(STATUS);
+                    $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+                            .find(byClassName("ant-tooltip-content"))
+                            .shouldHave(Condition.text(tooltipText));
+                    return parentAO;
                 }
 
                 public UserEntry validateBlockedStatus(final String username, final boolean blockedStatus) {

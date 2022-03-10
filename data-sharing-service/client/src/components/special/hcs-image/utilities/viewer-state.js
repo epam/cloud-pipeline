@@ -105,6 +105,7 @@ function buildZPositionsArray (max, zSize, zUnit) {
 }
 
 class ViewerState {
+  @observable loader;
   @observable use3D = false;
   @observable useLens = false;
   @observable useColorMap = false;
@@ -154,6 +155,7 @@ class ViewerState {
   @action
   onViewerStateChange = (viewer, newState) => {
     const {
+      loader,
       identifiers = [],
       channels = [],
       channelsVisibility = [],
@@ -178,6 +180,7 @@ class ViewerState {
       metadata
     } = newState || {};
     this.pending = pending;
+    this.loader = loader;
     if (pending) {
       return;
     }

@@ -21,8 +21,6 @@ import useSource from './utilities/use-source';
 import useViewerState from './viewer-state';
 import viewerActions from './viewer-state/actions';
 
-export { default as HCSImageContext } from './context';
-
 function initReducerState() {
   return {};
 }
@@ -102,4 +100,4 @@ function useHCSImageState() {
   };
 }
 
-export { useHCSImageState };
+export default useHCSImageState;
