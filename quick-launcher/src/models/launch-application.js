@@ -163,13 +163,7 @@ async function launchTool(application, user, options) {
     const appSettings = await fetchSettings();
     let prettyUrlParsed;
     let prettyUrlObj;
-    if (
-      !(options?.__validation__) &&
-      (
-        appSettings.prettyUrlDomain ||
-        appSettings.prettyUrlPath
-      )
-    ) {
+    if (appSettings.prettyUrlDomain || appSettings.prettyUrlPath) {
       prettyUrlParsed = generatePrettyUrl(
         appSettings.prettyUrlDomain,
         appSettings.prettyUrlPath,
@@ -177,13 +171,16 @@ async function launchTool(application, user, options) {
       );
       prettyUrlObj = prettyUrlParsed ? JSON.parse(prettyUrlParsed) : undefined;
     }
+    const prettyUrlString = prettyUrlObj
+      ? `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}`
+      : undefined;
     const userRuns = await getApplicationRun(
       application.id,
       user?.userName,
       `${application.image}:${version || 'latest'}`,
       options.__validation__ ? undefined : appOwner,
       appSettings.checkRunPrettyUrl && prettyUrlObj && !(options?.__skip_pretty_url_check__)
-        ? `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}`
+        ? prettyUrlString
         : undefined,
       options?.__check_run_parameters__
     );
@@ -238,7 +235,7 @@ async function launchTool(application, user, options) {
         payload.prettyUrl = prettyUrlParsed;
         payload.parameters.RUN_PRETTY_URL = {
           type: 'string',
-          value: `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}`
+          value: prettyUrlString
         };
         console.log(`Pretty url: ${payload.prettyUrl}`);
       }
