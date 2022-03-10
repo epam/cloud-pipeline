@@ -31,6 +31,10 @@ import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
 import HcsZPositionSelector from './hcs-z-position-selector';
+import {
+  downloadAvailable as downloadCurrentTiffAvailable,
+  downloadCurrentTiff
+} from './utilities/download-current-tiff';
 import styles from './hcs-image.css';
 
 @observer
@@ -417,11 +421,23 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
     if (!showConfiguration) {
       return (
         <div
           className={styles.configurationActions}
         >
+          <Button
+            className={styles.action}
+            size="small"
+            disabled={!downloadAvailable}
+            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
+          >
+            <Icon
+              type="camera"
+              className="cp-larger"
+            />
+          </Button>
           <Button
             className={styles.action}
             size="small"
@@ -442,6 +458,14 @@ class HcsImage extends React.PureComponent {
         onClose={this.hideConfiguration}
       >
         <HcsImageControls />
+        <div className={styles.downloadTiffRow}>
+          <Button
+            disabled={!downloadAvailable}
+            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
+          >
+            Download current image
+          </Button>
+        </div>
       </Panel>
     );
   };
