@@ -22,7 +22,7 @@ jobs:
         - psql -c "CREATE SCHEMA pipeline; ALTER ROLE postgres IN DATABASE pipeline_test SET search_path TO pipeline;" -U postgres -d pipeline_test
       install: true
       language: java
-      script: ./gradlew :api:test --no-daemon
+      script: ./gradlew :api:test --daemon
       if: tag IS present
   
     - stage: "Build"
@@ -30,7 +30,7 @@ jobs:
       install: true
       language: java
       script: 
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release client:buildUI --no-daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release client:buildUI --daemon
         - tar -zcf client.tgz client/build
       after_success:
         - aws s3 mv client.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
@@ -44,8 +44,8 @@ jobs:
         # But this caused an invalid version set to the second one. See https://github.com/epam/cloud-pipeline/issues/561
         # As a workaround - commands were divided into two calls for now
         # FIXME: this shall be reviewed further to uncover the real causes of such a behavior
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:build --no-daemon
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:build --daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildLinux --daemon
         - tar -zcf cli-linux.tgz pipe-cli/dist
       after_success:
         - aws s3 mv cli-linux.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
@@ -56,7 +56,7 @@ jobs:
       install: true
       language: java
       script:
-        - _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildLinux --no-daemon
+        - _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildLinux --daemon
         - tar -zcf cli-linux-el6.tgz pipe-cli/dist
       after_success:
         - aws s3 mv cli-linux-el6.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
@@ -66,7 +66,7 @@ jobs:
       install: true
       language: java
       script:
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildWin --no-daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release pipe-cli:buildWin --daemon
         - tar -zcf cli-win.tgz pipe-cli/dist
       after_success:
         - aws s3 mv cli-win.tgz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
@@ -76,7 +76,7 @@ jobs:
       install: true
       language: java
       script:
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release fs-browser:build --no-daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release fs-browser:build --daemon
       after_success:
         - aws s3 mv fs-browser/dist/fsbrowser-*.tar.gz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
 
@@ -85,7 +85,7 @@ jobs:
       install: true
       language: java
       script:
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildLinux --no-daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildLinux --daemon
       after_success:
         - aws s3 mv cloud-pipeline-webdav-client/out/cloud-data-linux.tar.gz s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
 
@@ -94,7 +94,7 @@ jobs:
       install: true
       language: java
       script:
-        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildWin --no-daemon
+        - ./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release cloud-pipeline-webdav-client:buildWin --daemon
       after_success:
         - aws s3 mv cloud-pipeline-webdav-client/out/cloud-data-win64.zip s3://cloud-pipeline-oss-builds/temp/${TRAVIS_BUILD_NUMBER}/
 
