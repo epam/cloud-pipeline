@@ -394,42 +394,6 @@ class HcsImage extends React.PureComponent {
     }
   }
 
-  renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {
-    const {
-      children,
-      detailsButtonTitle = 'Show details'
-    } = this.props;
-    const {showEntireWell} = this.state;
-    return (
-      <div
-        className={className}
-      >
-        {children ? (
-          <Button
-            className={styles.action}
-            size="small"
-            onClick={handleClick ? this.showDetails : undefined}
-          >
-            {detailsButtonTitle}
-          </Button>
-        ) : null}
-        {this.wellViewAvailable && (
-          <Button
-            className={styles.action}
-            size="small"
-            onClick={handleClick ? this.toggleWellView : undefined}
-          >
-            Well view
-            {showEntireWell
-              ? <Icon type="eye" />
-              : <Icon type="eye-o" />
-            }
-          </Button>
-        )}
-      </div>
-    );
-  }
-
   showDetails = () => {
     this.setState({
       showDetails: true
@@ -552,8 +516,9 @@ class HcsImage extends React.PureComponent {
             <Button
               className={styles.action}
               onClick={this.toggleWellView}
+              type={showEntireWell ? 'primary' : 'default'}
             >
-              Well view
+              {`${showEntireWell ? 'Disable' : 'Enable'} well view`}
               {showEntireWell
                 ? <Icon type="appstore" />
                 : <Icon type="appstore-o" />
