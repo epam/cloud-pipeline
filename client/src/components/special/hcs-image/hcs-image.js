@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Alert, Button, Icon} from 'antd';
+import {Alert, Button, Icon, Radio} from 'antd';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -505,6 +505,28 @@ class HcsImage extends React.PureComponent {
       >
         <HcsImageControls />
         <div className={styles.additionalConfigurationControls}>
+          {this.wellViewAvailable && (
+            <div className={styles.action}>
+              <Radio.Group
+                onChange={this.toggleWellView}
+                value={showEntireWell ? 'enabled' : 'disabled'}
+                className={styles.wellViewGroup}
+              >
+                <Radio.Button
+                  value="enabled"
+                  className={styles.wellViewButton}
+                >
+                  Well view
+                </Radio.Button>
+                <Radio.Button
+                  value="disabled"
+                  className={styles.wellViewButton}
+                >
+                  Field view
+                </Radio.Button>
+              </Radio.Group>
+            </div>
+          )}
           <Button
             className={styles.action}
             disabled={!downloadAvailable}
@@ -512,19 +534,6 @@ class HcsImage extends React.PureComponent {
           >
             Download current image
           </Button>
-          {this.wellViewAvailable && (
-            <Button
-              className={styles.action}
-              onClick={this.toggleWellView}
-              type={showEntireWell ? 'primary' : 'default'}
-            >
-              {`${showEntireWell ? 'Disable' : 'Enable'} well view`}
-              {showEntireWell
-                ? <Icon type="appstore" />
-                : <Icon type="appstore-o" />
-              }
-            </Button>
-          )}
         </div>
       </Panel>
     );
