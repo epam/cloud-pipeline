@@ -14,10 +14,11 @@
  *  limitations under the License.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function useElementSize(elementRef) {
   const [size, setSize] = useState({ width: undefined, height: undefined });
+  const sizeRef = useRef(undefined);
   useEffect(() => {
     let width;
     let height;
@@ -36,11 +37,12 @@ export default function useElementSize(elementRef) {
         width = currentWidth;
         height = currentHeight;
         setSize({ width, height });
+        sizeRef.current = { width, height };
       }
       handle = requestAnimationFrame(callback);
     };
     callback();
     return () => cancelAnimationFrame(handle);
-  }, [elementRef, setSize]);
-  return size;
+  }, [elementRef, setSize, sizeRef]);
+  return { size, sizeRef };
 }

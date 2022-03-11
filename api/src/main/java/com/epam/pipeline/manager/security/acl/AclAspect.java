@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.security.acl;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -57,6 +58,7 @@ public class AclAspect {
     private static final String RETURN_OBJECT = "entity";
     private static final String WITHIN_ACL_SYNC = "@within(com.epam.pipeline.manager.security.acl.AclSync)";
     private static final Logger LOGGER = LoggerFactory.getLogger(AclAspect.class);
+    public static final String LIST = "list";
 
     private final JdbcMutableAclServiceImpl aclService;
     private final GrantPermissionManager permissionManager;
@@ -137,7 +139,7 @@ public class AclAspect {
     }
 
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskList)",
-            returning = "list")
+            returning = LIST)
     @Transactional(propagation = Propagation.REQUIRED)
     public void setMaskForList(JoinPoint joinPoint, List<? extends AbstractSecuredEntity> list) {
         list.forEach(entity ->
@@ -145,7 +147,7 @@ public class AclAspect {
     }
 
     @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.AclMaskDelegateList)",
-            returning = "list")
+            returning = LIST)
     @Transactional(propagation = Propagation.REQUIRED)
     public void setMaskForDelegateList(JoinPoint joinPoint, List<? extends SecuredEntityDelegate> list) {
         ListUtils.emptyIfNull(list).forEach(delegate ->
@@ -171,11 +173,22 @@ public class AclAspect {
         permissionManager.filterTree(entity, AclPermission.READ);
     }
 
-    @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.StorageAcl)",
-            returning = "list")
-    @Transactional(propagation = Propagation.REQUIRED)
-    public void storageAclReadWrite(JoinPoint joinPoint, List<AbstractDataStorage> list) {
+    @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.storage.StorageAclReadOrWrite)",
+            returning = LIST)
+    public void storageAclReadOrWrite(JoinPoint joinPoint, List<AbstractDataStorage> list) {
         storagePermissionManager.filterStorage(list, Arrays.asList("READ", "WRITE"));
+    }
+
+    @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.storage.StorageAclReadAndWrite)",
+            returning = LIST)
+    public void storageAclReadAndWrite(JoinPoint joinPoint, List<AbstractDataStorage> list) {
+        storagePermissionManager.filterStorage(list, Arrays.asList("READ", "WRITE"), true);
+    }
+
+    @AfterReturning(pointcut = "@annotation(com.epam.pipeline.manager.security.acl.storage.StorageAclRead)",
+            returning = LIST)
+    public void storageAclRead(JoinPoint joinPoint, List<AbstractDataStorage> list) {
+        storagePermissionManager.filterStorage(list, Collections.singletonList("READ"));
     }
 
     @Before("@annotation(com.epam.pipeline.manager.security.acl.AclFilter) && args(filter,..)")

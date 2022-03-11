@@ -17,10 +17,12 @@
 export default {
   setDefault: 'set-default',
   setLoading: 'set-loading',
+  setLoaded: 'set-loaded',
   setError: 'set-error',
   setChannelProperties: 'set-channel-properties',
   setColorMap: 'set-color-map',
   setLensChannel: 'set-lens-channel',
   setLensEnabled: 'set-lens-enabled',
   setGlobalPosition: 'set-global-position',
+  setLockChannels: 'set-lock-channels',
 };

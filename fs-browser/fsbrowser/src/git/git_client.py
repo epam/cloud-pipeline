@@ -14,6 +14,7 @@
 import os
 import stat
 import pygit2
+from pygit2 import GitError
 
 from fsbrowser.src.git.git_diff_helper import GitDiffHelper
 from fsbrowser.src.git.git_helper import GitHelper
@@ -74,6 +75,42 @@ class GitClient:
             raise RuntimeError('Unknown merge analysis result')
         self._fix_permissions(repo.workdir)
         return result
+
+    def fetch_and_merge(self, path, message, user_name=None, user_email=None,
+                        remote_name=GitHelper.DEFAULT_REMOTE_NAME, branch=GitHelper.DEFAULT_BRANCH_NAME):
+        callbacks = self._build_callback()
+        repo = self._repository(path)
+        remote = self._get_remote(repo, remote_name)
+        commit_required = True
+
+        if self._is_merge_in_progress(repo):
+            self.commit(path, message, user_name, user_email, remote_name, branch)
+            commit_required = False
+
+        remote.fetch(callbacks=callbacks)
+        remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
+        merge_result, _ = repo.merge_analysis(remote_master_id)
+        result = []
+        if merge_result & pygit2.GIT_MERGE_ANALYSIS_UP_TO_DATE:
+            # Up to date, do nothing
+            self.logger.log("Repository '%s' already up to date" % path)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL and \
+                merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+            try:
+                self._fast_forward_pull(repo, path, remote_master_id, branch)
+            except GitError as e:
+                self.logger.log("Fast-forward pull failed: %s" % str(e))
+                if not self._is_merge_in_progress(repo):
+                    self.commit(path, message, user_name, user_email, remote_name, branch)
+                result = self._merge(repo, remote_master_id)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_FASTFORWARD:
+            self._fast_forward_pull(repo, path, remote_master_id, branch)
+        elif merge_result & pygit2.GIT_MERGE_ANALYSIS_NORMAL:
+            result = self._merge(repo, remote_master_id, True)
+        else:
+            raise RuntimeError('Unknown merge analysis result')
+        self._fix_permissions(repo.workdir)
+        return result, commit_required
 
     def ahead_behind(self, repo_path):
         repo = self._repository(repo_path)
@@ -152,7 +189,7 @@ class GitClient:
             self.logger.log("File '%s' staged" % path_to_stage)
         index.write()
 
-    def commit(self, repo_path, message, remote_name=GitHelper.DEFAULT_REMOTE_NAME,
+    def commit(self, repo_path, message, user_name=None, user_email=None, remote_name=GitHelper.DEFAULT_REMOTE_NAME,
                branch=GitHelper.DEFAULT_BRANCH_NAME):
         repo = self._repository(repo_path)
         head_id = repo.head.target
@@ -161,7 +198,7 @@ class GitClient:
         remote_master_id = GitHelper.get_remote_head(repo, remote_name, branch).target
         parent = [head_id, remote_master_id] if merge_in_progress else [head_id]
 
-        author = self._get_author()
+        author = self._get_author(user_name, user_email)
         index = repo.index
         tree = index.write_tree()
 
@@ -169,7 +206,7 @@ class GitClient:
             message = self._build_merge_commit_message(head_id, remote_master_id)
 
         commit = repo.create_commit('HEAD', author, author, message, tree, parent)
-        self.logger.log("Committed to repo '%s'" % repo_path)
+        self.logger.log("User '%s' committed to repo '%s'" % (author.name, repo_path))
         if merge_in_progress:
             self._finish_merge(repo)
         return commit
@@ -318,7 +355,9 @@ class GitClient:
     def _set_mode(self, path, mode):
         os.chmod(path, os.stat(path).st_mode | mode)
 
-    def _get_author(self):
+    def _get_author(self, user_name=None, user_email=None):
+        if user_name and user_email:
+            return pygit2.Signature(user_name, user_email)
         return pygit2.Signature(self.user_name, self.user_email)
 
     @staticmethod

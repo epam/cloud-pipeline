@@ -143,6 +143,9 @@ public class SystemPreferences {
             "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
     public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
             COMMIT_GROUP, isGreaterThan(0));
+    // List of ',' separated env vars to be cleaned up from docker image before commit
+    public static final StringPreference ADDITIONAL_ENVS_TO_CLEAN = new StringPreference(
+            "commit.additional.envs.to.clean", "CP_EXEC_TIMEOUT", COMMIT_GROUP, pass);
 
     // DATA_STORAGE_GROUP
     public static final IntPreference DATA_STORAGE_MAX_DOWNLOAD_SIZE = new IntPreference(
@@ -175,6 +178,8 @@ public class SystemPreferences {
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
             "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
+    public static final BooleanPreference DATA_STORAGE_POLICY_BACKUP_VISIBLE_NON_ADMINS =
+        new BooleanPreference("storage.policy.backup.visible.non.admins", true, DATA_STORAGE_GROUP, pass);
 
     /**
      * Black list for mount points, accept notation like: '/dir/*', '/dir/**'

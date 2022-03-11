@@ -54,6 +54,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermission;
@@ -269,7 +272,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         }
 
         DataStorageDownloadFileUrl url = new DataStorageDownloadFileUrl();
-        url.setUrl(baseApiHost + "datastorage/" + dataStorage.getId() + "/download?path=" + path);
+        url.setUrl(baseApiHost + "datastorage/" + dataStorage.getId() + "/download?path=" + encodeUrl(path));
         return url;
     }
 
@@ -507,5 +510,13 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public PathDescription getDataSize(final NFSDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         throw new UnsupportedOperationException("Getting item size info is not implemented for NFS storages");
+    }
+
+    private String encodeUrl(final String path) {
+        try {
+            return URLEncoder.encode(path, StandardCharsets.UTF_8.toString());
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

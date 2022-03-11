@@ -240,29 +240,21 @@ public class NFSQuotasMonitor {
 
     private LocalDateTime resolveActivationTime(final NFSDataStorage storage,
                                                 final NFSStorageMountStatus newMountStatus,
-                                                final LocalDateTime executionTime) {
+                                                final LocalDateTime immediateExecutionTime) {
         final NFSStorageMountStatus currentMountStatus = storage.getMountStatus();
         final int graceDelay = searchCorrespondingAction(newMountStatus)
             .map(graceConfiguration::get)
             .orElse(0);
         if (currentMountStatus.getPriority() >= newMountStatus.getPriority()
             || graceDelay == 0) {
-            return executionTime;
+            return immediateExecutionTime;
         } else {
-            final LocalDateTime lastRestrictiveStatusActivation =
-                Optional.ofNullable(latestTriggers.get(storage.getId()))
-                    .filter(trigger -> !trigger.getTargetStatus().equals(NFSStorageMountStatus.ACTIVE))
-                    .map(NFSQuotaTrigger::getTargetStatusActivationTime)
-                    .orElse(executionTime);
-            final LocalDateTime activationFromLastTrigger =
-                lastRestrictiveStatusActivation.plus(graceDelay, ChronoUnit.MINUTES);
-            if (activationFromLastTrigger.isBefore(executionTime)) {
-                return executionTime;
-            }
-            final LocalDateTime activationFromNow = executionTime.plus(graceDelay, ChronoUnit.MINUTES);
-            return activationFromLastTrigger.compareTo(activationFromNow) > 0
-                   ? activationFromNow
-                   : activationFromLastTrigger;
+            final LocalDateTime activationFromNow = immediateExecutionTime.plus(graceDelay, ChronoUnit.MINUTES);
+            return Optional.ofNullable(latestTriggers.get(storage.getId()))
+                .filter(lastTrigger -> !lastTrigger.getTargetStatus().equals(NFSStorageMountStatus.ACTIVE))
+                .map(NFSQuotaTrigger::getTargetStatusActivationTime)
+                .filter(lastDelayedActivation -> lastDelayedActivation.isBefore(activationFromNow))
+                .orElse(activationFromNow);
         }
     }
 

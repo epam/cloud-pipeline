@@ -48,10 +48,9 @@ export const ServiceTypes = {
 };
 
 @roleModel.authenticationInfo
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @Form.create()
 export class DataStorageEditDialog extends React.Component {
-
   static propTypes = {
     pending: PropTypes.bool,
     onCancel: PropTypes.func,
@@ -84,6 +83,27 @@ export class DataStorageEditDialog extends React.Component {
       sm: {span: 18}
     }
   };
+
+  @computed
+  get storageVersioningAllowed () {
+    const {
+      dataStorage,
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    if (!dataStorage) {
+      return true;
+    }
+    const loaded = preferences &&
+      preferences.loaded &&
+      authenticatedUserInfo &&
+      authenticatedUserInfo.loaded;
+    if (loaded) {
+      const isAdmin = authenticatedUserInfo.value.admin;
+      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
+    }
+    return false;
+  }
 
   openDeleteDialog = () => {
     this.setState({deleteDialogVisible: true});
@@ -483,8 +503,10 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
+                {!this.isNfsMount &&
+                this.props.policySupported &&
+                this.currentRegionSupportsPolicy &&
+                this.storageVersioningAllowed && (
                   <Row>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
@@ -498,24 +520,26 @@ export class DataStorageEditDialog extends React.Component {
                       </Form.Item>
                     </Col>
                   </Row>
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported &&
-                  this.state.versioningEnabled && this.currentRegionSupportsPolicy &&
-                    <Form.Item
-                      className={styles.dataStorageFormItem}
-                      {...this.formItemLayout}
-                      label="Backup duration">
-                      {getFieldDecorator('backupDuration', {
-                        initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                          ? this.props.dataStorage.storagePolicy.backupDuration : undefined
-                      })(
-                        <InputNumber
-                          style={{width: '100%'}}
-                          disabled={this.props.pending || isReadOnly} />
-                      )}
-                    </Form.Item>
-                }
+                )}
+                {!this.isNfsMount &&
+                this.props.policySupported &&
+                this.state.versioningEnabled &&
+                this.currentRegionSupportsPolicy &&
+                this.storageVersioningAllowed && (
+                  <Form.Item
+                    className={styles.dataStorageFormItem}
+                    {...this.formItemLayout}
+                    label="Backup duration">
+                    {getFieldDecorator('backupDuration', {
+                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
+                        ? this.props.dataStorage.storagePolicy.backupDuration : undefined
+                    })(
+                      <InputNumber
+                        style={{width: '100%'}}
+                        disabled={this.props.pending || isReadOnly} />
+                    )}
+                  </Form.Item>
+                )}
                 {
                   !this.state.mountDisabled && (
                     <Form.Item

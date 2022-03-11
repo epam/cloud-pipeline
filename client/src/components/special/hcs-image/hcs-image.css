@@ -113,6 +113,13 @@
   width: 300px;
 }
 
+.download-tiff-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 5px;
+}
+
 .details-panel {
   left: 5px;
   max-width: 300px;
