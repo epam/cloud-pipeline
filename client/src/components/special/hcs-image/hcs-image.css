@@ -50,7 +50,7 @@
   flex: 1;
 }
 
-.hidden-details-actions {
+.hidden-details-button {
   visibility: hidden;
   margin: 5px 10px 5px 5px;
 }
@@ -95,7 +95,6 @@
   z-index: 1;
 }
 
-.details-actions .action,
 .configuration-actions .action {
   margin: 5px;
   line-height: 1;
@@ -114,11 +113,17 @@
   width: 300px;
 }
 
-.download-tiff-row {
+.additional-configuration-controls {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   margin: 5px;
+}
+
+.additional-configuration-controls .action {
+  margin-bottom: 3px;
+  width: 80%;
 }
 
 .details-panel {
@@ -127,7 +132,7 @@
   min-width: 200px;
 }
 
-.details-actions {
+.details-info-btn {
   position: absolute;
   top: 10px;
   left: 10px;

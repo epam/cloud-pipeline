@@ -276,19 +276,19 @@ class HcsImage extends React.PureComponent {
             wellHeight: well.height,
             imageId: undefined,
             wellImageId: well.wellImageId,
-            showEntireWell: false,
             fields: images
-          }, () => this.changeWellImage(firstImage));
+          }, () => this.changeWellImage(firstImage, true));
         }
       }
     }
   };
 
-  changeWellImage = ({x, y} = {}) => {
+  changeWellImage = ({x, y} = {}, keepShowEntireWell = false) => {
     const {
       sequenceId,
       wellId,
-      imageId: currentImageId
+      imageId: currentImageId,
+      showEntireWell
     } = this.state;
     if (this.hcsInfo) {
       const sequence = (this.hcsInfo.sequences || []).find(s => s.id === sequenceId);
@@ -302,7 +302,7 @@ class HcsImage extends React.PureComponent {
             // todo: re-fetch signed urls here?
             this.setState({
               imageId: image.id,
-              showEntireWell: false
+              showEntireWell: keepShowEntireWell ? showEntireWell : false
             }, () => this.loadImage());
           }
         }
@@ -373,6 +373,26 @@ class HcsImage extends React.PureComponent {
       this.hcsImageViewer = undefined;
     }
   };
+
+  renderDetailsInfo = (className = styles.detailsInfoBtn, handleClick = true) => {
+    const {
+      children,
+      detailsButtonTitle = 'Show details'
+    } = this.props;
+    if (children) {
+      return (
+        <Button
+          size="small"
+          className={className}
+          onClick={handleClick ? this.showDetails : undefined}
+        >
+          {detailsButtonTitle}
+        </Button>
+      );
+    } else {
+      return null;
+    }
+  }
 
   renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {
     const {
@@ -460,7 +480,8 @@ class HcsImage extends React.PureComponent {
   renderConfigurationActions = () => {
     const {
       error,
-      showConfiguration
+      showConfiguration,
+      showEntireWell
     } = this.state;
     if (
       error ||
@@ -476,6 +497,18 @@ class HcsImage extends React.PureComponent {
         <div
           className={styles.configurationActions}
         >
+          {this.wellViewAvailable && (
+            <Button
+              className={styles.action}
+              size="small"
+              onClick={this.toggleWellView}
+            >
+              {showEntireWell
+                ? <Icon type="appstore" />
+                : <Icon type="appstore-o" />
+              }
+            </Button>
+          )}
           <Button
             className={styles.action}
             size="small"
@@ -507,13 +540,26 @@ class HcsImage extends React.PureComponent {
         onClose={this.hideConfiguration}
       >
         <HcsImageControls />
-        <div className={styles.downloadTiffRow}>
+        <div className={styles.additionalConfigurationControls}>
           <Button
+            className={styles.action}
             disabled={!downloadAvailable}
             onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
           >
             Download current image
           </Button>
+          {this.wellViewAvailable && (
+            <Button
+              className={styles.action}
+              onClick={this.toggleWellView}
+            >
+              Well view
+              {showEntireWell
+                ? <Icon type="appstore" />
+                : <Icon type="appstore-o" />
+              }
+            </Button>
+          )}
         </div>
       </Panel>
     );
@@ -584,8 +630,8 @@ class HcsImage extends React.PureComponent {
                   className={styles.alertContainer}
                 >
                   {
-                    this.renderDetailsActions(
-                      styles.hiddenDetailsActions,
+                    this.renderDetailsInfo(
+                      styles.hiddenDetailsButton,
                       false
                     )
                   }
@@ -603,7 +649,7 @@ class HcsImage extends React.PureComponent {
             {
               showDetails
                 ? this.showDetailsPanel()
-                : this.renderDetailsActions()
+                : this.renderDetailsInfo()
             }
             <div
               className={
