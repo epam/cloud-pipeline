@@ -374,24 +374,40 @@ class HcsImage extends React.PureComponent {
     }
   };
 
-  renderDetailsInfo = (className = styles.detailsInfoBtn, handleClick = true) => {
+  renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {
     const {
       children,
       detailsButtonTitle = 'Show details'
     } = this.props;
-    if (children) {
-      return (
-        <Button
-          size="small"
-          className={className}
-          onClick={handleClick ? this.showDetails : undefined}
-        >
-          {detailsButtonTitle}
-        </Button>
-      );
-    } else {
-      return null;
-    }
+    const {showEntireWell} = this.state;
+    return (
+      <div
+        className={className}
+      >
+        {children ? (
+          <Button
+            className={styles.action}
+            size="small"
+            onClick={handleClick ? this.showDetails : undefined}
+          >
+            {detailsButtonTitle}
+          </Button>
+        ) : null}
+        {this.wellViewAvailable && (
+          <Button
+            className={styles.action}
+            size="small"
+            onClick={handleClick ? this.toggleWellView : undefined}
+          >
+            Well view
+            {showEntireWell
+              ? <Icon type="eye" />
+              : <Icon type="eye-o" />
+            }
+          </Button>
+        )}
+      </div>
+    );
   }
 
   showDetails = () => {
@@ -604,8 +620,8 @@ class HcsImage extends React.PureComponent {
                   className={styles.alertContainer}
                 >
                   {
-                    this.renderDetailsInfo(
-                      styles.hiddenDetailsButton,
+                    this.renderDetailsActions(
+                      styles.hiddenDetailsActions,
                       false
                     )
                   }
@@ -623,7 +639,7 @@ class HcsImage extends React.PureComponent {
             {
               showDetails
                 ? this.showDetailsPanel()
-                : this.renderDetailsInfo()
+                : this.renderDetailsActions()
             }
             <div
               className={
