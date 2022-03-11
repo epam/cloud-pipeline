@@ -56,7 +56,7 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
-            - mountPath: /opt/cp-core-fs
+            - mountPath: /fs/core-fs
               name: cp-core-fs
               readOnly: true
             - name: cp-cloud-credentials
