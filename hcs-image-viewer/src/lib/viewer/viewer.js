@@ -47,10 +47,10 @@ import PropTypes from 'prop-types';
 import {
   AdditiveColormapExtension,
   LensExtension,
-  PictureInPictureViewer,
   getDefaultInitialViewState,
   DETAIL_VIEW_ID,
 } from '@hms-dbmi/viv';
+import VivViewer from './components/viv-viewer';
 import useHCSImageState from '../state';
 import useElementSize from './utilities/use-element-size';
 import getZoomLevel from '../state/utilities/get-zoom-level';
@@ -69,6 +69,7 @@ function HCSImageViewer(
     maxZoomBackOff = undefined,
     defaultZoomBackOff = 0,
     overview,
+    onCellClick,
   },
 ) {
   const {
@@ -76,6 +77,9 @@ function HCSImageViewer(
     viewerState,
     callbacks,
   } = useHCSImageState();
+  const {
+    mesh,
+  } = state;
   const containerRef = useRef();
   const { sizeRef } = useElementSize(containerRef);
   useEffect(() => {
@@ -161,7 +165,8 @@ function HCSImageViewer(
     >
       {
         readyForRendering && (
-          <PictureInPictureViewer
+          <VivViewer
+            mesh={mesh}
             contrastLimits={contrastLimits}
             colors={colors}
             channelsVisible={channelsVisibility}
@@ -177,6 +182,7 @@ function HCSImageViewer(
             overview={overview}
             lensSelection={useLens && lensEnabled ? lensChannel : undefined}
             lensEnabled={useLens && lensEnabled}
+            onCellClick={onCellClick}
             deckProps={{
               glOptions: {
                 preserveDrawingBuffer: true,
@@ -201,6 +207,7 @@ HCSImageViewer.propTypes = {
   defaultZoomBackOff: PropTypes.number,
   // eslint-disable-next-line react/forbid-prop-types
   overview: PropTypes.object,
+  onCellClick: PropTypes.func,
 };
 
 HCSImageViewer.defaultProps = {
@@ -213,6 +220,7 @@ HCSImageViewer.defaultProps = {
   maxZoomBackOff: undefined,
   defaultZoomBackOff: 0,
   overview: undefined,
+  onCellClick: undefined,
 };
 
 export default HCSImageViewer;

@@ -69,6 +69,10 @@ class HCSImageSequence {
       .join(objectStorage.delimiter || '/');
     this.offsetsJsonFileName = [directory, HCSConstants.OFFSETS_JSON_FILE_NAME]
       .join(objectStorage.delimiter || '/');
+    this.overviewOmeTiffFileName = [directory, HCSConstants.OVERVIEW_OME_TIFF_FILE_NAME]
+      .join(objectStorage.delimiter || '/');
+    this.overviewOffsetsJsonFileName = [directory, HCSConstants.OVERVIEW_OFFSETS_JSON_FILE_NAME]
+      .join(objectStorage.delimiter || '/');
     this.wellsMapFileName = [directory, HCSConstants.WELLS_MAP_FILE_NAME]
       .join(objectStorage.delimiter);
     this._fetch = undefined;
@@ -134,10 +138,36 @@ class HCSImageSequence {
     return promise;
   }
 
+  generateOverviewOMETiffURL () {
+    const promise = this.objectStorage
+      .generateFileUrl(this.overviewOmeTiffFileName);
+    promise
+      .then((url) => {
+        this.overviewOmeTiff = url;
+      })
+      .catch((e) => {
+        this.error = e.message;
+      });
+    return promise;
+  }
+
+  generateOverviewOffsetsJsonURL () {
+    const promise = this.objectStorage
+      .generateFileUrl(this.overviewOffsetsJsonFileName);
+    promise
+      .then((url) => {
+        this.overviewOffsetsJson = url;
+      })
+      .catch(() => {});
+    return promise;
+  }
+
   resignDataURLs () {
     return Promise.all([
       this.generateOMETiffURL(),
-      this.generateOffsetsJsonURL()
+      this.generateOffsetsJsonURL(),
+      this.generateOverviewOMETiffURL(),
+      this.generateOverviewOffsetsJsonURL()
     ]);
   }
 }
