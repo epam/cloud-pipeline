@@ -56,6 +56,9 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
+            - mountPath: /opt/cp-core-fs
+              name: cp-core-fs
+              readOnly: true
             - name: cp-cloud-credentials
               mountPath: "/root/.cloud"
               readOnly: true
@@ -105,5 +108,8 @@ spec:
         - name: kube-pki
           hostPath:
             path: /etc/kubernetes/pki
+        - name: cp-core-fs
+          hostPath:
+            path: /opt
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
