@@ -233,7 +233,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .setAutoscaledParameter("Scale Step", 1)
                 .selectValue(INSTANCE_TYPE, defaultInstance)
                 .selectValue(CLOUD_REGION, defaultRegion[0])
-                .setValue(DISK, "20")
+                .setValue(DISK, "40")
                 .addDockerImage(registry, group, tool)
                 .ok()
                 .waitUntilRunningNodesAppear(poolName, 2);
