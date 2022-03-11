@@ -43,6 +43,9 @@ function useHCSImageState() {
   const setImage = useCallback((options) => {
     dispatch({ type: actions.setImage, ...options });
   }, [dispatch]);
+  const setMesh = useCallback((mesh) => {
+    dispatch({ type: actions.setImage, mesh });
+  }, [dispatch]);
   const setImageViewportLoaded = useCallback((options) => {
     dispatch({ type: actions.setImageViewportLoaded, ...options });
     viewerDispatch({ type: viewerActions.setLoaded });

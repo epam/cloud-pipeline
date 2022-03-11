@@ -30,6 +30,7 @@ export default function setDataAction(state, action) {
     imageIndex: 0,
     imageTimePosition: 0,
     imageZPosition: 0,
+    mesh: undefined,
 
     source: undefined,
     sourcePending: false,

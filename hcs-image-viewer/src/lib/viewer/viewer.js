@@ -47,10 +47,10 @@ import PropTypes from 'prop-types';
 import {
   AdditiveColormapExtension,
   LensExtension,
-  PictureInPictureViewer,
   getDefaultInitialViewState,
   DETAIL_VIEW_ID,
 } from '@hms-dbmi/viv';
+import VivViewer from './components/viv-viewer';
 import useHCSImageState from '../state';
 import useElementSize from './utilities/use-element-size';
 import getZoomLevel from '../state/utilities/get-zoom-level';
@@ -76,6 +76,9 @@ function HCSImageViewer(
     viewerState,
     callbacks,
   } = useHCSImageState();
+  const {
+    mesh,
+  } = state;
   const containerRef = useRef();
   const { sizeRef } = useElementSize(containerRef);
   useEffect(() => {
@@ -161,7 +164,8 @@ function HCSImageViewer(
     >
       {
         readyForRendering && (
-          <PictureInPictureViewer
+          <VivViewer
+            mesh={mesh}
             contrastLimits={contrastLimits}
             colors={colors}
             channelsVisible={channelsVisibility}

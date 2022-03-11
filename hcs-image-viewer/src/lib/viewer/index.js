@@ -202,6 +202,28 @@ class Viewer {
     });
   }
 
+  setMesh(mesh) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setMesh')(mesh);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
+  hideMesh() {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setMesh')(undefined);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
   setChannelProperties(channel, properties) {
     return new Promise((resolve, reject) => {
       this.waitForInitialization()

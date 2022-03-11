@@ -45,6 +45,8 @@ function reducer(state, action) {
       return sourceActions.setImage(state, action);
     case actions.setImageViewportLoaded:
       return sourceActions.setImageViewportLoaded(state);
+    case actions.setMesh:
+      return sourceActions.setMesh(state, action);
     default:
       return state;
   }

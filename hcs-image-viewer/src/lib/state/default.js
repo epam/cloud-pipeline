@@ -30,6 +30,7 @@ export default {
   imagePending: false,
   imageTimePosition: 0,
   imageZPosition: 0,
+  mesh: undefined,
 
   error: undefined,
   pending: false,

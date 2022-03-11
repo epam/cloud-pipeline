@@ -27,6 +27,7 @@ import HcsCellSelector from './hcs-cell-selector';
 import HcsSequenceSelector from './hcs-sequence-selector';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
+import getWellMesh from './utilities/get-well-mesh';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
@@ -314,6 +315,7 @@ class HcsImage extends React.PureComponent {
     const {
       sequenceId,
       imageId,
+      wellId,
       timePointId,
       wellImageId,
       showEntireWell
@@ -328,6 +330,8 @@ class HcsImage extends React.PureComponent {
         let url = sequence.omeTiff;
         let offsetsJsonUrl = sequence.offsetsJson;
         let id = imageId;
+        const {wells = []} = sequence;
+        const well = wells.find(w => w.id === wellId);
         if (this.wellViewAvailable && showEntireWell) {
           url = sequence.overviewOmeTiff;
           offsetsJsonUrl = sequence.overviewOffsetsJson;
@@ -339,7 +343,10 @@ class HcsImage extends React.PureComponent {
               this.hcsImageViewer.setImage({
                 ID: id,
                 imageTimePosition: timePointId,
-                imageZPosition: z
+                imageZPosition: z,
+                mesh: showEntireWell && this.wellViewAvailable
+                  ? getWellMesh(well)
+                  : undefined
               });
             }
           });
@@ -379,35 +386,19 @@ class HcsImage extends React.PureComponent {
       children,
       detailsButtonTitle = 'Show details'
     } = this.props;
-    const {showEntireWell} = this.state;
-    return (
-      <div
-        className={className}
-      >
-        {children ? (
-          <Button
-            className={styles.action}
-            size="small"
-            onClick={handleClick ? this.showDetails : undefined}
-          >
-            {detailsButtonTitle}
-          </Button>
-        ) : null}
-        {this.wellViewAvailable && (
-          <Button
-            className={styles.action}
-            size="small"
-            onClick={handleClick ? this.toggleWellView : undefined}
-          >
-            Well view
-            {showEntireWell
-              ? <Icon type="eye" />
-              : <Icon type="eye-o" />
-            }
-          </Button>
-        )}
-      </div>
-    );
+    if (children) {
+      return (
+        <Button
+          size="small"
+          className={className}
+          onClick={handleClick ? this.showDetails : undefined}
+        >
+          {detailsButtonTitle}
+        </Button>
+      );
+    } else {
+      return null;
+    }
   }
 
   showDetails = () => {
@@ -477,18 +468,17 @@ class HcsImage extends React.PureComponent {
         <div
           className={styles.configurationActions}
         >
-          {this.wellViewAvailable && (
-            <Button
-              className={styles.action}
-              size="small"
-              onClick={this.toggleWellView}
-            >
-              {showEntireWell
-                ? <Icon type="appstore" />
-                : <Icon type="appstore-o" />
-              }
-            </Button>
-          )}
+          {
+            this.wellViewAvailable && (
+              <Button
+                className={styles.action}
+                size="small"
+                onClick={this.toggleWellView}
+              >
+                <Icon type={showEntireWell ? 'appstore' : 'appstore-o'} />
+              </Button>
+            )
+          }
           <Button
             className={styles.action}
             size="small"

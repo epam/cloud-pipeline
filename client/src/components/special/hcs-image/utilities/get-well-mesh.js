@@ -14,16 +14,20 @@
  *  limitations under the License.
  */
 
-export default {
-  setData: 'set-data',
-
-  setSourceInitializing: 'set-source-initializing',
-  setSource: 'set-source',
-  setSourceError: 'set-source-error',
-
-  setImage: 'set-image',
-  setImageViewportLoaded: 'set-image-viewport-loaded',
-  setMesh: 'set-mesh',
-
-  setError: 'set-error',
-};
+export default function getWellMesh (well) {
+  if (!well) {
+    return undefined;
+  }
+  const {images = []} = well;
+  if (images.length === 0) {
+    return undefined;
+  }
+  const minX = Math.min(...images.map(o => o.x));
+  const maxX = Math.max(...images.map(o => o.x));
+  const minY = Math.min(...images.map(o => o.y));
+  const maxY = Math.max(...images.map(o => o.y));
+  return {
+    columns: maxX - minX + 1,
+    rows: maxY - minY + 1
+  };
+}
