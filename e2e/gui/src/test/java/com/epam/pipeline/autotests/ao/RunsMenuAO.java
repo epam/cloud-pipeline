@@ -362,7 +362,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 text(format("Terminate %s?", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button("TERMINATE"));
-        $(className("ant-modal-body")).waitWhile(exist, DEFAULT_TIMEOUT);
+        $(className("ant-modal-body")).waitWhile(visible, DEFAULT_TIMEOUT);
         return this;
     }
 
