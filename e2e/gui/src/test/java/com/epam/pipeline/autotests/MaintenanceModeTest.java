@@ -291,7 +291,7 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
 
     private void ensureNotificationIsAbsent(String title) {
         $(byXpath(format("//*[contains(@class, 'system-notification__container') and contains(., '%s')]",
-                        title))).shouldBe(exist);
+                        title))).shouldNot(exist);
     }
 
     private void launchTool() {
