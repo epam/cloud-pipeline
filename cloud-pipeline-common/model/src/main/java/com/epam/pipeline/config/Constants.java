@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ public final class Constants {
     public static final String X509_END_CERTIFICATE = "-----END CERTIFICATE-----";
     public static final String MODEL_PARAMETERS_FILE_NAME = "src/model_parameters.json";
     public static final String HTTP_AUTH_COOKIE = "HttpAuthorization";
+    public static final double HUNDRED_PERCENTS = 100.0;
 
     public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
 
