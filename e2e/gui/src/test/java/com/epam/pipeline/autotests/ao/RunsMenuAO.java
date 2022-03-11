@@ -462,7 +462,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     }
 
     public boolean isActiveRun(final String id) {
-        return $(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist);
+        return $(tagName("tbody")).shouldBe(visible)
+                .findAll(tagName("tr")).findBy(text(id)).is(exist);
     }
 
     public enum HeaderColumn {
