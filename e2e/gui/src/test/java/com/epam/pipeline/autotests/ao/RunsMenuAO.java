@@ -358,8 +358,8 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO terminateRun(final String runId, final String pipelineName) {
         $("#run-" + runId + "-terminate-button").shouldBe(visible).click();
-        By title = byXpath("//div[@class='ant-modal-body']//b");
-        ensure(title, text(format("Terminate %s?", pipelineName)))
+        ensure(byXpath("//div[@class='ant-modal-body']//b"),
+                text(format("Terminate %s?", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button("TERMINATE"));
         $(className("ant-modal-body")).waitWhile(exist, DEFAULT_TIMEOUT);
