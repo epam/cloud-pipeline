@@ -39,8 +39,9 @@ function getExpirationDate (date, expiration) {
 
 function getApplicationPath (application) {
   const storage = application?.storage;
-  const path = removeExtraSlash(application?.info?.source || application?.info?.path);
-  return {storage, path};
+  const path = removeExtraSlash(application?.info?.source || application?.info?.path || '');
+  const publishedPath = removeExtraSlash(application?.info?.path || '');
+  return {storage, path, publishedPath};
 }
 
 const colorLog = (color, ...opts) => {
@@ -55,10 +56,11 @@ const colorLog = (color, ...opts) => {
 const log = (...opts) => colorLog('green', ...opts);
 const logError = (...opts) => colorLog('red', ...opts);
 
-function FAValidationSession (info, sessions) {
+function FAValidationSession (info, sessions, validatePublished) {
   const {
     storage,
     path,
+    publishedPath,
     id,
     status,
     jobStatus = 'running',
@@ -71,6 +73,7 @@ function FAValidationSession (info, sessions) {
   return {
     storage,
     path,
+    publishedPath,
     id,
     status,
     initialized,
@@ -79,15 +82,18 @@ function FAValidationSession (info, sessions) {
     jobStatus,
     stopped,
     ...rest,
+    get pathToValidate() {
+      return validatePublished ? publishedPath : path;
+    },
     update: function () {
       this.timestamp = new Date().getTime();
       sessions.updateTimestamp();
     },
     validationLog (...opts) {
-      log(...[`Validating application ${this.path}:`, ...opts])
+      log(...[`Validating application ${this.pathToValidate}:`, ...opts])
     },
     validationErrorLog (...opts) {
-      logError(...[`Validating application ${this.path} error:`, ...opts])
+      logError(...[`Validating application ${this.pathToValidate} error:`, ...opts])
     },
     remove: function () {
       if (this.removed) {
@@ -110,7 +116,7 @@ function FAValidationSession (info, sessions) {
       if (!this.stopping) {
         this.validationLog('stopping job...');
         this.stopping = new Promise((resolve) => {
-          stopRun(this.id)
+          stopRun(this.id, true)
             .then((result) => {
               const {status: requestStatus, message} = result;
               if (requestStatus === 'OK') {
@@ -221,12 +227,12 @@ function FAValidationSession (info, sessions) {
       return new Promise((resolve, reject) => {
         this.validationLog(`calling job endpoint to check application...`);
         Promise.all([
-          buildApplicationPath(this.storage, this.path, sessions.settings),
+          buildApplicationPath(this.storage, this.pathToValidate, sessions.settings),
           getUserToken()
         ])
           .then(([absolutePath, token]) => {
             this.validationLog(`target_folder=${absolutePath}`);
-            return checkApplication(this.endpoint, absolutePath, token);
+            return checkApplication(this.endpoint, absolutePath, token, sessions.settings);
           })
           .then((checkResult) => {
             this.validationLog(`check result: ${JSON.stringify(checkResult)}`);
@@ -285,7 +291,7 @@ function FAValidationSession (info, sessions) {
             .catch(e => {
               this.error = e.message;
               this.status = 'error';
-              logError(`Validating application ${this.path} error: ${e.message}`);
+              logError(`Validating application ${this.pathToValidate} error: ${e.message}`);
               return this.stop();
             })
             .then(() => this.update())
@@ -326,6 +332,8 @@ function FAValidationSession (info, sessions) {
       return {
         storage: this.storage,
         path: this.path,
+        publishedPath: this.publishedPath,
+        validatePublished,
         id: this.id,
         status: this.status,
         timestamp: this.timestamp,
@@ -341,7 +349,7 @@ function Sessions (settings) {
   try {
     this.sessions = JSON.parse(localStorage.getItem(KEY))
       .filter(o => !!o.id)
-      .map(o => new FAValidationSession(o, this));
+      .map(o => new FAValidationSession(o, this, o.validatePublished));
   } catch (_) {
     this.sessions = [];
   }
@@ -402,23 +410,32 @@ function Sessions (settings) {
     clearTimeout(this.active);
     this.active = undefined;
   }
-  this.findSession = function (storage, path) {
+  this.findSession = function (storage, path, publishedPath) {
     return this.sessions.find(session => !session.removed &&
       !session.expired &&
       `${session.storage}` === `${storage}` &&
-      session.path === path
+      session.path === path &&
+      (session.publishedPath || '') === (publishedPath || '')
     );
   }
   this.getSessionForApplication = function (application) {
     if (!application) {
       return undefined;
     }
-    const {path, storage} = getApplicationPath(application);
-    return this.findSession(storage, path);
+    const {
+      path,
+      publishedPath,
+      storage
+    } = getApplicationPath(application);
+    return this.findSession(storage, path, publishedPath);
   }
-  this.validateApplication = function (application) {
-    const {path, storage} = getApplicationPath(application);
-    const currentSession = this.findSession(storage, path);
+  this.validateApplication = function (application, validatePublished = false) {
+    const {
+      path,
+      storage,
+      publishedPath
+    } = getApplicationPath(application);
+    const currentSession = this.findSession(storage, path, publishedPath);
     const removeCurrentJob = () => new Promise((resolve) => {
       if (currentSession) {
         currentSession.remove()
@@ -431,7 +448,7 @@ function Sessions (settings) {
       removeCurrentJob()
         .then(() => this.save())
         .then(() => {
-          const session = new FAValidationSession({storage, path}, this);
+          const session = new FAValidationSession({storage, path, publishedPath}, this, validatePublished);
           this.sessions.push(session);
           this.save();
           return session.startValidation(application);
@@ -477,11 +494,15 @@ export function useApplicationSession (application) {
     setValidationDate(session?.timestamp);
     setSession(session);
   }, [application, sessions, timeStamp, setValidationDate]);
-  const validate = useCallback(() => {
+  const validate = useCallback((validatePublished = false) => {
     if (sessions) {
       sessions
-        .validateApplication(application)
-        .then(setSession);
+        .validateApplication(application, validatePublished)
+        .then(o => {
+          if (o) {
+            setSession(o);
+          }
+        });
     }
   }, [application, sessions, setSession]);
   const stopValidation = useCallback(() => {

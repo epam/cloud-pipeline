@@ -12,6 +12,8 @@ import RoleCard from './components/shared/role-card';
 import './app.css';
 import PickUpMountsModal from "./components/shared/pick-up-mounts-modal";
 import getAvailableDataStorages from "./models/cloud-pipeline-api/data-storage-available";
+import ContextMenu, { Placement } from "./components/shared/context-menu";
+import Arrow, { ArrowDirection } from "./components/shared/arrow";
 
 function sortAttributes (infoFields = {}) {
   return function sort (a, b) {
@@ -424,8 +426,8 @@ export default function EditFolderApplication(
   }, [remove, setActionError]);
   const restrictedNames = useMemo(() => {
     return applications
-        .filter(app => application.id !== app.id && app.published)
-        .map(app => new RegExp(`^${app.name}$`, 'i'));
+      .filter(app => application.id !== app.id && app.published)
+      .map(app => new RegExp(`^${app.name}$`, 'i'));
   }, [application, applications]);
   const {
     name,
@@ -854,10 +856,39 @@ export default function EditFolderApplication(
                   onClick={
                     (disabled)
                       ? undefined
-                      : validate
+                      : () => validate()
                   }
                 >
                   VALIDATE
+                  {
+                    published && !disabled && (
+                      <ContextMenu
+                        className="validate-button-actions"
+                        placement={Placement.bottom}
+                        margin={{top: 15, horizontal: -22}}
+                        closeOnClick
+                        trigger={(
+                          <Arrow
+                            direction={ArrowDirection.bottom}
+                            style={{height: '100%'}}
+                          />
+                        )}
+                      >
+                        <div
+                          className="validate-button-action"
+                          onClick={() => validate(true)}
+                        >
+                          Validate published
+                        </div>
+                        <div
+                          className="validate-button-action"
+                          onClick={() => validate(false)}
+                        >
+                          Validate source
+                        </div>
+                      </ContextMenu>
+                    )
+                  }
                 </div>
               )
             }

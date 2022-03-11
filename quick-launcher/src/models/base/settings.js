@@ -120,7 +120,10 @@ const defaultSettings = {
     parameters: {
       CP_CAP_SHINY_VALIDATOR_MODE: true
     },
-    pollingIntervalMS: 2500
+    pollingIntervalMS: 2500,
+    endpointPollingIntervalMS: 3000,
+    endpointPollingMaxRequests: 5,
+    endpointPollingErrorCodes: [404, 502]
   },
   anonymousAccess: {
     role: 'ROLE_ANONYMOUS_USER',

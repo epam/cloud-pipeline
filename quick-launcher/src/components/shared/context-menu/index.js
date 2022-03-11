@@ -31,8 +31,9 @@ function ContextMenuOverlay({children}) {
   }, [setVisible]);
   const contextValue = useMemo(() => ({
     visible,
-    open
-  }), [open, visible]);
+    open,
+    close,
+  }), [open, close, visible]);
   return (
     <ContextMenuOverlayContext.Provider value={contextValue}>
       {
@@ -71,14 +72,16 @@ function ContextMenu(
     onVisibilityChange,
     nested = false,
     visibilityControlled = false,
-    margin = 5
+    margin = 5,
+    closeOnClick = false
   }
 ) {
   const container = document.getElementById('context-menu-overlay');
   const [updatePosition, setUpdatePosition] = useState(0);
   const {
     visible: overlayVisible = false,
-    open: openOverlay = (() => {})
+    open: openOverlay = (() => {}),
+    close: closeOverlay
   } = useContext(ContextMenuOverlayContext);
   const triggerRef = useRef();
   const menuRef = useRef();
@@ -147,12 +150,6 @@ function ContextMenu(
     margin,
     updatePosition
   ]);
-  const prevent = useCallback((event) => {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }, []);
   const onTriggerClick = useCallback((event) => {
     if (event) {
       event.preventDefault();
@@ -172,6 +169,15 @@ function ContextMenu(
     }
     setIsVisible(false);
   }, [setIsVisible, nested]);
+  const prevent = useCallback((event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (closeOnClick && closeOverlay) {
+      closeOverlay();
+    }
+  }, [closeOnClick, closeOverlay]);
   useEffect(() => {
     if (!overlayVisible && hide) {
       hide();

@@ -93,9 +93,13 @@ function getPositionForAnchor(triggerBounds, menuBounds, anchor, margin = 5) {
     width: menuWidth = 0,
     height: menuHeight = 0
   } = menuBounds;
+  const topMargin = typeof margin === 'object' ? (margin.top || 0) : margin;
+  const leftMargin = typeof margin === 'object' ? (margin.left || 0) : margin;
+  const vOffset = typeof margin === 'object' ? (margin.vertical || 0) : 0;
+  const hOffset = typeof margin === 'object' ? (margin.horizontal || 0) : 0;
   return {
-    top: interpolatePosition(top, top + height, y) + dy * menuHeight + vMarginDirection * margin,
-    left: interpolatePosition(left, left + width, x) + dx * menuWidth + hMarginDirection * margin,
+    top: interpolatePosition(top, top + height, y) + dy * menuHeight + vMarginDirection * topMargin + vOffset,
+    left: interpolatePosition(left, left + width, x) + dx * menuWidth + hMarginDirection * leftMargin + hOffset,
     width: menuWidth,
     height: menuHeight
   }

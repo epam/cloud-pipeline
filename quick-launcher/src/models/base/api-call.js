@@ -9,7 +9,15 @@ function removeTrailingSlash (url) {
   return url.substring(0, url.length - 1);
 }
 
-export {combineUrl};
+class APICallError extends Error {
+  constructor(response) {
+    super(`Response: ${response.status} ${response.statusText}`);
+    this.status = response.status;
+    this.statusText = response.statusText;
+  }
+}
+
+export {combineUrl, APICallError};
 export default function apiCall (uri, query = {}, method = 'GET', body = undefined, options = {}) {
   return new Promise((resolve, reject) => {
     getSettings()
@@ -36,8 +44,8 @@ export default function apiCall (uri, query = {}, method = 'GET', body = undefin
             }
           )
             .then(response => {
-              const codeFamily = Math.ceil(response.status / 100);
-              if (codeFamily === 4 || codeFamily === 5) {
+              const codeFamily = Math.floor(response.status / 100);
+              if ([3, 4, 5].includes(codeFamily)) {
                 if (response.status === 401 && settings.redirectOnAPIUnauthenticated) {
                   const authEndpoint = combineUrl(
                     settings.api,
@@ -46,7 +54,7 @@ export default function apiCall (uri, query = {}, method = 'GET', body = undefin
                   console.log(`"${uri}" got 401 error. Redirecting to ${authEndpoint}`);
                   window.location = authEndpoint;
                 }
-                reject(new Error(`Response: ${response.status} ${response.statusText}`));
+                reject(new APICallError(response));
               } else {
                 if (isBlob) {
                   response

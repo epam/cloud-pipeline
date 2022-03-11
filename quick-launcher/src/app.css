@@ -330,6 +330,7 @@
   background-color: rgba(255, 255, 255, 0.8);
   border-color: white;
   color: #333;
+  display: inline-flex;
 }
 
 .edit-application-button.publish-button:not(:last-child) {
@@ -340,6 +341,26 @@
   background-color: rgba(255, 255, 255, 1);
   border-color: white;
   color: #222;
+}
+
+.validate-button-actions {
+  background-color: #fafafa;
+  border-color: white;
+  color: #444;
+}
+
+.validate-button-actions .validate-button-action {
+  padding: 5px;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.validate-button-actions .validate-button-action:hover {
+  color: black;
+}
+
+.validate-button-actions .validate-button-action:not(:last-child) {
+  border-bottom: 1px solid #ccc;
 }
 
 .edit-application-button.remove-button {
