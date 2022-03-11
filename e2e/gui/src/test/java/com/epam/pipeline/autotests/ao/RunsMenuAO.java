@@ -41,6 +41,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
 import static java.lang.String.format;
@@ -361,6 +362,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         ensure(title, text(format("Terminate %s?", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button("TERMINATE"));
+        $(className("ant-modal-body")).waitWhile(exist, DEFAULT_TIMEOUT);
         return this;
     }
 
