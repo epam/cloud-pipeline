@@ -25,6 +25,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.time.DayOfWeek;
@@ -35,6 +36,7 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.open;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.PAUSED;
 import static com.epam.pipeline.autotests.ao.Primitive.AUTOSCALED;
@@ -90,6 +92,11 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToPreferences()
                 .switchToCluster()
                 .getLinePreference("default.edge.region");
+    }
+
+    @BeforeMethod
+    void openApplication() {
+        open(C.ROOT_ADDRESS);
     }
 
     @AfterClass(alwaysRun = true)
