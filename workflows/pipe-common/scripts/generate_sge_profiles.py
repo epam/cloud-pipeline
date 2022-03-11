@@ -33,7 +33,8 @@ def generate_sge_profiles():
         profile['CP_CAP_SGE_QUEUE_NAME'] = unique_profile_queues[profile_indexes.index(profile_index)]
         profile['CP_CAP_SGE_HOSTLIST_NAME'] = '@{}'.format(profile['CP_CAP_SGE_QUEUE_NAME'])
 
-    common_profile['CP_CAP_SGE_STATIC'] = 'true'
+    common_profile['CP_CAP_SGE_QUEUE_STATIC'] = 'true'
+    common_profile['CP_CAP_SGE_QUEUE_DEFAULT'] = 'true'
     common_profile['CP_CAP_AUTOSCALE_TASK'] = 'GridEngineAutoscaling'
 
     logging.info('Generating sge profile scripts...')
