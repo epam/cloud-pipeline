@@ -150,7 +150,6 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName, final String port) {
-        sleep(3, SECONDS);
         expandGroup(ipAddressOrServerName, port);
         final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         route
@@ -161,7 +160,6 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO expandGroup(final String serverName, final String port) {
-        sleep(3, SECONDS);
         final SelenideElement routeRecord = $(groupRouteByName(serverName, port));
         if (routeRecord.exists() && routeRecord.find(By.className("ant-table-row-expand-icon"))
                 .has(cssClass("ant-table-row-collapsed"))) {
@@ -357,7 +355,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
          }
 
          public NATAddRouteAO addMorePorts(final String port, int portNumber) {
-             context().findAll(By.className("cp-nat-route-port-control")).get(portNumber-1)
+             context().findAll(By.className("cp-nat-route-port-control")).get(portNumber - 1)
                      .find(".ant-form-item-control")
                      .find("input")
                      .shouldBe(visible)
