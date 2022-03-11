@@ -19,7 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
-import com.epam.pipeline.autotests.utils.PipelineSelectors;
+import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -149,8 +149,7 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO checkButtonTooltip(Primitive button, String message) {
         context().find(byXpath(format(".//span[.='%s']", button.name()))).hover();
-        $(visible(byClassName("ant-popover-inner-content")))
-                .shouldHave(text(message));
+        $(visible(byClassName("ant-popover-inner-content"))).shouldHave(text(message));
         return this;
     }
 
@@ -188,7 +187,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO ensureButtonDisabled(Primitive button) {
         context().find(byXpath(format(".//span[.='%s']", button.name())))
                 .shouldBe(visible)
-                .shouldBe(disabled);
+                .shouldBe(Conditions.disabled);
         return this;
     }
 
@@ -481,13 +480,6 @@ public class LogAO implements AccessObject<LogAO> {
             label
         ));
     }
-
-    public static Condition disabled = new Condition("be disable type") {
-        @Override
-        public boolean apply(final WebElement element) {
-            return cssClass("cp-disabled").apply(element);
-        }
-    };
 
     public static Condition containsMessage(final String text) {
         Objects.requireNonNull(text);

@@ -50,7 +50,6 @@ import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.AssertJUnit.assertTrue;
 
 public class HotNodePoolsAO  implements AccessObject<ClusterMenuAO> {
 

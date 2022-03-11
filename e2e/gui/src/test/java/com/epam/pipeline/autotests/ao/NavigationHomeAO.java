@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -126,7 +127,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     public NavigationHomeAO checkPauseLinkIsDisabledOnActiveRunsPanel(String runId) {
-        activeRunPauseLink(runId).parent().parent().shouldHave(Condition.cssClass("cp-disabled"));
+        activeRunPauseLink(runId).parent().parent().shouldHave(Conditions.disabled);
         return this;
     }
 

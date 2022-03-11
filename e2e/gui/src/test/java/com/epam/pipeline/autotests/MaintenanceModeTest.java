@@ -102,8 +102,11 @@ public class MaintenanceModeTest extends AbstractSeveralPipelineRunningTest impl
                 .switchToSystem()
                 .disableSystemMaintenanceMode()
                 .saveIfNeeded();
-        runsMenu()
-                .terminateRun(run2ID, format("pipeline-%s", run2ID));
+        final RunsMenuAO runsMenuAO = runsMenu();
+        if (runsMenuAO.isActiveRun(run2ID)) {
+            runsMenuAO
+                    .terminateRun(run2ID, format("pipeline-%s", run2ID));
+        }
         clusterMenu()
                 .switchToHotNodePool()
                 .searchForNodeEntry(poolName)

@@ -22,6 +22,7 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
@@ -309,7 +310,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO stopRunIfPresent(String id) {
         activeRuns().viewAvailableActiveRuns();
         sleep(10, SECONDS);
-        if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
+        if (isActiveRun(id)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);
         }
@@ -358,8 +359,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO terminateRun(final String runId, final String pipelineName) {
         $("#run-" + runId + "-terminate-button").shouldBe(visible).click();
-        ensure(byXpath("//div[@class='ant-modal-body']//b"),
-                text(format("Terminate %s?", pipelineName)))
+        ensure(byXpath("//div[@class='ant-modal-body']//b"), text(format("Terminate %s?", pipelineName)))
                 .sleep(1, SECONDS)
                 .click(button("TERMINATE"));
         $(className("ant-modal-body")).waitWhile(visible, DEFAULT_TIMEOUT);
@@ -368,7 +368,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
 
     public RunsMenuAO ensurePauseButtonDisabled(String runID) {
         context().find(byId(format("run-%s-pause-button", runID)))
-                .shouldBe(LogAO.disabled);
+                .shouldBe(Conditions.disabled);
         return this;
     }
 
@@ -459,6 +459,10 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         $(byClassName("run-table__filter-popover-container"))
                 .$$("input").findBy(attribute("placeholder", "Filter"))
                 .setValue(value);
+    }
+
+    public boolean isActiveRun(final String id) {
+        return $(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist);
     }
 
     public enum HeaderColumn {
