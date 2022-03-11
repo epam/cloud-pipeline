@@ -29,6 +29,7 @@ import requests
 import sys
 import time
 from datetime import datetime, timedelta
+from xml.etree import ElementTree
 
 from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 
@@ -196,22 +197,19 @@ class GridEngineJob:
 
 class GridEngine:
     _DELETE_HOST = 'qconf -de %s'
-    _SHOW_JOB_PARALLEL_ENVIRONMENT = 'qstat -j %s | grep "^parallel environment" | awk \'{print $3}\''
-    _SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS = 'qstat -j %s | grep "^parallel environment" | awk \'{print $5}\''
     _SHOW_PE_ALLOCATION_RULE = 'qconf -sp %s | grep "^allocation_rule" | awk \'{print $2}\''
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
-    _QSTAT = 'qstat -f -u "*" -q %s'
-    _SHOW_EXECUTION_HOSTS_SLOTS = 'qstat -f -u "*" | grep %s'
-    _QSTAT_DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
+    _QSTAT = 'qstat -u "*" -r -f -xml'
+    _QHOST = 'qhost -q -xml'
+    _QSTAT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _QMOD_DISABLE = 'qmod -d %s@%s'
     _QMOD_ENABLE = 'qmod -e %s@%s'
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
-    _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
     def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores, queue, hostlist):
@@ -220,71 +218,68 @@ class GridEngine:
         self.max_cluster_cores = max_cluster_cores
         self.queue = queue
         self.hostlist = hostlist
+        self.tmp_queue_name_attribute = 'tmp_queue_name'
 
     def get_jobs(self):
-        """
-        Executes command and parse its output. The expected output is something like the following:
-
-            queuename                      qtype resv/used/tot. load_avg arch          states
-            ---------------------------------------------------------------------------------
-            main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
-                 20 0.50000 sleep.sh   root         r     11/27/2019 14:48:59     2
-            ---------------------------------------------------------------------------------
-            main.q@pipeline-18031          BIP   0/2/2          0.46     lx-amd64
-                 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
-            ############################################################################
-             - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS
-            ############################################################################
-                 21 0.50000 sleep.sh   root         qw    11/27/2019 14:48:58     2
-
-        :return: Grid engine jobs list.
-        """
         try:
-            lines = self.cmd_executor.execute_to_lines(GridEngine._QSTAT % self.queue)
+            output = self.cmd_executor.execute(GridEngine._QSTAT)
         except ExecutionError:
             Logger.warn('Grid engine jobs listing has failed.')
             return []
-        if len(lines) == 0:
-            return []
         jobs = {}
-        current_host = None
-        for line in lines:
-            tokens = line.strip().split()
-            # host line like: main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
-            if tokens[0].startswith(self.queue):
-                current_host = self._parse_host(tokens[0])
-            # job line: 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
-            elif tokens[0].isdigit():
-                root_job_id = int(tokens[0])
-                job_array = self._parse_array(tokens[8] if len(tokens) >= 9 else None)
-                job_ids = [str(root_job_id) + "." + str(sub_id) for sub_id in job_array] if job_array else [str(root_job_id)]
-                for job_id in job_ids:
-                    if job_id in jobs:
-                        job = jobs[job_id]
-                        job.hosts.append(current_host)
-                    else:
-                        pe = self.get_job_parallel_environment(job_id)
-                        job_slots = self.get_job_slots(job_id)
-                        jobs[job_id] = GridEngineJob(
-                            id=job_id,
-                            root_id=root_job_id,
-                            name=tokens[2],
-                            user=tokens[3],
-                            state=GridEngineJobState.from_letter_code(tokens[4]),
-                            datetime=self._parse_date("%s %s" % (tokens[5], tokens[6])),
-                            hosts=[current_host] if current_host else [],
-                            slots=job_slots,
-                            pe=pe
-                        )
-            else:
-                current_host = None
+        root = ElementTree.fromstring(output)
+        running_jobs = []
+        queue_info = root.find('queue_info')
+        for queue_list in queue_info.findall('Queue-List'):
+            queue_name = queue_list.findtext('name')
+            queue_running_jobs = queue_list.findall('job_list')
+            for job_list in queue_running_jobs:
+                job_queue_name = ElementTree.SubElement(job_list, self.tmp_queue_name_attribute)
+                job_queue_name.text = queue_name
+            running_jobs.extend(queue_running_jobs)
+        job_info = root.find('job_info')
+        pending_jobs = job_info.findall('job_list')
+        for job_list in running_jobs + pending_jobs:
+            job_requested_queue = job_list.findtext('hard_req_queue')
+            job_actual_queue, job_host = self._parse_queue_and_host(job_list.findtext(self.tmp_queue_name_attribute))
+            if job_requested_queue and job_requested_queue != self.queue \
+                    or job_actual_queue and job_actual_queue != self.queue:
+                continue
+            root_job_id = job_list.findtext('JB_job_number')
+            job_tasks = self._parse_array(job_list.findtext('tasks'))
+            job_ids = ['{}.{}'.format(root_job_id, job_task) for job_task in job_tasks] or [root_job_id]
+            job_name = job_list.findtext('JB_name')
+            job_user = job_list.findtext('JB_owner')
+            job_state = GridEngineJobState.from_letter_code(job_list.findtext('state'))
+            job_datetime = self._parse_date(job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
+            job_hosts = [job_host] if job_host else []
+            requested_pe = job_list.find('requested_pe')
+            job_slots = int(requested_pe.text if requested_pe is not None else '1')
+            job_pe = requested_pe.get('name') if requested_pe is not None else 'local'
+            for job_id in job_ids:
+                if job_id in jobs:
+                    job = jobs[job_id]
+                    if job_host:
+                        job.hosts.append(job_host)
+                else:
+                    jobs[job_id] = GridEngineJob(
+                        id=job_id,
+                        root_id=root_job_id,
+                        name=job_name,
+                        user=job_user,
+                        state=job_state,
+                        datetime=job_datetime,
+                        hosts=job_hosts,
+                        slots=job_slots,
+                        pe=job_pe
+                    )
         return jobs.values()
 
     def _parse_date(self, date):
         return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
 
-    def _parse_host(self, queue_and_host):
-        return queue_and_host.split('@')[1] if queue_and_host else None
+    def _parse_queue_and_host(self, queue_and_host):
+        return queue_and_host.split('@')[:2] if queue_and_host else (None, None)
 
     def _parse_array(self, array_jobs):
         result = []
@@ -349,22 +344,6 @@ class GridEngine:
         exec_result = self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe)
         return AllocationRule(exec_result.strip()) if exec_result else AllocationRule.pe_slots()
 
-    def get_job_parallel_environment(self, job_id):
-        """
-        Returns PE of the specific job.
-
-        :param job_id: id of a SGE job
-        """
-        return str(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT % job_id) or 'local').strip()
-
-    def get_job_slots(self, job_id):
-        """
-        Returns number of slots of the specific job.
-
-        :param job_id: id of a SGE job
-        """
-        return int(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS % job_id) or 1)
-
     def delete_host(self, host, skip_on_failure=False):
         """
         Completely deletes host from GE:
@@ -406,11 +385,16 @@ class GridEngine:
 
     def _get_available_slots(self):
         available_slots = 0
-        # there should be lines like:  main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
-        # and we are interested in 0/2/2 - slots status
-        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOSTS_SLOTS % self.queue):
-            rsrv_used_total = line.strip().split()[2].split("/")
-            available_slots += int(rsrv_used_total[2]) - int(rsrv_used_total[1]) - int(rsrv_used_total[0])
+        output = self.cmd_executor.execute(GridEngine._QHOST)
+        root = ElementTree.fromstring(output)
+        for host in root.findall('host'):
+            for queue in host.findall('queue[@name=\'%s\']' % self.queue):
+                host_used = int(queue.find('queuevalue[@name=\'slots_used\']').text or '0')
+                host_resv = int(queue.find('queuevalue[@name=\'slots_resv\']').text or '0')
+                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
+                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                if all(host_state not in self._BAD_HOST_STATES for host_state in host_states):
+                    available_slots += max(host_slots - host_used - host_resv, 0)
         return available_slots
 
     def get_host_resource(self, host):
@@ -476,13 +460,19 @@ class GridEngine:
         """
         try:
             self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host)
-            host_states = self.cmd_executor.execute(GridEngine._SHOW_HOST_STATES % (self.queue, host)).strip()
-            for host_state in host_states:
-                if host_state in self._BAD_HOST_STATES:
-                    Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, host_states))
-                    return False
-            if host_states:
-                Logger.warn('Execution host %s GE state is not empty: %s.' % (host, host_states))
+            output = self.cmd_executor.execute(GridEngine._QHOST)
+            root = ElementTree.fromstring(output)
+            for host_object in root.findall('host[@name=\'%s\']' % host):
+                for queue in host_object.findall('queue[@name=\'%s\']' % self.queue):
+                    host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                    for host_state in host_states:
+                        if host_state in self._BAD_HOST_STATES:
+                            Logger.warn('Execution host %s GE state is %s which makes host invalid.'
+                                        % (host, host_state))
+                            return False
+                    if host_states:
+                        Logger.warn('Execution host %s GE state is not empty but is considered valid: %s.'
+                                    % (host, host_states))
             return True
         except RuntimeError as e:
             Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e))
