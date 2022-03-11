@@ -212,12 +212,13 @@ class GridEngine:
     _FORCE_KILL_JOBS = 'qdel -f %s'
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
-    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores, queue, hostlist):
+    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores, queue, hostlist, queue_default):
         self.cmd_executor = cmd_executor
         self.max_instance_cores = max_instance_cores
         self.max_cluster_cores = max_cluster_cores
         self.queue = queue
         self.hostlist = hostlist
+        self.queue_default = queue_default
         self.tmp_queue_name_attribute = 'tmp_queue_name'
 
     def get_jobs(self):
@@ -244,6 +245,12 @@ class GridEngine:
             job_actual_queue, job_host = self._parse_queue_and_host(job_list.findtext(self.tmp_queue_name_attribute))
             if job_requested_queue and job_requested_queue != self.queue \
                     or job_actual_queue and job_actual_queue != self.queue:
+                # filter out a job with actual/requested queue specified
+                # if a configured queue is different from the job's one
+                continue
+            if not job_requested_queue and not job_actual_queue and not self.queue_default:
+                # filter out a job without actual/requested queue specified
+                # if a configured queue is not a default queue
                 continue
             root_job_id = job_list.findtext('JB_job_number')
             job_tasks = self._parse_array(job_list.findtext('tasks'))
@@ -911,7 +918,7 @@ class GridEngineScaleDownHandler:
         self._remove_host_from_grid_engine_configuration(child_host)
         self._stop_run(child_host)
         self._remove_host_from_hosts(child_host)
-        Logger.info('Additional worker %s has been stopped.' % child_host, crucial=True)
+        Logger.info('Additional worker %s has been scaled down.' % child_host, crucial=True)
         return True
 
     def _remove_host_from_grid_engine_configuration(self, host):
@@ -1775,7 +1782,8 @@ if __name__ == '__main__':
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceProvider.get_family_from_type(cloud_provider, instance_type))
-    queue_static = os.getenv('CP_CAP_SGE_STATIC', 'false').strip().lower() == 'true'
+    queue_static = os.getenv('CP_CAP_SGE_QUEUE_STATIC', 'false').strip().lower() == 'true'
+    queue_default = os.getenv('CP_CAP_SGE_QUEUE_DEFAULT', 'false').strip().lower() == 'true'
     queue = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
     hostlist = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
     log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
@@ -1835,6 +1843,7 @@ if __name__ == '__main__':
                 'Max cluster cores: {max_cluster_cores}\n'
                 'Max additional hosts: {additional_hosts}\n'
                 'Static Grid Engine queue: {queue_static}\n'
+                'Default Grid Engine queue: {queue_default}\n'
                 'Grid Engine queue: {queue}\n'
                 'Grid Engine hostlist: {hostlist}\n'
                 'Hybrid autoscaling: {hybrid_autoscale}\n'
@@ -1864,6 +1873,7 @@ if __name__ == '__main__':
                         max_cluster_cores=max_cluster_cores,
                         additional_hosts=additional_hosts,
                         queue_static=queue_static,
+                        queue_default=queue_default,
                         queue=queue,
                         hostlist=hostlist,
                         hybrid_autoscale=hybrid_autoscale,
@@ -1878,7 +1888,8 @@ if __name__ == '__main__':
     cmd_executor = CmdExecutor()
     scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
-                             max_cluster_cores=max_cluster_cores, queue=queue, hostlist=hostlist)
+                             max_cluster_cores=max_cluster_cores, queue=queue, hostlist=hostlist,
+                             queue_default=queue_default)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
                                          storage_file=os.path.join(working_directory, '.autoscaler.%s.storage' % queue),
                                          clock=scaling_operations_clock)
