@@ -50,7 +50,7 @@
   flex: 1;
 }
 
-.hidden-details-button {
+.hidden-details-actions {
   visibility: hidden;
   margin: 5px 10px 5px 5px;
 }
@@ -95,6 +95,7 @@
   z-index: 1;
 }
 
+.details-actions .action,
 .configuration-actions .action {
   margin: 5px;
   line-height: 1;
@@ -126,7 +127,7 @@
   min-width: 200px;
 }
 
-.details-info-btn {
+.details-actions {
   position: absolute;
   top: 10px;
   left: 10px;

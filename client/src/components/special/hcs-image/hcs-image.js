@@ -49,13 +49,15 @@ class HcsImage extends React.PureComponent {
     fields: [],
     wellId: undefined,
     imageId: undefined,
+    wellImageId: undefined,
     plateWidth: 0,
     plateHeight: 0,
     wellWidth: 0,
     wellHeight: 0,
     sequences: [],
     showDetails: false,
-    showConfiguration: false
+    showConfiguration: false,
+    showEntireWell: false
   };
 
   @observable hcsInfo;
@@ -88,6 +90,18 @@ class HcsImage extends React.PureComponent {
       return [];
     }
     return (this.hcsInfo.sequences || []).map(s => s);
+  }
+
+  get wellViewAvailable () {
+    const {wellImageId, sequenceId} = this.state;
+    if (sequenceId) {
+      const sequence = this.sequences.find(s => s.id === sequenceId);
+      return sequence &&
+        sequence.overviewOmeTiff &&
+        sequence.overviewOffsetsJson &&
+        wellImageId;
+    }
+    return false;
   }
 
   prepare = () => {
@@ -221,7 +235,8 @@ class HcsImage extends React.PureComponent {
                   timePointId: timePointId === undefined
                     ? defaultTimePointId
                     : timePointId,
-                  wells
+                  wells,
+                  showEntireWell: false
                 }, () => {
                   const firstWell = wells[0];
                   if (firstWell) {
@@ -260,6 +275,8 @@ class HcsImage extends React.PureComponent {
             wellWidth: well.width,
             wellHeight: well.height,
             imageId: undefined,
+            wellImageId: well.wellImageId,
+            showEntireWell: false,
             fields: images
           }, () => this.changeWellImage(firstImage));
         }
@@ -284,7 +301,8 @@ class HcsImage extends React.PureComponent {
           if (image && image.id !== currentImageId) {
             // todo: re-fetch signed urls here?
             this.setState({
-              imageId: image.id
+              imageId: image.id,
+              showEntireWell: false
             }, () => this.loadImage());
           }
         }
@@ -296,7 +314,9 @@ class HcsImage extends React.PureComponent {
     const {
       sequenceId,
       imageId,
-      timePointId
+      timePointId,
+      wellImageId,
+      showEntireWell
     } = this.state;
     if (this.hcsImageViewer && this.hcsInfo) {
       const z = this.hcsViewerState
@@ -305,13 +325,19 @@ class HcsImage extends React.PureComponent {
       const {sequences = []} = this.hcsInfo;
       const sequence = sequences.find(s => s.id === sequenceId);
       if (sequence && sequence.omeTiff) {
-        const url = sequence.omeTiff;
-        const offsetsJsonUrl = sequence.offsetsJson;
+        let url = sequence.omeTiff;
+        let offsetsJsonUrl = sequence.offsetsJson;
+        let id = imageId;
+        if (this.wellViewAvailable && showEntireWell) {
+          url = sequence.overviewOmeTiff;
+          offsetsJsonUrl = sequence.overviewOffsetsJson;
+          id = wellImageId;
+        }
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
               this.hcsImageViewer.setImage({
-                ID: imageId,
+                ID: id,
                 imageTimePosition: timePointId,
                 imageZPosition: z
               });
@@ -348,24 +374,40 @@ class HcsImage extends React.PureComponent {
     }
   };
 
-  renderDetailsInfo = (className = styles.detailsInfoBtn, handleClick = true) => {
+  renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {
     const {
       children,
       detailsButtonTitle = 'Show details'
     } = this.props;
-    if (children) {
-      return (
-        <Button
-          size="small"
-          className={className}
-          onClick={handleClick ? this.showDetails : undefined}
-        >
-          {detailsButtonTitle}
-        </Button>
-      );
-    } else {
-      return null;
-    }
+    const {showEntireWell} = this.state;
+    return (
+      <div
+        className={className}
+      >
+        {children ? (
+          <Button
+            className={styles.action}
+            size="small"
+            onClick={handleClick ? this.showDetails : undefined}
+          >
+            {detailsButtonTitle}
+          </Button>
+        ) : null}
+        {this.wellViewAvailable && (
+          <Button
+            className={styles.action}
+            size="small"
+            onClick={handleClick ? this.toggleWellView : undefined}
+          >
+            Well view
+            {showEntireWell
+              ? <Icon type="eye" />
+              : <Icon type="eye-o" />
+            }
+          </Button>
+        )}
+      </div>
+    );
   }
 
   showDetails = () => {
@@ -391,6 +433,13 @@ class HcsImage extends React.PureComponent {
       showConfiguration: false
     });
   }
+
+  toggleWellView = () => {
+    const {showEntireWell} = this.state;
+    this.setState({showEntireWell: !showEntireWell}, () => {
+      this.loadImage();
+    });
+  };
 
   showDetailsPanel = () => {
     const {
@@ -489,7 +538,8 @@ class HcsImage extends React.PureComponent {
       plateHeight,
       wellWidth,
       wellHeight,
-      showDetails
+      showDetails,
+      showEntireWell
     } = this.state;
     const pending = hcsImagePending ||
       sequencePending ||
@@ -534,8 +584,8 @@ class HcsImage extends React.PureComponent {
                   className={styles.alertContainer}
                 >
                   {
-                    this.renderDetailsInfo(
-                      styles.hiddenDetailsButton,
+                    this.renderDetailsActions(
+                      styles.hiddenDetailsActions,
                       false
                     )
                   }
@@ -553,7 +603,7 @@ class HcsImage extends React.PureComponent {
             {
               showDetails
                 ? this.showDetailsPanel()
-                : this.renderDetailsInfo()
+                : this.renderDetailsActions()
             }
             <div
               className={
@@ -603,6 +653,7 @@ class HcsImage extends React.PureComponent {
                   gridRadius={selectedWell && selectedWell.radius ? selectedWell.radius : undefined}
                   flipVertical
                   showLegend={false}
+                  entireWellView={showEntireWell}
                 />
                 <HcsSequenceSelector
                   sequences={this.sequences}

@@ -98,7 +98,8 @@ class HcsCellSelector extends React.Component {
     } else if (
       prevProps.selectedCell !== this.props.selectedCell ||
       prevProps.selectedId !== this.props.selectedId ||
-      prevProps.cells !== this.props.cells
+      prevProps.cells !== this.props.cells ||
+      prevProps.entireWellView !== this.props.entireWellView
     ) {
       this.draw();
     }
@@ -327,7 +328,8 @@ class HcsCellSelector extends React.Component {
         gridShape = Shapes.rect,
         gridRadius = 0,
         flipVertical,
-        flipHorizontal
+        flipHorizontal,
+        entireWellView
       } = this.props;
       let {
         cellShape = Shapes.circle
@@ -335,7 +337,12 @@ class HcsCellSelector extends React.Component {
       if (cellSize < 15) {
         cellShape = Shapes.rect;
       }
-      const selected = selectedCell || cells.find(o => o.id === selectedId);
+      let selected = [];
+      if (entireWellView) {
+        selected = cells;
+      } else {
+        selected = [selectedCell || cells.find(o => o.id === selectedId)];
+      }
       if (height && width && cellSize) {
         if (this.drawHandle) {
           cancelAnimationFrame(this.drawHandle);
@@ -387,7 +394,7 @@ class HcsCellSelector extends React.Component {
               y,
               x
             } = dataCell;
-            if (selected && selected.x === x && selected.y === y) {
+            if (selected.some(cell => cell.x === x && cell.y === y)) {
               continue;
             }
             context.beginPath();
@@ -397,11 +404,11 @@ class HcsCellSelector extends React.Component {
           context.restore();
           context.save();
           context.fillStyle = selectedColor;
-          if (selected) {
+          for (let selectedCell of selected) {
             const {
               x,
               y
-            } = selected;
+            } = selectedCell;
             context.beginPath();
             renderCell(x, y);
             context.fill();
@@ -666,13 +673,15 @@ HcsCellSelector.propTypes = {
   flipVertical: PropTypes.bool,
   flipHorizontal: PropTypes.bool,
   title: PropTypes.string,
-  showLegend: PropTypes.bool
+  showLegend: PropTypes.bool,
+  entireWellView: PropTypes.bool
 };
 
 HcsCellSelector.defaultProps = {
   cellShape: Shapes.circle,
   gridShape: Shapes.rect,
-  showLegend: true
+  showLegend: true,
+  entireWellView: false
 };
 
 HcsCellSelector.Shapes = Shapes;
