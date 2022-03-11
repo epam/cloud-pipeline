@@ -51,6 +51,7 @@ class VSHistory extends React.Component {
     filters: undefined,
     error: undefined,
     commits: [],
+    lastCommitHash: undefined,
     pending: false,
     hasMorePages: false,
     filtersVisible: false
@@ -92,6 +93,7 @@ class VSHistory extends React.Component {
 
   componentDidMount () {
     this.fetchCommits();
+    this.fetchLastCommit();
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
@@ -102,6 +104,14 @@ class VSHistory extends React.Component {
       prevProps.revision !== this.props.revision
     ) {
       this.clearFiltersAndFetchCommits();
+    }
+    if (
+      prevProps.path !== this.props.path ||
+      prevProps.versionedStorageId !== this.props.versionedStorageId ||
+      prevProps.isFolder !== this.props.isFolder ||
+      prevProps.revision !== this.props.revision
+    ) {
+      this.fetchLastCommit();
     }
   }
 
@@ -204,11 +214,52 @@ class VSHistory extends React.Component {
     });
   };
 
+  fetchLastCommit = () => {
+    const {
+      versionedStorageId
+    } = this.props;
+    if (!versionedStorageId) {
+      return;
+    }
+    this.setState({
+      lastCommitHash: undefined
+    }, () => {
+      const request = new LoadVSCommits(
+        versionedStorageId,
+        0,
+        1
+      );
+      const filtersPayload = {
+        path: this.path
+      };
+      request
+        .send(filtersPayload)
+        .then(() => {
+          if (request.loaded) {
+            const {
+              listing: commits = []
+            } = request.value;
+            const [lastCommit] = commits;
+            const {
+              commit
+            } = lastCommit || {};
+            this.setState({
+              lastCommitHash: commit
+            });
+          }
+        })
+        .catch(() => {});
+    });
+  };
+
   render () {
     const {
       className,
       style,
-      versionedStorageId
+      versionedStorageId,
+      isFolder,
+      onRefresh,
+      readOnly
     } = this.props;
     if (!versionedStorageId) {
       return null;
@@ -218,7 +269,8 @@ class VSHistory extends React.Component {
       pending,
       error,
       filtersVisible,
-      filters
+      filters,
+      lastCommitHash
     } = this.state;
     return (
       <div
@@ -287,9 +339,13 @@ class VSHistory extends React.Component {
               <CommitCard
                 key={commit.commit}
                 commit={commit}
+                isLatestFileCommit={lastCommitHash && commit.commit === lastCommitHash}
                 disabled={pending}
                 versionedStorageId={versionedStorageId}
+                readOnly={readOnly}
                 path={this.path}
+                isFile={!isFolder}
+                onRefresh={onRefresh}
               />
             ))
           }
@@ -325,7 +381,9 @@ VSHistory.propTypes = {
   revision: PropTypes.string,
   path: PropTypes.string,
   isFolder: PropTypes.bool,
-  style: PropTypes.object
+  style: PropTypes.object,
+  onRefresh: PropTypes.func,
+  readOnly: PropTypes.bool
 };
 
 export default VSHistory;

@@ -305,5 +305,6 @@ public enum Primitive {
     ALLOW_MOUNT,
     SERVICE_NAME,
     CONFIGURE_DNS,
+    SHOW_USERS,
     PROTOCOL
 }

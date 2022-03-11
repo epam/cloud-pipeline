@@ -105,6 +105,7 @@ function buildZPositionsArray (max, zSize, zUnit) {
 }
 
 class ViewerState {
+  @observable loader;
   @observable use3D = false;
   @observable useLens = false;
   @observable useColorMap = false;
@@ -123,6 +124,7 @@ class ViewerState {
    * @type {ChannelState[]}
    */
   @observable channels = [];
+  @observable channelsLocked = false;
   @observable imageZPosition = 0;
   @observable availableZPositions = [];
 
@@ -153,9 +155,11 @@ class ViewerState {
   @action
   onViewerStateChange = (viewer, newState) => {
     const {
+      loader,
       identifiers = [],
       channels = [],
       channelsVisibility = [],
+      lockChannels,
       globalSelection = {},
       globalDimensions = [],
       pixelValues = [],
@@ -176,6 +180,7 @@ class ViewerState {
       metadata
     } = newState || {};
     this.pending = pending;
+    this.loader = loader;
     if (pending) {
       return;
     }
@@ -211,6 +216,9 @@ class ViewerState {
      * updated channels options
      * @type {ChannelOptions[]}
      */
+    if (lockChannels !== undefined) {
+      this.channelsLocked = lockChannels;
+    }
     const updatedChannels = [];
     for (let c = 0; c < identifiers.length; c++) {
       updatedChannels.push({
@@ -288,6 +296,14 @@ class ViewerState {
         }
         this.viewer.setChannelProperties(channelIndex, {colors: color});
       }
+    }
+  };
+
+  @action
+  setChannelsLocked = (channelsLocked) => {
+    if (this.viewer && typeof this.viewer.setLockChannels === 'function') {
+      this.channelsLocked = channelsLocked;
+      this.viewer.setLockChannels(channelsLocked);
     }
   };
 

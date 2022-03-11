@@ -23,16 +23,19 @@ import {
   Button,
   Icon,
   Spin,
-  Input
+  Input,
+  message
 } from 'antd';
-import Papa from 'papaparse';
-import VersionFile from '../../../../../models/pipelines/VersionFile';
 import localization from '../../../../../utils/localization';
 import {SplitPanel} from '../../../../special/splitPanel';
+import PipelineCodeForm from '../../../version/code/forms/PipelineCodeForm';
 import VSHistory from '../history';
+import downloadPipelineFile from '../../../version/utilities/download-pipeline-file';
+import parsePipelineFile from '../../../version/utilities/parse-pipeline-file';
+import PipelineFileUpdate from '../../../../../models/pipelines/PipelineFileUpdate';
 import styles from './info-panel.css';
 
-const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 25kb
+const MAX_SIZE_TO_PREVIEW = 1024 * 75; // 75kb
 const CONTENT_INFO = [{
   key: 'preview',
   containerStyle: {
@@ -75,9 +78,9 @@ class InfoPanel extends localization.LocalizedReactComponent {
     binaryFile: false,
     tabularFile: false,
     fileContent: null,
-    editFile: false,
     fileEditable: true,
-    fileSizeExceeded: false
+    fileSizeExceeded: false,
+    filePreviewVisible: false
   };
 
   componentDidMount () {
@@ -99,9 +102,16 @@ class InfoPanel extends localization.LocalizedReactComponent {
     return false;
   };
 
-  handleFileEdit = () => {
-    const {onFileEdit} = this.props;
-    onFileEdit && onFileEdit();
+  openFilePreview = () => {
+    this.setState({
+      filePreviewVisible: true
+    });
+  };
+
+  closeFilePreview = () => {
+    this.setState({
+      filePreviewVisible: false
+    });
   };
 
   handleGoBackClick = () => {
@@ -127,74 +137,45 @@ class InfoPanel extends localization.LocalizedReactComponent {
         fileFetchingError: undefined,
         fileContent: undefined,
         binaryFile: false,
-        tabularFile: false
+        tabularFile: false,
+        filePreviewVisible: false
       });
       return null;
     }
-    const request = new VersionFile(
-      pipelineId,
-      file.path,
-      lastCommitId
-    );
     this.setState({
       fileIsFetching: true
     }, () => {
-      const reject = error => {
-        this.setState({
-          fileIsFetching: false,
-          fileFetchingError: error.message,
-          fileContent: undefined,
-          binaryFile: false,
-          tabularFile: false
-        });
-      };
-      const resolve = result => {
-        try {
-          const content = atob(result);
-          // eslint-disable-next-line
-          const isBinary = o => /[\x00-\x08\x0B-\x0C\x0E-\x1F]/.test(o);
-          const binary = isBinary(content);
-          const parseAsTabular = Papa.parse(content);
-          const isTabular = !binary &&
-            /\.(csv|tsv)$/i.test(file.path) &&
-            parseAsTabular.errors.length === 0 &&
-            !parseAsTabular.data.find(item => item.find(isBinary));
+      parsePipelineFile(pipelineId, lastCommitId, file.path, MAX_SIZE_TO_PREVIEW)
+        .then(info => {
+          const {
+            content,
+            error,
+            binary,
+            tabular
+          } = info;
           this.setState({
-            fileContent: binary ? undefined : content,
-            binaryFile: !isTabular && binary,
-            tabularFile: isTabular
-              ? parseAsTabular.data
-              : false,
+            fileContent: content,
+            binaryFile: binary,
+            tabularFile: tabular,
+            fileFetchingError: error,
             fileIsFetching: false,
-            fileFetchingError: undefined
+            filePreviewVisible: false
           });
-        } catch (e) {
-          reject(new Error(`Error parsing file: ${e.message}`));
-        }
-      };
-      request
-        .fetch()
-        .then(() => {
-          if (request.error) {
-            reject(new Error(request.error || `Error fetching ${file.path} content`));
-          } else {
-            resolve(request.response);
-          }
-        })
-        .catch(reject);
+        });
     });
   };
 
   renderDownloadLink = (description) => {
-    const {file, onFileDownload} = this.props;
-    if (!file) {
+    const {file, pipelineId, lastCommitId} = this.props;
+    if (!file || !pipelineId || !lastCommitId) {
       return null;
     }
+    const handleDownload = () => downloadPipelineFile(pipelineId, lastCommitId, file.path);
     return (
       <span>
         <span
           className={styles.downloadBtn}
-          onClick={() => onFileDownload(file)}
+          onClick={handleDownload}
         >
           Download file
         </span>
@@ -263,7 +244,7 @@ class InfoPanel extends localization.LocalizedReactComponent {
           <b>File preview</b>
           <Button
             size="small"
-            onClick={this.handleFileEdit}
+            onClick={this.openFilePreview}
             disabled={!fileEditable}
             className={styles.previewHeaderBtn}
           >
@@ -400,13 +381,50 @@ class InfoPanel extends localization.LocalizedReactComponent {
     }
   };
 
+  saveFile = async (contents, comment) => {
+    const {
+      pipelineId,
+      onRefresh,
+      file,
+      lastCommitId
+    } = this.props;
+    if (!file) {
+      return;
+    }
+    const request = new PipelineFileUpdate(pipelineId);
+    try {
+      const hide = message.loading('Committing file changes...');
+      await request.send({
+        contents,
+        comment,
+        path: file.path,
+        lastCommitId
+      });
+      hide();
+      if (request.error) {
+        throw new Error(request.error);
+      }
+      this.closeFilePreview();
+      if (onRefresh) {
+        onRefresh();
+      }
+    } catch (e) {
+      message.error(e.error, 5);
+    }
+  };
+
   render () {
     const {
       lastCommitId,
       pipelineId,
       path,
-      file
+      file,
+      readOnly,
+      onRefresh
     } = this.props;
+    const {
+      filePreviewVisible
+    } = this.state;
     return (
       <SplitPanel
         style={{overflow: 'auto'}}
@@ -430,9 +448,21 @@ class InfoPanel extends localization.LocalizedReactComponent {
           versionedStorageId={pipelineId}
           revision={lastCommitId}
           isFolder={!file}
+          onRefresh={onRefresh}
+          readOnly={readOnly}
           style={{
             flex: 1
           }}
+        />
+        <PipelineCodeForm
+          visible={filePreviewVisible && !!file}
+          path={file ? file.path : undefined}
+          pipelineId={pipelineId}
+          editable={!readOnly}
+          download
+          cancel={this.closeFilePreview}
+          save={this.saveFile}
+          version={lastCommitId}
         />
       </SplitPanel>
     );
@@ -448,8 +478,8 @@ InfoPanel.propTypes = {
   ]),
   lastCommitId: PropTypes.string,
   pending: PropTypes.bool,
-  onFileEdit: PropTypes.func,
-  onFileDownload: PropTypes.func,
+  readOnly: PropTypes.bool,
+  onRefresh: PropTypes.func,
   onGoBack: PropTypes.func
 };
 

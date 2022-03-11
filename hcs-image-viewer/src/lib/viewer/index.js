@@ -14,6 +14,8 @@
  *  limitations under the License.
  */
 
+import createSnapshot from './utilities/create-snapshot';
+
 const LOG_MESSAGE = Symbol('log message');
 const LOG_ERROR = Symbol('log error');
 const CALLBACKS = Symbol('callbacks');
@@ -79,6 +81,7 @@ class Viewer {
       this.verbose = verbose;
     }
     this.listeners = [];
+    this.container = container;
     this.initializationPromise = new Promise((resolve, reject) => {
       import(/* webpackChunkName: "hcs-image-inject" */ './hcs-image-wrapper')
         .then(({ default: wrapper }) => {
@@ -260,6 +263,36 @@ class Viewer {
 
   setGlobalTimePosition(time) {
     return this.setGlobalPosition({ t: time });
+  }
+
+  setLockChannels(lock) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setLockChannels')(lock);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
+  makeSnapshot(name) {
+    if (this.container) {
+      const canvas = this.container.getElementsByTagName('canvas')[0];
+      let imageName = name;
+      if (!imageName && this.viewerState && this.viewerState.metadata) {
+        const { metadata } = this.viewerState;
+        const {
+          ID,
+          Name,
+        } = metadata;
+        const parts = [ID, Name].filter(Boolean);
+        if (parts.length > 0) {
+          imageName = parts.join(' ');
+        }
+      }
+      createSnapshot(canvas, imageName);
+    }
   }
 }
 

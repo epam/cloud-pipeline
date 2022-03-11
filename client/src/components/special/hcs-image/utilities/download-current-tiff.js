@@ -14,9 +14,24 @@
  *  limitations under the License.
  */
 
-import React from 'react';
-import DefaultState from './default';
+export function downloadAvailable (viewer) {
+  if (!viewer) {
+    return false;
+  }
+  const {
+    viewerState
+  } = viewer;
+  const {
+    loader,
+    pending
+  } = viewerState || {};
+  return !pending &&
+    loader &&
+    loader.length > 0;
+}
 
-const HCSImageContext = React.createContext(DefaultState);
-
-export default HCSImageContext;
+export function downloadCurrentTiff (viewer) {
+  if (downloadAvailable(viewer)) {
+    viewer.makeSnapshot();
+  }
+}

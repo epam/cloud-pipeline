@@ -33,6 +33,7 @@ public class DockerCommitCommand extends AbstractDockerCommand {
     private final String runId;
     private final String containerId;
     private final String cleanUp;
+    private final String additionalEnvsToClean;
     private final String stopPipeline;
     private final String timeout;
     private final String registryToPush;
@@ -62,6 +63,7 @@ public class DockerCommitCommand extends AbstractDockerCommand {
         command.add(runId);
         command.add(containerId);
         command.add(cleanUp);
+        command.add(additionalEnvsToClean);
         command.add(stopPipeline);
         command.add(timeout);
         command.add(registryToPush);

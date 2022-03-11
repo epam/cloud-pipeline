@@ -51,7 +51,7 @@ import {
   getDefaultInitialViewState,
   DETAIL_VIEW_ID,
 } from '@hms-dbmi/viv';
-import { HCSImageContext, useHCSImageState } from '../state';
+import useHCSImageState from '../state';
 import useElementSize from './utilities/use-element-size';
 import getZoomLevel from '../state/utilities/get-zoom-level';
 
@@ -77,7 +77,7 @@ function HCSImageViewer(
     callbacks,
   } = useHCSImageState();
   const containerRef = useRef();
-  const size = useElementSize(containerRef);
+  const { sizeRef } = useElementSize(containerRef);
   useEffect(() => {
     if (onStateChange) {
       onStateChange(state);
@@ -94,6 +94,7 @@ function HCSImageViewer(
     }
   }, [callbacks, onRegisterStateActions]);
   const {
+    setImageViewportLoading,
     setImageViewportLoaded,
   } = callbacks || {};
   const {
@@ -108,19 +109,30 @@ function HCSImageViewer(
     lensEnabled,
     lensChannel,
   } = viewerState;
+  useEffect(() => {
+    if (typeof setImageViewportLoading === 'function') {
+      setImageViewportLoading();
+    }
+  }, [selections, loader, setImageViewportLoading]);
   const [viewState, setViewState] = useState(undefined);
   useEffect(() => {
-    if (loader && loader.length && size && size.width && size.height) {
+    if (
+      loader
+      && loader.length
+      && sizeRef.current
+      && sizeRef.current.width
+      && sizeRef.current.height
+    ) {
       const [first] = Array.isArray(loader) ? loader : [loader];
       const last = Array.isArray(loader) ? loader[loader.length - 1] : loader;
       const defaultViewState = [{
-        ...getDefaultInitialViewState(loader, size, defaultZoomBackOff),
+        ...getDefaultInitialViewState(loader, sizeRef.current, defaultZoomBackOff),
         id: DETAIL_VIEW_ID,
         minZoom: minZoomBackOff !== undefined
-          ? getZoomLevel(first, size, minZoomBackOff)
+          ? getZoomLevel(first, sizeRef.current, minZoomBackOff)
           : -Infinity,
         maxZoom: maxZoomBackOff !== undefined
-          ? getZoomLevel(last, size, maxZoomBackOff)
+          ? getZoomLevel(last, sizeRef.current, maxZoomBackOff)
           : Infinity,
       }];
       setViewState(defaultViewState);
@@ -129,7 +141,7 @@ function HCSImageViewer(
     }
   }, [
     loader,
-    size,
+    sizeRef,
     setViewState,
     minZoomBackOff,
     maxZoomBackOff,
@@ -137,40 +149,43 @@ function HCSImageViewer(
   ]);
   const readyForRendering = loader
     && ready
-    && size
-    && size.width
-    && size.height
+    && sizeRef.current
+    && sizeRef.current.width
+    && sizeRef.current.height
     && viewState;
   return (
-    <HCSImageContext.Provider value={state}>
-      <div
-        className={className}
-        style={({ position: 'relative', ...style || {} })}
-        ref={containerRef}
-      >
-        {
-          readyForRendering && (
-            <PictureInPictureViewer
-              contrastLimits={contrastLimits}
-              colors={colors}
-              channelsVisible={channelsVisibility}
-              loader={loader}
-              selections={selections}
-              height={size.height}
-              width={size.width}
-              extensions={colorMap ? [additiveColorMapExtension] : [lensExtension]}
-              colormap={colorMap || 'viridis'}
-              onViewportLoad={setImageViewportLoaded}
-              viewStates={viewState}
-              overviewOn={!!overview}
-              overview={overview}
-              lensSelection={useLens && lensEnabled ? lensChannel : undefined}
-              lensEnabled={useLens && lensEnabled}
-            />
-          )
-        }
-      </div>
-    </HCSImageContext.Provider>
+    <div
+      className={className}
+      style={({ position: 'relative', ...style || {} })}
+      ref={containerRef}
+    >
+      {
+        readyForRendering && (
+          <PictureInPictureViewer
+            contrastLimits={contrastLimits}
+            colors={colors}
+            channelsVisible={channelsVisibility}
+            loader={loader}
+            selections={selections}
+            height={sizeRef.current.height}
+            width={sizeRef.current.width}
+            extensions={colorMap ? [additiveColorMapExtension] : [lensExtension]}
+            colormap={colorMap || 'viridis'}
+            onViewportLoad={setImageViewportLoaded}
+            viewStates={viewState}
+            overviewOn={!!overview}
+            overview={overview}
+            lensSelection={useLens && lensEnabled ? lensChannel : undefined}
+            lensEnabled={useLens && lensEnabled}
+            deckProps={{
+              glOptions: {
+                preserveDrawingBuffer: true,
+              },
+            }}
+          />
+        )
+      }
+    </div>
   );
 }
 

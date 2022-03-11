@@ -16,6 +16,7 @@
 
 import ViewerStateActions from './actions';
 import changeChannelProperties from './change-channel-properties';
+import lockChannelsState from './lock-channels-state';
 import { GlobalDimensionFields } from '../constants';
 
 const EMPTY_ARRAY = [];
@@ -25,6 +26,9 @@ export default function reducer(state, action) {
   switch (action.type) {
     case ViewerStateActions.setLoading: {
       return { ...state, pending: true, error: undefined };
+    }
+    case ViewerStateActions.setLoaded: {
+      return { ...state, pending: false };
     }
     case ViewerStateActions.setChannelProperties: {
       const { channel, properties } = action;
@@ -97,13 +101,43 @@ export default function reducer(state, action) {
       }
       return state;
     }
+    case ViewerStateActions.setLockChannels: {
+      const { lock } = action;
+      const {
+        contrastLimits = EMPTY_ARRAY,
+        realDomains = EMPTY_ARRAY,
+      } = state;
+      const newState = {
+        ...state,
+        lockChannels: lock,
+      };
+      if (!lock) {
+        newState.domains = realDomains.slice();
+        newState.contrastLimits = contrastLimits.map((limit, index) => {
+          const domain = realDomains[index];
+          if (domain && Array.isArray(domain) && domain.length === 2) {
+            const [cFrom, cTo, ...limitRest] = limit;
+            const [dFrom, dTo] = domain;
+            const correct = (l) => Math.max(dFrom, Math.min(dTo, l));
+            return [
+              correct(cFrom),
+              correct(cTo),
+              ...limitRest,
+            ];
+          }
+          return limit;
+        });
+      }
+      return newState;
+    }
     case ViewerStateActions.setDefault: {
       const {
-        identifiers = EMPTY_ARRAY,
         channels = EMPTY_ARRAY,
+        channelsVisibility = EMPTY_ARRAY,
         selections = EMPTY_ARRAY,
         colors = EMPTY_ARRAY,
         domains = EMPTY_ARRAY,
+        realDomains = domains.slice(),
         contrastLimits = EMPTY_ARRAY,
         useLens = false,
         useColorMap = false,
@@ -120,17 +154,19 @@ export default function reducer(state, action) {
         globalDimensions = EMPTY_ARRAY,
         metadata,
         loader,
-      } = action;
+      } = lockChannelsState(state, action);
       return {
-        identifiers,
+        ...state,
+        identifiers: channels.map((name, index) => `${name || 'channel'}-${index}`),
         channels,
-        channelsVisibility: channels.map(() => true),
+        channelsVisibility,
         selections,
         builtForSelections: selections,
         globalSelection: (selections || [])[0],
         pixelValues: new Array((selections || []).length).fill('-----'),
         colors,
         domains,
+        realDomains,
         contrastLimits,
         useLens,
         useColorMap,
@@ -145,7 +181,6 @@ export default function reducer(state, action) {
         isRGB,
         shapeIsInterleaved,
         globalDimensions,
-        pending: false,
         error: undefined,
         metadata,
         loader,

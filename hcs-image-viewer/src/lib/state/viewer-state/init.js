@@ -25,6 +25,7 @@ export default function init() {
     globalSelection: undefined,
     colors: [],
     domains: [],
+    realDomains: [],
     contrastLimits: [],
     useLens: false,
     useColorMap: false,
@@ -44,5 +45,6 @@ export default function init() {
     metadata: undefined,
     loader: [],
     error: undefined,
+    lockChannels: false,
   };
-};
+}

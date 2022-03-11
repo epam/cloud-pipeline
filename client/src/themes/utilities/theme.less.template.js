@@ -950,6 +950,9 @@ export default `
   color: @application-color;
   box-shadow: 0 1px 6px @card-hovered-shadow-color;
 }
+@THEME .rc-menu-item-group-title {
+  border-bottom: 1px solid @card-border-color;
+}
 @THEME .rc-menu,
 @THEME .rc-dropdown-menu {
   border-color: @panel-border-color;
@@ -1982,6 +1985,11 @@ export default `
   border: none;
   background-color: transparent;
 }
+@THEME .ant-input.cp-parameter-name.disabled {
+  border-color: transparent;
+  background-color: transparent;
+  color: @application-color;
+}
 @THEME .cp-runs-autocomplete-menu.ant-menu {
   background-color: fade(@panel-background-color, 100%);
   border: 1px solid @panel-border-color;
@@ -2383,6 +2391,41 @@ export default `
 @THEME .cp-storage-deleted-row {
   background-color: @deleted-row-accent;
   cursor: default;
+}
+@THEME .cp-git-diff-collapse .ant-collapse-item.ant-collapse-item-active .ant-collapse-header {
+  border-bottom: 1px solid @card-border-color;
+}
+@THEME .cp-branch-code-line-numbers {
+  background-color: fadeout(@application-background-color, 40%);
+  border-color: @panel-border-color;
+}
+@THEME .cp-branch-code-resize {
+  background-color: fadeout(@application-background-color, 40%);
+}
+@THEME .cp-conflicts-resolve-area-container {
+  background-color: @card-background-color;
+}
+@THEME .cp-conflicts-divider {
+  background-color: fadeout(@card-border-color, 40%);
+}
+@THEME .cp-conflict-action {
+  color: @application-color;
+}
+@THEME .cp-conflict-action:hover,
+@THEME .cp-conflict-action:focus,
+@THEME .cp-conflict-action:active {
+  color: @application-color-accent;
+}
+@THEME .cp-conflict-scroller {
+  background-color: fade(@application-color, 10%);
+}
+@THEME .cp-conflict-scroller .bar {
+  background-color: fade(@application-color, 25%);
+}
+@THEME .cp-conflict-scroller:hover .bar,
+@THEME .cp-conflict-scroller .bar:hover,
+@THEME .cp-conflict-scroller .bar.hovered {
+  background-color: fade(@application-color, 50%);
 }
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;

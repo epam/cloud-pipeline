@@ -84,7 +84,6 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
   const channels = Channels.map(mapChannel);
   const [xSlice, ySlice, zSlice] = getBoundingCube(loader);
   return {
-    identifiers: channels.map((name, index) => `${name || 'channel'}-${index}`),
     channels,
     selections: currentSelections,
     useLens,

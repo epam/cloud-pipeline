@@ -15,6 +15,7 @@
 
 package com.epam.pipeline.manager.report;
 
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Median;
 
 import java.time.LocalDateTime;
@@ -23,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public interface ReportUtils {
 
@@ -44,12 +46,18 @@ public interface ReportUtils {
 
     static <T> Integer calculateSampleMedian(final Function<T, Integer> getValueFunction,
                                              final List<T> records) {
-        final double[] sample = records.stream()
+        final List<Integer> sampleWithNulls = records.stream()
                 .map(getValueFunction)
                 .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        if (CollectionUtils.isEmpty(sampleWithNulls)) {
+            return null;
+        }
+        final double[] sample = sampleWithNulls.stream()
                 .mapToDouble(Integer::doubleValue)
+                .filter(value -> value != 0)
                 .toArray();
-        return sample.length == 0 ? null : (int) Math.round(new Median().evaluate(sample));
+        return sample.length == 0 ? 0 : (int) Math.round(new Median().evaluate(sample));
     }
 
     static <T> Integer calculateSampleMax(final Function<T, Integer> getValueFunction,

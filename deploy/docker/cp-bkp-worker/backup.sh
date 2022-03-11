@@ -40,7 +40,7 @@ function report_failure() {
         --header 'Accept: application/json' \
         --header "Authorization: Bearer $CP_API_JWT_ADMIN" \
         "https://$CP_API_SRV_INTERNAL_HOST:$CP_API_SRV_INTERNAL_PORT/pipeline/restapi/notification/message" \
-        -d "{ \"subject\": \"[$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME] The backup process has failed: $CP_BKP_SERVICE_NAME\", \"body\": \"An error occured while running $CP_BKP_SERVICE_NAME backup service: $_msg\", \"toUser\": \"$_admin\", \"copyUsers\": [$_admins_json_array]}"
+        -d "{ \"subject\": \"[Administration] [$CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME] The backup process has failed: $CP_BKP_SERVICE_NAME\", \"body\": \"An error occured while running $CP_BKP_SERVICE_NAME backup service: $_msg\", \"toUser\": \"$_admin\", \"copyUsers\": [$_admins_json_array]}"
 
     echo "$_msg"
 }

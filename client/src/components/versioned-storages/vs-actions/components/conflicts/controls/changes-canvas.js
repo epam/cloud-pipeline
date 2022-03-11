@@ -14,14 +14,13 @@
  *  limitations under the License.
  */
 
-import renderingConfig from './changes-display-config';
 import ChangeStatuses from '../utilities/changes/statuses';
 import getStyleForChange from '../controls/branch-code/utilities/style-for-change';
 import {Merged} from '../utilities/conflicted-file/branches';
 
-function correctTransparentColor (color) {
+function correctTransparentColor (color, colorsConfig) {
   if (color === 'transparent') {
-    return renderingConfig.background;
+    return colorsConfig.background;
   }
   return color;
 }
@@ -99,14 +98,15 @@ export default function renderChanges (canvas, conflictedFile, branch, options =
       top = 0,
       mergedTop = 0,
       lineHeight = 0,
-      rtl = false
+      rtl = false,
+      colorsConfig = {}
     } = options;
     const x1 = rtl ? correctPixels(width) : 0;
     const x2 = rtl ? 0 : correctPixels(width);
     const context = canvas.getContext('2d');
     if (context) {
       context.clearRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = renderingConfig.background;
+      context.fillStyle = colorsConfig.background;
       context.fillRect(0, 0, canvas.width, canvas.height);
       const currentModifications = (conflictedFile?.changes || [])
         .filter(m => m.branch === branch);
@@ -124,7 +124,7 @@ export default function renderChanges (canvas, conflictedFile, branch, options =
           mergedModificationsBefore * 2.0 + 0.5 - mergedTop;
         const mergedY2 = merged.end * lineHeight +
           (mergedModificationsBefore + 1) * 2.0 - 0.5 - mergedTop;
-        const config = getStyleForChange(modification);
+        const config = getStyleForChange(modification, colorsConfig);
         const applied = modification.status !== ChangeStatuses.prepared;
         if (config) {
           const start1 = {
@@ -144,7 +144,7 @@ export default function renderChanges (canvas, conflictedFile, branch, options =
             y: correctPixels(mergedY2)
           };
           context.save();
-          context.fillStyle = correctTransparentColor(config.backgroundColor);
+          context.fillStyle = correctTransparentColor(config.backgroundColor, colorsConfig);
           context.lineWidth = correctPixels(0);
           context.beginPath();
           drawCurve(context, start1, end1);
@@ -152,7 +152,7 @@ export default function renderChanges (canvas, conflictedFile, branch, options =
           context.closePath();
           context.fill();
           context.lineWidth = correctPixels(1);
-          context.strokeStyle = correctTransparentColor(config.borderColor);
+          context.strokeStyle = correctTransparentColor(config.borderColor, colorsConfig);
           if (applied) {
             context.setLineDash([5]);
           }

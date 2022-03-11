@@ -60,7 +60,7 @@ const Titles = {
   [Modes.unique]: 'Total unique users count'
 };
 
-function fetchDataMock (options) {
+function fetchData (options) {
   return new Promise((resolve, reject) => {
     const {
       period,
@@ -451,7 +451,7 @@ class UsersActivityChart extends React.Component {
           );
         }
       });
-      fetchDataMock({period, range, runner})
+      fetchData({period, range, runner})
         .then(data => setData(data))
         .catch((e) => setError(e.message));
     });

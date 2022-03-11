@@ -28,12 +28,13 @@ DISTRIBUTION_URL=$4
 export RUN_ID=$5
 export CONTAINER_ID=$6
 export CLEAN_UP=$7
-export STOP_PIPELINE=$8
-TIMEOUT=$9
-export REGISTRY_TO_PUSH=${10}
-export REGISTRY_TO_PUSH_ID=${11}
-export TOOL_GROUP_ID=${12}
-export NEW_IMAGE_NAME=${13}
+export ADDITIONAL_ENVS_TO_CLEAN_UP=$8
+export STOP_PIPELINE=$9
+TIMEOUT=${10}
+export REGISTRY_TO_PUSH=${11}
+export REGISTRY_TO_PUSH_ID=${12}
+export TOOL_GROUP_ID=${13}
+export NEW_IMAGE_NAME=${14}
 
 export SCRIPTS_DIR="$(pwd)/commit-run-scripts"
 export COMMON_REPO_DIR="$(pwd)/pipe-common"
@@ -41,17 +42,17 @@ export COMMON_REPO_DIR="$(pwd)/pipe-common"
 export FULL_NEW_IMAGE_NAME="${REGISTRY_TO_PUSH}/${NEW_IMAGE_NAME}"
 export CP_PYTHON2_PATH=python
 
-if [[ "$#" -ge 15 ]]; then
-    export DOCKER_LOGIN=${14}
-    export DOCKER_PASSWORD=${15}
-fi
-
 if [[ "$#" -ge 16 ]]; then
-    export IS_PIPELINE_AUTH=${16}
+    export DOCKER_LOGIN=${15}
+    export DOCKER_PASSWORD=${16}
 fi
 
-export PRE_COMMIT_COMMAND=${17}
-export POST_COMMIT_COMMAND=${18}
+if [[ "$#" -ge 17 ]]; then
+    export IS_PIPELINE_AUTH=${17}
+fi
+
+export PRE_COMMIT_COMMAND=${18}
+export POST_COMMIT_COMMAND=${19}
 
 export TASK_NAME="CommitPipelineRun"
 

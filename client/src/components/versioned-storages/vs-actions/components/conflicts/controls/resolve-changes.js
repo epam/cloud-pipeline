@@ -56,7 +56,7 @@ function hasNonConflictingChanges (changes, ...branch) {
 
 function Divider () {
   return (
-    <div className={styles.divider}>
+    <div className={classNames('cp-divider', 'vertical')}>
       {'\u00A0'}
     </div>
   );
