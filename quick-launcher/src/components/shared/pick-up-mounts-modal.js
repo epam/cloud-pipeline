@@ -79,7 +79,6 @@ export default function PickUpMountsModal (
       onClose();
     }
   }, [onChange, selected, onClose]);
-  console.log(selected);
   return (
     <Modal
       visible={visible}

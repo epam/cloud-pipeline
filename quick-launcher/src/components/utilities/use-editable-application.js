@@ -276,50 +276,59 @@ export default function useEditableApplication(application) {
   )
   useEffect(() => {
     if (application && settings) {
-      const {
-        name,
-        description,
-        fullDescription,
-        info = {},
-        readOnlyAttributes = [],
-        pathInfo: initialPathInfo = {}
-      } = application || {};
-      setName(name);
-      setNameInitial(name);
-      setDescription(description);
-      setDescriptionInitial(description);
-      setFullDescription(fullDescription);
-      setFullDescriptionInitial(fullDescription);
-      setNewAttributes([]);
-      setPathInfo(initialPathInfo);
-      setPathInfoInitial(initialPathInfo);
-      const nodeSizes = Object.keys(settings.appConfigNodeSizes || {});
-      const limitMountsPlaceholders = Object.keys(settings.limitMountsPlaceholders || {});
-      setInfoFields(
-        Object.keys({
-          ...(
-            nodeSizes.length > 0
-              ? {instance: ''}
-              : {}
-          ),
-          ...limitMountsPlaceholders.reduce((r, c) => ({...r, [c]: ''}), {}),
-          ...info
-        })
-          .filter(key => !isCommonAttributeName(key))
-          .reduce((r, c) => ({
-            ...r,
-            [c]: {
-              title: getInfoFieldTitle(c, settings),
-              value: info[c],
-              initialValue: info[c],
-              readOnly: readOnlyAttributes.includes(c),
-              type: getInfoFieldType(c, settings),
-              valuesPromise: getInfoFieldValuesPromise(c, settings)
-            }
-          }), {})
-      );
-      setInitialSource(info?.source);
-      setPending(false);
+      setPending(true);
+      setDisabled(true);
+      const apply = (data) => {
+        const {
+          name,
+          description,
+          fullDescription,
+          info = {},
+          readOnlyAttributes = [],
+          pathInfo: initialPathInfo = {}
+        } = data || {};
+        setName(name);
+        setNameInitial(name);
+        setDescription(description);
+        setDescriptionInitial(description);
+        setFullDescription(fullDescription);
+        setFullDescriptionInitial(fullDescription);
+        setNewAttributes([]);
+        setPathInfo(initialPathInfo);
+        setPathInfoInitial(initialPathInfo);
+        const nodeSizes = Object.keys(settings.appConfigNodeSizes || {});
+        const limitMountsPlaceholders = Object.keys(settings.limitMountsPlaceholders || {});
+        setInfoFields(
+          Object.keys({
+            ...(
+              nodeSizes.length > 0
+                ? {instance: ''}
+                : {}
+            ),
+            ...limitMountsPlaceholders.reduce((r, c) => ({...r, [c]: ''}), {}),
+            ...info
+          })
+            .filter(key => !isCommonAttributeName(key))
+            .reduce((r, c) => ({
+              ...r,
+              [c]: {
+                title: getInfoFieldTitle(c, settings),
+                value: info[c],
+                initialValue: info[c],
+                readOnly: readOnlyAttributes.includes(c),
+                type: getInfoFieldType(c, settings),
+                valuesPromise: getInfoFieldValuesPromise(c, settings)
+              }
+            }), {})
+        );
+        setInitialSource(info?.source);
+        setPending(false);
+      };
+      apply(application);
+      fetchFolderApplication(application?.info?.path || application?.info?.source, settings)
+        .catch(() => application)
+        .then(apply)
+        .then(() => setDisabled(false));
     }
   }, [
     settings,
@@ -334,6 +343,7 @@ export default function useEditableApplication(application) {
     setInfoField,
     isCommonAttributeName,
     setPending,
+    setDisabled,
     setPathInfo,
     setPathInfoInitial
   ]);
