@@ -34,11 +34,7 @@ mv $_OSX_CLI_PATH/dist/dist-file/pipe-osx ${API_STATIC_PATH}/pipe-osx
 mv $_OSX_CLI_PATH/dist/dist-folder/pipe-osx.tar.gz ${API_STATIC_PATH}/pipe-osx.tar.gz
 
 _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${CLOUD_PIPELINE_BUILD_NUMBER}.${GITHUB_SHA} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
-whoami
-id
-ls -la pipe-cli/dist/dist-file/
-ls -la pipe-cli/dist/dist-folder/
-ls -al ${API_STATIC_PATH}
+sudo chmod 777 pipe-cli/dist -R
 mv pipe-cli/dist/dist-file/pipe ${API_STATIC_PATH}/pipe-el6
 mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
 
@@ -47,6 +43,7 @@ mv pipe-cli/dist/dist-folder/pipe.tar.gz ${API_STATIC_PATH}/pipe-el6.tar.gz
                     -x test \
                     -Pfast \
                     --no-daemon
+sudo chmod 777 build/install/dist -R
 
 if [ "$GITHUB_REPOSITORY" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
