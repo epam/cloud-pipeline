@@ -1,10 +1,6 @@
 version: 0.17.{build}
 
-branches:
-  only:
-    - develop
-    - /release\/.*/
-    - /stage\/.*/
+
 
 skip_tags: true
 max_jobs: 1
