@@ -22,8 +22,6 @@ set -e
           --no-daemon \
           -x :pipe-cli:test
 
-pip install awscli
-
 cd pipe-cli
 DIST_TGZ_NAME=pipe-osx-full.$GITHUB_RUN_NUMBER.tar.gz
 tar -zcf $DIST_TGZ_NAME dist
