@@ -17,6 +17,7 @@ echo $http_proxy
 echo $https_proxy
 echo $HTTP_PROXY
 echo $HTTPS_PROXY
+echo $GLOBAL_AGENT_HTTP_PROXY
 
 set -e
 
