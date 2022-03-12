@@ -1,4 +1,6 @@
-name: CI
+name: Cloud-Pipeline-Dsitribution
+
+concurrency: Cloud-Pipeline-Dsitribution
 
 on:
   push:
