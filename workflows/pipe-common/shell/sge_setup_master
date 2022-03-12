@@ -403,6 +403,9 @@ pipe_log_info "Add $OWNER_NAME as SGE manager and operator" "$SGE_MASTER_SETUP_T
 qconf -am $OWNER_NAME
 qconf -ao $OWNER_NAME
 
+# Delete any existing-default queues and hostlists, before adding new ones
+delete_existing_queues
+delete_existing_hostlists
 # - First delete all default PEs
 delete_pe all
 
@@ -416,20 +419,6 @@ configure_pe "$CP_CAP_SGE_PE_MPI_NAME" \
              "\$fill_up" \
              "FALSE" \
              "$CP_CAP_SGE_PE_MPI_SLOTS"
-# - Add any other user-provided PEs
-if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
-    pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up" "$SGE_MASTER_SETUP_TASK"
-    for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
-        pipe_log_info "-> Configuring PE from $_pe_spec_file" "$SGE_MASTER_SETUP_TASK"
-        create_pe_from_file "$_pe_spec_file"
-    done
-else
-    pipe_log_info "No extra PEs are provided, skipping setup" "$SGE_MASTER_SETUP_TASK"
-fi
-
-# Delete any existing-default queues and hostlists, before adding new ones
-delete_existing_queues
-delete_existing_hostlists
 
 create_execution_host
 
@@ -442,6 +431,17 @@ for sge_profile_script in "$CP_CAP_SCRIPTS_DIR"/sge_profile_*.sh; do
         sge_setup_queue
     )
 done
+
+# - Add any other user-provided PEs
+if [ "$CP_CAP_SGE_EXTRA_PE_PATH" ] && [ -d "$CP_CAP_SGE_EXTRA_PE_PATH" ]; then
+    pipe_log_info "Extra PEs are provided via ${CP_CAP_SGE_EXTRA_PE_PATH}, setting them up" "$SGE_MASTER_SETUP_TASK"
+    for _pe_spec_file in $CP_CAP_SGE_EXTRA_PE_PATH/*.spec; do
+        pipe_log_info "-> Configuring PE from $_pe_spec_file" "$SGE_MASTER_SETUP_TASK"
+        create_pe_from_file "$_pe_spec_file"
+    done
+else
+    pipe_log_info "No extra PEs are provided, skipping setup" "$SGE_MASTER_SETUP_TASK"
+fi
 
 if [ "$LINUX_DISTRIBUTION" = "debian" ]; then
     /etc/init.d/gridengine-exec restart
