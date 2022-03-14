@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export default function getWellMesh (well) {
+export function getWellMesh (well) {
   if (!well) {
     return undefined;
   }
@@ -28,6 +28,20 @@ export default function getWellMesh (well) {
   const maxY = Math.max(...images.map(o => o.y));
   return {
     columns: maxX - minX + 1,
-    rows: maxY - minY + 1
+    rows: maxY - minY + 1,
+    cells: images.map(image => ({column: image.x - minX, row: maxY - image.y}))
   };
+}
+
+export function getWellImageFromMesh (well, cell) {
+  if (!well || !cell) {
+    return undefined;
+  }
+  const {images = []} = well;
+  if (images.length === 0) {
+    return undefined;
+  }
+  const minX = Math.min(...images.map(o => o.x));
+  const maxY = Math.max(...images.map(o => o.y));
+  return images.find(image => image.x === minX + cell.column && image.y === maxY - cell.row);
 }

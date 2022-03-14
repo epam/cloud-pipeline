@@ -16,7 +16,7 @@
 
 /* eslint-disable react/prop-types */
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   VivViewer as HmsDbmiVivViewer,
   OverviewView,
@@ -53,6 +53,7 @@ function VivViewer(props) {
     extensions = [],
     deckProps,
     mesh,
+    onCellClick,
   } = props;
   const detailViewState = viewStatesProp?.find((v) => v.id === DETAIL_VIEW_ID);
   const baseViewState = useMemo(
@@ -61,12 +62,29 @@ function VivViewer(props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loader, detailViewState],
   );
-
+  const [hoveredCell, setHoveredCell] = useState(undefined);
+  const onCellHovered = useCallback((cell) => {
+    if (cell && !hoveredCell) {
+      setHoveredCell(cell);
+    } else if (!cell) {
+      setHoveredCell(cell);
+    } else if (
+      cell
+      && hoveredCell
+      && cell.column !== hoveredCell.column
+      && cell.row !== hoveredCell.row
+    ) {
+      setHoveredCell(cell);
+    }
+  }, [hoveredCell, setHoveredCell]);
   const detailView = new DetailViewWithMesh({
     id: DETAIL_VIEW_ID,
     height,
     width,
     mesh,
+    onCellHover: onCellHovered,
+    hoveredCell,
+    onCellClick,
   });
   const layerConfig = {
     loader,

@@ -46,6 +46,7 @@ class Viewer {
   Events = {
     stateChanged: 'state-changed',
     viewerStateChanged: 'viewer-state-changed',
+    onCellClick: 'on-cell-click',
   };
 
   initializationPromise;
@@ -97,6 +98,9 @@ class Viewer {
             this[CALLBACKS] = actions;
             resolve(this);
           };
+          const onCellClick = (cell) => {
+            this.emit(this.Events.onCellClick, cell);
+          };
           wrapper(
             container,
             {
@@ -111,6 +115,7 @@ class Viewer {
               onStateChange: onStateChanged,
               onRegisterStateActions: registerActions,
               onViewerStateChanged,
+              onCellClick,
             },
           );
         })

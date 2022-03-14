@@ -27,7 +27,7 @@ import HcsCellSelector from './hcs-cell-selector';
 import HcsSequenceSelector from './hcs-sequence-selector';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
-import getWellMesh from './utilities/get-well-mesh';
+import {getWellMesh, getWellImageFromMesh} from './utilities/get-well-mesh';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
@@ -284,6 +284,26 @@ class HcsImage extends React.PureComponent {
     }
   };
 
+  onMeshCellClick = (viewer, cell) => {
+    const {
+      sequenceId,
+      wellId
+    } = this.state;
+    if (this.hcsInfo) {
+      const sequence = (this.hcsInfo.sequences || []).find(s => s.id === sequenceId);
+      if (sequence) {
+        const {wells = []} = sequence;
+        const well = wells.find(w => w.id === wellId);
+        if (well) {
+          const image = getWellImageFromMesh(well, cell);
+          if (image) {
+            this.changeWellImage(image);
+          }
+        }
+      }
+    }
+  };
+
   changeWellImage = ({x, y} = {}, keepShowEntireWell = false) => {
     const {
       sequenceId,
@@ -371,6 +391,10 @@ class HcsImage extends React.PureComponent {
           position: 'bottom-left'
         }
       });
+      this.hcsImageViewer.addEventListener(
+        this.hcsImageViewer.Events.onCellClick,
+        this.onMeshCellClick.bind(this)
+      );
       this.hcsViewerState.attachToViewer(this.hcsImageViewer);
       this.hcsSourceState.attachToViewer(this.hcsImageViewer);
       this.loadImage();

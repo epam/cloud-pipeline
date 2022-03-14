@@ -18,10 +18,18 @@ import { DetailView } from '@hms-dbmi/viv';
 import CollageMeshLayer from './layer';
 import { getLayerId } from '../get-layer-id';
 
-export class DetailViewWithMesh extends DetailView {
+class DetailViewWithMesh extends DetailView {
   constructor(props) {
     super(props);
-    const { mesh } = props;
+    const {
+      mesh,
+      onCellHover,
+      hoveredCell,
+      onCellClick,
+    } = props;
+    this.onCellHover = onCellHover;
+    this.hoveredCell = hoveredCell;
+    this.onCellClick = onCellClick;
     this.mesh = mesh;
   }
 
@@ -39,6 +47,9 @@ export class DetailViewWithMesh extends DetailView {
             id: `mesh-${getLayerId(id)}`,
             mesh: { ...this.mesh },
             viewState: { ...layerViewState, height, width },
+            onHover: this.onCellHover,
+            onClick: this.onCellClick,
+            hoveredCell: this.hoveredCell,
           },
         ),
       );

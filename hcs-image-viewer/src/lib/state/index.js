@@ -82,6 +82,7 @@ function useHCSImageState() {
     setLensChannel,
     setGlobalPosition,
     setLockChannels,
+    setMesh,
   }), [
     setData,
     setImage,
@@ -93,6 +94,7 @@ function useHCSImageState() {
     setLensChannel,
     setGlobalPosition,
     setLockChannels,
+    setMesh,
   ]);
   return {
     callbacks,
