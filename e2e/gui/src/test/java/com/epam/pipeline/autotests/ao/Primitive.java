@@ -311,5 +311,6 @@ public enum Primitive {
     STARTS_ON_TIME,
     ENDS_ON,
     ENDS_ON_TIME,
-    AUTOSCALED
+    AUTOSCALED,
+    PROTOCOL
 }
