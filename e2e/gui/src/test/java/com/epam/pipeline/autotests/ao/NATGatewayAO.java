@@ -31,7 +31,6 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -266,8 +265,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         int maxAttempts = 60;
         expandGroup(ipAddressOrServerName, port);
         final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
-        while (route.findAll(".external-column").get(0).find(tagName("i"))
-                .has(cssClass(status))
+        while (route.findAll(".external-column").get(0).find(tagName("i")).has(cssClass(status))
                 && attempt < maxAttempts) {
             expandGroup(ipAddressOrServerName, port);
             click(REFRESH);
