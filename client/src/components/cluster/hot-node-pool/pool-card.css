@@ -106,27 +106,6 @@
   line-height: 1;
 }
 
-.instance {
-  font-size: 10pt;
-}
-
-.instance > * {
-  margin-left: 5px;
-}
-
-.instance > *:first-child {
-  margin-left: 0;
-}
-
-.instance .count,
-.instance .type,
-.instance .price-type,
-.instance .disk {
-  font-size: 8pt;
-  font-weight: bold;
-  text-transform: uppercase;
-}
-
 .images {
   display: flex;
   flex-direction: row;

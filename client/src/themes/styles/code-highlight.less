@@ -23,7 +23,8 @@
   border-radius: 4px;
 }
 
-.markdown pre {
+.markdown pre,
+.markdown code {
   color: @application-color;
   background-color: @code-background-color;
   border: 1px solid @card-border-color;
@@ -35,8 +36,6 @@
 
 .code-highlight code,
 .markdown code {
-  color: @color-pink;
-  background-color: @color-pink-light;
   box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.25);
 }
 
@@ -45,6 +44,7 @@
   background-color: transparent;
   color: inherit;
   box-shadow: none;
+  border: none;
 }
 
 .markdown code {
@@ -492,24 +492,30 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {
   color: @application-color;
   border-color: @card-border-color;
 }
+
 .d2h-tag {
   background-color: @card-background-color;
 }
+
 .d2h-info {
   background-color: @panel-background-color;
 }
+
 .d2h-file-diff .d2h-ins.d2h-change,
 .d2h-ins {
   background-color: @color-green-semi-transparent;
 }
+
 .d2h-file-diff .d2h-del.d2h-change,
 .d2h-del {
   background-color: @color-red-semi-transparent;
 }
+
 .d2h-code-line.d2h-del.d2h-change del {
   color: @card-background-color;
   background-color: @color-red;
 }
+
 .d2h-code-line.d2h-ins.d2h-change ins {
   color: @card-background-color;
   background-color: @color-green;

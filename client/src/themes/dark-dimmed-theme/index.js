@@ -23,6 +23,7 @@ export default {
   predefined: true,
   configuration: {
     '@application-background-color': 'rgb(40, 44, 50)',
+    '@application-dark-background-color': '@application-background-color',
     '@application-color': 'rgb(202, 202, 216)',
     '@application-color-faded': 'fadeout(@application-color, 20%)',
     '@application-color-disabled': 'fadeout(@application-color, 60%)',
@@ -120,8 +121,17 @@ export default {
     '@btn-danger-active-background': 'darken(@btn-danger-color, 20%)',
     '@btn-disabled-color': 'lighten(@panel-background-color, 40%)',
     '@btn-disabled-background-color': 'lighten(@panel-background-color, 4%)',
-    '@code-background-color': 'lighten(@card-background-color, 5%)',
+    '@code-background-color': 'lighten(@card-background-color, 10%)',
     '@search-highlight-text-color': '@application-color',
-    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated'
+    '@search-highlight-text-background-color': '@navigation-panel-color-impersonated',
+    '@vs-color-conflict-background': '@alert-error-background',
+    '@vs-color-conflict-border': '@alert-error-border',
+    '@vs-color-conflict-applied-background': '@vs-color-conflict-background',
+    '@vs-color-insertion-background': '@alert-info-background',
+    '@vs-color-insertion-border': '@alert-info-border',
+    '@vs-color-insertion-applied-background': '@vs-color-insertion-background',
+    '@vs-color-change-background': '@alert-warning-background',
+    '@vs-color-change-border': '@alert-warning-border',
+    '@vs-color-change-applied-background': '@vs-color-change-background'
   }
 };

@@ -17,6 +17,7 @@
 package com.epam.pipeline.security.acl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -28,6 +29,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.security.acl.AclEntitySummary;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
@@ -38,6 +40,7 @@ import org.springframework.security.acls.model.Acl;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.AlreadyExistsException;
 import org.springframework.security.acls.model.MutableAcl;
+import org.springframework.security.acls.model.NotFoundException;
 import org.springframework.security.acls.model.ObjectIdentity;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
@@ -46,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 @Service
+@Slf4j
 public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     private static final String CLASS_IDENTITY_QUERY = "SELECT currval('acl_class_id_seq');";
@@ -99,7 +103,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
-        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
+        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity.getClass(), securedEntity.getId());
         if (retrieveObjectIdentityPrimaryKey(identity) != null) {
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
@@ -147,15 +151,26 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     public MutableAcl getAcl(AbstractSecuredEntity securedEntity) {
-        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
-        if (retrieveObjectIdentityPrimaryKey(identity) != null) {
+        try {
+            ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
                     .getMessage(MessageConstants.ERROR_MUTABLE_ACL_RETURN));
             return (MutableAcl) acl;
-        } else {
+        } catch (NotFoundException e) {
+            log.debug(e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public Acl readAclById(ObjectIdentity object, List<Sid> sids)
+            throws NotFoundException {
+        Map<ObjectIdentity, Acl> map = readAclsById(Collections.singletonList(object), sids);
+        if (!map.containsKey(object)) {
+            throw new NotFoundException("There should have been an Acl entry for ObjectIdentity " + object);
+        }
+        return map.get(object);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

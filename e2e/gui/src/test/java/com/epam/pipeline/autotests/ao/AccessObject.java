@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -523,6 +523,14 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         get(combobox).shouldBe(visible).click();
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         listDropDown.forEach(row -> row.shouldHave(text(option)));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkValueIsNotInDropDown(final Primitive combobox, String...options) {
+        sleep(1, SECONDS);
+        get(combobox).shouldBe(visible).click();
+        ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
+        Arrays.stream(options).forEach(option -> listDropDown.forEach(row -> row.shouldNotHave(text(option))));
         return (ELEMENT_TYPE) this;
     }
 

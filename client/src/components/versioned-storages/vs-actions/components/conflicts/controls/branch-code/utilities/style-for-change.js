@@ -15,10 +15,9 @@
  */
 
 import ChangeType from '../../../utilities/changes/types';
-import renderingConfig from '../../changes-display-config';
 import ChangeStatuses from '../../../utilities/changes/statuses';
 
-export default function getStyleForChange (change, hidden = false) {
+export default function getStyleForChange (change, renderingConfig, hidden = false) {
   const {type, status} = change || {};
   if (hidden) {
     return {

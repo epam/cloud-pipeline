@@ -32,7 +32,6 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
-import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
@@ -117,7 +116,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -445,44 +443,7 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
-    public boolean storageWithSharePermission(final DataStorageWithShareMount storageWithShare,
-                                              final String permissionName) {
-        final AbstractDataStorage storage = storageWithShare.getStorage();
-        final boolean accessGranted = storagePermission(storage.getId(), permissionName);
-        if (accessGranted) {
-            Optional.of(storage)
-                .filter(NFSDataStorage.class::isInstance)
-                .map(NFSDataStorage.class::cast)
-                .map(NFSDataStorage::getMountStatus)
-                .filter(NFSStorageMountStatus.MOUNT_DISABLED::equals)
-                .ifPresent(status -> storage.setMask(AclPermission.READ.getMask()));
-        }
-        return accessGranted;
-    }
-
-    public boolean storagePermission(final AbstractDataStorage storage, final String permissionName) {
-        return storagePermission((AbstractSecuredEntity)storage, permissionName);
-    }
-
-    public boolean storagePermission(Long storageId, String permissionName) {
-        AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
-        return storagePermission(storage, permissionName);
-    }
-
-    public boolean storagePermissions(Long storageId, List<String> permissionNames) {
-        return Optional.ofNullable(permissionNames)
-                .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList(READ))
-                .stream()
-                .allMatch(permissionName -> storagePermission(storageId, permissionName));
-    }
-
-    public boolean storagePermissionByName(final String identifier, final String permissionName) {
-        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
-        return storagePermission(storage, permissionName);
-    }
-
-    private boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
+    public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
         if (forbiddenByMountStatus(storage, permissionName)) {
             return false;
         }

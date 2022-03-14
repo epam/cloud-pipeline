@@ -1885,7 +1885,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
-  @computed
   get showConfigurationPreview () {
     return !!(this.props.showConfigurationPreview &&
       this.state.showConfigurationPreview && this.highlightedItem &&
@@ -1904,7 +1903,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     return !!this.state.metadata;
   }
 
-  @computed
   get showIssues () {
     if (this.props.folderId !== undefined) {
       return !!this.state.issuesItem || this.state.showIssuesPanel;
@@ -2059,7 +2057,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           isNfsMount={this.state.createNFSFlag}
           policySupported={!this.state.createNFSFlag}
           addExistingStorageFlag={!this.state.createNewStorageFlag}
-          pending={this.state.operationInProgress} />
+          pending={this.state.operationInProgress}
+        />
         <VersionedStorageDialog
           onSubmit={this.folderOperationWrapper(opts =>
             this.checkRepositoryExistence(opts, this.createVersionedStorage))}
@@ -2075,7 +2074,11 @@ export default class Folder extends localization.LocalizedReactComponent {
           visible={!!this.state.editableStorage}
           pending={this.state.operationInProgress}
           dataStorage={this.state.editableStorage}
-          policySupported={this.state.editableStorage && this.state.editableStorage.policySupported} />
+          policySupported={
+            this.state.editableStorage &&
+            this.state.editableStorage.policySupported
+          }
+        />
         <EditDetachedConfigurationForm
           configuration={this.state.editableConfiguration}
           onDelete={this.folderOperationWrapper(this.deleteConfiguration)}

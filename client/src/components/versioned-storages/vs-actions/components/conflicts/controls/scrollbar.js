@@ -182,6 +182,7 @@ class Scrollbar extends React.PureComponent {
         className={
           classNames(
             styles.scrollbar,
+            'cp-conflict-scroller',
             className
           )
         }
@@ -196,7 +197,9 @@ class Scrollbar extends React.PureComponent {
           className={
             classNames(
               styles.bar,
+              'bar',
               {
+                hovered: !!moving,
                 [styles.hovered]: !!moving
               }
             )

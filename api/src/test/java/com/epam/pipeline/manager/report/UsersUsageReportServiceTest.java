@@ -20,21 +20,25 @@ import com.epam.pipeline.dto.report.UsersUsageInfo;
 import com.epam.pipeline.dto.report.UsersUsageReportFilterVO;
 import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.user.PipelineUser;
-import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.epam.pipeline.util.ReportTestUtils.DAYS_IN_MONTH;
+import static com.epam.pipeline.util.ReportTestUtils.HOURS_IN_DAY;
+import static com.epam.pipeline.util.ReportTestUtils.buildTimeIntervals;
+import static com.epam.pipeline.util.ReportTestUtils.dayEnd;
+import static com.epam.pipeline.util.ReportTestUtils.dayStart;
+import static com.epam.pipeline.util.ReportTestUtils.monthEnd;
+import static com.epam.pipeline.util.ReportTestUtils.monthStart;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -46,9 +50,6 @@ public class UsersUsageReportServiceTest {
     private static final List<String> USER_NAMES = Arrays.asList(USERNAME1, USERNAME2);
     private static final Set<Long> FILTER_USERS = Collections.singleton(1L);
     private static final List<String> FILTER_USER_NAMES = Collections.singletonList(USERNAME1);
-    private static final int HOURS_IN_DAY = 24;
-    private static final int JANUARY_DAYS_COUNT = 31;
-    private static final int LOG_MINUTES_INTERVAL = 10;
 
     private final OnlineUsersService onlineUsersService = mock(OnlineUsersService.class);
     private final UserManager userManager = mock(UserManager.class);
@@ -57,8 +58,8 @@ public class UsersUsageReportServiceTest {
 
     @Test
     public void shouldCalculateDailyUsersUsageWithoutUsersFilter() {
-        final LocalDateTime from = DateUtils.nowUTC().minusDays(1).toLocalDate().atStartOfDay();
-        final LocalDateTime to = from.toLocalDate().atTime(LocalTime.MAX);
+        final LocalDateTime from = dayStart();
+        final LocalDateTime to = dayEnd(from);
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.HOURS)
@@ -88,8 +89,8 @@ public class UsersUsageReportServiceTest {
 
     @Test
     public void shouldCalculateDailyUsersUsageWithUsersFilter() {
-        final LocalDateTime from = DateUtils.nowUTC().minusDays(1).toLocalDate().atStartOfDay();
-        final LocalDateTime to = from.toLocalDate().atTime(LocalTime.MAX);
+        final LocalDateTime from = dayStart();
+        final LocalDateTime to = dayEnd(from);
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.HOURS)
@@ -121,12 +122,8 @@ public class UsersUsageReportServiceTest {
 
     @Test
     public void shouldCalculateMonthlyUsersUsageWithoutUsersFilter() {
-        final LocalDateTime from = DateUtils.nowUTC().toLocalDate()
-                .minusYears(1)
-                .withMonth(1)
-                .withDayOfMonth(1)
-                .atStartOfDay();
-        final LocalDateTime to = from.toLocalDate().withDayOfMonth(JANUARY_DAYS_COUNT).atTime(LocalTime.MAX);
+        final LocalDateTime from = monthStart();
+        final LocalDateTime to = monthEnd(from);
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.DAYS)
@@ -144,26 +141,22 @@ public class UsersUsageReportServiceTest {
                 .activeUsersCount(USER_NAMES.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
-                .periodStart(from.plusDays(JANUARY_DAYS_COUNT - 1))
-                .periodEnd(from.plusDays(JANUARY_DAYS_COUNT))
+                .periodStart(from.plusDays(DAYS_IN_MONTH - 1))
+                .periodEnd(from.plusDays(DAYS_IN_MONTH))
                 .totalUsers(USER_NAMES)
                 .totalUsersCount(USER_NAMES.size())
                 .activeUsersCount(USER_NAMES.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
-        assertThat(result).hasSize(JANUARY_DAYS_COUNT);
+        assertThat(result).hasSize(DAYS_IN_MONTH);
         assertThat(result.get(0)).isEqualTo(expectedFirstResult);
-        assertThat(result.get(JANUARY_DAYS_COUNT - 1)).isEqualTo(expectedLastResult);
+        assertThat(result.get(DAYS_IN_MONTH - 1)).isEqualTo(expectedLastResult);
     }
 
     @Test
     public void shouldCalculateMonthlyUsersUsageWithUsersFilter() {
-        final LocalDateTime from = DateUtils.nowUTC().toLocalDate()
-                .minusYears(1)
-                .withMonth(1)
-                .withDayOfMonth(1)
-                .atStartOfDay();
-        final LocalDateTime to = from.toLocalDate().withDayOfMonth(JANUARY_DAYS_COUNT).atTime(LocalTime.MAX);
+        final LocalDateTime from = monthStart();
+        final LocalDateTime to = monthEnd(from);
 
         final UsersUsageReportFilterVO filter = UsersUsageReportFilterVO.builder()
                 .interval(ChronoUnit.DAYS)
@@ -183,16 +176,16 @@ public class UsersUsageReportServiceTest {
                 .activeUsersCount(FILTER_USER_NAMES.size())
                 .build();
         final UsersUsageInfo expectedLastResult = UsersUsageInfo.builder()
-                .periodStart(from.plusDays(JANUARY_DAYS_COUNT - 1))
-                .periodEnd(from.plusDays(JANUARY_DAYS_COUNT))
+                .periodStart(from.plusDays(DAYS_IN_MONTH - 1))
+                .periodEnd(from.plusDays(DAYS_IN_MONTH))
                 .totalUsers(FILTER_USER_NAMES)
                 .totalUsersCount(FILTER_USER_NAMES.size())
                 .activeUsersCount(FILTER_USER_NAMES.size())
                 .build();
         final List<UsersUsageInfo> result = usersUsageReportService.loadUsersUsage(filter);
-        assertThat(result).hasSize(JANUARY_DAYS_COUNT);
+        assertThat(result).hasSize(DAYS_IN_MONTH);
         assertThat(result.get(0)).isEqualTo(expectedFirstResult);
-        assertThat(result.get(JANUARY_DAYS_COUNT - 1)).isEqualTo(expectedLastResult);
+        assertThat(result.get(DAYS_IN_MONTH - 1)).isEqualTo(expectedLastResult);
     }
 
     private List<OnlineUsers> generateOnlineUsers(final LocalDateTime from, final LocalDateTime to) {
@@ -206,16 +199,6 @@ public class UsersUsageReportServiceTest {
                 .logDate(logTime)
                 .userIds(USERS)
                 .build();
-    }
-
-    private List<LocalDateTime> buildTimeIntervals(final LocalDateTime from, final LocalDateTime to) {
-        LocalDateTime intervalTime = from;
-        final List<LocalDateTime> timeIntervals = new ArrayList<>();
-        while (!intervalTime.isAfter(to)) {
-            timeIntervals.add(intervalTime);
-            intervalTime = intervalTime.plus(LOG_MINUTES_INTERVAL, ChronoUnit.MINUTES);
-        }
-        return timeIntervals;
     }
 
     private List<PipelineUser> mockedUsers() {

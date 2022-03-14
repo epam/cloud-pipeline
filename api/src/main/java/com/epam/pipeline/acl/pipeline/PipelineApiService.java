@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.pipeline;
 
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
+import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
@@ -227,6 +228,11 @@ public class PipelineApiService {
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry modifyFile(Long id, PipelineSourceItemVO sourceItemVO) throws GitClientException {
         return gitManager.modifyFile(pipelineManager.load(id, true), sourceItemVO);
+    }
+
+    @PreAuthorize(PIPELINE_ID_WRITE)
+    public GitCommitEntry revertFile(final Long id, final PipelineSourceItemRevertVO sourceItemRevertVO) {
+        return gitManager.revertFile(pipelineManager.load(id, true), sourceItemRevertVO);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)

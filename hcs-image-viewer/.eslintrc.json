@@ -1,0 +1,17 @@
+{
+  "env": {
+    "browser": true
+  },
+  "parser": "@babel/eslint-parser",
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "airbnb",
+    "airbnb/hooks"
+  ],
+  "rules": {
+    "no-console": 0,
+    "react/jsx-filename-extension": 0,
+    "react/jsx-props-no-spreading": 0
+  }
+}

@@ -23,10 +23,9 @@ import {
 } from 'antd';
 import moment from 'moment-timezone';
 import classNames from 'classnames';
-import {getSpotTypeName} from '../../special/spot-instance-names';
-import AWSRegionTag from '../../special/AWSRegionTag';
 import DockerImageDetails from './docker-image-details';
 import {parseDay} from './schedule-control';
+import PoolShortDescription from './pool-short-description';
 import styles from './pool-card.css';
 
 function capitalized (string) {
@@ -113,28 +112,19 @@ function PoolCard ({
   onEdit,
   onRemove,
   onClick,
-  nodes
+  nodes,
+  router
 }) {
   if (!pool) {
     return null;
   }
-  const regions = awsRegions.loaded ? awsRegions.value : [];
   const {
-    autoscaled,
+    id,
     name,
     schedule,
     count: nodeCount,
-    minSize,
-    maxSize,
-    instanceType,
-    instanceDisk,
-    regionId,
-    priceType,
     dockerImages = []
   } = pool;
-  const region = (regions || []).find(r => r.id === regionId);
-  const provider = region ? region.provider : undefined;
-  const isSpot = /^spot$/i.test(priceType);
   const poolNodes = (nodes || [])
     .filter(node => node.labels &&
       node.labels.hasOwnProperty('pool_id') &&
@@ -150,6 +140,14 @@ function PoolCard ({
   const runsCountLabel = displayCount(runs);
   const totalLabel = displayCount(total);
   const fontSize = total >= 100 ? 10 : 12;
+  const navigate = (path) => {
+    if (!router) {
+      return;
+    }
+    if (path) {
+      router.push(path);
+    }
+  };
   return (
     <div
       className={
@@ -219,6 +217,16 @@ function PoolCard ({
               <Button
                 disabled={disabled}
                 size="small"
+                onClick={(e) => {
+                  e && e.stopPropagation();
+                  navigate(`/cluster/usage?pool=${id}`);
+                }}
+              >
+                <Icon type="area-chart" />
+              </Button>
+              <Button
+                disabled={disabled}
+                size="small"
                 type="danger"
                 onClick={onRemove}
               >
@@ -226,41 +234,7 @@ function PoolCard ({
               </Button>
             </div>
           </div>
-          <div className={styles.instance}>
-            <AWSRegionTag regionId={regionId} />
-            {
-              !autoscaled && nodeCount > 0
-                ? (
-                  <span className={styles.count}>
-                    {nodeCount} node{nodeCount === 1 ? '' : 's'}
-                  </span>
-                )
-                : undefined
-            }
-            {
-              autoscaled && Number(maxSize) >= 1 && (
-                <span className={styles.count}>
-                  Autoscaled ({minSize} - {maxSize} nodes)
-                </span>
-              )
-            }
-            {
-              autoscaled && !maxSize && (
-                <span className={styles.count}>
-                  Autoscaled ({minSize} - ... nodes)
-                </span>
-              )
-            }
-            <span className={styles.type}>
-              {instanceType}
-            </span>
-            <span className={styles.priceType}>
-              {getSpotTypeName(isSpot, provider)}
-            </span>
-            <span className={styles.count}>
-              {instanceDisk} GB
-            </span>
-          </div>
+          <PoolShortDescription pool={pool} />
         </div>
       </div>
       <div className={styles.images}>

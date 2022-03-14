@@ -159,7 +159,8 @@ public class MetadataEntityManager implements SecuredEntityManager {
                 metadataEntityDao.updateMetadataEntity(metadataEntity);
                 return metadataEntity;
             }
-            LOGGER.debug("Metadata entity with id %d was not found. A new one will be created.", entityId);
+            LOGGER.debug(String.format(
+                    "Metadata entity with id %d was not found. A new one will be created.", entityId));
         }
         String externalId = metadataEntity.getExternalId();
         if (StringUtils.isNotBlank(externalId)) {

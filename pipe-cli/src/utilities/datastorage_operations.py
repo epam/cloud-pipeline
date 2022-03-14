@@ -138,9 +138,9 @@ class DataStorageOperations(object):
             # check that we have corresponding permission for the file before take action
             if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
                 continue
+            if source_wrapper.is_file() and not source_wrapper.path == full_path:
+                continue
             if not include and not exclude:
-                if source_wrapper.is_file() and not source_wrapper.path == full_path:
-                    continue
                 if not source_wrapper.is_file():
                     possible_folder_name = source_wrapper.path_with_trailing_separator()
                     if not full_path.startswith(possible_folder_name):

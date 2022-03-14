@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests.ao;
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.NaturalOrderComparators;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -34,8 +35,10 @@ import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.utils.Conditions.contains;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
@@ -47,14 +50,14 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
         final String clusterTableClass = "cluster__table";
         final String clusterRowClass = "cluster-row";
         final String pipelineColumnClass = "cluster__cluster-node-row-pipeline";
-        return byXpath(String.format(
+        return byXpath(format(
             ".//*[contains(@class, '%s')]//tr[contains(@class, '%s') and ./td[@class = '%s' and text() = '%s']]",
             clusterTableClass, clusterRowClass, pipelineColumnClass, pipeline
         ));
     }
 
     public static By nodeLabel(final String text) {
-        return byXpath(String.format(
+        return byXpath(format(
             ".//*[@class = 'cluster__cluster-node-row-labels']/*[contains(., '%s')]", text
         ));
     }
@@ -276,6 +279,38 @@ public class ClusterMenuAO implements AccessObject<ClusterMenuAO> {
 
         assertTrue(sortedByStrings.size() > 0);
         assertEquals(sortedByStrings, sortedSortedByStrings);
+    }
+
+    public HotNodePoolsAO switchToHotNodePool() {
+        context().find(byText("Hot Node Pools")).parent()
+                .waitUntil(exist, C.DEFAULT_TIMEOUT)
+                .shouldBe(enabled).click();
+        return new HotNodePoolsAO();
+    }
+
+    public ClusterMenuAO checkNodeNotContainsHotNodePoolsLabel(String runId, String poolName) {
+        waitForRunIdAppearing(runId);
+        assertFalse(hotPoolLabel(runId, poolName),
+               format("Node with runID=%s shouldn't have label with pool %s", runId, poolName)
+        );
+        return this;
+    }
+
+    public ClusterMenuAO checkNodeContainsHotNodePoolsLabel(String runId, String poolName) {
+        waitForRunIdAppearing(runId);
+        assertTrue(hotPoolLabel(runId, poolName),
+                format("Node with runID=%s should have label with pool %s", runId, poolName)
+        );
+        return this;
+    }
+
+    private boolean hotPoolLabel(String runId, String poolName) {
+        return nodeLine(runId)
+                .shouldBe(visible)
+                .find(byClassName("cluster__cluster-node-row-labels"))
+                .find(byXpath(format(".//*[contains(@class, 'cp-node-tag-pool') and contains(., '%s')]",
+                            poolName.toUpperCase())))
+                .exists();
     }
 
     @Override

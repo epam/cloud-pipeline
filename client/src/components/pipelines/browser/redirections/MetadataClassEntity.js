@@ -84,15 +84,15 @@ class MetadataClassEntity extends React.PureComponent {
                   classEntity
                 } = result;
                 if (!classEntity) {
-                  router.push(`/metadataFolder/${folder}`);
+                  router.push(`/folder/${folder}/metadata`);
                 } else {
                   const {
                     name
                   } = classEntity;
                   if (!name) {
-                    router.push(`/metadataFolder/${folder}`);
+                    router.push(`/folder/${folder}/metadata`);
                   } else {
-                    router.push(`/metadata/${folder}/${name}`);
+                    router.push(`/folder/${folder}/metadata/${name}`);
                   }
                 }
               }

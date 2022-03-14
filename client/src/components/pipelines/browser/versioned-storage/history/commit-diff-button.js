@@ -154,12 +154,7 @@ class CommitDiffButton extends React.Component {
     } = this.state;
     return (
       <div
-        className={
-          classNames(
-            styles.diff,
-            className
-          )
-        }
+        className={className}
         style={style}
       >
         <Button

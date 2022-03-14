@@ -153,6 +153,12 @@ export default [
     hidden: true
   },
   {
+    key: Pages.hcs,
+    keys: ['hcs'],
+    static: true,
+    hidden: true
+  },
+  {
     key: Pages.run,
     keys: ['run'],
     static: true,

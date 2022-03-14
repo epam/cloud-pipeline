@@ -208,7 +208,7 @@ public class ResourceMonitoringManagerTest {
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(mockSubject);
 
         RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "spotNode", PLATFORM, true, null, null, null);
+                null, null, "spotNode", PLATFORM, true, null, null, null, null);
         final Map <String, String> stubTagMap = new HashMap<>();
         okayRun = new PipelineRun();
         okayRun.setInstance(spotInstance);
@@ -222,7 +222,7 @@ public class ResourceMonitoringManagerTest {
 
         idleSpotRun = new PipelineRun();
         idleSpotRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "idleSpotNode", PLATFORM, true, null, null, null));
+                null, null, "idleSpotNode", PLATFORM, true, null, null, null, null));
         idleSpotRun.setPodId("idle-spot");
         idleSpotRun.setId(TEST_IDLE_SPOT_RUN_ID);
         idleSpotRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
@@ -233,7 +233,7 @@ public class ResourceMonitoringManagerTest {
 
         autoscaleMasterRun = new PipelineRun();
         autoscaleMasterRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "autoscaleMasterRun", PLATFORM, false, null, null, null));
+                null, null, "autoscaleMasterRun", PLATFORM, false, null, null, null, null));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
         autoscaleMasterRun
@@ -248,7 +248,7 @@ public class ResourceMonitoringManagerTest {
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, 
-                        "idleNode", PLATFORM, false, null, null, null));
+                        "idleNode", PLATFORM, false, null, null, null, null));
         idleOnDemandRun.setPodId("idle-on-demand");
         idleOnDemandRun.setId(TEST_IDLE_ON_DEMAND_RUN_ID);
         idleOnDemandRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -260,7 +260,7 @@ public class ResourceMonitoringManagerTest {
         idleRunToProlong = new PipelineRun();
         idleRunToProlong.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, 
-                        "prolongedNode", PLATFORM, false, null, null, null));
+                        "prolongedNode", PLATFORM, false, null, null, null, null));
         idleRunToProlong.setPodId("idle-to-prolong");
         idleRunToProlong.setId(TEST_IDLE_RUN_TO_PROLONG_ID);
         idleRunToProlong.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -271,7 +271,7 @@ public class ResourceMonitoringManagerTest {
 
         highConsumingRun = new PipelineRun();
         highConsumingRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "highConsumingNode", PLATFORM, true, null, null, null));
+                null, null, "highConsumingNode", PLATFORM, true, null, null, null, null));
         highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
         highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
         highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));

@@ -39,6 +39,12 @@
 .table tbody tr td.column,
 .table tbody tr td.actions-column {
   padding: 4px 8px;
+  vertical-align: middle;
+}
+
+.table tbody tr td.status-column {
+  padding: 0 0 0 4px;
+  max-width: 45px;
 }
 
 .table-content-actions {
@@ -90,7 +96,7 @@
 }
 
 .route-status {
-  padding: 5px 10px 5px 0px;
+  padding: 0;
   font-size: larger;
 }
 
@@ -112,4 +118,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.ports {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.ports .port:not(:last-child)::after {
+  content: ', ';
+  margin-right: 5px;
 }

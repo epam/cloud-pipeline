@@ -58,7 +58,7 @@ class GitTask(Task):
             self.pulling()
             self._check_pull_possibility(git_client, full_repo_path)
 
-            status_files = git_client.status(full_repo_path)
+            status_files = list(self._filter_ignored(git_client.status(full_repo_path)))
             if status_files:
                 self._prepare_for_pull(status_files, git_client, full_repo_path)
                 git_client.stash(full_repo_path)
@@ -80,19 +80,20 @@ class GitTask(Task):
             self.logger.log(traceback.format_exc())
             self.failure(e)
 
-    def push(self, git_client, full_repo_path, message, files_to_add=None):
+    def push(self, git_client, full_repo_path, message, files_to_add=None, user_name=None, user_email=None):
         try:
             self.indexing()
             git_client.prepare_index(full_repo_path, files_to_add)
 
-            self.committing()
-            git_client.commit(full_repo_path, message)
-
             self.pulling()
-            conflicts = git_client.pull(full_repo_path)
+            conflicts, commit_required = git_client.fetch_and_merge(full_repo_path, message, user_name, user_email)
             if conflicts:
                 self._conflicts_failure(conflicts)
                 return
+
+            if commit_required:
+                self.committing()
+                git_client.commit(full_repo_path, message, user_name, user_email)
 
             self.pushing()
             git_client.push(full_repo_path)
@@ -142,3 +143,7 @@ class GitTask(Task):
         for status_file in status_files:
             if status_file.state_code & pygit2.GIT_STATUS_WT_NEW:
                 client.add(repo_path, status_file)
+
+    @staticmethod
+    def _filter_ignored(status_files):
+        return filter(lambda status_file: status_file.state != 'ignored', status_files)

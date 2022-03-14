@@ -42,6 +42,9 @@ import java.util.stream.Stream;
 public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
 
     private static final String OWNER = "owner";
+    private static final double NOTIFICATION_THRESHOLD = 10.0;
+    private static final double DISABLE_THRESHOLD = 50.0;
+    private static final double READ_ONLY_THRESHOLD = 100.0;
 
     @Autowired
     private StorageQuotaTriggersDao storageQuotaTriggersDao;
@@ -54,11 +57,13 @@ public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
     public void testCRUD() {
         final Long storageId1 = createNfsStorage().getId();
         final Long storageId2 = createNfsStorage().getId();
-        final NFSQuotaTrigger triggerEntry1 = createQuotaTrigger(storageId1, 10.0, StorageQuotaType.PERCENTS,
+        final NFSQuotaTrigger triggerEntry1 = createQuotaTrigger(storageId1, NOTIFICATION_THRESHOLD,
+                                                                 StorageQuotaType.PERCENTS,
                                                                  NFSStorageMountStatus.ACTIVE,
                                                                  StorageQuotaAction.EMAIL);
-        final NFSQuotaTrigger triggerEntry2 = createQuotaTrigger(storageId2, 50.0, StorageQuotaType.GIGABYTES,
-                                                                 NFSStorageMountStatus.ACTIVE,
+        final NFSQuotaTrigger triggerEntry2 = createQuotaTrigger(storageId2, DISABLE_THRESHOLD,
+                                                                 StorageQuotaType.GIGABYTES,
+                                                                 NFSStorageMountStatus.MOUNT_DISABLED,
                                                                  StorageQuotaAction.DISABLE, StorageQuotaAction.EMAIL);
 
         assertThat(storageQuotaTriggersDao.loadAll()).isEmpty();
@@ -76,12 +81,23 @@ public class StorageQuotaTriggersDaoTest extends AbstractJdbcTest {
         assertThat(storageQuotaTriggersDao.loadAll()).hasSameElementsAs(Collections.singletonList(triggerEntry2));
         assertThat(storageQuotaTriggersDao.find(storageId1)).isEqualTo(Optional.empty());
 
-        final NFSQuotaTrigger triggerEntryUpdate = createQuotaTrigger(storageId2, 100.0, StorageQuotaType.GIGABYTES,
+        final NFSQuotaTrigger triggerEntryUpdate = createQuotaTrigger(storageId2, READ_ONLY_THRESHOLD,
+                                                                      StorageQuotaType.GIGABYTES,
                                                                       NFSStorageMountStatus.READ_ONLY,
                                                                       StorageQuotaAction.READ_ONLY,
                                                                       StorageQuotaAction.EMAIL);
         storageQuotaTriggersDao.update(triggerEntryUpdate);
         assertThat(storageQuotaTriggersDao.find(storageId2)).isEqualTo(Optional.of(triggerEntryUpdate));
+        final NFSQuotaTrigger triggerEntryImmediateActivation = createQuotaTrigger(storageId2, DISABLE_THRESHOLD,
+                                                                                   StorageQuotaType.GIGABYTES,
+                                                                                   NFSStorageMountStatus.MOUNT_DISABLED,
+                                                                                   StorageQuotaAction.DISABLE,
+                                                                                   StorageQuotaAction.EMAIL)
+            .toBuilder()
+            .targetStatusActivationTime(null)
+            .build();
+        storageQuotaTriggersDao.update(triggerEntryImmediateActivation);
+        assertThat(storageQuotaTriggersDao.find(storageId2)).isEqualTo(Optional.of(triggerEntryImmediateActivation));
     }
 
     private NFSDataStorage createNfsStorage() {

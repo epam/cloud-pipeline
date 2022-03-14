@@ -32,7 +32,6 @@
 
 .conflicts-ide .divider {
   grid-column: DIVIDER;
-  background-color: #fafafa;
   cursor: col-resize;
   display: flex;
   flex-direction: row;
@@ -40,7 +39,6 @@
 }
 
 .conflicts-ide .divider > div {
-  background-color: #eee;
   width: 2px;
   height: 100%;
 }
@@ -57,10 +55,6 @@
   text-align: right;
 }
 
-.resolved-cell .resolved {
-  color: #399839;
-}
-
 .conflicts-ide .resolve-area-container {
   grid-column: IDE;
   min-width: 0;
@@ -73,7 +67,6 @@
 .resolve-changes {
   width: 100%;
   padding: 0 4px;
-  background-color: #fafafa;
 }
 
 .resolve-area {
@@ -86,8 +79,7 @@
 
 .resolve-area .header {
   grid-row: HEADER;
-  background-color: #fafafa;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid transparent;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -120,10 +112,6 @@
 /* Hide scrollbar for Chrome, Safari and Opera */
 .resolve-area .panel::-webkit-scrollbar {
   display: none;
-}
-
-.selected-file {
-  background-color: #eef8ff;
 }
 
 .resolve-area .panel .sticky-placeholder {
@@ -178,11 +166,11 @@
 }
 
 .panel .numbers-panel.left .line-numbers {
-  border-right: 1px solid #ccc;
+  border-right: 1px solid transparent;
 }
 
 .panel .numbers-panel.right .line-numbers {
-  border-left: 1px solid #ccc;
+  border-left: 1px solid transparent;
 }
 
 .resolve-area .line-numbers,
@@ -210,18 +198,11 @@
 
 .line .actions .action {
   cursor: pointer;
-  color: #555;
   padding: 3px;
-}
-
-.line .actions .action:hover {
-  color: #333;
-  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .line .number {
   padding: 0 5px;
-  color: #999;
 }
 
 .code .line {
@@ -256,7 +237,6 @@
   position: absolute;
   display: none;
   z-index: 1;
-  color: rgba(0, 0, 0, 0.65);
 }
 
 .code.focused .caret {

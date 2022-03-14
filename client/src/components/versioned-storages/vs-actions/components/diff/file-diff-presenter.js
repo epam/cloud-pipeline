@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as diff2html from 'diff2html';
-import {Collapse, Icon} from 'antd';
+import {Checkbox, Collapse, Icon} from 'antd';
 import classNames from 'classnames';
 import rawTemplates from './raw-templates';
 import styles from './diff.css';
@@ -117,12 +117,31 @@ class FileDiffPresenter extends React.PureComponent {
   renderDescription = () => {
     const {
       file,
-      type
+      type,
+      selectable,
+      selectedFiles,
+      onSelectionChanged
     } = this.props;
     if (file && type) {
       return (
         <div key="description">
-          <div className={styles.fileDiffHeader}>
+          {
+            selectable && (
+              <Checkbox
+                onClick={event => event.stopPropagation()}
+                onChange={onSelectionChanged(file)}
+                checked={selectedFiles.includes(file)}
+              />
+            )
+          }
+          <div
+            className={
+              classNames(
+                styles.fileDiffHeader,
+                {[styles.fileDiffHeaderSelectable]: selectable}
+              )
+            }
+          >
             <Icon type="file-text" />
             <span>{file}</span>
             <span
@@ -147,7 +166,8 @@ class FileDiffPresenter extends React.PureComponent {
     const {
       className,
       file,
-      style
+      style,
+      selectable
     } = this.props;
     const {
       opened
@@ -159,7 +179,14 @@ class FileDiffPresenter extends React.PureComponent {
         style={style}
       >
         <Collapse
-          className="git-diff-collapse"
+          className={classNames(
+            'cp-git-diff-collapse',
+            'git-diff-collapse',
+            {
+              'git-diff-unselectable': !selectable,
+              'git-diff-selectable': selectable
+            }
+          )}
           activeKey={opened ? ['presentation'] : []}
           onChange={this.onOpenedChange}
         >
@@ -183,7 +210,10 @@ FileDiffPresenter.propTypes = {
   type: PropTypes.string,
   visible: PropTypes.bool,
   collapsed: PropTypes.bool,
-  style: PropTypes.object
+  style: PropTypes.object,
+  selectable: PropTypes.bool,
+  onSelectionChanged: PropTypes.func,
+  selectedFiles: PropTypes.arrayOf(PropTypes.string)
 };
 
 export default FileDiffPresenter;

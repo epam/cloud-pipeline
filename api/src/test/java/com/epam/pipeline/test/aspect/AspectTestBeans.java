@@ -90,6 +90,7 @@ import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
@@ -97,6 +98,7 @@ import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
+import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
@@ -425,4 +427,10 @@ public class AspectTestBeans {
 
     @MockBean
     protected OnlineUsersMapper onlineUsersMapper;
+
+    @MockBean
+    protected NodePoolUsageRepository nodePoolUsageRepository;
+
+    @MockBean
+    protected NodePoolUsageMapper nodePoolUsageMapper;
 }

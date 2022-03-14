@@ -7,7 +7,6 @@ import {log, error} from '../log';
 import * as utilities from './utilities';
 import copyPingConfiguration from './copy-ping-configuration';
 import cloudPipelineAPI from '../cloud-pipeline-api';
-import {isDigit} from "@marshallofsound/webpack-asset-relocator-loader";
 
 axios.defaults.adapter = require('axios/lib/adapters/http');
 

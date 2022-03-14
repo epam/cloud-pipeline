@@ -23,6 +23,7 @@ export default {
   predefined: true,
   configuration: {
     '@application-background-color': '#ececec',
+    '@application-dark-background-color': '#000',
     '@application-color': 'rgba(0, 0, 0, 0.65)',
     '@application-color-faded': 'fadeout(@application-color, 20%)',
     '@application-color-disabled': 'fadeout(@application-color, 40%)',
@@ -143,6 +144,18 @@ export default {
     '@search-highlight-text-background-color': 'yellow',
     '@background-image': 'none',
     '@navigation-background-image': 'none',
-    '@logo-image': "@static_resource('logo.png')"
+    '@logo-image': "@static_resource('logo.png')",
+    '@vs-color-conflict-background': 'rgba(237, 75, 48, 0.25)',
+    '@vs-color-conflict-border': 'rgba(237, 75, 48, 5)',
+    '@vs-color-conflict-applied-background': '@vs-color-conflict-background',
+    '@vs-color-insertion-background': 'rgba(9, 171, 90, 0.4)',
+    '@vs-color-insertion-border': '#b4e2b4',
+    '@vs-color-insertion-applied-background': '@vs-color-insertion-background',
+    '@vs-color-deletion-background': 'rgba(217, 217, 217, 0.4)',
+    '@vs-color-deletion-border': '#9e9e9e',
+    '@vs-color-deletion-applied-background': '#d9d9d9',
+    '@vs-color-change-background': 'rgba(252, 230, 162, 0.4)',
+    '@vs-color-change-border': '#f5e3aa',
+    '@vs-color-change-applied-background': '@vs-color-change-background'
   }
 };

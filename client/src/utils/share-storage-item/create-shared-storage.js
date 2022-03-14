@@ -16,6 +16,7 @@
 
 import CreateDataStorage from '../../models/dataStorage/DataStorageSave';
 import getStoragePath from './get-storage-path';
+import generateSharingList from './extend-sharing-list';
 
 const ServiceTypes = {
   objectStorage: 'OBJECT_STORAGE',
@@ -28,28 +29,6 @@ function wrapRequest (request, payload) {
       .then(() => resolve(request))
       .catch(reject);
   });
-}
-
-function extendSharedItems (items = [], delimiter = '/') {
-  const itemsSet = new Set(items);
-  for (const item of items) {
-    const e = /^(.+)\.vsi$/i.exec(item);
-    if (e) {
-      const pathComponents = e[1].split(delimiter);
-      const file = pathComponents.pop();
-      const folderToAppend = [
-        ...pathComponents,
-        `_${file}_`
-      ].join(delimiter).concat('/**');
-      const wsiParserFolder = [
-        ...pathComponents,
-        '.wsiparser'
-      ].join(delimiter).concat('/**');
-      itemsSet.add(folderToAppend);
-      itemsSet.add(wsiParserFolder);
-    }
-  }
-  return [...itemsSet];
 }
 
 export default function createSharedStorage (
@@ -78,7 +57,7 @@ export default function createSharedStorage (
             : ServiceTypes.objectStorage;
           const payload = {
             sourceStorageId: sharedStorage.id,
-            linkingMasks: extendSharedItems(
+            linkingMasks: generateSharingList(
               sharedItems,
               sharedStorage ? sharedStorage.delimiter : undefined
             ),

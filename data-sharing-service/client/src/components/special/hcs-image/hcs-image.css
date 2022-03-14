@@ -1,0 +1,135 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.loading-view {
+  z-index: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.hcs-image-page {
+  width: 100%;
+  text-align: initial;
+  height: 100%;
+  overflow: auto;
+  padding: 10px;
+}
+
+.hcs-image-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+}
+
+.alert-container {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  z-index: 1;
+  display: flex;
+}
+
+.alert-container .alert {
+  flex: 1;
+}
+
+.hidden-details-button {
+  visibility: hidden;
+  margin: 5px 10px 5px 5px;
+}
+
+.hcs-image-renderer {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.hcs-image {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  overflow: hidden;
+  position: relative;
+}
+
+.hcs-image-controls {
+  overflow: auto;
+  z-index: 1;
+  padding: 5px;
+  width: 300px;
+  border: 1px solid transparent;
+}
+
+.selector-container {
+  padding: 5px;
+  margin-bottom: 5px;
+  min-width: 200px;
+}
+
+.selector {
+  width: 100%;
+}
+
+.configuration-actions {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 1;
+}
+
+.configuration-actions .action {
+  margin: 5px;
+  line-height: 1;
+}
+
+.details-panel,
+.configuration {
+  position: absolute;
+  top: 5px;
+  max-height: calc(100% - 10px);
+  z-index: 2;
+}
+
+.configuration {
+  right: 5px;
+  width: 300px;
+}
+
+.download-tiff-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 5px;
+}
+
+.details-panel {
+  left: 5px;
+  max-width: 300px;
+  min-width: 200px;
+}
+
+.details-info-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  line-height: 1;
+}

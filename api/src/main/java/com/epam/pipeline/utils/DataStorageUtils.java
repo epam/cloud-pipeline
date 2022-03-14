@@ -19,8 +19,12 @@ package com.epam.pipeline.utils;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.pipeline.run.parameter.DataStorageLink;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
-public class DataStorageUtils {
+@SuppressWarnings("HideUtilityClassConstructor")
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class DataStorageUtils {
 
     public static DataStorageLink constructDataStorageLink(final AbstractDataStorage dataStorage,
                                                            final String path,
@@ -46,6 +50,24 @@ public class DataStorageUtils {
         } else {
             dataStorageLink.setPath(relativePath);
         }
+        return dataStorageLink;
+    }
+
+    public static DataStorageLink constructDataStorageFileLink(final AbstractDataStorage dataStorage,
+                                                               final String path) {
+        final String relativePath;
+        if (path.startsWith(dataStorage.getPathMask())) {
+            relativePath = path.substring(dataStorage.getPathMask().length())
+                    .substring(ProviderUtils.DELIMITER.length());
+        } else {
+            relativePath = path.startsWith(ProviderUtils.DELIMITER)
+                    ? path.substring(1) : path;
+        }
+        final DataStorageLink dataStorageLink = new DataStorageLink();
+        dataStorageLink.setAbsolutePath(dataStorage.getPathMask()
+                + ProviderUtils.DELIMITER + relativePath);
+        dataStorageLink.setDataStorageId(dataStorage.getId());
+        dataStorageLink.setPath(relativePath);
         return dataStorageLink;
     }
 

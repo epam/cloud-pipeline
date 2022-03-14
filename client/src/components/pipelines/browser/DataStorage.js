@@ -75,7 +75,6 @@ import displayDate from '../../../utils/displayDate';
 import displaySize from '../../../utils/displaySize';
 import roleModel from '../../../utils/roleModel';
 import moment from 'moment-timezone';
-import styles from './Browser.css';
 import DataStorageCodeForm from './forms/DataStorageCodeForm';
 import DataStorageGenerateSharedLink
 from '../../../models/dataStorage/DataStorageGenerateSharedLink';
@@ -93,6 +92,12 @@ import BashCode from '../../special/bash-code';
 import {extractFileShareMountList} from './forms/DataStoragePathInput';
 import SharedItemInfo from './forms/data-storage-item-sharing/SharedItemInfo';
 import {SAMPLE_SHEET_FILE_NAME_REGEXP} from '../../special/sample-sheet/utilities';
+import {
+  fastCheckPreviewAvailable as fastCheckHCSPreviewAvailable,
+  checkPreviewAvailable as checkHCSPreviewAvailable
+} from '../../special/hcs-image/utilities/check-preview-available';
+
+import styles from './Browser.css';
 
 const PAGE_SIZE = 40;
 
@@ -270,6 +275,44 @@ export default class DataStorage extends React.Component {
     return false;
   }
 
+  @computed
+  get storageVersioningAllowed () {
+    const {
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    const loaded = preferences &&
+      preferences.loaded &&
+      authenticatedUserInfo &&
+      authenticatedUserInfo.loaded;
+    if (loaded) {
+      const isAdmin = authenticatedUserInfo.value.admin;
+      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
+    }
+    return false;
+  }
+
+  @computed
+  get versionControlsEnabled () {
+    const {info} = this.props;
+    return this.storageVersioningAllowed &&
+      info &&
+      info.loaded &&
+      info.value.type !== 'NFS' &&
+      info.value.storagePolicy &&
+      info.value.storagePolicy.versioningEnabled;
+  }
+
+  @computed
+  get showVersions () {
+    if (this.props.info.pending) {
+      return false;
+    }
+    return this.props.info.value.type !== 'NFS' &&
+      this.props.showVersions &&
+      roleModel.isOwner(this.props.info.value);
+  }
+
   onDataStorageEdit = async (storage) => {
     const dataStorage = {
       id: this.props.storageId,
@@ -361,16 +404,6 @@ export default class DataStorage extends React.Component {
       this.props.info.fetch();
     });
   };
-
-  @computed
-  get showVersions () {
-    if (this.props.info.pending) {
-      return false;
-    }
-    return this.props.info.value.type !== 'NFS' &&
-      this.props.showVersions &&
-      roleModel.isOwner(this.props.info.value);
-  }
 
   renameDataStorage = async (name) => {
     const dataStorage = {
@@ -911,7 +944,10 @@ export default class DataStorage extends React.Component {
         </a>
       );
     }
-    if (item.editable) {
+    if (item.isVersion
+      ? item.editable && this.versionControlsEnabled
+      : item.editable
+    ) {
       actions.push(
         <Button
           id={`edit ${item.name}`}
@@ -922,14 +958,17 @@ export default class DataStorage extends React.Component {
         </Button>
       );
     }
-    if (this.canRestoreItem(item)) {
+    if (this.versionControlsEnabled && this.canRestoreItem(item)) {
       actions.push(
         <Button id={`restore ${item.name}`} key="restore" size="small" onClick={() => this.onRestoreClicked(item, item.isVersion ? item.version : undefined)}>
           <Icon type="reload" />
         </Button>
       );
     }
-    if (item.deletable) {
+    if (item.isVersion
+      ? item.deletable && this.versionControlsEnabled
+      : item.deletable
+    ) {
       actions.push(separator());
       actions.push(
         <Button
@@ -1041,7 +1080,7 @@ export default class DataStorage extends React.Component {
       .split('.')
       .pop()
       .toLowerCase();
-    if (extension === 'vsi' || extension === 'mrxs') {
+    if (extension === 'vsi' || extension === 'mrxs' || extension === 'hcs') {
       return (
         <Row
           key="preview body"
@@ -1081,7 +1120,7 @@ export default class DataStorage extends React.Component {
     this.setState({previewModal: null});
   };
 
-  checkPreviewAvailability = (file) => {
+  checkWsiPreviewAvailability = (file) => {
     if (!file) {
       return;
     }
@@ -1105,6 +1144,31 @@ export default class DataStorage extends React.Component {
           });
       });
     }
+  };
+
+  checkHcsPreviewAvailability = (file) => {
+    if (!file) {
+      return;
+    }
+    const {storageId} = this.props;
+    this.setState({
+      previewPending: true
+    }, async () => {
+      let error;
+      try {
+        const available = await checkHCSPreviewAvailable({path: file.path, storageId});
+        if (!available) {
+          throw new Error('HCS preview not available');
+        }
+      } catch (e) {
+        error = true;
+      } finally {
+        this.setState({
+          previewPending: false,
+          previewAvailable: !error
+        });
+      }
+    });
   };
 
   getStorageItemsTable = () => {
@@ -1183,7 +1247,7 @@ export default class DataStorage extends React.Component {
               i.labels['StorageClass'].toLowerCase() !== 'glacier'
             ),
           editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-          shareAvailable: i.type.toLowerCase() !== 'file' && !i.deleteMarker && this.sharingEnabled,
+          shareAvailable: !i.deleteMarker && this.sharingEnabled,
           deletable: roleModel.writeAllowed(this.props.info.value),
           children: getChildList(i, i.versions, sensitive),
           selectable: !i.deleteMarker,
@@ -1193,7 +1257,10 @@ export default class DataStorage extends React.Component {
           vsi: !i.deleteMarker && i.type.toLowerCase() === 'file' && (
             i.path.toLowerCase().endsWith('.vsi') ||
             i.path.toLowerCase().endsWith('.mrxs')
-          )
+          ),
+          hcs: !i.deleteMarker &&
+            i.type.toLowerCase() === 'file' &&
+            fastCheckHCSPreviewAvailable({path: i.path, storageId: this.props.storageId})
         };
       }));
       return items;
@@ -1205,7 +1272,7 @@ export default class DataStorage extends React.Component {
     for (
       let i = 0; i < this.tableData.length; i++) {
       const item = this.tableData[i];
-      if (item.miew || item.vsi) {
+      if (item.miew || item.vsi || item.hcs) {
         hasAppsColumn = true;
       }
       if (item.versions) {
@@ -1301,6 +1368,17 @@ export default class DataStorage extends React.Component {
             </div>
           );
         }
+        if (item.hcs) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(event) => this.openPreviewModal(item, event)}
+              key={item.key}
+            >
+              <img src="icons/file-extensions/hcs.png" />
+            </div>
+          );
+        }
         return apps;
       }
     };
@@ -1392,8 +1470,15 @@ export default class DataStorage extends React.Component {
         selectedFile: item,
         metadata: true
       }, () => {
-        if (extension === 'vsi' || extension === 'mrxs') {
-          this.checkPreviewAvailability(item);
+        switch (extension) {
+          case 'vsi':
+          case 'mrxs':
+            this.checkWsiPreviewAvailability(item);
+            break;
+          case 'hcs':
+            this.checkHcsPreviewAvailability(item);
+            break;
+          default: return false;
         }
       });
     }
@@ -1673,7 +1758,10 @@ export default class DataStorage extends React.Component {
     );
     if (itemsAvailableForShare.length === 1) {
       buttonText = (
-        <span>
+        <span
+          className="cp-ellipsis-text"
+          style={{maxWidth: 300, display: 'block'}}
+        >
           Share <b>{itemsAvailableForShare[0].name}</b> {itemsAvailableForShare[0].type}
         </span>
       );
@@ -1754,10 +1842,7 @@ export default class DataStorage extends React.Component {
                 </Button>
               }
               {
-                roleModel.isOwner(this.props.info.value) &&
-                this.props.info.value.type !== 'NFS' &&
-                this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.versioningEnabled
+                this.versionControlsEnabled
                   ? (
                     <Checkbox
                       checked={this.showVersions}

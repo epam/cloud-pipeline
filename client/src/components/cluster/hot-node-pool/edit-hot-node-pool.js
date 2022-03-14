@@ -1334,7 +1334,11 @@ class EditHotNodePool extends React.Component {
                 <Select.OptGroup key={group.family} label={group.family}>
                   {
                     group.instances.map(instance => (
-                      <Select.Option key={instance.sku} value={instance.name}>
+                      <Select.Option
+                        key={instance.sku}
+                        value={instance.name}
+                        title={instance.name}
+                      >
                         <InstanceDetails
                           instance={instance.name}
                           instances={allowedInstanceTypes}
