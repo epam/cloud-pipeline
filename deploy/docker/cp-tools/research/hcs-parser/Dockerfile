@@ -62,6 +62,7 @@ RUN yum install -y -q epel-release && \
     wget "$BFTOOLS_DISTR_URL" -O "$HCS_TOOLS_HOME/bftools-cli.zip" && \
     unzip "$HCS_TOOLS_HOME/bftools-cli.zip" -d "$HCS_TOOLS_HOME" && \
     rm -f "$HCS_TOOLS_HOME/bftools-cli.zip" && \
+    pip install pillow && \
     wget "$PYTHON_3_9_DISTRIBUTION_URL" -O python3.tgz  && \
     tar xzf python3.tgz && \
     cd Python-* && \

@@ -18,6 +18,7 @@ import os
 import multiprocessing
 import datetime
 import math
+from PIL import Image
 import shutil
 import sys
 import tempfile
@@ -201,6 +202,9 @@ class WellGrid:
 
     def get_height(self):
         return len(self.__y_coords)
+
+    def get_values_dict(self):
+        return dict({y_coord: set(self.__x_coords) for y_coord in self.__y_coords})
 
 
 class HcsFileTagProcessor:
@@ -772,21 +776,25 @@ class HcsFileParser:
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         original_images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
         hcs_xml_info_root.remove(original_images_list)
-        channel_dimensions = self.get_channel_dimensions(hcs_xml_info_root)
+        wells_grid_mapping = self.get_wells_grid_mapping(hcs_schema_prefix, original_images_list)
+        channel_dimensions = self.get_channel_dimensions(hcs_xml_info_root, wells_grid_mapping)
         self.log_processing_info('Scaling overview TIFF files...')
-        well_layers = self.build_well_layers(original_images_list, sequence_data_root_path,
-                                             channel_dimensions, sequence_preview_dir_path)
+        well_layers, well_grid_missing_values = self.build_well_layers(original_images_list, sequence_data_root_path,
+                                                                       channel_dimensions, sequence_preview_dir_path,
+                                                                       wells_grid_mapping)
         wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
         self.log_processing_info('Merging overview TIFF files...')
         for well in wells_list.findall(hcs_schema_prefix + 'Well'):
-            self.merge_well_layers(original_images_list, sequence_preview_dir_path, well, well_layers)
+            self.merge_well_layers(original_images_list, sequence_preview_dir_path, well, well_layers,
+                                   well_grid_missing_values)
         hcs_xml_info_root.append(original_images_list)
         preview_sequence_index_file_path = os.path.join(sequence_preview_dir_path, HCS_INDEX_FILE)
         ET.register_namespace('', hcs_schema_prefix[1:-1])
         hcs_xml_info_tree.write(preview_sequence_index_file_path)
         return preview_sequence_index_file_path
 
-    def merge_well_layers(self, original_images_list, sequence_preview_dir_path, well, well_layers):
+    def merge_well_layers(self, original_images_list, sequence_preview_dir_path, well, well_layers,
+                          well_grid_missing_values):
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(original_images_list)
         [well.remove(image) for image in well.findall(hcs_schema_prefix + 'Image')]
         row_id = well.find(hcs_schema_prefix + 'Row').text
@@ -801,8 +809,14 @@ class HcsFileParser:
                     vertically_sorted_mapping = OrderedDict(
                         sorted(channel_images.items(), key=cmp_to_key(lambda y1, y2: float(y2[0]) - float(y1[0]))))
                     well_rows_data = vertically_sorted_mapping.items()
+                    well_grid_missing_channel_planes = {}
+                    if channel_id in well_grid_missing_values:
+                        channel_missing_values = well_grid_missing_values[channel_id]
+                        if well_id in channel_missing_values:
+                            well_grid_missing_channel_planes = channel_missing_values[well_id]
                     rows_image_paths = self.merge_images_by_row(hcs_schema_prefix, sequence_preview_dir_path,
-                                                                well_preview_full_name, well_rows_data)
+                                                                well_preview_full_name, well_rows_data,
+                                                                well_grid_missing_channel_planes)
                     well_preview_full_path = HcsParsingUtils.quote_string(
                         os.path.join(sequence_preview_dir_path, well_preview_full_name))
                     exit_code = os.system('convert -append {} {}'
@@ -821,28 +835,55 @@ class HcsFileParser:
                     original_images_list.append(well_preview_details)
                     well.append(ET.fromstring('<Image id="{}" />'.format(image_id)))
 
-    def merge_images_by_row(self, hcs_schema_prefix, sequence_preview_dir_path, well_preview_full_name, well_rows_data):
+    def merge_images_by_row(self, hcs_schema_prefix, sequence_preview_dir_path, well_preview_full_name, well_rows_data,
+                            well_grid_missing_channel_planes):
         rows_image_paths = list()
         for y_coord, images_list in well_rows_data:
-            sorted(images_list, key=lambda image: float(image.find(hcs_schema_prefix + 'PositionX').text))
-            row_image_chunks_names = \
-                [HcsParsingUtils.quote_string(os.path.join(sequence_preview_dir_path,
-                                                           image.find(hcs_schema_prefix + 'URL').text))
-                 for image in images_list]
+            row_image_chunks_names = {}
+            cropped_width, cropped_height = self.get_cropped_size(sequence_preview_dir_path, images_list)
+            for image in images_list:
+                x_coord = image.find(hcs_schema_prefix + 'PositionX').text
+                file_path = HcsParsingUtils.quote_string(os.path.join(sequence_preview_dir_path,
+                                                                      image.find(hcs_schema_prefix + 'URL').text))
+                row_image_chunks_names[x_coord] = file_path
+            if y_coord in well_grid_missing_channel_planes:
+                for x_coord in well_grid_missing_channel_planes[y_coord]:
+                    empty_file_name = HcsParsingUtils.quote_string(
+                        tempfile.mkstemp(dir=sequence_preview_dir_path, suffix='.tiff',
+                                         prefix='empty-{}-{}'.format(y_coord, x_coord))[1])
+                    os.system('convert -size {}x{} xc:#000000 {}'
+                              .format(cropped_width, cropped_height, empty_file_name))
+                    row_image_chunks_names[x_coord] = empty_file_name
+            sorted_images = OrderedDict(sorted(row_image_chunks_names.items(),
+                                               key=cmp_to_key(lambda x1, x2: float(x1[0]) - float(x2[0]))))
             row_image_name = HcsParsingUtils.quote_string(
                 os.path.join(sequence_preview_dir_path, '{}y-{}'.format(y_coord, well_preview_full_name)))
-            exit_code = os.system('convert +append {} {}'.format(' '.join(row_image_chunks_names), row_image_name))
+            exit_code = os.system('convert +append {} {}'.format(' '.join(sorted_images.values()), row_image_name))
             if exit_code != 0:
                 raise RuntimeError('Error during y={} row overview merging'.format(y_coord))
             rows_image_paths.append(row_image_name)
         return rows_image_paths
 
+    def get_cropped_size(self, sequence_preview_dir_path, images_list):
+        image = images_list[0]
+        hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(image)
+        full_image_path = os.path.join(sequence_preview_dir_path, image.find(hcs_schema_prefix + 'URL').text)
+        row_image_descriptor = Image.open(full_image_path)
+        return row_image_descriptor.width, row_image_descriptor.height
+
     def build_well_layers(self, original_images_root, sequence_data_root_path, channel_dimensions,
-                          sequence_preview_dir_path):
+                          sequence_preview_dir_path, wells_grid_mapping):
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(original_images_root)
         original_images_list = original_images_root.findall(hcs_schema_prefix + 'Image')
-        wells_grid_mapping = self.get_wells_grid_mapping(hcs_schema_prefix, original_images_list)
         well_grouping = dict()
+        well_grid_missing_values = dict()
+        for well_id, grid_details in wells_grid_mapping.items():
+            for channel_id in channel_dimensions.keys():
+                if channel_id not in well_grid_missing_values:
+                    well_grid_missing_values[channel_id] = {well_id: grid_details.get_values_dict()}
+                else:
+                    well_grid_missing_values[channel_id][well_id] = grid_details.get_values_dict()
+        print(well_grid_missing_values)
         for image in original_images_list:
             well_id = self.add_image_summary_to_mapping(hcs_schema_prefix, image, well_grouping)
             original_images_root.remove(image)
@@ -851,22 +892,39 @@ class HcsFileParser:
             resized_file = os.path.join(sequence_preview_dir_path, file_name)
             well_grid_details = wells_grid_mapping[well_id]
             channel_id = image.find(hcs_schema_prefix + 'ChannelID').text
-            if channel_id in channel_dimensions:
-                channel_dimension = channel_dimensions[channel_id]
-                channel_width = channel_dimension[0]
-                channel_height = channel_dimension[1]
-            else:
-                channel_width = DEFAULT_CHANNEL_WIDTH
-                channel_height = DEFAULT_CHANNEL_HEIGHT
+            y_coord = image.find(hcs_schema_prefix + 'PositionY').text
+            x_coord = image.find(hcs_schema_prefix + 'PositionX').text
+            channel_width, channel_height = self.find_channel_dimensions(channel_dimensions, channel_id)
             resize_width = str(channel_width / well_grid_details.get_width())
             resize_height = str(channel_height / well_grid_details.get_height())
             exit_code = os.system('convert "{}" -resize {}x{} "{}"'
                                   .format(src_file, resize_width, resize_height, resized_file))
+            x_coords = well_grid_missing_values[channel_id][well_id][y_coord]
+            if x_coords and x_coord in x_coords:
+                x_coords.remove(x_coord)
+                well_grid_missing_values[channel_id][well_id][y_coord] = x_coords
             if exit_code != 0:
                 raise RuntimeError(
                     'An error occurred during [{}] resizing: {}x{} to {}x{}, exit code {}'
                         .format(file_name, channel_width, channel_height, resize_width, resize_height, exit_code))
-        return well_grouping
+        for channel_id, channel_map in well_grid_missing_values.items():
+            for well_id, well_map in channel_map.items():
+                for y_coord, x_coords in well_map.items():
+                    if len(x_coords) == 0:
+                        well_map.pop(y_coord)
+                if len(well_map) == 0:
+                    channel_map.pop(well_id)
+        return well_grouping, well_grid_missing_values
+
+    def find_channel_dimensions(self, channel_dimensions, channel_id):
+        if channel_id in channel_dimensions:
+            channel_dimension = channel_dimensions[channel_id]
+            channel_width = channel_dimension[0]
+            channel_height = channel_dimension[1]
+        else:
+            channel_width = DEFAULT_CHANNEL_WIDTH
+            channel_height = DEFAULT_CHANNEL_HEIGHT
+        return channel_width, channel_height
 
     def add_image_summary_to_mapping(self, hcs_schema_prefix, image, well_grouping):
         row_id = image.find(hcs_schema_prefix + 'Row').text
@@ -912,8 +970,13 @@ class HcsFileParser:
             wells_grid_mapping[well_id] = well_grid_details
         return wells_grid_mapping
 
-    def get_channel_dimensions(self, hcs_file_root):
+    def get_channel_dimensions(self, hcs_file_root, wells_grid_mapping):
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_file_root)
+        y_scaling = 1
+        x_scaling = 1
+        for well_grid in wells_grid_mapping.values():
+            y_scaling = max(y_scaling, well_grid.get_height())
+            x_scaling = max(x_scaling, well_grid.get_height())
         channel_dimensions = dict()
         for channel_map in hcs_file_root.find(hcs_schema_prefix + 'Maps').findall(hcs_schema_prefix + 'Map'):
             for entry in channel_map.findall(hcs_schema_prefix + 'Entry'):
@@ -923,6 +986,12 @@ class HcsFileParser:
                     channel_size_y = int(entry.find(hcs_schema_prefix + 'ImageSizeY').text)
                     channel_id = entry.get('ChannelID')
                     channel_dimensions[channel_id] = tuple([channel_size_x, channel_size_y])
+                    resolution_x = entry.find(hcs_schema_prefix + 'ImageResolutionX').text
+                    resolution_y = entry.find(hcs_schema_prefix + 'ImageResolutionY').text
+                    entry.find(hcs_schema_prefix + 'ImageResolutionX').text = \
+                        str(float(resolution_x) * x_scaling).upper()
+                    entry.find(hcs_schema_prefix + 'ImageResolutionY').text = \
+                        str(float(resolution_y) * y_scaling).upper()
         return channel_dimensions
 
 
