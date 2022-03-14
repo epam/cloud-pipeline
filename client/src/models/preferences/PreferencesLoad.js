@@ -248,6 +248,19 @@ class PreferencesLoad extends Remote {
     return value === undefined || `${value}` !== 'false';
   }
 
+  @computed
+  get autoscalingMultiQueuesTemplate () {
+    const value = this.getPreferenceValue('ge.autoscaling.scale.multi.queues.template');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ge.autoscaling.scale.multi.queues.template:', e);
+      }
+    }
+    return {};
+  }
+
   get requestFileSystemAccessTooltip () {
     const value = this.getPreferenceValue('ui.pipe.file.browser.request');
     if (value) {
