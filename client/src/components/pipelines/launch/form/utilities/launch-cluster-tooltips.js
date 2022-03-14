@@ -135,6 +135,21 @@ const AUTOSCALE_PRICE_TYPE = (
     </Row>
   </div>
 );
+const GPU_SCALING_TOOLTIP = (
+  <div>
+    <Row>
+      This option creates a separate SGE queue for the GPU-bound tasks:
+    </Row>
+    <Row>
+      <code>cpu.q</code> for CPU-only tasks and <code>gpu.q</code> for CUDA tasks
+    </Row>
+    <Row>If enabled, you can specify instance types to be used for the autoscaled workers.</Row>
+    <Row>
+      If selected together with <b>Enable Hybrid cluster</b>
+      it is possible to specify instance family and the exact size is selected automatically.
+    </Row>
+  </div>
+);
 
 export const LaunchClusterTooltip = {
   clusterMode: 'cluster mode',
@@ -148,7 +163,8 @@ export const LaunchClusterTooltip = {
     autoScaledUpTo: 'up to',
     defaultNodesCount: 'default nodes count',
     hybridAutoScaledCluster: 'hybrid',
-    autoScalePriceType: 'auto scale price type'
+    autoScalePriceType: 'auto scale price type',
+    gpuScaling: 'gpu scaling'
   }
 };
 
@@ -169,7 +185,8 @@ const tooltips = {
     AUTOSCALED_CLUSTER_DEFAULT_NODES_COUNT_TOOLTIP,
   [LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster]:
     HYBRID_AUTOSCALED_CLUSTER_TOOLTIP,
-  [LaunchClusterTooltip.autoScaledCluster.autoScalePriceType]: AUTOSCALE_PRICE_TYPE
+  [LaunchClusterTooltip.autoScaledCluster.autoScalePriceType]: AUTOSCALE_PRICE_TYPE,
+  [LaunchClusterTooltip.autoScaledCluster.gpuScaling]: GPU_SCALING_TOOLTIP
 };
 
 export function renderTooltip (tooltip, style) {

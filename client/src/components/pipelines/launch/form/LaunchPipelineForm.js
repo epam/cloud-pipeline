@@ -124,6 +124,10 @@ import OOMCheck from './utilities/oom-check';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
 import JobNotifications from '../dialogs/job-notifications';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
+import {
+  applyParameters as applyGPUScalingParameters,
+  readGPUScalingPreference
+} from './utilities/enable-gpu-scaling';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -261,6 +265,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     launchCluster: false,
     autoScaledCluster: false,
     hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -871,6 +876,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
       this.props.parameters.parameters
     );
+    const gpuScalingConfiguration = readGPUScalingPreference(
+      {
+        autoScaled: autoScaledCluster,
+        provider: this.currentCloudRegionProvider,
+        hybrid: hybridAutoScaledCluster,
+        parameters: this.props.parameters.parameters
+      },
+      this.props.preferences
+    );
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
@@ -890,6 +904,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
+        gpuScalingConfiguration,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
@@ -946,6 +961,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
         autoScaledCluster: autoScaledCluster,
         hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
+        gpuScalingConfiguration,
         gridEngineEnabled: gridEngineEnabledValue,
         sparkEnabled: sparkEnabledValue,
         slurmEnabled: slurmEnabledValue,
@@ -1131,6 +1147,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             type: 'boolean',
             value: true
           };
+        }
+        if (this.state.gpuScalingConfiguration) {
+          payload[PARAMETERS] = applyGPUScalingParameters(
+            this.state.gpuScalingConfiguration,
+            payload[PARAMETERS]
+          );
         }
       }
       if (this.state.launchCluster && this.state.gridEngineEnabled) {
@@ -1335,6 +1357,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           value: true
         };
       }
+      if (this.state.gpuScalingConfiguration) {
+        payload.params = applyGPUScalingParameters(
+          this.state.gpuScalingConfiguration,
+          payload.params
+        );
+      }
     }
     if (this.state.launchCluster && this.state.gridEngineEnabled) {
       payload.params[CP_CAP_SGE] = {
@@ -1517,6 +1545,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     const hybridAutoScaledCluster = hybridAutoScaledClusterEnabled(
       this.props.parameters.parameters
     );
+    const gpuScalingConfiguration = readGPUScalingPreference(
+      {
+        autoScaled: autoScaledCluster,
+        provider: this.currentCloudRegionProvider,
+        hybrid: hybridAutoScaledCluster,
+        parameters: this.props.parameters.parameters
+      },
+      this.props.preferences
+    );
     const gridEngineEnabledValue = gridEngineEnabled(this.props.parameters.parameters);
     const sparkEnabledValue = sparkEnabled(this.props.parameters.parameters);
     const slurmEnabledValue = slurmEnabled(this.props.parameters.parameters);
@@ -1527,6 +1564,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       launchCluster: +this.props.parameters.node_count > 0 || autoScaledCluster,
       autoScaledCluster: autoScaledCluster,
       hybridAutoScaledClusterEnabled: hybridAutoScaledCluster,
+      gpuScalingConfiguration,
       gridEngineEnabled: gridEngineEnabledValue,
       sparkEnabled: sparkEnabledValue,
       slurmEnabled: slurmEnabledValue,
@@ -1767,7 +1805,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ) {
             continue;
           }
-          if ([CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList()].indexOf(key) >= 0) {
+          if ([CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)].indexOf(key) >= 0) {
             continue;
           }
           this.parameterIndexIdentifier[parameterIndexIdentifierKey] =
@@ -3678,6 +3716,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       launchCluster,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -3698,6 +3737,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       launchCluster,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration,
       gridEngineEnabled,
       sparkEnabled,
       slurmEnabled,
@@ -5188,6 +5228,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       autoScaledPriceType={this.state.autoScaledPriceType}
                       autoScaledCluster={this.state.autoScaledCluster}
                       hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
+                      gpuScalingConfiguration={this.state.gpuScalingConfiguration}
                       gridEngineEnabled={this.state.gridEngineEnabled}
                       sparkEnabled={this.state.sparkEnabled}
                       slurmEnabled={this.state.slurmEnabled}
@@ -5198,6 +5239,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       onChange={this.onChangeClusterConfiguration}
                       visible={this.state.configureClusterDialogVisible}
                       disabled={this.props.readOnly && !this.props.canExecute}
+                      instanceTypes={this.instanceTypes}
                     />
                     {
                       this.renderFormItemRow(

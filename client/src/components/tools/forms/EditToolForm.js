@@ -80,6 +80,12 @@ import RunCapabilities, {
   hasPlatformSpecificCapabilities,
   isCustomCapability
 } from '../../pipelines/launch/form/utilities/run-capabilities';
+import {
+  applyParametersArray,
+  configurationChanged,
+  getSkippedParameters as getGPUScalingSkippedParameters,
+  readGPUScalingPreference
+} from '../../pipelines/launch/form/utilities/enable-gpu-scaling';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -154,6 +160,7 @@ export default class EditToolForm extends React.Component {
     autoScaledCluster: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -258,6 +265,9 @@ export default class EditToolForm extends React.Component {
                 type: 'boolean',
                 value: true
               });
+            }
+            if (this.state.gpuScalingConfiguration) {
+              applyParametersArray(this.state.gpuScalingConfiguration, params);
             }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
@@ -451,6 +461,7 @@ export default class EditToolForm extends React.Component {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
         await this.props.dataStorageAvailable.fetchIfNeededOrWait();
         await this.props.preferences.fetchIfNeededOrWait();
+        await this.props.awsRegions.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
           props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -459,6 +470,23 @@ export default class EditToolForm extends React.Component {
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
         state.hybridAutoScaledClusterEnabled = props.configuration &&
           hybridAutoScaledClusterEnabled(props.configuration.parameters);
+        const regions = this.props.awsRegions.loaded
+          ? this.props.awsRegions.value
+          : [];
+        const instanceTypeName = (props.configuration ? props.configuration.instance_size : undefined) ||
+          (props.tool ? props.tool.instanceType : undefined);
+        const instanceType = this.allowedInstanceTypes.find(i => i.name === instanceTypeName);
+        const [provider] = regions
+          .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
+          .map(a => a.provider);
+        state.gpuScalingConfiguration = props.configuration
+          ? readGPUScalingPreference({
+            autoScaled: state.autoScaledCluster,
+            hybrid: state.hybridAutoScaledClusterEnabled,
+            provider,
+            parameters: props.configuration.parameters
+          }, this.props.preferences)
+          : undefined;
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
@@ -470,10 +498,14 @@ export default class EditToolForm extends React.Component {
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
+        const gpuScalingParameters = state.gpuScalingConfiguration
+          ? getGPUScalingSkippedParameters(this.props.preferences)
+          : [];
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
-              getSystemParameterDisabledState(this, key)) {
+              getSystemParameterDisabledState(this, key) ||
+              gpuScalingParameters.includes(key)) {
               continue;
             }
             if (key === CP_CAP_LIMIT_MOUNTS) {
@@ -766,6 +798,14 @@ export default class EditToolForm extends React.Component {
       autoScaledClusterEnabled(this.props.configuration.parameters);
     const hybridAutoScaledCluster = this.props.configuration &&
       hybridAutoScaledClusterEnabled(this.props.configuration.parameters);
+    const gpuScalingConfiguration = this.props.configuration
+      ? readGPUScalingPreference({
+        autoScaled: autoScaledCluster,
+        hybrid: hybridAutoScaledCluster,
+        provider: this.getCloudProvider(),
+        parameters: this.props.configuration.parameters
+      }, this.props.preferences)
+      : undefined;
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
@@ -799,6 +839,7 @@ export default class EditToolForm extends React.Component {
       !!launchCluster !== !!this.state.launchCluster ||
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
+      configurationChanged(gpuScalingConfiguration, this.state.gpuScalingConfiguration) ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
@@ -846,6 +887,7 @@ export default class EditToolForm extends React.Component {
       launchCluster,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -867,6 +909,7 @@ export default class EditToolForm extends React.Component {
       nodesCount,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
@@ -1390,6 +1433,7 @@ export default class EditToolForm extends React.Component {
                 autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
+                gpuScalingConfiguration={this.state.gpuScalingConfiguration}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
