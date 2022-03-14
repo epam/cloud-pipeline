@@ -29,7 +29,7 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">0</div>
+<div class="counter">1</div>
 <p>failures</p>
 </div>
 </td>
@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">32m14.62s</div>
+<div class="counter">41m26.76s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox success" id="successRate">
-<div class="percent">100%</div>
+<div class="infoBox failures" id="successRate">
+<div class="percent">96%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,13 +61,54 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Tests</a>
+<a href="#tab0">Failed tests</a>
 </li>
 <li>
-<a href="#tab1">Standard output</a>
+<a href="#tab1">Tests</a>
+</li>
+<li>
+<a href="#tab2">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
+<h2>Failed tests</h2>
+<div class="test">
+<a name="validateSearchForNoUser - EPMCMBIBPC-1581"></a>
+<h3 class="failures">validateSearchForNoUser - EPMCMBIBPC-1581</h3>
+<span class="code">
+<pre>Element should css class 'ant-input-affix-wrapper' {By.id: search-users-input}
+Element: '&lt;input class=&quot;ant-input&quot; id=&quot;search-users-input&quot; placeholder=&quot;Search users&quot; type=&quot;text&quot;&gt;&lt;/input&gt;'
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1647168765383.11.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1647168765383.11.html
+Timeout: 80 s.
+	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:66)
+	at com.codeborne.selenide.commands.Should.should(Should.java:35)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
+	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
+	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
+	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
+	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
+	at com.sun.proxy.$Proxy15.should(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
+	at com.epam.pipeline.autotests.RoleModelTest.validateSearchForNoUser(RoleModelTest.java:842)
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+	at java.lang.reflect.Method.invoke(Method.java:498)
+	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
+	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
+	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
+	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
+	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
+	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
+	at java.lang.Thread.run(Thread.java:748)
+</pre>
+</span>
+</div>
+</div>
+<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -79,154 +120,154 @@
 </thead>
 <tr>
 <td class="success">checkBucketEditProhibitionForReadOnlyUser - EPMCMBIBPC-563</td>
-<td>26.130s</td>
+<td>26.750s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkBucketEditingByNonAdminUser - EPMCMBIBPC-566</td>
-<td>3m41.24s</td>
+<td>3m44.70s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkClusterNodesByNonAdminUser - EPMCMBIBPC-567</td>
-<td>6m18.67s</td>
+<td>6m34.09s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkFolderPermissionForReadOnlyUser - EPMCMBIBPC-549</td>
-<td>53.810s</td>
+<td>56.776s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkFolderPermissionsForReadOnlyUserAndCheckInnerDeniedPipelinePermissions - EPMCMBIBPC-552</td>
-<td>1m13.05s</td>
+<td>1m14.47s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPermissionsForExecutingPipelines - EPMCMBIBPC-553</td>
-<td>1m15.21s</td>
+<td>4m55.25s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkPipelinePermissionsForGroup - EPMCMBIBPC-578</td>
-<td>22.069s</td>
+<td>24.091s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkReadPermissionForBucket - EPMCMBIBPC-562</td>
-<td>38.894s</td>
+<td>40.172s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByEditPermissionUser - EPMCMBIBPC-574</td>
-<td>1m19.89s</td>
+<td>1m22.48s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByExecutePermissionUser - EPMCMBIBPC-573</td>
-<td>1m28.44s</td>
+<td>1m30.67s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkToolsPageByReadOnlyUser - EPMCMBIBPC-572</td>
-<td>1m44.40s</td>
+<td>1m49.69s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkWritePermissionForBucket - EPMCMBIBPC-565</td>
-<td>44.557s</td>
+<td>46.178s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">editAndExecutePipeline - EPMCMBIBPC-561</td>
-<td>2m21.15s</td>
+<td>5m39.16s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">givePermissionsToUser - EPMCMBIBPC-537</td>
-<td>22.421s</td>
+<td>22.877s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserReadPermissionForPipeline - EPMCMBIBPC-546</td>
-<td>32.652s</td>
+<td>34.366s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">giveUserWritePermissionForPipeline - EPMCMBIBPC-540</td>
-<td>47.857s</td>
+<td>47.318s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditFileInPipeline - EPMCMBIBPC-558</td>
-<td>4.531s</td>
+<td>4.639s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">readOnlyUserIsNotAbleToEditPipeline - EPMCMBIBPC-547</td>
-<td>23.927s</td>
+<td>25.953s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">rerunPipelineWithoutPermissionsForExecute - EPMCMBIBPC-560</td>
-<td>54.540s</td>
+<td>56.337s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setPipelinePermissionsAndCheckItForGroup - EPMCMBIBPC-579</td>
-<td>2m12.89s</td>
+<td>2m13.97s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">setToolPermissionsAndCheckItForGroup - EPMCMBIBPC-580</td>
-<td>1m16.33s</td>
+<td>1m17.82s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">tryToNavigateToAnotherBucketByNavigationBar - EPMCMBIBPC-564</td>
-<td>15.633s</td>
+<td>18.420s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipeline - EPMCMBIBPC-556</td>
-<td>1m5.32s</td>
+<td>1m6.23s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">validatePermissionsForEditPipelineFiles - EPMCMBIBPC-557</td>
-<td>50.123s</td>
+<td>50.877s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
-<td class="success">validateSearchForNoUser - EPMCMBIBPC-1581</td>
-<td>11.603s</td>
-<td class="success">passed</td>
+<td class="failures">validateSearchForNoUser - EPMCMBIBPC-1581</td>
+<td>1m33.94s</td>
+<td class="failures">failed</td>
 </tr>
 <tr>
 <td class="success">validateSearchWithinEditUser - EPMCMBIBPC-1575</td>
-<td>23.211s</td>
+<td>23.290s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">viewUserPermissions - EPMCMBIBPC-539</td>
-<td>26.081s</td>
+<td>26.255s</td>
 <td class="success">passed</td>
 </tr>
 </table>
 </div>
-<div id="tab1" class="tab">
+<div id="tab2" class="tab">
 <h2>Standard output</h2>
 <span class="code">
-<pre>Returns latest run with runId 15951 from [15951]
-Returns latest run with runId 15951 from [15951]
-Returns latest run with runId 15951 from [15951]
-Returns latest run with runId 15952 from [15951, 15952]
-Returns latest run with runId 15952 from [15951, 15952]
-Returns latest run with runId 15952 from [15951, 15952]
-Returns latest run with runId 15954 from [15951, 15952, 15954]
-Returns latest run with runId 15954 from [15951, 15952, 15954]
-Returns latest run with runId 15955 from [15951, 15952, 15954, 15955]
-Returns latest run with runId 15955 from [15951, 15952, 15954, 15955]
+<pre>Returns latest run with runId 19630 from [19630]
+Returns latest run with runId 19630 from [19630]
+Returns latest run with runId 19630 from [19630]
+Returns latest run with runId 19631 from [19630, 19631]
+Returns latest run with runId 19631 from [19630, 19631]
+Returns latest run with runId 19631 from [19630, 19631]
+Returns latest run with runId 19632 from [19630, 19631, 19632]
+Returns latest run with runId 19632 from [19630, 19631, 19632]
+Returns latest run with runId 19633 from [19630, 19631, 19632, 19633]
+Returns latest run with runId 19633 from [19630, 19631, 19632, 19633]
 </pre>
 </span>
 </div>
@@ -238,7 +279,7 @@ Returns latest run with runId 15955 from [15951, 15952, 15954, 15955]
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jan 11, 2022 11:35:15 AM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Mar 14, 2022 2:32:39 AM</p>
 </div>
 </div>
 </body>
