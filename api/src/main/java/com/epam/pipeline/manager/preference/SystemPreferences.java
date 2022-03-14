@@ -900,7 +900,10 @@ public class SystemPreferences {
                     GRID_ENGINE_AUTOSCALING_GROUP,
                     isNotLessThanValueOrNull(LAUNCH_MAX_SCHEDULED_NUMBER.getKey()),
                     LAUNCH_MAX_SCHEDULED_NUMBER);
-
+    public static final ObjectPreference<Map<String, Object>> GE_AUTOSCALING_SCALE_MULTI_QUEUES_TEMPLATE =
+            new ObjectPreference<>("ge.autoscaling.scale.multi.queues.template", null,
+                    new TypeReference<Map<String, Object>>() {}, GRID_ENGINE_AUTOSCALING_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
 
     //GCP
     public static final ObjectPreference<List<String>> GCP_REGION_LIST = new ObjectPreference<>(

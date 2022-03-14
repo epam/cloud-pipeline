@@ -1,0 +1,116 @@
+{
+    "AWS": {
+        "General": {
+            "InstanceTypeCPU": {
+                "Param": "CP_CAP_AUTOSCALE_INSTANCE_TYPE_1",
+                "DefaultValue": "m5.large"
+            },
+            "InstanceTypeGPU": {
+                "Param": "CP_CAP_AUTOSCALE_INSTANCE_TYPE_2",
+                "DefaultValue": "p2.xlarge"
+            },
+            "Parameters": {
+                "CP_CAP_SGE": "true",
+                "CP_CAP_AUTOSCALE": "true",
+                "CP_CAP_AUTOSCALE_1": "true",
+                "CP_CAP_SGE_QUEUE_NAME_1": "cpu.q",
+                "CP_CAP_AUTOSCALE_2": "true",
+                "CP_CAP_SGE_QUEUE_NAME_2": "gpu.q"
+            }
+        },
+        "Hybrid": {
+            "FamilyTypeCPU": {
+                "Param": "CP_CAP_AUTOSCALE_HYBRID_FAMILY_1",
+                "DefaultValue": "m5"
+            },
+            "FamilyTypeGPU": {
+                "Param": "CP_CAP_AUTOSCALE_HYBRID_FAMILY_2",
+                "DefaultValue": "p2"
+            },
+            "Parameters": {
+                "CP_CAP_SGE": "true",
+                "CP_CAP_AUTOSCALE": "true",
+                "CP_CAP_AUTOSCALE_1": "true",
+                "CP_CAP_SGE_QUEUE_NAME_1": "cpu.q",
+                "CP_CAP_AUTOSCALE_2": "true",
+                "CP_CAP_SGE_QUEUE_NAME_2": "gpu.q"
+            }
+        }
+    },
+    "GCP": {
+        "General": {
+            "InstanceTypeCPU": {
+                "Param": "CP_CAP_AUTOSCALE_INSTANCE_TYPE_1",
+                "DefaultValue": "n1-standard-2"
+            },
+            "InstanceTypeGPU": {
+                "Param": "CP_CAP_AUTOSCALE_INSTANCE_TYPE_2",
+                "DefaultValue": "a2-highgpu-1g"
+            },
+            "Parameters": {
+                "CP_CAP_SGE": "true",
+                "CP_CAP_AUTOSCALE": "true",
+                "CP_CAP_AUTOSCALE_1": "true",
+                "CP_CAP_SGE_QUEUE_NAME_1": "cpu.q",
+                "CP_CAP_AUTOSCALE_2": "true",
+                "CP_CAP_SGE_QUEUE_NAME_2": "gpu.q"
+            }
+        },
+        "Hybrid": {
+            "FamilyTypeCPU": {
+                "Param": "CP_CAP_AUTOSCALE_HYBRID_FAMILY_1",
+                "DefaultValue": "standard"
+            },
+            "FamilyTypeGPU": {
+                "Param": "CP_CAP_AUTOSCALE_HYBRID_FAMILY_2",
+                "DefaultValue": "highgpu"
+            },
+            "Parameters": {
+                "CP_CAP_SGE": "true",
+                "CP_CAP_AUTOSCALE": "true",
+                "CP_CAP_AUTOSCALE_1": "true",
+                "CP_CAP_SGE_QUEUE_NAME_1": "cpu.q",
+                "CP_CAP_AUTOSCALE_2": "true",
+                "CP_CAP_SGE_QUEUE_NAME_2": "gpu.q"
+            }
+        }
+    },
+    "AZURE": {
+        "General": {
+            "InstanceTypeCPU": {
+                "Param": "CP_CAP_AUTOSCALE_INSTANCE_TYPE_1",
+                "DefaultValue": "Standard_D2s_v3"
+            },
+            "InstanceTypeGPU": {
+                "Param": "CP_CAP_AUTOSCALE_INSTANCE_TYPE_2",
+                "DefaultValue": "Standard_NC6s_v2"
+            },
+            "Parameters": {
+                "CP_CAP_SGE": "true",
+                "CP_CAP_AUTOSCALE": "true",
+                "CP_CAP_AUTOSCALE_1": "true",
+                "CP_CAP_SGE_QUEUE_NAME_1": "cpu.q",
+                "CP_CAP_AUTOSCALE_2": "true",
+                "CP_CAP_SGE_QUEUE_NAME_2": "gpu.q"
+            }
+        },
+        "Hybrid": {
+            "FamilyTypeCPU": {
+                "Param": "CP_CAP_AUTOSCALE_HYBRID_FAMILY_1",
+                "DefaultValue": "Dsv3"
+            },
+            "FamilyTypeGPU": {
+                "Param": "CP_CAP_AUTOSCALE_HYBRID_FAMILY_2",
+                "DefaultValue": "NCsv2"
+            },
+            "Parameters": {
+                "CP_CAP_SGE": "true",
+                "CP_CAP_AUTOSCALE": "true",
+                "CP_CAP_AUTOSCALE_1": "true",
+                "CP_CAP_SGE_QUEUE_NAME_1": "cpu.q",
+                "CP_CAP_AUTOSCALE_2": "true",
+                "CP_CAP_SGE_QUEUE_NAME_2": "gpu.q"
+            }
+        }
+    }
+}
