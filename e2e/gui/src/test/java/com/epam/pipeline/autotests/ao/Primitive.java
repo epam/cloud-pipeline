@@ -305,5 +305,11 @@ public enum Primitive {
     ALLOW_MOUNT,
     SERVICE_NAME,
     CONFIGURE_DNS,
-    SHOW_USERS
+    SHOW_USERS,
+    POOL_NAME,
+    STARTS_ON,
+    STARTS_ON_TIME,
+    ENDS_ON,
+    ENDS_ON_TIME,
+    AUTOSCALED
 }
