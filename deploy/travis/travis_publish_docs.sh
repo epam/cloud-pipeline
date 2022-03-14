@@ -26,7 +26,7 @@ fi
 
 # Build docs - it will produce a tar.gz file in ./dist/
 echo "Building docs"
-./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release buildDoc --no-daemon
+./gradlew -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} -Pprofile=release buildDoc --daemon
 mkdir -p $HOME/cloud-pipeline-docs
 tar -zxf dist/cloud-pipeline-docs.tar.gz -C $HOME/cloud-pipeline-docs
 

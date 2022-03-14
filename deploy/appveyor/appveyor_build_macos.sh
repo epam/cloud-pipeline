@@ -20,7 +20,7 @@ source ~/venv2.7.18/bin/activate
 ./gradlew -PbuildNumber=${APPVEYOR_BUILD_NUMBER}.${APPVEYOR_REPO_COMMIT} \
           -Pprofile=release \
           pipe-cli:buildMac \
-          --no-daemon \
+          --daemon \
           -x :pipe-cli:test
 
 deactivate

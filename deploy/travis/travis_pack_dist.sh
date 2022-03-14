@@ -64,7 +64,7 @@ cd ..
 ./gradlew api:checkstyleMain \
           api:pmdMain \
           api:checkstyleTest \
-          api:pmdTest --no-daemon
+          api:pmdTest --daemon
 
 # Create distribution tgz
 ./gradlew distTar   -PbuildNumber=${TRAVIS_BUILD_NUMBER}.${TRAVIS_COMMIT} \
@@ -78,7 +78,7 @@ cd ..
                     -x cloud-pipeline-webdav-client:buildLinux \
                     -x cloud-pipeline-webdav-client:buildWin \
                     -Pfast \
-                    --no-daemon
+                    --daemon
 
 if [ "$TRAVIS_REPO_SLUG" == "epam/cloud-pipeline" ]; then
     DIST_TGZ_NAME=$(echo build/install/dist/cloud-pipeline*)
