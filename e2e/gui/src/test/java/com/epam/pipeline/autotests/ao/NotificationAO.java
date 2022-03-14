@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ public class NotificationAO implements AccessObject<NotificationAO> {
     }
 
     public NotificationAO ensureSeverityIs(String severity) {
-        ensure(SEVERITY_ICON, cssClass(String.format("system-notification__%s", severity.toLowerCase())));
+        ensure(SEVERITY_ICON, cssClass(String.format("anticon-%s-circle-o", severity.toLowerCase())));
         return this;
     }
 

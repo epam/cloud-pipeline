@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import com.codeborne.selenide.Selenide;
 import com.codeborne.selenide.SelenideElement;
 import com.codeborne.selenide.ex.ElementNotFound;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Conditions;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
@@ -40,6 +42,7 @@ import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.utils.C.COMPLETION_TIMEOUT;
+import static com.epam.pipeline.autotests.utils.C.DEFAULT_TIMEOUT;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.elementWithText;
 import static java.lang.String.format;
@@ -307,7 +310,7 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
     public RunsMenuAO stopRunIfPresent(String id) {
         activeRuns().viewAvailableActiveRuns();
         sleep(10, SECONDS);
-        if ($(tagName("tbody")).findAll(tagName("tr")).findBy(text(id)).is(exist)) {
+        if (isActiveRun(id)) {
             stopRun(id);
             System.out.printf("Run with id %s has been stopped.%n", id);
         }
@@ -351,6 +354,28 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
                 .ensureTitleContains(format("Do you want to pause %s", pipelineName))
                 .sleep(1, SECONDS)
                 .click(button("PAUSE"));
+        return this;
+    }
+
+    public RunsMenuAO terminateRun(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-terminate-button").shouldBe(visible).click();
+        ensure(byXpath("//div[@class='ant-modal-body']//b"), text(format("Terminate %s?", pipelineName)))
+                .sleep(1, SECONDS)
+                .click(button("TERMINATE"));
+        $(className("ant-modal-body")).waitWhile(visible, DEFAULT_TIMEOUT);
+        return this;
+    }
+
+    public RunsMenuAO ensurePauseButtonDisabled(String runID) {
+        context().find(byId(format("run-%s-pause-button", runID)))
+                .shouldBe(Conditions.disabled);
+        return this;
+    }
+
+    public RunsMenuAO checkPauseButtonTooltip(String runID, String message) {
+        hover(byId(format("run-%s-pause-button", runID)));
+        $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
+                .shouldHave(text(message));
         return this;
     }
 
@@ -434,6 +459,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         $(byClassName("run-table__filter-popover-container"))
                 .$$("input").findBy(attribute("placeholder", "Filter"))
                 .setValue(value);
+    }
+
+    public boolean isActiveRun(final String id) {
+        return $(tagName("tbody")).shouldBe(visible)
+                .findAll(tagName("tr")).findBy(text(id)).is(exist);
     }
 
     public enum HeaderColumn {

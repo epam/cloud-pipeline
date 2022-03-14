@@ -29,6 +29,7 @@ import requests
 import sys
 import time
 from datetime import datetime, timedelta
+from xml.etree import ElementTree
 
 from pipeline import PipelineAPI, Logger as CloudPipelineLogger
 
@@ -195,92 +196,97 @@ class GridEngineJob:
 
 
 class GridEngine:
-    _MAIN_Q = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
-    _ALL_HOSTS = '@allhosts'
     _DELETE_HOST = 'qconf -de %s'
-    _SHOW_JOB_PARALLEL_ENVIRONMENT = 'qstat -j %s | grep "^parallel environment" | awk \'{print $3}\''
-    _SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS = 'qstat -j %s | grep "^parallel environment" | awk \'{print $5}\''
     _SHOW_PE_ALLOCATION_RULE = 'qconf -sp %s | grep "^allocation_rule" | awk \'{print $2}\''
     _REMOVE_HOST_FROM_HOST_GROUP = 'qconf -dattr hostgroup hostlist %s %s'
     _REMOVE_HOST_FROM_QUEUE_SETTINGS = 'qconf -purge queue slots %s@%s'
     _SHUTDOWN_HOST_EXECUTION_DAEMON = 'qconf -ke %s'
     _REMOVE_HOST_FROM_ADMINISTRATIVE_HOSTS = 'qconf -dh %s'
-    _QSTAT = 'qstat -f -u "*"'
-    _SHOW_EXECUTION_HOSTS_SLOTS = 'qstat -f -u "*" | grep %s' % _MAIN_Q
-    _QSTAT_DATETIME_FORMAT = '%m/%d/%Y %H:%M:%S'
+    _QSTAT = 'qstat -u "*" -r -f -xml'
+    _QHOST = 'qhost -q -xml'
+    _QSTAT_DATETIME_FORMAT = '%Y-%m-%dT%H:%M:%S'
     _QMOD_DISABLE = 'qmod -d %s@%s'
     _QMOD_ENABLE = 'qmod -e %s@%s'
     _SHOW_EXECUTION_HOST = 'qconf -se %s'
     _KILL_JOBS = 'qdel %s'
     _FORCE_KILL_JOBS = 'qdel -f %s'
-    _SHOW_HOST_STATES = 'qstat -f | grep \'%s@%s\' | awk \'{print $6}\''
     _BAD_HOST_STATES = ['u', 'E', 'd']
 
-    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores):
+    def __init__(self, cmd_executor, max_instance_cores, max_cluster_cores, queue, hostlist, queue_default):
         self.cmd_executor = cmd_executor
         self.max_instance_cores = max_instance_cores
         self.max_cluster_cores = max_cluster_cores
+        self.queue = queue
+        self.hostlist = hostlist
+        self.queue_default = queue_default
+        self.tmp_queue_name_attribute = 'tmp_queue_name'
 
     def get_jobs(self):
-        """
-        Executes command and parse its output. The expected output is something like the following:
-
-            queuename                      qtype resv/used/tot. load_avg arch          states
-            ---------------------------------------------------------------------------------
-            main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
-                 20 0.50000 sleep.sh   root         r     11/27/2019 14:48:59     2
-            ---------------------------------------------------------------------------------
-            main.q@pipeline-18031          BIP   0/2/2          0.46     lx-amd64
-                 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
-            ############################################################################
-             - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS - PENDING JOBS
-            ############################################################################
-                 21 0.50000 sleep.sh   root         qw    11/27/2019 14:48:58     2
-
-        :return: Grid engine jobs list.
-        """
-        lines = self.cmd_executor.execute_to_lines(GridEngine._QSTAT)
-        if len(lines) == 0:
+        try:
+            output = self.cmd_executor.execute(GridEngine._QSTAT)
+        except ExecutionError:
+            Logger.warn('Grid engine jobs listing has failed.')
             return []
         jobs = {}
-        current_host = None
-        for line in lines:
-            tokens = line.strip().split()
-            # host line like: main.q@pipeline-18033          BIP   0/0/2          0.50     lx-amd64
-            if tokens[0].startswith(self._MAIN_Q):
-                current_host = self._parse_host(tokens[0])
-            # job line: 15 0.50000 sleep.sh   root         r     11/27/2019 11:47:40     2
-            elif tokens[0].isdigit():
-                root_job_id = int(tokens[0])
-                job_array = self._parse_array(tokens[8] if len(tokens) >= 9 else None)
-                job_ids = [str(root_job_id) + "." + str(sub_id) for sub_id in job_array] if job_array else [str(root_job_id)]
-                for job_id in job_ids:
-                    if job_id in jobs:
-                        job = jobs[job_id]
-                        job.hosts.append(current_host)
-                    else:
-                        pe = self.get_job_parallel_environment(job_id)
-                        job_slots = self.get_job_slots(job_id)
-                        jobs[job_id] = GridEngineJob(
-                            id=job_id,
-                            root_id=root_job_id,
-                            name=tokens[2],
-                            user=tokens[3],
-                            state=GridEngineJobState.from_letter_code(tokens[4]),
-                            datetime=self._parse_date("%s %s" % (tokens[5], tokens[6])),
-                            hosts=[current_host] if current_host else [],
-                            slots=job_slots,
-                            pe=pe
-                        )
-            else:
-                current_host = None
+        root = ElementTree.fromstring(output)
+        running_jobs = []
+        queue_info = root.find('queue_info')
+        for queue_list in queue_info.findall('Queue-List'):
+            queue_name = queue_list.findtext('name')
+            queue_running_jobs = queue_list.findall('job_list')
+            for job_list in queue_running_jobs:
+                job_queue_name = ElementTree.SubElement(job_list, self.tmp_queue_name_attribute)
+                job_queue_name.text = queue_name
+            running_jobs.extend(queue_running_jobs)
+        job_info = root.find('job_info')
+        pending_jobs = job_info.findall('job_list')
+        for job_list in running_jobs + pending_jobs:
+            job_requested_queue = job_list.findtext('hard_req_queue')
+            job_actual_queue, job_host = self._parse_queue_and_host(job_list.findtext(self.tmp_queue_name_attribute))
+            if job_requested_queue and job_requested_queue != self.queue \
+                    or job_actual_queue and job_actual_queue != self.queue:
+                # filter out a job with actual/requested queue specified
+                # if a configured queue is different from the job's one
+                continue
+            if not job_requested_queue and not job_actual_queue and not self.queue_default:
+                # filter out a job without actual/requested queue specified
+                # if a configured queue is not a default queue
+                continue
+            root_job_id = job_list.findtext('JB_job_number')
+            job_tasks = self._parse_array(job_list.findtext('tasks'))
+            job_ids = ['{}.{}'.format(root_job_id, job_task) for job_task in job_tasks] or [root_job_id]
+            job_name = job_list.findtext('JB_name')
+            job_user = job_list.findtext('JB_owner')
+            job_state = GridEngineJobState.from_letter_code(job_list.findtext('state'))
+            job_datetime = self._parse_date(job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
+            job_hosts = [job_host] if job_host else []
+            requested_pe = job_list.find('requested_pe')
+            job_slots = int(requested_pe.text if requested_pe is not None else '1')
+            job_pe = requested_pe.get('name') if requested_pe is not None else 'local'
+            for job_id in job_ids:
+                if job_id in jobs:
+                    job = jobs[job_id]
+                    if job_host:
+                        job.hosts.append(job_host)
+                else:
+                    jobs[job_id] = GridEngineJob(
+                        id=job_id,
+                        root_id=root_job_id,
+                        name=job_name,
+                        user=job_user,
+                        state=job_state,
+                        datetime=job_datetime,
+                        hosts=job_hosts,
+                        slots=job_slots,
+                        pe=job_pe
+                    )
         return jobs.values()
 
     def _parse_date(self, date):
         return datetime.strptime(date, GridEngine._QSTAT_DATETIME_FORMAT)
 
-    def _parse_host(self, queue_and_host):
-        return queue_and_host.split('@')[1] if queue_and_host else None
+    def _parse_queue_and_host(self, queue_and_host):
+        return queue_and_host.split('@')[:2] if queue_and_host else (None, None)
 
     def _parse_array(self, array_jobs):
         result = []
@@ -301,28 +307,40 @@ class GridEngine:
         if job.slots:
             if allocation_rule == AllocationRule.pe_slots():
                 result = job.slots <= self.max_instance_cores
+                if not result:
+                    Logger.warn('Invalid job {job_id} found with allocation_rule={alloc_rule} and slots={slots}. '
+                                'Number of job slots should be less or equal '
+                                'to the number of instance cores of the largest allowed instance. '
+                                'It is {max_instance_cores} for the current launch.'
+                                .format(job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots,
+                                        max_instance_cores=self.max_instance_cores))
             elif allocation_rule in [AllocationRule.fill_up(), AllocationRule.round_robin()]:
                 result = job.slots <= self.max_cluster_cores
+                if not result:
+                    Logger.warn('Invalid job {job_id} found with allocation_rule={alloc_rule} and slots={slots}. '
+                                'Number of job slots should be less or equal '
+                                'to the maximum possible number of cluster cores. '
+                                'It is {max_cluster_cores} for the current launch.'
+                                .format(job_id=job.id, alloc_rule=allocation_rule.value, slots=job.slots,
+                                        max_cluster_cores=self.max_cluster_cores))
         return result
 
-    def disable_host(self, host, queue=_MAIN_Q):
+    def disable_host(self, host):
         """
-        Disables host to prevent receiving new jobs from the given queue.
+        Disables host to prevent receiving new jobs from the queue.
         This command does not abort currently running jobs.
 
         :param host: Host to be enabled.
-        :param queue: Queue that host is a part of.
         """
-        self.cmd_executor.execute(GridEngine._QMOD_DISABLE % (queue, host))
+        self.cmd_executor.execute(GridEngine._QMOD_DISABLE % (self.queue, host))
 
-    def enable_host(self, host, queue=_MAIN_Q):
+    def enable_host(self, host):
         """
-        Enables host to make it available to receive new jobs from the given queue.
+        Enables host to make it available to receive new jobs from the queue.
 
         :param host: Host to be enabled.
-        :param queue: Queue that host is a part of.
         """
-        self.cmd_executor.execute(GridEngine._QMOD_ENABLE % (queue, host))
+        self.cmd_executor.execute(GridEngine._QMOD_ENABLE % (self.queue, host))
 
     def get_pe_allocation_rule(self, pe):
         """
@@ -333,23 +351,7 @@ class GridEngine:
         exec_result = self.cmd_executor.execute(GridEngine._SHOW_PE_ALLOCATION_RULE % pe)
         return AllocationRule(exec_result.strip()) if exec_result else AllocationRule.pe_slots()
 
-    def get_job_parallel_environment(self, job_id):
-        """
-        Returns PE of the specific job.
-
-        :param job_id: id of a SGE job
-        """
-        return str(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT % job_id) or 'local').strip()
-
-    def get_job_slots(self, job_id):
-        """
-        Returns number of slots of the specific job.
-
-        :param job_id: id of a SGE job
-        """
-        return int(self.cmd_executor.execute(GridEngine._SHOW_JOB_PARALLEL_ENVIRONMENT_SLOTS % job_id) or 1)
-
-    def delete_host(self, host, queue=_MAIN_Q, hostgroup=_ALL_HOSTS, skip_on_failure=False):
+    def delete_host(self, host, skip_on_failure=False):
         """
         Completely deletes host from GE:
         1. Shutdown host execution daemon.
@@ -359,14 +361,12 @@ class GridEngine:
         5. Removes host from GE.
 
         :param host: Host to be removed.
-        :param queue: Queue host is a part of.
-        :param hostgroup: Host group queue uses.
         :param skip_on_failure: Specifies if the host killing should be continued even if some of
         the commands has failed.
         """
         self._shutdown_execution_host(host, skip_on_failure=skip_on_failure)
-        self._remove_host_from_queue_settings(host, queue, skip_on_failure=skip_on_failure)
-        self._remove_host_from_host_group(host, hostgroup, skip_on_failure=skip_on_failure)
+        self._remove_host_from_queue_settings(host, self.queue, skip_on_failure=skip_on_failure)
+        self._remove_host_from_host_group(host, self.hostlist, skip_on_failure=skip_on_failure)
         self._remove_host_from_administrative_hosts(host, skip_on_failure=skip_on_failure)
         self._remove_host_from_grid_engine(host, skip_on_failure=skip_on_failure)
 
@@ -392,11 +392,16 @@ class GridEngine:
 
     def _get_available_slots(self):
         available_slots = 0
-        # there should be lines like:  main.q@pipeline-18033          BIP   0/2/2          0.06     lx-amd64
-        # and we are interested in 0/2/2 - slots status
-        for line in self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOSTS_SLOTS):
-            rsrv_used_total = line.strip().split()[2].split("/")
-            available_slots += int(rsrv_used_total[2]) - int(rsrv_used_total[1]) - int(rsrv_used_total[0])
+        output = self.cmd_executor.execute(GridEngine._QHOST)
+        root = ElementTree.fromstring(output)
+        for host in root.findall('host'):
+            for queue in host.findall('queue[@name=\'%s\']' % self.queue):
+                host_used = int(queue.find('queuevalue[@name=\'slots_used\']').text or '0')
+                host_resv = int(queue.find('queuevalue[@name=\'slots_resv\']').text or '0')
+                host_slots = int(queue.find('queuevalue[@name=\'slots\']').text or '0')
+                host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                if all(host_state not in self._BAD_HOST_STATES for host_state in host_states):
+                    available_slots += max(host_slots - host_used - host_resv, 0)
         return available_slots
 
     def get_host_resource(self, host):
@@ -453,7 +458,7 @@ class GridEngine:
             if not skip_on_failure:
                 raise RuntimeError(error_msg, e)
 
-    def is_valid(self, host, queue=_MAIN_Q):
+    def is_valid(self, host):
         """
         Validates host in GE checking corresponding execution host availability and its states.
 
@@ -462,13 +467,19 @@ class GridEngine:
         """
         try:
             self.cmd_executor.execute_to_lines(GridEngine._SHOW_EXECUTION_HOST % host)
-            host_states = self.cmd_executor.execute(GridEngine._SHOW_HOST_STATES % (queue, host)).strip()
-            for host_state in host_states:
-                if host_state in self._BAD_HOST_STATES:
-                    Logger.warn('Execution host %s GE state is %s which makes host invalid.' % (host, host_states))
-                    return False
-            if host_states:
-                Logger.warn('Execution host %s GE state is not empty: %s.' % (host, host_states))
+            output = self.cmd_executor.execute(GridEngine._QHOST)
+            root = ElementTree.fromstring(output)
+            for host_object in root.findall('host[@name=\'%s\']' % host):
+                for queue in host_object.findall('queue[@name=\'%s\']' % self.queue):
+                    host_states = queue.find('queuevalue[@name=\'state_string\']').text or ''
+                    for host_state in host_states:
+                        if host_state in self._BAD_HOST_STATES:
+                            Logger.warn('Execution host %s GE state is %s which makes host invalid.'
+                                        % (host, host_state))
+                            return False
+                    if host_states:
+                        Logger.warn('Execution host %s GE state is not empty but is considered valid: %s.'
+                                    % (host, host_states))
             return True
         except RuntimeError as e:
             Logger.warn('Execution host %s validation has failed in GE: %s' % (host, e))
@@ -666,8 +677,8 @@ class GridEngineScaleUpHandler:
     _GE_POLL_ATTEMPTS = 6
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, cmd_template, price_type, region_id, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, worker_launch_system_params='', clock=Clock()):
+                 instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
+                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, instance_launch_params=None, clock=Clock()):
         """
         Grid engine scale up handler.
 
@@ -684,12 +695,15 @@ class GridEngineScaleUpHandler:
         :param cmd_template: Additional nodes cmd template.
         :param price_type: Additional nodes price type.
         :param region_id: Additional nodes Cloud Region id.
+        :param queue: Additional nodes queue.
+        :param hostlist: Additional nodes hostlist.
         :param owner_param_name: Instance owner param name.
         :param polling_timeout: Kubernetes and Pipeline APIs polling timeout - in seconds.
         :param polling_delay: Polling delay - in seconds.
         :param ge_polling_timeout: Grid Engine polling timeout - in seconds.
         :param instance_family: Instance family for launching additional instance,
                 e.g. c5 means that you can run instances like c5.large, c5.xlarge etc.
+        :param instance_launch_params: Instance launch params dictionary.
         """
         self.executor = cmd_executor
         self.api = api
@@ -702,12 +716,14 @@ class GridEngineScaleUpHandler:
         self.cmd_template = cmd_template
         self.price_type = price_type
         self.region_id = region_id
+        self.queue = queue
+        self.hostlist = hostlist
         self.owner_param_name = owner_param_name
         self.polling_timeout = polling_timeout
         self.polling_delay = polling_delay
         self.ge_polling_timeout = ge_polling_timeout
         self.instance_family = instance_family
-        self.worker_launch_system_params = worker_launch_system_params
+        self.instance_launch_params = instance_launch_params or {}
         self.clock = clock
 
     def scale_up(self, instance, owner):
@@ -761,7 +777,8 @@ class GridEngineScaleUpHandler:
                            '%s ' \
                            '%s' \
                            % (self.instance_disk, instance, self.instance_image, self.cmd_template, self.parent_run_id,
-                              self._pipe_cli_price_type(self.price_type), self.region_id, self.worker_launch_system_params,
+                              self._pipe_cli_price_type(self.price_type), self.region_id,
+                              self._parameters_str(self.instance_launch_params),
                               self._parameters_str(instance_dynamic_launch_params))
         run_id = int(self.executor.execute_to_lines(pipe_run_command)[0])
         Logger.info('Additional worker #%s (%s) has been launched.' % (run_id, instance))
@@ -901,7 +918,7 @@ class GridEngineScaleDownHandler:
         self._remove_host_from_grid_engine_configuration(child_host)
         self._stop_run(child_host)
         self._remove_host_from_hosts(child_host)
-        Logger.info('Additional worker %s has been stopped.' % child_host, crucial=True)
+        Logger.info('Additional worker %s has been scaled down.' % child_host, crucial=True)
         return True
 
     def _remove_host_from_grid_engine_configuration(self, host):
@@ -1222,8 +1239,11 @@ class GridEngineAutoscaler:
         # kill jobs that are pending and can't be satisfied with requested resource
         # f.i. we have only 3 instance max and the biggest possible type has 10 cores but job requests 40 coresf
         pending_jobs = [job for job in updated_jobs if job.state == GridEngineJobState.PENDING]
+        if not pending_jobs:
+            return []
         valid_pending_jobs = []
         invalid_pending_jobs = []
+        Logger.info('Validate %s pending jobs.' % len(pending_jobs))
         for pending_job in pending_jobs:
             if not self.grid_engine.is_job_valid(pending_job):
                 invalid_pending_jobs.append(pending_job)
@@ -1235,6 +1255,7 @@ class GridEngineAutoscaler:
                         % ', '.join('%s (%s cpu)' % (job.id, job.slots) for job in invalid_pending_jobs),
                         crucial=True)
             self.grid_engine.kill_jobs(invalid_pending_jobs)
+        Logger.info('Pending jobs validation has finished.')
         return valid_pending_jobs
 
     def scale_up(self, resource_demands, remaining_additional_hosts):
@@ -1501,12 +1522,12 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
 
 class CloudPipelineInstanceProvider:
 
-    def __init__(self, pipe, cloud_provider, region_id, master_instance_type, instance_family,
+    def __init__(self, pipe, cloud_provider, region_id, instance_type, instance_family,
                  hybrid_autoscale, hybrid_instance_cores, free_cores):
         self.pipe = pipe
         self.cloud_provider = cloud_provider
         self.region_id = region_id
-        self.master_instance_type = master_instance_type
+        self.instance_type = instance_type
         self.instance_family = instance_family
         self.hybrid_autoscale = hybrid_autoscale
         self.hybrid_instance_cores = hybrid_instance_cores
@@ -1519,11 +1540,11 @@ class CloudPipelineInstanceProvider:
         if self.hybrid_autoscale and self.instance_family:
             return self._get_hybrid_instances(price_type)
         else:
-            return self._get_master_instance(price_type)
+            return self._get_default_instance(price_type)
 
-    def _get_master_instance(self, price_type):
+    def _get_default_instance(self, price_type):
         return [instance for instance in self._get_existing_instances(price_type)
-                if instance.name == self.master_instance_type]
+                if instance.name == self.instance_type]
 
     def _get_hybrid_instances(self, price_type):
         return sorted([instance for instance in self._get_existing_instances(price_type)
@@ -1581,6 +1602,9 @@ class CloudProvider:
             # don't attempt to compare against unrelated types
             return False
         return other.value == self.value
+
+    def __repr__(self):
+        return self.value
 
 
 class AllocationRule:
@@ -1711,20 +1735,27 @@ class CloudPipelineAPI:
         raise exceptions[-1]
 
 
-def fetch_worker_launch_system_params(api, master_run_id):
+def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     parent_run = api.load_run(master_run_id)
     master_system_params = {param.get('name'): param.get('resolvedValue') for param in parent_run.get('pipelineRunParameters', [])}
     system_launch_params_string = api.retrieve_preference('launch.system.parameters', default_value='[]')
     system_launch_params = json.loads(system_launch_params_string)
-    worker_launch_system_params = 'CP_CAP_SGE false ' \
-                                  'CP_CAP_AUTOSCALE false ' \
-                                  'CP_CAP_AUTOSCALE_WORKERS 0 ' \
-                                  'CP_DISABLE_RUN_ENDPOINTS true '
+    launch_params = {}
     for launch_param in system_launch_params:
         param_name = launch_param.get('name')
         if launch_param.get('passToWorkers', False) and param_name in master_system_params:
-            worker_launch_system_params += ' {} {}'.format(param_name, master_system_params.get(param_name))
-    return worker_launch_system_params
+            launch_params[param_name] = str(master_system_params.get(param_name))
+    launch_params.update({
+        'CP_CAP_SGE': 'false',
+        'CP_CAP_AUTOSCALE': 'false',
+        'CP_CAP_AUTOSCALE_WORKERS': '0',
+        'CP_DISABLE_RUN_ENDPOINTS': 'true',
+        'CP_CAP_SGE_QUEUE_NAME': queue,
+        'CP_CAP_SGE_HOSTLIST_NAME': hostlist,
+        'cluster_role': 'worker',
+        'cluster_role_type': 'additional'
+    })
+    return launch_params
 
 
 if __name__ == '__main__':
@@ -1739,33 +1770,41 @@ if __name__ == '__main__':
     price_type = os.getenv('CP_CAP_AUTOSCALE_PRICE_TYPE', os.environ['price_type'])
     region_id = os.getenv('CP_CAP_AUTOSCALE_CLOUD_REGION_ID', os.environ['CLOUD_REGION_ID'])
     instance_cores = int(os.getenv('CLOUD_PIPELINE_NODE_CORES', multiprocessing.cpu_count()))
+    static_hosts = int(os.getenv('node_count', 0))
     additional_hosts = int(os.getenv('CP_CAP_AUTOSCALE_WORKERS', 3))
     log_verbose = os.getenv('CP_CAP_AUTOSCALE_VERBOSE', 'false').strip().lower() == 'true'
     free_cores = int(os.getenv('CP_CAP_SGE_WORKER_FREE_CORES', 0))
     master_cores = int(os.getenv('CP_CAP_SGE_MASTER_CORES', instance_cores))
     master_cores = master_cores - free_cores if master_cores - free_cores > 0 else master_cores
-    shared_work_dir = os.getenv('SHARED_WORK_FOLDER', '/common/workdir')
+    working_directory = os.getenv('CP_CAP_AUTOSCALE_WORKDIR', os.getenv('TMP_DIR', '/tmp'))
+    logging_directory = os.getenv('CP_CAP_AUTOSCALE_LOGDIR', os.getenv('LOG_DIR', '/var/log'))
     hybrid_autoscale = os.getenv('CP_CAP_AUTOSCALE_HYBRID', 'false').strip().lower() == 'true'
     hybrid_instance_cores = int(os.getenv('CP_CAP_AUTOSCALE_HYBRID_MAX_CORE_PER_NODE', sys.maxint))
     instance_family = os.getenv('CP_CAP_AUTOSCALE_HYBRID_FAMILY',
                                 CloudPipelineInstanceProvider.get_family_from_type(cloud_provider, instance_type))
+    queue_static = os.getenv('CP_CAP_SGE_QUEUE_STATIC', 'false').strip().lower() == 'true'
+    queue_default = os.getenv('CP_CAP_SGE_QUEUE_DEFAULT', 'false').strip().lower() == 'true'
+    queue = os.getenv('CP_CAP_SGE_QUEUE_NAME', 'main.q')
+    hostlist = os.getenv('CP_CAP_SGE_HOSTLIST_NAME', '@allhosts')
+    log_task = os.environ.get('CP_CAP_AUTOSCALE_TASK',
+                              'GridEngineAutoscaling-%s' % (queue if not queue.endswith('.q') else queue[:-2]))
     owner_param_name = os.getenv('CP_CAP_AUTOSCALE_OWNER_PARAMETER_NAME', 'CP_CAP_AUTOSCALE_OWNER')
     idle_timeout = int(os.getenv('CP_CAP_AUTOSCALE_IDLE_TIMEOUT', 30))
     scale_up_strategy = os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_STRATEGY', 'default')
     scale_up_batch_size = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_BATCH_SIZE', 1))
     scale_up_polling_delay = int(os.getenv('CP_CAP_AUTOSCALE_SCALE_UP_POLLING_DELAY', 10))
 
-    Logger.init(log_file=os.path.join(shared_work_dir, '.autoscaler.log'),
-                task='GridEngineAutoscaling', verbose=log_verbose)
+    Logger.init(log_file=os.path.join(logging_directory, '.autoscaler.%s.log' % queue),
+                task=log_task, verbose=log_verbose)
 
     # TODO: Replace all the usages of PipelineAPI raw client with an actual CloudPipelineAPI client
-    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(shared_work_dir, '.pipe.log'))
+    pipe = PipelineAPI(api_url=pipeline_api, log_dir=os.path.join(logging_directory, '.autoscaler.%s.pipe.log' % queue))
     api = CloudPipelineAPI(pipe=pipe)
 
-    worker_launch_system_params = fetch_worker_launch_system_params(api, master_run_id)
+    instance_launch_params = fetch_instance_launch_params(api, master_run_id, queue, hostlist)
 
     instance_provider = CloudPipelineInstanceProvider(cloud_provider=cloud_provider, region_id=region_id,
-                                                      instance_family=instance_family, master_instance_type=instance_type,
+                                                      instance_family=instance_family, instance_type=instance_type,
                                                       pipe=pipe, hybrid_autoscale=hybrid_autoscale,
                                                       hybrid_instance_cores=hybrid_instance_cores,
                                                       free_cores=free_cores)
@@ -1780,19 +1819,79 @@ if __name__ == '__main__':
                                                                free_cores=free_cores,
                                                                batch_size=scale_up_batch_size)
 
-    default_hosts = int(os.getenv('node_count', 0))
-
     max_instance_cores = instance_provider.get_max_allowed(price_type).cpu - free_cores
-    max_cluster_cores = max_instance_cores * additional_hosts \
-                        + (instance_cores - free_cores) * default_hosts \
-                        + master_cores
+    max_cluster_cores = max_instance_cores * additional_hosts
+    if queue_static:
+        max_cluster_cores += master_cores + (instance_cores - free_cores) * static_hosts
+
+    Logger.info('##################################################\n'
+                'Cloud Pipeline: {pipeline_api}\n'
+                'Cloud provider: {cloud_provider}\n'
+                'Cloud region id: {region_id}\n'
+                'Manager run id: {master_run_id}\n'
+                'Manager cores: {master_cores}\n'
+                'Static hosts: {static_hosts}\n'
+                'Instance disk: {instance_disk}\n'
+                'Instance type: {instance_type}\n'
+                'Instance image: {instance_image}\n'
+                'Instance cmd template: {cmd_template}\n'
+                'Instance price type: {price_type}\n'
+                'Instance cores: {instance_cores}\n'
+                'Instance free cores: {free_cores}\n'
+                'Instance parameters: {instance_parameters}\n'
+                'Max instance cores: {max_instance_cores}\n'
+                'Max cluster cores: {max_cluster_cores}\n'
+                'Max additional hosts: {additional_hosts}\n'
+                'Static Grid Engine queue: {queue_static}\n'
+                'Default Grid Engine queue: {queue_default}\n'
+                'Grid Engine queue: {queue}\n'
+                'Grid Engine hostlist: {hostlist}\n'
+                'Hybrid autoscaling: {hybrid_autoscale}\n'
+                'Hybrid instance cores: {hybrid_instance_cores}\n'
+                'Hybrid instance family: {instance_family}\n'
+                'Logging task: {log_task}\n'
+                'Logging verbose: {log_verbose}\n'
+                'Logging directory: {logging_directory}\n'
+                'Working directory: {working_directory}\n'
+                'Default hostfile: {default_hostfile}\n'
+                '##################################################'
+                .format(pipeline_api=pipeline_api,
+                        cloud_provider=cloud_provider,
+                        region_id=region_id,
+                        master_run_id=master_run_id,
+                        master_cores=master_cores,
+                        static_hosts=static_hosts,
+                        instance_disk=instance_disk,
+                        instance_type=instance_type,
+                        instance_image=instance_image,
+                        cmd_template=cmd_template,
+                        price_type=price_type,
+                        instance_cores=instance_cores,
+                        free_cores=free_cores,
+                        instance_parameters=instance_launch_params,
+                        max_instance_cores=max_instance_cores,
+                        max_cluster_cores=max_cluster_cores,
+                        additional_hosts=additional_hosts,
+                        queue_static=queue_static,
+                        queue_default=queue_default,
+                        queue=queue,
+                        hostlist=hostlist,
+                        hybrid_autoscale=hybrid_autoscale,
+                        hybrid_instance_cores=hybrid_instance_cores,
+                        instance_family=instance_family,
+                        log_task=log_task,
+                        log_verbose=log_verbose,
+                        logging_directory=logging_directory,
+                        working_directory=working_directory,
+                        default_hostfile=default_hostfile))
 
     cmd_executor = CmdExecutor()
     scaling_operations_clock = Clock()
     grid_engine = GridEngine(cmd_executor=cmd_executor, max_instance_cores=max_instance_cores,
-                             max_cluster_cores=max_cluster_cores)
+                             max_cluster_cores=max_cluster_cores, queue=queue, hostlist=hostlist,
+                             queue_default=queue_default)
     host_storage = FileSystemHostStorage(cmd_executor=cmd_executor,
-                                         storage_file=os.path.join(shared_work_dir, '.autoscaler.storage'),
+                                         storage_file=os.path.join(working_directory, '.autoscaler.%s.storage' % queue),
                                          clock=scaling_operations_clock)
     host_storage = ThreadSafeHostStorage(host_storage)
     scale_up_timeout = int(api.retrieve_preference('ge.autoscaling.scale.up.timeout', default_value=30))
@@ -1805,11 +1904,12 @@ if __name__ == '__main__':
                                                 instance_disk=instance_disk, instance_image=instance_image,
                                                 cmd_template=cmd_template,
                                                 price_type=price_type, region_id=region_id,
+                                                queue=queue, hostlist=hostlist,
                                                 owner_param_name=owner_param_name,
                                                 polling_delay=scale_up_polling_delay,
                                                 polling_timeout=scale_up_polling_timeout,
                                                 instance_family=instance_family,
-                                                worker_launch_system_params=worker_launch_system_params,
+                                                instance_launch_params=instance_launch_params,
                                                 clock=scaling_operations_clock)
     scale_up_orchestrator = GridEngineScaleUpOrchestrator(scale_up_handler=scale_up_handler, grid_engine=grid_engine,
                                                           host_storage=host_storage,
