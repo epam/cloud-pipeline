@@ -20,12 +20,14 @@ import {observable} from 'mobx';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import {Switch, Alert, Button, Row, Col, Modal, Spin} from 'antd';
-import CodeFileCommitForm from './CodeFileCommitForm';
-import CodeEditor from '../../../../special/CodeEditor';
 import HotTable from 'react-handsontable';
 import Papa from 'papaparse';
+
+import CodeEditor from '../../../../special/CodeEditor';
+import GitIgnoreEditForm from '../../../browser/versioned-storage/forms/git-ignore-edit-form';
 import downloadPipelineFile from '../../utilities/download-pipeline-file';
 import parsePipelineFile from '../../utilities/parse-pipeline-file';
+import CodeFileCommitForm from './CodeFileCommitForm';
 import styles from './PipelineCodeForm.css';
 
 @inject(({routing}) => ({
@@ -62,7 +64,8 @@ class PipelineCodeForm extends React.PureComponent {
     error: undefined,
     editMode: false,
     commitMessageForm: false,
-    editTabularAsText: false
+    editTabularAsText: false,
+    editGitignoreAsText: false
   };
 
   _modifiedCode = null;
@@ -212,6 +215,10 @@ class PipelineCodeForm extends React.PureComponent {
     this.setState({editTabularAsText});
   };
 
+  toggleEditGitignoreAsText = (editGitignoreAsText) => {
+    this.setState({editGitignoreAsText});
+  };
+
   get isEditable () {
     const {editable, pipelineId, version} = this.props;
     return editable && pipelineId && version;
@@ -245,6 +252,11 @@ class PipelineCodeForm extends React.PureComponent {
       case 'txt':
       default: return 'text';
     }
+  }
+
+  get isGitIgnore () {
+    const {path} = this.props;
+    return path && path === '.gitignore';
   }
 
   get isTabular () {
@@ -346,6 +358,13 @@ class PipelineCodeForm extends React.PureComponent {
               ${this._tableData.message}`}
             type="error" />
         );
+    } else if (this.isGitIgnore && !this.state.editGitignoreAsText) {
+      return (
+        <GitIgnoreEditForm
+          content={this._modifiedCode !== null ? this._modifiedCode : (this._originalCode || '')}
+          onChange={this.onCodeChange}
+          editMode={this.state.editMode}
+        />);
     } else {
       return (
         <CodeEditor
@@ -386,6 +405,13 @@ class PipelineCodeForm extends React.PureComponent {
               <span>{this.state.editMode ? 'Edit' : 'View'} as text: <Switch
                 className={styles.button}
                 onChange={(checked) => this.toggleEditTabularAsText(checked)}
+              /></span>
+            }
+            {
+              this.isEditable && this.isGitIgnore &&
+              <span>{this.state.editMode ? 'Edit' : 'View'} as text: <Switch
+                className={styles.button}
+                onChange={(checked) => this.toggleEditGitignoreAsText(checked)}
               /></span>
             }
             {

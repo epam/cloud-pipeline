@@ -39,33 +39,6 @@ const renderActions = (item) => {
   }
   const actions = [];
   if (item.type === DOCUMENT_TYPES.blob) {
-    if (roleModel.writeAllowed(item)) {
-      item.showGitIgnoreActions &&
-      !item.ignored &&
-      actions.push((
-        <Button
-          key="gitignore add"
-          className={styles.action}
-          data-action="addGitIgnore"
-          size="small"
-        >
-          Ignore
-        </Button>
-      ));
-      item.showGitIgnoreActions &&
-      item.ignored &&
-      item.hasExplicitIgnoreRule &&
-      actions.push((
-        <Button
-          key="gitignore remove"
-          className={styles.action}
-          data-action="removeGitIgnore"
-          size="small"
-        >
-          Track
-        </Button>
-      ));
-    }
     actions.push((
       <Button
         key="download"
@@ -102,31 +75,6 @@ const renderActions = (item) => {
   }
   if (item.type === DOCUMENT_TYPES.tree) {
     if (roleModel.writeAllowed(item)) {
-      item.showGitIgnoreActions &&
-      !item.ignored &&
-      actions.push((
-        <Button
-          key="gitignore add"
-          className={styles.action}
-          data-action="addGitIgnore"
-          size="small"
-        >
-          Ignore
-        </Button>
-      ));
-      item.showGitIgnoreActions &&
-      item.ignored &&
-      item.hasExplicitIgnoreRule &&
-      actions.push((
-        <Button
-          key="gitignore remove"
-          className={styles.action}
-          data-action="removeGitIgnore"
-          size="small"
-        >
-          Track
-        </Button>
-      ));
       actions.push((
         <Button
           key="edit"

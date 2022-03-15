@@ -117,12 +117,22 @@ function getFileIgnoreRegExpPatterns (file) {
 
 class GitIgnore {
   static cache = new Map();
-  static getGitIgnore = (versionedStorageId, revision, path) => {
-    const key = `${versionedStorageId}|${revision}|${(path || '').replace(/\/$/, '')}`;
-    if (!GitIgnore.cache.has(key)) {
-      GitIgnore.cache.set(key, new GitIgnore(versionedStorageId, revision, path));
+  static getGitIgnore = (options) => {
+    const {
+      pipelineId: versionedStorageId,
+      lastCommit: revision,
+      path,
+      content
+    } = options;
+    if (!content) {
+      const key = `${versionedStorageId}|${revision}|${(path || '').replace(/\/$/, '')}`;
+      if (!GitIgnore.cache.has(key)) {
+        GitIgnore.cache.set(key, new GitIgnore({versionedStorageId, revision, path, content}));
+      }
+      return GitIgnore.cache.get(key);
+    } else {
+      return new GitIgnore(options);
     }
-    return GitIgnore.cache.get(key);
   }
   @observable versionedStorageId;
   @observable revision;
@@ -132,13 +142,25 @@ class GitIgnore {
   @observable loaded = false;
   @observable content = [];
   @observable patterns = [];
-  constructor (versionedStorageId, revision, path) {
-    this.versionedStorageId = versionedStorageId;
-    this.revision = revision;
-    this.path = (path || '')
-      .replace(/\/$/, '')
-      .concat('/.gitignore');
-    (this.fetch)();
+  constructor (options) {
+    const {
+      versionedStorageId,
+      revision,
+      path,
+      content
+    } = options;
+    if (!content) {
+      this.versionedStorageId = versionedStorageId;
+      this.revision = revision;
+      this.path = (path || '')
+        .replace(/\/$/, '')
+        .concat('/.gitignore');
+
+      (this.fetch)();
+    } else {
+      this.content = parseGitIgnore(content);
+      this.patterns = buildPatterns(this.content);
+    }
   }
   @action
   async fetch () {
