@@ -129,6 +129,12 @@
         "defaultValue": "ERROR"
     },
     {
+        "name": "CP_PIPE_FUSE_MOUNT_OPTIONS",
+        "type": "string",
+        "description": "Declares pipefuse additional mount options",
+        "defaultValue": ""
+    },
+    {
         "name": "CP_CAP_SGE_MASTER_CORES",
         "type": "string",
         "description": "Allow to limit Grid Engine master cores usage (0 - do not use)",
