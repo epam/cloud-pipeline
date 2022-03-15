@@ -116,7 +116,7 @@ EOF
             _dest_host="\$backend$_source_port"
         fi
 
-        echo "server { listen $_source_port; proxy_pass ${_dest_host}:${_dest_port} ${_entry_protocol}; }" >> "$CP_TP_NGINX_CONFIG"
+        echo "server { listen ${_source_port} ${_entry_protocol}; proxy_pass ${_dest_host}:${_dest_port}; }" >> "$CP_TP_NGINX_CONFIG"
         echo "Entry added: ${_source_port}->${_dest_host}:${_dest_port}"
     done
 
