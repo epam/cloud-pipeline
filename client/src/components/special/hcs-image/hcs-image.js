@@ -319,7 +319,7 @@ class HcsImage extends React.PureComponent {
         if (well) {
           const {images = []} = well;
           const image = images.find(i => i.x === x && i.y === y);
-          if (image && image.id !== currentImageId) {
+          if (showEntireWell || (image && image.id !== currentImageId)) {
             // todo: re-fetch signed urls here?
             this.setState({
               imageId: image.id,
