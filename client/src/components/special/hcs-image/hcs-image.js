@@ -263,6 +263,7 @@ class HcsImage extends React.PureComponent {
       sequenceId,
       wellId
     } = this.state;
+    const {wellViewByDefault} = this.props;
     if (this.hcsInfo) {
       const sequence = (this.hcsInfo.sequences || []).find(s => s.id === sequenceId);
       if (sequence) {
@@ -277,7 +278,8 @@ class HcsImage extends React.PureComponent {
             wellHeight: well.height,
             imageId: undefined,
             wellImageId: well.wellImageId,
-            fields: images
+            fields: images,
+            ...(wellViewByDefault ? {showEntireWell: true} : {})
           }, () => this.changeWellImage(firstImage, true));
         }
       }
@@ -319,7 +321,7 @@ class HcsImage extends React.PureComponent {
         if (well) {
           const {images = []} = well;
           const image = images.find(i => i.x === x && i.y === y);
-          if (image && image.id !== currentImageId) {
+          if (showEntireWell || (image && image.id !== currentImageId)) {
             // todo: re-fetch signed urls here?
             this.setState({
               imageId: image.id,
@@ -729,12 +731,14 @@ HcsImage.propTypes = {
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   path: PropTypes.string,
   detailsTitle: PropTypes.string,
-  detailsButtonTitle: PropTypes.string
+  detailsButtonTitle: PropTypes.string,
+  wellViewByDefault: PropTypes.bool
 };
 
 HcsImage.defaultProps = {
   detailsTitle: 'Details',
-  detailsButtonTitle: 'Show details'
+  detailsButtonTitle: 'Show details',
+  wellViewByDefault: true
 };
 
 export default HcsImage;
