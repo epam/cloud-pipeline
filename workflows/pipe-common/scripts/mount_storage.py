@@ -516,6 +516,7 @@ class S3Mounter(StorageMounter):
 
     def build_mount_command(self, params):
         if params['aws_token'] is not None or params['fuse_type'] == FUSE_PIPE_ID:
+            mount_options = os.getenv('CP_PIPE_FUSE_MOUNT_OPTIONS')
             persist_logs = os.getenv('CP_PIPE_FUSE_PERSIST_LOGS', 'false').lower() == 'true'
             debug_libfuse = os.getenv('CP_PIPE_FUSE_DEBUG_LIBFUSE', 'false').lower() == 'true'
             logging_level = os.getenv('CP_PIPE_FUSE_LOGGING_LEVEL')
@@ -525,6 +526,7 @@ class S3Mounter(StorageMounter):
                     + ('-l {logging_file} ' if persist_logs else '')
                     + ('-v {logging_level} ' if logging_level else '')
                     + ('-o allow_other,debug ' if debug_libfuse else '-o allow_other ')
+                    + (mount_options if mount_options else '')
                     ).format(**params)
         elif params['fuse_type'] == FUSE_GOOFYS_ID:
             params['path'] = '{bucket}:{relative_path}'.format(**params) if params['relative_path'] else params['path']
