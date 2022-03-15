@@ -172,15 +172,21 @@ class GCPInstanceProvider(AbstractInstanceProvider):
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
         utils.pipe_log('Checking instance ({}) boot state'.format(ins_id))
         port = 8888
-        response = self.__find_instance(run_id)
-        ipaddr = response['networkInterfaces'][0]['networkIP']
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         utils.pipe_log('- Waiting for instance boot up...')
-        result = utils.poll_instance(sock, time_rep, ipaddr, port)
+        result = 1
         rep = 0
+        instance = None
         while result != 0:
             sleep(time_rep)
-            result = utils.poll_instance(sock, time_rep, ipaddr, port)
+            if instance is None:
+                instance = self.__find_instance(run_id)
+            if instance is not None:
+                if 'networkInterfaces' in instance and \
+                        len(instance['networkInterfaces']) > 0 and \
+                        'networkIP' in instance['networkInterfaces'][0]:
+                    ipaddr = instance['networkInterfaces'][0]['networkIP']
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    result = utils.poll_instance(sock, time_rep, ipaddr, port)
             rep = utils.increment_or_fail(num_rep, rep,
                                           'Exceeded retry count ({}) for instance ({}) network check on port {}'.format(
                                               num_rep, ins_id, port))
