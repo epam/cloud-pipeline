@@ -52,7 +52,6 @@ class HCSPreview extends React.Component {
         }}
         detailsTitle={detailsTitle}
         detailsButtonTitle={detailsButtonTitle}
-        wellViewByDefault
       >
         {children}
       </HcsImage>

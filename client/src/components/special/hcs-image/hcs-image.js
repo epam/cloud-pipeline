@@ -279,7 +279,7 @@ class HcsImage extends React.PureComponent {
             imageId: undefined,
             wellImageId: well.wellImageId,
             fields: images,
-            ...(wellViewByDefault && {showEntireWell: true})
+            ...(wellViewByDefault ? {showEntireWell: true} : {})
           }, () => this.changeWellImage(firstImage, true));
         }
       }
@@ -738,7 +738,7 @@ HcsImage.propTypes = {
 HcsImage.defaultProps = {
   detailsTitle: 'Details',
   detailsButtonTitle: 'Show details',
-  wellViewByDefault: false
+  wellViewByDefault: true
 };
 
 export default HcsImage;
