@@ -40,11 +40,27 @@
 .table tbody tr td.actions-column {
   padding: 4px 8px;
   vertical-align: middle;
+  word-break: break-word;
 }
 
 .table tbody tr td.status-column {
   padding: 0 0 0 4px;
   max-width: 45px;
+}
+
+.table.has-child-routes tbody tr td.status-column {
+  width: 45px;
+}
+
+.table tr .name-column,
+.table tr .ip-column,
+.table tr .service-name-column,
+.table tr .protocol-column {
+  min-width: 100px;
+}
+
+.table tr .ports-column {
+  min-width: 50px;
 }
 
 .table-content-actions {
@@ -114,6 +130,7 @@
 }
 
 .comment-column {
+  min-width: 100px;
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
