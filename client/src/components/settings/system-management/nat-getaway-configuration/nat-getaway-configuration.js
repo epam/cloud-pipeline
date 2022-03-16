@@ -75,6 +75,10 @@ export default class NATGetaway extends React.Component {
       .concat(added.sort(routesSorter));
   }
 
+  get hasChildRoutes () {
+    return this.sortedContent.some(o => o.children && o.children.length > 0);
+  }
+
   get tableContentChanged () {
     const {addedRoutes = [], removedRoutes = []} = this.state;
     return addedRoutes.length > 0 || removedRoutes.length > 0;
@@ -318,7 +322,15 @@ export default class NATGetaway extends React.Component {
           <Spin spinning={pending}>
             <Table
               indentSize={0}
-              className={classNames(styles.table, 'cp-settings-nat-table')}
+              className={
+                classNames(
+                  styles.table,
+                  'cp-settings-nat-table',
+                  {
+                    [styles.hasChildRoutes]: this.hasChildRoutes
+                  }
+                )
+              }
               dataSource={this.sortedContent}
               pagination={false}
               rowKey={getRouteIdentifier}
