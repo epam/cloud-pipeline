@@ -209,7 +209,7 @@ function renderStatusIcon (status) {
         />
       );
   }
-};
+}
 
 function renderPorts (value) {
   if (Array.isArray(value)) {
@@ -220,10 +220,10 @@ function renderPorts (value) {
       if (sliced) {
         const totalSliced = slicedArray
           .map(portUtilities.getPortsCount)
-          .reduce((total, current) => total + current.length, 0);
+          .reduce((total, current) => total + current, 0);
         const all = value
           .map(portUtilities.getPortsCount)
-          .reduce((total, current) => total + current.length, 0);
+          .reduce((total, current) => total + current, 0);
         return (
           <div>
             {children}
@@ -272,14 +272,24 @@ function renderPorts (value) {
 export const columns = {
   external: [
     {name: 'status', prettyName: '', renderer: renderStatusIcon, className: styles.statusColumn},
-    {name: 'externalName', prettyName: 'name'},
-    {name: 'externalIp', prettyName: 'ip'},
-    {name: 'externalPortsPresentation', prettyName: 'ports', renderer: renderPorts},
-    {name: 'protocol', prettyName: 'protocol'}
+    {name: 'externalName', prettyName: 'name', className: styles.nameColumn},
+    {name: 'externalIp', prettyName: 'ip', className: styles.ipColumn},
+    {
+      name: 'externalPortsPresentation',
+      prettyName: 'ports',
+      renderer: renderPorts,
+      className: styles.portsColumn
+    },
+    {name: 'protocol', prettyName: 'protocol', className: styles.protocolColumn}
   ],
   internal: [
-    {name: 'internalName', prettyName: 'service name'},
-    {name: 'internalIp', prettyName: 'ip'},
-    {name: 'internalPortsPresentation', prettyName: 'ports', renderer: renderPorts}
+    {name: 'internalName', prettyName: 'service name', className: styles.serviceNameColumn},
+    {name: 'internalIp', prettyName: 'ip', className: styles.ipColumn},
+    {
+      name: 'internalPortsPresentation',
+      prettyName: 'ports',
+      renderer: renderPorts,
+      className: styles.portsColumn
+    }
   ]
 };

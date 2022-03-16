@@ -105,7 +105,7 @@ function getPortEntryCount (portEntry) {
     if (e && e.length >= 3) {
       const n1 = Number(e[1]);
       const n2 = Number(e[2]);
-      return Math.max(0, n1 - n2 + 1);
+      return Math.max(0, n2 - n1 + 1);
     }
   }
   return 1;
@@ -154,7 +154,7 @@ export function getPortsCount (string) {
       .map(o => getPortEntryCount(o.trim()))
       .reduce((r, c) => r + c, 0);
   }
-  return [];
+  return 0;
 }
 
 export function combinePorts (ports = []) {
@@ -194,6 +194,10 @@ function processProtocolPorts (routes, mapPort = (o => o.externalPort)) {
   };
 }
 
+function sortByPorts (a, b) {
+  return (a.externalPort || 0) - (b.externalPort || 0);
+}
+
 export function groupRoutes (routes) {
   const keys = [];
   for (const route of routes) {
@@ -222,7 +226,8 @@ export function groupRoutes (routes) {
         o.protocol === protocol &&
         o.externalIp === externalIp &&
         o.internalIp === internalIp
-      );
+      )
+      .sort(sortByPorts);
     const statuses = [...(new Set(ipRoutes.map(o => o.status)))];
     const [any] = ipRoutes;
     const {
