@@ -375,7 +375,7 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO ensureParameterIsNotPresent(String name) {
         if (!get(PARAMETERS).exists()) {
                 return this;
-            }
+        }
         $(byXpath(format(
                 "//tr[.//td[contains(@class, 'log__task-parameter-name') " +
                         "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);

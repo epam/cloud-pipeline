@@ -862,6 +862,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    public boolean checkConfigureRunAs(final String name) {
+                        return context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))
+                                .$$(byXpath(".//span")).texts().contains(name);
+                    }
+
                     public NavigationHomeAO impersonate() {
                         click(IMPERSONATE);
                         return new NavigationHomeAO();

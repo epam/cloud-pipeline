@@ -20,11 +20,11 @@ Test verifies that a user with sufficient permissions can launch a run as a diff
 | 10 | Login as the regular user from the prerequisites | |
 | 11 | Open the **Tools** page | |
 | 12 | Select test tool | |
-| 13 | Run tool with *Custom settings* | |
+| 13 | Run tool with *Default settings* | |
 | 14 | At the **Runs** page, click the just-launched run | |
 | 15 | Wait until the **SSH** hyperlink appears | |
 | 16 | Click the **SSH** hyperlink | |
-| 17 | In the opened tab, enter and perform the `pipe run -di <tool>:latest -u <ADMIN_USER> -y` command, where `<tool>` is any tool name with group, `<ADMIN_USER>` is the admin user from the Prerequisites | The output contains `Pipeline run scheduled with RunId: <runID>` |
+| 17 | In the opened tab, enter and perform the `pipe run -di <tool>:latest -u <ADMIN_USER> -y` command, where `<tool>` is name of any tool that shall be accessible for the `<REGULAR USER>` for the running, `<ADMIN_USER>` is the admin user from the Prerequisites | The output contains `Pipeline run scheduled with RunId: <runID>` |
 | 18 | Store `runID` from output | | 
 | 19 | Logout | |
 | 20 | Login as the admin user from the prerequisites | |

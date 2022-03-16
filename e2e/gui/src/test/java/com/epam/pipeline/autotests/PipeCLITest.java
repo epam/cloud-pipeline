@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO.UserEntry.EditUserPopup;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -28,19 +29,22 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
+import static java.util.regex.Pattern.compile;
 import static org.testng.Assert.assertTrue;
 
 public class PipeCLITest extends AbstractSeveralPipelineRunningTest
         implements Navigation, Authorization {
 
-    private static final String command = "pipe run -di %s:latest -u %s -y";
-    private static final String result = "Pipeline run scheduled with RunId: ";
+    private static final String COMMAND = "pipe run -di %s:latest -u %s -y";
+    private static final String RESULT = "Pipeline run scheduled with RunId: ";
     private static final String ORIGINAL_OWNER = "ORIGINAL_OWNER";
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
@@ -48,14 +52,18 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
 
     @AfterClass(alwaysRun = true)
     public void resetPreference() {
-        navigationMenu()
+        logoutIfNeeded();
+        loginAs(admin);
+        final EditUserPopup popUp = navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .searchUserEntry(admin.login.toUpperCase())
-                .edit()
-                .resetConfigureRunAs(user.login)
-                .ok();
+                .edit();
+        if (popUp.checkConfigureRunAs(user.login)) {
+                popUp.resetConfigureRunAs(user.login)
+                    .ok();
+        }
     }
 
     @Test
@@ -102,7 +110,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
     @Test
     @TestCase(value = {"1948_1"})
     public void checkPipeCLIAdminRunAsUser() {
-        String runID = launchRunAsUser(user.login);
+        final String runID = launchRunAsUser(user.login);
         runsMenu()
                 .viewAvailableActiveRuns()
                 .shouldContainRun("pipeline", runID)
@@ -126,7 +134,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .ok();
         logout();
         loginAs(user);
-        String runID = launchRunAsUser(admin.login);
+        final String runID = launchRunAsUser(admin.login);
         logout();
         loginAs(admin);
         runsMenu()
@@ -135,7 +143,7 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .validatePipelineOwner(runID, admin.login)
                 .showLog(runID)
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter("ORIGINAL_OWNER", user.login), exist);
+                .ensure(configurationParameter(ORIGINAL_OWNER, user.login), exist);
         runsMenu()
                 .stopRun(runID);
     }
@@ -151,12 +159,14 @@ public class PipeCLITest extends AbstractSeveralPipelineRunningTest
                 .ssh(shell -> {
                     output[0] = shell
                             .waitUntilTextAppears(getLastRunId())
-                            .execute(format(command, tool, userName))
-                            .assertOutputContains(result)
-                            .lastCommandResult(format(command, tool, userName));
+                            .execute(format(COMMAND, tool, userName))
+                            .assertOutputContains(RESULT)
+                            .lastCommandResult(format(COMMAND, tool, userName));
                     shell.close();
                 });
-        return output[0].substring(output[0].indexOf(": ")+2,
-                output[0].indexOf("root"));
+        final Pattern pattern = compile(format("%s(\\d+).*", RESULT));
+        final Matcher matcher = pattern.matcher(output[0]);
+        assertTrue(matcher.find());
+        return matcher.group(1);
     }
 }
