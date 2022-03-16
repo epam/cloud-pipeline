@@ -864,7 +864,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public boolean checkConfigureRunAs(final String name) {
                         return context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))
-                                .$$(byXpath(".//span")).texts().contains(name);
+                                .shouldBe(visible).$$(byXpath(".//span")).texts().contains(name);
                     }
 
                     public NavigationHomeAO impersonate() {
