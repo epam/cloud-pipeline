@@ -124,11 +124,15 @@ class HcsCellSelector extends React.Component {
     this.container = container;
     if (this.container) {
       this.container.addEventListener('wheel', this.handleZoom);
-      this.setState({
-        widthPx: this.container.clientWidth,
-        heightPx: this.container.clientHeight
-      }, () => this.updateSize());
+      setTimeout(this.setInitialContainerSize, 0);
     }
+  };
+
+  setInitialContainerSize = () => {
+    this.setState({
+      widthPx: this.container.clientWidth,
+      heightPx: this.container.clientHeight
+    }, () => this.updateSize());
   };
 
   initializeLegend = (horizontal = false) => (container) => {
