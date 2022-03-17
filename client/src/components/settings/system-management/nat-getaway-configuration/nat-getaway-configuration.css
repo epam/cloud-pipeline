@@ -49,7 +49,7 @@
 }
 
 .table.has-child-routes tbody tr td.status-column {
-  width: 45px;
+  min-width: 45px;
 }
 
 .table tr .name-column,
