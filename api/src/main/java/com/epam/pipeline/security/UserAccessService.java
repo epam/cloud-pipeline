@@ -16,6 +16,7 @@
 package com.epam.pipeline.security;
 
 
+import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.user.GroupStatus;
@@ -23,6 +24,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.jwt.TokenVerificationException;
 import lombok.extern.slf4j.Slf4j;
@@ -42,15 +44,18 @@ public class UserAccessService {
 
     private final UserManager userManager;
     private final boolean validateUser;
-    private PreferenceManager preferenceManager;
+    private final PreferenceManager preferenceManager;
+    private final QuotaService quotaService;
 
 
     public UserAccessService(final UserManager userManager,
                              final @Value("${jwt.validate.token.user:false}") boolean validateUser,
-                             final PreferenceManager preferenceManager) {
+                             final PreferenceManager preferenceManager,
+                             final QuotaService quotaService) {
         this.userManager = userManager;
         this.validateUser = validateUser;
         this.preferenceManager = preferenceManager;
+        this.quotaService = quotaService;
     }
 
     public UserContext getJwtUser(final JwtRawToken jwtRawToken, final JwtTokenClaims claims) {
@@ -82,6 +87,11 @@ public class UserAccessService {
         if (user.isBlocked()) {
             throwUserIsBlocked(user.getUserName());
         }
+        quotaService.findActiveActionForUser(user, QuotaActionType.BLOCK)
+                .ifPresent(quota -> {
+                    log.info("Logging of user is blocked due to quota applied {}", quota);
+                    throwUserIsBlocked(user.getUserName());
+                });
     }
 
     public void throwUserIsBlocked(final String userName) {
