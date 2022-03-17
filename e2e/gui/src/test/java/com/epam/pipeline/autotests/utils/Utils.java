@@ -68,6 +68,7 @@ import static org.testng.Assert.assertTrue;
 public class Utils {
 
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
     public static final String SPOT = "Spot";
 

@@ -119,6 +119,11 @@ public class C {
         LDAP_USERNAME = conf.getProperty("e2e.ui.ldap.server.username");
         LDAP_PASSWORD = conf.getProperty("e2e.ui.ldap.server.password");
         SYSTEM_MONITOR_DELAY = conf.getProperty("e2e.ui.system.monitor.delay");
+
+        BACKUP_STORAGE_NAMES = Arrays.asList(conf.getProperty("e2e.ui.backup.storage.names")
+                .split(","));
+        BACKUP_STORAGE_PATH = conf.getProperty("e2e.ui.backup.storage.path");
+        BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -218,4 +223,8 @@ public class C {
     public static final String LDAP_USERNAME;
     public static final String LDAP_PASSWORD;
     public static final String SYSTEM_MONITOR_DELAY;
+
+    public static final List<String> BACKUP_STORAGE_NAMES;
+    public static final String BACKUP_STORAGE_PATH;
+    public static final int BACKUP_STORAGE_OFFSET;
 }

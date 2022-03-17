@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -216,6 +216,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
     public StorageContentAO validateElementNotPresent(String elementName) {
         elementRow(elementName).shouldNotBe(visible);
+        return this;
+    }
+
+    public StorageContentAO validateElementByPatternIsPresent(String elementNamePattern) {
+        $$(className("ant-table-row")).findBy(matchText(elementNamePattern)).shouldBe(visible);
         return this;
     }
 
@@ -502,6 +507,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 .find(byXpath("preceding-sibling::*[contains(@class, 'browser__checkbox-cell')]"));
         checkBox.shouldBe(visible).click();
         return this;
+    }
+
+    public String findFileSizeByPattern(String filename) {
+        return Optional.ofNullable(filename)
+                .map(fileName -> $(byClassName("ant-table-body"))
+                        .findAll(byClassName("browser__file"))
+                        .findBy(matchText(filename))
+                        .find(byCssSelector("td:nth-child(4)"))
+                        .shouldBe(visible)
+                        .getText()
+                )
+                .orElseThrow(() -> new NoSuchElementException(format("%s file was not found.", filename)));
     }
 
     public class FileAO extends ElementAO<FileAO> {
