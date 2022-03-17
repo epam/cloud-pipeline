@@ -29,6 +29,7 @@ import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
@@ -146,6 +147,9 @@ public class TestApplication {
 
     @MockBean
     public NodePoolUsageService nodePoolUsageService;
+
+    @MockBean
+    public QuotaService mockQuotaService;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

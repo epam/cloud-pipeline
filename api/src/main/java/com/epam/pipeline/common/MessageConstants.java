@@ -686,6 +686,16 @@ public final class MessageConstants {
     public static final String NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS = "nat.gateway.route.removal.no.service.ports";
     public static final String NAT_ROUTE_REMOVAL_SERVICE_PORT = "nat.gateway.route.removal.service.port";
 
+    // Quota
+    public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
+    public static final String ERROR_QUOTA_VALUE_EMPTY = "error.quota.value.empty";
+    public static final String ERROR_QUOTA_NOT_FOUND_BY_ID = "error.quota.not.found.by.id";
+    public static final String ERROR_QUOTA_GLOBAL_ALREADY_EXISTS = "error.quota.global.already.exists";
+    public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
+    public static final String ERROR_QUOTA_SUBJECT_EMPTY = "error.quota.subject.empty";
+    public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
+    public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
+
     private MessageConstants() {
         // no-op
     }

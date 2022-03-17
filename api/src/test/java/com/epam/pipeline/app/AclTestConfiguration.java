@@ -55,6 +55,7 @@ import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.report.NodePoolReportService;
 import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.user.UserManager;
@@ -233,6 +234,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected NodePoolReportService nodePoolReportService;
+
+    @MockBean
+    protected QuotaService quotaService;
 
     @Bean
     public PermissionFactory permissionFactory() {
