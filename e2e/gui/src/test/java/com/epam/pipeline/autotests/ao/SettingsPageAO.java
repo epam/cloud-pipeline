@@ -1378,9 +1378,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public PreferencesAO setEmptyPreferenceValue(String preference) {
+            SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
             searchPreference(preference);
-            click(getByField(preference));
-            PreferencesAO.this.clearByKey(getByField(preference));
+            clearTextField(pref);
             return this;
         }
 

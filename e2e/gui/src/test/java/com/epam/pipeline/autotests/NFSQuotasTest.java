@@ -350,7 +350,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         logout();
     }
 
-    @Test
+    @Test(dependsOnMethods = "validateReadOnlyQuota")
     @TestCase(value = {"2182_6"})
     public void validateQuotasViaUI() throws IOException {
         navigationMenu()
