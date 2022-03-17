@@ -1377,6 +1377,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .saveIfNeeded();
         }
 
+        public PreferencesAO setEmptyPreferenceValue(String preference) {
+            searchPreference(preference);
+            click(getByField(preference));
+            PreferencesAO.this.clearByKey(getByField(preference));
+            return this;
+        }
+
         public class ClusterTabAO extends PreferencesAO {
 
             private final By dockerExtraMulti = getByField("cluster.docker.extra_multi");

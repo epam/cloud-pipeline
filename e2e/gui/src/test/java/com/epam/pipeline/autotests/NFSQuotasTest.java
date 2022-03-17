@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,6 +45,8 @@ import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
 import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
+import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
+import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -54,6 +56,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     private static final String TEST_NAME_BIG_FILE_2 = "test2.big";
     private static final String DISABLED_MOUNT_STATUS = "MOUNT IS DISABLED";
     private static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
+    private static final String GRACE_PERIOD_JSON = "/gracePeriod.json";
     private final String nfsPrefix = C.NFS_PREFIX.replace(":/", "");
     private final String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
     private final String storage2 = "epmcmbi-test-nfs-" + Utils.randomSuffix();
@@ -63,9 +66,11 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     private final String group = C.DEFAULT_GROUP;
     private final String fileName = "test_file1.txt";
     private final String fileName2 = "test_file2.txt";
+    private final String storageQuotasActionsGracePeriod = "storage.quotas.actions.grace.period";
     private String commonRunId;
     private String userRunId;
     private String userRunId2;
+    private String[] initialGracePeriodJson;
 
     @BeforeClass
     public void createNfsStorage() {
@@ -91,6 +96,10 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .ok()
                 .launch(this)
                 .showLog(commonRunId = getLastRunId());
+        initialGracePeriodJson = navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .getPreference(storageQuotasActionsGracePeriod);
     }
 
     @AfterClass(alwaysRun = true)
@@ -103,6 +112,12 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                         .editForNfsMount()
                         .clickDeleteStorageButton()
                         .clickDelete());
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .clearAndSetJsonToPreference(storageQuotasActionsGracePeriod,
+                        initialGracePeriodJson[0], parseBoolean(initialGracePeriodJson[1]))
+                .saveIfNeeded();
     }
 
     @Test
@@ -170,7 +185,12 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     @TestCase(value = {"2182_3"})
     public void validateFSMountConfigureNotifications() {
         final String storageSizeWithUnit = format("%s Gb", "1.*");
-
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .clearAndSetJsonToPreference(storageQuotasActionsGracePeriod,
+                        readResourceFully(GRACE_PERIOD_JSON), true)
+                .saveIfNeeded();
         logoutIfNeeded();
         loginAs(user);
         tools()
@@ -218,10 +238,16 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
         logout();
     }
 
-    @Test(dependsOnMethods = {"validateFSMountConfigureNotifications"})
+    @Test(dependsOnMethods = {"validateFSMountConfigureNotificationsFormForUser"})
     @TestCase(value = {"2182_4"})
     public void validateReadOnlyQuota() {
         final String storageSizeWithUnit = format("%s Gb", "2.*");
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToSystem()
+                .setEmptyPreferenceValue(storageQuotasActionsGracePeriod)
+                .saveIfNeeded();
         addBigFileToStorage(commonRunId, TEST_NAME_BIG_FILE_2, "1000MB");
         navigationMenu()
                 .library()
