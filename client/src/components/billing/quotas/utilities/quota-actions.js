@@ -29,8 +29,8 @@ const actions = {
 const actionNames = {
   [actions.notify]: 'Notify',
   [actions.readMode]: 'Read-only mode',
-  [actions.readModeAndDisableNewJobs]: 'Read-only mode, new jobs submission disabled',
-  [actions.readModeAndStopAllJobs]: 'Read-only mode, stop all jobs',
+  [actions.readModeAndDisableNewJobs]: 'Disable new jobs',
+  [actions.readModeAndStopAllJobs]: 'Stop all jobs',
   [actions.block]: 'Block'
 };
 
