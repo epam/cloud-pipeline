@@ -14,16 +14,6 @@
  *  limitations under the License.
  */
 
-export default {
-  setData: 'set-data',
-
-  setSourceInitializing: 'set-source-initializing',
-  setSource: 'set-source',
-  setSourceError: 'set-source-error',
-
-  setImage: 'set-image',
-  setImageViewportLoaded: 'set-image-viewport-loaded',
-  setMesh: 'set-mesh',
-
-  setError: 'set-error',
-};
+export function getLayerId(id) {
+  return `-#${id}#`;
+}

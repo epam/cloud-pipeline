@@ -32,7 +32,8 @@ RUN mkdir -p /opt/tinyproxy && \
 
 # 2. NGINX (TCP/UDP forward proxy)
 RUN yum install -y epel-release
-RUN yum install -y nginx
+# Since 1.20 we shall install "stream" explicitly
+RUN yum install -y nginx nginx-mod-stream
 
 ADD init /init
 RUN chmod +x /init

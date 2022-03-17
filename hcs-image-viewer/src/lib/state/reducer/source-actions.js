@@ -78,6 +78,7 @@ export function setImage(state, action) {
     search,
     imageTimePosition = 0,
     imageZPosition = 0,
+    mesh,
   } = action;
   const { metadata = [] } = state;
   let metadataItem;
@@ -100,9 +101,15 @@ export function setImage(state, action) {
       imagePending: true,
       imageTimePosition,
       imageZPosition,
+      mesh,
     };
   }
   return state;
+}
+
+export function setMesh(state, action) {
+  const { mesh } = action;
+  return { ...state, mesh };
 }
 
 export function setImageViewportLoaded(state) {

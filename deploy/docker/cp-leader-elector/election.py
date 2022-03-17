@@ -39,6 +39,9 @@ def is_pod_alive(api, pod_id):
     pods = pykube.Pod.objects(api).filter(field_selector={'metadata.name': pod_id})
     if len(pods) == 1:
         pod = pods.response['items'][0]
+        phase = pod['status']['phase']
+        if phase != 'Running':
+            return False
         status_list = pod['status']['conditions']
         for status in status_list:
             if status['type'] == 'Ready' and status['status'] == 'True':

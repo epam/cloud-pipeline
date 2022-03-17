@@ -31,7 +31,6 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disappear;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
-import static com.codeborne.selenide.Condition.hidden;
 import static com.codeborne.selenide.Condition.matchText;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
@@ -47,6 +46,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.COMMENT;
 import static com.epam.pipeline.autotests.ao.Primitive.IP;
 import static com.epam.pipeline.autotests.ao.Primitive.PORT;
+import static com.epam.pipeline.autotests.ao.Primitive.PROTOCOL;
 import static com.epam.pipeline.autotests.ao.Primitive.REFRESH;
 import static com.epam.pipeline.autotests.ao.Primitive.RESOLVE;
 import static com.epam.pipeline.autotests.ao.Primitive.REVERT;
@@ -62,6 +62,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
 import static org.openqa.selenium.By.xpath;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class NATGatewayAO implements AccessObject<NATGatewayAO> {
@@ -84,8 +85,9 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
-                        .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(1))
-                                && text(port).apply(element.findAll(".external-column").get(2)))
+                        .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
+                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(el -> el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -97,8 +99,23 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
             public List<WebElement> findElements(final SearchContext context) {
                 return context()
                         .findAll(byClassName("ant-table-row")).stream()
-                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(0))
-                                && text(port).apply(element.findAll(".external-column").get(2)))
+                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
+                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(el -> el.find(By.className("ant-table-row-spaced")).exists())
+                        .collect(toList());
+            }
+        };
+    }
+
+    public By groupRouteByName(final String serverName, final String port) {
+        return new By() {
+            @Override
+            public List<WebElement> findElements(final SearchContext context) {
+                return context()
+                        .findAll(byClassName("ant-table-row")).stream()
+                        .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
+                                && text(port).apply(element.findAll(".external-column").get(3)))
+                        .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists())
                         .collect(toList());
             }
         };
@@ -112,7 +129,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     public NATGatewayAO checkRouteRecord(final String ipAddress, final String serverName, final String port) {
         getRouteRecord(ipAddress, port)
                 .shouldBe(exist)
-                .findAll(".external-column").get(0)
+                .findAll(".external-column").get(1)
                 .shouldHave(text(serverName));
         return this;
     }
@@ -120,7 +137,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     public NATGatewayAO checkRouteRecordByServerName(final String serverName, final String port) {
         $(routeByName(serverName, port))
                 .shouldBe(exist)
-                .findAll(".external-column").get(1)
+                .findAll(".external-column").get(2)
                 .shouldHave(text(serverName));
         return this;
     }
@@ -132,6 +149,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     }
 
     public NATGatewayAO checkCreationScheduled(final String ipAddressOrServerName, final String port) {
+        sleep(3, SECONDS);
+        expandGroup(ipAddressOrServerName, port);
         final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
         route
                 .findAll(".external-column").get(0)
@@ -140,15 +159,21 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         return this;
     }
 
+    public NATGatewayAO expandGroup(final String serverName, final String port) {
+        sleep(3, SECONDS);
+        final SelenideElement routeRecord = $(groupRouteByName(serverName, port));
+        if (routeRecord.exists() && routeRecord.find(By.className("ant-table-row-expand-icon"))
+                .has(cssClass("ant-table-row-collapsed"))) {
+            routeRecord.find(By.className("ant-table-row-expand-icon")).click();
+        }
+        return this;
+    }
+
     public NATGatewayAO checkActiveRouteRecord(final String ipAddress, final String serverName, final String comment,
                                                final String port) {
         final SelenideElement routeRecord = StringUtils.isBlank(ipAddress)
                 ? $(routeByName(serverName, port))
                 : $(route(ipAddress, port));
-        routeRecord
-                .findAll(".external-column").get(0)
-                .find(tagName("i"))
-                .shouldHave(cssClass("anticon-play-circle-o"));
         final ElementsCollection internalConfigElements = routeRecord
                 .findAll(".internal-column")
                 .shouldHaveSize(3);
@@ -192,8 +217,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
     private SelenideElement getRouteRecord(final String externalIPAddressOrServerName, final String port) {
         return externalIPAddressOrServerName.matches(IPV4_PATTERN)
-                    ? $(route(externalIPAddressOrServerName, port))
-                    : $(routeByName(externalIPAddressOrServerName, port));
+                ? $(route(externalIPAddressOrServerName, port))
+                : $(routeByName(externalIPAddressOrServerName, port));
     }
 
     public boolean routeRecordExist(final String externalIPAddressOrServerName, final String port) {
@@ -238,10 +263,11 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
         sleep(1, MINUTES);
         int attempt = 0;
         int maxAttempts = 60;
+        expandGroup(ipAddressOrServerName, port);
         final SelenideElement route = getRouteRecord(ipAddressOrServerName, port);
-        while (route.findAll(".external-column").get(0).find(tagName("i"))
-                .has(cssClass(status))
+        while (route.findAll(".external-column").get(0).find(tagName("i")).has(cssClass(status))
                 && attempt < maxAttempts) {
+            expandGroup(ipAddressOrServerName, port);
             click(REFRESH);
             sleep(1, SECONDS);
             attempt++;
@@ -252,6 +278,19 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
     public NATGatewayAO waitForRouteData() {
         $(byClassName("ub-settings__content")).waitUntil(visible, C.DEFAULT_TIMEOUT);
         get(ADD_ROUTE).shouldBe(enabled);
+        return this;
+    }
+
+    public List<String> getGroupExternalPortsList(final String serverName, final String port) {
+        final SelenideElement routeRecord = $(groupRouteByName(serverName, port));
+        return routeRecord.shouldBe(exist).findAll(".external-column")
+                .get(3).findAll(".at-getaway-configuration__port").texts();
+    }
+
+    public NATGatewayAO checkGroupPortsList(final String serverName, final String port, List<String> ports) {
+        List<String> actualPorts = getGroupExternalPortsList(serverName, port);
+        assertEquals(actualPorts, ports, format("Actual list of ports {%s} doesn't correspond expended {%s}",
+                actualPorts.toString(), ports.toString()));
         return this;
     }
 
@@ -273,14 +312,15 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                 entry(ADD, context().find(button("ADD"))),
                 entry(ADD_PORT, context().find(button("Add port"))),
                 entry(SERVER_NAME, context().find(byAttribute("placeholder", "Server name"))),
-                entry(PORT, context().find(byText("Port"))
+                entry(PORT, context().find(byText("Port:"))
                         .closest(".dd-route-modal__form-item-container")
                         .find(".dd-route-modal__form-item").find("input")),
                 entry(COMMENT, context().find(byAttribute("placeholder", "Comment"))),
                 entry(SPECIFY_IP, context().find(elementWithText(byClassName("ant-checkbox-wrapper"),
                         "Specify IP address"))),
                 entry(RESOLVE, context().find(button("Resolve"))),
-                entry(IP, context().find(byAttribute("placeholder", "127.0.0.1")))
+                entry(IP, context().find(byAttribute("placeholder", "127.0.0.1"))),
+                entry(PROTOCOL, context().find(byText("Protocol:")).find(By.xpath("following::div")))
         );
 
          public NATAddRouteAO(final NATGatewayAO parentAO) {
@@ -314,11 +354,10 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
              return parent();
          }
 
-         public NATAddRouteAO addMorePorts(final String port) {
-             context().findAll(byText("Port"))
-                     .filter(hidden).first()
-                     .closest(".dd-route-modal__form-item-container")
-                     .find(".dd-route-modal__form-item").find("input")
+         public NATAddRouteAO addMorePorts(final String port, int portNumber) {
+             context().findAll(By.className("cp-nat-route-port-control")).get(portNumber - 1)
+                     .find(".ant-form-item-control")
+                     .find("input")
                      .shouldBe(visible)
                      .setValue(port);
              return this;

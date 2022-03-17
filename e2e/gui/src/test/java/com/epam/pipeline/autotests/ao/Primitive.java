@@ -291,6 +291,7 @@ public enum Primitive {
     GENERATE_URL,
     IMPERSONATE,
     MY_PROFILE,
+    FILE_SYSTEM_ACCESS,
     CONFIGURE_NOTIFICATION,
     RECIPIENTS,
     ADD_NOTIFICATION,
@@ -300,7 +301,6 @@ public enum Primitive {
     DISABLE,
     ALLOW_COMMIT,
     CONTENT_PREVIEW,
-    FILE_SYSTEM_ACCESS,
     ADD_ROUTE,
     ROUTE_TABLE,
     ADD_PORT,
@@ -319,5 +319,6 @@ public enum Primitive {
     ENDS_ON,
     ENDS_ON_TIME,
     AUTOSCALED,
+    PROTOCOL,
     REINDEX
 }
