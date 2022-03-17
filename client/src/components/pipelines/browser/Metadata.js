@@ -160,13 +160,13 @@ function makeCurrentOrderSort (array) {
   params
 ) => {
   let componentParameters = params;
-  let filters = {};
+  let filters = [];
   if (params.params) {
     // Router renderer
     componentParameters = params.params;
     filters = routing && routing.location
       ? metadataFilterUtilities.parse(routing.location.query)
-      : {};
+      : [];
   }
   return {
     folders,
