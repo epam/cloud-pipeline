@@ -372,6 +372,16 @@ public class LogAO implements AccessObject<LogAO> {
         throw new AssertionError("Valid parameter value is absent.");
     }
 
+    public LogAO ensureParameterIsNotPresent(String name) {
+        if (!get(PARAMETERS).exists()) {
+            return this;
+        }
+        $(byXpath(format(
+                "//tr[.//td[contains(@class, 'log__task-parameter-name') " +
+                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+        return this;
+    }
+
     /**
      * Selects entry of a parameters panel on a run page.
      *
