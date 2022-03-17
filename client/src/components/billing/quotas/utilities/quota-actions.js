@@ -21,8 +21,8 @@ import quotaTypes from './quota-types';
 const actions = {
   notify: 'NOTIFY',
   readMode: 'READ_MODE',
-  readModeAndDisableNewJobs: 'READ_MODE_AND_DISABLE_NEW_JOBS',
-  readModeAndStopAllJobs: 'READ_MODE_AND_STOP_ALL_JOBS',
+  readModeAndDisableNewJobs: 'DISABLE_NEW_JOBS',
+  readModeAndStopAllJobs: 'STOP_ALL_JOBS',
   block: 'BLOCK'
 };
 
