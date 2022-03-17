@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import BillingNavigation from './navigation';
-// import Quotas from './quotas';
+import Quotas from './quotas';
 import * as Reports from './reports';
 import roleModel from '../../utils/roleModel';
 
@@ -57,7 +57,7 @@ function billing ({children, location, router, preferences, authenticatedUserInf
 }
 
 export {
-  // Quotas as BillingQuotas,
+  Quotas as BillingQuotas,
   Reports as BillingReports
 };
 export default inject('preferences')(roleModel.authenticationInfo(observer(billing)));

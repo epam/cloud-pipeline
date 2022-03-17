@@ -58,8 +58,9 @@ import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
 import Billing, {
-  // BillingQuotas,
-  BillingReports} from '../billing';
+  BillingQuotas,
+  BillingReports
+} from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
 import Log from '../runs/logs/Log';
 import App from './App';
@@ -129,7 +130,7 @@ export default class AppRouter extends React.Component {
           <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
           <Redirect from="/billing" to="/billing/reports" />
           <Route path="/billing" component={Billing}>
-            {/* <Route path="quotas" component={BillingQuotas} /> */}
+            <Route path="quotas(/:type)" component={BillingQuotas} />
             <Route path="reports" component={BillingReports.default}>
               <IndexRoute component={BillingReports.GeneralReport} />
               <Route path="instance(/:type)" component={BillingReports.InstanceReport} />

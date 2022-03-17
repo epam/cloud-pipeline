@@ -21,16 +21,16 @@ import quotaTypes from './quota-types';
 const actions = {
   notify: 'NOTIFY',
   readMode: 'READ_MODE',
-  readModeAndDisableNewJobs: 'READ_MODE_AND_DISABLE_NEW_JOBS',
-  readModeAndStopAllJobs: 'READ_MODE_AND_STOP_ALL_JOBS',
+  readModeAndDisableNewJobs: 'DISABLE_NEW_JOBS',
+  readModeAndStopAllJobs: 'STOP_JOBS',
   block: 'BLOCK'
 };
 
 const actionNames = {
   [actions.notify]: 'Notify',
   [actions.readMode]: 'Read-only mode',
-  [actions.readModeAndDisableNewJobs]: 'Read-only mode, new jobs submission disabled',
-  [actions.readModeAndStopAllJobs]: 'Read-only mode, stop all jobs',
+  [actions.readModeAndDisableNewJobs]: 'Disable new jobs',
+  [actions.readModeAndStopAllJobs]: 'Stop all jobs',
   [actions.block]: 'Block'
 };
 

@@ -144,18 +144,39 @@ class BillingNavigation extends React.Component {
         <Menu.Item key="instances.gpu">GPU</Menu.Item>
       </Menu.SubMenu>
     );
+    const quotasMenu = (
+      <Menu.SubMenu
+        className={
+          classNames(
+            'cp-billing-sub-menu',
+            {
+              'cp-billing-sub-menu-selected': isSubMenuSelected('quotas')
+            }
+          )
+        }
+        key="quotas"
+        title="Quotas"
+        onTitleClick={onSelect}
+      >
+        <Menu.Item key="quotas.compute">Compute instances</Menu.Item>
+        <Menu.Item key="quotas.storage">Storages</Menu.Item>
+      </Menu.SubMenu>
+    );
+    const isBillingManager = roleModel.isManager.billing(this);
     return (
       <Menu
         className="cp-billing-menu"
         mode="inline"
         inlineIndent={12}
         onClick={onSelect}
-        openKeys={['storages', 'instances']}
+        openKeys={['storages', 'instances', 'quotas']}
         selectedKeys={[report]}
       >
         <Menu.Item key="general">General</Menu.Item>
         {storagesMenu}
         {instancesMenu}
+        {isBillingManager && <Menu.Divider />}
+        {isBillingManager && quotasMenu}
       </Menu>
     );
   };
