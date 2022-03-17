@@ -22,19 +22,6 @@ import classNames from 'classnames';
 import GitIgnore from '../utils/git-ignore-utils';
 import styles from './git-ignore-edit-form.css';
 
-function saveCursorPosition (ctrl, pos) {
-  if (ctrl.setSelectionRange) {
-    ctrl.focus();
-    ctrl.setSelectionRange(pos, pos);
-  } else if (ctrl.createTextRange) {
-    const range = ctrl.createTextRange();
-    range.collapse(true);
-    range.moveEnd('character', pos);
-    range.moveStart('character', pos);
-    range.select();
-  }
-}
-
 @inject((stores, props) => {
   return {
     gitIgnore: GitIgnore.getGitIgnore({content: props.content})
@@ -43,7 +30,6 @@ function saveCursorPosition (ctrl, pos) {
 
 @observer
 class GitIgnoreEditForm extends React.Component {
-
   static ruleUID = 0;
   static getRuleUID = () => {
     GitIgnoreEditForm.ruleUID += 1;
@@ -51,56 +37,55 @@ class GitIgnoreEditForm extends React.Component {
   };
 
   state = {
-    originalContent: (this.props.gitIgnore.content || []).map(v => ({key: v, value: v})),
-    modifiedContent: (this.props.gitIgnore.content || []).map(v => ({key: v, value: v}))
+    modifiedContent: (this.props.gitIgnore.content || []).map((v, i) => ({id: i, value: v})),
+    currentID: null,
+    currentSection: null,
+    currentValue: null
   }
 
-  isSelectedInputRefExists = () => {
-    return (
-      this.selectedInputRef &&
-      this.selectedInputRef.refs &&
-      this.selectedInputRef.refs.input &&
-      this.selectedInputRef.refs.input.value
-    );
-  }
-  componentDidMount () {
-    if (this.isSelectedInputRefExists() && this.props.editMode) {
-      saveCursorPosition(
-        this.selectedInputRef.refs.input,
-        this.selectedInputRef.refs.input.value.length
-      );
-    }
-  }
-
-  componentDidUpdate () {
-    if (this.isSelectedInputRefExists() && this.props.editMode) {
-      saveCursorPosition(
-        this.selectedInputRef.refs.input,
-        this.selectedInputRef.refs.input.value.length
-      );
-    }
-  }
-
-  get rules () {
+  get rulesMenu () {
     return [{
       title: 'Ignore entire folder',
-      type: 'folder(s)'
+      section: 'folder'
     }, {
       title: 'Ignore file',
-      type: 'file(s)'
+      section: 'file'
     }, {
       title: 'Ignore files with specific extension',
-      type: 'extension'
+      section: 'extension'
     }];
   }
 
+  get rules () {
+    return this.state.modifiedContent.map((item) => {
+      if (!this.isCurrentItem(item.id)) {
+        if (this.isFolderIgnoreRule(item.value) || (item.section === 'folder' && !item.value)) {
+          return ({...item, section: 'folder'});
+        } else if (this.isExtensionRule(item.value) || (item.section === 'extension' && !item.value)) {
+          return ({...item, section: 'extension'});
+        } else if (this.isFileIgnoreRule(item.value) || (item.section === 'file' && !item.value)) {
+          return ({...item, section: 'file'});
+        } else {
+          return item;
+        }
+      } else {
+        const {currentValue, currentSection} = this.state;
+        return ({
+          ...item,
+          value: currentValue,
+          section: currentSection
+        });
+      }
+    });
+  }
+
   get groupedRules () {
-    return this.state.modifiedContent.reduce((rules, item) => {
-      if (this.isFolderIgnoreRule(item.value) || (item.type === 'folder(s)' && !item.value)) {
+    return this.rules.reduce((rules, item) => {
+      if (item.section && item.section === 'folder') {
         rules.folders.push(item);
-      } else if (this.isExtensionRule(item.value) || (item.type === 'extension' && !item.value)) {
+      } else if (item.section && item.section === 'extension') {
         rules.extension.push(item);
-      } else if (this.isFileIgnoreRule(item.value) || (item.type === 'file(s)' && !item.value)) {
+      } else if (item.section && item.section === 'file') {
         rules.files.push(item);
       } else {
         rules.other.push(item);
@@ -113,18 +98,8 @@ class GitIgnoreEditForm extends React.Component {
     return this.state.modifiedContent.map(v => v.value).join('\n');
   }
 
-  renderRulesMenu () {
-    return (
-      <Menu onClick={this.addRule}>
-        {
-          this.rules.map(rule => (
-            <Menu.Item
-              key={rule.type}
-            >
-              {rule.title}
-            </Menu.Item>))
-        }
-      </Menu>);
+  isCurrentItem (id) {
+    return this.state.currentID === id;
   }
 
   isFileIgnoreRule (contentItem) {
@@ -136,97 +111,122 @@ class GitIgnoreEditForm extends React.Component {
   }
 
   isExtensionRule (contentItem) {
-    return /^\*\.\w+/.test(contentItem);
+    return /\/?\*\.\w+/.test(contentItem);
   }
 
-  renderInputItem = (value) => {
-    return (
-      <div
-        key={value.key}
-        className={classNames(
-          styles.inputContainer
-        )}>
-        <Input
-          ref={(element) => {
-            if (value.editing) {
-              this.selectedInputRef = element;
-            }
-          }}
-          value={value.value}
-          className={classNames(
-            styles.ruleInput,
-            {'cp-gitignore-rule-changed': value.changed}
-          )}
-          onChange={(e) => this.onEditRule(value.key, e.target)}
-          placeholder={value.type ? `Enter rule for ${value.type} to ignore it` : ''}
-          autoFocus={!value.value}
-        />
-        <Button
-          type="danger"
-          icon="delete"
-          onClick={() => this.onDeleteRule(value.key)}
-        />
-      </div>
-    );
+  onEditRule = (item, input) => {
+    const {id, section} = item;
+    const modifiedValue = input.value;
+    this.setState({
+      currentID: id,
+      currentValue: modifiedValue,
+      currentSection: section
+    }, () => this.props.onChange(this.newTextContent));
   }
 
-  onEditRule = (key, input) => {
-    const {originalContent} = this.state;
-    const modifiedInputIndex = this.state.modifiedContent.findIndex(item => item.key === key);
-    const modifiedContent = this.state.modifiedContent.map(o => {
-      o.editing = false;
-      return o;
-    });
-    if (modifiedInputIndex > -1) {
-      modifiedContent[modifiedInputIndex].value = input.value;
-      modifiedContent[modifiedInputIndex].changed = !originalContent[modifiedInputIndex] ||
-      originalContent[modifiedInputIndex].value !== input.value;
-      modifiedContent[modifiedInputIndex].editing = true;
-      this.setState({
-        modifiedContent
-      });
-    }
-    this.props.onChange && this.props.onChange(this.newTextContent);
-  }
-
-  onDeleteRule = (key) => {
-    const modifiedContent = this.state.modifiedContent.filter(v => v.key !== key);
+  onDeleteRule = (id) => {
+    const modifiedContent = this.state.modifiedContent.filter(v => v.id !== id);
     this.setState({
       modifiedContent
     }, () => this.props.onChange(this.newTextContent));
   }
 
-  addRule = ({key}) => {
-    const modifiedContent = this.state.modifiedContent.map(o => {
-      o.editing = false;
-      return o;
-    });
+  onAddRule = ({key}) => {
     this.setState({
-      modifiedContent: [...modifiedContent, {
-        type: key,
+      currentID: `${key}${GitIgnoreEditForm.getRuleUID()}`,
+      currentValue: '',
+      currentSection: key,
+      modifiedContent: [...this.state.modifiedContent, {
+        section: key,
         value: '',
-        key: `${key}${GitIgnoreEditForm.getRuleUID()}`,
-        changed: true,
-        editing: true
+        id: `${key}${GitIgnoreEditForm.getRuleUID()}`,
+        changed: true
       }]
     });
+  }
+
+  onResetCurrentItemAndUpdate () {
+    const {currentID, currentValue, modifiedContent} = this.state;
+    if (currentID !== null) {
+      this.setState({
+        currentID: null,
+        currentSection: null,
+        currentValue: null,
+        modifiedContent: modifiedContent
+          .map(v => v.id === currentID ? ({...v, value: currentValue}) : v)
+      });
+    }
   }
 
   renderUneditableView = (item) => {
     return (
       <li
         className={classNames(styles.rule, 'cp-gitignore-rule')}
-        key={item.key}
+        key={item.id}
       >
         {item.value}
       </li>
     );
   }
 
+  renderInputItem ({
+    id,
+    value,
+    section,
+    changed
+  }) {
+    return (
+      <div
+        key={id}
+        className={classNames(
+          styles.inputContainer
+        )}>
+        <Input
+          value={value}
+          className={classNames(
+            styles.ruleInput,
+            {'cp-gitignore-rule-changed': changed}
+          )}
+          onChange={(e) => this.onEditRule({id, section}, e.target)}
+          onBlur={() => this.onResetCurrentItemAndUpdate()}
+          placeholder={section ? `Enter rule for ${section} to ignore it` : ''}
+          autoFocus={!value}
+        />
+        <Button
+          type="danger"
+          icon="delete"
+          onClick={() => this.onDeleteRule(id)}
+        />
+      </div>
+    );
+  }
+
+  renderRulesMenu () {
+    return (
+      <Menu onClick={this.onAddRule}>
+        {
+          this.rulesMenu.map(rule => (
+            <Menu.Item
+              key={rule.section}
+            >
+              {rule.title}
+            </Menu.Item>))
+        }
+      </Menu>);
+  }
+
   render () {
     const {editMode} = this.props;
     return (
       <div className={styles.rulesContainer}>
+        <div className={styles.buttonContainer}>
+          <Dropdown.Button
+            onClick={this.onAddRule}
+            overlay={this.renderRulesMenu()}
+          >
+            ADD A RULE
+          </Dropdown.Button>
+        </div>
         {
           Object.entries(this.groupedRules)
             .filter(([, items]) => items.length)
@@ -238,23 +238,16 @@ class GitIgnoreEditForm extends React.Component {
                     styles.ruleContainer,
                     'cp-gitignore-rule-container'
                   )}>
-                  <h3 className={styles.title}>Ignore {type} below</h3>
-                  {items.map(item => editMode
-                    ? this.renderInputItem(item)
-                    : this.renderUneditableView(item))
+                  <h3 className={styles.title}>{`Ignore ${type}(s)`}</h3>
+                  {
+                    items.map(item => editMode
+                      ? this.renderInputItem(item)
+                      : this.renderUneditableView(item))
                   }
                 </div>
               );
             })
         }
-        <div className={styles.buttonContainer}>
-          <Dropdown.Button
-            onClick={this.addRule}
-            overlay={this.renderRulesMenu()}
-          >
-            ADD A RULE
-          </Dropdown.Button>
-        </div>
       </div>);
   }
 }
