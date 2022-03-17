@@ -22,7 +22,7 @@ const actions = {
   notify: 'NOTIFY',
   readMode: 'READ_MODE',
   readModeAndDisableNewJobs: 'DISABLE_NEW_JOBS',
-  readModeAndStopAllJobs: 'STOP_ALL_JOBS',
+  readModeAndStopAllJobs: 'STOP_JOBS',
   block: 'BLOCK'
 };
 
