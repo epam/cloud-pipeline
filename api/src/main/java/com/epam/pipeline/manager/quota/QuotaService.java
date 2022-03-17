@@ -48,6 +48,7 @@ import org.springframework.util.Assert;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -162,6 +163,26 @@ public class QuotaService {
                 .stream()
                 .map(quotaMapper::appliedQuotaToDto)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public Optional<AppliedQuota> findActiveActionForUser(final PipelineUser user,
+                                                          final QuotaActionType actionType) {
+        return findActiveQuotasForUser(user)
+                .stream()
+                .filter(quota -> quota.getAction().getActions().contains(actionType))
+                .findAny();
+    }
+
+    @Transactional
+    public Optional<AppliedQuota> findActiveActionForUser(final PipelineUser user,
+                                                          final QuotaActionType actionType,
+                                                          final QuotaGroup group) {
+        return findActiveQuotasForUser(user)
+                .stream()
+                .filter(quota -> group.equals(quota.getQuota().getQuotaGroup()) &&
+                        quota.getAction().getActions().contains(actionType))
+                .findAny();
     }
 
     private void deleteObsoleteActions(final QuotaEntity loaded, final QuotaEntity entity) {

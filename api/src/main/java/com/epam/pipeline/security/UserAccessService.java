@@ -18,6 +18,7 @@ package com.epam.pipeline.security;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.security.JwtTokenClaims;
 import com.epam.pipeline.entity.user.DefaultRoles;
@@ -27,6 +28,7 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -68,6 +70,8 @@ public class UserAccessService {
     private boolean allowAnonymous;
     @Autowired
     private PreferenceManager preferenceManager;
+    @Autowired
+    private QuotaService quotaService;
 
     public UserContext parseUser(final String userName,
                                  final List<String> groups,
@@ -106,6 +110,11 @@ public class UserAccessService {
         if (user.isBlocked()) {
             throwUserIsBlocked(user.getUserName());
         }
+        quotaService.findActiveActionForUser(user, QuotaActionType.BLOCK)
+                .ifPresent(quota -> {
+                    log.info("Logging of user is blocked due to quota applied {}", quota);
+                    throwUserIsBlocked(user.getUserName());
+                });
     }
 
     public void throwUserIsBlocked(final String userName) {

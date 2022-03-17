@@ -24,6 +24,9 @@ import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.dto.quota.AppliedQuota;
+import com.epam.pipeline.dto.quota.QuotaActionType;
+import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
@@ -66,6 +69,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.metadata.MetadataPermissionManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -107,16 +111,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -193,6 +188,8 @@ public class GrantPermissionManager {
     @Autowired private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
 
     @Autowired private MetadataPermissionManager metadataPermissionManager;
+
+    @Autowired private QuotaService quotaService;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -389,7 +386,15 @@ public class GrantPermissionManager {
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
         }
-        return retrieveMaskForSid(entity, merge, includeInherited, sids);
+        return retrieveMaskForSid(entity, merge, includeInherited, sids, findStorageQuota(entity));
+    }
+
+    private Optional<AppliedQuota> findStorageQuota(AbstractSecuredEntity entity) {
+        if (entity instanceof AbstractDataStorage) {
+            return quotaService.findActiveActionForUser(authManager.getCurrentUser(),
+                    QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
+        }
+        return Optional.empty();
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -908,7 +913,8 @@ public class GrantPermissionManager {
     }
 
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
-                                       boolean includeInherited, List<Sid> sids) {
+                                       boolean includeInherited, List<Sid> sids,
+                                       Optional<AppliedQuota> activeQuota) {
         if (entity instanceof NFSDataStorage) {
             final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
             switch (mountStatus) {
@@ -919,6 +925,9 @@ public class GrantPermissionManager {
                 default:
                     break;
             }
+        }
+        if (entity instanceof AbstractDataStorage && activeQuota.isPresent()) {
+            return AclPermission.READ.getMask();
         }
         Acl child = aclService.getAcl(entity);
         //case for Runs and Nodes, that are not registered as ACL entities
@@ -948,8 +957,9 @@ public class GrantPermissionManager {
             Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, boolean root,
             List<Sid> sids) {
         int defaultMask = 0;
+        final Optional<AppliedQuota> activeQuota = findStorageQuota(entity);
         int currentMask = entity.getId() != null ?
-                permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids),
+                permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids, activeQuota),
                         parentMask) : defaultMask;
         entity.getChildren().forEach(
             leaf -> processHierarchicalEntity(currentMask, leaf, entitiesToRemove, permission,

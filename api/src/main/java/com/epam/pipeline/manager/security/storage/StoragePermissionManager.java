@@ -15,6 +15,9 @@
 
 package com.epam.pipeline.manager.security.storage;
 
+import com.epam.pipeline.dto.quota.AppliedQuota;
+import com.epam.pipeline.dto.quota.QuotaActionType;
+import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageWithShareMount;
@@ -22,6 +25,8 @@ import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.EntityManager;
+import com.epam.pipeline.manager.quota.QuotaService;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
@@ -47,6 +52,8 @@ public class StoragePermissionManager {
     private final EntityManager entityManager;
     private final CheckPermissionHelper permissionHelper;
     private final PermissionsService permissionsService;
+    private final QuotaService quotaService;
+    private final AuthManager authManager;
 
     public boolean storagePermission(final AbstractDataStorage storage,
                                      final String permissionName) {
@@ -100,14 +107,22 @@ public class StoragePermissionManager {
         if (permissionHelper.isAdmin()) {
             return;
         }
+        final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(authManager.getCurrentUser(),
+                QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
         final List<Sid> sids = permissionHelper.getSids();
         final List<AclPermission> permissions = permissionNames.stream()
                 .map(AclPermission::getAclPermissionByName)
                 .collect(Collectors.toList());
         final List<AbstractDataStorage> filtered = ListUtils.emptyIfNull(storages)
                 .stream()
-                .peek(storage ->
-                        storage.setMask(grantPermissionManager.getPermissionsMask(storage, true, true, sids)))
+                .peek(storage -> {
+                    if (activeQuota.isPresent()) {
+                        storage.setMask(AclPermission.READ.getMask());
+                    } else {
+                        storage.setMask(
+                                grantPermissionManager.getPermissionsMask(storage, true, true, sids));
+                    }
+                })
                 .filter(storage -> checkPermissions(permissions, storage, allPermissions))
                 .collect(Collectors.toList());
         if (storages.size() != filtered.size()) {

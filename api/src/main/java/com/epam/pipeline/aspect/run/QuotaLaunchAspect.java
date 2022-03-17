@@ -31,9 +31,7 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -56,14 +54,9 @@ public class QuotaLaunchAspect {
             return;
         }
         log.info("Checking billing quota limits for launching runs.");
-        final List<AppliedQuota> activeQuotas = quotaService.findActiveQuotasForUser(currentUser);
-        if (CollectionUtils.isEmpty(activeQuotas)) {
-            log.info("No active quotas applied.");
-        }
-        final Optional<AppliedQuota> launchRestrictQuota = activeQuotas.stream()
-                .filter(quota -> quota.getAction().getActions().contains(QuotaActionType.DISABLE_NEW_JOBS))
-                .findAny();
-        launchRestrictQuota.ifPresent(quota -> {
+        final Optional<AppliedQuota> activeQuota = quotaService.findActiveActionForUser(currentUser,
+                QuotaActionType.DISABLE_NEW_JOBS);
+        activeQuota.ifPresent(quota -> {
             log.info("Launch of new jobs is restricted due to quota applied {}", quota);
             throw new BillingQuotaExceededException(
                     messageHelper.getMessage(MessageConstants.ERROR_BILLING_QUOTA_EXCEEDED_LAUNCH));
