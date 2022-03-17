@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.security.UserContext;
@@ -51,10 +52,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,6 +95,9 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
     @MockBean
     private UserManager userManager;
 
+    @Autowired
+    private QuotaService quotaService;
+
     @Before
     public void setUp() {
         expectedAttributes = initAttributes();
@@ -110,6 +111,8 @@ public class SAMLUserDetailsServiceImplTest extends AbstractSpringTest {
         String[] mockAttributesArray = {SAML_ATTRIBUTE_1, SAML_ATTRIBUTE_2};
         Mockito.when(credential.getAttributeAsStringArray(Matchers.anyString())).thenReturn(mockAttributesArray);
         Mockito.when(credential.getAttributeAsString(Matchers.anyString())).thenReturn(SAML_ATTRIBUTES_STRING);
+        Mockito.when(quotaService.findActiveActionForUser(Matchers.any(), Matchers.any()))
+                .thenReturn(Optional.empty());
     }
 
     @Test
