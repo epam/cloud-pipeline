@@ -24,7 +24,9 @@ import com.epam.pipeline.dto.quota.QuotaPeriod;
 import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaActionEntity;
 import com.epam.pipeline.entity.quota.QuotaEntity;
+import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
+import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
 import org.junit.Test;
@@ -51,10 +53,12 @@ import static org.mockito.Mockito.verify;
 public class QuotaServiceTest {
     private final QuotaRepository quotaRepository = mock(QuotaRepository.class);
     private final QuotaActionRepository quotaActionRepository = mock(QuotaActionRepository.class);
+    private final AppliedQuotaRepository appliedQuotaRepository = mock(AppliedQuotaRepository.class);
+    private final MetadataManager metadataManager = mock(MetadataManager.class);
     private final QuotaMapper quotaMapper = mock(QuotaMapper.class);
     private final MessageHelper messageHelper = mock(MessageHelper.class);
-    private final QuotaService quotaService = new QuotaService(quotaRepository, quotaActionRepository, quotaMapper,
-            messageHelper);
+    private final QuotaService quotaService = new QuotaService(quotaRepository, quotaActionRepository,
+            appliedQuotaRepository, metadataManager, quotaMapper, messageHelper, null);
 
     @Test
     public void shouldFailCreateIfQuotaGroupNotSpecified() {
@@ -115,7 +119,7 @@ public class QuotaServiceTest {
         final Quota dto = quota(null);
         final QuotaEntity entity = quotaEntity(null);
         final QuotaActionEntity quotaActionEntity = quotaActionEntity(null);
-        quotaActionEntity.getActions().add(QuotaActionType.READ_MODE_AND_DISABLE_NEW_JOBS);
+        quotaActionEntity.getActions().add(QuotaActionType.DISABLE_NEW_JOBS);
         entity.setActions(Collections.singletonList(quotaActionEntity));
         entity.setQuotaGroup(QuotaGroup.STORAGE);
         doReturn(entity).when(quotaMapper).quotaToEntity(dto);
@@ -182,7 +186,7 @@ public class QuotaServiceTest {
         final ArgumentCaptor<Quota> mapperCaptor = ArgumentCaptor.forClass(Quota.class);
         verify(quotaMapper).quotaToEntity(mapperCaptor.capture());
         final Quota mapperResult = mapperCaptor.getValue();
-        assertThat(mapperResult.getType(), nullValue());
+        assertThat(mapperResult.getType(), is(QuotaType.OVERALL));
         assertThat(mapperResult.getQuotaGroup(), is(QuotaGroup.GLOBAL));
         assertThat(mapperResult.getSubject(), nullValue());
         assertThat(mapperResult.getValue(), notNullValue());
@@ -192,7 +196,6 @@ public class QuotaServiceTest {
         final QuotaEntity repoResult = repoCaptor.getValue();
         assertThat(repoResult.getId(), nullValue());
         assertThat(repoResult.getPeriod(), is(QuotaPeriod.MONTH));
-        assertThat(repoResult.getActions(), nullValue());
     }
 
     @Test
@@ -238,7 +241,7 @@ public class QuotaServiceTest {
         final Quota dto = quota(null);
         final QuotaEntity entity = quotaEntity(null);
         final QuotaActionEntity quotaActionEntity = quotaActionEntity(null);
-        quotaActionEntity.getActions().add(QuotaActionType.READ_MODE_AND_DISABLE_NEW_JOBS);
+        quotaActionEntity.getActions().add(QuotaActionType.DISABLE_NEW_JOBS);
         entity.setActions(Collections.singletonList(quotaActionEntity));
         entity.setQuotaGroup(QuotaGroup.STORAGE);
         doReturn(entity).when(quotaRepository).findOne(ID);

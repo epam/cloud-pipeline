@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.run;
 
+import com.epam.pipeline.aspect.run.QuotaLaunchCheck;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
@@ -93,6 +94,7 @@ public class RunApiService {
     private final RunPermissionManager runPermissionManager;
 
     @AclMask
+    @QuotaLaunchCheck
     public PipelineRun runCmd(PipelineStart runVO) {
         Assert.notNull(runVO.getDockerImage(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "docker_image"));
@@ -115,6 +117,7 @@ public class RunApiService {
             + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE'))"
             + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
+    @QuotaLaunchCheck
     public PipelineRun runPipeline(final PipelineStart runVO) {
         return pipelineRunAsManager.runAsAnotherUser(runVO)
                 ? pipelineRunAsManager.runPipeline(runVO)
@@ -124,6 +127,7 @@ public class RunApiService {
     @PreAuthorize("hasRole('ADMIN') OR "
             + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
     @AclMaskList
+    @QuotaLaunchCheck
     public List<PipelineRun> runConfiguration(String refreshToken,
                                               RunConfigurationWithEntitiesVO configuration,
                                               String expansionExpression) {

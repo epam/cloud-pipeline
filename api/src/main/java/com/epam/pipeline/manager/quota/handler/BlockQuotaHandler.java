@@ -13,9 +13,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.user;
+package com.epam.pipeline.manager.quota.handler;
 
-public interface Sid {
-    String getName();
-    boolean isPrincipal();
+import com.epam.pipeline.dto.quota.QuotaActionType;
+import com.epam.pipeline.dto.quota.AppliedQuota;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+@Component
+@Slf4j
+public class BlockQuotaHandler implements QuotaHandler {
+    @Override
+    public QuotaActionType type() {
+        return QuotaActionType.BLOCK;
+    }
+
+    @Override
+    public void applyActionType(final AppliedQuota appliedQuota, final QuotaActionType type) {
+        log.debug("Blocking users...");
+    }
 }

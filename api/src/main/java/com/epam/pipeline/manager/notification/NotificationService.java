@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.notification;
 
+import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
@@ -90,5 +91,9 @@ public interface NotificationService {
     }
 
     default void notifyFullNodePools(List<NodePool> nodePools) {
+    }
+
+    default void notifyOnBillingQuotaExceeding(final AppliedQuota appliedQuota) {
+
     }
 }

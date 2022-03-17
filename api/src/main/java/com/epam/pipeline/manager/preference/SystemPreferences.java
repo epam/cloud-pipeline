@@ -115,6 +115,7 @@ public class SystemPreferences {
     private static final String LUSTRE_GROUP = "Lustre FS";
     private static final String CLOUD_REGION_GROUP = "Cloud region";
     private static final String MONITORING_GROUP = "Monitoring";
+    private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
 
     public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
             "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
@@ -823,6 +824,10 @@ public class SystemPreferences {
             "billing.export.aggregation.page.size", 5000, BILLING_GROUP, pass);
     public static final IntPreference BILLING_EXPORT_PERIOD_AGGREGATION_PAGE_SIZE = new IntPreference(
             "billing.export.period.aggregation.page.size", 1000, BILLING_GROUP, pass);
+
+    // Billing quotas
+    public static final BooleanPreference BILLING_QUOTAS_ENABLED = new BooleanPreference(
+            "billing.quotas.enabled", false, BILLING_QUOTAS_GROUP, pass);
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
