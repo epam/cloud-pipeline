@@ -77,7 +77,7 @@ function isFolder (document) {
     lastCommit
   } = props;
   return {
-    gitIgnore: GitIgnore.getGitIgnore(pipelineId, lastCommit)
+    gitIgnore: GitIgnore.getGitIgnore({pipelineId, lastCommit})
   };
 })
 @observer
@@ -111,13 +111,7 @@ class VersionedStorageTable extends React.Component {
           ? versionedStorage.mask
           : 0,
         isFolder: isFolder(content.git_object),
-        ignored: gitIgnore.pathIsIgnored(content.git_object.path, isFolder(content.git_object)),
-        hasExplicitIgnoreRule: gitIgnore.hasPathRule(
-          content.git_object.path,
-          isFolder(content.git_object)
-        ),
-        showGitIgnoreActions: !/\.gitignore$/i.test(content.git_object.path) &&
-          !this.currentFolderIgnored
+        ignored: gitIgnore.pathIsIgnored(content.git_object.path, isFolder(content.git_object))
       })).sort(typeSorter);
     return showNavigateBack ? [navigateBack, ...content] : content;
   };
@@ -132,9 +126,7 @@ class VersionedStorageTable extends React.Component {
     return {
       delete: (record) => this.showDeleteDialog(record),
       edit: (record) => onRenameDocument && onRenameDocument(record),
-      download: onDownloadFile,
-      addGitIgnore: (record) => this.ignoreItem(record.path, record.isFolder),
-      removeGitIgnore: (record) => this.stopIgnoreItem(record.path, record.isFolder)
+      download: onDownloadFile
     };
   };
 
@@ -145,14 +137,6 @@ class VersionedStorageTable extends React.Component {
       path || '/',
       {trimTrailingSlash: !!path}
     );
-  }
-
-  get currentFolderIgnored () {
-    const {
-      gitIgnore,
-      path
-    } = this.props;
-    return gitIgnore.folderIsIgnored(path);
   }
 
   updateFileContent = async (path, contents, comment) => {
@@ -346,35 +330,10 @@ class VersionedStorageTable extends React.Component {
     this.closeGitIgnoreDialog();
   };
 
-  ignoreItem = (path, itemIsFolder = false) => {
-    const {gitIgnore} = this.props;
-    const content = itemIsFolder
-      ? gitIgnore.ignoreFolder(path).join('\n')
-      : gitIgnore.ignoreFile(path).join('\n');
-    return this.updateFileContent(
-      '.gitignore',
-      content,
-      `Ignoring ${path || '/'} ${itemIsFolder ? 'folder' : 'file'}`
-    );
-  };
-
-  stopIgnoreItem = (path, itemIsFolder = false) => {
-    const {gitIgnore} = this.props;
-    const content = itemIsFolder
-      ? gitIgnore.stopIgnoreFolder(path).join('\n')
-      : gitIgnore.stopIgnoreFile(path).join('\n');
-    return this.updateFileContent(
-      '.gitignore',
-      content,
-      `Tracking ${path || '/'} ${itemIsFolder ? 'folder' : 'file'}`
-    );
-  };
-
   renderGitIgnoreActions = () => {
     const {
       controlsEnabled,
-      path,
-      gitIgnore
+      path
     } = this.props;
     const items = [
       (
@@ -386,33 +345,6 @@ class VersionedStorageTable extends React.Component {
         </MenuItem>
       )
     ];
-    if (
-      path &&
-      !this.currentFolderIgnored
-    ) {
-      items.push((
-        <MenuItem
-          key="ignore-current"
-          disabled={!controlsEnabled}
-        >
-          Ignore current folder
-        </MenuItem>
-      ));
-    }
-    if (
-      path &&
-      this.currentFolderIgnored &&
-      gitIgnore.hasFolderRule(path)
-    ) {
-      items.push((
-        <MenuItem
-          key="stop-ignore-current"
-          disabled={!controlsEnabled}
-        >
-          Track current folder
-        </MenuItem>
-      ));
-    }
     if (!path || items.length === 1) {
       return (
         <Button
@@ -431,12 +363,6 @@ class VersionedStorageTable extends React.Component {
       switch (key) {
         case 'configure':
           this.openGitIgnoreDialog();
-          break;
-        case 'ignore-current':
-          this.ignoreItem(path, true);
-          break;
-        case 'stop-ignore-current':
-          this.stopIgnoreItem(path, true);
           break;
       }
     };

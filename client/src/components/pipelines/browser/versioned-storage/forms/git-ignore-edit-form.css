@@ -1,0 +1,44 @@
+.rules-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 90%;
+  margin: 20px auto;
+}
+
+.rule-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px auto;
+  width: 100%;
+}
+
+.rule-input {
+  margin: 0px auto;
+}
+.button-container, .input-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.input-container button {
+  margin-left: 10px;
+}
+
+.title {
+  font-weight: bolder;
+  text-transform: uppercase;
+  padding-left: 10px;
+}
+
+.rule {
+  margin: 10px;
+  padding: 5px;
+  list-style-type: none;
+}

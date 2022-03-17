@@ -2427,6 +2427,16 @@ export default `
 @THEME .cp-conflict-scroller .bar.hovered {
   background-color: fade(@application-color, 50%);
 }
+@THEME .cp-gitignore-rule-container {
+  background-color: fadeout(@element-selected-background-color, 50%);
+}
+@THEME .cp-gitignore-rule-changed {
+  background-color: fadeout(@color-grey, 80%);
+}
+@THEME .cp-gitignore-rule {
+  background-color: @panel-background-color;
+}
+
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;
