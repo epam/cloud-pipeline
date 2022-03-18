@@ -111,7 +111,17 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
@@ -389,14 +399,6 @@ public class GrantPermissionManager {
         return retrieveMaskForSid(entity, merge, includeInherited, sids, findStorageQuota(entity));
     }
 
-    private Optional<AppliedQuota> findStorageQuota(AbstractSecuredEntity entity) {
-        if (entity instanceof AbstractDataStorage) {
-            return quotaService.findActiveActionForUser(authManager.getCurrentUser(),
-                    QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
-        }
-        return Optional.empty();
-    }
-
     @Transactional(propagation = Propagation.REQUIRED)
     public AclSecuredEntry changeOwner(final Long id, final AclClass aclClass, final String userName) {
         Assert.isTrue(StringUtils.isNotBlank(userName), "User name is required "
@@ -449,7 +451,7 @@ public class GrantPermissionManager {
     }
 
     public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
-        if (forbiddenByMountStatus(storage, permissionName)) {
+        if (forbiddenByStorageStatus(storage, permissionName)) {
             return false;
         }
         if (permissionName.equals(OWNER)) {
@@ -466,11 +468,11 @@ public class GrantPermissionManager {
                 return false;
             }
             if (action.isRead() && !permissionsHelper.isAllowed(READ, storage)
-                && !forbiddenByMountStatus(storage, READ)) {
+                && !forbiddenByStorageStatus(storage, READ)) {
                 return false;
             }
             if (action.isWrite() && !permissionsHelper.isAllowed(WRITE, storage)
-                && !forbiddenByMountStatus(storage, WRITE)) {
+                && !forbiddenByStorageStatus(storage, WRITE)) {
                 return false;
             }
         }
@@ -915,20 +917,19 @@ public class GrantPermissionManager {
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
                                        boolean includeInherited, List<Sid> sids,
                                        Optional<AppliedQuota> activeQuota) {
-        if (entity instanceof NFSDataStorage) {
-            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
-            switch (mountStatus) {
-                case READ_ONLY:
-                    if (permissionsHelper.isAllowed(AclPermission.READ_NAME, entity)) {
-                        return AclPermission.READ.getMask();
-                    }
-                default:
-                    break;
+        if (entity instanceof  AbstractDataStorage) {
+            boolean readAllowed = permissionsHelper.isAllowed(AclPermission.READ_NAME, entity);
+            if (entity instanceof NFSDataStorage) {
+                final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+                if (NFSStorageMountStatus.READ_ONLY.equals(mountStatus) && readAllowed) {
+                    return AclPermission.READ.getMask();
+                }
+            }
+            if (activeQuota.isPresent() && readAllowed) {
+                return AclPermission.READ.getMask();
             }
         }
-        if (entity instanceof AbstractDataStorage && activeQuota.isPresent()) {
-            return AclPermission.READ.getMask();
-        }
+
         Acl child = aclService.getAcl(entity);
         //case for Runs and Nodes, that are not registered as ACL entities
         //check ownership
@@ -964,7 +965,7 @@ public class GrantPermissionManager {
         entity.getChildren().forEach(
             leaf -> processHierarchicalEntity(currentMask, leaf, entitiesToRemove, permission,
                         false, sids));
-        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids);
+        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids, activeQuota);
         entity.filterLeaves(entitiesToRemove);
         entity.filterChildren(entitiesToRemove);
         boolean permissionGranted = permissionsService.isPermissionGranted(currentMask, permission);
@@ -982,22 +983,18 @@ public class GrantPermissionManager {
     }
 
     private void filterChildren(int parentMask, List<? extends AbstractSecuredEntity> children,
-            Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids) {
+                                Map<AclClass, Set<Long>> entitiesToRemove,
+                                Permission permission, List<Sid> sids,
+                                Optional<AppliedQuota> activeQuota) {
         ListUtils.emptyIfNull(children).forEach(child -> {
             int mask = permissionsService
                     .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
                 addToEntitiesToBeRemoved(entitiesToRemove, child);
             }
-            if (child instanceof NFSDataStorage) {
-                final NFSStorageMountStatus mountStatus = ((NFSDataStorage) child).getMountStatus();
-                switch (mountStatus) {
-                    case READ_ONLY:
-                        child.setMask(AclPermission.READ.getMask());
-                        return;
-                    default:
-                        break;
-                }
+            if (isStorageReadOnly(child, activeQuota)) {
+                child.setMask(AclPermission.READ.getMask());
+                return;
             }
             child.setMask(permissionsService.mergeMask(mask));
         });
@@ -1175,21 +1172,43 @@ public class GrantPermissionManager {
         }
     }
 
-    private boolean forbiddenByMountStatus(final AbstractSecuredEntity storage, final String permissionName) {
-        if (storage instanceof NFSDataStorage) {
-            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) storage).getMountStatus();
-            switch (mountStatus) {
-                case READ_ONLY:
-                    storage.setMask(AclPermission.READ.getMask());
-                    if (!permissionName.equals(READ)) {
-                        return true;
-                    }
-                    break;
-                default:
-                    break;
+    private boolean forbiddenByStorageStatus(final AbstractSecuredEntity storage, final String permissionName) {
+        return isStorageReadOnly(storage) && !permissionName.equals(READ);
+    }
+
+    private boolean isStorageReadOnly(final AbstractSecuredEntity entity,
+                                      final Optional<AppliedQuota> activeQuota) {
+        if (entity instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+            if (NFSStorageMountStatus.READ_ONLY.equals(mountStatus)) {
+                return true;
             }
         }
+        if (entity instanceof AbstractDataStorage) {
+            return activeQuota.isPresent();
+        }
         return false;
+    }
+
+    private boolean isStorageReadOnly(final AbstractSecuredEntity entity) {
+        if (entity instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+            if (NFSStorageMountStatus.READ_ONLY.equals(mountStatus)) {
+                return true;
+            }
+        }
+        if (entity instanceof AbstractDataStorage) {
+            return findStorageQuota(entity).isPresent();
+        }
+        return false;
+    }
+
+    private Optional<AppliedQuota> findStorageQuota(final AbstractSecuredEntity entity) {
+        if (entity instanceof AbstractDataStorage) {
+            return quotaService.findActiveActionForUser(authManager.getCurrentUser(),
+                    QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
+        }
+        return Optional.empty();
     }
 
     @Data
