@@ -64,7 +64,7 @@ public final class AppliedQuotaSpecification {
             ));
             if (StringUtils.isNotBlank(billingCenter)) {
                 predicates.add(criteriaBuilder.and(
-                        criteriaBuilder.equal(quotaType, QuotaType.BILLING_CENTER.name()),
+                        criteriaBuilder.equal(quotaType, QuotaType.BILLING_CENTER),
                         criteriaBuilder.equal(subject, billingCenter)
                 ));
             }
