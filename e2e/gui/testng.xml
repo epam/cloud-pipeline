@@ -514,6 +514,12 @@
         </classes>
     </test>
 
+    <test name="StorageBackupsTest">
+        <classes>
+            <class name="com.epam.pipeline.autotests.StorageBackupsTest"/>
+        </classes>
+    </test>
+
     <test name="RestrictionsOnInstancePriceTypeTest">
         <classes>
             <class name="com.epam.pipeline.autotests.RestrictionsOnInstancePriceTypeTest"/>
