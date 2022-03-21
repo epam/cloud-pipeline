@@ -89,7 +89,7 @@ else
     export CP_EDGE_FSBROWSER_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
     export CP_EDGE_INVALIDATE_URL_CORS="${_api_schema}://${CP_API_SRV_EXTERNAL_HOST}${_api_port}"
 fi
-# FIXME: !!! WebDAV tips For Windows Drive Mapping: 
+# FIXME: !!! WebDAV tips For Windows Drive Mapping:
 #        !!! - EDGE shall be added to the "Trusted sites", otherwise Windows WebClient won't send the auth cookie for DAV !!!
 #        !!! - File size/timout restrictions which require registry to be modified !!!
 #        !!!    - HKLM\SYSTEM\CurrentControlSet\Services\WebClient\Parameters -> FileSizeLimitInBytes (default: 50,000,000) !!!
@@ -126,10 +126,15 @@ WETTY_PID="$!"
 
 # Persist environment for a cron job
 env > /etc/sync-routes/env.sh
+env > /etc/maintenance/env.sh
 
 # Start cron
 nohup bash /etc/sync-routes/crontab.sh &> /dev/null &
 CRON_PID="$!"
+
+# Start maintenance cron
+nohup bash /etc/maintenance/crontab.sh &> /dev/null &
+MAINTENANCE_CRON_PID="$!"
 
 # Run Filebeat
 envsubst < /etc/filebeat/filebeat-template.yml > /etc/filebeat/filebeat.yml
@@ -156,5 +161,5 @@ function sig_handler {
 }
 trap 'kill $! ; sig_handler' SIGTERM
 # Print wetty and cron logs to the stdout
-tail -f /var/log/wetty.log -f /var/log/sync-routes.log &
+tail -f /var/log/wetty.log -f /var/log/sync-routes.log -f /var/log/maintenance.log &
 wait "$!"

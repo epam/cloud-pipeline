@@ -12,6 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Building 'maintenance' page
+#
+# CP_MAINTENANCE_PUBLIC_URL env var is used for building Maintenance Page UI and nginx routing.
+# This variable specifies an URI for maintenance page and should be of "/<something>" format (starts with "/")
+#
+# To share CP_MAINTENANCE_PUBLIC_URL between stages of the Dockerfile, we use ARG maintenance_public_url with
+# default value.
+ARG maintenance_public_url="/maintenance"
+
+FROM node:14-alpine AS maintenance
+
+ARG maintenance_public_url
+ENV CP_MAINTENANCE_PUBLIC_URL=$maintenance_public_url
+
+WORKDIR /etc/maintenance
+
+COPY ./maintenance/ui/package*.json ./
+
+RUN npm ci
+
+COPY ./maintenance/ui .
+
+RUN npm run build
+
 FROM library/centos:7
 
 ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v6.11.3-linux-x64/bin/
@@ -105,6 +129,25 @@ ADD wetty /etc/ssh-proxy/wetty
 RUN cd /etc/ssh-proxy/wetty && \
     npm install && \
     cd /
+
+## Install maintenance page
+ARG maintenance_public_url
+ENV CP_MAINTENANCE_PUBLIC_URL=$maintenance_public_url
+ENV CP_MAINTENANCE_FLAG_FILE="/etc/maintenance/active"
+ENV CP_MAINTENANCE_PREFERENCE_NAME="system.blocking.maintenance.mode"
+
+COPY --from=maintenance /etc/maintenance/build /etc/nginx/maintenance
+
+COPY ./maintenance/process.maintenance.conf.sh /etc/nginx/endpoints-config/pmconf.sh
+
+RUN sh /etc/nginx/endpoints-config/pmconf.sh /etc/nginx/endpoints-config && \
+    rm -rf /etc/nginx/endpoints-config/pmconf.sh \
+
+# Configure maintenance cron and refresh script
+ADD	maintenance/crontab.sh /etc/maintenance/crontab.sh
+ADD maintenance/maintenance.sh /etc/maintenance/maintenance.sh
+ADD	maintenance/maintenance.py /etc/maintenance/maintenance.py
+RUN touch /var/log/maintenance.log
 
 ## Disable tls checks for wetty -> API
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
