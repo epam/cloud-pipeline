@@ -249,7 +249,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .settings()
                 .switchToPreferences()
                 .switchToSystem()
-                .setEmptyPreferenceValue(storageQuotasActionsGracePeriod)
+                .clearAndSetJsonToPreference(storageQuotasActionsGracePeriod, "{}", true)
                 .saveIfNeeded();
         addBigFileToStorage(commonRunId, TEST_NAME_BIG_FILE_2, "1000MB");
         navigationMenu()
