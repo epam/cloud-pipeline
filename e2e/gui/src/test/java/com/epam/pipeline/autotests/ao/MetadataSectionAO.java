@@ -231,7 +231,7 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
 
     public MetadataSectionAO waitUntilStatusUpdated(final String status) {
         for (int i = 0; i < 10; i++) {
-            if ($(byClassName("estricted-images-info__popover-icon")).isDisplayed()) {
+            if ($(byClassName("estricted-images-info__container")).isDisplayed()) {
                 hover(byClassName("estricted-images-info__container"));
                 if ($(byClassName("estricted-images-info__popover-container"))
                         .has(text(format("Storage status is: %s", status)))) {
