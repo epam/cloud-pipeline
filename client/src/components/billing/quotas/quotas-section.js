@@ -225,6 +225,7 @@ class QuotasSection extends React.Component {
                       )
                     }
                     onClick={() => this.onQuotaClick(quota)}
+                    onRemove={this.onRemoveQuota}
                     quota={quota}
                     roles={roles}
                   />

@@ -148,7 +148,8 @@ class EditQuotaDialog extends React.Component {
     const {
       actions,
       subject,
-      value
+      value,
+      filter
     } = this.state;
     const errors = {};
     if (isNaN(value)) {
@@ -156,7 +157,7 @@ class EditQuotaDialog extends React.Component {
     } else if (value === 0) {
       errors.value = 'Value should be great then zero';
     }
-    if (type !== quotaTypes.overall && !subject) {
+    if (type !== quotaTypes.overall && !subject && !filter) {
       errors.subject = 'Quota subject is required';
     }
     const actionErrors = actions.map(this.validateAction);
@@ -192,6 +193,14 @@ class EditQuotaDialog extends React.Component {
     }
   };
 
+  onChangeSubject = (subject) => {
+    this.setState({
+      subject,
+      filter: undefined,
+      modified: true
+    }, this.validate);
+  };
+
   renderUsersSelection = () => {
     const {
       disabled,
@@ -199,13 +208,18 @@ class EditQuotaDialog extends React.Component {
       subject,
       filter
     } = this.state;
-    const onChangeSearchString = e => this.setState({filter: e});
+    const onChangeSearchString = e => this.setState({filter: e}, this.validate);
     const error = errors.subject;
     const filtered = this.users
       .filter(user => filter &&
         filter.length >= MINIMUM_SEARCH_LENGTH &&
-        user.userName.toLowerCase().includes(filter.toLowerCase())
-      );
+        (
+          user.userName.toLowerCase().includes(filter.toLowerCase()) ||
+          (
+            user.attributes && Object.entries(user.attributes)
+              .some(([_attribute, value]) => value.toLowerCase().includes(filter.toLowerCase()))
+          )
+        ));
     const current = this.users.find(user => user.userName === subject);
     if (current && !filtered.find(o => o.userName === current.userName)) {
       filtered.push(current);
@@ -222,13 +236,7 @@ class EditQuotaDialog extends React.Component {
           )
         }
         value={subject}
-        onChange={subject =>
-          this.setState({
-            subject,
-            filter: undefined,
-            modified: true
-          }, this.validate)
-        }
+        onChange={this.onChangeSubject}
         filterOption={false}
         getPopupContainer={o => o.parentNode}
         onSearch={onChangeSearchString}
@@ -276,6 +284,7 @@ class EditQuotaDialog extends React.Component {
               });
             }
           });
+        this.validate();
       });
     };
     const error = errors.subject;
@@ -300,13 +309,7 @@ class EditQuotaDialog extends React.Component {
           )
         }
         value={subject}
-        onChange={subject =>
-          this.setState({
-            subject,
-            filter: undefined,
-            modified: true
-          }, this.validate)
-        }
+        onChange={this.onChangeSubject}
         filterOption={false}
         getPopupContainer={o => o.parentNode}
         onSearch={onChangeSearchString}
@@ -465,16 +468,19 @@ class EditQuotaDialog extends React.Component {
     } = quota;
     const error = errors.actions;
     const onRemove = (index) => () => {
-      actions.splice(index, 1);
-      this.setState({actions, modified: true}, this.validate);
+      const modifiedActions = actions.slice();
+      modifiedActions.splice(index, 1);
+      this.setState({actions: modifiedActions, modified: true}, this.validate);
     };
     const onActionChange = (index) => (action) => {
-      actions.splice(index, 1, action);
-      this.setState({actions, modified: true}, this.validate);
+      const modifiedActions = actions.slice();
+      modifiedActions.splice(index, 1, action);
+      this.setState({actions: modifiedActions, modified: true}, this.validate);
     };
     const onAddAction = () => {
-      actions.push({});
-      this.setState({actions, modified: true}, this.validate);
+      const modifiedActions = actions.slice();
+      modifiedActions.push({});
+      this.setState({actions: modifiedActions, modified: true}, this.validate);
     };
     return (
       <div className={styles.quotaActionsContainer}>

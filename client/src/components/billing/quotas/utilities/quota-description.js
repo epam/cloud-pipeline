@@ -16,6 +16,8 @@
 
 import React from 'react';
 import classNames from 'classnames';
+import {Button, Modal} from 'antd';
+
 import QuotaTarget from './quota-target';
 import {QuotaAction} from './quota-actions';
 import {periodNames} from './quota-periods';
@@ -32,6 +34,7 @@ function QuotaDescription (
   {
     className,
     onClick,
+    onRemove,
     quota,
     roles,
     style
@@ -50,6 +53,14 @@ function QuotaDescription (
       {numberFormatter(value)}$ per {(periodNames[period] || period).toLowerCase()}
     </span>
   );
+  const onRemoveQuota = (e) => {
+    e.stopPropagation();
+    Modal.confirm({
+      title: 'Are you sure you want to remove quota?',
+      onOk: onRemove
+    });
+  };
+
   return (
     <div
       className={
@@ -71,18 +82,27 @@ function QuotaDescription (
           {quotaValue}
         </div>
       </div>
-      <div className={styles.actions}>
-        {
-          actions
-            .sort(sortActionsByThreshold)
-            .map((action, index) => (
-              <QuotaAction
-                className={styles.action}
-                key={`action-${index}`}
-                action={action}
-              />
-            ))
-        }
+      <div className={styles.actionsContainer}>
+        <div className={styles.actions}>
+          {
+            actions
+              .sort(sortActionsByThreshold)
+              .map((action, index) => (
+                <QuotaAction
+                  className={styles.action}
+                  key={`action-${index}`}
+                  action={action}
+                  onDelete={onRemoveQuota}
+                />
+              ))
+          }
+        </div>
+        <Button
+          icon="close"
+          size="small"
+          type="danger"
+          onClick={onRemoveQuota}
+        />
       </div>
     </div>
   );
