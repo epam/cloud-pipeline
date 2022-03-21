@@ -26,6 +26,7 @@ import java.util.Map;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.matchText;
@@ -210,7 +211,8 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkWarningStatusIcon() {
-        ensure(byClassName("browser__current-folder-actions"), cssClass("anticon-exclamation-circle-o"));
+//        ensure(byClassName("browser__current-folder-actions"), cssClass("anticon-exclamation-circle-o"));
+        ensure(byClassName("estricted-images-info__container"), exist);
         return this;
     }
 
