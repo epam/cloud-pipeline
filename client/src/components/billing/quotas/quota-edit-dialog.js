@@ -107,6 +107,7 @@ class EditQuotaDialog extends React.Component {
 
   createInitialState = () => {
     const {quota = {}} = this.props;
+    const isNew = quota && !quota.id;
     const {
       actions = [],
       value = 0,
@@ -121,7 +122,8 @@ class EditQuotaDialog extends React.Component {
       value,
       period,
       modified: false,
-      filter: undefined
+      filter: undefined,
+      disabled: !isNew
     }, this.validate);
   };
 
@@ -425,6 +427,7 @@ class EditQuotaDialog extends React.Component {
         />
         <span style={{margin: '0px 5px'}}>$</span>
         <Select
+          disabled={disabled}
           style={{width: 200}}
           getPopupContainer={node => node.parentNode}
           value={period}
@@ -573,7 +576,7 @@ class EditQuotaDialog extends React.Component {
     const {quotaGroup} = quota || {};
     const {disabled, modified, errors} = this.state;
     const groupName = quotaGroup ? (quotaGroupNames[quotaGroup] || quotaGroup) : '';
-    const title = `${isNew ? 'Create' : 'Edit'} ${groupName.toLowerCase()}`;
+    const title = `${isNew ? 'Create' : ''} ${groupName.toLowerCase()}`;
     return (
       <Modal
         width="50%"
@@ -588,7 +591,7 @@ class EditQuotaDialog extends React.Component {
               !isNew && (
                 <Button
                   type="danger"
-                  disabled={disabled || isNew}
+                  disabled={isNew}
                   onClick={this.onRemove}
                 >
                   REMOVE
