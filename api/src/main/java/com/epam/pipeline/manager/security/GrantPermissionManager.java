@@ -391,12 +391,18 @@ public class GrantPermissionManager {
 
     public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,
             boolean includeInherited, List<Sid> sids) {
+        return getPermissionsMask(entity, merge, includeInherited, sids, findStorageQuota(entity));
+    }
+
+    public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,
+                                      boolean includeInherited, List<Sid> sids,
+                                      Optional<AppliedQuota> activeQuota) {
         if (isAdmin(sids)) {
             return merge ?
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
         }
-        return retrieveMaskForSid(entity, merge, includeInherited, sids, findStorageQuota(entity));
+        return retrieveMaskForSid(entity, merge, includeInherited, sids, activeQuota);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -434,7 +440,8 @@ public class GrantPermissionManager {
         if (isAdmin(sids)) {
             return;
         }
-        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids);
+        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true,
+                sids, findStorageQuota());
     }
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
@@ -956,15 +963,14 @@ public class GrantPermissionManager {
 
     private void processHierarchicalEntity(int parentMask, AbstractHierarchicalEntity entity,
             Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, boolean root,
-            List<Sid> sids) {
+            List<Sid> sids, Optional<AppliedQuota> activeQuota) {
         int defaultMask = 0;
-        final Optional<AppliedQuota> activeQuota = findStorageQuota(entity);
         int currentMask = entity.getId() != null ?
                 permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids, activeQuota),
                         parentMask) : defaultMask;
         entity.getChildren().forEach(
             leaf -> processHierarchicalEntity(currentMask, leaf, entitiesToRemove, permission,
-                        false, sids));
+                        false, sids, activeQuota));
         filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids, activeQuota);
         entity.filterLeaves(entitiesToRemove);
         entity.filterChildren(entitiesToRemove);
@@ -988,7 +994,8 @@ public class GrantPermissionManager {
                                 Optional<AppliedQuota> activeQuota) {
         ListUtils.emptyIfNull(children).forEach(child -> {
             int mask = permissionsService
-                    .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
+                    .mergeParentMask(getPermissionsMask(child, false, false, sids, activeQuota),
+                            parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
                 addToEntitiesToBeRemoved(entitiesToRemove, child);
             }
@@ -1209,6 +1216,11 @@ public class GrantPermissionManager {
                     QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
         }
         return Optional.empty();
+    }
+
+    private Optional<AppliedQuota> findStorageQuota() {
+        return quotaService.findActiveActionForUser(authManager.getCurrentUser(),
+                    QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
     }
 
     @Data

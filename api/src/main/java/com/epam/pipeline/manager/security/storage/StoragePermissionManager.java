@@ -115,14 +115,9 @@ public class StoragePermissionManager {
                 .collect(Collectors.toList());
         final List<AbstractDataStorage> filtered = ListUtils.emptyIfNull(storages)
                 .stream()
-                .peek(storage -> {
-                    if (activeQuota.isPresent()) {
-                        storage.setMask(AclPermission.READ.getMask());
-                    } else {
-                        storage.setMask(
-                                grantPermissionManager.getPermissionsMask(storage, true, true, sids));
-                    }
-                })
+                .peek(storage -> storage.setMask(
+                        grantPermissionManager.getPermissionsMask(storage, true, true, sids,
+                                activeQuota)))
                 .filter(storage -> checkPermissions(permissions, storage, allPermissions))
                 .collect(Collectors.toList());
         if (storages.size() != filtered.size()) {
