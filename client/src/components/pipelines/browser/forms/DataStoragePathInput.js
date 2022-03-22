@@ -28,7 +28,7 @@ const SERVER_PORT_MASK = /^[^:]+(:[\d]+)?$/i;
 
 export function extractFileShareMountList (regions) {
   const list = [];
-  for (let i = 0; i < regions.length; i++) {
+  for (let i = 0; i < (regions || []).length; i++) {
     const region = regions[i];
     if (region.fileShareMounts && region.fileShareMounts.length) {
       region.fileShareMounts.forEach(fileShareMount => {
