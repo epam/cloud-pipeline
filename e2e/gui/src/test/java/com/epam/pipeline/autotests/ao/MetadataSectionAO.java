@@ -30,7 +30,6 @@ import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.have;
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.matchText;
-import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
@@ -211,7 +210,6 @@ public class MetadataSectionAO extends PopupAO<MetadataSectionAO, AccessObject> 
     }
 
     public MetadataSectionAO checkWarningStatusIcon() {
-//        ensure(byClassName("browser__current-folder-actions"), cssClass("anticon-exclamation-circle-o"));
         ensure(byClassName("estricted-images-info__container"), exist);
         return this;
     }

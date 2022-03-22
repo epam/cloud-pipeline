@@ -1377,13 +1377,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     .saveIfNeeded();
         }
 
-        public PreferencesAO setEmptyPreferenceValue(String preference) {
-            SelenideElement pref = context().$(byClassName("preference-group__code-editor"));
-            searchPreference(preference);
-            clearTextField(pref);
-            return this;
-        }
-
         public class ClusterTabAO extends PreferencesAO {
 
             private final By dockerExtraMulti = getByField("cluster.docker.extra_multi");

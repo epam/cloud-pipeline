@@ -41,7 +41,6 @@ import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURE_NOTIFICATION;
 import static com.epam.pipeline.autotests.ao.Primitive.CREATE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
-import static com.epam.pipeline.autotests.ao.Primitive.REINDEX;
 import static com.epam.pipeline.autotests.ao.Primitive.UPLOAD;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.utils.Privilege.READ;
@@ -214,7 +213,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .click(REINDEX)
+                .reindexStorage()
                 .waitUntilStatusUpdated(DISABLED_MOUNT_STATUS)
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)
@@ -226,7 +225,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .click(REINDEX)
+                .reindexStorage()
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)
                 .checkStorageStatus(DISABLED_MOUNT_STATUS);
@@ -256,7 +255,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .library()
                 .selectStorage(storage)
                 .showMetadata()
-                .click(REINDEX)
+                .reindexStorage()
                 .waitUntilStatusUpdated(READ_ONLY_MOUNT_STATUS)
                 .checkWarningStatusIcon()
                 .checkStorageSize(storageSizeWithUnit)
