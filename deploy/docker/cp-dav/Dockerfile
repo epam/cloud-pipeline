@@ -95,5 +95,8 @@ COPY sync/nfs-watcher.sh ${SYNC_HOME}/
 # E.g.: cp cp ../../../scripts/nfs-roles-management ./ -r && docker build ...
 COPY nfs-roles-management ${SYNC_HOME}/nfs-roles-management
 
+ADD liveness.sh /liveness.sh
+RUN chmod +x /liveness.sh
+
 COPY init /init
 RUN  chmod +x /init

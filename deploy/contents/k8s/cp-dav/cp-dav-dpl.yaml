@@ -32,6 +32,15 @@ spec:
             - name: cp-region-creds
               mountPath: "/root/.cloud/regioncreds"
               readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 600
+            periodSeconds: 300
+            failureThreshold: 4
           readinessProbe:
             httpGet:
               path: /${CP_DAV_URL_PATH}

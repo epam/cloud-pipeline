@@ -121,9 +121,11 @@ ADD error-pages /opt/api/static/error
 ADD init-api /init-api
 ADD init-git-sync /init-git-sync
 ADD update-trust /update-trust
+ADD liveness-git-sync.sh /liveness-git-sync.sh
 
 RUN chmod +x /init* && \
-    chmod +x /update-trust
+    chmod +x /update-trust && \
+    chmod +x /liveness-git-sync.sh
 
 RUN wget -q https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/filebeat/filebeat-6.8.3-x86_64.rpm \
     && rpm -vi filebeat-6.8.3-x86_64.rpm && rm -rf filebeat-6.8.3-x86_64.rpm

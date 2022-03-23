@@ -28,6 +28,15 @@ spec:
           volumeMounts:
             - mountPath: /opt/git-sync/logs
               name: git-sync-logs
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness-git-sync.sh
+            initialDelaySeconds: 600
+            periodSeconds: 300
+            failureThreshold: 4
       volumes:
         - name: git-sync-logs
           hostPath:
