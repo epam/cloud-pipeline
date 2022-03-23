@@ -46,7 +46,8 @@ function QuotaDescription (
   const {
     actions = [],
     value,
-    period = 'MONTH'
+    period = 'MONTH',
+    id
   } = quota;
   const quotaValue = (
     <span className={styles.quotaValue}>
@@ -57,7 +58,7 @@ function QuotaDescription (
     e.stopPropagation();
     Modal.confirm({
       title: 'Are you sure you want to remove quota?',
-      onOk: onRemove
+      onOk: () => onRemove(id)
     });
   };
 

@@ -124,6 +124,9 @@ class QuotasSection extends React.Component {
       message.error(error, 5);
       return;
     }
+    this.setState({
+      inProgress: true
+    });
     const hide = message.loading(quota.id ? 'Updating quota...' : 'Creating quota', 0);
     try {
       const {onRefresh} = this.props;
@@ -142,14 +145,21 @@ class QuotasSection extends React.Component {
       message.error(e.message, 5);
     } finally {
       hide();
+      this.setState({
+        inProgress: false
+      });
     }
   };
 
-  onRemoveQuota = async () => {
+  onRemoveQuota = async (id = null) => {
+    this.setState({
+      inProgress: true
+    });
     const hide = message.loading('Removing quota...', 0);
     try {
       const {editableQuota} = this.state;
-      const request = new DeleteBillingQuota(editableQuota.id);
+      const quotaID = id || editableQuota.id;
+      const request = new DeleteBillingQuota(quotaID);
       await request.send();
       if (request.error) {
         throw new Error(request.error);
@@ -164,6 +174,9 @@ class QuotasSection extends React.Component {
       message.error(e.message, 5);
     } finally {
       hide();
+      this.setState({
+        inProgress: false
+      });
     }
   };
 
@@ -175,7 +188,8 @@ class QuotasSection extends React.Component {
       roles
     } = this.props;
     const {
-      editableQuota
+      editableQuota,
+      inProgress
     } = this.state;
     return (
       <div
@@ -238,6 +252,7 @@ class QuotasSection extends React.Component {
             onRemove={this.onRemoveQuota}
             onSave={this.onEditQuota}
             quota={editableQuota}
+            disabled={inProgress}
           />
         </div>
       </div>
