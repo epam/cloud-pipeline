@@ -26,7 +26,8 @@ import {
 import Export from '../export';
 import {costTickFormatter} from '../utilities';
 import {discounts} from '../discounts';
-import {getTickFormat, getCurrentDate} from '../../../special/periods';
+import {getCurrentDate} from '../../../special/periods';
+import getQuotaDatasets from './get-quotas-datasets';
 import moment from 'moment-timezone';
 
 const Display = {
@@ -35,7 +36,16 @@ const Display = {
 };
 
 function dataIsEmpty (data) {
-  return !data || data.filter((d) => !isNaN(d)).length === 0;
+  const itemIsEmpty = item => {
+    if (item === undefined) {
+      return true;
+    }
+    if (!Number.isNaN(Number(item))) {
+      return false;
+    }
+    return Number.isNaN(Number(item.y));
+  };
+  return !data || data.filter((d) => !itemIsEmpty(d)).length === 0;
 }
 
 function generateEmptySet (filters) {
@@ -44,12 +54,13 @@ function generateEmptySet (filters) {
   }
   const {
     start: initial,
-    end
+    end,
+    tick
   } = filters;
   const emptySet = [];
   let start = moment(initial);
   let unit = 'day';
-  if (getTickFormat(initial, end) === '1M') {
+  if (tick === '1M') {
     unit = 'M';
   }
   while (start <= end) {
@@ -87,8 +98,7 @@ function generateLabels (data, filters = {}) {
     return {labels: []};
   }
   const {
-    start,
-    end
+    tick
   } = filters;
   const currentDate = getCurrentDate();
   let currentDateIndex;
@@ -100,7 +110,7 @@ function generateLabels (data, filters = {}) {
   let fullFormat = 'DD MMM YYYY';
   let tooltipFormat = 'MMMM DD, YYYY';
   let previousDateFn = date => moment(date).add(-1, 'M');
-  if (getTickFormat(start, end) === '1M') {
+  if (tick === '1M') {
     format = 'MMM';
     fullFormat = 'MMM YYYY';
     tooltipFormat = 'MMMM YYYY';
@@ -150,12 +160,18 @@ function extractDataSet (data, title, type, color, options = {}) {
     backgroundColor = 'transparent',
     isPrevious = false
   } = options;
+  const mapItem = (item, index) => {
+    if (typeof item === 'number') {
+      return {y: item, x: index};
+    }
+    return item;
+  };
   return {
     [DataLabelPlugin.noDataIgnoreOption]: options[DataLabelPlugin.noDataIgnoreOption],
     label: title,
     type,
     isPrevious,
-    data,
+    data: (data || []).map(mapItem),
     fill,
     backgroundColor,
     borderColor,
@@ -166,18 +182,16 @@ function extractDataSet (data, title, type, color, options = {}) {
   };
 }
 
-function parse (values, quota) {
+function parse (values) {
   const data = (values || [])
     .map(d => ({
       date: d.dateValue,
       value: d.value || NaN,
       cost: d.cost || NaN,
       previous: d.previous || NaN,
-      previousCost: d.previousCost || NaN,
-      quota: quota
+      previousCost: d.previousCost || NaN
     }));
   return {
-    quota: data.map(d => d.quota),
     currentData: data.map(d => d.cost),
     previousData: data.map(d => d.previousCost),
     currentAccumulativeData: data.map(d => d.value),
@@ -193,6 +207,7 @@ function Summary (
     storages,
     computeDiscounts,
     storagesDiscounts,
+    quotas,
     quota: showQuota = true,
     display = Display.accumulative,
     reportThemes
@@ -207,17 +222,17 @@ function Summary (
     [computeDiscounts, storagesDiscounts]
   );
   const data = summary ? fillSet(filters, summary.values || []) : [];
-  const quotaValue = showQuota && summary
-    ? summary.quota
-    : undefined;
   const {labels, currentDateIndex} = generateLabels(data, filters);
   const {
     currentData,
     previousData,
     currentAccumulativeData,
-    previousAccumulativeData,
-    quota
-  } = parse(data, quotaValue);
+    previousAccumulativeData
+  } = parse(data);
+  const shouldDisplayQuotas = display === Display.accumulative && showQuota;
+  const quotaDatasets = shouldDisplayQuotas
+    ? getQuotaDatasets(compute, storages, quotas, data)
+    : [];
   const disabled = currentData.length === 0 && previousData.length === 0;
   const loading = pending && !loaded;
   const dataConfiguration = {
@@ -260,9 +275,9 @@ function Summary (
           isPrevious: true
         }
       ) : false,
-      quotaValue ? extractDataSet(
-        quota,
-        'Quota',
+      ...quotaDatasets.map(quotaDataset => extractDataSet(
+        quotaDataset.data,
+        quotaDataset.title,
         SummaryChart.quota,
         reportThemes.quota,
         {
@@ -270,7 +285,7 @@ function Summary (
           currentDateIndex,
           [DataLabelPlugin.noDataIgnoreOption]: true
         }
-      ) : false
+      ))
     ].filter(Boolean)
   };
   const options = {
@@ -302,6 +317,7 @@ function Summary (
           zeroLineColor: reportThemes.lineColor
         },
         ticks: {
+          min: 0,
           display: !disabled,
           callback: o => costTickFormatter(o),
           fontColor: reportThemes.textColor
@@ -323,8 +339,13 @@ function Summary (
           return undefined;
         },
         label: function (tooltipItem, data) {
-          let {label, type, isPrevious} = data.datasets[tooltipItem.datasetIndex];
-          const value = costTickFormatter(tooltipItem.yLabel);
+          let {label, type, isPrevious, data: items} = data.datasets[tooltipItem.datasetIndex];
+          let value = costTickFormatter(tooltipItem.yLabel);
+          if (type === SummaryChart.quota) {
+            const {quota} = (items || [])[tooltipItem.index || 0];
+            value = quota ? costTickFormatter(quota) : value;
+            return `${label || 'Quota'}: ${value}`;
+          }
           const {xLabel: defaultTitle, index} = tooltipItem;
           if (index >= 0 && index < labels.length) {
             const {tooltip, previousTooltip} = labels[index];
@@ -373,5 +394,5 @@ function Summary (
   );
 }
 
-export default inject('reportThemes')(observer(Summary));
+export default inject('reportThemes', 'quotas')(observer(Summary));
 export {Display};

@@ -914,7 +914,7 @@ export default `
 @THEME .ant-select.ant-select-disabled .ant-select-selection {
   color: @application-color-disabled;
   background-color: @input-background-disabled;
-  border-color: currentColor;
+  border-color: @input-border;
 }
 @THEME .ant-select-selection:hover {
   border-color: @primary-color;
@@ -1039,6 +1039,9 @@ export default `
 }
 @THEME .ant-select-selection--multiple .ant-select-selection__choice__remove:hover {
   color: @application-color;
+}
+@THEME .ant-select-disabled .ant-select-selection--multiple .ant-select-selection__choice {
+  color: currentColor;
 }
 @THEME .ant-select-dropdown-menu-item-group-title {
   color: @application-color-faded;
@@ -1402,6 +1405,10 @@ export default `
 }
 @THEME .ant-slider-disabled .ant-slider-track {
   background-color: @application-color-disabled !important;
+}
+@THEME .ant-slider-dot {
+  border-color: @card-header-background;
+  background-color: @card-background-color;
 }
 @THEME .ant-slider-disabled .ant-slider-handle,
 @THEME .ant-slider-disabled .ant-slider-dot {
@@ -2066,6 +2073,25 @@ export default `
 }
 @THEME .cp-billing-layout .react-grid-item {
   transition: none;
+}
+@THEME .cp-quota-status-green {
+  fill: @color-success;
+  background-color: @color-success;
+}
+@THEME .cp-quota-status-green.hide {
+  fill: transparent;
+  background-color: transparent;
+}
+@THEME .cp-quota-status-yellow {
+  fill: @color-warning;
+  background-color: @color-warning;
+}
+@THEME .cp-quota-status-red {
+  fill: @color-error;
+  background-color: @color-error;
+}
+@THEME .cp-billing-action-tag .ant-tag-text {
+  background-color: @color-warning;
 }
 
 @THEME .cp-search-clear-filters-button {

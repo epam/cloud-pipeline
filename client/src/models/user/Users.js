@@ -17,12 +17,13 @@
 import Remote from '../basic/Remote';
 
 export default class Users extends Remote {
-  constructor (activity) {
+  constructor (activity = false, quotas = false) {
     super();
-    if (activity !== undefined) {
-      this.url = `/users?activity=${activity}`;
-    } else {
-      this.url = '/users';
-    }
+    const params = [
+      activity ? `activity=true` : false,
+      quotas ? `quotas=true` : false
+    ].filter(Boolean).join('&');
+    const query = params.length ? `?${params}` : '';
+    this.url = `/users${query}`;
   }
 }

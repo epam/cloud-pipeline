@@ -37,6 +37,12 @@
   align-self: stretch;
 }
 
+.actions-container {
+  display: flex;
+  align-items: center;
+  margin: 5px;
+}
+
 .container .actions .action {
   margin: 2px 5px;
 }

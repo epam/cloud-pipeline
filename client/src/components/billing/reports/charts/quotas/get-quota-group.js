@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,20 @@
  *  limitations under the License.
  */
 
-import Remote from '../../basic/Remote';
+import QuotaGroups from '../../../quotas/utilities/quota-groups';
 
-export default class BillingQuotasList extends Remote {
-  constructor (loadActive = true) {
-    super();
-    this.url = `/quotas?loadActive=${!!loadActive}`;
+export function getQuotaGroup (request) {
+  if (!request || !request.filters) {
+    return undefined;
   }
+  const {
+    resourceType
+  } = request.filters;
+  if (/^storage$/i.test(resourceType)) {
+    return QuotaGroups.storages;
+  }
+  if (/^compute$/i.test(resourceType)) {
+    return QuotaGroups.computeInstances;
+  }
+  return QuotaGroups.global;
 }

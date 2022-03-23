@@ -49,6 +49,8 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
+    '@color-green-soft': '#008080',
+    '@color-blue-soft': '#025979',
     '@spinner': '@application-color',
     '@element-hover-color': '@application-color',
     '@element-hover-background-color': 'lighten(@panel-background-color, 5%)',

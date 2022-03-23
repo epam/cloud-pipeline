@@ -26,5 +26,11 @@ const quotaGroupNames = {
   [groups.storages]: 'Storages quota'
 };
 
-export {quotaGroupNames};
+const quotaGroupSpendingNames = {
+  [groups.global]: 'Global',
+  [groups.computeInstances]: 'Compute',
+  [groups.storages]: 'Storages'
+};
+
+export {quotaGroupNames, quotaGroupSpendingNames};
 export default groups;

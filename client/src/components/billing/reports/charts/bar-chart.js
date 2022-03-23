@@ -24,6 +24,7 @@ import {
 import Export from '../export';
 import {discounts} from '../discounts';
 import {costTickFormatter} from '../utilities';
+import QuotaSummaryChartsTitle from './quota-summary-chart';
 
 function toValueFormat (value) {
   return Math.round((+value || 0) * 100.0) / 100.0;
@@ -65,12 +66,15 @@ function BarChart (
     title,
     style,
     subChart,
+    subChartTitleStyle,
     top = 10,
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
     onImageDataReceived,
     itemNameFn = o => o,
-    reportThemes
+    reportThemes,
+    displayQuotasSummary,
+    quotaGroup
   }
 ) {
   if (!request) {
@@ -92,6 +96,8 @@ function BarChart (
     value,
     discountsFn
   );
+  const requests = Array.isArray(request) ? request : [request];
+  const discountsArray = Array.isArray(discountsFn) ? discountsFn : [discountsFn];
   const [error] = Array.isArray(request)
     ? request.filter(r => r.error).map(r => r.error)
     : [request.error];
@@ -110,7 +116,7 @@ function BarChart (
     datasets: [
       {
         label: 'Previous',
-        type: 'quota-bar',
+        type: 'previous-line-bar',
         data: previousData,
         borderWidth: 2,
         borderDash: [4, 4],
@@ -140,21 +146,18 @@ function BarChart (
     scales: {
       xAxes: [{
         id: 'x-axis',
+        stacked: true,
         gridLines: {
           drawOnChartArea: false,
           color: reportThemes.lineColor,
           zeroLineColor: reportThemes.lineColor
-        },
-        scaleLabel: {
-          display: !disabled && subChart,
-          labelString: title,
-          fontColor: reportThemes.subTextColor
         },
         ticks: {
           fontColor: reportThemes.subTextColor
         }
       }],
       yAxes: [{
+        stacked: true,
         position: axisPosition,
         gridLines: {
           display: !disabled,
@@ -243,24 +246,46 @@ function BarChart (
     <Container
       style={
         Object.assign(
-          {height: '100%', position: 'relative', display: 'block'},
+          {
+            height: '100%',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
+          },
           style
         )
       }
     >
-      <Chart
-        data={chartData}
-        error={error}
-        loading={loading}
-        type="bar"
-        options={options}
-        plugins={[
-          BarchartDataLabelPlugin.plugin,
-          ChartClickPlugin.plugin
-        ]}
-        useChartImageGenerator={useImageConsumer}
-        onImageDataReceived={onImageDataReceived}
-      />
+      <div style={{flex: 1, overflow: 'hidden'}}>
+        <Chart
+          data={chartData}
+          error={error}
+          loading={loading}
+          type="bar"
+          options={options}
+          plugins={[
+            BarchartDataLabelPlugin.plugin,
+            ChartClickPlugin.plugin
+          ]}
+          useChartImageGenerator={useImageConsumer}
+          onImageDataReceived={onImageDataReceived}
+        />
+      </div>
+      {
+        subChart && (
+          <QuotaSummaryChartsTitle
+            onClick={onScaleSelect}
+            style={subChartTitleStyle}
+            displayQuotasSummary={displayQuotasSummary}
+            data={rawData}
+            requests={requests}
+            discounts={discountsArray}
+            quotaGroup={quotaGroup}
+          >
+            {title}
+          </QuotaSummaryChartsTitle>
+        )
+      }
     </Container>
   );
 }

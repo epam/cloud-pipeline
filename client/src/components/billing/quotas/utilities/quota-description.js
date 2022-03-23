@@ -16,11 +16,14 @@
 
 import React from 'react';
 import classNames from 'classnames';
+import {Button, Modal} from 'antd';
+
 import QuotaTarget from './quota-target';
 import {QuotaAction} from './quota-actions';
 import {periodNames} from './quota-periods';
 import {numberFormatter} from '../../reports/utilities';
 import styles from './quota-description.css';
+import QuotaLimitIndicator from './quota-indicator';
 
 function sortActionsByThreshold (a, b) {
   const {threshold: aThreshold} = a;
@@ -32,6 +35,7 @@ function QuotaDescription (
   {
     className,
     onClick,
+    onRemove,
     quota,
     roles,
     style
@@ -43,13 +47,23 @@ function QuotaDescription (
   const {
     actions = [],
     value,
-    period = 'MONTH'
+    period = 'MONTH',
+    id
   } = quota;
+
   const quotaValue = (
     <span className={styles.quotaValue}>
       {numberFormatter(value)}$ per {(periodNames[period] || period).toLowerCase()}
     </span>
   );
+  const onRemoveQuota = (e) => {
+    e.stopPropagation();
+    Modal.confirm({
+      title: 'Are you sure you want to remove quota?',
+      onOk: () => onRemove(id)
+    });
+  };
+
   return (
     <div
       className={
@@ -62,7 +76,8 @@ function QuotaDescription (
       onClick={onClick}
     >
       <div className={styles.description}>
-        <div>
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          <QuotaLimitIndicator quota={quota} />
           <QuotaTarget
             addonAfter=":"
             quota={quota}
@@ -71,18 +86,27 @@ function QuotaDescription (
           {quotaValue}
         </div>
       </div>
-      <div className={styles.actions}>
-        {
-          actions
-            .sort(sortActionsByThreshold)
-            .map((action, index) => (
-              <QuotaAction
-                className={styles.action}
-                key={`action-${index}`}
-                action={action}
-              />
-            ))
-        }
+      <div className={styles.actionsContainer}>
+        <div className={styles.actions}>
+          {
+            actions
+              .sort(sortActionsByThreshold)
+              .map((action, index) => (
+                <QuotaAction
+                  className={styles.action}
+                  key={`action-${index}`}
+                  action={action}
+                  onDelete={onRemoveQuota}
+                />
+              ))
+          }
+        </div>
+        <Button
+          icon="close"
+          size="small"
+          type="danger"
+          onClick={onRemoveQuota}
+        />
       </div>
     </div>
   );
