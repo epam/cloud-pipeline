@@ -210,6 +210,9 @@ class EditQuotaDialog extends React.Component {
       subject,
       filter
     } = this.state;
+    const {
+      disabled
+    } = this.props;
     const onChangeSearchString = e => this.setState({filter: e}, this.validate);
     const error = errors.subject;
     const filtered = this.users
@@ -230,7 +233,7 @@ class EditQuotaDialog extends React.Component {
     return (
       <Select
         showSearch
-        disabled={this.props.disabled || !this.isNewQuota}
+        disabled={disabled || !this.isNewQuota}
         className={
           classNames(
             styles.targetSelect,
@@ -272,6 +275,9 @@ class EditQuotaDialog extends React.Component {
       subject,
       filter
     } = this.state;
+    const {
+      disabled
+    } = this.props;
     const onChangeSearchString = e => {
       this.setState({filter: e}, () => {
         GroupFind.findGroups(e)
@@ -302,7 +308,7 @@ class EditQuotaDialog extends React.Component {
     return (
       <Select
         showSearch
-        disabled={this.props.disabled || !this.isNewQuota}
+        disabled={disabled || !this.isNewQuota}
         className={
           classNames(
             styles.targetSelect,
@@ -340,10 +346,13 @@ class EditQuotaDialog extends React.Component {
       errors = {},
       subject
     } = this.state;
+    const {
+      disabled
+    } = this.props;
     const error = errors.subject;
     return (
       <Select
-        disabled={this.props.disabled || !this.isNewQuota}
+        disabled={disabled || !this.isNewQuota}
         className={
           classNames(
             styles.targetSelect,
@@ -400,6 +409,9 @@ class EditQuotaDialog extends React.Component {
 
   renderQuotaInput = () => {
     const {
+      disabled
+    } = this.props;
+    const {
       errors,
       value,
       period
@@ -411,7 +423,7 @@ class EditQuotaDialog extends React.Component {
           Quota:
         </span>
         <InputNumber
-          disabled={this.props.disabled || !this.isNewQuota}
+          disabled={disabled || !this.isNewQuota}
           className={classNames(
             styles.quotaInput,
             {
@@ -424,7 +436,7 @@ class EditQuotaDialog extends React.Component {
         />
         <span style={{margin: '0px 5px'}}>$</span>
         <Select
-          disabled={this.props.disabled || !this.isNewQuota}
+          disabled={disabled || !this.isNewQuota}
           style={{width: 200}}
           getPopupContainer={node => node.parentNode}
           value={period}
@@ -452,7 +464,8 @@ class EditQuotaDialog extends React.Component {
 
   renderActions = () => {
     const {
-      quota
+      quota,
+      disabled
     } = this.props;
     if (!quota) {
       return null;
@@ -491,7 +504,7 @@ class EditQuotaDialog extends React.Component {
             (actions || []).map((action, index) => (
               <QuotaThreshold
                 key={`action-${index}`}
-                disabled={this.props.disabled || !this.isNewQuota}
+                disabled={disabled || !this.isNewQuota}
                 action={action}
                 quotaGroup={quotaGroup}
                 quotaType={type}
@@ -503,7 +516,7 @@ class EditQuotaDialog extends React.Component {
           }
           <div className={styles.add}>
             <Button
-              disabled={this.props.disabled || !this.isNewQuota}
+              disabled={disabled || !this.isNewQuota}
               onClick={onAddAction}
             >
               <Icon type="plus" /> Add action
@@ -530,6 +543,9 @@ class EditQuotaDialog extends React.Component {
       errors,
       recipients
     } = this.state;
+    const {
+      disabled
+    } = this.props;
     const error = errors.recipients;
     return (
       <div className={styles.quotaInputContainer}>
@@ -539,7 +555,7 @@ class EditQuotaDialog extends React.Component {
         <UsersRolesSelect
           value={recipients}
           onChange={newRecipients => this.setState({recipients: newRecipients, modified: true})}
-          disabled={this.props.disabled || !this.isNewQuota}
+          disabled={disabled || !this.isNewQuota}
           className={
             classNames(
               {
@@ -565,7 +581,8 @@ class EditQuotaDialog extends React.Component {
     const {
       visible,
       onCancel,
-      quota
+      quota,
+      disabled
     } = this.props;
     const {quotaGroup} = quota || {};
     const {modified, errors} = this.state;
@@ -585,7 +602,7 @@ class EditQuotaDialog extends React.Component {
               !this.isNewQuota && (
                 <Button
                   type="danger"
-                  disabled={this.isNewQuota}
+                  disabled={disabled}
                   onClick={this.onRemove}
                 >
                   REMOVE
@@ -595,16 +612,22 @@ class EditQuotaDialog extends React.Component {
             <div>
               <Button
                 onClick={onCancel}
-                style={{marginRight: 5}}
+                disabled={disabled}
               >
-                CANCEL
+                {this.isNewQuota ? 'CANCEL' : 'CLOSE'}
               </Button>
-              <Button
-                type="primary"
-                disabled={this.props.disabled || !modified || Object.keys(errors).length > 0}
-                onClick={this.onSaveClicked}>
-                SAVE
-              </Button>
+              {
+                this.isNewQuota && (
+                  <Button
+                    type="primary"
+                    disabled={disabled || !modified || Object.keys(errors).length > 0}
+                    onClick={this.onSaveClicked}
+                    style={{marginLeft: 5}}
+                  >
+                    SAVE
+                  </Button>
+                )
+              }
             </div>
           </Row>
         )}
