@@ -52,7 +52,7 @@
             <td>$summary.vm.privateIp</td>
             <td>
                 #foreach( $run in $summary.matchingRuns )
-                    <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/run/$run.id">$run.id</a> [ $run.status.name ] <br>
+                    <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$run.id">$run.id</a> [ $run.status.name ] <br>
                 #end
             </td>
             <td>$summary.vm.cloudProvider</td>

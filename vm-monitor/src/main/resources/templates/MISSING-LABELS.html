@@ -51,11 +51,11 @@
         <td>
             #set( $correspondingRunStatus = $summary.correspondingRunStatus )
             #if ($correspondingRunStatus)
-                Run <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ $correspondingRunStatus.status ] <br>
+                Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ $correspondingRunStatus.status ] <br>
             #end
             #set( $correspondingPoolId = $summary.correspondingPoolId )
             #if ($correspondingPoolId)
-                Pool <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/cluster?pool_id=$correspondingPoolId">$correspondingPoolId</a><br>
+                Pool <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster?pool_id=$correspondingPoolId">$correspondingPoolId</a><br>
             #end
         </td>
         <td>
@@ -64,7 +64,7 @@
             #end
         </td>
         <td>
-            Delete <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/cluster/$summary.nodeName">instance</a> in the <b>$templateParameters["deploymentName"]</b> console
+            Delete <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster/$summary.nodeName">instance</a> in the <b>$templateParameters["deploymentName"]</b> console
         </td>
     </tr>
     #end
