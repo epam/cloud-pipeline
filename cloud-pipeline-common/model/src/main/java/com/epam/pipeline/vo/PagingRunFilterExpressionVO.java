@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.rest;
+package com.epam.pipeline.vo;
 
+import com.epam.pipeline.entity.filter.AclSecuredFilter;
+import com.epam.pipeline.entity.filter.FilterExpression;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.util.List;
+
+@Getter
+@Setter
 @NoArgsConstructor
-public class PagedResult<T> { // TODO: refactor to extend Result class
-    private T elements; // TODO; refactor to contain a list of T
-    private int totalCount;
+public class PagingRunFilterExpressionVO implements AclSecuredFilter {
 
-    public PagedResult(T elements, int totalCount) {
-        this.elements = elements;
-        this.totalCount = totalCount;
-    }
+    private int page;
+    private int pageSize;
+    private int timezoneOffsetInMinutes;
+    private FilterExpression filterExpression;
 
-    public T getElements() {
-        return elements;
-    }
-
-    public int getTotalCount() {
-        return totalCount;
-    }
+    @JsonIgnore
+    private List<Long> allowedPipelines;
+    @JsonIgnore
+    private String ownershipFilter;
 }

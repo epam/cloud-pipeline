@@ -48,10 +48,12 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.RunStatusVO;
 import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
@@ -113,6 +115,9 @@ public interface CloudPipelineAPI {
 
     @GET("run/{runId}/logs")
     Call<Result<List<RunLog>>> loadLogs(@Path(RUN_ID) Long runId);
+
+    @POST("run/search")
+    Call<Result<PagedResult<List<PipelineRun>>>> searchPipelineRuns(@Body PagingRunFilterExpressionVO filterVO);
 
     @POST("metadata/load")
     Call<Result<List<MetadataEntry>>> loadFolderMetadata(@Body List<EntityVO> entities);

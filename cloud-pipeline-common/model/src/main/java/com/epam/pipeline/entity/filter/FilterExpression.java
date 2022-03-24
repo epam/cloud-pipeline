@@ -14,25 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.rest;
+package com.epam.pipeline.entity.filter;
 
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+@Getter
+@Setter
 @NoArgsConstructor
-public class PagedResult<T> { // TODO: refactor to extend Result class
-    private T elements; // TODO; refactor to contain a list of T
-    private int totalCount;
+public class FilterExpression {
 
-    public PagedResult(T elements, int totalCount) {
-        this.elements = elements;
-        this.totalCount = totalCount;
-    }
-
-    public T getElements() {
-        return elements;
-    }
-
-    public int getTotalCount() {
-        return totalCount;
-    }
+    private String field;
+    private String value;
+    private String operand;
+    private String filterExpressionType;
 }

@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.rest;
+package com.epam.pipeline.vmmonitor.model.vm;
 
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@NoArgsConstructor
-public class PagedResult<T> { // TODO: refactor to extend Result class
-    private T elements; // TODO; refactor to contain a list of T
-    private int totalCount;
+import java.util.List;
 
-    public PagedResult(T elements, int totalCount) {
-        this.elements = elements;
-        this.totalCount = totalCount;
-    }
+@AllArgsConstructor
+@Getter
+public class MissingNodeSummary {
 
-    public T getElements() {
-        return elements;
-    }
-
-    public int getTotalCount() {
-        return totalCount;
-    }
+    private final VirtualMachine vm;
+    private final List<PipelineRun> matchingRuns;
 }
