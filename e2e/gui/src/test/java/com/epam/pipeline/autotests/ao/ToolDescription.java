@@ -68,6 +68,18 @@ public class ToolDescription extends ToolTab<ToolDescription> {
         return this;
     }
 
+    public String getFullDescriptionMarkdown() {
+        context().find(editButtonFor(FULL_DESCRIPTION)).shouldBe(visible).click();
+        String description = context().find(byId("description-input")).shouldBe(visible).getText();
+        context().find(byId("description-edit-cancel-button")).shouldBe(visible).click();
+        return description;
+    }
+
+    public String[] getDescriptionHtml() {
+        return context().find(byId("description-text-container"))
+                .shouldBe(visible).innerHtml().split("\n");
+    }
+
     public ToolDescription showMetadata(final Consumer<MetadataSectionAO> action) {
         showMetadata(showAttributes);
         action.accept(new MetadataSectionAO(this));
