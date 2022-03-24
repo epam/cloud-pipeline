@@ -15,15 +15,17 @@ export default function applicationAvailable(appInfo, user, settings) {
   const userToTest = settings?.isAnonymous
     ? (settings.originalUser || user)
     : user;
-  const availableForUsers = new Set(users.filter(o => o.principal).map(o => o.name));
-  const availableForRoles = new Set(users.filter(o => !o.principal).map(o => o.name));
+  const availableForUsers = new Set(users.filter(o => o.principal).map(o => (o.name || '').toUpperCase()));
+  const availableForRoles = new Set(users.filter(o => !o.principal).map(o => (o.name || '').toUpperCase()));
   const {
     roles = [],
     userName,
     admin
   } = userToTest || {};
   return admin ||
-    owner === userName ||
-    availableForUsers.has(userName) ||
-    roles.map(o => o.name).some(role => availableForRoles.has(role));
+    (owner || '').toUpperCase() === (userName || '').toUpperCase() ||
+    availableForUsers.has((userName || '').toUpperCase()) ||
+    roles
+      .map(o => (o.name || '').toUpperCase())
+      .some(role => availableForRoles.has(role));
 }
