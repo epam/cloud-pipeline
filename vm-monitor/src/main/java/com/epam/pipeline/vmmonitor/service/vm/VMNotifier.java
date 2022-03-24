@@ -19,6 +19,7 @@ package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.vmmonitor.model.vm.MissingLabelsSummary;
 import com.epam.pipeline.vmmonitor.model.vm.MissingNodeSummary;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
@@ -71,8 +72,11 @@ public class VMNotifier {
         missingNodes.add(new MissingNodeSummary(vm, matchingRuns));
     }
 
-    public void queueMissingLabelsNotification(final NodeInstance node, final List<String> labels) {
-        missingLabelsSummaries.add(new MissingLabelsSummary(node.getName(), labels));
+    public void queueMissingLabelsNotification(final NodeInstance node, final VirtualMachine vm,
+                                               final List<String> labels, final RunStatus runStatus,
+                                               final Long poolId) {
+        missingLabelsSummaries.add(new MissingLabelsSummary(node.getName(), labels, vm.getInstanceType(),
+                                                            node.getCreationTimestamp(), runStatus, poolId));
     }
 
     private void notifyOnQueuedElements(final String emailSubject, final String emailTemplatePath,
