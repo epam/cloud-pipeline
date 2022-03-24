@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ public class VirtualMachine {
     private String instanceId;
     private String instanceName;
     private String privateIp;
+    private String instanceType;
     private CloudProvider cloudProvider;
     private Map<String, String> tags;
     private LocalDateTime created;
