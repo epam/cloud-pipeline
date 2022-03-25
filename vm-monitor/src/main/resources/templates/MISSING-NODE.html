@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -35,9 +35,29 @@
 <p>Looks like there are some Virtual Machines that are not registered in the $templateParameters["platformName"] cluster.</p>
 <p>
 <table>
-    <tr><td><b>Instance ID</b></td><td><b>Private IP</b></td><td><b>Provider</b></td></tr>
-    #foreach( $instance in $templateParameters["missingNodes"] )
-        <tr><td>$instance.instanceId</td><td>$instance.privateIp</td><td>$instance.cloudProvider</td></tr>
+    <tr>
+        <td><b>Instance ID</b></td>
+        <td><b>Creation date</b></td>
+        <td><b>Instance type</b></td>
+        <td><b>Private IP</b></td>
+        <td><b>Matching runs</b></td>
+        <td><b>Provider</b></td>
+        <td><b>Action proposed</b></td>
+    </tr>
+    #foreach( $summary in $templateParameters["missingNodes"] )
+        <tr>
+            <td>$summary.vm.instanceId</td>
+            <td>$summary.vm.created</td>
+            <td>$summary.vm.instanceType</td>
+            <td>$summary.vm.privateIp</td>
+            <td>
+                #foreach( $run in $summary.matchingRuns )
+                    <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$run.id">$run.id</a> [ $run.status.name ] <br>
+                #end
+            </td>
+            <td>$summary.vm.cloudProvider</td>
+            <td>Delete instance in the <b>$summary.vm.cloudProvider</b> console</td>
+        </tr>
     #end
 </table>
 </p>

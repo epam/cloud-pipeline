@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,26 @@ import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
+import com.epam.pipeline.entity.filter.FilterExpression;
 import com.epam.pipeline.entity.notification.NotificationMessage;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
+import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.FilterNodesVO;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTimeConstants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -41,6 +48,7 @@ public class CloudPipelineAPIClient {
 
     private static final APIVersion REGION_CHANGE_VERSION = new APIVersion("0.15");
     private static final APIVersion USER_CHANGE_VERSION = new APIVersion("0.14");
+    public static final int SEARCH_PAGE_SIZE = 20;
 
     private final CloudPipelineAPI cloudPipelineAPI;
     private final APIVersion apiVersion;
@@ -85,6 +93,39 @@ public class CloudPipelineAPIClient {
 
     public PipelineRun loadRun(final Long runId) {
         return QueryUtils.execute(cloudPipelineAPI.loadPipelineRun(runId));
+    }
+
+    public List<PipelineRun> searchRunsByInstanceId(final String instanceId) {
+        final List<PipelineRun> searchResults = new ArrayList<>();
+        final PagedResult<List<PipelineRun>> initialSearchResult = addSearchResults(instanceId, 1, searchResults);
+        final int totalPages = initialSearchResult.getTotalCount() % SEARCH_PAGE_SIZE + 1;
+        for (int pageNumber = 2; pageNumber <= totalPages; pageNumber++) {
+            addSearchResults(instanceId, pageNumber, searchResults);
+        }
+        return searchResults;
+    }
+
+    private PagedResult<List<PipelineRun>> addSearchResults(final String instanceId, final int pageNumber,
+                                                            final List<PipelineRun> searchResults) {
+        final PagedResult<List<PipelineRun>> initialSearchResult = QueryUtils.execute(
+            cloudPipelineAPI.searchPipelineRuns(buildRunByInstanceSearchExpression(instanceId, pageNumber)));
+        searchResults.addAll(CollectionUtils.emptyIfNull(initialSearchResult.getElements()));
+        return initialSearchResult;
+    }
+
+    private PagingRunFilterExpressionVO buildRunByInstanceSearchExpression(final String instanceId, final int page) {
+        final PagingRunFilterExpressionVO searchExpression = new PagingRunFilterExpressionVO();
+        searchExpression.setPage(page);
+        searchExpression.setPageSize(SEARCH_PAGE_SIZE);
+        final FilterExpression filterExpression = new FilterExpression();
+        filterExpression.setField("node.name");
+        filterExpression.setFilterExpressionType("LOGICAL");
+        filterExpression.setValue(instanceId);
+        filterExpression.setOperand("=");
+        searchExpression.setFilterExpression(filterExpression);
+        searchExpression.setTimezoneOffsetInMinutes(
+            ZonedDateTime.now().getOffset().getTotalSeconds() / DateTimeConstants.SECONDS_PER_MINUTE);
+        return searchExpression;
     }
 
     public List<NodePool> loadNodePools() {
