@@ -102,7 +102,7 @@ class TunnelArgs:
     def __init__(self, host_id=None, local_ports=None, remote_ports=None,
                  ssh=None, ssh_path=None, ssh_host=None,
                  direct=None):
-        self.host_id = str(host_id)
+        self.host_id = str(host_id) if host_id else None
         self.local_ports = local_ports
         self.remote_ports = remote_ports
         if not self.local_ports:
@@ -110,8 +110,8 @@ class TunnelArgs:
         if not self.remote_ports:
             self.remote_ports = self.local_ports
         self.ssh = ssh
-        self.ssh_path = str(ssh_path)
-        self.ssh_host = str(ssh_host)
+        self.ssh_path = str(ssh_path) if ssh_path else None
+        self.ssh_host = str(ssh_host) if ssh_host else None
         self.direct = direct
 
     @staticmethod
