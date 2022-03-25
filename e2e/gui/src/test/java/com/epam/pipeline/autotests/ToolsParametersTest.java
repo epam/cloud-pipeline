@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
-import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -31,10 +30,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.testng.internal.collections.Pair;
 
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -58,8 +58,6 @@ import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 
 public class ToolsParametersTest
@@ -69,7 +67,7 @@ public class ToolsParametersTest
     private static final String CUSTOM_CAPABILITIES_1_JSON = "/customCapabilities1.json";
     private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private static final String CUSTOM_CAPABILITIES_3_JSON = "/customCapabilities3.json";
-    private static final String DESCRIPTION_MARKDOWN = "/markdown_mapping.txt";
+    private static final String DESCRIPTION_MARKDOWN = "/markdown_mapping.csv";
     private static final String SYSTEM_D = "SystemD";
     private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
@@ -352,8 +350,7 @@ public class ToolsParametersTest
     @Test
     @TestCase(value = "2445")
     public void checkMarkdownForToolsAndPipelinesDescription() {
-        final String[] out = readResourceFully(DESCRIPTION_MARKDOWN).split("\n");
-        Map<String, String> mapp = mappingPattern(out);
+        final Map<String, String> markdownMapping = mappingPattern();
         tools()
                 .performWithin(registry, group, tool, tool -> {
                     toolDescription = tool
@@ -363,16 +360,13 @@ public class ToolsParametersTest
                     descriptionHtml = tool.ensure(RUN, visible)
                             .getDescriptionHtml();
                 });
-        checkMarkdown(mapp, toolDescription, descriptionHtml);
+        checkMarkdown(markdownMapping, toolDescription, descriptionHtml);
     }
 
-    private Map<String, String> mappingPattern(String[] lines) {
-        Map<String, String> mapp = new HashMap<>();
-        IntStream.range(0, lines.length).forEach(i -> {
-                    String[] el = lines[i].split(";");
-                    mapp.put(el[0], el[1]);
-                });
-        return mapp;
+    private Map<String, String> mappingPattern() {
+        return Arrays.stream(readResourceFully(DESCRIPTION_MARKDOWN).split("\n"))
+                .map(l -> l.split(","))
+                .collect(Collectors.toMap(strings -> strings[0], strings -> strings[1], (a, b) -> b));
     }
 
     private void checkMarkdown(final Map<String, String> descPattern,
@@ -384,7 +378,7 @@ public class ToolsParametersTest
             for (String key : descPattern.keySet()) {
                 if (input[i].matches(key)) {
                     Matcher matcher = Pattern.compile(key).matcher(input[i]);
-                    matcher.find();
+                    assertTrue(matcher.find());
                     assertTrue(output[i].contains(format(descPattern.get(key), matcher.group(1))),
                             format("The %s markdown is parsed incorrect as %s", input[i], output[i]));
                     return;
