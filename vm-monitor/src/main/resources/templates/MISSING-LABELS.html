@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -35,14 +35,36 @@
 <p>Looks like there are some nodes which are missing one of the required labels:</p>
 <p>
 <table>
-    <tr><td><b>Node</b></td><td><b>Missing labels</b></td></tr>
+    <tr>
+        <td><b>Node</b></td>
+        <td><b>Instance type</b></td>
+        <td><b>Creation date</b></td>
+        <td><b>Corresponding run/pool</b></td>
+        <td><b>Missing labels</b></td>
+        <td><b>Action proposed</b></td>
+    </tr>
     #foreach( $summary in $templateParameters["missingLabelsSummaries"] )
     <tr>
         <td>$summary.nodeName</td>
+        <td>$summary.instanceType</td>
+        <td>$summary.creationTimestamp</td>
+        <td>
+            #set( $correspondingRunStatus = $summary.correspondingRunStatus )
+            #if ($correspondingRunStatus)
+                Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ $correspondingRunStatus.status ] <br>
+            #end
+            #set( $correspondingPoolId = $summary.correspondingPoolId )
+            #if ($correspondingPoolId)
+                Pool <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster?pool_id=$correspondingPoolId">$correspondingPoolId</a><br>
+            #end
+        </td>
         <td>
             #foreach( $label in $summary.labels )
             $label<br>
             #end
+        </td>
+        <td>
+            Delete <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster/$summary.nodeName">instance</a> in the <b>$templateParameters["deploymentName"]</b> console
         </td>
     </tr>
     #end

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.epam.pipeline.vmmonitor.service.vm;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.PipelineResponseException;
@@ -125,7 +126,7 @@ public class VMMonitor {
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
                 if (!matchingRunExists(vm) && !checkVMPoolNode(vm)) {
-                    notifier.queueMissingNodeNotification(vm);
+                    notifier.queueMissingNodeNotification(vm, apiClient.searchRunsByInstanceId(vm.getInstanceId()));
                 }
             }
         } catch (Exception e) {
@@ -183,16 +184,24 @@ public class VMMonitor {
     }
 
     private boolean isRunActive(final VirtualMachine vm, final long runId) {
+        return loadPipelineRun(runId)
+            .map(PipelineRun::getStatus)
+            .map(status -> {
+                if (status.isFinal()) {
+                    log.debug("Run {} is in final status, but VM {} is still up.", runId, vm.getInstanceId());
+                    return false;
+                }
+                return true;
+            })
+            .orElse(false);
+    }
+
+    private Optional<PipelineRun> loadPipelineRun(final long runId) {
         try {
-            final PipelineRun run = apiClient.loadRun(runId);
-            if (run.getStatus().isFinal()) {
-                log.debug("Run {} is in final status, but VM {} is still up.", runId, vm.getInstanceId());
-                return false;
-            }
-            return true;
+            return Optional.of(apiClient.loadRun(runId));
         } catch (PipelineResponseException e) {
             log.error("Failed to load run {}: {}", runId, e.getMessage());
-            return false;
+            return Optional.empty();
         }
     }
 
@@ -209,10 +218,32 @@ public class VMMonitor {
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
         final List<String> labels = getMissingLabels(node);
         if (CollectionUtils.isNotEmpty(labels)) {
-            notifier.queueMissingLabelsNotification(node, labels);
+            final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
+            final Map<String, String> nodeTags = MapUtils.emptyIfNull(node.getLabels());
+            final Optional<Long> runIdFromNode = findLongValueInTags(nodeTags, runIdLabel);
+            final Optional<Long> runId = runIdFromNode.isPresent()
+                                         ? runIdFromNode
+                                         : findLongValueInTags(vmTags, runIdLabel);
+            final RunStatus matchingRunStatus = runId
+                .map(this::loadPipelineRun)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(run -> new RunStatus(run.getId(), run.getStatus(), null))
+                .orElse(null);
+            final Long matchingPoolId = findLongValueInTags(nodeTags, poolIdLabel)
+                .filter(this::isNodePoolExists)
+                .orElse(null);
+            notifier.queueMissingLabelsNotification(node, vm, labels, matchingRunStatus, matchingPoolId);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }
+    }
+
+    private Optional<Long> findLongValueInTags(final Map<String, String> tags, final String labelName) {
+        return Optional.ofNullable(tags.get(labelName))
+            .filter(StringUtils::isNotBlank)
+            .filter(NumberUtils::isDigits)
+            .map(Long::parseLong);
     }
 
     private List<String> getMissingLabels(final NodeInstance node) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vmmonitor.model.vm;
+package com.epam.pipeline.entity.filter;
 
-import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.List;
-
-@AllArgsConstructor
 @Getter
-public class MissingLabelsSummary {
+@Setter
+@NoArgsConstructor
+public class FilterExpression {
 
-    private final String nodeName;
-    private final List<String> labels;
-    private final String instanceType;
-    private final String creationTimestamp;
-    private final RunStatus correspondingRunStatus;
-    private final Long correspondingPoolId;
+    private String field;
+    private String value;
+    private String operand;
+    private String filterExpressionType;
 }
