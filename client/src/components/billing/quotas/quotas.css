@@ -76,9 +76,9 @@
 .threshold-container {
   display: flex;
   flex-direction: row;
+  justify-content: space-between;
   align-items: center;
   margin-bottom: 5px;
-  padding-right: 12px;
 }
 
 .target-select-container,
