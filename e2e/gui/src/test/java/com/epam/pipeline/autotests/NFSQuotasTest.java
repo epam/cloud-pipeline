@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.Condition.enabled;
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NOTIFICATION;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
@@ -136,7 +138,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .configureNotification()
                 .ensureVisible(RECIPIENTS, ADD_NOTIFICATION, CLEAR_ALL_NOTIFICATIONS, CLEAR_ALL_RECIPIENTS)
-                .ensureAll(Condition.enabled, RECIPIENTS, ADD_NOTIFICATION, OK, CANCEL)
+                .ensureAll(enabled, RECIPIENTS, ADD_NOTIFICATION, OK, CANCEL)
                 .ensureDisable(CLEAR_ALL_NOTIFICATIONS, CLEAR_ALL_RECIPIENTS)
                 .ok();
     }
@@ -158,10 +160,10 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .configureNotification()
                 .addRecipient(user.login)
-                .ensure(CLEAR_ALL_RECIPIENTS, Condition.enabled)
+                .ensure(CLEAR_ALL_RECIPIENTS, enabled)
                 .addNotification(String.valueOf(1), "Disable mount")
                 .addNotification(String.valueOf(2), "Make read-only")
-                .ensure(CLEAR_ALL_NOTIFICATIONS, Condition.enabled)
+                .ensure(CLEAR_ALL_NOTIFICATIONS, enabled)
                 .ok()
                 .checkConfiguredNotificationsLink(2, 1);
         loginAs(user);
@@ -185,7 +187,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .clearAllNotifications()
                 .clearAllRecipients()
                 .ok()
-                .ensure(CONFIGURE_NOTIFICATION, Condition.text("Configure notifications"));
+                .ensure(CONFIGURE_NOTIFICATION, text("Configure notifications"));
     }
 
     @Test(dependsOnMethods = {"validateFSMountConfigureNotificationsFormForUser"})
