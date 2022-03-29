@@ -26,6 +26,7 @@ import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.File;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_NOTIFICATION;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLEAR_ALL_NOTIFICATIONS;
@@ -100,6 +102,11 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .settings()
                 .switchToPreferences()
                 .getPreference(storageQuotasActionsGracePeriod);
+    }
+
+    @BeforeMethod
+    void openApplication() {
+        open(C.ROOT_ADDRESS);
     }
 
     @AfterClass(alwaysRun = true)
