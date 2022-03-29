@@ -84,6 +84,13 @@ class BufferingWriteFileSystemClient(FileSystemClientDecorator):
             attrs = attrs._replace(size=max(attrs.size, write_buf.file_size))
         return attrs
 
+    def download_range(self, fh, buf, path, offset=0, length=0):
+        write_buf = self._buffs.get(path, None)
+        if write_buf:
+            logging.info('Flushing inside read %d:%s.' % (fh, path))
+            self.flush(fh, path)
+        self._inner.download_range(fh, buf, path, offset, length)
+
     def upload_range(self, fh, buf, path, offset=0):
         try:
             file_buf = self._buffs.get(path)
