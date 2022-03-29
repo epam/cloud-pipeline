@@ -143,6 +143,10 @@ class DataStorageOperations(object):
             if not include and not exclude:
                 if not source_wrapper.is_file():
                     possible_folder_name = source_wrapper.path_with_trailing_separator()
+                    # if operation from source root
+                    if possible_folder_name == source_wrapper.path_separator:
+                        filtered_items.append(item)
+                        continue
                     if not full_path.startswith(possible_folder_name):
                         continue
             if not PatternMatcher.match_any(relative_path, include):
