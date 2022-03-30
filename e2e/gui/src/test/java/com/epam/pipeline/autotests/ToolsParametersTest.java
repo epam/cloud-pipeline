@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
-import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -31,36 +30,24 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.testng.internal.collections.Pair;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.matchText;
-import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byTitle;
 import static com.epam.pipeline.autotests.ao.LogAO.configurationParameter;
 import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
-import static com.epam.pipeline.autotests.ao.Primitive.FULL_DESCRIPTION;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PARAMETERS;
-import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN_CAPABILITIES;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Profile.execEnvironmentTab;
-import static com.epam.pipeline.autotests.ao.ToolDescription.editButtonFor;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
-import static org.testng.Assert.assertTrue;
 
 public class ToolsParametersTest
         extends AbstractSeveralPipelineRunningTest
@@ -69,7 +56,6 @@ public class ToolsParametersTest
     private static final String CUSTOM_CAPABILITIES_1_JSON = "/customCapabilities1.json";
     private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private static final String CUSTOM_CAPABILITIES_3_JSON = "/customCapabilities3.json";
-    private static final String DESCRIPTION_MARKDOWN = "/markdown_mapping.txt";
     private static final String SYSTEM_D = "SystemD";
     private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
@@ -96,10 +82,6 @@ public class ToolsParametersTest
     private final String pipeline2323 = "tool-parameters-2323-" + Utils.randomSuffix();
     private final String configuration2323 = "configuration-2323-" + Utils.randomSuffix();
     private String[] prefInitialValue;
-    private String initialToolDescription;
-    private String initialPipelineDescription;
-    private String[] descriptionHtml;
-    private String[] toolDescription;
 
     @BeforeClass
     public void getPreferencesValue() {
@@ -108,9 +90,6 @@ public class ToolsParametersTest
                 .settings()
                 .switchToPreferences()
                 .getPreference(launchCapabilities);
-        tools()
-                .performWithin(registry, group, tool, tool ->
-                        initialToolDescription = tool.getFullDescriptionMarkdown());
     }
 
     @BeforeMethod
@@ -129,9 +108,6 @@ public class ToolsParametersTest
                 .switchToPreferences()
                 .clearAndSetJsonToPreference(launchCapabilities, prefInitialValue[0], parseBoolean(prefInitialValue[1]))
                 .saveIfNeeded();
-        tools()
-                .performWithin(registry, group, tool, tool ->
-                        tool.addFullDescription(initialToolDescription));
     }
 
     @Test(priority = 1)
@@ -346,50 +322,6 @@ public class ToolsParametersTest
                                     .checkCustomCapability(custCapability4, false)
                                     .selectValue(RUN_CAPABILITIES, custCapability4));
             new PipelineRunFormAO().checkTooltipText(custCapability4, CUSTOM_TEST_CAPABILITY_4);
-        });
-    }
-
-    @Test
-    @TestCase(value = "2445")
-    public void checkMarkdownForToolsAndPipelinesDescription() {
-        final String[] out = readResourceFully(DESCRIPTION_MARKDOWN).split("\n");
-        Map<String, String> mapp = mappingPattern(out);
-        tools()
-                .performWithin(registry, group, tool, tool -> {
-                    toolDescription = tool
-                            .ensure(editButtonFor(FULL_DESCRIPTION), visible)
-                            .getFullDescriptionMarkdown()
-                            .split("\n");
-                    descriptionHtml = tool.ensure(RUN, visible)
-                            .getDescriptionHtml();
-                });
-        checkMarkdown(mapp, toolDescription, descriptionHtml);
-    }
-
-    private Map<String, String> mappingPattern(String[] lines) {
-        Map<String, String> mapp = new HashMap<>();
-        IntStream.range(0, lines.length).forEach(i -> {
-                    String[] el = lines[i].split(";");
-                    mapp.put(el[0], el[1]);
-                });
-        return mapp;
-    }
-
-    private void checkMarkdown(final Map<String, String> descPattern,
-                               final String[] input, final String[] output) {
-        if (input.length <= 1 || descPattern.isEmpty()) {
-            return;
-        }
-        IntStream.range(0, input.length).forEach(i -> {
-            for (String key : descPattern.keySet()) {
-                if (input[i].matches(key)) {
-                    Matcher matcher = Pattern.compile(key).matcher(input[i]);
-                    matcher.find();
-                    assertTrue(output[i].contains(format(descPattern.get(key), matcher.group(1))),
-                            format("The %s markdown is parsed incorrect as %s", input[i], output[i]));
-                    return;
-                }
-            }
         });
     }
 }
