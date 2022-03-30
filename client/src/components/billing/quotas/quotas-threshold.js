@@ -30,6 +30,7 @@ class Threshold extends React.Component {
   static propTypes = {
     action: PropTypes.object,
     error: PropTypes.bool,
+    single: PropTypes.bool,
     quotaGroup: PropTypes.string,
     quotaType: PropTypes.string,
     disabled: PropTypes.bool,
@@ -60,7 +61,8 @@ class Threshold extends React.Component {
       error,
       onRemove,
       quotaGroup,
-      quotaType
+      quotaType,
+      single
     } = this.props;
     if (!action) {
       return null;
@@ -92,7 +94,7 @@ class Threshold extends React.Component {
           placeholder="Select action"
           value={actions.slice()}
           onChange={this.onChangeAction}
-          style={{flex: 1, margin: '0px 5px'}}
+          style={{flex: '1 1 auto', marginLeft: 5}}
         >
           {
             getActionsByTypeAndGroup(quotaType, quotaGroup).map(action => (
@@ -107,6 +109,7 @@ class Threshold extends React.Component {
         </Select>
         {
           onRemove &&
+          !single &&
           (
             <Button
               size="small"

@@ -31,6 +31,7 @@ import QuotaThreshold from './quotas-threshold';
 import {quotaGroupNames} from './utilities/quota-groups';
 import quotaTypes, {quotaSubjectName} from './utilities/quota-types';
 import quotaPeriods from './utilities/quota-periods';
+import quotaActions from './utilities/quota-actions';
 import {splitRoleName} from '../../settings/user-management/utilities';
 import GroupFind from '../../../models/user/GroupFind';
 import UserName from '../../special/UserName';
@@ -52,7 +53,7 @@ class EditQuotaDialog extends React.Component {
   };
 
   state = {
-    actions: [],
+    actions: [{}],
     recipients: [],
     subject: undefined,
     value: 0,
@@ -98,6 +99,16 @@ class EditQuotaDialog extends React.Component {
     return this.props.quota && !this.props.quota.id;
   }
 
+  get isNotifyActionAdded () {
+    const {actions} = this.state;
+    return actions
+      .filter(Boolean)
+      .some((action) => (
+        action.actions &&
+          action.actions.includes(quotaActions.notify)
+      ));
+  }
+
   componentDidMount () {
     this.createInitialState();
   }
@@ -111,7 +122,7 @@ class EditQuotaDialog extends React.Component {
   createInitialState = () => {
     const {quota = {}} = this.props;
     const {
-      actions = [],
+      actions = [{}],
       value = 0,
       recipients = [],
       subject,
@@ -152,7 +163,8 @@ class EditQuotaDialog extends React.Component {
       actions,
       subject,
       value,
-      filter
+      filter,
+      recipients
     } = this.state;
     const errors = {};
     if (isNaN(value)) {
@@ -163,9 +175,15 @@ class EditQuotaDialog extends React.Component {
     if (type !== quotaTypes.overall && !subject && !filter) {
       errors.subject = 'Quota subject is required';
     }
+    if (actions.length === 0) {
+      errors.actions = 'Quota action is required';
+    }
     const actionErrors = actions.map(this.validateAction);
     if (actionErrors.filter(Boolean).length > 0) {
       errors.actions = actionErrors;
+    }
+    if (this.isNotifyActionAdded && !recipients.length) {
+      errors.recipients = 'Quota recipients is required';
     }
     this.setState({errors});
     return Object.keys(errors).length === 0;
@@ -352,6 +370,7 @@ class EditQuotaDialog extends React.Component {
     const error = errors.subject;
     return (
       <Select
+        showSearch
         disabled={disabled || !this.isNewQuota}
         className={
           classNames(
@@ -361,7 +380,11 @@ class EditQuotaDialog extends React.Component {
         }
         value={subject}
         onChange={t => this.setState({subject: t, modified: true}, this.validate)}
+        filterOption={(input, option) =>
+          option.props.value.toLowerCase().indexOf((input || '').toLowerCase()) >= 0
+        }
         placeholder="Select billing center"
+        notFoundContent="Nothing found"
         getPopupContainer={o => o.parentNode}
       >
         {
@@ -494,6 +517,13 @@ class EditQuotaDialog extends React.Component {
       modifiedActions.push({});
       this.setState({actions: modifiedActions, modified: true}, this.validate);
     };
+    const showErrorStyles = (index) => (
+      error &&
+      Array.isArray(error) &&
+      !!error[index] &&
+      !disabled &&
+      this.isNewQuota
+    );
     return (
       <div className={styles.quotaActionsContainer}>
         <span className={styles.label}>
@@ -508,20 +538,24 @@ class EditQuotaDialog extends React.Component {
                 action={action}
                 quotaGroup={quotaGroup}
                 quotaType={type}
-                error={error && Array.isArray(error) && !!error[index]}
+                error={showErrorStyles(index)}
                 onChange={onActionChange(index)}
                 onRemove={onRemove(index)}
+                single={actions.length === 1}
               />
             ))
           }
-          <div className={styles.add}>
-            <Button
-              disabled={disabled || !this.isNewQuota}
-              onClick={onAddAction}
-            >
-              <Icon type="plus" /> Add action
-            </Button>
-          </div>
+          {
+            this.isNewQuota && (
+              <div className={styles.add}>
+                <Button
+                  disabled={disabled || !this.isNewQuota}
+                  onClick={onAddAction}
+                >
+                  <Icon type="plus" /> Add action
+                </Button>
+              </div>)
+          }
           {
             error &&
             !Array.isArray(error) && (
@@ -554,7 +588,10 @@ class EditQuotaDialog extends React.Component {
         </span>
         <UsersRolesSelect
           value={recipients}
-          onChange={newRecipients => this.setState({recipients: newRecipients, modified: true})}
+          onChange={newRecipients => this.setState(
+            {recipients: newRecipients, modified: true},
+            this.validate
+          )}
           disabled={disabled || !this.isNewQuota}
           className={
             classNames(
@@ -636,7 +673,7 @@ class EditQuotaDialog extends React.Component {
         {this.renderSubject()}
         {this.renderQuotaInput()}
         {this.renderActions()}
-        {this.renderRecipients()}
+        {this.isNotifyActionAdded && this.renderRecipients()}
       </Modal>
     );
   }
