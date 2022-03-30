@@ -31,6 +31,7 @@ import QuotaThreshold from './quotas-threshold';
 import {quotaGroupNames} from './utilities/quota-groups';
 import quotaTypes, {quotaSubjectName} from './utilities/quota-types';
 import quotaPeriods from './utilities/quota-periods';
+import quotaActions from './utilities/quota-actions';
 import {splitRoleName} from '../../settings/user-management/utilities';
 import GroupFind from '../../../models/user/GroupFind';
 import UserName from '../../special/UserName';
@@ -98,19 +99,14 @@ class EditQuotaDialog extends React.Component {
     return this.props.quota && !this.props.quota.id;
   }
 
-  get isNotifyActionEstablished () {
+  get isNotifyActionAdded () {
     const {actions} = this.state;
-    return !!actions
-      .filter((action) => !!action)
-      .reduce((notifies, action) => {
-        if (
-          action.actions &&
-          action.actions.includes('NOTIFY')
-        ) {
-          notifies += 1;
-        }
-        return notifies;
-      }, 0);
+    return actions
+      .filter(Boolean)
+      .some((action) => (
+        action.actions &&
+          action.actions.includes(quotaActions.notify)
+      ));
   }
 
   componentDidMount () {
@@ -186,7 +182,7 @@ class EditQuotaDialog extends React.Component {
     if (actionErrors.filter(Boolean).length > 0) {
       errors.actions = actionErrors;
     }
-    if (this.isNotifyActionEstablished && !recipients.length) {
+    if (this.isNotifyActionAdded && !recipients.length) {
       errors.recipients = 'Quota recipients is required';
     }
     this.setState({errors});
@@ -604,7 +600,7 @@ class EditQuotaDialog extends React.Component {
         </span>
         <UsersRolesSelect
           value={recipients}
-          onChange={newRecipients => this.setState({recipients: newRecipients, modified: true})}
+          onChange={newRecipients => this.setState({recipients: newRecipients, modified: true}, this.validate)}
           disabled={disabled || !this.isNewQuota}
           className={
             classNames(
@@ -686,7 +682,7 @@ class EditQuotaDialog extends React.Component {
         {this.renderSubject()}
         {this.renderQuotaInput()}
         {this.renderActions()}
-        {this.isNotifyActionEstablished && this.renderRecipients()}
+        {this.isNotifyActionAdded && this.renderRecipients()}
       </Modal>
     );
   }
