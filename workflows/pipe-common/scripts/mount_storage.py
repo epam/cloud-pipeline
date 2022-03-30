@@ -143,29 +143,32 @@ class MountStorageTask:
 
     # Any conditions to wait for before starting the mount procedure
     def wait_before_mount(self):
-        wait_before_mount_attempts = int(os.getenv('CP_SENSITIVE_RUN_WAIT_POD_IP_SEC', 10))
-        wait_before_mount_timeout_sec = 3
+        try:
+            wait_before_mount_attempts = int(os.getenv('CP_SENSITIVE_RUN_WAIT_POD_IP_SEC', 10))
+            wait_before_mount_timeout_sec = 3
 
-        # 1. If it's a sensitive job - we shall be sure that a "Run" has a Pod IP assigned.
-        #    Otherwise we won't be able to mount sensitive storages. API will consider this job as "outside of the sensitive context"
-        is_sensitive_job = os.getenv('CP_SENSITIVE_RUN')
-        if is_sensitive_job == 'true':
-            Logger.info('A sensitive job detected, will wait for the Pod IP assignment', task_name=self.task_name)
-            current_wait_iteration = 1
-            while current_wait_iteration <= wait_before_mount_attempts:
-                current_run = self.api.load_run(self.run_id)
-                if current_run == None:
-                    Logger.warn('Cannot load run info, while waiting for the sensitive pod IP assignment. Will not wait anymore', task_name=self.task_name)
-                    break
-                else:
-                    if 'podIP' in current_run and current_run['podIP'] != '' and current_run['podIP'] != None:
-                        Logger.info('Pod IP is assigned, proceeding further', task_name=self.task_name)
+            # 1. If it's a sensitive job - we shall be sure that a "Run" has a Pod IP assigned.
+            #    Otherwise we won't be able to mount sensitive storages. API will consider this job as "outside of the sensitive context"
+            is_sensitive_job = os.getenv('CP_SENSITIVE_RUN')
+            if is_sensitive_job == 'true':
+                Logger.info('A sensitive job detected, will wait for the Pod IP assignment', task_name=self.task_name)
+                current_wait_iteration = 1
+                while current_wait_iteration <= wait_before_mount_attempts:
+                    current_run = self.api.load_run(self.run_id)
+                    if current_run == None:
+                        Logger.warn('Cannot load run info, while waiting for the sensitive pod IP assignment. Will not wait anymore', task_name=self.task_name)
                         break
-                    Logger.info('Pod IP is NOT available yet, waiting...', task_name=self.task_name)
-                    current_wait_iteration = current_wait_iteration + 1
-                    time.sleep(wait_before_mount_timeout_sec)
-        # 2. ... Add more conditions here ...
-        #    ...
+                    else:
+                        if 'podIP' in current_run and current_run['podIP'] != '' and current_run['podIP'] != None:
+                            Logger.info('Pod IP is assigned, proceeding further', task_name=self.task_name)
+                            break
+                        Logger.info('Pod IP is NOT available yet, waiting...', task_name=self.task_name)
+                        current_wait_iteration = current_wait_iteration + 1
+                        time.sleep(wait_before_mount_timeout_sec)
+            # 2. ... Add more conditions here ...
+            #    ...
+        except Exception as e:
+            Logger.fail('An error occured while waiting for the mounts prerequisites: {}.'.format(str(e.message)), task_name=self.task_name)
 
     def run(self, mount_root, tmp_dir):
         try:
