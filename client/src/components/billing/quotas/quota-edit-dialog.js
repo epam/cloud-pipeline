@@ -362,21 +362,12 @@ class EditQuotaDialog extends React.Component {
   renderBillingCentersSelection = () => {
     const {
       errors = {},
-      subject,
-      filter
+      subject
     } = this.state;
     const {
       disabled
     } = this.props;
     const error = errors.subject;
-    const onChangeSearchString = e => this.setState({filter: e}, this.validate);
-    const filteredCenters = this.billingCenters
-      .filter(center => filter && center.toLowerCase().includes(filter.toLowerCase()));
-    const current = this.billingCenters.find(center => center === subject);
-    if (current && !filteredCenters.find(o => o === current)) {
-      filteredCenters.push(current);
-    }
-    filteredCenters.sort((a, b) => a.localeCompare(b));
     return (
       <Select
         showSearch
@@ -389,18 +380,15 @@ class EditQuotaDialog extends React.Component {
         }
         value={subject}
         onChange={t => this.setState({subject: t, modified: true}, this.validate)}
-        onSearch={onChangeSearchString}
-        onBlur={() => onChangeSearchString()}
-        filterOption={false}
-        notFoundContent={
-          filter && filter.length >= MINIMUM_SEARCH_LENGTH
-            ? `Nothing found for "${filter}"`
-            : 'Specify billing center'
+        filterOption={(input, option) =>
+          option.props.value.toLowerCase().indexOf((input || '').toLowerCase()) >= 0
         }
+        placeholder="Select billing center"
+        notFoundContent="Nothing found"
         getPopupContainer={o => o.parentNode}
       >
         {
-          filteredCenters.map(billingCenter => (
+          this.billingCenters.map(billingCenter => (
             <Select.Option
               key={billingCenter}
               value={billingCenter}
@@ -600,7 +588,10 @@ class EditQuotaDialog extends React.Component {
         </span>
         <UsersRolesSelect
           value={recipients}
-          onChange={newRecipients => this.setState({recipients: newRecipients, modified: true}, this.validate)}
+          onChange={newRecipients => this.setState(
+            {recipients: newRecipients, modified: true},
+            this.validate
+          )}
           disabled={disabled || !this.isNewQuota}
           className={
             classNames(
