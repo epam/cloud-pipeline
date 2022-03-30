@@ -43,6 +43,16 @@ end
 -- Check if request already contains a cookie or a header named "bearer"
 local token = ngx.var.cookie_bearer or ngx.var.http_bearer
 
+-- Check if 'Authorization: Bearer' header is presented (if bearer cookie / bearer header is missing)
+if token == nil and ngx.var.http_authorization ~= nil then
+    local authorization_token_lower = string.lower(ngx.var.http_authorization)
+    local index = string.find(authorization_token_lower, "bearer ", 1, true)
+    if index ~= nil and index > 0 then
+        token = string.sub(ngx.var.http_authorization, index + 7)
+        ngx.log(ngx.WARN, "maintenance authorization header " .. token)
+    end
+end
+
 if token then
     -- Check if user belongs to administrators / privileged groups
     if maintenance.check_user_is_admin(token) then
