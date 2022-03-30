@@ -92,7 +92,9 @@ public class QuotaServiceTest {
     public void shouldFailCreateIfGlobalQuotaAlreadyExists() {
         final Quota quota = quota(null);
         quota.setQuotaGroup(QuotaGroup.GLOBAL);
-        doReturn(quotaEntity(null)).when(quotaRepository).findByQuotaGroup(QuotaGroup.GLOBAL);
+        quota.setPeriod(QuotaPeriod.QUARTER);
+        doReturn(quotaEntity(null)).when(quotaRepository)
+                .findByQuotaGroupAndPeriod(QuotaGroup.GLOBAL, QuotaPeriod.QUARTER);
         assertThrows(IllegalArgumentException.class, () -> quotaService.create(quota));
     }
 
@@ -101,16 +103,19 @@ public class QuotaServiceTest {
         final Quota quota = quota(null);
         quota.setQuotaGroup(QuotaGroup.STORAGE);
         quota.setType(QuotaType.OVERALL);
+        quota.setPeriod(QuotaPeriod.QUARTER);
         doReturn(quotaEntity(null)).when(quotaRepository)
-                .findByQuotaGroupAndType(QuotaGroup.STORAGE, QuotaType.OVERALL);
+                .findByQuotaGroupAndTypeAndPeriod(QuotaGroup.STORAGE, QuotaType.OVERALL, QuotaPeriod.QUARTER);
         assertThrows(IllegalArgumentException.class, () -> quotaService.create(quota));
     }
 
     @Test
     public void shouldFailCreateIfSuchQuotaAlreadyExists() {
         final Quota quota = quota(null);
+        quota.setPeriod(QuotaPeriod.MONTH);
         doReturn(quotaEntity(null)).when(quotaRepository)
-                .findByTypeAndSubjectAndQuotaGroup(quota.getType(), quota.getSubject(), quota.getQuotaGroup());
+                .findByTypeAndSubjectAndQuotaGroupAndPeriod(quota.getType(), quota.getSubject(),
+                        quota.getQuotaGroup(), quota.getPeriod());
         assertThrows(IllegalArgumentException.class, () -> quotaService.create(quota));
     }
 

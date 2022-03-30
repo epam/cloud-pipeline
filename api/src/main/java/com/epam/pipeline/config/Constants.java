@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.config;
 
+
 public final class Constants {
     public static final String FMT_ISO_LOCAL_DATE = "yyyy-MM-dd HH:mm:ss.SSS";
     public static final String TIME_FORMAT = "HH:mm:ss";
@@ -24,13 +25,18 @@ public final class Constants {
     public static final String SECURITY_DATE_TIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS";
     public static final String SIMPLE_DATE_FORMAT = "yyyyMMdd";
     public static final String SIMPLE_TIME_FORMAT = "HHmmss";
-    public static final Integer SECONDS_IN_MINUTE = 60;
     public static final String PATH_DELIMITER = "/";
     public static final String X509_BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----";
     public static final String X509_END_CERTIFICATE = "-----END CERTIFICATE-----";
     public static final String COMMA = ",";
     public static final String NEWLINE = "\n";
     public static final String DOT = ".";
+
+    public static final Integer SECONDS_IN_MINUTE = 60;
+    public static final Integer MINUTES_IN_HOUR = 60;
+    public static final Integer HOURS_IN_DAY = 24;
+    public static final Integer SECONDS_IN_DAY = SECONDS_IN_MINUTE * MINUTES_IN_HOUR * HOURS_IN_DAY;
+    public static final Integer MILLISECONDS_IN_DAY = SECONDS_IN_DAY * 1000;
 
     public static final String FIRECLOUD_TOKEN_HEADER = "Firecloud-Token";
 

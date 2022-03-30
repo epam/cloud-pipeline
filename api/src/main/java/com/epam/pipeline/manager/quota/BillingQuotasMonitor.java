@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -46,7 +45,6 @@ public class BillingQuotasMonitor {
     private final QuotaHandlerService quotaHandler;
     private final PreferenceManager preferenceManager;
 
-    @Scheduled(cron = "${billing.quota.monitor.cron:*/1 * * * * ?}")
     @SchedulerLock(name = "BillingQuotasMonitor_checkQuotas", lockAtMostForString = "PT30M")
     public void checkQuotas() {
         if (!preferenceManager.getPreference(SystemPreferences.BILLING_QUOTAS_ENABLED)) {
@@ -55,7 +53,6 @@ public class BillingQuotasMonitor {
         }
         log.debug("Starting billing quotas monitoring.");
         ListUtils.emptyIfNull(quotaService.getAll())
-                .stream()
                 .forEach(this::applyQuota);
         log.debug("Finished billing quotas monitoring.");
     }
