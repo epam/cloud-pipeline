@@ -281,6 +281,7 @@ public class RunApiService {
         return pipelineRunDockerOperationManager.pauseRun(runId, checkSize);
     }
 
+    @QuotaLaunchCheck
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     public PipelineRun resumeRun(Long runId) {
