@@ -234,19 +234,21 @@ public class QuotaService {
 
     private void validateUniqueness(final Quota quota) {
         if (QuotaGroup.GLOBAL.equals(quota.getQuotaGroup())) {
-            Assert.isNull(quotaRepository.findByQuotaGroup(QuotaGroup.GLOBAL),
-                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GLOBAL_ALREADY_EXISTS));
+            Assert.isNull(quotaRepository.findByQuotaGroupAndPeriod(QuotaGroup.GLOBAL, quota.getPeriod()),
+                    messageHelper.getMessage(MessageConstants.ERROR_QUOTA_GLOBAL_ALREADY_EXISTS, quota.getPeriod()));
             return;
         }
         if (QuotaType.OVERALL.equals(quota.getType())) {
-            Assert.isNull(quotaRepository.findByQuotaGroupAndType(quota.getQuotaGroup(), QuotaType.OVERALL),
+            Assert.isNull(quotaRepository.findByQuotaGroupAndTypeAndPeriod(
+                    quota.getQuotaGroup(), QuotaType.OVERALL, quota.getPeriod()),
                     messageHelper.getMessage(MessageConstants.ERROR_QUOTA_OVERALL_ALREADY_EXISTS,
-                            quota.getQuotaGroup()));
+                            quota.getQuotaGroup(), quota.getPeriod()));
             return;
         }
-        Assert.isNull(quotaRepository.findByTypeAndSubjectAndQuotaGroup(quota.getType(), quota.getSubject(),
-                quota.getQuotaGroup()), messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ALREADY_EXISTS,
-                quota.getQuotaGroup().name(), quota.getType().name(), quota.getSubject()));
+        Assert.isNull(quotaRepository.findByTypeAndSubjectAndQuotaGroupAndPeriod(quota.getType(), quota.getSubject(),
+                quota.getQuotaGroup(), quota.getPeriod()),
+                messageHelper.getMessage(MessageConstants.ERROR_QUOTA_ALREADY_EXISTS,
+                quota.getQuotaGroup().name(), quota.getType().name(), quota.getSubject(), quota.getPeriod()));
     }
 
     private void validateQuotaName(final Quota quota, final QuotaType type) {

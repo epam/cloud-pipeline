@@ -17,6 +17,7 @@
 package com.epam.pipeline.repository.quota;
 
 import com.epam.pipeline.dto.quota.QuotaGroup;
+import com.epam.pipeline.dto.quota.QuotaPeriod;
 import com.epam.pipeline.dto.quota.QuotaType;
 import com.epam.pipeline.entity.quota.QuotaEntity;
 import org.springframework.data.repository.CrudRepository;
@@ -24,8 +25,10 @@ import org.springframework.data.repository.CrudRepository;
 public interface QuotaRepository extends CrudRepository<QuotaEntity, Long> {
 
     QuotaEntity findByQuotaGroup(QuotaGroup quotaGroup);
-
+    QuotaEntity findByQuotaGroupAndPeriod(QuotaGroup quotaGroup, QuotaPeriod period);
     QuotaEntity findByQuotaGroupAndType(QuotaGroup quotaGroup, QuotaType type);
-
+    QuotaEntity findByQuotaGroupAndTypeAndPeriod(QuotaGroup quotaGroup, QuotaType type, QuotaPeriod period);
     QuotaEntity findByTypeAndSubjectAndQuotaGroup(QuotaType type, String subject, QuotaGroup quotaGroup);
+    QuotaEntity findByTypeAndSubjectAndQuotaGroupAndPeriod(QuotaType type, String subject,
+                                                           QuotaGroup quotaGroup, QuotaPeriod period);
 }

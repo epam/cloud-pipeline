@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.preference;
 import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -177,7 +178,7 @@ public class SystemPreferences {
     public static final IntPreference DATA_STORAGE_DAV_MOUNT_MAX_STORAGES = new IntPreference(
             "storage.dav.mount.max.storages", 32, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final IntPreference DATA_STORAGE_DAV_ACCESS_DURATION_SECONDS = new IntPreference(
-            "storage.webdav.access.duration.seconds", 86400, DATA_STORAGE_GROUP, isGreaterThan(0));
+            "storage.webdav.access.duration.seconds",  Constants.SECONDS_IN_DAY, DATA_STORAGE_GROUP, isGreaterThan(0));
     public static final BooleanPreference DATA_STORAGE_POLICY_BACKUP_VISIBLE_NON_ADMINS =
         new BooleanPreference("storage.policy.backup.visible.non.admins", true, DATA_STORAGE_GROUP, pass);
 
@@ -756,7 +757,7 @@ public class SystemPreferences {
     public static final StringPreference SYSTEM_OOM_EXCLUDE_EVENTS = new StringPreference(
             "system.oom.exclude.events", "flanneld|iptables|canal|kube-proxy|calico", SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USER_MONITOR_DELAY = new IntPreference(
-            "system.user.monitor.delay", 86400000, SYSTEM_GROUP, isGreaterThan(0));
+            "system.user.monitor.delay", Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final BooleanPreference SYSTEM_USER_MONITOR_ENABLED = new BooleanPreference(
             "system.user.monitor.enable", false, SYSTEM_GROUP, pass);
     public static final BooleanPreference SYSTEM_LDAP_USER_BLOCK_MONITOR_ENABLED = new BooleanPreference(
@@ -797,7 +798,7 @@ public class SystemPreferences {
     public static final BooleanPreference SYSTEM_USAGE_USERS_CLEAN_ENABLE = new BooleanPreference(
             "system.usage.users.clean.enable", false, SYSTEM_GROUP, pass);
     public static final IntPreference SYSTEM_USAGE_USERS_CLEAN_DELAY = new IntPreference(
-            "system.usage.users.clean.delay", 86400000, SYSTEM_GROUP, isGreaterThan(0));
+            "system.usage.users.clean.delay",  Constants.MILLISECONDS_IN_DAY, SYSTEM_GROUP, isGreaterThan(0));
     public static final IntPreference SYSTEM_USAGE_USERS_STORE_DAYS = new IntPreference(
             "system.usage.users.store.days", 365, SYSTEM_GROUP, pass);
 
@@ -930,6 +931,8 @@ public class SystemPreferences {
     // Billing quotas
     public static final BooleanPreference BILLING_QUOTAS_ENABLED = new BooleanPreference(
             "billing.quotas.enabled", false, BILLING_QUOTAS_GROUP, pass);
+    public static final IntPreference BILLING_QUOTAS_MONITORING_PERIOD_SECONDS = new IntPreference(
+            "billing.quotas.period.seconds", Constants.SECONDS_IN_DAY, BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
@@ -1010,7 +1013,8 @@ public class SystemPreferences {
     public static final BooleanPreference MONITORING_POOL_USAGE_CLEAN_ENABLE = new BooleanPreference(
             "monitoring.node.pool.usage.clean.enable", false, MONITORING_GROUP, pass);
     public static final IntPreference MONITORING_POOL_USAGE_CLEAN_DELAY = new IntPreference(
-            "monitoring.node.pool.usage.clean.delay", 86400000, MONITORING_GROUP, isGreaterThan(0));
+            "monitoring.node.pool.usage.clean.delay",  Constants.MILLISECONDS_IN_DAY, MONITORING_GROUP,
+            isGreaterThan(0));
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
 
