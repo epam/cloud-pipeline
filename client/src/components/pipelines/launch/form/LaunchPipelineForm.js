@@ -139,6 +139,8 @@ const DTS_ENVIRONMENT = 'DTS';
 
 const OTHER_PARAMETERS_GROUP = 'other';
 
+const RUN_FRIENDLY_NAME_MAX_LENGTH = 25;
+
 function getFormItemClassName (rootClass, key) {
   if (key) {
     return `${rootClass} ${key.replace(/\./g, '_')}`;
@@ -331,7 +333,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     showLaunchCommands: false,
     runCapabilities: [],
     useResolvedParameters: false,
-    notifications: []
+    notifications: [],
+    runFriendlyName: undefined
   };
 
   formItemLayout = {
@@ -4486,6 +4489,17 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
+  runFriendlyNameChange = (event = {}) => {
+    const {value = ''} = event.target || {};
+    const validityPattern = /^$|^[\da-zA-Z._-]+$/;
+    if (
+      value.length <= RUN_FRIENDLY_NAME_MAX_LENGTH &&
+      validityPattern.test(value)
+    ) {
+      this.setState({runFriendlyName: value});
+    }
+  };
+
   renderRunButton = () => {
     if (!this.props.detached || !this.props.canExecute) {
       return undefined;
@@ -5148,6 +5162,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               pipelineVersion && <span id="launch-form-pipeline-version">{pipelineVersion}</span>}.
           </td>,
           ...configuration,
+          <td
+            key="run friendly name"
+            className={styles.itemHeader}
+            style={{width: 1, whiteSpace: 'nowrap'}}
+          >
+            <span
+              style={{
+                verticalAlign: 'middle',
+                marginLeft: configuration.length > 0 ? '5px' : '0px'
+              }}
+            >
+              {`${configuration.length > 0 ? '' : ', '}run name:`}
+            </span>
+            <Input
+              onChange={this.runFriendlyNameChange}
+              value={this.state.runFriendlyName}
+              style={{width: '200px', marginLeft: '5px'}}
+            />
+          </td>,
           <td
             key="estimated price"
             className={styles.itemHeader}
