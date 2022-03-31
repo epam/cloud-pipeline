@@ -118,7 +118,8 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_RUN_NAME
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
@@ -1399,6 +1400,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         value: true
       };
     }
+    if (this.state.runFriendlyName) {
+      payload.params[CP_RUN_NAME] = {
+        type: 'string',
+        value: this.state.runFriendlyName
+      };
+    }
     applyCapabilities(
       payload.params,
       this.state.runCapabilities,
@@ -1808,7 +1815,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           ) {
             continue;
           }
-          if ([CP_CAP_LIMIT_MOUNTS, ...getSkippedSystemParametersList(this)].indexOf(key) >= 0) {
+          const parametersToSkip = [
+            CP_CAP_LIMIT_MOUNTS,
+            (this.props.editConfigurationMode ? undefined : CP_RUN_NAME),
+            ...getSkippedSystemParametersList(this)
+          ].filter(Boolean);
+          if (parametersToSkip.includes(key)) {
             continue;
           }
           this.parameterIndexIdentifier[parameterIndexIdentifierKey] =
@@ -4491,7 +4503,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
 
   runFriendlyNameChange = (event = {}) => {
     const {value = ''} = event.target || {};
-    const validityPattern = /^$|^[\da-zA-Z._-]+$/;
+    const validityPattern = /^$|^[\da-zA-Z_-]+$/;
     if (
       value.length <= RUN_FRIENDLY_NAME_MAX_LENGTH &&
       validityPattern.test(value)

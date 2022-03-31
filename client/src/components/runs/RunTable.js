@@ -54,6 +54,7 @@ import localization from '../../utils/localization';
 import registryName from '../tools/registryName';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
+import {CP_RUN_NAME} from '../pipelines/launch/form/utilities/parameters';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
 import MultizoneUrl from '../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../utils/multizone';
@@ -643,6 +644,18 @@ export default class RunTable extends localization.LocalizedReactComponent {
     };
   };
 
+  getRunName = (run = {}) => {
+    let name;
+    const nameParameter = (run.pipelineRunParameters || [])
+      .find(parameter => parameter.name === CP_RUN_NAME);
+    if (nameParameter && nameParameter.value) {
+      name = `${nameParameter.value} (${run.id})`;
+    } else {
+      name = run.podId;
+    }
+    return name;
+  };
+
   pausePipeline = async (id, e) => {
     if (e) {
       e.stopPropagation();
@@ -1008,7 +1021,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
             </span>
           );
         }
-        const name = <b>{text}</b>;
+        const name = <b>{this.getRunName(run)}</b>;
         if (run.serviceUrl && run.initialized) {
           const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
           return (

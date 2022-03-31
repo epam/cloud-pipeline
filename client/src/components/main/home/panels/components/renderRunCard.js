@@ -24,6 +24,7 @@ import AWSRegionTag from '../../../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info';
 import styles from './CardsPanel.css';
 import RunTags from '../../../../runs/run-tags';
+import {CP_RUN_NAME} from '../../../../pipelines/launch/form/utilities/parameters';
 import PlatformIcon from '../../../../tools/platform-icon';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
@@ -56,8 +57,12 @@ function renderPipeline (run) {
       displayName = pipelineName;
     }
   } else if (run.dockerImage) {
-    const parts = run.dockerImage.split('/');
-    displayName = parts[parts.length - 1];
+    const image = run.dockerImage.split('/').pop();
+    const runNameParameter = (run.pipelineRunParameters || [])
+      .find(parameter => parameter.name === CP_RUN_NAME);
+    displayName = runNameParameter && runNameParameter.value
+      ? `${runNameParameter.value} (${image})`
+      : image;
   }
   let clusterIcon;
   if (run.nodeCount > 0) {
