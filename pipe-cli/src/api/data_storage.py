@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,17 @@ class DataStorage(API):
         return storage, \
                full_path.replace(url.netloc, '').lstrip(storage.delimiter), \
                full_path.replace(storage.path, '').lstrip(storage.delimiter)
+
+    @classmethod
+    def list_with_mount_limits(cls):
+        api = cls.instance()
+        response_data = api.call('datastorage/availableWithMounts', None)
+        if 'payload' not in response_data:
+            return
+        for data_storages_json in response_data['payload']:
+            if 'storage' in data_storages_json:
+                data_storage = DataStorageModel.load(data_storages_json['storage'])
+                yield data_storage
 
     @classmethod
     def list(cls):

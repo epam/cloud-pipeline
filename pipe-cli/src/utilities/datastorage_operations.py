@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from operator import itemgetter
 
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
+from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
@@ -418,7 +419,7 @@ class DataStorageOperations(object):
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
-            items = [s for s in list(DataStorage.list()) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
+            items = [s for s in list(DataStorage.list_with_mount_limits()) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
 
             if not items:
                 click.echo("No datastorages available.")
@@ -428,13 +429,14 @@ class DataStorageOperations(object):
             click.echo(header)
 
         if show_details:
+            cls.assign_metadata_to_items(items)
             items_table = prettytable.PrettyTable()
-            fields = ["Type", "Labels", "Modified", "Size", "Name"]
+            fields = ["Type", "Mount status", "Mount limits", "Labels", "Metadata", "Modified", "Size", "Name"]
             if show_versions:
                 fields.append("Version")
             items_table.field_names = fields
             items_table.align = "l"
-            items_table.border = False
+            items_table.hrules = prettytable.ALL
             items_table.padding_width = 2
             items_table.align['Size'] = 'r'
             for item in items:
@@ -457,7 +459,10 @@ class DataStorageOperations(object):
                 if item.labels is not None and len(item.labels) > 0 and not item.deleted:
                     labels = ', '.join(map(lambda i: i.value, item.labels))
                 item_type = "-File" if item.delete_marker or item.deleted else item.type
-                row = [item_type, labels, changed, size, name]
+                mount_limits = '\n'.join(item.tools_to_mount)
+                mount_status = item.mount_status
+                item_metadata = '\n'.join(['='.join(entry) for entry in item.metadata.items()])
+                row = [item_type, mount_status, mount_limits, labels, item_metadata, changed, size, name]
                 if show_versions:
                     row.append('')
                 items_table.add_row(row)
@@ -480,6 +485,27 @@ class DataStorageOperations(object):
             for item in items:
                 click.echo('{}\t\t'.format(item.path), nl=False)
             click.echo()
+
+    @classmethod
+    def assign_metadata_to_items(cls, items):
+        metadata_mapping = Metadata.load_metadata_mapping([item.identifier for item in items], 'DATA_STORAGE')
+        for item in items:
+            item.metadata = metadata_mapping.get(item.identifier, {})
+
+    @classmethod
+    def load_metadata_mapping(cls, items):
+        storage_ids = [item.identifier for item in items]
+        metadata_list = Metadata.load_metadata_mapping(storage_ids, 'DATA_STORAGE')
+        metadata_mapping = dict()
+        for metadata_entry in metadata_list:
+            metadata_data_dict = {}
+            for key, data in metadata_entry.data.iteritems():
+                if 'value' in data:
+                    data_value = data['value']
+                    if len(data_value) > 0:
+                        pass
+            metadata_mapping[metadata_entry.entity_id] = metadata_data_dict
+        return metadata_mapping
 
     @classmethod
     def __get_file_to_copy(cls, file_path, source_path):
