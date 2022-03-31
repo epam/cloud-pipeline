@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEsti
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
@@ -56,7 +57,9 @@ import {
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
-export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
+export const submitsRun = (...opts) => {
+  return inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
+};
 
 export function run (parent, callback) {
   if (!parent) {
@@ -92,13 +95,17 @@ export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTy
   if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
     let availableInstanceTypes = [];
     if (payload.dockerImage) {
-      availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || [])
-        .map(i => i.name);
+      availableInstanceTypes = (
+        allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || []
+      ).map(i => i.name);
     } else {
-      availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || [])
-        .map(i => i.name);
+      availableInstanceTypes = (
+        allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || []
+      ).map(i => i.name);
     }
-    const availablePriceTypes = (allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []).map(p => {
+    const availablePriceTypes = (
+      allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []
+    ).map(p => {
       if (p === 'spot') {
         return true;
       } else if (p === 'on_demand') {
@@ -160,19 +167,24 @@ function runFn (
 ) {
   return new Promise(async (resolve) => {
     let launchName;
+    let launchVersion;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
     const {dataStorageAvailable} = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
-        availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || [])
-          .map(i => i);
+        availableInstanceTypes = (
+          allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || []
+        ).map(i => i);
       } else {
-        availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || [])
-          .map(i => i);
+        availableInstanceTypes = (
+          allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || []
+        ).map(i => i);
       }
-      availablePriceTypes = (allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []).map(p => {
+      availablePriceTypes = (
+        allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []
+      ).map(p => {
         if (p === 'spot') {
           return true;
         } else if (p === 'on_demand') {
@@ -237,7 +249,8 @@ function runFn (
       const [, , imageName] = payload.dockerImage.split('/');
       const parts = imageName.split(':');
       if (parts.length === 2) {
-        launchName = `${parts[0]} (version ${parts[1]})`;
+        launchName = parts[0];
+        launchVersion = parts[1];
       } else {
         launchName = imageName;
       }
@@ -249,7 +262,17 @@ function runFn (
     }
     payload.params = applyCustomCapabilitiesParameters(payload.params, stores.preferences);
     const launchFn = async () => {
-      const hide = message.loading(`Launching ${launchName}...`, -1);
+      const messageVersion = payload.runNameAlias
+        ? `${launchName}:${launchVersion}`
+        : launchVersion;
+      const hide = message
+        .loading(`Launching ${payload.runNameAlias || launchName} (${messageVersion})...`, -1);
+      if (payload.runNameAlias) {
+        payload.tags = {
+          alias: payload.runNameAlias
+        };
+        delete payload.runNameAlias;
+      }
       await PipelineRunner.send({...payload, force: true});
       hide();
       if (PipelineRunner.error) {
@@ -290,10 +313,16 @@ function runFn (
         component = element;
       };
       Modal.confirm({
-        title: title || `Launch ${launchName}?`,
+        title: null,
         width: '50%',
         content: (
           <RunSpotConfirmationWithPrice
+            runInfo={{
+              name: launchName,
+              alias: payload.runNameAlias,
+              version: launchVersion,
+              title
+            }}
             ref={ref}
             warning={warning}
             instanceType={payload.instanceType}
@@ -344,13 +373,25 @@ function runFn (
                 delete payload.params[CP_CAP_LIMIT_MOUNTS];
               }
             }
+            if (component.state.runNameAlias) {
+              payload.tags = {
+                alias: component.state.runNameAlias
+              };
+            }
           }
           if (!payload.instanceType) {
             message.error('You should select instance type');
             resolve(false);
             callbackFn && callbackFn(false);
           } else {
-            const hide = message.loading(`Launching ${launchName}...`, -1);
+            const version = payload.runNameAlias
+              ? `${launchName}:${launchVersion}`
+              : launchVersion;
+            const hide = message
+              .loading(`Launching ${payload.runNameAlias || launchName} (${version})...`, -1);
+            if (payload.runNameAlias) {
+              delete payload.runNameAlias;
+            }
             await PipelineRunner.send({...payload, force: true});
             hide();
             if (PipelineRunner.error) {
@@ -376,11 +417,11 @@ function runFn (
   });
 }
 
-function isUniqueInArray(element, index, array) {
+function isUniqueInArray (element, index, array) {
   return array.filter(e => e === element).length === 1;
 }
 
-function notUniqueInArray(element, index, array) {
+function notUniqueInArray (element, index, array) {
   return array.filter(e => e === element).length > 1;
 }
 
@@ -587,11 +628,26 @@ export class RunConfirmation extends React.Component {
               <Tooltip
                 overlayClassName="limit-mounts-warning"
                 title={s.pathMask}>
-                <div style={{height: 30, display: 'flex', flexDirection: 'column', position: 'relative'}}>
+                <div
+                  style={{
+                    height: 30,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative'
+                  }}
+                >
                   <b style={{height: 20, lineHeight: '20px'}}>
                     <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} /> {s.name}
                   </b>
-                  <span style={{position: 'absolute', height: 12, lineHeight: '12px', top: 20, left: 5}}>
+                  <span
+                    style={{
+                      position: 'absolute',
+                      height: 12,
+                      lineHeight: '12px',
+                      top: 20,
+                      left: 5
+                    }}
+                  >
                     {s.pathMask}
                   </span>
                 </div>
@@ -660,20 +716,38 @@ export class RunConfirmation extends React.Component {
             message={
               <div>
                 <Row style={{marginBottom: 5}}>
-                  <b>You are going to launch a job using a {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance.</b>
+                  <b>
+                    {`You are going to launch a job using a ${
+                      getSpotTypeName(true, this.currentCloudProvider)
+                        .toUpperCase()
+                    } instance.`}
+                  </b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  <b>While this is much cheaper, this type of instance may be OCCASIONALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
-                  Consider {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance for batch jobs and short living runs.</b>
+                  <b>
+                    While this is much cheaper, this type of instance may be OCCASIONALLY STOPPED,
+                    without a notification and you will NOT be able to PAUSE this run, only STOP.
+                    Consider {
+                      getSpotTypeName(true, this.currentCloudProvider)
+                        .toUpperCase()
+                    } instance for batch jobs and short living runs.
+                  </b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  To change this setting use <b>ADVANCED -> PRICE TYPE</b> option within a launch form.
+                  To change this setting
+                  use <b>ADVANCED {'->'} PRICE TYPE</b> option
+                  within a launch form.
                 </Row>
                 <Row type="flex" justify="center" style={{marginBottom: 5}}>
                   <Button
                     onClick={() => this.setOnDemand(true)}
                     type="primary"
-                    size="small">Set {getSpotTypeName(false, this.currentCloudProvider).toUpperCase()} price type</Button>
+                    size="small"
+                  >
+                    Set {getSpotTypeName(false, this.currentCloudProvider)
+                      .toUpperCase()
+                    } price type
+                  </Button>
                 </Row>
               </div>
             } />
@@ -688,7 +762,12 @@ export class RunConfirmation extends React.Component {
             message={
               <div>
                 <Row style={{marginBottom: 5}}>
-                  <b>You are going to launch a job using a {getSpotTypeName(false, this.currentCloudProvider).toUpperCase()} instance.</b>
+                  <b>
+                    You are going to launch a job using a {
+                      getSpotTypeName(false, this.currentCloudProvider)
+                        .toUpperCase()
+                    } instance.
+                  </b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
                   You will be able to PAUSE this run.
@@ -696,7 +775,12 @@ export class RunConfirmation extends React.Component {
                 <Row type="flex" justify="center" style={{marginBottom: 5}}>
                   <Button
                     onClick={() => this.setOnDemand(false)}
-                    size="small">Set {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} price type</Button>
+                    size="small"
+                  >
+                    Set {getSpotTypeName(true, this.currentCloudProvider)
+                      .toUpperCase()
+                    } price type
+                  </Button>
                 </Row>
               </div>
             } />
@@ -709,7 +793,10 @@ export class RunConfirmation extends React.Component {
             showIcon
             message={
               <Row>
-                Note that clusters cannot be paused, even if {getSpotTypeName(false, this.currentCloudProvider).toLowerCase()} price is selected
+                Note that clusters cannot be paused, even
+                if {getSpotTypeName(false, this.currentCloudProvider)
+                  .toLowerCase()
+                } price is selected
               </Row>
             } />
         }
@@ -775,7 +862,10 @@ export class RunConfirmation extends React.Component {
                       .filter((familyName, index, array) => array.indexOf(familyName) === index)
                       .map(instanceFamily => {
                         return (
-                          <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
+                          <Select.OptGroup
+                            key={instanceFamily || 'Other'}
+                            label={instanceFamily || 'Other'}
+                          >
                             {
                               this.getInstanceTypes()
                                 .filter(t => t.instanceFamily === instanceFamily)
@@ -934,7 +1024,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     isSpot: false,
     hddSize: 0,
     instanceType: null,
-    limitMounts: null
+    limitMounts: null,
+    runNameAlias: null
   };
 
   onChangeSpotType = (isSpot) => {
@@ -984,9 +1075,61 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     });
   };
 
+  onChangeRunNameAlias = (alias) => {
+    this.setState({runNameAlias: alias});
+  };
+
+  renderModalTitle = () => {
+    const {
+      name,
+      version,
+      title
+    } = this.props.runInfo || {};
+    const {runNameAlias} = this.state;
+    let titleFn = (runName) => ([
+      (<span key="launch">Launch</span>),
+      runName,
+      (<span key="question">?</span>),
+    ]);
+    if (title && typeof title === 'function') {
+      titleFn = title;
+    }
+    if (title && typeof title === 'string') {
+      titleFn = () => title;
+    }
+    return (
+      <div
+        style={{
+          marginTop: '-16px',
+          marginBottom: '6px',
+          fontWeight: 700,
+          fontSize: '14px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          lineHeight: '32px'
+        }}
+      >
+        {
+          titleFn((
+            <RunName
+              key="run name"
+              alias={runNameAlias}
+              onChange={this.onChangeRunNameAlias}
+              editable
+            >
+              {name}
+              {version && `:${version}`}
+            </RunName>
+          ))
+        }
+      </div>
+    );
+  };
+
   render () {
     return (
       <div>
+        {this.renderModalTitle()}
         <Row>
           <RunConfirmation
             warning={this.props.warning}
@@ -1034,6 +1177,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
 
   componentDidMount () {
     this.setState({
+      runNameAlias: (this.props.runInfo || {}).alias,
       isSpot: this.props.isSpot,
       instanceType: this.props.instanceType,
       hddSize: this.props.hddSize,

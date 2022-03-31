@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +91,7 @@ import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import RunName from '../run-name';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -1344,6 +1345,13 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  refreshRun = () => {
+    if (this.props.run) {
+      return this.props.run.fetch();
+    }
+    return Promise.resolve();
+  };
+
   render () {
     if (this.props.run.error) {
       return <Alert type="error" message={this.props.run.error} />;
@@ -1563,7 +1571,19 @@ class Logs extends localization.LocalizedReactComponent {
 
       Title = (
         <h1 className={styles.runTitle}>
-          <StatusIcon run={this.props.run.value} /><span>Run #{runId}{failureReason} - </span>
+          <StatusIcon
+            run={this.props.run.value}
+          />
+          <span>
+            <span>Run</span>
+            <RunName.AutoUpdate
+              run={this.props.run.value}
+              editable
+              onRefresh={this.refreshRun}
+            >
+              #{runId}
+            </RunName.AutoUpdate>
+            {failureReason} - </span>
           {pipelineLink}
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>
