@@ -55,6 +55,7 @@ import registryName from '../tools/registryName';
 import parseRunServiceUrl from '../../utils/parseRunServiceUrl';
 import mapResumeFailureReason from './utilities/map-resume-failure-reason';
 import RunTags from './run-tags';
+import RunName from './run-name';
 import JobEstimatedPriceInfo from '../special/job-estimated-price-info';
 import getMaintenanceDisabledButton from './controls/get-maintenance-mode-disabled-button';
 
@@ -1007,7 +1008,15 @@ export default class RunTable extends localization.LocalizedReactComponent {
             </span>
           );
         }
-        const name = <b>{text}</b>;
+        const name = (
+          <RunName
+            style={{fontWeight: 'bold'}}
+            run={run}
+            ignoreOffset
+          >
+            {text}
+          </RunName>
+        );
         if (run.serviceUrl && run.initialized) {
           const urls = parseRunServiceUrl(run.serviceUrl);
           return (
@@ -1035,13 +1044,14 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 }
                 trigger={['hover']}
               >
-                {clusterIcon} <Icon type="export" /> {name}
+                {clusterIcon} <Icon type="export" />
+                {name}
                 {instanceOrSensitiveFlag && <br />}
                 {
                   instanceOrSensitiveFlag &&
                   <span style={{marginLeft: 18}}>
-                  {instanceOrSensitiveFlag}
-                </span>
+                    {instanceOrSensitiveFlag}
+                  </span>
                 }
               </Popover>
             </div>
@@ -1054,7 +1064,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
                 small
                 additionalStyle={{marginRight: 5}}
               />
-              {clusterIcon}{name}
+              {clusterIcon}
+              {name}
               {instanceOrSensitiveFlag && <br />}
               {
                 instanceOrSensitiveFlag &&
