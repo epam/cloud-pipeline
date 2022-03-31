@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import traceback
 import urllib
 import xml.etree.ElementTree as ET
 
+from abc import ABCMeta, abstractmethod
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
 from pipeline.common import get_path_with_trailing_delimiter
@@ -83,6 +84,7 @@ class ImageDetails(object):
 class WsiParsingUtils:
 
     TILES_DIR = 'tiles'
+    PARSER_SERVICE_DIR = '.wsiparser'
 
     @staticmethod
     def get_file_without_extension(file_path):
@@ -108,12 +110,12 @@ class WsiParsingUtils:
     def get_service_directory(file_path):
         name_without_extension = WsiParsingUtils.get_basename_without_extension(file_path)
         parent_dir = os.path.dirname(file_path)
-        return os.path.join(parent_dir, '.wsiparser', name_without_extension)
+        return os.path.join(parent_dir, WsiParsingUtils.PARSER_SERVICE_DIR, name_without_extension)
 
     @staticmethod
     def generate_local_service_directory(file_path):
         name_without_extension = WsiParsingUtils.get_basename_without_extension(file_path)
-        return tempfile.mkdtemp(prefix=name_without_extension + '.wsiparser.')
+        return tempfile.mkdtemp(prefix=name_without_extension + WsiParsingUtils.PARSER_SERVICE_DIR + '.')
 
     @staticmethod
     def create_service_dir_if_not_exist(file_path):
@@ -142,7 +144,7 @@ class WsiParsingUtils:
         return 'cp://{}'.format(path_chunks[1])
 
 
-class WsiProcessingFileGenerator:
+class WsiProcessingFileGenerator(object):
 
     def __init__(self, lookup_paths, target_file_formats):
         self.lookup_paths = lookup_paths
@@ -165,8 +167,79 @@ class WsiProcessingFileGenerator:
                     related_subdirectories.add(full_file_path)
         return related_subdirectories
 
+    @abstractmethod
+    def find_all_matching_files(self):
+        pass
+
+    @abstractmethod
+    def filter_processed_files(self, paths):
+        pass
+
     def generate_paths(self):
+        log_info('Generating paths using {}'.format(self.__class__.__name__))
         paths = self.find_all_matching_files()
+        log_info('Found {} matching files.'.format(len(paths)))
+        return self.filter_processed_files(paths)
+
+    @staticmethod
+    def is_processing_required(file_path):
+        if os.getenv('WSI_PARSING_SKIP_DATE_CHECK') or TAGS_PROCESSING_ONLY:
+            return True
+        active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
+        if os.path.exists(active_stat_file):
+            return WsiParsingUtils.active_processing_exceed_timeout(active_stat_file)
+        stat_file = WsiParsingUtils.get_stat_file_name(file_path)
+        if not os.path.isfile(stat_file):
+            return True
+        stat_file_modification_date = WsiParsingUtils.get_file_last_modification_time(stat_file)
+        if WsiProcessingFileGenerator.is_modified_after(file_path, stat_file_modification_date):
+            return True
+        related_directories = WsiProcessingFileGenerator.get_related_wsi_directories(file_path)
+        for directory in related_directories:
+            dir_root = os.walk(directory)
+            for dir_root, directories, files in dir_root:
+                for file in files:
+                    if WsiProcessingFileGenerator.is_modified_after(os.path.join(dir_root, file),
+                                                                    stat_file_modification_date):
+                        return True
+        return False
+
+
+class DirListingParams:
+
+    def __init__(self, absolute_dir_path, filter_dir_names, target_extensions):
+        self.absolute_dir_path = absolute_dir_path
+        self.filter_dir_names = filter_dir_names
+        self.target_extensions = target_extensions
+
+
+class DirListingResult:
+
+    def __init__(self, files, nested_dirs):
+        self.files = files
+        self.nested_dirs = nested_dirs
+
+
+def search_in_directory(search_params):
+    files = set()
+    nested_dirs = set()
+    for (dir_path, nested_dir_names, file_names) in os.walk(search_params.absolute_dir_path):
+        for file_name in file_names:
+            if file_name.endswith(search_params.target_extensions):
+                files.add(os.path.join(dir_path, file_name))
+        for nested_dir_name in nested_dir_names:
+            if nested_dir_name not in search_params.filter_dir_names:
+                nested_dirs.add(os.path.join(dir_path, nested_dir_name))
+        break
+    return DirListingResult(files, nested_dirs)
+
+
+class SingleThreadWsiProcessingFileGenerator(WsiProcessingFileGenerator):
+
+    def __init__(self, lookup_paths, target_file_formats):
+        super(SingleThreadWsiProcessingFileGenerator, self).__init__(lookup_paths, target_file_formats)
+
+    def filter_processed_files(self, paths):
         return filter(lambda p: self.is_processing_required(p), paths)
 
     def find_all_matching_files(self):
@@ -179,26 +252,42 @@ class WsiProcessingFileGenerator:
                         paths.add(os.path.join(dir_root, file))
         return paths
 
-    def is_processing_required(self, file_path):
-        if os.getenv('WSI_PARSING_SKIP_DATE_CHECK') or TAGS_PROCESSING_ONLY:
-            return True
-        active_stat_file = WsiParsingUtils.get_stat_active_file_name(file_path)
-        if os.path.exists(active_stat_file):
-            return WsiParsingUtils.active_processing_exceed_timeout(active_stat_file)
-        stat_file = WsiParsingUtils.get_stat_file_name(file_path)
-        if not os.path.isfile(stat_file):
-            return True
-        stat_file_modification_date = WsiParsingUtils.get_file_last_modification_time(stat_file)
-        if self.is_modified_after(file_path, stat_file_modification_date):
-            return True
-        related_directories = self.get_related_wsi_directories(file_path)
-        for directory in related_directories:
-            dir_root = os.walk(directory)
-            for dir_root, directories, files in dir_root:
-                for file in files:
-                    if self.is_modified_after(os.path.join(dir_root, file), stat_file_modification_date):
-                        return True
-        return False
+
+def return_none_if_processing_is_not_required(path):
+    return path if WsiProcessingFileGenerator.is_processing_required(path) else None
+
+
+class ParallelWsiProcessingFileGenerator(WsiProcessingFileGenerator):
+
+    def __init__(self, lookup_paths, target_file_formats, processing_pool):
+        super(ParallelWsiProcessingFileGenerator, self).__init__(lookup_paths, target_file_formats)
+        self.processing_pool = processing_pool
+        self.filter_dir_names = self.__get_dir_names_to_ignore()
+
+    @staticmethod
+    def __get_dir_names_to_ignore():
+        return {dir_name.strip() for dir_name in
+                os.getenv('WSI_PARSING_SEARCH_SKIP_DIRS', WsiParsingUtils.PARSER_SERVICE_DIR).split(',')}
+
+    def filter_processed_files(self, paths):
+        filtered_files = self.processing_pool.map(return_none_if_processing_is_not_required, paths)
+        return [path for path in filtered_files if path is not None]
+
+    def find_all_matching_files(self):
+        matching_files = set()
+        path_check_list = set(self.lookup_paths)
+        while len(path_check_list) > 0:
+            dirs_to_check = list()
+            for i in range(0, min(self.processing_pool._processes, len(path_check_list))):
+                dirs_to_check.append(path_check_list.pop())
+            search_params_list = [DirListingParams(dir_path, self.filter_dir_names, self.target_file_formats)
+                                  for dir_path
+                                  in dirs_to_check]
+            dir_search_results = self.processing_pool.map(search_in_directory, search_params_list)
+            for result in dir_search_results:
+                matching_files.update(result.files)
+                path_check_list.update(result.nested_dirs)
+        return matching_files
 
 
 class UserDefinedMetadata:
@@ -999,6 +1088,19 @@ def try_process_file(file_path):
             parser.clear_tmp_local_dir()
 
 
+def get_processing_pool():
+    processing_threads = int(os.getenv('WSI_PARSING_THREADS', 1))
+    if processing_threads < 1:
+        log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
+                 .format(processing_threads))
+        processing_threads = 1
+    log_info('{} threads enabled for WSI processing'.format(processing_threads))
+    if processing_threads == 1:
+        return None
+    else:
+        return multiprocessing.Pool(processing_threads)
+
+
 def process_wsi_files():
     lookup_paths = os.getenv('WSI_TARGET_DIRECTORIES')
     if not lookup_paths:
@@ -1006,26 +1108,24 @@ def process_wsi_files():
         exit(0)
     target_file_formats = tuple(['.' + extension for extension in os.getenv('WSI_FILE_FORMATS', 'vsi,mrxs').split(',')])
     log_info('Following paths are specified for processing: {}'.format(lookup_paths))
+    processing_pool = get_processing_pool()
     log_info('Lookup for unprocessed files')
-    paths_to_wsi_files = WsiProcessingFileGenerator(lookup_paths.split(','), target_file_formats).generate_paths()
+    lookup_paths_set = set(lookup_paths.split(','))
+    file_generator = SingleThreadWsiProcessingFileGenerator(lookup_paths_set, target_file_formats) \
+        if processing_pool is None \
+        else ParallelWsiProcessingFileGenerator(lookup_paths_set, target_file_formats, processing_pool)
+    paths_to_wsi_files = file_generator.generate_paths()
     if not paths_to_wsi_files:
         log_success('Found no files requires processing in the target directories.')
         exit(0)
     log_info('Found {} files for processing.'.format(len(paths_to_wsi_files)))
-    processing_threads = int(os.getenv('WSI_PARSING_THREADS', 1))
-    if processing_threads < 1:
-        log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
-                 .format(processing_threads))
-        processing_threads = 1
-    log_info('{} threads enabled for WSI processing'.format(processing_threads))
     if TAGS_PROCESSING_ONLY:
         log_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
-    if processing_threads == 1:
+    if processing_pool is None:
         for file_path in paths_to_wsi_files:
             try_process_file(file_path)
     else:
-        pool = multiprocessing.Pool(processing_threads)
-        pool.map(try_process_file, paths_to_wsi_files)
+        processing_pool.map(try_process_file, paths_to_wsi_files)
     log_success('Finished WSI files processing')
     exit(0)
 
