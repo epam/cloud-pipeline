@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
+import PipelineRunTagsUpdate from '../../../models/pipelines/PipelineRunTagsUpdate';
 import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
 import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -93,6 +94,7 @@ import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import RunName from '../run-name';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
@@ -154,7 +156,8 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    commitAllowedCheckedForDockerImage: undefined
+    commitAllowedCheckedForDockerImage: undefined,
+    runNameAliasPending: false
   };
 
   componentDidMount () {
@@ -1356,6 +1359,30 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  onChangeRunNameAlias = (alias) => {
+    this.setState({
+      runNameAliasPending: true
+    }, async () => {
+      const hide = message.loading('Updating run name alias...', -1);
+      const request = new PipelineRunTagsUpdate(this.props.runId, false);
+      await request.send({tags: {alias}});
+      hide();
+      if (request.error) {
+        message.error(request.error);
+      } else {
+        await this.props.run.fetch();
+      }
+      this.setState({runNameAliasPending: false});
+    });
+  };
+
+  refreshRun = () => {
+    if (this.props.run) {
+      return this.props.run.fetch();
+    }
+    return Promise.resolve();
+  };
+
   render () {
     if (this.props.run.error) {
       return <Alert type="error" message={this.props.run.error} />;
@@ -1577,7 +1604,19 @@ class Logs extends localization.LocalizedReactComponent {
 
       Title = (
         <h1 className={styles.runTitle}>
-          <StatusIcon run={this.props.run.value} /><span>Run #{runId}{failureReason} - </span>
+          <StatusIcon
+            run={this.props.run.value}
+          />
+          <span>
+            <span>Run</span>
+            <RunName.AutoUpdate
+              run={this.props.run.value}
+              editable
+              onRefresh={this.refreshRun}
+            >
+              #{runId}
+            </RunName.AutoUpdate>
+            {failureReason} - </span>
           {pipelineLink}
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>
@@ -1963,7 +2002,9 @@ class Logs extends localization.LocalizedReactComponent {
         <Row>
           <Col span={18}>
             <Row type="flex" justify="space-between">
-              {Title}
+              <Spin spinning={this.state.runNameAliasPending}>
+                {Title}
+              </Spin>
             </Row>
             {
               this.props.run.value.stateReasonMessage &&
