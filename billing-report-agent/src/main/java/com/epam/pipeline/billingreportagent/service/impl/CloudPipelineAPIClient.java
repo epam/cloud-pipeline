@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.billingreportagent.service.impl;
 
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
+import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -25,9 +26,9 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
-import com.epam.pipeline.utils.QueryUtils;
 import com.epam.pipeline.vo.EntityVO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,43 +40,49 @@ import java.util.List;
 public class CloudPipelineAPIClient {
 
     private final CloudPipelineAPI cloudPipelineAPI;
+    private final RetryingCloudPipelineApiExecutor retryingApiExecutor;
 
     public CloudPipelineAPIClient(@Value("${cloud.pipeline.host}") String cloudPipelineHostUrl,
                                   @Value("${cloud.pipeline.token}") String cloudPipelineToken) {
         this.cloudPipelineAPI =
                 new CloudPipelineApiBuilder(0, 0, cloudPipelineHostUrl, cloudPipelineToken)
                         .buildClient();
+        this.retryingApiExecutor = new RetryingCloudPipelineApiExecutor();
     }
 
     public List<PipelineUser> loadAllUsers() {
-        return QueryUtils.execute(cloudPipelineAPI.loadAllUsers());
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllUsers());
     }
 
     public List<PipelineRun> loadAllPipelineRunsActiveInPeriod(final String from, final String to) {
-        return QueryUtils.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadRunsActivityStats(from, to));
     }
 
     public List<AbstractDataStorage> loadAllDataStorages() {
-        return QueryUtils.execute(cloudPipelineAPI.loadAllDataStorages());
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllDataStorages());
     }
 
     public List<InstanceType> loadAllInstanceTypesForRegion(final Long regionId) {
         try {
-            return QueryUtils.execute(cloudPipelineAPI.loadAllInstanceTypesForRegion(regionId));
+            return retryingApiExecutor.execute(cloudPipelineAPI.loadAllInstanceTypesForRegion(regionId));
         } catch (PipelineResponseException e) {
             return Collections.emptyList();
         }
     }
 
     public List<MetadataEntry> loadMetadataEntry(List<EntityVO> entities) {
-        return QueryUtils.execute(cloudPipelineAPI.loadFolderMetadata(entities));
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadFolderMetadata(entities));
     }
 
     public List<NodeDisk> loadNodeDisks(final String nodeId) {
-        return QueryUtils.execute(cloudPipelineAPI.loadNodeDisks(nodeId));
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadNodeDisks(nodeId));
     }
 
     public List<AbstractCloudRegion> loadAllCloudRegions() {
-        return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllRegions());
+    }
+
+    public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
+        return retryingApiExecutor.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
     }
 }
