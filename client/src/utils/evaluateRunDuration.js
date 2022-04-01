@@ -18,9 +18,18 @@ import moment from 'moment-timezone';
 
 export default function evaluateRunDuration (run) {
   if (run.runStatuses) {
-    const endDate = run.endDate ? moment.utc(run.endDate) : moment.utc();
     const startDate = moment.utc(run.startDate);
-    const dates = run.runStatuses.map(r => ({status: r.status, timestamp: moment.utc(r.timestamp)}));
+    const endDate = run.endDate ? moment.utc(run.endDate) : moment.utc();
+    const dates = run.runStatuses
+      .map(r => ({status: r.status, timestamp: moment.utc(r.timestamp)}));
+    dates.push({
+      status: 'RUNNING',
+      timestamp: startDate
+    });
+    dates.push({
+      status: 'STOPPED',
+      timestamp: endDate
+    });
     dates.sort((dA, dB) => {
       if (dA.timestamp > dB.timestamp) {
         return 1;
@@ -29,20 +38,15 @@ export default function evaluateRunDuration (run) {
       }
       return 0;
     });
-    let duration = endDate.diff(startDate, 'hours', true);
-    let pausedDate = null;
-    for (let i = 0; i < dates.length; i++) {
-      if (pausedDate && (dates[i].status || '').toLowerCase() !== 'paused') {
-        duration -= (dates[i].timestamp.diff(pausedDate, 'hours', true));
-        pausedDate = null;
-      } else if (!pausedDate && (dates[i].status || '').toLowerCase() === 'paused') {
-        pausedDate = dates[i].timestamp;
+    let activeDuration = 0;
+    for (let i = 0; i < dates.length - 1; i++) {
+      const start = dates[i];
+      const end = dates[i + 1];
+      if (/^RUNNING$/i.test(start.status)) {
+        activeDuration += (end.timestamp.diff(start.timestamp, 'hours', true));
       }
     }
-    if (pausedDate) {
-      duration -= (endDate.diff(pausedDate, 'hours', true));
-    }
-    return duration;
+    return activeDuration;
   } else {
     const endDate = run.endDate ? moment.utc(run.endDate) : moment.utc();
     return endDate.diff(moment.utc(run.startDate), 'hours', true);
