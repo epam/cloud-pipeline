@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.exception.PipelineResponseException;
 import com.epam.pipeline.utils.QueryUtils;
@@ -77,5 +78,9 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractCloudRegion> loadAllCloudRegions() {
         return QueryUtils.execute(cloudPipelineAPI.loadAllRegions());
+    }
+
+    public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
+        return QueryUtils.execute(cloudPipelineAPI.searchMetadata(key, value, entityClass));
     }
 }
