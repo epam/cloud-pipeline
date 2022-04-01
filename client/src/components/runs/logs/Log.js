@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +92,10 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_RUN_NAME
+} from '../../pipelines/launch/form/utilities/parameters';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
@@ -1356,6 +1359,18 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
+  getRunName = (run = {}) => {
+    let name;
+    const nameParameter = (run.pipelineRunParameters || [])
+      .find(parameter => parameter.name === CP_RUN_NAME);
+    if (nameParameter && nameParameter.value) {
+      name = `Run ${nameParameter.value} (${run.id})`;
+    } else {
+      name = `Run #${run.podId}`;
+    }
+    return name;
+  };
+
   render () {
     if (this.props.run.error) {
       return <Alert type="error" message={this.props.run.error} />;
@@ -1520,7 +1535,6 @@ class Logs extends localization.LocalizedReactComponent {
       const pipeline = pipelineName && version
         ? {name: pipelineName, id: pipelineId, version: version}
         : undefined;
-      const {runId} = this.props.params;
 
       const {
         startDate,
@@ -1574,10 +1588,11 @@ class Logs extends localization.LocalizedReactComponent {
 
       const failureReason = status === 'FAILURE' && podStatus
         ? <span style={{fontWeight: 'normal', marginLeft: 5}}>({podStatus})</span> : undefined;
-
       Title = (
         <h1 className={styles.runTitle}>
-          <StatusIcon run={this.props.run.value} /><span>Run #{runId}{failureReason} - </span>
+          <StatusIcon
+            run={this.props.run.value}
+          /><span>{this.getRunName(this.props.run.value)}{failureReason} - </span>
           {pipelineLink}
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>

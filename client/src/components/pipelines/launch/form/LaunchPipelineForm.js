@@ -5109,9 +5109,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           };
           configuration = [
             <td
-              style={{width: 1, whiteSpace: 'nowrap'}}
+              style={{
+                width: 1,
+                whiteSpace: 'nowrap',
+                paddingLeft: '3px'
+              }}
               key="configuration title"
-              className={styles.itemHeader}>, configuration: </td>,
+              className={styles.itemHeader}>configuration: </td>,
             <td key="configuration selector" style={{width: 200, paddingLeft: 5}}>
               <Select
                 disabled={this.props.readOnly && !this.props.canExecute}
@@ -5164,8 +5168,15 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               type="play-circle-o"
               className="cp-primary"
             />
-            Launch <b id="launch-form-pipeline-name">{pipelineName}</b> {
-              pipelineVersion && <span id="launch-form-pipeline-version">{pipelineVersion}</span>}.
+            Launch <b id="launch-form-pipeline-name">
+              {pipelineName}
+            </b> {pipelineVersion && (
+              <span id="launch-form-pipeline-version">
+                {`${pipelineVersion}${configuration.length > 0 ||
+                  !this.props.editConfigurationMode ? ',' : ''}`
+                }
+              </span>
+            )}
           </td>,
           ...configuration,
           <td
@@ -5176,7 +5187,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             <RunFriendlyNameInput
               onChange={this.runFriendlyNameChange}
               value={this.state.runFriendlyName}
-              label={`${configuration.length > 0 ? '' : ', '}run name:`}
+              label="run name:"
               containerStyle={{marginLeft: configuration.length > 0 ? '5px' : '0px'}}
               inputStyle={{width: '200px'}}
             />

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,7 +43,11 @@ import {
   RunConfirmation
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
-import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_RUN_NAME
+} from '../../../pipelines/launch/form/utilities/parameters';
+import RunFriendlyNameInput from '../../../pipelines/launch/form/RunFriendlyNameInput';
 import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
@@ -86,7 +90,8 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   state = {
-    runToolInfo: null
+    runToolInfo: null,
+    runFriendlyNameExpanded: false
   };
 
   isAdmin = () => {
@@ -234,9 +239,13 @@ export default class PersonalToolsPanel extends React.Component {
         delete payload.params[CP_CAP_LIMIT_MOUNTS];
       }
     }
+    if (this.state.runToolInfo.runFriendlyName !== undefined) {
+      payload.params[CP_RUN_NAME] = this.state.runToolInfo.runFriendlyName;
+    }
     if (await run(this)(payload, false)) {
       this.setState({
-        runToolInfo: null
+        runToolInfo: null,
+        runFriendlyNameExpanded: false
       }, this.props.refresh);
     }
   };
@@ -624,7 +633,8 @@ export default class PersonalToolsPanel extends React.Component {
 
   cancelRunTool = () => {
     this.setState({
-      runToolInfo: null
+      runToolInfo: null,
+      runFriendlyNameExpanded: false
     });
   };
 
@@ -708,6 +718,24 @@ export default class PersonalToolsPanel extends React.Component {
         runToolInfo
       });
     }
+  };
+
+  onChangeRunFriendlyName = (name) => {
+    if (this.state.runToolInfo) {
+      const runToolInfo = this.state.runToolInfo;
+      runToolInfo.runFriendlyName = {
+        type: 'string',
+        required: false,
+        value: name
+      };
+      this.setState({
+        runToolInfo
+      });
+    }
+  };
+
+  showRunFriendlyNameInput = () => {
+    this.setState({runFriendlyNameExpanded: true});
   };
 
   render () {
@@ -822,6 +850,26 @@ export default class PersonalToolsPanel extends React.Component {
                 </Row>
               } />
           }
+          {this.state.runFriendlyNameExpanded ? (
+            <RunFriendlyNameInput
+              onChange={this.onChangeRunFriendlyName}
+              value={(this.state.runToolInfo.runFriendlyName || {}).value}
+              label="Run name alias:"
+              containerStyle={{margin: '4px 2px'}}
+              inputStyle={{width: 'auto', flexGrow: 1}}
+            />
+          ) : (
+            <a
+              onClick={this.showRunFriendlyNameInput}
+              style={{
+                display: 'inline-block',
+                margin: '2px',
+                lineHeight: '30px'
+              }}
+            >
+              <Icon type="setting" /> Configure run name alias
+            </a>
+          )}
         </Modal>
       </div>
     );

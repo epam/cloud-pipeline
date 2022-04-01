@@ -507,7 +507,8 @@ export class RunConfirmation extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    runFriendlyNameExpanded: false
   };
 
   static defaultProps = {
@@ -1032,7 +1033,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     instanceType: null,
     limitMounts: null,
     runFriendlyName: null,
-    runFriendlyNameVisible: false
+    runFriendlyNameExpanded: false
   };
 
   onChangeSpotType = (isSpot) => {
@@ -1087,7 +1088,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
   };
 
   showRunFriendlyNameInput = () => {
-    this.setState({runFriendlyNameVisible: true});
+    this.setState({runFriendlyNameExpanded: true});
   };
 
   render () {
@@ -1135,7 +1136,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
-        {this.state.runFriendlyNameVisible ? (
+        {this.state.runFriendlyNameExpanded ? (
           <RunFriendlyNameInput
             onChange={this.onChangeRunFriendlyName}
             value={this.state.runFriendlyName}
