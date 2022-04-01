@@ -437,8 +437,8 @@ public class UserManager {
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
         final Collection<PipelineUserWithStoragePath> filteredUsers = filterUsers(users, attr);
-        final List<String> sensitiveKeys = preferenceManager.getPreference(
-                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        final List<String> sensitiveKeys = authManager.isAdmin() ? Collections.emptyList() :
+                preferenceManager.getPreference(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
     }
 
