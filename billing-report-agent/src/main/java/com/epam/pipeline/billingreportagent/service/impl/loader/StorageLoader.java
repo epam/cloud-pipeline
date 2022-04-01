@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,29 +20,42 @@ import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.vo.EntityVO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
 public class StorageLoader implements EntityLoader<AbstractDataStorage> {
 
     private final CloudPipelineAPIClient apiClient;
+    private final String storageExcludeKey;
+    private final String storageExcludeValue;
 
-    public StorageLoader(final CloudPipelineAPIClient apiClient) {
+    public StorageLoader(final CloudPipelineAPIClient apiClient,
+                         @Value("${sync.storage.billing.exclude.metadata.key:Billing status}")
+                         final String storageExcludeKey,
+                         @Value("${sync.storage.billing.exclude.metadata.value:Exclude}")
+                         final String storageExcludeValue) {
         this.apiClient = apiClient;
+        this.storageExcludeKey = storageExcludeKey;
+        this.storageExcludeValue = storageExcludeValue;
     }
 
     @Override
     public List<EntityContainer<AbstractDataStorage>> loadAllEntities() {
         final Map<String, EntityWithMetadata<PipelineUser>> usersWithMetadata = prepareUsers(apiClient);
-
+        final Set<Long> storageIdsToIgnore = loadStorageIdsToIgnoreByTag();
         return apiClient.loadAllDataStorages()
                 .stream()
+                .filter(storage -> isStorageBillable(storage, storageIdsToIgnore))
                 .map(storage -> EntityContainer.<AbstractDataStorage>builder()
                         .entity(storage)
                         .owner(usersWithMetadata.get(storage.getOwner()))
@@ -54,5 +67,16 @@ public class StorageLoader implements EntityLoader<AbstractDataStorage> {
     public List<EntityContainer<AbstractDataStorage>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
                                                                                     final LocalDateTime to) {
         return loadAllEntities();
+    }
+
+    private Set<Long> loadStorageIdsToIgnoreByTag() {
+        return apiClient.searchEntriesByMetadata(AclClass.DATA_STORAGE, storageExcludeKey, storageExcludeValue)
+            .stream()
+            .map(EntityVO::getEntityId)
+            .collect(Collectors.toSet());
+    }
+
+    private boolean isStorageBillable(final AbstractDataStorage storage, final Set<Long> storageIdsToIgnore) {
+        return !storage.isShared() && !storageIdsToIgnore.contains(storage.getId());
     }
 }
