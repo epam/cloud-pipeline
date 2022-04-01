@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.metadata.parser.MetadataLineProcessor;
 import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.utils.MetadataParsingUtils;
@@ -92,6 +93,9 @@ public class MetadataManager {
 
     @Autowired
     private PreferenceManager preferenceManager;
+
+    @Autowired
+    private AuthManager authManager;
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MetadataEntry updateMetadataItemKey(MetadataVO metadataVO) {
@@ -310,8 +314,8 @@ public class MetadataManager {
     }
 
     public Set<String> getMetadataKeys(final AclClass entityClass) {
-        final List<String> sensitiveKeys = preferenceManager.getPreference(
-                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        final List<String> sensitiveKeys = authManager.isAdmin() ? Collections.emptyList() :
+                preferenceManager.getPreference(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         Set<String> keys = metadataDao.loadMetadataKeys(entityClass);
         keys.removeAll(ListUtils.emptyIfNull(sensitiveKeys));
         return keys;
