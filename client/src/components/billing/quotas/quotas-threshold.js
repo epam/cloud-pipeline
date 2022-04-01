@@ -23,7 +23,7 @@ import {
   Select
 } from 'antd';
 import classNames from 'classnames';
-import {actionNames, getActionsByTypeAndGroup} from './utilities/quota-actions';
+import {actionNames, actionsByGroup} from './utilities/quota-actions';
 import styles from './quotas.css';
 
 class Threshold extends React.Component {
@@ -97,7 +97,7 @@ class Threshold extends React.Component {
           style={{flex: '1 1 auto', marginLeft: 5}}
         >
           {
-            getActionsByTypeAndGroup(quotaType, quotaGroup).map(action => (
+            (actionsByGroup[quotaGroup] || []).map(action => (
               <Select.Option
                 key={action}
                 value={action}

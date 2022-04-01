@@ -40,8 +40,8 @@ QuotaTypeIcon.propTypes = {
 const ordered = [
   types.overall,
   types.billingCenter,
-  types.user,
-  types.group
+  types.group,
+  types.user
 ];
 
 const names = {

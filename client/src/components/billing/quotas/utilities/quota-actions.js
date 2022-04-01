@@ -16,7 +16,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import quotaGroups from './quota-groups';
-import quotaTypes from './quota-types';
 
 const actions = {
   notify: 'NOTIFY',
@@ -92,50 +91,9 @@ const actionsByGroup = {
   ]
 };
 
-const actionsByType = {
-  [quotaTypes.overall]: [
-    actions.notify,
-    actions.readMode,
-    actions.block
-  ],
-  [quotaTypes.user]: [
-    actions.notify,
-    actions.readMode,
-    actions.readModeAndStopAllJobs,
-    actions.readModeAndDisableNewJobs,
-    actions.block
-  ],
-  [quotaTypes.group]: [
-    actions.notify,
-    actions.readMode,
-    actions.readModeAndStopAllJobs,
-    actions.readModeAndDisableNewJobs,
-    actions.block
-  ],
-  [quotaTypes.billingCenter]: [
-    actions.notify,
-    actions.readMode,
-    actions.readModeAndStopAllJobs,
-    actions.readModeAndDisableNewJobs,
-    actions.block
-  ]
-};
-
-function getActionsByTypeAndGroup (type, group) {
-  const set1 = actionsByType[type] || [];
-  const set2 = actionsByGroup[group] || [];
-  const result = [];
-  for (const action of set1) {
-    if (set2.includes(action)) {
-      result.push(action);
-    }
-  }
-  return result;
-}
-
 export {
   actionNames,
-  getActionsByTypeAndGroup,
+  actionsByGroup,
   QuotaAction
 };
 export default actions;
