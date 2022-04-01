@@ -70,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -178,6 +179,11 @@ public class UserManager {
         PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
         return user;
+    }
+
+    public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
+        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+                .collect(Collectors.toList());
     }
 
     public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
