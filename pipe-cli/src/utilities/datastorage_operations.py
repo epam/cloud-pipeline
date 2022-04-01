@@ -37,6 +37,7 @@ from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 FOLDER_MARKER = '.DS_Store'
+STORAGE_DETAILS_SEPARATOR = ', '
 
 
 class DataStorageOperations(object):
@@ -286,7 +287,7 @@ class DataStorageOperations(object):
         manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended):
         """Lists storage contents
         """
         if path:
@@ -305,7 +306,8 @@ class DataStorageOperations(object):
                                                   page_size=page, show_versions=show_versions, show_all=show_all)
         else:
             # If no argument is specified - list brief details of all buckets
-            cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all)
+            cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
+                                              show_extended=show_extended)
 
     @classmethod
     def storage_mk_dir(cls, folders):
@@ -407,8 +409,12 @@ class DataStorageOperations(object):
         return table
 
     @classmethod
+    def __load_storage_list(cls, extended=False):
+        return list(DataStorage.list_with_mount_limits()) if extended else list(DataStorage.list())
+
+    @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False):
+                                      show_versions=False, show_all=False, show_extended=False):
 
         items = []
         header = None
@@ -419,7 +425,7 @@ class DataStorageOperations(object):
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
-            items = [s for s in list(DataStorage.list_with_mount_limits()) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
+            items = [s for s in cls.__load_storage_list(show_extended) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
 
             if not items:
                 click.echo("No datastorages available.")
@@ -429,14 +435,16 @@ class DataStorageOperations(object):
             click.echo(header)
 
         if show_details:
-            cls.assign_metadata_to_items(items)
             items_table = prettytable.PrettyTable()
-            fields = ["Type", "Mount status", "Mount limits", "Labels", "Metadata", "Modified", "Size", "Name"]
+            fields = ["Type", "Labels", "Modified", "Size", "Name"]
             if show_versions:
                 fields.append("Version")
+            if show_extended:
+                fields.extend(["Mount status", "Mount limits", "Metadata"])
+                cls.assign_metadata_to_items(items)
             items_table.field_names = fields
             items_table.align = "l"
-            items_table.hrules = prettytable.ALL
+            items_table.border = False
             items_table.padding_width = 2
             items_table.align['Size'] = 'r'
             for item in items:
@@ -457,14 +465,16 @@ class DataStorageOperations(object):
                 if item.size is not None and not item.deleted:
                     size = item.size
                 if item.labels is not None and len(item.labels) > 0 and not item.deleted:
-                    labels = ', '.join(map(lambda i: i.value, item.labels))
+                    labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, item.labels))
                 item_type = "-File" if item.delete_marker or item.deleted else item.type
-                mount_limits = '\n'.join(item.tools_to_mount)
-                mount_status = item.mount_status
-                item_metadata = '\n'.join(['='.join(entry) for entry in item.metadata.items()])
-                row = [item_type, mount_status, mount_limits, labels, item_metadata, changed, size, name]
+                row = [item_type, labels, changed, size, name]
                 if show_versions:
                     row.append('')
+                if show_extended:
+                    mount_status = item.mount_status
+                    mount_limits = STORAGE_DETAILS_SEPARATOR.join(item.tools_to_mount)
+                    item_metadata = STORAGE_DETAILS_SEPARATOR.join(['='.join(entry) for entry in item.metadata.items()])
+                    row.extend([mount_status, mount_limits, item_metadata])
                 items_table.add_row(row)
                 if show_versions and item.type == 'File':
                     if item.deleted:
@@ -474,7 +484,7 @@ class DataStorageOperations(object):
                     for version in item.versions:
                         version_type = "-File" if version.delete_marker else "+File"
                         version_label = "{} (latest)".format(version.version) if version.latest else version.version
-                        labels = ', '.join(map(lambda i: i.value, version.labels))
+                        labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, version.labels))
                         size = '' if version.size is None else version.size
                         row = [version_type, labels, version.changed.strftime('%Y-%m-%d %H:%M:%S'), size, name, version_label]
                         items_table.add_row(row)

@@ -1064,11 +1064,25 @@ def mvtodir(name, directory):
 @click.option('-r', '--recursive', is_flag=True, help='Recursive listing')
 @click.option('-p', '--page', type=int, help='Maximum number of records to show')
 @click.option('-a', '--all', is_flag=True, help='Show all results at once ignoring page settings')
+@click.option('-o', '--output', default='compact', show_default=False,
+              help="Option for configuring storage summary details listing mode. Possible values:"
+                   "compact - brief summary only"                   
+                   "full - show extended details")
 @common_options
-def storage_list(path, show_details, show_versions, recursive, page, all):
+def storage_list(path, show_details, show_versions, recursive, page, all, output):
     """Lists storage contents
     """
-    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all)
+    show_extended = False
+    if output != 'compact':
+        if output != 'full':
+            click.echo('Invalid listing mode: `{}`, possible values are [full, compact]!'.format(output), err=True)
+            sys.exit(1)
+        elif path is not None and output == 'full' or not show_details:
+            click.echo('Extended output could be configured for the storage summary listing only!', err=True)
+            sys.exit(1)
+        else:
+            show_extended = True if output == 'full' else False
+    DataStorageOperations.storage_list(path, show_details, show_versions, recursive, page, all, show_extended)
 
 
 @storage.command(name='mkdir')
