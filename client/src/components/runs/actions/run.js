@@ -1031,7 +1031,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     hddSize: 0,
     instanceType: null,
     limitMounts: null,
-    runFriendlyName: null
+    runFriendlyName: null,
+    runFriendlyNameVisible: false
   };
 
   onChangeSpotType = (isSpot) => {
@@ -1081,8 +1082,12 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     });
   };
 
-  onCHangeRunFriendlyName = (name) => {
+  onChangeRunFriendlyName = (name) => {
     this.setState({runFriendlyName: name});
+  };
+
+  showRunFriendlyNameInput = () => {
+    this.setState({runFriendlyNameVisible: true});
   };
 
   render () {
@@ -1130,18 +1135,26 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
-        <RunFriendlyNameInput
-          onChange={this.onCHangeRunFriendlyName}
-          value={this.state.runFriendlyName}
-          label="Run name:"
-          containerStyle={{
-            justifyContent: 'center',
-            margin: '4px 2px',
-            padding: '3px'
-          }}
-          containerClassName="cp-runs-friendly-name-highlighted"
-          inputStyle={{width: '400px'}}
-        />
+        {this.state.runFriendlyNameVisible ? (
+          <RunFriendlyNameInput
+            onChange={this.onChangeRunFriendlyName}
+            value={this.state.runFriendlyName}
+            label="Run name alias:"
+            containerStyle={{margin: '4px 2px'}}
+            inputStyle={{width: 'auto', flexGrow: 1}}
+          />
+        ) : (
+          <a
+            onClick={this.showRunFriendlyNameInput}
+            style={{
+              display: 'inline-block',
+              margin: '2px',
+              lineHeight: '30px'
+            }}
+          >
+            <Icon type="setting" /> Configure run name alias
+          </a>
+        )}
       </div>
     );
   }

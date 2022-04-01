@@ -2009,10 +2009,6 @@ export default `
   border: @menu-active-color;
   color: @application-color;
 }
-@THEME .cp-runs-friendly-name-highlighted {
-  background-color: @alert-success-background;
-  border: 1px solid @alert-success-border;
-}
 
 @THEME .cp-billing-menu {
   width: fit-content;
