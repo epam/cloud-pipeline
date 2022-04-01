@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,7 +34,11 @@ import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeSe
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
-import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import {
+  CP_CAP_LIMIT_MOUNTS,
+  CP_RUN_NAME
+} from '../../pipelines/launch/form/utilities/parameters';
+import RunFriendlyNameInput from '../../pipelines/launch/form/RunFriendlyNameInput';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
@@ -410,6 +414,14 @@ function runFn (
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
+            if (component.state.runFriendlyName) {
+              const {runFriendlyName} = component.state;
+              payload.params[CP_RUN_NAME] = {
+                type: 'string',
+                required: false,
+                value: runFriendlyName
+              };
+            }
             if (component.state.limitMounts !== component.props.limitMounts) {
               const {limitMounts} = component.state;
               if (limitMounts) {
@@ -1018,7 +1030,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     isSpot: false,
     hddSize: 0,
     instanceType: null,
-    limitMounts: null
+    limitMounts: null,
+    runFriendlyName: null
   };
 
   onChangeSpotType = (isSpot) => {
@@ -1068,6 +1081,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     });
   };
 
+  onCHangeRunFriendlyName = (name) => {
+    this.setState({runFriendlyName: name});
+  };
+
   render () {
     return (
       <div>
@@ -1113,6 +1130,18 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
+        <RunFriendlyNameInput
+          onChange={this.onCHangeRunFriendlyName}
+          value={this.state.runFriendlyName}
+          label="Run name:"
+          containerStyle={{
+            justifyContent: 'center',
+            margin: '4px 2px',
+            padding: '3px'
+          }}
+          containerClassName="cp-runs-friendly-name-highlighted"
+          inputStyle={{width: '400px'}}
+        />
       </div>
     );
   }

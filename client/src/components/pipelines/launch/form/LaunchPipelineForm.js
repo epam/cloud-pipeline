@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,6 +48,7 @@ import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
 import {LimitMountsInput} from './LimitMountsInput';
+import RunFriendlyNameInput from './RunFriendlyNameInput';
 
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import FolderProject from '../../../../models/folders/FolderProject';
@@ -4501,15 +4502,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
-  runFriendlyNameChange = (event = {}) => {
-    const {value = ''} = event.target || {};
-    const validityPattern = /^$|^[\da-zA-Z_-]+$/;
-    if (
-      value.length <= RUN_FRIENDLY_NAME_MAX_LENGTH &&
-      validityPattern.test(value)
-    ) {
-      this.setState({runFriendlyName: value});
-    }
+  runFriendlyNameChange = (name) => {
+    this.setState({runFriendlyName: name});
   };
 
   renderRunButton = () => {
@@ -5179,18 +5173,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             className={styles.itemHeader}
             style={{width: 1, whiteSpace: 'nowrap'}}
           >
-            <span
-              style={{
-                verticalAlign: 'middle',
-                marginLeft: configuration.length > 0 ? '5px' : '0px'
-              }}
-            >
-              {`${configuration.length > 0 ? '' : ', '}run name:`}
-            </span>
-            <Input
+            <RunFriendlyNameInput
               onChange={this.runFriendlyNameChange}
               value={this.state.runFriendlyName}
-              style={{width: '200px', marginLeft: '5px'}}
+              label={`${configuration.length > 0 ? '' : ', '}run name:`}
+              containerStyle={{marginLeft: configuration.length > 0 ? '5px' : '0px'}}
+              inputStyle={{width: '200px'}}
             />
           </td>,
           <td
