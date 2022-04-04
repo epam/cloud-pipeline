@@ -1803,7 +1803,56 @@ def transmit_tunnel(tunnel_host, tunnel_port,
                     timeout, foreground,
                     retries, region):
     """
-    Transmits tunnel connection from specified transmitter port to specified receiver port.
+    Establishes transmitting reverse tunnel connection from the specified tunnel host to the specified output host.
+
+    It allows to transfer any tcp traffic from the tunnel connections to the output connections
+    and works both on Linux and Windows.
+
+    Tunnel connection transmitting requires a tunnel connection receiver to be accessible
+    by the specified tunnel host and port.
+
+    Examples:
+
+    I.   Example of a single transmitting reverse tcp port tunnel connection establishing.
+
+    Establish tunnel connection receiver in the target run (12345).
+
+        pipe ssh pipeline-12345 pipe tunnel receive -ip 4568 -tp 4567
+
+    Establish tunnel connection from run (12345) instance port (4567) to a host (cloud-pipeline.com) local port (4568).
+
+        pipe tunnel transmit -th pipeline-12345 -tp 4567 -oh cloud-pipeline.com -op 4568
+
+    Establish tunnel connection from run (12345) instance port (4567) to a local port (4568).
+
+        pipe tunnel transmit -th pipeline-12345 -tp 4567 -oh 127.0.0.1 -op 4568
+
+    II.  Example of multiple transmitting reverse tcp ports tunnel connection establishing.
+
+    Establish tunnel connection receiver in the target run (12345).
+
+        pipe ssh pipeline-12345 pipe tunnel receive -ip 4570-4572 -tp 4567-4569
+
+    Establish tunnel connections from run (12345) instance ports (4567, 4568 and 4569)
+    to some local ports (4570, 4571 and 4572).
+
+        pipe tunnel transmit -th pipeline-12345 -tp 4567-4569 -oh 127.0.0.1 -op 4570-4572
+
+    III. Example of transmitting reverse tcp port tunnel connection establishing to a specific host.
+
+    Establish tunnel connection receiver in the target host (10.244.123.123).
+
+        ssh 10.244.123.123 pipe tunnel receive -ip 4568 -tp 4567
+
+    Establish tunnel connection from host (10.244.123.123) port (4567) to a local port (4568).
+
+        pipe tunnel transmit -th 10.244.123.123 -tp 4567 -oh 127.0.0.1 -op 4568
+
+    Advanced tunnel configuration environment variables:
+
+    \b
+        CP_CLI_TUNNEL_PROXY_HOST - tunnel proxy host
+        CP_CLI_TUNNEL_PROXY_PORT - tunnel proxy port
     """
     create_transmitting_tunnel(tunnel_host, tunnel_port, output_host, output_port,
                                refresh_interval, pool_size,
@@ -1835,7 +1884,32 @@ def receive_tunnel(input_port, tunnel_port,
                    log_file, log_level,
                    timeout, foreground):
     """
-    Receives tunnel connection from specified transmitter local port to specified receiver local port.
+    Establishes receiving reverse tunnel connection from the specified local input port
+    to the specified local tunnel port.
+
+    It allows to transfer any tcp traffic from the input connections to the tunnel connections
+    and works both on Linux and Windows.
+
+    Tunnel connection receiving requires a tunnel connection transmitter to be connected to the specified tunnel port.
+
+    Examples:
+
+    I.   Example of a single receiving reverse tcp port tunnel connection establishing.
+
+    Establish tunnel connection from input port (4568) to a tunnel port (4567).
+
+        pipe tunnel receive -ip 4568 -tp 4567
+
+    II.  Example of multiple transmitting reverse tcp ports tunnel connection establishing.
+
+    Establish tunnel connections from input ports (4567, 4568 and 4569) to tunnel ports (4570, 4571 and 4572).
+
+        pipe tunnel receive -ip 4567-4569 -tp 4570-4572
+
+    Advanced tunnel configuration environment variables:
+
+    \b
+        CP_CLI_TUNNEL_SERVER_ADDRESS - tunnel server address
     """
     create_receiving_tunnel(input_port, tunnel_port,
                             log_file, log_level,
