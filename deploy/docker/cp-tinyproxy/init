@@ -24,6 +24,8 @@ CP_TP_INTERNAL_PORT="${CP_TP_INTERNAL_PORT:-3128}"
 CP_TP_VIA_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}-tinyproxy"
 CP_TP_CONFIG_PATH="${CP_TP_CONFIG_PATH:-/opt/tinyproxy/tinyproxy.conf}"
 CP_TP_FILTER_PATH="${CP_TP_FILTER_PATH:-$(dirname $CP_TP_CONFIG_PATH)/filter.conf}"
+CP_TP_TIMEOUT="${CP_TP_TIMEOUT:-60}"
+CP_TP_LOG_LEVEL="${CP_TP_LOG_LEVEL:-Error}"
 
 CP_TP_MAX_CLIENTS="${CP_TP_MAX_CLIENTS:-100}"
 CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-5}"
@@ -38,12 +40,12 @@ Group root
 Port $CP_TP_INTERNAL_PORT
 Listen 0.0.0.0
 BindSame yes
-Timeout 600
+Timeout $CP_TP_TIMEOUT
 
 DefaultErrorFile "/opt/tinyproxy/logs/default.html"
 StatFile "/opt/tinyproxy/logs/stats.html"
 Logfile "/opt/tinyproxy/logs/tinyproxy.log"
-LogLevel Info
+LogLevel $CP_TP_LOG_LEVEL
 PidFile "/var/run/tinyproxy/tinyproxy.pid"
 
 MaxClients $CP_TP_MAX_CLIENTS
