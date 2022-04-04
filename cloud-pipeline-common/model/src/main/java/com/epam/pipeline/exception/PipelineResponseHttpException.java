@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 
 package com.epam.pipeline.exception;
 
-public class PipelineResponseException extends RuntimeException {
+public class PipelineResponseHttpException extends PipelineResponseException {
 
-    public PipelineResponseException(final String message) {
+    public PipelineResponseHttpException(final String message) {
         super(message);
     }
 
-    public PipelineResponseException(final Throwable cause) {
+    public PipelineResponseHttpException(final Throwable cause) {
         super(cause);
     }
 
-    public PipelineResponseException(final String message, final Throwable cause) {
+    public PipelineResponseHttpException(final String message, final Throwable cause) {
         super(message, cause);
     }
 }
