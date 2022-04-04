@@ -624,7 +624,10 @@ class EditQuotaDialog extends React.Component {
     const {quotaGroup} = quota || {};
     const {modified, errors} = this.state;
     const groupName = quotaGroup ? (quotaGroupNames[quotaGroup] || quotaGroup) : '';
-    const title = `${this.isNewQuota ? 'Create' : ''} ${groupName.toLowerCase()}`;
+    const title = [
+      this.isNewQuota ? 'Create' : false,
+      this.isNewQuota ? groupName.toLowerCase() : groupName
+    ].filter(Boolean).join(' ');
     return (
       <Modal
         width="50%"
