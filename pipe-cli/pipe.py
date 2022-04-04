@@ -44,7 +44,8 @@ from src.utilities.datastorage_operations import DataStorageOperations
 from src.utilities.metadata_operations import MetadataOperations
 from src.utilities.permissions_operations import PermissionsOperations
 from src.utilities.pipeline_run_operations import PipelineRunOperations
-from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels
+from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_tunnels, list_tunnels, \
+    create_transmitting_tunnel, create_receiving_tunnel
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
@@ -1760,6 +1761,85 @@ def view_tunnels(log_level):
 
     """
     list_tunnels(log_level, parse_tunnel_args)
+
+
+@tunnel.command(name='transmit')
+@click.option('-th', '--tunnel-host', required=False, type=str,
+              help='Host name of a tunnel host which has active pipe tunnel receiver process.')
+@click.option('-tp', '--tunnel-port', required=False, type=str,
+              help='A single tunnel port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for. '
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then tunnel and output ports will be the same.')
+@click.option('-oh', '--output-host', required=False, type=str,
+              help='Host name of an output host which will receive tunnel connections.')
+@click.option('-op', '--output-port', required=False, type=str,
+              help='A single output port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for.'
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then tunnel and output ports will be the same.')
+@click.option('--refresh-interval', required=False, type=int, default=60,
+              help='Tunnel connections refresh interval in seconds.')
+@click.option('--pool-size', required=False, type=int, default=5,
+              help='Tunnel connections pool size.')
+@click.option('-ct', '--connection-timeout', required=False, type=float, default=0,
+              help='Socket connection timeout in seconds.')
+@click.option('-d', '--direct', required=False, is_flag=True, default=False,
+              help='Configures direct tunnel connection without proxy.')
+@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode.')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
+              help='Maximum timeout for background tunnel process health check in seconds.')
+@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+              help='Establishes tunnel in foreground mode.')
+@click.option('-r', '--retries', required=False, type=int, default=10, help=RETRIES_OPTION_DESCRIPTION)
+@click.option('-rg', '--region', required=False, help=EDGE_REGION_OPTION_DESCRIPTION)
+@common_options
+def transmit_tunnel(tunnel_host, tunnel_port,
+                    output_host, output_port,
+                    refresh_interval, pool_size,
+                    connection_timeout,
+                    direct, log_file, log_level,
+                    timeout, foreground,
+                    retries, region):
+    """
+    Transmits tunnel connection from specified transmitter port to specified receiver port.
+    """
+    create_transmitting_tunnel(tunnel_host, tunnel_port, output_host, output_port,
+                               refresh_interval, pool_size,
+                               connection_timeout,
+                               direct, log_file, log_level,
+                               timeout, foreground,
+                               retries, region)
+
+
+@tunnel.command(name='receive')
+@click.option('-ip', '--input-port', required=False, type=str,
+              help='A single input port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for. '
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then input and tunnel ports will be the same.')
+@click.option('-tp', '--tunnel-port', required=False, type=str,
+              help='A single tunnel port (4567) or a range of ports (4567-4569) '
+                   'to establish tunnel connections for. '
+                   'At least one of -tp/--tunnel-port and -op/--output-port options should be be specified. '
+                   'If one of the options is omitted then input and tunnel ports will be the same.')
+@click.option('-l', '--log-file', required=False, help='Logs file for tunnel in background mode.')
+@click.option('-v', '--log-level', required=False, help=LOGGING_LEVEL_OPTION_DESCRIPTION)
+@click.option('-t', '--timeout', required=False, type=int, default=5 * 60,
+              help='Maximum timeout for background tunnel process health check in seconds.')
+@click.option('-f', '--foreground', required=False, is_flag=True, default=False,
+              help='Establishes tunnel in foreground mode.')
+@common_options
+def receive_tunnel(input_port, tunnel_port,
+                   log_file, log_level,
+                   timeout, foreground):
+    """
+    Receives tunnel connection from specified transmitter local port to specified receiver local port.
+    """
+    create_receiving_tunnel(input_port, tunnel_port,
+                            log_file, log_level,
+                            timeout, foreground)
 
 
 @cli.command(name='update')
