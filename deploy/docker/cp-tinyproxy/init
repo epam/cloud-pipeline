@@ -78,6 +78,21 @@ if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
     echo "Filter \"$CP_TP_FILTER_PATH\"" >> "$CP_TP_CONFIG_PATH"
 fi
 
+if [ "$CP_TP_RESTRICTED_DESTINATION" ]; then
+    if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
+        echo "CP_TP_RESTRICTED_DESTINATION cannot be mixed with CP_TP_ALLOWED_DESTINATION ('allowed' destinations take precedence)"
+    else
+        echo "Setting proxy restricted destinations"
+        IFS=',' read -ra _restricted_dests <<< "$CP_TP_RESTRICTED_DESTINATION"
+        for _d in "${_restricted_dests[@]}"; do
+            echo "$_d" >> $CP_TP_FILTER_PATH
+            echo "Entry added: $_d"
+        done
+        echo "FilterDefaultDeny No" >> "$CP_TP_CONFIG_PATH"
+        echo "Filter \"$CP_TP_FILTER_PATH\"" >> "$CP_TP_CONFIG_PATH"
+    fi
+fi
+
 tinyproxy -c "$CP_TP_CONFIG_PATH"
 
 #################################
