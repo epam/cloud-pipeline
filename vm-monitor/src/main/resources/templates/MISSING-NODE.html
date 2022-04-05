@@ -52,7 +52,9 @@
             <td>$summary.vm.privateIp</td>
             <td>
                 #foreach( $run in $summary.matchingRuns )
-                    <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$run.id">$run.id</a> [ $run.status.name ] <br>
+                    #set( $runId = $run.id )
+                    #set( $runStatus =  $run.status )
+                    <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$runId">$runId</a> [ #if( $runStatus )$runStatus.name#{else}UNKNOWN#end ] <br>
                 #end
             </td>
             <td>$summary.vm.cloudProvider</td>

@@ -51,7 +51,8 @@
         <td>
             #set( $correspondingRunStatus = $summary.correspondingRunStatus )
             #if ($correspondingRunStatus)
-                Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ $correspondingRunStatus.status ] <br>
+                #set( $statusCode = $correspondingRunStatus.status )
+                Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ #if( $statusCode )$statusCode#{else}UNKNOWN#end] <br>
             #end
             #set( $correspondingPoolId = $summary.correspondingPoolId )
             #if ($correspondingPoolId)
