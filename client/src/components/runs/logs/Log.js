@@ -1360,13 +1360,14 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   getRunName = (run = {}) => {
+    const {runId} = this.props.params;
     let name;
     const nameParameter = (run.pipelineRunParameters || [])
       .find(parameter => parameter.name === CP_RUN_NAME);
     if (nameParameter && nameParameter.value) {
-      name = `${nameParameter.value} (${run.id})`;
+      name = `${nameParameter.value} (${runId})`;
     } else {
-      name = `Run #${run.podId}`;
+      name = `Run #${runId}`;
     }
     return name;
   };
