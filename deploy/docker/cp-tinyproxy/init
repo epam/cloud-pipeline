@@ -43,7 +43,7 @@ BindSame yes
 Timeout $CP_TP_TIMEOUT
 
 DefaultErrorFile "/opt/tinyproxy/logs/default.html"
-StatFile "/opt/tinyproxy/logs/stats.html"
+StatFile "/opt/tinyproxy/stats.json"
 Logfile "/opt/tinyproxy/logs/tinyproxy.log"
 LogLevel $CP_TP_LOG_LEVEL
 PidFile "/var/run/tinyproxy/tinyproxy.pid"

@@ -1,0 +1,9 @@
+{{
+    "server": "{package}",
+    "version": "{version}",
+    "open": "{opens}",
+    "requests": "{reqs}",
+    "bad": "{badconns}",
+    "denied": "{deniedconns}",
+    "refused": "{refusedconns}"
+}

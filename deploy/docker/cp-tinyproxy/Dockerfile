@@ -30,6 +30,10 @@ RUN mkdir -p /opt/tinyproxy && \
     make && \
     make install
 
+# This is a template file to format usage statistics (curl tinyproxy.stats)
+# See http://tinyproxy.github.io/: "StatHost" option
+ADD stats.json /opt/tinyproxy/stats.json
+
 # 2. NGINX (TCP/UDP forward proxy)
 RUN yum install -y epel-release
 # Since 1.20 we shall install "stream" explicitly
