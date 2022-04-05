@@ -140,7 +140,7 @@ class DataStorageOperations(object):
                 continue
             if source_wrapper.is_file() and not source_wrapper.path == full_path:
                 continue
-            if not include and not exclude:
+            if not include and not exclude and not skip_existing and not verify_destination:
                 if not source_wrapper.is_file():
                     possible_folder_name = source_wrapper.path_with_trailing_separator()
                     # if operation from source root
