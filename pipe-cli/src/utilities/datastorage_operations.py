@@ -137,7 +137,7 @@ class DataStorageOperations(object):
             # check that we have corresponding permission for the file before take action
             if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
                 continue
-            if not include and not exclude:
+            if not include and not exclude and not skip_existing and not verify_destination:
                 if source_wrapper.is_file() and not source_wrapper.path == full_path:
                     continue
                 if not source_wrapper.is_file():
