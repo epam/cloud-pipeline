@@ -88,6 +88,9 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
+    def get_paging_items(self, relative_path, next_token, page_size):
+        return self.get_items(relative_path), None
+
     def get_summary(self, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,

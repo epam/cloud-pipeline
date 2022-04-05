@@ -36,6 +36,7 @@ from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 FOLDER_MARKER = '.DS_Store'
+BATCH_SIZE = 2
 
 
 class DataStorageOperations(object):
@@ -95,8 +96,26 @@ class DataStorageOperations(object):
         command = 'mv' if clean else 'cp'
         permission_to_check = os.R_OK if command == 'cp' else os.W_OK
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
-        items = files_to_copy if file_list else source_wrapper.get_items()
-        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+
+        if verify_destination or file_list or not cls._is_cloud_source(source_wrapper.get_type()):
+            items = files_to_copy if file_list else source_wrapper.get_items()
+            cls._transfer(source_wrapper, destination_wrapper, items, manager, permission_to_check, include, exclude,
+                          force, quiet, skip_existing, verify_destination, threads, clean, tags, io_threads)
+        else:
+            items_batch, next_token = source_wrapper.get_paging_items(next_token=None, page_size=BATCH_SIZE)
+            while True:
+                cls._transfer(source_wrapper, destination_wrapper, items_batch, manager, permission_to_check, include,
+                              exclude, force, quiet, skip_existing, verify_destination, threads, clean, tags,
+                              io_threads)
+                if not next_token:
+                    return
+                items_batch, next_token = source_wrapper.get_paging_items(next_token=next_token, page_size=BATCH_SIZE)
+
+    @classmethod
+    def _transfer(cls, source_wrapper, destination_wrapper, items_part, manager, permission_to_check,
+                  include, exclude, force, quiet, skip_existing, verify_destination, threads,
+                  clean, tags, io_threads):
+        items = cls._filter_items(items_part, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination)
         sorted_items = list()
         transfer_results = []
@@ -123,6 +142,10 @@ class DataStorageOperations(object):
                                             transfer_results, clean=clean, flush_size=1)
 
     @classmethod
+    def _is_cloud_source(cls, source_wrapper_type):
+        return source_wrapper_type in [WrapperType.S3, WrapperType.AZURE, WrapperType.GS]
+
+    @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
                       include, exclude, force, quiet, skip_existing, verify_destination):
         filtered_items = []
@@ -140,7 +163,7 @@ class DataStorageOperations(object):
                 continue
             if source_wrapper.is_file() and not source_wrapper.path == full_path:
                 continue
-            if not include and not exclude:
+            if not include and not exclude and not skip_existing and not verify_destination:
                 if not source_wrapper.is_file():
                     possible_folder_name = source_wrapper.path_with_trailing_separator()
                     # if operation from source root

@@ -329,6 +329,10 @@ class AbstractListingManager:
                 item_relative_path = StorageOperations.get_item_name(item.name, prefix + StorageOperations.PATH_SEPARATOR)
             yield ('File', item.name, item_relative_path, item.size)
 
+    @abstractmethod
+    def get_paging_items(self, relative_path, next_token, page_size):
+        pass
+
     def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
         prefix = StorageOperations.get_prefix(relative_path).rstrip(delimiter) + delimiter
         for item in self.list_items(prefix, show_all=True):

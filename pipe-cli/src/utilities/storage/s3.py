@@ -789,6 +789,10 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def get_items(self, relative_path):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
+    def get_paging_items(self, relative_path, next_token, page_size):
+        return S3BucketOperations.get_paging_items(self.bucket, page_size=page_size, next_token=next_token,
+                                                   session=self.session)
+
     def get_file_tags(self, relative_path):
         return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
             self.session, self.bucket, self.region_name), relative_path)
@@ -931,6 +935,39 @@ class S3BucketOperations(object):
                     if name.endswith(delimiter):
                         continue
                     yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'])
+
+    @classmethod
+    def get_paging_items(cls, storage_wrapper, page_size, next_token=None, session=None):
+        if session is None:
+            session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
+
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = cls._get_client(session, storage_wrapper.bucket.region)
+        paginator = client.get_paginator('list_objects_v2')
+        prefix = cls.get_prefix(delimiter, storage_wrapper.path)
+        operation_parameters = {
+            'Bucket': storage_wrapper.bucket.path,
+            'Prefix': prefix,
+            'PaginationConfig':
+                {
+                    'PageSize': page_size,
+                    'MaxKeys': page_size
+                }
+        }
+
+        if next_token:
+            operation_parameters['ContinuationToken'] = next_token
+
+        page_iterator = paginator.paginate(**operation_parameters)
+        res = []
+        for page in page_iterator:
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    name = cls.get_item_name(file['Key'], prefix=prefix)
+                    if name.endswith(delimiter):
+                        continue
+                    res.append(('File', file['Key'], cls.get_prefix(delimiter, name), file['Size']))
+            return res, page.get('NextContinuationToken', None) if page else None
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):
