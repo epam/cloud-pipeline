@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         self.project_id = os.environ["GOOGLE_PROJECT_ID"]
         self.client = discovery.build('compute', 'v1')
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, kms_encyr_key_id,
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[]):
         ssh_pub_key = utils.read_ssh_key(ins_key)
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "GCP")
@@ -74,7 +74,7 @@ class GCPInstanceProvider(AbstractInstanceProvider):
             'canIpForward': False,
             'disks': self.__get_disk_devices(ins_img, OS_DISK_SIZE, ins_hdd, swap_size),
             'networkInterfaces': network_interfaces,
-            'labels': GCPInstanceProvider.get_tags(run_id, self.cloud_region),
+            'labels': GCPInstanceProvider.get_tags(run_id, pool_id, self.cloud_region),
             'tags': {
                 'items': utils.get_network_tags(self.cloud_region)
             },
@@ -351,8 +351,10 @@ class GCPInstanceProvider(AbstractInstanceProvider):
         }
 
     @staticmethod
-    def get_tags(run_id, cloud_region):
+    def get_tags(run_id, pool_id, cloud_region):
         tags = GCPInstanceProvider.run_id_tag(run_id)
+        if pool_id:
+            GCPInstanceProvider.append_tags(tags, {'pool_id': pool_id})
         GCPInstanceProvider.append_tags(tags, GCPInstanceProvider.resource_tags())
         GCPInstanceProvider.append_tags(tags, utils.get_region_tags(cloud_region))
         return tags
