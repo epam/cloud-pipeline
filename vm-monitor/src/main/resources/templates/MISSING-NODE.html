@@ -40,7 +40,7 @@
         <td><b>Creation date</b></td>
         <td><b>Instance type</b></td>
         <td><b>Private IP</b></td>
-        <td><b>Matching runs</b></td>
+        <td><b>Matching runs/pool</b></td>
         <td><b>Provider</b></td>
         <td><b>Action proposed</b></td>
     </tr>
@@ -54,7 +54,10 @@
                 #foreach( $run in $summary.matchingRuns )
                     #set( $runId = $run.id )
                     #set( $runStatus =  $run.status )
-                    <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$runId">$runId</a> [ #if( $runStatus )$runStatus.name#{else}UNKNOWN#end ] <br>
+                    Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$runId">$runId</a> [ #if( $runStatus )$runStatus.name#{else}UNKNOWN#end ] <br>
+                #end
+                #if ( $summary.matchingPoolId )
+                    Pool <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster?pool_id=$summary.matchingPoolId">$summary.matchingPoolId</a><br>
                 #end
             </td>
             <td>$summary.vm.cloudProvider</td>

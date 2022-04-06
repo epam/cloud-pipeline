@@ -127,12 +127,13 @@ public class VMMonitor {
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
                 if (!matchingRunExists(vm) && !checkVMPoolNode(vm)) {
-                    final List<PipelineRun> matchingRuns = findLongValueInTags(MapUtils.emptyIfNull(vm.getTags()),
-                                                                               runIdLabel)
+                    final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
+                    final List<PipelineRun> matchingRuns = findLongValueInMap(vmTags, runIdLabel)
                         .map(runId -> loadPipelineRun(runId).orElseGet(() -> new PipelineRun(runId, null)))
                         .map(Collections::singletonList)
                         .orElseGet(() -> apiClient.searchRunsByInstanceId(vm.getInstanceId()));
-                    notifier.queueMissingNodeNotification(vm, matchingRuns);
+                    final Long matchingPoolId = findLongValueInMap(vmTags, poolIdLabel).orElse(null);
+                    notifier.queueMissingNodeNotification(vm, matchingRuns, matchingPoolId);
                 }
             }
         } catch (Exception e) {
@@ -239,8 +240,8 @@ public class VMMonitor {
         }
     }
 
-    private Optional<Long> findLongValueInTags(final Map<String, String> tags, final String labelName) {
-        return Optional.ofNullable(tags.get(labelName))
+    private Optional<Long> findLongValueInMap(final Map<String, String> map, final String labelName) {
+        return Optional.ofNullable(map.get(labelName))
             .filter(StringUtils::isNotBlank)
             .filter(NumberUtils::isDigits)
             .map(Long::parseLong);
@@ -248,8 +249,8 @@ public class VMMonitor {
 
     private Optional<Long> findLongValueInMaps(final Map<String, String> firstMap, final Map<String, String> secondMap,
                                                final String key) {
-        final Optional<Long> runIdFromNode = findLongValueInTags(firstMap, key);
-        return runIdFromNode.isPresent() ? runIdFromNode : findLongValueInTags(secondMap, key);
+        final Optional<Long> runIdFromNode = findLongValueInMap(firstMap, key);
+        return runIdFromNode.isPresent() ? runIdFromNode : findLongValueInMap(secondMap, key);
     }
 
     private List<String> getMissingLabels(final NodeInstance node) {
