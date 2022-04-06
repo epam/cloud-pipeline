@@ -244,7 +244,7 @@ public class PipelineRunManagerUnitTest {
         doReturn(null).when(pipelineRunDao).loadPipelineRun(eq(NOT_EXISTING_RUN_ID));
 
         assertThrows(IllegalArgumentException.class, () -> pipelineRunManager
-                .updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null)));
+                .updateTags(NOT_EXISTING_RUN_ID, new TagsVO(null), true));
     }
 
     @Test
