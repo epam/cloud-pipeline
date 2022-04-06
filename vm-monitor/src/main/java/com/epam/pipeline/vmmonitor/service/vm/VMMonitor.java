@@ -226,17 +226,14 @@ public class VMMonitor {
         if (CollectionUtils.isNotEmpty(labels)) {
             final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
             final Map<String, String> nodeTags = MapUtils.emptyIfNull(node.getLabels());
-            final Optional<Long> runIdFromNode = findLongValueInTags(nodeTags, runIdLabel);
-            final Optional<Long> runIdFromAttributes = runIdFromNode.isPresent()
-                                                       ? runIdFromNode
-                                                       : findLongValueInTags(vmTags, runIdLabel);
+            final Optional<Long> runIdFromAttributes = findLongValueInMaps(nodeTags, vmTags, runIdLabel);
             final RunStatus matchingRunStatus = runIdFromAttributes
                 .map(runId -> new RunStatus(runId,
                                             loadPipelineRun(runId).map(PipelineRun::getStatus).orElse(null),
                                             null))
                 .orElse(null);
-            final Long matchingPoolId = findLongValueInTags(nodeTags, poolIdLabel).orElse(null);
-            notifier.queueMissingLabelsNotification(node, vm, labels, matchingRunStatus, matchingPoolId);
+            final Long poolIdFromAttributes = findLongValueInMaps(nodeTags, vmTags, poolIdLabel).orElse(null);
+            notifier.queueMissingLabelsNotification(node, vm, labels, matchingRunStatus, poolIdFromAttributes);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }
@@ -247,6 +244,12 @@ public class VMMonitor {
             .filter(StringUtils::isNotBlank)
             .filter(NumberUtils::isDigits)
             .map(Long::parseLong);
+    }
+
+    private Optional<Long> findLongValueInMaps(final Map<String, String> firstMap, final Map<String, String> secondMap,
+                                               final String key) {
+        final Optional<Long> runIdFromNode = findLongValueInTags(firstMap, key);
+        return runIdFromNode.isPresent() ? runIdFromNode : findLongValueInTags(secondMap, key);
     }
 
     private List<String> getMissingLabels(final NodeInstance node) {
