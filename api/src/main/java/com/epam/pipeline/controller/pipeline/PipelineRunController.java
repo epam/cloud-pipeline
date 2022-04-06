@@ -53,7 +53,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -61,10 +60,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -73,7 +70,7 @@ import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Controller
+@RestController
 @Api(value = "Pipeline runs")
 public class PipelineRunController extends AbstractRestController {
 
@@ -86,8 +83,7 @@ public class PipelineRunController extends AbstractRestController {
     @Value("${run.prolong.redirect:/prolong.html}")
     private String prolongRedirect;
 
-    @RequestMapping(value = "/run", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run")
     @ApiOperation(
             value = "Launches pipeline version execution.",
             notes = "Launches pipeline version execution.",
@@ -103,8 +99,7 @@ public class PipelineRunController extends AbstractRestController {
         }
     }
 
-    @RequestMapping(value = "/runConfiguration", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/runConfiguration")
     @ApiOperation(
             value = "Launches execution according to passed configuration.",
             notes = "Launches execution according to passed configuration.",
@@ -119,8 +114,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.runConfiguration(refreshToken, configuration, expansionExpression));
     }
 
-    @RequestMapping(value = "/run/{runId}/log", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/{runId}/log")
     @ApiOperation(
             value = "Adds log entry for specified pipeline run.",
             notes = "Adds log entry for specified pipeline run.",
@@ -134,8 +128,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.saveLog(log));
     }
 
-    @RequestMapping(value = "/run/{runId}/logs", method= RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/logs")
     @ApiOperation(
             value = "Loads pipeline run logs.",
             notes = "Loads pipeline run logs.",
@@ -147,8 +140,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadAllLogsByRunId(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/price", method= RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/price")
     @ApiOperation(
             value = "Gets estimated price for pipeline run.",
             notes = "Gets estimated price for pipeline run.",
@@ -161,8 +153,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.getPipelineRunEstimatedPrice(runId, regionId));
     }
 
-    @RequestMapping(value = "/run/{runId}/logfile", method= RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/logfile")
     @ApiOperation(
             value = "Downloads pipeline run logs as a text file.",
             notes = "Downloads pipeline run logs a text file.",
@@ -187,8 +178,7 @@ public class PipelineRunController extends AbstractRestController {
         }
     }
 
-    @RequestMapping(value = "/run/{runId}/tasks", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/tasks")
     @ApiOperation(
             value = "Loads pipeline run tasks.",
             notes = "Loads pipeline run tasks.",
@@ -198,8 +188,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadTasksByRunId(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/task", method= RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/task")
     @ApiOperation(
             value = "Loads logs for a task.",
             notes = "Loads logs for a task.",
@@ -213,8 +202,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadAllLogsForTask(runId, taskName, parameters));
     }
 
-    @RequestMapping(value = "/run/{runId}/status", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/{runId}/status")
     @ApiOperation(
             value = "Updates pipeline run status.",
             notes = "Updates pipeline run status.",
@@ -226,8 +214,7 @@ public class PipelineRunController extends AbstractRestController {
                 statusVO.getStatus()));
     }
 
-    @RequestMapping(value = "/run/{runId}/instance", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/{runId}/instance")
     @ApiOperation(
             value = "Updates pipeline run instance.",
             notes = "Updates pipeline run instance.",
@@ -238,8 +225,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.updateRunInstance(runId, instance));
     }
 
-    @RequestMapping(value = "/run/{runId}/commit", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/{runId}/commit")
     @ApiOperation(
         value = "Commit and push docker container in which run is executing.",
         notes = "Commit and push docker container in which run is executing.",
@@ -257,7 +243,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/commit/check")
-    @ResponseBody
     @ApiOperation(
             value = "Checks if free disk space is available.",
             notes = "Checks if free disk space is available.",
@@ -267,8 +252,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.checkFreeSpaceAvailable(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/commitStatus", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/{runId}/commitStatus")
     @ApiOperation(
             value = "Update commit status of the pipeline.",
             notes = "Update commit status of the pipeline.",
@@ -279,8 +263,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.updateCommitRunStatus(runId, commitRunStatusVO.getCommitStatus()));
     }
 
-    @RequestMapping(value = "/run/{runId}/serviceUrl", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping("/run/{runId}/serviceUrl")
     @ApiOperation(
             value = "Updates pipeline run service url.",
             notes = "Updates pipeline run service url.",
@@ -291,8 +274,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.updateServiceUrl(runId, serviceUrlVO));
     }
 
-    @RequestMapping(value = "/run/{runId}/prettyUrl", method= RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/{runId}/prettyUrl")
     @ApiOperation(
             value = "Updates pipeline run pretty url.",
             notes = "Updates pipeline run pretty url.",
@@ -303,8 +285,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.updatePrettyUrl(runId, url));
     }
 
-    @RequestMapping(value = "/run/{runId}", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}")
     @ApiOperation(
             value = "Loads pipeline run details with full list of it's restarted runs.",
             notes = "Loads pipeline run details with full list of it's restarted runs.",
@@ -316,8 +297,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.loadPipelineRunWithRestartedRuns(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/ssh", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/ssh")
     @ApiOperation(
             value = "Return URL to access run ssh client.",
             notes = "Return URL to access run ssh client.",
@@ -329,8 +309,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.buildSshUrl(runId));
     }
 
-    @RequestMapping(value = "/run/{runId}/fsbrowser", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/{runId}/fsbrowser")
     @ApiOperation(
             value = "Return URL to access run fsbrowser client.",
             notes = "Return URL to access run fsbrowser client.",
@@ -342,8 +321,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.buildFSBrowserUrl(runId));
     }
 
-    @RequestMapping(value = "/run/filter", method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/filter")
     @ApiOperation(
             value = "Filters pipeline runs.",
             notes = "Filters pipeline runs by specified criteria.",
@@ -357,8 +335,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.searchPipelineRuns(filterVO, loadStorageLinks));
     }
 
-    @RequestMapping(value = "/run/search", method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/search")
     @ApiOperation(
             value = "Search pipeline runs.",
             notes = "Search pipeline runs by specified criteria.",
@@ -371,8 +348,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.searchPipelineRunsByExpression(filterVO));
     }
 
-    @RequestMapping(value = "/run/search/keywords", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/search/keywords")
     @ApiOperation(
             value = "Gets pipeline runs search query keywords.",
             notes = "Gets pipeline runs search query keywords.",
@@ -384,8 +360,7 @@ public class PipelineRunController extends AbstractRestController {
         return Result.success(runApiService.getRunSearchQueryKeywords());
     }
 
-    @RequestMapping(value = "/run/count", method = RequestMethod.POST)
-    @ResponseBody
+    @PostMapping(value = "/run/count")
     @ApiOperation(
             value = "Returns number of pipeline runs matching filter.",
             notes = "Returns number of pipeline runs matching filter.",
@@ -398,8 +373,7 @@ public class PipelineRunController extends AbstractRestController {
     }
 
 
-    @RequestMapping(value = "/run/defaultParameters", method = RequestMethod.GET)
-    @ResponseBody
+    @GetMapping(value = "/run/defaultParameters")
     @ApiOperation(
             value = "Returns list of predefined run parameters.",
             notes = "Returns list of predefined run parameters.",
@@ -412,7 +386,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/pause")
-    @ResponseBody
     @ApiOperation(
             value = "Pauses executing run.",
             notes = "Pauses executing run.",
@@ -424,7 +397,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping("/run/{runId}/resume")
-    @ResponseBody
     @ApiOperation(
             value = "Resumes paused run.",
             notes = "Resumes paused run.",
@@ -435,7 +407,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/updateSids")
-    @ResponseBody
     @ApiOperation(
             value = "Updates pipeline run sids.",
             notes = "Updates pipeline run sids.",
@@ -460,7 +431,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/prolong")
-    @ResponseBody
     @ApiOperation(
             value = "Prolong idle pipeline run for new period.",
             notes = "Prolong idle pipeline run for new period.",
@@ -472,7 +442,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/terminate")
-    @ResponseBody
     @ApiOperation(
             value = "Terminates paused pipeline run.",
             notes = "Terminates paused pipeline run cloud instance if it exists and stops the pipeline run.",
@@ -483,19 +452,19 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/tag")
-    @ResponseBody
     @ApiOperation(
             value = "Updates tags for pipeline run.",
             notes = "Updates tags for pipeline run. To remove all the tags pass empty map or null inside VO.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<PipelineRun>  updateRunTags(@PathVariable(value = RUN_ID) final Long runId,
-                                              @RequestBody final TagsVO tagsVO) {
-        return Result.success(runApiService.updateTags(runId, tagsVO));
+    public Result<PipelineRun>  updateRunTags(
+            @PathVariable(value = RUN_ID) final Long runId,
+            @RequestBody final TagsVO tagsVO,
+            @RequestParam(defaultValue = "true", required = false) final boolean overwrite) {
+        return Result.success(runApiService.updateTags(runId, tagsVO, overwrite));
     }
 
     @PostMapping(value = "/run/{runId}/disk/attach")
-    @ResponseBody
     @ApiOperation(
             value = "Creates and attaches new disk to pipeline run.",
             notes = "Creates and attaches new disk to pipeline run cloud instance by the given request. " +
@@ -508,7 +477,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/activity")
-    @ResponseBody
     @ApiOperation(
         value = "Load runs with its activity statuses.",
         notes = "Load runs with its activity statuses. " +
@@ -524,7 +492,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/cmd")
-    @ResponseBody
     @ApiOperation(
             value = "Returns launch command for specified run",
             notes = "Returns launch command for specified run",
@@ -535,7 +502,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/runs")
-    @ResponseBody
     @ApiOperation(
             value = "Returns runs with associated tools",
             notes = "Returns runs with associated tools",
@@ -546,7 +512,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @PostMapping(value = "/run/{runId}/kube/services")
-    @ResponseBody
     @ApiOperation(
             value = "Creates kubernetes service",
             notes = "Creates kubernetes service",
@@ -559,7 +524,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping(value = "/run/{runId}/kube/services")
-    @ResponseBody
     @ApiOperation(
             value = "Returns kubernetes service description",
             notes = "Returns kubernetes service description",
@@ -570,7 +534,6 @@ public class PipelineRunController extends AbstractRestController {
     }
 
     @GetMapping("/run/pools/{id}")
-    @ResponseBody
     @ApiOperation(
             value = "Loads runs associated with certain node pool ID",
             notes = "Loads runs associated with certain node pool ID",

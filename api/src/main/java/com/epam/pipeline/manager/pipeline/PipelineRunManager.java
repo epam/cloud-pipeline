@@ -99,6 +99,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -378,6 +379,10 @@ public class PipelineRunManager {
         save(run);
         dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(run));
         contextualNotificationRegistrationManager.register(notificationRequests, run);
+        if (MapUtils.isNotEmpty(configuration.getTags())) {
+            run.setTags(configuration.getTags());
+            pipelineRunDao.updateRunTags(run);
+        }
         return run;
     }
 
@@ -893,14 +898,21 @@ public class PipelineRunManager {
      * Updates run's tags
      * @param runId is ID of pipeline run which tags should be updated
      * @param newTags object, containing a map with tags to set for a pipeline
+     * @param overwrite
      * @return
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateTags(final Long runId, final TagsVO newTags) {
+    public PipelineRun updateTags(final Long runId, final TagsVO newTags, final boolean overwrite) {
         final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
-        run.setTags(newTags.getTags());
+        if (overwrite) {
+            run.setTags(newTags.getTags());
+        } else {
+            final Map<String, String> currentTags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+            currentTags.putAll(MapUtils.emptyIfNull(newTags.getTags()));
+            run.setTags(currentTags);
+        }
         pipelineRunDao.updateRunTags(run);
         return run;
     }

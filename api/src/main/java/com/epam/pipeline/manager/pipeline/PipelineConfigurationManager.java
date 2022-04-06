@@ -366,6 +366,7 @@ public class PipelineConfigurationManager {
         if (!StringUtils.hasText(runVO.getConfigurationName()) && entry != null) {
             runVO.setConfigurationName(entry.getName());
         }
+        defaultConfiguration.setTags(runVO.getTags());
         return defaultConfiguration;
     }
 

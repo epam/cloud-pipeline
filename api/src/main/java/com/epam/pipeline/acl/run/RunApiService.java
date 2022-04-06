@@ -202,8 +202,8 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun updateTags(final Long runId, final TagsVO tagsVO) {
-        return runManager.updateTags(runId, tagsVO);
+    public PipelineRun updateTags(final Long runId, final TagsVO tagsVO, final boolean overwrite) {
+        return runManager.updateTags(runId, tagsVO, overwrite);
     }
 
     @PreAuthorize(ADMIN_ONLY)
