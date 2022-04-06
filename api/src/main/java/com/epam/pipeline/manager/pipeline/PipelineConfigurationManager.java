@@ -201,6 +201,7 @@ public class PipelineConfigurationManager {
         configuration.setRunAs(mergeRunAs(runVO, defaultConfig));
         configuration.setSharedWithUsers(defaultConfig.getSharedWithUsers());
         configuration.setSharedWithRoles(defaultConfig.getSharedWithRoles());
+        configuration.setTags(runVO.getTags());
         return configuration;
     }
 
@@ -388,7 +389,6 @@ public class PipelineConfigurationManager {
         if (!StringUtils.hasText(runVO.getConfigurationName()) && entry != null) {
             runVO.setConfigurationName(entry.getName());
         }
-        defaultConfiguration.setTags(runVO.getTags());
         return defaultConfiguration;
     }
 
