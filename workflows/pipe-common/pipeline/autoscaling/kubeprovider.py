@@ -97,12 +97,7 @@ class KubeProvider(object):
         }
 
         if additional_labels:
-            for label in additional_labels:
-                label_parts = label.split("=")
-                if len(label_parts) == 1:
-                    obj["metadata"]["labels"][label_parts[0]] = None
-                else:
-                    obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
+            obj["metadata"]["labels"].update(additional_labels)
 
         if cluster_name:
             obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name

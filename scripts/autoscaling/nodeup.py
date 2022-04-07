@@ -65,7 +65,7 @@ def main():
     region_id = args.region_id
     cloud = args.cloud
     pre_pull_images = args.image
-    additional_labels = args.label
+    additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get('pool_id')
 
     if not kube_ip or not kubeadm_token:
@@ -144,6 +144,17 @@ def main():
             cloud_provider.terminate_instance(node)
         utils.pipe_log('[ERROR] ' + str(e), status=TaskStatus.FAILURE)
         raise e
+
+
+def map_labels_to_dict(additional_labels_list):
+    additional_labels_dict = dict()
+    for label in additional_labels_list:
+        label_parts = label.split("=")
+        if len(label_parts) == 1:
+            additional_labels_dict[label_parts[0]] = None
+        else:
+            additional_labels_dict[label_parts[0]] = label_parts[1]
+    return additional_labels_dict
 
 
 if __name__ == '__main__':

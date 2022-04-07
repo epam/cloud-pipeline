@@ -725,12 +725,7 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, aws_region, ad
         }
     }
     if additional_labels:
-        for label in additional_labels:
-            label_parts = label.split("=")
-            if len(label_parts) == 1:
-                obj["metadata"]["labels"][label_parts[0]] = None
-            else:
-                obj["metadata"]["labels"][label_parts[0]] = label_parts[1]
+        obj["metadata"]["labels"].update(additional_labels)
 
     if cluster_name:
         obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name
@@ -1193,6 +1188,17 @@ def get_aws_region(region_id):
     raise RuntimeError('Failed to determine region for EC2 instance')
 
 
+def map_labels_to_dict(additional_labels_list):
+    additional_labels_dict = dict()
+    for label in additional_labels_list:
+        label_parts = label.split("=")
+        if len(label_parts) == 1:
+            additional_labels_dict[label_parts[0]] = None
+        else:
+            additional_labels_dict[label_parts[0]] = label_parts[1]
+    return additional_labels_dict
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ins_key", type=str, required=True)
@@ -1239,7 +1245,7 @@ def main():
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     pre_pull_images = args.image
-    additional_labels = args.label
+    additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
 
     if not kube_ip or not kubeadm_token:
@@ -1322,7 +1328,7 @@ def main():
             api_token = os.environ["API_TOKEN"]
             api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
-                                        num_rep, run_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api, pre_pull_images, instance_additional_spec)
+                                        num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api, pre_pull_images, instance_additional_spec)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
