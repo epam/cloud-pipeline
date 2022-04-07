@@ -28,4 +28,5 @@ public class MissingNodeSummary {
 
     private final VirtualMachine vm;
     private final List<PipelineRun> matchingRuns;
+    private final Long matchingPoolId;
 }

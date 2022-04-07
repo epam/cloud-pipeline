@@ -50,12 +50,12 @@
         <td>$summary.creationTimestamp</td>
         <td>
             #set( $correspondingRunStatus = $summary.correspondingRunStatus )
-            #if ($correspondingRunStatus)
-                Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ $correspondingRunStatus.status ] <br>
+            #if ( $correspondingRunStatus )
+                #set( $statusCode = $correspondingRunStatus.status )
+                Run <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/run/$correspondingRunStatus.runId">$correspondingRunStatus.runId</a> [ #if( $statusCode )$statusCode#{else}UNKNOWN#end] <br>
             #end
-            #set( $correspondingPoolId = $summary.correspondingPoolId )
-            #if ($correspondingPoolId)
-                Pool <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster?pool_id=$correspondingPoolId">$correspondingPoolId</a><br>
+            #if ( $summary.correspondingPoolId )
+                Pool <a href="https://$templateParameters["externalHost"]:$templateParameters["externalPort"]/pipeline/#/cluster?pool_id=$summary.correspondingPoolId">$summary.correspondingPoolId</a><br>
             #end
         </td>
         <td>
