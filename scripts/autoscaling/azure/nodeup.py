@@ -738,6 +738,9 @@ def label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region):
         }
     }
 
+    if additional_labels:
+        obj["metadata"]["labels"].update(additional_labels)
+
     if cluster_name:
         obj["metadata"]["labels"]["cp-cluster-name"] = cluster_name
     if cluster_role:
@@ -1008,6 +1011,17 @@ def get_subnet_name_from_id(subnet_id):
                            "/subscriptions/<sub>/resourceGroups/<res_grp>/providers/Microsoft.Network/virtualNetworks/<vnet>/subnets/<subnet>: {}".format(subnet_id))
 
 
+def map_labels_to_dict(additional_labels_list):
+    additional_labels_dict = dict()
+    for label in additional_labels_list:
+        label_parts = label.split("=")
+        if len(label_parts) == 1:
+            additional_labels_dict[label_parts[0]] = None
+        else:
+            additional_labels_dict[label_parts[0]] = label_parts[1]
+    return additional_labels_dict
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ins_key", type=str, required=True)
@@ -1025,6 +1039,9 @@ def main():
     parser.add_argument("--kubeadm_token", type=str, required=True)
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
+
 
     args, unknown = parser.parse_known_args()
     ins_key_path = args.ins_key
@@ -1041,8 +1058,8 @@ def main():
     kubeadm_token = args.kubeadm_token
     region_id = args.region_id
     pre_pull_images = args.image
-    additional_labels = args.label
-    pool_id = additional_labels.get('pool_id')
+    additional_labels = map_labels_to_dict(args.label)
+    pool_id = additional_labels.get(POOL_ID_KEY)
 
     global zone
     zone = region_id
