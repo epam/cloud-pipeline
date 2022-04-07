@@ -68,8 +68,9 @@ public class VMNotifier {
                                "missingLabelsSummaries");
     }
 
-    public void queueMissingNodeNotification(final VirtualMachine vm, final List<PipelineRun> matchingRuns) {
-        missingNodes.add(new MissingNodeSummary(vm, matchingRuns));
+    public void queueMissingNodeNotification(final VirtualMachine vm, final List<PipelineRun> matchingRuns,
+                                             final Long matchingPoolId) {
+        missingNodes.add(new MissingNodeSummary(vm, matchingRuns, matchingPoolId));
     }
 
     public void queueMissingLabelsNotification(final NodeInstance node, final VirtualMachine vm,

@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -45,6 +45,7 @@ NODEUP_TASK = "InitializeNode"
 LIMIT_EXCEEDED_EXIT_CODE = 6
 LIMIT_EXCEEDED_ERROR_MASSAGE = 'Instance limit exceeded. A new one will be launched as soon as free space will be available.'
 LOW_PRIORITY_INSTANCE_ID_TEMPLATE = '(az-[a-z0-9]{16})[0-9A-Z]{6}'
+POOL_ID_KEY = 'pool_id'
 
 DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
@@ -249,7 +250,7 @@ else:
 resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
 
-def run_instance(api_url, api_token, api_user, instance_name, instance_type, cloud_region, run_id, ins_hdd, ins_img, ins_platform, ssh_pub_key, user,
+def run_instance(api_url, api_token, api_user, instance_name, instance_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_platform, ssh_pub_key, user,
                  ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images):
     ins_key = read_ssh_key(ssh_pub_key)
     swap_size = get_swap_size(cloud_region, ins_type, is_spot)
@@ -262,10 +263,10 @@ def run_instance(api_url, api_token, api_user, instance_name, instance_type, clo
         disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
     if not is_spot:
         create_nic(instance_name, run_id, disable_external_access)
-        return create_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
+        return create_vm(instance_name, run_id, pool_id, instance_type, ins_img, ins_hdd,
                          user_data_script, ins_key, user, swap_size)
     else:
-        return create_low_priority_vm(instance_name, run_id, instance_type, ins_img, ins_hdd,
+        return create_low_priority_vm(instance_name, run_id, pool_id, instance_type, ins_img, ins_hdd,
                                       user_data_script, ins_key, user, swap_size, disable_external_access)
 
 
@@ -452,7 +453,7 @@ def get_storage_profile(disk, image, instance_type,
     }
 
 
-def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_data_script,
+def create_vm(instance_name, run_id, pool_id, instance_type, instance_image, disk, user_data_script,
               ssh_pub_key, user, swap_size):
     nic = network_client.network_interfaces.get(
         resource_group_name,
@@ -477,7 +478,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
                 'id': nic.id
             }]
         },
-        'tags': get_tags(run_id)
+        'tags': get_tags(run_id, pool_id)
     }
 
     create_node_resource(compute_client.virtual_machines, instance_name, vm_parameters)
@@ -488,7 +489,7 @@ def create_vm(instance_name, run_id, instance_type, instance_image, disk, user_d
     return instance_name, private_ip
 
 
-def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image, disk, user_data_script,
+def create_low_priority_vm(scale_set_name, run_id, pool_id, instance_type, instance_image, disk, user_data_script,
                            ssh_pub_key, user, swap_size, disable_external_access):
 
     pipe_log('Create VMScaleSet with low priority instance for run: {}'.format(run_id))
@@ -545,7 +546,7 @@ def create_low_priority_vm(scale_set_name, run_id, instance_type, instance_image
                 }
             }
         },
-        'tags': get_tags(run_id)
+        'tags': get_tags(run_id, pool_id)
     }
     if not disable_external_access:
         vmss_parameters['properties']['virtualMachineProfile'] \
@@ -631,11 +632,13 @@ def run_id_tag(run_id):
     }
 
 
-def get_tags(run_id):
+def get_tags(run_id, pool_id=None):
     tags = run_id_tag(run_id)
     res_tags = resource_tags()
     if res_tags:
         tags.update(res_tags)
+    if pool_id:
+        tags[POOL_ID_KEY] = pool_id
     return tags
 
 
@@ -1095,6 +1098,7 @@ def main():
     region_id = args.region_id
     pre_pull_images = args.image
     additional_labels = args.label
+    pool_id = additional_labels.get('pool_id')
 
     global zone
     zone = region_id
@@ -1152,7 +1156,7 @@ def main():
             api_url = os.environ["API"]
             api_token = os.environ["API_TOKEN"]
             api_user = os.environ["API_USER"]
-            ins_id, ins_ip = run_instance(api_url, api_token, api_user, resource_name, ins_type, cloud_region, run_id, ins_hdd, ins_img, ins_platform, ins_key_path,
+            ins_id, ins_ip = run_instance(api_url, api_token, api_user, resource_name, ins_type, cloud_region, run_id, pool_id, ins_hdd, ins_img, ins_platform, ins_key_path,
                                           "pipeline", ins_type, is_spot, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images)
         nodename = verify_regnode(ins_id, num_rep, time_rep, api)
         label_node(nodename, run_id, api, cluster_name, cluster_role, cloud_region, additional_labels)

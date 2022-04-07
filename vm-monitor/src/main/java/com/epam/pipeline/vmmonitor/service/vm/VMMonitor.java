@@ -39,6 +39,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -126,7 +127,13 @@ public class VMMonitor {
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
                 if (!matchingRunExists(vm) && !checkVMPoolNode(vm)) {
-                    notifier.queueMissingNodeNotification(vm, apiClient.searchRunsByInstanceId(vm.getInstanceId()));
+                    final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
+                    final List<PipelineRun> matchingRuns = findLongValueInMap(vmTags, runIdLabel)
+                        .map(runId -> loadPipelineRun(runId).orElseGet(() -> new PipelineRun(runId, null)))
+                        .map(Collections::singletonList)
+                        .orElseGet(() -> apiClient.searchRunsByInstanceId(vm.getInstanceId()));
+                    final Long matchingPoolId = findLongValueInMap(vmTags, poolIdLabel).orElse(null);
+                    notifier.queueMissingNodeNotification(vm, matchingRuns, matchingPoolId);
                 }
             }
         } catch (Exception e) {
@@ -220,30 +227,30 @@ public class VMMonitor {
         if (CollectionUtils.isNotEmpty(labels)) {
             final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
             final Map<String, String> nodeTags = MapUtils.emptyIfNull(node.getLabels());
-            final Optional<Long> runIdFromNode = findLongValueInTags(nodeTags, runIdLabel);
-            final Optional<Long> runId = runIdFromNode.isPresent()
-                                         ? runIdFromNode
-                                         : findLongValueInTags(vmTags, runIdLabel);
-            final RunStatus matchingRunStatus = runId
-                .map(this::loadPipelineRun)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(run -> new RunStatus(run.getId(), run.getStatus(), null))
+            final Optional<Long> runIdFromAttributes = findLongValueInMaps(nodeTags, vmTags, runIdLabel);
+            final RunStatus matchingRunStatus = runIdFromAttributes
+                .map(runId -> new RunStatus(runId,
+                                            loadPipelineRun(runId).map(PipelineRun::getStatus).orElse(null),
+                                            null))
                 .orElse(null);
-            final Long matchingPoolId = findLongValueInTags(nodeTags, poolIdLabel)
-                .filter(this::isNodePoolExists)
-                .orElse(null);
-            notifier.queueMissingLabelsNotification(node, vm, labels, matchingRunStatus, matchingPoolId);
+            final Long poolIdFromAttributes = findLongValueInMaps(nodeTags, vmTags, poolIdLabel).orElse(null);
+            notifier.queueMissingLabelsNotification(node, vm, labels, matchingRunStatus, poolIdFromAttributes);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }
     }
 
-    private Optional<Long> findLongValueInTags(final Map<String, String> tags, final String labelName) {
-        return Optional.ofNullable(tags.get(labelName))
+    private Optional<Long> findLongValueInMap(final Map<String, String> map, final String labelName) {
+        return Optional.ofNullable(map.get(labelName))
             .filter(StringUtils::isNotBlank)
             .filter(NumberUtils::isDigits)
             .map(Long::parseLong);
+    }
+
+    private Optional<Long> findLongValueInMaps(final Map<String, String> firstMap, final Map<String, String> secondMap,
+                                               final String key) {
+        final Optional<Long> runIdFromNode = findLongValueInMap(firstMap, key);
+        return runIdFromNode.isPresent() ? runIdFromNode : findLongValueInMap(secondMap, key);
     }
 
     private List<String> getMissingLabels(final NodeInstance node) {
