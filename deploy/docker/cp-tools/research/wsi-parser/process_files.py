@@ -1031,6 +1031,7 @@ class WsiFileParser:
         elif self._is_same_series_selected(target_series):
             self.log_processing_info('The same series [{}] is selected for image processing, skipping... '
                                      .format(target_series))
+            self.update_stat_file(target_image_details)
             return 0
         self.log_processing_info('Series #{} selected for DZ creation [width={}; height={}]'
                                  .format(target_series, target_image_details.width, target_image_details.height))
