@@ -80,7 +80,7 @@ public class VMMonitorTest {
         doReturn(Collections.singletonList(nodePool)).when(mockApiClient).loadNodePools();
         monitor.monitor();
 
-        verify(notifier, never()).queueMissingNodeNotification(vm, Collections.emptyList());
+        verify(notifier, never()).queueMissingNodeNotification(vm, Collections.emptyList(), POOL_ID);
     }
 
     @Test
@@ -89,6 +89,6 @@ public class VMMonitorTest {
         doReturn(Collections.singletonList(vm)).when(mockService).fetchRunningVms(region);
         monitor.monitor();
 
-        verify(notifier).queueMissingNodeNotification(vm, Collections.emptyList());
+        verify(notifier).queueMissingNodeNotification(vm, Collections.emptyList(), null);
     }
 }

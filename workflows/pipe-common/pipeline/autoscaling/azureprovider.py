@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         self.compute_client = get_client_from_auth_file(ComputeManagementClient)
         self.resource_group_name = os.environ["AZURE_RESOURCE_GROUP"]
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, kms_encyr_key_id,
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token):
         try:
             ins_key = utils.read_ssh_key(ins_key)
@@ -67,10 +67,10 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                 disable_external_access = DISABLE_ACCESS in access_config and access_config[DISABLE_ACCESS]
             if not is_spot:
                 self.__create_nic(instance_name, run_id, disable_external_access)
-                return self.__create_vm(instance_name, run_id, ins_type, ins_img, ins_hdd, user_data_script,
+                return self.__create_vm(instance_name, run_id, pool_id, ins_type, ins_img, ins_hdd, user_data_script,
                                         ins_key, "pipeline", swap_size)
             else:
-                return self.__create_low_priority_vm(instance_name, run_id, ins_type, ins_img, ins_hdd,
+                return self.__create_low_priority_vm(instance_name, run_id, pool_id, ins_type, ins_img, ins_hdd,
                                                      user_data_script, ins_key, "pipeline", swap_size, disable_external_access)
         except Exception as e:
             self.__delete_all_by_run_id(run_id)
@@ -284,7 +284,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                         break
         return disk_type
 
-    def __create_vm(self, instance_name, run_id, instance_type, instance_image, disk, user_data_script,
+    def __create_vm(self, instance_name, run_id, pool_id, instance_type, instance_image, disk, user_data_script,
                   ssh_pub_key, user, swap_size):
         nic = self.network_client.network_interfaces.get(
             self.resource_group_name,
@@ -311,7 +311,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                     'id': nic.id
                 }]
             },
-            'tags': AzureInstanceProvider.get_tags(run_id)
+            'tags': AzureInstanceProvider.get_tags(run_id, pool_id)
         }
 
         self.__create_node_resource(self.compute_client.virtual_machines, instance_name, vm_parameters)
@@ -321,7 +321,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
 
         return instance_name, private_ip
 
-    def __create_low_priority_vm(self, scale_set_name, run_id, instance_type, instance_image,
+    def __create_low_priority_vm(self, scale_set_name, run_id, pool_id, instance_type, instance_image,
                                  disk, user_data_script, ssh_pub_key, user, swap_size, disable_external_access):
 
         resource_group, image_name = AzureInstanceProvider.get_res_grp_and_res_name_from_string(instance_image, 'images')
@@ -377,7 +377,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
                     }
                 }
             },
-            'tags': AzureInstanceProvider.get_tags(run_id)
+            'tags': AzureInstanceProvider.get_tags(run_id, pool_id)
         }
 
         if not disable_external_access:
@@ -578,9 +578,11 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         }
 
     @staticmethod
-    def get_tags(run_id):
-        tags = AzureInstanceProvider.run_id_tag(run_id)
+    def get_tags(run_id, pool_id=None):
+        tags = AzureInstanceProvider.run_id_tag(run_id, pool_id)
         res_tags = AzureInstanceProvider.resource_tags()
         if res_tags:
             tags.update(res_tags)
+        if pool_id:
+            tags['pool_id'] = pool_id
         return tags

@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,6 +38,8 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--cloud", type=str, default=None)
+    parser.add_argument("--label", type=str, default=[], required=False, action='append')
+    parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
 
     args = parser.parse_args()
@@ -57,6 +59,9 @@ def main():
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     cloud = args.cloud
+    pre_pull_images = args.image
+    additional_labels = args.label
+    pool_id = additional_labels.get('pool_id')
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -105,7 +110,7 @@ def main():
         ins_id, ins_ip = cloud_provider.verify_run_id(run_id)
 
         if not ins_id:
-            ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id,
+            ins_id, ins_ip = cloud_provider.run_instance(is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_key, run_id, pool_id,
                                                          kms_encyr_key_id, num_rep, time_rep, kube_ip, kubeadm_token)
 
         cloud_provider.check_instance(ins_id, run_id, num_rep, time_rep)

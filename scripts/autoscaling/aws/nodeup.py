@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ MIN_SWAP_DEVICE_SIZE = 5
 LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
 DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
+POOL_ID_KEY = 'pool_id'
 
 current_run_id = 0
 api_url = None
@@ -339,15 +340,21 @@ def merge_tags(region_tags, global_tags):
     return merged
 
 
-def run_id_tag(run_id):
-    return [{
+def run_id_tag(run_id, pool_id):
+    tags = [{
         'Value': run_id,
         'Key': 'Name'
     }]
+    if pool_id:
+        tags.append({
+            'Value': pool_id,
+            'Key': POOL_ID_KEY
+        })
+    return tags
 
 
-def get_tags(run_id, cloud_region):
-    tags = run_id_tag(run_id)
+def get_tags(run_id, cloud_region, pool_id):
+    tags = run_id_tag(run_id, pool_id)
     res_tags = resource_tags(cloud_region)
     if res_tags:
         tags.extend(res_tags)
@@ -362,21 +369,21 @@ def run_id_filter(run_id):
 
 
 def run_instance(api_url, api_token, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_key, ins_type,
-                 is_spot, num_rep, run_id, time_rep, kube_ip, kubeadm_token, kube_client, pre_pull_images, instance_additional_spec):
+                 is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kube_client, pre_pull_images, instance_additional_spec):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, aws_region, ins_type, ins_img, kube_ip,
                                             kubeadm_token, swap_size, pre_pull_images)
     if is_spot:
-        ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
+        ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
                                             user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
     else:
-        ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
+        ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
                                                 num_rep, time_rep, swap_size, kube_client, instance_additional_spec)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
-                           kms_encyr_key_id, run_id, user_data_script, num_rep, time_rep,
+                           kms_encyr_key_id, run_id, pool_id, user_data_script, num_rep, time_rep,
                            swap_size, kube_client, instance_additional_spec):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
@@ -404,7 +411,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
             TagSpecifications=[
                 {
                     'ResourceType': 'instance',
-                    "Tags": get_tags(run_id, aws_region)
+                    "Tags": get_tags(run_id, aws_region, pool_id)
                 }
             ],
              MetadataOptions={
@@ -923,7 +930,7 @@ def exit_if_spot_unavailable(run_id, last_status):
                  status=TaskStatus.FAILURE)
         sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
-def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, ins_key,
+def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
                        swap_size, kube_client, instance_additional_spec):
     pipe_log('Creating spot request')
@@ -1013,7 +1020,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
     pipe_log('- Spot request {} is registered'.format(request_id))
     ec2.create_tags(
         Resources=[request_id],
-        Tags=run_id_tag(run_id),
+        Tags=run_id_tag(run_id, pool_id),
     )
 
     pipe_log('- Spot request {} was tagged with RunID {}. Waiting for request fulfillment...'.format(request_id, run_id))
@@ -1052,7 +1059,7 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, ins_img, ins_type, in
             ins_ip = instance_reservation['PrivateIpAddress']
             ec2.create_tags(
                 Resources=[ins_id],
-                Tags=get_tags(run_id, aws_region),
+                Tags=get_tags(run_id, aws_region, pool_id),
             )
 
             ebs_tags = resource_tags(aws_region)
@@ -1111,7 +1118,7 @@ def wait_for_fulfilment(status):
            or status == 'pending-fulfillment' or status == 'fulfilled'
 
 
-def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region):
+def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id):
     pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
     for interation in range(0, 5):
         spot_req = get_spot_req_by_run_id(ec2, run_id)
@@ -1121,7 +1128,7 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region):
             pipe_log('- Spot request for RunID {} already exists: SpotInstanceRequestId: {}, Status: {}'.format(run_id, request_id, status))
             rep = 0
             if status == 'request-canceled-and-instance-running' and instance_is_active(ec2, spot_req['InstanceId']):
-                return tag_and_get_instance(ec2, spot_req, run_id)
+                return tag_and_get_instance(ec2, spot_req, run_id, aws_region, pool_id)
             if wait_for_fulfilment(status):
                 while status != 'fulfilled':
                     pipe_log('- Spot request ({}) is not yet fulfilled. Waiting...'.format(request_id))
@@ -1136,7 +1143,7 @@ def check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region):
                         exit_if_spot_unavailable(run_id, status)
                         return '', ''
                 if  instance_is_active(ec2, spot_req['InstanceId']):
-                    return tag_and_get_instance(ec2, spot_req, run_id, aws_region)
+                    return tag_and_get_instance(ec2, spot_req, run_id, aws_region, pool_id)
         sleep(5)
     pipe_log('No spot request for RunID {} found\n-'.format(run_id))
     return '', ''
@@ -1151,7 +1158,7 @@ def get_spot_req_by_run_id(ec2, run_id):
     return None
 
 
-def tag_and_get_instance(ec2, spot_req, run_id, aws_region):
+def tag_and_get_instance(ec2, spot_req, run_id, aws_region, pool_id):
     ins_id = spot_req['InstanceId']
     pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
     instance = ec2.describe_instances(InstanceIds=[ins_id])
@@ -1159,7 +1166,7 @@ def tag_and_get_instance(ec2, spot_req, run_id, aws_region):
     if not tag_name_is_present(instance):  # create tag name if not presents
         ec2.create_tags(
             Resources=[ins_id],
-            Tags=get_tags(run_id, aws_region),
+            Tags=get_tags(run_id, aws_region, pool_id),
         )
         pipe_log('Tag ({}) created for instance ({})\n-'.format(run_id, ins_id))
     else:
@@ -1216,6 +1223,7 @@ def main():
     region_id = args.region_id
     pre_pull_images = args.image
     additional_labels = args.label
+    pool_id = additional_labels.get(POOL_ID_KEY)
 
     if not kube_ip or not kubeadm_token:
         raise RuntimeError('Kubernetes configuration is required to create a new node')
@@ -1287,7 +1295,7 @@ def main():
 
         ins_id, ins_ip = verify_run_id(ec2, run_id)
         if not ins_id:
-            ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region)
+            ins_id, ins_ip = check_spot_request_exists(ec2, num_rep, run_id, time_rep, aws_region, pool_id)
 
         if not ins_id:
             api_url = os.environ["API"]
