@@ -16,7 +16,9 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Input} from 'antd';
+import {
+  Input
+} from 'antd';
 import styles from './RunNameAlias.css';
 
 const ALIAS_MAX_LENGTH = 25;
@@ -76,8 +78,8 @@ class RunNameAlias extends React.Component {
   };
 
   onExpandInput = () => {
-    const {onChange} = this.props;
-    if (onChange) {
+    const {onChange, disabled} = this.props;
+    if (!disabled && onChange) {
       this.setState({expanded: true});
     }
   };
@@ -176,7 +178,8 @@ class RunNameAlias extends React.Component {
       idPrefix,
       textBeforeContent,
       textAfterContent,
-      containerStyle
+      containerStyle,
+      disabled
     } = this.props;
     const {expanded, inputValue} = this.state;
     return (
@@ -197,6 +200,7 @@ class RunNameAlias extends React.Component {
             onBlur={this.changeAlias}
             ref={this.initializeInput}
             value={inputValue}
+            disabled={disabled}
           />
         ) : (
           <span
@@ -234,7 +238,8 @@ RunNameAlias.propTypes = {
   textAfterVersion: PropTypes.string,
   versionDelimiter: PropTypes.string,
   containerStyle: PropTypes.object,
-  namePlaceholderStyle: PropTypes.object
+  namePlaceholderStyle: PropTypes.object,
+  disabled: PropTypes.bool
 };
 
 export default RunNameAlias;

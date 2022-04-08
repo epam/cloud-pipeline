@@ -156,7 +156,8 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    commitAllowedCheckedForDockerImage: undefined
+    commitAllowedCheckedForDockerImage: undefined,
+    runNameAliasPending: false
   };
 
   componentDidMount () {
@@ -1359,7 +1360,9 @@ class Logs extends localization.LocalizedReactComponent {
   };
 
   onChangeRunNameAlias = (alias) => {
-    this.setState({alias}, async () => {
+    this.setState({
+      runNameAliasPending: true
+    }, async () => {
       const hide = message.loading('Updating run name alias...', -1);
       const request = new PipelineRunTagsUpdate(this.props.runId, false);
       await request.send({tags: {alias}});
@@ -1369,6 +1372,7 @@ class Logs extends localization.LocalizedReactComponent {
       } else {
         await this.props.run.fetch();
       }
+      this.setState({runNameAliasPending: false});
     });
   };
 
@@ -1602,6 +1606,7 @@ class Logs extends localization.LocalizedReactComponent {
               name={runName}
               alias={runAlias}
               onChange={this.onChangeRunNameAlias}
+              disabled={this.state.runNameAliasPending}
             />
             {failureReason} - </span>
           {pipelineLink}
@@ -1989,7 +1994,9 @@ class Logs extends localization.LocalizedReactComponent {
         <Row>
           <Col span={18}>
             <Row type="flex" justify="space-between">
-              {Title}
+              <Spin spinning={this.state.runNameAliasPending}>
+                {Title}
+              </Spin>
             </Row>
             {
               this.props.run.value.stateReasonMessage &&
