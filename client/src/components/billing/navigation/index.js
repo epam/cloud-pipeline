@@ -158,8 +158,8 @@ class BillingNavigation extends React.Component {
         title="Quotas"
         onTitleClick={onSelect}
       >
-        <Menu.Item key="quotas.compute">Compute instances</Menu.Item>
         <Menu.Item key="quotas.storage">Storages</Menu.Item>
+        <Menu.Item key="quotas.compute">Compute instances</Menu.Item>
       </Menu.SubMenu>
     );
     const isBillingManager = roleModel.isManager.billing(this);

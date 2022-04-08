@@ -73,6 +73,25 @@ function applyGroupedDataDiscounts (groupedData, discountFn) {
   if (!groupedData) {
     return groupedData;
   }
+  if (Array.isArray(groupedData)) {
+    return joinObjects(applyDiscountsToObjects(groupedData, discountFn));
+  }
+  return applyDiscountsToObjectProperties(groupedData, discountFn);
+}
+
+function applyDiscountsToObjectProperties (object, discountFn) {
+  if (!object) {
+    return object;
+  }
+  return Object.keys(object)
+    .map(key => ({
+      key,
+      data: applyDiscounts(object[key], discountFn)
+    }))
+    .reduce((r, c) => ({...r, [c.key]: c.data}), {});
+}
+
+function joinObjects (joins) {
   const processSumm = (objA, join, isGroupingInfoProcessing = false) => {
     const result = {...(objA || {})};
     const summKeys = Object.keys(join || {});
@@ -92,44 +111,49 @@ function applyGroupedDataDiscounts (groupedData, discountFn) {
     }
     return result;
   };
-  if (Array.isArray(groupedData)) {
-    const joins = [];
-    for (let i = 0; i < groupedData.length; i++) {
-      const data = groupedData[i];
-      let discount = discountFn;
-      if (discountFn && Array.isArray(discountFn)) {
-        discount = discountFn.length > i ? discountFn[i] : undefined;
-      }
-      const appliedData = applyGroupedDataDiscounts(data, discount);
-      if (appliedData) {
-        joins.push(appliedData);
-      }
-    }
-    let result;
-    for (let j = 0; j < joins.length; j++) {
-      const join = joins[j];
-      if (!result) {
-        result = join;
-      } else {
-        const joinKeys = Object.keys(join);
-        for (let jk = 0; jk < joinKeys.length; jk++) {
-          const joinKey = joinKeys[jk];
-          if (!result.hasOwnProperty(joinKey)) {
-            result[joinKey] = join[joinKey];
-          } else {
-            result[joinKey] = processSumm(result[joinKey], join[joinKey]);
-          }
+  let result;
+  const filtered = (joins || []).filter(Boolean);
+  for (let j = 0; j < filtered.length; j++) {
+    const join = filtered[j];
+    if (!result) {
+      result = join;
+    } else {
+      const joinKeys = Object.keys(join);
+      for (let jk = 0; jk < joinKeys.length; jk++) {
+        const joinKey = joinKeys[jk];
+        if (!result.hasOwnProperty(joinKey)) {
+          result[joinKey] = join[joinKey];
+        } else {
+          result[joinKey] = processSumm(result[joinKey], join[joinKey]);
         }
       }
     }
-    return result;
   }
-  return Object.keys(groupedData)
-    .map(key => ({
-      key,
-      data: applyDiscounts(groupedData[key], discountFn)
-    }))
-    .reduce((r, c) => ({...r, [c.key]: c.data}), {});
+  return result;
+}
+
+function applyDiscountsToObjects (objects, discountFn) {
+  if (!objects) {
+    return objects;
+  }
+  const asArray = Array.isArray(objects)
+    ? objects
+    : [objects];
+  const joins = [];
+  for (let i = 0; i < asArray.length; i++) {
+    const data = asArray[i];
+    let discount = discountFn;
+    if (discountFn && Array.isArray(discountFn)) {
+      discount = discountFn.length > i ? discountFn[i] : undefined;
+    }
+    const appliedData = applyDiscountsToObjectProperties(data, discount);
+    if (appliedData) {
+      joins.push(appliedData);
+    } else {
+      joins.push(undefined);
+    }
+  }
+  return joins;
 }
 
 function joinSummaryDiscounts (summaries, discounts) {
@@ -224,6 +248,8 @@ function joinSummaryDiscounts (summaries, discounts) {
 export {
   applySummaryDiscounts,
   applyGroupedDataDiscounts,
+  applyDiscountsToObjects,
+  applyDiscountsToObjectProperties,
   joinSummaryDiscounts,
   simpleDiscount
 };

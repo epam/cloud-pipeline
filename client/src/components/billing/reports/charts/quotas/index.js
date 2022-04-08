@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +14,11 @@
  *  limitations under the License.
  */
 
-import Remote from '../../basic/Remote';
-
-export default class BillingQuotasList extends Remote {
-  constructor (loadActive = true) {
-    super();
-    this.url = `/quotas?loadActive=${!!loadActive}`;
-  }
-}
+export {getAffectiveQuotaPeriods} from './get-affective-quota-period';
+export {getQuotaGroup} from './get-quota-group';
+export {
+  getQuotaSummary,
+  getQuotaSummaries,
+  getQuotaSummariesExceeded
+} from './get-quota-summary';
+export {getQuotaType} from './get-quota-type';

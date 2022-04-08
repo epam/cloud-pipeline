@@ -1,0 +1,73 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import React from 'react';
+import classNames from 'classnames';
+import QuotaActions, {getTriggeredActions} from './quota-actions';
+
+import styles from './quota-indicator.css';
+
+const statusClassNames = {
+  active: 'cp-quota-status-green',
+  warning: 'cp-quota-status-yellow',
+  exception: 'cp-quota-status-red'
+};
+
+const statuses = {
+  exception: 'exception',
+  active: 'active',
+  warning: 'warning'
+};
+
+const getStatus = (quota) => {
+  const triggered = getTriggeredActions(quota);
+  if (triggered.length === 0) {
+    return statuses.active;
+  }
+  if (
+    triggered.includes(QuotaActions.block) ||
+    triggered.includes(QuotaActions.readModeAndDisableNewJobs) ||
+    triggered.includes(QuotaActions.readModeAndStopAllJobs)
+  ) {
+    return statuses.exception;
+  }
+  return statuses.warning;
+};
+
+function QuotaLimitIndicator (props) {
+  const {quota} = props;
+  const status = getStatus(quota);
+  return (
+    <div className={styles.circleContainer}>
+      <svg height="10" width="10">
+        <circle
+          className={
+            classNames(
+              statusClassNames[status],
+              'hide'
+            )
+          }
+          cx="5"
+          cy="5"
+          r="4"
+          strokeWidth={1}
+        />
+      </svg>
+    </div>
+  );
+}
+
+export default QuotaLimitIndicator;

@@ -44,6 +44,9 @@ import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
 import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
+import quotaTypes from '../../billing/quotas/utilities/quota-types';
+import {quotaHasTriggeredActions} from '../../billing/quotas/utilities/quota-actions';
+import {UserQuotasDisclaimer} from './quota-info';
 
 const PAGE_SIZE = 20;
 
@@ -60,13 +63,12 @@ function usersFilter (criteria) {
 const USERS_FILTERS = {
   all: 'all',
   blocked: 'blocked',
-  notBlocked: 'notBlocked',
   online: 'online',
-  offline: 'offline'
+  quota: 'quota'
 };
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'usersWithActivity', 'userMetadataKeys', 'users')
+@inject('dataStorages', 'usersWithActivity', 'userMetadataKeys', 'users', 'quotas')
 @inject(({usersWithActivity, authenticatedUserInfo, userMetadataKeys, users}) => ({
   users: usersWithActivity,
   usersStore: users,
@@ -100,6 +102,14 @@ export default class UsersManagement extends React.Component {
   get isReader () {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
+
+  @computed
+  get quotas () {
+    const {quotas} = this.props;
+    return quotas && quotas.loaded
+      ? quotas.value.filter(quota => quota.type === quotaTypes.user)
+      : [];
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -210,14 +220,13 @@ export default class UsersManagement extends React.Component {
           case USERS_FILTERS.blocked: {
             return user.blocked;
           }
-          case USERS_FILTERS.notBlocked: {
-            return !user.blocked;
-          }
           case USERS_FILTERS.online: {
             return user.online;
           }
-          case USERS_FILTERS.offline: {
-            return !user.online;
+          case USERS_FILTERS.quota: {
+            const quotas = this.quotas
+              .filter(quota => quota.subject === user.userName);
+            return quotas.some(quotaHasTriggeredActions);
           }
         }
       });
@@ -280,18 +289,13 @@ export default class UsersManagement extends React.Component {
           value={this.state.filterUsers}
           style={{width: 175, marginLeft: 5}}
           onChange={this.onChangeUsersFilters}
+          dropdownMatchSelectWidth={false}
         >
           <Select.Option
             key={USERS_FILTERS.all}
             value={USERS_FILTERS.all}
           >
             Show all users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.notBlocked}
-            value={USERS_FILTERS.notBlocked}
-          >
-            Show not blocked users
           </Select.Option>
           <Select.Option
             key={USERS_FILTERS.blocked}
@@ -309,10 +313,10 @@ export default class UsersManagement extends React.Component {
           }
           { this.isAdmin && (
             <Select.Option
-              key={USERS_FILTERS.offline}
-              value={USERS_FILTERS.offline}
+              key={USERS_FILTERS.quota}
+              value={USERS_FILTERS.quota}
             >
-              Show offline users
+              Show exceeded spending quotas
             </Select.Option>)
           }
         </Select>
@@ -496,6 +500,10 @@ export default class UsersManagement extends React.Component {
                   >
                     {attributesString}
                   </span>
+                  <UserQuotasDisclaimer
+                    user={user.userName}
+                    style={{fontSize: 'smaller', cursor: 'pointer'}}
+                  />
                 </Row>
               </Row>
             );
@@ -681,10 +689,12 @@ export default class UsersManagement extends React.Component {
   }
 
   componentDidMount () {
+    this.props.quotas.fetchIfNeededOrWait();
     this.props.users.fetch();
   }
 
   componentWillUnmount () {
+    this.props.quotas.invalidateCache();
     this.props.usersStore.fetch();
   }
 }

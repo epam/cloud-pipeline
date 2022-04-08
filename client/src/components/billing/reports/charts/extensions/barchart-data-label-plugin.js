@@ -31,7 +31,8 @@ const plugin = {
     const datasetLabels = chart.data.datasets
       .map((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
-        if (meta) {
+        const {showDataLabel = true} = dataset;
+        if (meta && showDataLabel) {
           return meta.data.map((element, index) => this.getInitialLabelConfig(
             dataset,
             element,
@@ -51,7 +52,9 @@ const plugin = {
           dataLabels.push([]);
         }
         const labels = dataLabels[j];
-        labels.push(data[j]);
+        if (data[j]) {
+          labels.push(data[j]);
+        }
       }
     }
     dataLabels.forEach(labels => this.arrangeLabels(labels));

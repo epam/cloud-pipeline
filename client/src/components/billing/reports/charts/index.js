@@ -15,6 +15,7 @@
  */
 
 export {default as BarChart} from './bar-chart';
+export {default as BarChartWithQuota} from './bar-chart-with-quota';
 export {default as BillingTable} from './billing-table';
 export {default as colors} from './colors';
 export {default as GroupedBarChart} from './grouped-bar-chart';
