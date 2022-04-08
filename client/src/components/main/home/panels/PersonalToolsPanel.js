@@ -43,11 +43,8 @@ import {
   RunConfirmation
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
-import {
-  CP_CAP_LIMIT_MOUNTS,
-  CP_RUN_NAME
-} from '../../../pipelines/launch/form/utilities/parameters';
-import RunFriendlyNameInput from '../../../pipelines/launch/form/RunFriendlyNameInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import RunNameAlias from '../../../pipelines/launch/form/RunNameAlias';
 import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
@@ -90,8 +87,7 @@ export default class PersonalToolsPanel extends React.Component {
   }
 
   state = {
-    runToolInfo: null,
-    runFriendlyNameExpanded: false
+    runToolInfo: null
   };
 
   isAdmin = () => {
@@ -239,13 +235,12 @@ export default class PersonalToolsPanel extends React.Component {
         delete payload.params[CP_CAP_LIMIT_MOUNTS];
       }
     }
-    if (this.state.runToolInfo.runFriendlyName !== undefined) {
-      payload.params[CP_RUN_NAME] = this.state.runToolInfo.runFriendlyName;
+    if (this.state.runToolInfo.runNameAlias) {
+      payload.runNameAlias = this.state.runToolInfo.runNameAlias;
     }
     if (await run(this)(payload, false)) {
       this.setState({
-        runToolInfo: null,
-        runFriendlyNameExpanded: false
+        runToolInfo: null
       }, this.props.refresh);
     }
   };
@@ -633,8 +628,7 @@ export default class PersonalToolsPanel extends React.Component {
 
   cancelRunTool = () => {
     this.setState({
-      runToolInfo: null,
-      runFriendlyNameExpanded: false
+      runToolInfo: null
     });
   };
 
@@ -720,22 +714,14 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
-  onChangeRunFriendlyName = (name) => {
+  onChangeRunNameAlias = (alias) => {
     if (this.state.runToolInfo) {
       const runToolInfo = this.state.runToolInfo;
-      runToolInfo.runFriendlyName = {
-        type: 'string',
-        required: false,
-        value: name
-      };
+      runToolInfo.runNameAlias = alias;
       this.setState({
         runToolInfo
       });
     }
-  };
-
-  showRunFriendlyNameInput = () => {
-    this.setState({runFriendlyNameExpanded: true});
   };
 
   render () {
@@ -751,14 +737,35 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.props.authenticatedUserInfo.error) {
       return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
     }
+    let toolImage;
+    let toolVersion;
+    if (this.state.runToolInfo) {
+      const fullImageInfo = (this.state.runToolInfo.payload.dockerImage || '')
+        .split('/')
+        .pop();
+      const [, version] = fullImageInfo.split(':');
+      toolImage = this.state.runToolInfo.image;
+      toolVersion = version;
+    }
+    const modalTitle = (
+      <RunNameAlias
+        textBeforeContent="Run "
+        textAfterContent=" with default settings?"
+        textBeforeVersion="("
+        textAfterVersion=")"
+        onChange={this.onChangeRunNameAlias}
+        alias={(this.state.runToolInfo || {}).runNameAlias}
+        name={toolImage}
+        version={toolVersion}
+      />
+    );
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>
         {this.renderContent()}
         <Modal
-          title={
-            this.state.runToolInfo && this.state.runToolInfo.warning
-              ? `Run ${this.state.runToolInfo ? this.state.runToolInfo.image : undefined} with default settings?`
-              : false
+          title={this.state.runToolInfo && this.state.runToolInfo.warning
+            ? modalTitle
+            : false
           }
           visible={!!this.state.runToolInfo}
           onCancel={this.cancelRunTool}
@@ -850,26 +857,6 @@ export default class PersonalToolsPanel extends React.Component {
                 </Row>
               } />
           }
-          {this.state.runFriendlyNameExpanded ? (
-            <RunFriendlyNameInput
-              onChange={this.onChangeRunFriendlyName}
-              value={(this.state.runToolInfo.runFriendlyName || {}).value}
-              label="Run name alias:"
-              containerStyle={{margin: '4px 2px'}}
-              inputStyle={{width: 'auto', flexGrow: 1}}
-            />
-          ) : (
-            <a
-              onClick={this.showRunFriendlyNameInput}
-              style={{
-                display: 'inline-block',
-                margin: '2px',
-                lineHeight: '30px'
-              }}
-            >
-              <Icon type="setting" /> Configure run name alias
-            </a>
-          )}
         </Modal>
       </div>
     );

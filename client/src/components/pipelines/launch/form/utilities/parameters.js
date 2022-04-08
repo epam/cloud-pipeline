@@ -19,5 +19,3 @@ export const CP_CAP_LIMIT_MOUNTS = 'CP_CAP_LIMIT_MOUNTS';
 export const CP_CAP_DCV = 'CP_CAP_DCV';
 export const CP_CAP_DCV_DESKTOP = 'CP_CAP_DCV_DESKTOP';
 export const CP_CAP_DCV_WEB = 'CP_CAP_DCV_WEB';
-
-export const CP_RUN_NAME = 'CP_RUN_NAME';

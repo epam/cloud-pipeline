@@ -48,7 +48,7 @@ import JobEstimatedPriceInfo from '../../../special/job-estimated-price-info';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import AutoCompleteForParameter from '../../../special/AutoCompleteForParameter';
 import {LimitMountsInput} from './LimitMountsInput';
-import RunFriendlyNameInput from './RunFriendlyNameInput';
+import RunNameAlias from './RunNameAlias';
 
 import PipelineRunEstimatedPrice from '../../../../models/pipelines/PipelineRunEstimatedPrice';
 import FolderProject from '../../../../models/folders/FolderProject';
@@ -119,8 +119,7 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE,
-  CP_RUN_NAME
+  CP_CAP_AUTOSCALE_PRICE_TYPE
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
@@ -140,8 +139,6 @@ const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
 
 const OTHER_PARAMETERS_GROUP = 'other';
-
-const RUN_FRIENDLY_NAME_MAX_LENGTH = 25;
 
 function getFormItemClassName (rootClass, key) {
   if (key) {
@@ -336,7 +333,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     runCapabilities: [],
     useResolvedParameters: false,
     notifications: [],
-    runFriendlyName: undefined
+    runNameAlias: undefined
   };
 
   formItemLayout = {
@@ -1261,6 +1258,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
     }
+    if (this.state.runNameAlias) {
+      payload.runNameAlias = this.state.runNameAlias;
+    }
     if ((values[ADVANCED].is_spot ||
       `${this.getDefaultValue('is_spot')}`) !== 'true' &&
       !this.state.autoScaledCluster &&
@@ -1399,12 +1399,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       payload.params[CP_CAP_SYSTEMD_CONTAINER] = {
         type: 'boolean',
         value: true
-      };
-    }
-    if (this.state.runFriendlyName) {
-      payload.params[CP_RUN_NAME] = {
-        type: 'string',
-        value: this.state.runFriendlyName
       };
     }
     applyCapabilities(
@@ -1818,7 +1812,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           }
           const parametersToSkip = [
             CP_CAP_LIMIT_MOUNTS,
-            (this.props.editConfigurationMode ? undefined : CP_RUN_NAME),
             ...getSkippedSystemParametersList(this)
           ].filter(Boolean);
           if (parametersToSkip.includes(key)) {
@@ -4502,8 +4495,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     });
   };
 
-  runFriendlyNameChange = (name) => {
-    this.setState({runFriendlyName: name});
+  runNameAliasChange = (name) => {
+    this.setState({runNameAlias: name});
   };
 
   renderRunButton = () => {
@@ -5161,37 +5154,41 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             pipelineName = this.localizedString('pipeline');
           }
         }
-
+        const showCommaAfterAlias = (this.state.estimatedPrice &&
+          (this.state.estimatedPrice.pricePerHour > 0 ||
+          this.state.estimatedPrice.pricePerHour > 0
+          )) || configuration.length > 0;
         return [
-          <td key="header" className={styles.itemHeader} style={{width: 1, whiteSpace: 'nowrap'}}>
-            <Icon
-              type="play-circle-o"
-              className="cp-primary"
-            />
-            Launch <b id="launch-form-pipeline-name">
-              {pipelineName}
-            </b> {pipelineVersion && (
-              <span id="launch-form-pipeline-version">
-                {`${pipelineVersion}${configuration.length > 0 ||
-                  !this.props.editConfigurationMode ? ',' : ''}`
-                }
-              </span>
-            )}
-          </td>,
-          ...configuration,
           <td
-            key="run friendly name"
+            key="header"
             className={styles.itemHeader}
             style={{width: 1, whiteSpace: 'nowrap'}}
           >
-            <RunFriendlyNameInput
-              onChange={this.runFriendlyNameChange}
-              value={this.state.runFriendlyName}
-              label="run name:"
-              containerStyle={{marginLeft: configuration.length > 0 ? '5px' : '0px'}}
-              inputStyle={{width: '200px'}}
-            />
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'nowrap',
+                alignItems: 'baseline'
+              }}
+            >
+              <Icon
+                type="play-circle-o"
+                className="cp-primary"
+              />
+              <RunNameAlias
+                textBeforeContent="Launch "
+                textAfterContent={showCommaAfterAlias ? ',' : null}
+                idPrefix="launch-form"
+                alias={this.state.runNameAlias}
+                name={pipelineName}
+                version={pipelineVersion}
+                onChange={this.runNameAliasChange}
+                containerStyle={{flexWrap: 'nowrap'}}
+                versionDelimiter={this.state.runNameAlias ? ':' : ' '}
+              />
+            </div>
           </td>,
+          ...configuration,
           <td
             key="estimated price"
             className={styles.itemHeader}

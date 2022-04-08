@@ -24,7 +24,7 @@ import AWSRegionTag from '../../../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../../../special/job-estimated-price-info';
 import styles from './CardsPanel.css';
 import RunTags from '../../../../runs/run-tags';
-import {CP_RUN_NAME} from '../../../../pipelines/launch/form/utilities/parameters';
+import RunNameAlias from '../../../../pipelines/launch/form/RunNameAlias';
 import PlatformIcon from '../../../../tools/platform-icon';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
@@ -48,27 +48,32 @@ function renderTitle (run) {
 }
 
 function renderPipeline (run) {
-  const {pipelineName} = run;
+  const {
+    pipelineName,
+    version
+  } = run;
   let displayName;
   if (pipelineName) {
-    if (run.version) {
-      displayName = `${pipelineName} (${run.version})`;
-    } else {
-      displayName = pipelineName;
-    }
+    displayName = pipelineName;
   } else if (run.dockerImage) {
-    const image = run.dockerImage.split('/').pop();
-    const runNameParameter = (run.pipelineRunParameters || [])
-      .find(parameter => parameter.name === CP_RUN_NAME);
-    displayName = runNameParameter && runNameParameter.value
-      ? `${runNameParameter.value} (${image})`
-      : image;
+    const parts = run.dockerImage.split('/');
+    displayName = parts[parts.length - 1];
   }
   let clusterIcon;
   if (run.nodeCount > 0) {
     clusterIcon = <Icon type="database" />;
   }
-  displayName = <span type="main">{displayName}</span>;
+  const runName = (
+    <span type="main">
+      <RunNameAlias
+        name={displayName}
+        version={version}
+        alias={(run.tags || {}).alias}
+        versionDelimiter=":"
+        containerStyle={{fontWeight: 'bold'}}
+      />
+    </span>
+  );
   if (run.serviceUrl && run.initialized) {
     const regionedUrls = parseRunServiceUrlConfiguration(run.serviceUrl);
     return (
@@ -95,12 +100,12 @@ function renderPipeline (run) {
             </div>
           }
           trigger="hover">
-          <Icon type="export" /> {clusterIcon} {displayName}
+          <Icon type="export" /> {clusterIcon} {runName}
         </Popover>
       </span>
     );
   } else {
-    return (<span><StatusIcon run={run} small /> {clusterIcon} {displayName}</span>);
+    return (<span><StatusIcon run={run} small /> {clusterIcon} {runName}</span>);
   }
 }
 

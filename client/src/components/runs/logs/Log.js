@@ -44,6 +44,7 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
+import PipelineRunTagsUpdate from '../../../models/pipelines/PipelineRunTagsUpdate';
 import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
 import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -92,10 +93,8 @@ import CreateRunSchedules from '../../../models/runSchedule/CreateRunSchedules';
 import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
-import {
-  CP_CAP_LIMIT_MOUNTS,
-  CP_RUN_NAME
-} from '../../pipelines/launch/form/utilities/parameters';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import RunNameAlias from '../../pipelines/launch/form/RunNameAlias';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
@@ -1359,17 +1358,18 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
-  getRunName = (run = {}) => {
-    const {runId} = this.props.params;
-    let name;
-    const nameParameter = (run.pipelineRunParameters || [])
-      .find(parameter => parameter.name === CP_RUN_NAME);
-    if (nameParameter && nameParameter.value) {
-      name = `${nameParameter.value} (${runId})`;
-    } else {
-      name = `Run #${runId}`;
-    }
-    return name;
+  onChangeRunNameAlias = (alias) => {
+    this.setState({alias}, async () => {
+      const hide = message.loading('Updating run name alias...', -1);
+      const request = new PipelineRunTagsUpdate(this.props.runId, false);
+      await request.send({tags: {alias}});
+      hide();
+      if (request.error) {
+        message.error(request.error);
+      } else {
+        await this.props.run.fetch();
+      }
+    });
   };
 
   render () {
@@ -1587,13 +1587,23 @@ class Logs extends localization.LocalizedReactComponent {
         }
       }
 
+      const runName = this.props.params.runId;
+      const runAlias = (this.props.run.value.tags || {}).alias;
+
       const failureReason = status === 'FAILURE' && podStatus
         ? <span style={{fontWeight: 'normal', marginLeft: 5}}>({podStatus})</span> : undefined;
       Title = (
         <h1 className={styles.runTitle}>
           <StatusIcon
             run={this.props.run.value}
-          /><span>{this.getRunName(this.props.run.value)}{failureReason} - </span>
+          /><span>
+            <RunNameAlias
+              textBeforeContent="#"
+              name={runName}
+              alias={runAlias}
+              onChange={this.onChangeRunNameAlias}
+            />
+            {failureReason} - </span>
           {pipelineLink}
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>

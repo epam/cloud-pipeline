@@ -34,11 +34,8 @@ import PipelineRunKubeServices from '../../../models/pipelines/PipelineRunKubeSe
 import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEstimatedPrice';
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
-import {
-  CP_CAP_LIMIT_MOUNTS,
-  CP_RUN_NAME
-} from '../../pipelines/launch/form/utilities/parameters';
-import RunFriendlyNameInput from '../../pipelines/launch/form/RunFriendlyNameInput';
+import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import RunNameAlias from '../../pipelines/launch/form/RunNameAlias';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
@@ -72,7 +69,7 @@ export function run (parent, callback) {
   return function (
     payload,
     confirm = true,
-    title,
+    title = {},
     warning,
     allowedInstanceTypesRequest,
     hostedApplicationConfiguration,
@@ -244,6 +241,7 @@ function runFn (
 ) {
   return new Promise(async (resolve) => {
     let launchName;
+    let launchVersion;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
     const {dataStorageAvailable} = stores;
@@ -321,7 +319,8 @@ function runFn (
       const [, , imageName] = payload.dockerImage.split('/');
       const parts = imageName.split(':');
       if (parts.length === 2) {
-        launchName = `${parts[0]} (version ${parts[1]})`;
+        launchName = parts[0];
+        launchVersion = parts[1];
       } else {
         launchName = imageName;
       }
@@ -333,7 +332,15 @@ function runFn (
     }
     payload.params = applyCustomCapabilitiesParameters(payload.params, stores.preferences);
     const launchFn = async () => {
-      const hide = message.loading(`Launching ${launchName}...`, -1);
+      const messageVersion = payload.runNameAlias
+        ? `${launchName}:${launchVersion}`
+        : launchVersion;
+      const hide = message
+        .loading(`Launching ${payload.runNameAlias || launchName} (${messageVersion})...`, -1);
+      if (payload.runNameAlias) {
+        // todo remove this block when api will be ready to receive alias field
+        delete payload.runNameAlias;
+      }
       await PipelineRunner.send({...payload, force: true});
       hide();
       if (PipelineRunner.error) {
@@ -374,10 +381,16 @@ function runFn (
         component = element;
       };
       Modal.confirm({
-        title: title || `Launch ${launchName}?`,
+        title: null,
         width: '50%',
         content: (
           <RunSpotConfirmationWithPrice
+            runInfo={{
+              name: launchName,
+              alias: payload.runNameAlias,
+              version: launchVersion,
+              title
+            }}
             ref={ref}
             platform={platform}
             warning={warning}
@@ -414,13 +427,8 @@ function runFn (
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
-            if (component.state.runFriendlyName) {
-              const {runFriendlyName} = component.state;
-              payload.params[CP_RUN_NAME] = {
-                type: 'string',
-                required: false,
-                value: runFriendlyName
-              };
+            if (component.state.runNameAlias) {
+              payload.runNameAlias = component.state.runNameAlias;
             }
             if (component.state.limitMounts !== component.props.limitMounts) {
               const {limitMounts} = component.state;
@@ -443,7 +451,15 @@ function runFn (
             resolve(false);
             callbackFn && callbackFn(false);
           } else {
-            const hide = message.loading(`Launching ${launchName}...`, -1);
+            const version = payload.runNameAlias
+              ? `${launchName}:${launchVersion}`
+              : launchVersion;
+            const hide = message
+              .loading(`Launching ${payload.runNameAlias || launchName} (${version})...`, -1);
+            if (payload.runNameAlias) {
+              // todo remove this block when api will be ready to receive alias field
+              delete payload.runNameAlias;
+            }
             await PipelineRunner.send({...payload, force: true});
             hide();
             if (PipelineRunner.error) {
@@ -507,8 +523,7 @@ export class RunConfirmation extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool,
-    runFriendlyNameExpanded: false
+    skipCheck: PropTypes.bool
   };
 
   static defaultProps = {
@@ -1032,8 +1047,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     hddSize: 0,
     instanceType: null,
     limitMounts: null,
-    runFriendlyName: null,
-    runFriendlyNameExpanded: false
+    runNameAlias: null
   };
 
   onChangeSpotType = (isSpot) => {
@@ -1083,17 +1097,53 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     });
   };
 
-  onChangeRunFriendlyName = (name) => {
-    this.setState({runFriendlyName: name});
+  onChangeRunNameAlias = (alias) => {
+    this.setState({runNameAlias: alias});
   };
 
-  showRunFriendlyNameInput = () => {
-    this.setState({runFriendlyNameExpanded: true});
+  renderModalTitle = () => {
+    const {
+      name,
+      version,
+      title = {}
+    } = this.props.runInfo || {};
+    const {runNameAlias} = this.state;
+    return (
+      <div
+        style={{
+          marginTop: '-16px',
+          marginBottom: '6px',
+          fontWeight: 700,
+          fontSize: '14px'
+        }}
+      >
+        {title && title.text ? (
+          <span
+            style={{lineHeight: '24px'}}
+          >
+            {title.text}
+          </span>
+        ) : (
+          <RunNameAlias
+            textBeforeContent={title.textBeforeContent || 'Launch '}
+            textAfterContent={title.textAfterContent || '?'}
+            textBeforeVersion={title.textBeforeVersion || '(version '}
+            textAfterVersion={title.textAfterVersion || ')'}
+            alias={runNameAlias}
+            name={name}
+            version={version}
+            onChange={this.onChangeRunNameAlias}
+            versionDelimiter={runNameAlias ? ':' : ''}
+          />
+        )}
+      </div>
+    );
   };
 
   render () {
     return (
       <div>
+        {this.renderModalTitle()}
         <Row>
           <RunConfirmation
             warning={this.props.warning}
@@ -1136,32 +1186,13 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
-        {this.state.runFriendlyNameExpanded ? (
-          <RunFriendlyNameInput
-            onChange={this.onChangeRunFriendlyName}
-            value={this.state.runFriendlyName}
-            label="Run name alias:"
-            containerStyle={{margin: '4px 2px'}}
-            inputStyle={{width: 'auto', flexGrow: 1}}
-          />
-        ) : (
-          <a
-            onClick={this.showRunFriendlyNameInput}
-            style={{
-              display: 'inline-block',
-              margin: '2px',
-              lineHeight: '30px'
-            }}
-          >
-            <Icon type="setting" /> Configure run name alias
-          </a>
-        )}
       </div>
     );
   }
 
   componentDidMount () {
     this.setState({
+      runNameAlias: (this.props.runInfo || {}).alias,
       isSpot: this.props.isSpot,
       instanceType: this.props.instanceType,
       hddSize: this.props.hddSize,
