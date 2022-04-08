@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+function is_dir_empty {
+    local dir_path="$1"
+
+    if [ ! -d "$dir_path" ]; then
+        mkdir -p "$dir_path"
+        return 0
+    fi
+
+    shopt -s nullglob
+    shopt -s dotglob
+
+    local dir_contents=(${1}/*)
+
+    shopt -u nullglob
+    shopt -u dotglob
+
+    local result=0
+    (( ${#dir_contents[*]} )) && result=1 || result=0
+    return $result
+}
+
+function configure_icon_win_distribution() {
+    # Check and change windows icon if exists
+    CLOUD_DATA_WIN_ICO_NAME=${CLOUD_DATA_WIN_ICO_NAME:-"favicon.ico"}
+    if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
+        if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_WIN_ICO_NAME" ]; then
+            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CP_PREF_API_STATIC_DIRECTORY_EXT/favicon.ico -mask ICONGROUP,MAINICON,
+            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CP_PREF_API_STATIC_DIRECTORY_EXT/favicon.ico -mask ICONGROUP,1,1033
+        else
+            echo "Windows icon doesn't not exist. The cloud data icon will not be changed."
+        fi
+    fi
+}
+
+function configure_and_publish_cloud_data_win_distribution() {
+    local _cloud_data_name="cloud-data"
+    if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
+        _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
+        _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
+    fi
+
+cat > cloud-data-win32-x64/settings.json <<EOF
+{
+ "certificates": [],
+ "ignoreCertificateErrors": true,
+ "api": "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/",
+ "server": "https://${CP_EDGE_EXTERNAL_HOST}:${CP_EDGE_EXTERNAL_PORT}/webdav/<USER_ID>",
+ "username": "<USER_ID>" $_cloud_data_name_json
+}
+EOF
+    mv cloud-data-win32-x64/cloud-data.exe cloud-data-win32-x64/${_cloud_data_name}.exe
+    mv cloud-data-win32-x64 ${_cloud_data_name}-win32-x64
+    zip -q -r "${CP_API_COMMON_DIR}/${_cloud_data_name}-win64.zip" ${_cloud_data_name}-win32-x64
+    rm -rf ${_cloud_data_name}-win32-x64
+}
+
+cd $CP_COMMON
+unzip -p "$CP_COMMON/pipeline.jar" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
+unzip -qq cloud-data-win64.zip
+rm -f cloud-data-win64.zip
+
+# Change an icon to the "cloud data" application:
+echo "Customizing Windows Cloud Data icon for a specific deployment"
+configure_icon_win_distribution
+
+# Add a deployment specific configuration to the "cloud data" application:
+# - API URL
+# - DAV URL
+# - Application name
+echo "Configuring Cloud Data with the deployment specific settings"
+configure_and_publish_cloud_data_win_distribution
