@@ -65,10 +65,10 @@ public class TinyproxyMonitor {
         log.info("Checking {} configured tinyproxy stats thresholds", statsThresholds.size());
         final LocalDateTime checkTime = LocalDateTime.now();
         final List<TinyproxyThresholdEvent> thresholdEvents = getExceedingThresholdsEvents(checkTime);
-        log.info("{} tinyproxy threshold events detected", thresholdEvents.size());
+        log.info("Tinyproxy threshold events detected: {}", getEventsNames(thresholdEvents));
         thresholdEvents.removeIf(this::beforeNextNotificationTime);
         if (CollectionUtils.isNotEmpty(thresholdEvents)) {
-            log.info("Sending notifications on {} tinyproxy threshold events", thresholdEvents.size());
+            log.info("Sending notifications on tinyproxy threshold events: {}", getEventsNames(thresholdEvents));
             kubernetesNotifier.notifyTinyproxyThreshold(thresholdEvents);
             thresholdEvents.forEach(event -> lastNotification.put(event.getThresholdKey(), checkTime));
         } else {
@@ -101,5 +101,11 @@ public class TinyproxyMonitor {
         return statsClient.load().entrySet().stream()
             .filter(e -> NumberUtils.isDigits(e.getValue()))
             .collect(Collectors.toMap(Map.Entry::getKey, e -> Long.parseLong(e.getValue())));
+    }
+
+    private List<String> getEventsNames(final List<TinyproxyThresholdEvent> thresholdEvents) {
+        return thresholdEvents.stream()
+            .map(TinyproxyThresholdEvent::getThresholdKey)
+            .collect(Collectors.toList());
     }
 }
