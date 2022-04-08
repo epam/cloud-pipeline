@@ -338,7 +338,9 @@ function runFn (
       const hide = message
         .loading(`Launching ${payload.runNameAlias || launchName} (${messageVersion})...`, -1);
       if (payload.runNameAlias) {
-        // todo remove this block when api will be ready to receive alias field
+        payload.tags = {
+          alias: payload.runNameAlias
+        };
         delete payload.runNameAlias;
       }
       await PipelineRunner.send({...payload, force: true});
@@ -427,9 +429,6 @@ function runFn (
             payload.isSpot = component.state.isSpot;
             payload.instanceType = component.state.instanceType;
             payload.hddSize = component.state.hddSize;
-            if (component.state.runNameAlias) {
-              payload.runNameAlias = component.state.runNameAlias;
-            }
             if (component.state.limitMounts !== component.props.limitMounts) {
               const {limitMounts} = component.state;
               if (limitMounts) {
@@ -445,6 +444,11 @@ function runFn (
                 delete payload.params[CP_CAP_LIMIT_MOUNTS];
               }
             }
+            if (component.state.runNameAlias) {
+              payload.tags = {
+                alias: component.state.runNameAlias
+              };
+            }
           }
           if (!payload.instanceType) {
             message.error('You should select instance type');
@@ -457,7 +461,6 @@ function runFn (
             const hide = message
               .loading(`Launching ${payload.runNameAlias || launchName} (${version})...`, -1);
             if (payload.runNameAlias) {
-              // todo remove this block when api will be ready to receive alias field
               delete payload.runNameAlias;
             }
             await PipelineRunner.send({...payload, force: true});
