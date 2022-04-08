@@ -2,6 +2,7 @@ import RemotePost from '../basic/RemotePost';
 import GetDataWithPrevious from './get-data-with-previous';
 import {GetGroupedStorageTypes} from './get-grouped-storage-types';
 import {GetGroupedComputeTypes} from './get-grouped-compute-types';
+import QuotaGroups from '../../components/billing/quotas/utilities/quota-groups';
 import join from './join-periods';
 
 export class GetGroupedResources extends RemotePost {
@@ -46,6 +47,11 @@ export class GetGroupedResources extends RemotePost {
     }
     payload['Compute instances'] = computeTypesRequest.loaded ? computeTypesRequest.value : [];
 
+    payload.quotaGroups = {
+      'Storage': QuotaGroups.storages,
+      'Compute instances': QuotaGroups.computeInstances
+    };
+
     this.update({
       status: 'OK',
       payload
@@ -88,7 +94,11 @@ export class GetGroupedResourcesWithPrevious extends GetDataWithPrevious {
     );
     return {
       'Storage': storage,
-      'Compute instances': compute
+      'Compute instances': compute,
+      quotaGroups: {
+        'Storage': QuotaGroups.storages,
+        'Compute instances': QuotaGroups.computeInstances
+      }
     };
   }
 }

@@ -314,7 +314,7 @@ class StorageReports extends React.Component {
                           <Summary
                             storages={summary}
                             storagesDiscounts={storageDiscounts}
-                            quota={false}
+                            quota
                             title={this.getSummaryTitle()}
                             style={{width, height}}
                           />

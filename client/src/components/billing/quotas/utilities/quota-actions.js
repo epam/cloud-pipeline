@@ -70,6 +70,27 @@ QuotaAction.propTypes = {
   })
 };
 
+function quotaActionTriggered (action) {
+  return action && action.activeAction;
+}
+
+function quotaHasTriggeredActions (quota) {
+  if (!quota) {
+    return false;
+  }
+  const {actions = []} = quota;
+  return actions.some(quotaActionTriggered);
+}
+
+function getTriggeredActions (quota) {
+  const {actions = []} = quota || {};
+  const triggered = actions
+    .filter(quotaActionTriggered)
+    .map(triggeredAction => triggeredAction.actions || [])
+    .reduce((r, c) => ([...r, ...c]), []);
+  return [...(new Set(triggered))];
+}
+
 const actionsByGroup = {
   [quotaGroups.global]: [
     actions.notify,
@@ -94,6 +115,9 @@ const actionsByGroup = {
 export {
   actionNames,
   actionsByGroup,
-  QuotaAction
+  QuotaAction,
+  quotaActionTriggered,
+  quotaHasTriggeredActions,
+  getTriggeredActions
 };
 export default actions;
