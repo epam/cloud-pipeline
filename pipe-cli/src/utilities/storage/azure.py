@@ -149,7 +149,8 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         if version or hard_delete:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         prefix = StorageOperations.get_prefix(relative_path)

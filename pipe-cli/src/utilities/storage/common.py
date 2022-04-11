@@ -356,7 +356,8 @@ class AbstractDeleteManager:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         """
         Deletes all items under the given path.
 
@@ -366,6 +367,7 @@ class AbstractDeleteManager:
         :param include: Include item pattern.
         :param version: Version to be deleted.
         :param hard_delete: Specifies if all item versions have to be deleted.
+        :param page_size: Specifies page size for listing objects.
         """
         pass
 

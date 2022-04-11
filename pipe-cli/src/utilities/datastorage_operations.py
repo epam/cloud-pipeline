@@ -164,10 +164,6 @@ class DataStorageOperations(object):
                                             transfer_results, clean=clean, flush_size=1)
 
     @classmethod
-    def _is_cloud_source(cls, source_wrapper_type):
-        return source_wrapper_type in [WrapperType.S3, WrapperType.AZURE, WrapperType.GS]
-
-    @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
                       include, exclude, force, quiet, skip_existing, verify_destination):
         filtered_items = []
