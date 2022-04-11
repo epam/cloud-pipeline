@@ -89,6 +89,7 @@ public class MonitorScheduleService {
     @Scheduled(cron = "${monitor.tinyproxy.cron}")
     public void monitorTinyproxy() {
         if (tinyproxyMonitor == null) {
+            log.debug("Tinyproxy monitoring is disabled.");
             return;
         }
         try {
