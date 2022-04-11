@@ -1,5 +1,7 @@
 package com.epam.pipeline.utils;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -22,6 +24,10 @@ public final class StreamUtils {
 
     public static <T> Stream<List<T>> chunked(final Stream<T> stream, final int chunkSize) {
         return from(IteratorUtils.chunked(stream.iterator(), chunkSize));
+    }
+
+    public static <L, R> Stream<Pair<L, R>> zipped(final Stream<L> lstream, final Stream<R> rstream) {
+        return from(IteratorUtils.zipped(lstream.iterator(), rstream.iterator()));
     }
 
     /**
