@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -67,10 +67,10 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         else:
             self.ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
-    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, kms_encyr_key_id,
+    def run_instance(self, is_spot, bid_price, ins_type, ins_hdd, ins_img, ins_platform, ins_key, run_id, pool_id, kms_encyr_key_id,
                      num_rep, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, pre_pull_images=[]):
 
-        ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, time_rep)
+        ins_id, ins_ip = self.__check_spot_request_exists(num_rep, run_id, pool_id, time_rep)
         if ins_id:
             return ins_id, ins_ip
         swap_size = utils.get_swap_size(self.cloud_region, ins_type, is_spot, "AWS")
@@ -78,11 +78,11 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                                                       kubeadm_token, kubeadm_cert_hash, kube_node_token,
                                                       swap_size, pre_pull_images)
         if is_spot:
-            ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
+            ins_id, ins_ip = self.__find_spot_instance(bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
                                                        kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size)
         else:
             ins_id, ins_ip = self.__run_on_demand_instance(ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id,
-                                                           run_id, user_data_script, num_rep, time_rep, swap_size)
+                                                           run_id, pool_id, user_data_script, num_rep, time_rep, swap_size)
         return ins_id, ins_ip
 
     def check_instance(self, ins_id, run_id, num_rep, time_rep):
@@ -212,7 +212,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
             'Values': [run_id]
         }
 
-    def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, user_data_script,
+    def __run_on_demand_instance(self, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
                                  num_rep, time_rep, swap_size):
         utils.pipe_log('Creating on demand instance')
         allowed_networks = utils.get_networks_config(self.cloud_region)
@@ -240,7 +240,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 TagSpecifications=[
                     {
                         'ResourceType': 'instance',
-                        "Tags": AWSInstanceProvider.get_tags(run_id)
+                        "Tags": AWSInstanceProvider.get_tags(run_id, pool_id)
                     }
                 ],
                 MetadataOptions={
@@ -379,7 +379,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                            status=TaskStatus.FAILURE)
             sys.exit(SPOT_UNAVAILABLE_EXIT_CODE)
 
-    def __find_spot_instance(self, bid_price, run_id, ins_img, ins_type, ins_key, ins_hdd,
+    def __find_spot_instance(self, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd,
                              kms_encyr_key_id, user_data_script, num_rep, time_rep, swap_size):
         utils.pipe_log('Creating spot request')
 
@@ -465,7 +465,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         utils.pipe_log('- Spot request {} is registered'.format(request_id))
         self.ec2.create_tags(
             Resources=[request_id],
-            Tags=utils.run_id_tag(run_id),
+            Tags=AWSInstanceProvider.run_id_tag(run_id, pool_id),
         )
 
         utils.pipe_log('- Spot request {} was tagged with RunID {}. Waiting for request fulfillment...'.format(request_id, run_id))
@@ -500,7 +500,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 ins_ip = instance_reservation['PrivateIpAddress']
                 self.ec2.create_tags(
                     Resources=[ins_id],
-                    Tags=AWSInstanceProvider.get_tags(run_id),
+                    Tags=AWSInstanceProvider.get_tags(run_id, pool_id),
                 )
 
                 ebs_tags = AWSInstanceProvider.resource_tags()
@@ -536,7 +536,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         return status == 'not-scheduled-yet' or status == 'pending-evaluation' \
                or status == 'pending-fulfillment' or status == 'fulfilled'
 
-    def __check_spot_request_exists(self, num_rep, run_id, time_rep):
+    def __check_spot_request_exists(self, num_rep, run_id, pool_id, time_rep):
         utils.pipe_log('Checking if spot request for RunID {} already exists...'.format(run_id))
         for _ in range(0, 5):
             spot_req = self.__get_spot_req_by_run_id(run_id)
@@ -546,7 +546,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                 utils.pipe_log('- Spot request for RunID {} already exists: SpotInstanceRequestId: {}, Status: {}'.format(run_id, request_id, status))
                 rep = 0
                 if status == 'request-canceled-and-instance-running' and self.__instance_is_active(spot_req['InstanceId']):
-                    return self.__tag_and_get_instance(spot_req, run_id)
+                    return self.__tag_and_get_instance(spot_req, run_id, pool_id)
                 if AWSInstanceProvider.wait_for_fulfilment(status):
                     while status != 'fulfilled':
                         utils.pipe_log('- Spot request ({}) is not yet fulfilled. Waiting...'.format(request_id))
@@ -561,7 +561,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                             AWSInstanceProvider.exit_if_spot_unavailable(run_id, status)
                             return '', ''
                     if self.__instance_is_active(spot_req['InstanceId']):
-                        return self.__tag_and_get_instance(spot_req, run_id)
+                        return self.__tag_and_get_instance(spot_req, run_id, pool_id)
             sleep(5)
         utils.pipe_log('No spot request for RunID {} found\n-'.format(run_id))
         return '', ''
@@ -588,7 +588,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
                     return instances[0]['InstanceId']
         return None
 
-    def __tag_and_get_instance(self, spot_req, run_id):
+    def __tag_and_get_instance(self, spot_req, run_id, pool_id):
         ins_id = spot_req['InstanceId']
         utils.pipe_log('Setting \"Name={}\" tag for instance {}'.format(run_id, ins_id))
         instance = self.ec2.describe_instances(InstanceIds=[ins_id])
@@ -596,7 +596,7 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         if not AWSInstanceProvider.tag_name_is_present(instance):  # create tag name if not presents
             self.ec2.create_tags(
                 Resources=[ins_id],
-                Tags=AWSInstanceProvider.get_tags(run_id),
+                Tags=AWSInstanceProvider.get_tags(run_id, pool_id),
             )
             utils.pipe_log('Tag ({}) created for instance ({})\n-'.format(run_id, ins_id))
         else:
@@ -630,15 +630,21 @@ class AWSInstanceProvider(AbstractInstanceProvider):
         return tags
 
     @staticmethod
-    def run_id_tag(run_id):
-        return [{
+    def run_id_tag(run_id, pool_id):
+        tags = [{
             'Value': run_id,
             'Key': 'Name'
         }]
+        if pool_id:
+            tags.append({
+                'Value': pool_id,
+                'Key': 'pool_id'
+            })
+        return tags
 
     @staticmethod
-    def get_tags(run_id):
-        tags = AWSInstanceProvider.run_id_tag(run_id)
+    def get_tags(run_id, pool_id):
+        tags = AWSInstanceProvider.run_id_tag(run_id, pool_id)
         res_tags = AWSInstanceProvider.resource_tags()
         if res_tags:
             tags.extend(res_tags)

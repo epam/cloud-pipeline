@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vmmonitor.model.vm;
+package com.epam.pipeline.vmmonitor.model.k8s;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.Value;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
-@AllArgsConstructor
-@Getter
-public class MissingNodeSummary {
+@Value
+public class TinyproxyThresholdEvent {
 
-    private final VirtualMachine vm;
-    private final List<PipelineRun> matchingRuns;
-    private final Long matchingPoolId;
+    private final String thresholdKey;
+    private final Long thresholdValue;
+    private final Long actualValue;
+    private final LocalDateTime timestamp;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,3 +179,12 @@
   color: @application-color;
 }
 
+.cp-run-name.editable {
+  outline: 1px solid transparent;
+  padding: 0 2px;
+}
+
+.cp-run-name.editable:hover {
+  outline: 1px solid @panel-border-color;
+  background-color: @element-selected-background-color !important;
+}

@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vmmonitor.model.vm;
+import RemotePost from '../basic/RemotePost';
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
-import java.util.List;
-
-@AllArgsConstructor
-@Getter
-public class MissingNodeSummary {
-
-    private final VirtualMachine vm;
-    private final List<PipelineRun> matchingRuns;
-    private final Long matchingPoolId;
+class PipelineRunTagsUpdate extends RemotePost {
+  constructor (runId, overwrite = false) {
+    super();
+    this.runId = runId;
+    this.url = `/run/${runId}/tag?overwrite=${!!overwrite}`;
+  };
 }
+
+export default PipelineRunTagsUpdate;

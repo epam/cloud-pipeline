@@ -14,19 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.vmmonitor.model.vm;
+package com.epam.pipeline.vmmonitor.exception;
 
-import com.epam.pipeline.entity.pipeline.PipelineRun;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public class TinyproxyMonitoringException extends RuntimeException {
 
-import java.util.List;
-
-@AllArgsConstructor
-@Getter
-public class MissingNodeSummary {
-
-    private final VirtualMachine vm;
-    private final List<PipelineRun> matchingRuns;
-    private final Long matchingPoolId;
+    public TinyproxyMonitoringException(final String message, final Throwable cause) {
+        super(message, cause);
+    }
 }

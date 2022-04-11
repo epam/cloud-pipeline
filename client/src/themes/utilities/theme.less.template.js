@@ -2009,7 +2009,14 @@ export default `
   border: @menu-active-color;
   color: @application-color;
 }
-
+@THEME .cp-run-name.editable {
+  outline: 1px solid transparent;
+  padding: 0 2px;
+}
+@THEME .cp-run-name.editable:hover {
+  outline: 1px solid @panel-border-color;
+  background-color: @element-selected-background-color !important;
+}
 
 @THEME .cp-billing-menu {
   width: fit-content;

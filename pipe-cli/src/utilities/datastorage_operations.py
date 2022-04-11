@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from operator import itemgetter
 
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
+from src.api.metadata import Metadata
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
@@ -36,6 +37,7 @@ from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 FOLDER_MARKER = '.DS_Store'
+STORAGE_DETAILS_SEPARATOR = ', '
 DEFAULT_BATCH_SIZE = 1000
 BATCH_SIZE = os.getenv('CP_CLI_STORAGE_LIST', DEFAULT_BATCH_SIZE)
 
@@ -331,7 +333,7 @@ class DataStorageOperations(object):
         manager.restore_version(version, exclude, include, recursive=recursive)
 
     @classmethod
-    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all):
+    def storage_list(cls, path, show_details, show_versions, recursive, page, show_all, show_extended):
         """Lists storage contents
         """
         if path:
@@ -350,7 +352,8 @@ class DataStorageOperations(object):
                                                   page_size=page, show_versions=show_versions, show_all=show_all)
         else:
             # If no argument is specified - list brief details of all buckets
-            cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all)
+            cls.__print_data_storage_contents(None, None, show_details, recursive, show_all=show_all,
+                                              show_extended=show_extended)
 
     @classmethod
     def storage_mk_dir(cls, folders):
@@ -452,8 +455,13 @@ class DataStorageOperations(object):
         return table
 
     @classmethod
+    def __load_storage_list(cls, extended=False):
+        return list(DataStorage.list_with_mount_limits()) if extended else list(DataStorage.list())
+
+    @classmethod
     def __print_data_storage_contents(cls, bucket_model, relative_path, show_details, recursive, page_size=None,
-                                      show_versions=False, show_all=False):
+                                      show_versions=False, show_all=False, show_extended=False):
+
         items = []
         next_page_token = None
         manager = None
@@ -470,14 +478,14 @@ class DataStorageOperations(object):
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
-            items = [s for s in list(DataStorage.list()) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
+            items = [s for s in cls.__load_storage_list(show_extended) if not hidden_object_manager.is_object_hidden('data_storage', s.identifier)]
 
             if not items:
                 click.echo("No datastorages available.")
                 sys.exit(0)
 
-        items_table = cls.__init_items_table(show_versions)
-        cls.__print_items(bucket_model, items, show_details, items_table, show_versions)
+        items_table = cls.__init_items_table(show_versions, show_extended, items)
+        cls.__print_items(bucket_model, items, show_details, items_table, show_extended, show_versions)
 
         if not next_page_token:
             click.echo()
@@ -493,13 +501,13 @@ class DataStorageOperations(object):
         while True:
             items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
                                                                page_size=BATCH_SIZE, next_token=next_page_token)
-            cls.__print_items(bucket_model, items, show_details, items_table, show_versions)
+            cls.__print_items(bucket_model, items, show_details, items_table, False, show_versions)
             if not next_page_token:
                 click.echo()
                 return
 
     @classmethod
-    def __print_items(cls, bucket_model, items, show_details, items_table, show_versions=False):
+    def __print_items(cls, bucket_model, items, show_details, items_table, show_extended, show_versions=False):
         if show_details:
             for item in items:
                 name = item.name
@@ -519,11 +527,16 @@ class DataStorageOperations(object):
                 if item.size is not None and not item.deleted:
                     size = item.size
                 if item.labels is not None and len(item.labels) > 0 and not item.deleted:
-                    labels = ', '.join(map(lambda i: i.value, item.labels))
+                    labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, item.labels))
                 item_type = "-File" if item.delete_marker or item.deleted else item.type
                 row = [item_type, labels, changed, size, name]
                 if show_versions:
                     row.append('')
+                if show_extended:
+                    mount_status = item.mount_status
+                    mount_limits = STORAGE_DETAILS_SEPARATOR.join(item.tools_to_mount)
+                    item_metadata = STORAGE_DETAILS_SEPARATOR.join(['='.join(entry) for entry in item.metadata.items()])
+                    row.extend([mount_status, mount_limits, item_metadata])
                 items_table.add_row(row)
                 if show_versions and item.type == 'File':
                     if item.deleted:
@@ -533,7 +546,7 @@ class DataStorageOperations(object):
                     for version in item.versions:
                         version_type = "-File" if version.delete_marker else "+File"
                         version_label = "{} (latest)".format(version.version) if version.latest else version.version
-                        labels = ', '.join(map(lambda i: i.value, version.labels))
+                        labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, version.labels))
                         size = '' if version.size is None else version.size
                         row = [version_type, labels, version.changed.strftime('%Y-%m-%d %H:%M:%S'), size, name,
                                version_label]
@@ -546,17 +559,41 @@ class DataStorageOperations(object):
                 click.echo('{}\t\t'.format(item.path), nl=False)
 
     @classmethod
-    def __init_items_table(cls, show_versions):
+    def __init_items_table(cls, show_versions,  show_extended, items):
         items_table = prettytable.PrettyTable()
         fields = ["Type", "Labels", "Modified", "Size", "Name"]
         if show_versions:
             fields.append("Version")
+        if show_extended:
+            fields.extend(["Mount status", "Mount limits", "Metadata"])
+            cls.assign_metadata_to_items(items)
         items_table.field_names = fields
         items_table.align = "l"
         items_table.border = False
         items_table.padding_width = 2
         items_table.align['Size'] = 'r'
         return items_table
+
+    @classmethod
+    def assign_metadata_to_items(cls, items):
+        metadata_mapping = Metadata.load_metadata_mapping([item.identifier for item in items], 'DATA_STORAGE')
+        for item in items:
+            item.metadata = metadata_mapping.get(item.identifier, {})
+
+    @classmethod
+    def load_metadata_mapping(cls, items):
+        storage_ids = [item.identifier for item in items]
+        metadata_list = Metadata.load_metadata_mapping(storage_ids, 'DATA_STORAGE')
+        metadata_mapping = dict()
+        for metadata_entry in metadata_list:
+            metadata_data_dict = {}
+            for key, data in iteritems(metadata_entry.data):
+                if 'value' in data:
+                    data_value = data['value']
+                    if len(data_value) > 0:
+                        pass
+            metadata_mapping[metadata_entry.entity_id] = metadata_data_dict
+        return metadata_mapping
 
     @classmethod
     def __get_file_to_copy(cls, file_path, source_path):
