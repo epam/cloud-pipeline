@@ -103,22 +103,22 @@ public class TransferConfiguration {
         return new GSDataUploader(pipelineCliProvider);
     }
 
-    @Bean
+    @Bean("transferService")
     @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "true", matchIfMissing = true)
-    public TransferService transferService(final TaskService taskService,
-                                           final @Qualifier("commonDataUploaderProviderManager")
-                                               DataUploaderProviderManager providerManager,
-                                           final SecurityService securityService,
-                                           @Value("${dts.impersonation.name.metadata.key}")
-                                               final String dtsNameMetadataKey) {
+    public TransferService impersonatingTransferService(final TaskService taskService,
+                                                        @Qualifier("commonDataUploaderProviderManager")
+                                                        final DataUploaderProviderManager providerManager,
+                                                        final SecurityService securityService,
+                                                        @Value("${dts.impersonation.name.metadata.key}")
+                                                        final String dtsNameMetadataKey) {
         return new ImpersonatingTransferServiceImpl(taskService, providerManager, securityService, dtsNameMetadataKey);
     }
 
-    @Bean
+    @Bean("transferService")
     @ConditionalOnProperty(value = "dts.impersonation.enabled", havingValue = "false")
     public TransferService transferService(final TaskService taskService,
-                                           final @Qualifier("commonDataUploaderProviderManager")
-                                               DataUploaderProviderManager providerManager) {
+                                           @Qualifier("commonDataUploaderProviderManager")
+                                           final DataUploaderProviderManager providerManager) {
         return new TransferServiceImpl(taskService, providerManager);
     }
 

@@ -50,6 +50,9 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final String dtsShutdownKey;
     private final String dtsSyncRulesKey;
     private final String dtsHeartbeatEnabledKey;
+    private final String dtsTunnelEnabledKey;
+    private final String dtsTunnelHostKey;
+    private final String dtsTunnelOutputPortKey;
 
     @Autowired
     public CloudPipelineApiPreferenceService(
@@ -59,6 +62,12 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             final String dtsSyncRulesKey,
             @Value("${dts.preference.heartbeat.enabled.key:dts.heartbeat.enabled}")
             final String dtsHeartbeatEnabledKey,
+            @Value("${dts.preference.tunnel.enabled.key:dts.tunnel.enabled}")
+            final String dtsTunnelEnabledKey,
+            @Value("${dts.preference.tunnel.host.key:dts.tunnel.host}")
+            final String dtsTunnelHostKey,
+            @Value("${dts.preference.tunnel.output.port.key:dts.tunnel.output.port}")
+            final String dtsTunnelOutputPortKey,
             final CloudPipelineAPIClient apiClient,
             final IdentificationService identificationService) {
         this.apiClient = apiClient;
@@ -67,6 +76,9 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.dtsShutdownKey = dtsShutdownKey;
         this.dtsSyncRulesKey = dtsSyncRulesKey;
         this.dtsHeartbeatEnabledKey = dtsHeartbeatEnabledKey;
+        this.dtsTunnelEnabledKey = dtsTunnelEnabledKey;
+        this.dtsTunnelHostKey = dtsTunnelHostKey;
+        this.dtsTunnelOutputPortKey = dtsTunnelOutputPortKey;
         log.info("Synchronizing preferences for current host: `{}`", identificationService.getId());
     }
 
@@ -102,9 +114,28 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         return getBooleanPreference(dtsHeartbeatEnabledKey);
     }
 
-    private boolean getBooleanPreference(final String preference) {
+    @Override
+    public boolean isTunnelEnabled() {
+        return getBooleanPreference(dtsTunnelEnabledKey);
+    }
+
+    @Override
+    public Optional<String> getTunnelHost() {
+        return getStringPreference(dtsTunnelHostKey);
+    }
+
+    @Override
+    public Optional<String> getTunnelOutputPort() {
+        return getStringPreference(dtsTunnelOutputPortKey);
+    }
+
+    private Optional<String> getStringPreference(final String preference) {
         return Optional.of(preference)
-                .map(preferences::get)
+                .map(preferences::get);
+    }
+
+    private boolean getBooleanPreference(final String preference) {
+        return getStringPreference(preference)
                 .map(BooleanUtils::toBoolean)
                 .orElse(false);
     }
