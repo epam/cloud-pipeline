@@ -45,15 +45,20 @@ import javax.net.ssl.X509TrustManager;
 @Service
 public class TinyproxyStatsClient {
 
+    private static final int DEFAULT_PROXY_PORT = 3128;
+
     private final ObjectMapper mapper;
+    private final int tinyproxyStatsRequestTimeout;
     private final String proxyUrl;
     private final String tinyproxyStatsUrl;
 
     public TinyproxyStatsClient(
+        @Value("${monitor.tinyproxy.stats.request.timeout.seconds:10}") final Integer tinyproxyStatsRequestTimeout,
         @Value("${monitor.tinyproxy.http.proxy.url:cp-tinyproxy.default.svc.cluster.local:3128}") final String proxyUrl,
         @Value("${monitor.tinyproxy.stats.endpoint.url:tinyproxy.stats}") final String tinyproxyStatsUrl) {
         this.proxyUrl = proxyUrl;
         this.tinyproxyStatsUrl = tinyproxyStatsUrl;
+        this.tinyproxyStatsRequestTimeout = tinyproxyStatsRequestTimeout;
         this.mapper = new ObjectMapper();
     }
 
@@ -105,9 +110,9 @@ public class TinyproxyStatsClient {
             .map(chunks -> chunks[1])
             .filter(NumberUtils::isDigits)
             .map(Integer::parseInt)
-            .orElse(3128);
-        return builder.readTimeout(10L, TimeUnit.SECONDS)
-            .connectTimeout(10L, TimeUnit.SECONDS)
+            .orElse(DEFAULT_PROXY_PORT);
+        return builder.readTimeout(tinyproxyStatsRequestTimeout, TimeUnit.SECONDS)
+            .connectTimeout(tinyproxyStatsRequestTimeout, TimeUnit.SECONDS)
             .hostnameVerifier((s, sslSession) -> true)
             .proxy(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyHostname, proxyPort)))
             .build();
@@ -121,7 +126,6 @@ public class TinyproxyStatsClient {
         } catch (GeneralSecurityException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
-
     }
 
     private interface TinyproxyStatsAPI {
