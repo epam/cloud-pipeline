@@ -973,6 +973,7 @@ export default class RunTable extends localization.LocalizedReactComponent {
       key: 'statuses',
       className: styles.runRowName,
       render: (text, run) => {
+        const alias = (run.tags || {}).alias;
         let clusterIcon;
         if (run.nodeCount > 0) {
           clusterIcon = <Icon type="database" />;
@@ -1011,8 +1012,8 @@ export default class RunTable extends localization.LocalizedReactComponent {
         }
         const name = (
           <RunNameAlias
-            name={run.podId}
-            alias={(run.tags || {}).alias}
+            name={alias ? run.id : run.podId}
+            alias={alias}
             containerStyle={{
               fontWeight: 'bold',
               flexWrap: 'nowrap'

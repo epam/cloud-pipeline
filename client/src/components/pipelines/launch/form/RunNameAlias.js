@@ -227,7 +227,10 @@ class RunNameAlias extends React.Component {
 }
 
 RunNameAlias.propTypes = {
-  name: PropTypes.string,
+  name: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.number
+  ]),
   onChange: PropTypes.func,
   alias: PropTypes.string,
   version: PropTypes.string,
