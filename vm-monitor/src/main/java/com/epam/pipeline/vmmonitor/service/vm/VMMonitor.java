@@ -39,12 +39,15 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Main monitoring service class, checks VM status on a scheduled basis
@@ -86,6 +89,7 @@ public class VMMonitor {
         try {
             ListUtils.emptyIfNull(apiClient.loadRegions())
                     .forEach(this::checkVMs);
+            sendRunningVmsToNotifier();
         } finally {
             notifier.sendNotifications();
         }
@@ -260,5 +264,16 @@ public class VMMonitor {
                     return !nodeLabels.containsKey(label) || StringUtils.isBlank(nodeLabels.get(label));
                 })
                 .collect(Collectors.toList());
+    }
+
+    private void sendRunningVmsToNotifier() {
+        final Set<String> runningVmsIds = ListUtils.emptyIfNull(apiClient.loadRegions()).stream()
+            .flatMap(region -> getVmService(region)
+                .map(service -> service.fetchRunningVms(region))
+                .map(Collection<VirtualMachine>::stream)
+                .orElse(Stream.empty()))
+            .map(VirtualMachine::getInstanceId)
+            .collect(Collectors.toSet());
+        notifier.checkMissingNodesQueue(runningVmsIds);
     }
 }
