@@ -82,7 +82,7 @@ public class TinyproxyMonitor {
             .map(e -> {
                 final String thresholdKey = e.getKey();
                 final Long thresholdValue = e.getValue();
-                final Long latestValue = latestStats.getOrDefault(thresholdKey, 0L);
+                final Long latestValue = latestStats.getOrDefault(thresholdKey, -1L);
                 return new TinyproxyThresholdEvent(thresholdKey, thresholdValue, latestValue, checkTime);
             })
             .filter(event -> event.getActualValue() > event.getThresholdValue())
