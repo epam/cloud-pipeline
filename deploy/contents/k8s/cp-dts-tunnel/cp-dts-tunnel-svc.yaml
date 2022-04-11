@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    cloud-pipeline/cp-dts-tunnel: "true"
+  name: cp-dts-tunnel
+  namespace: default
+spec:
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+      name: port-5000
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+      name: port-5001
+    - protocol: TCP
+      port: 5002
+      targetPort: 5002
+      name: port-5002
+    - protocol: TCP
+      port: 5003
+      targetPort: 5003
+      name: port-5003
+    - protocol: TCP
+      port: 5004
+      targetPort: 5004
+      name: port-5004
+    - protocol: TCP
+      port: 5005
+      targetPort: 5005
+      name: port-5005
+    - protocol: TCP
+      port: 5006
+      targetPort: 5006
+      name: port-5006
+    - protocol: TCP
+      port: 5007
+      targetPort: 5007
+      name: port-5007
+    - protocol: TCP
+      port: 5008
+      targetPort: 5008
+      name: port-5008
+    - protocol: TCP
+      port: 5009
+      targetPort: 5009
+      name: port-5009
+    - protocol: TCP
+      port: 5010
+      targetPort: 5010
+      name: port-5010
+    - protocol: TCP
+      port: 5011
+      targetPort: 5011
+      name: port-5011
+    - protocol: TCP
+      port: 5012
+      targetPort: 5012
+      name: port-5012
+    - protocol: TCP
+      port: 5013
+      targetPort: 5013
+      name: port-5013
+    - protocol: TCP
+      port: 5014
+      targetPort: 5014
+      name: port-5014
+    - protocol: TCP
+      port: 5015
+      targetPort: 5015
+      name: port-5015
+    - protocol: TCP
+      port: 5016
+      targetPort: 5016
+      name: port-5016
+    - protocol: TCP
+      port: 5017
+      targetPort: 5017
+      name: port-5017
+    - protocol: TCP
+      port: 5018
+      targetPort: 5018
+      name: port-5018
+    - protocol: TCP
+      port: 5019
+      targetPort: 5019
+      name: port-5019
+  selector:
+    cloud-pipeline/cp-dts-tunnel: "true"

@@ -294,7 +294,7 @@ CP_BILLING_SRV_KUBE_NODE_NAME=${CP_BILLING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE
 print_info "-> Assigning cloud-pipeline/cp-billing-srv to $CP_SHARE_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_BILLING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-billing-srv="true" --overwrite
 
-# Allow to schedule Share service to the master
+# Allow to schedule Tinyproxy service to the master
 CP_TP_KUBE_NODE_NAME=${CP_TP_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-tinyproxy to $CP_TP_KUBE_NODE_NAME"
 kubectl label nodes "$CP_TP_KUBE_NODE_NAME" cloud-pipeline/cp-tinyproxy="true" --overwrite
@@ -308,6 +308,11 @@ kubectl label nodes "$CP_POLICY_MANAGER_KUBE_NODE_NAME" cloud-pipeline/cp-run-po
 CP_MONITORING_SRV_KUBE_NODE_NAME=${CP_MONITORING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
 print_info "-> Assigning cloud-pipeline/cp-monitoring-srv to $CP_MONITORING_SRV_KUBE_NODE_NAME"
 kubectl label nodes "$CP_MONITORING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-monitoring-srv="true" --overwrite
+
+# Allow to schedule DTS tunnel service to the master
+CP_DTS_TUNNEL_KUBE_NODE_NAME=${CP_DTS_TUNNEL_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-dts-tunnel to $CP_DTS_TUNNEL_KUBE_NODE_NAME"
+kubectl label nodes "$CP_DTS_TUNNEL_KUBE_NODE_NAME" cloud-pipeline/cp-dts-tunnel="true" --overwrite
 
 echo
 
@@ -1293,6 +1298,27 @@ if is_service_requested cp-monitoring-srv; then
         wait_for_deployment "cp-monitoring-srv"
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-monitoring-srv: deployed"
+    fi
+    echo
+fi
+
+# DTS tunnel service
+if is_service_requested cp-dts-tunnel; then
+    print_ok "[Starting DTS tunnel service deployment]"
+
+    print_info "-> Deleting existing instance of DTS tunnel service"
+    delete_deployment_and_service   "cp-dts-tunnel" \
+                                    "/opt/dts-tunnel"
+
+    if is_install_requested; then
+        print_info "-> Deploying DTS tunnel service"
+        create_kube_resource $K8S_SPECS_HOME/cp-dts-tunnel/cp-dts-tunnel-dpl.yaml
+        create_kube_resource $K8S_SPECS_HOME/cp-dts-tunnel/cp-dts-tunnel-svc.yaml
+
+        print_info "-> Waiting for DTS tunnel service to initialize"
+        wait_for_deployment "cp-dts-tunnel"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-dts-tunnel: deployed"
     fi
     echo
 fi
