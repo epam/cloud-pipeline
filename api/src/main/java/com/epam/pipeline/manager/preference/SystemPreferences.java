@@ -83,6 +83,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotBlank;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
@@ -573,6 +574,14 @@ public class SystemPreferences {
             (int) TimeUnit.MINUTES.toSeconds(1), DTS_GROUP, isGreaterThan(10));
     public static final IntPreference DTS_OFFLINE_TIMEOUT_SECONDS = new IntPreference("dts.offline.timeout.seconds",
             (int) TimeUnit.MINUTES.toSeconds(5), DTS_GROUP, isGreaterThan(0));
+    public static final StringPreference DTS_TUNNEL_HOSTS = new StringPreference("dts.tunnel.hosts",
+            "cp-dts-tunnel.default.svc.cluster.local", DTS_GROUP, isNotBlank);
+    public static final StringPreference DTS_TUNNEL_INPUT_PORTS = new StringPreference("dts.tunnel.input.ports",
+            "5000-5009", DTS_GROUP, isNotBlank);
+    public static final StringPreference DTS_TUNNEL_OUTPUT_PORTS = new StringPreference("dts.tunnel.output.ports",
+            "5010-5019", DTS_GROUP, isNotBlank);
+    public static final StringPreference DTS_TUNNEL_URL_TEMPLATE = new StringPreference("dts.tunnel.url.template",
+            "http://%s:%s/dts/restapi", DTS_GROUP, isNotBlank);
 
     /**
      * Controls maximum number of scheduled at once runs
