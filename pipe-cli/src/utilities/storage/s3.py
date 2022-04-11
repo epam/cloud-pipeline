@@ -831,9 +831,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def get_items(self, relative_path):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
-    def get_paging_items(self, relative_path, next_token, page_size):
+    def get_paging_items(self, relative_path, next_token, page_size, results=None):
         return S3BucketOperations.get_paging_items(self.bucket, page_size=page_size, next_token=next_token,
-                                                   session=self.session)
+                                                   session=self.session, results=results)
 
     def get_file_tags(self, relative_path):
         return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
@@ -979,7 +979,7 @@ class S3BucketOperations(object):
                     yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'])
 
     @classmethod
-    def get_paging_items(cls, storage_wrapper, page_size, next_token=None, session=None):
+    def get_paging_items(cls, storage_wrapper, page_size, next_token=None, session=None, results=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
@@ -1009,7 +1009,10 @@ class S3BucketOperations(object):
                     if name.endswith(delimiter):
                         continue
                     res.append(('File', file['Key'], cls.get_prefix(delimiter, name), file['Size']))
-            return res, page.get('NextContinuationToken', None) if page else None
+            next_page_token = page.get('NextContinuationToken', None) if page else None
+            if results is not None:
+                results.put((res, next_page_token))
+            return res, next_page_token
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):

@@ -36,7 +36,7 @@ from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
 FOLDER_MARKER = '.DS_Store'
-DEFAULT_BATCH_SIZE = 2
+DEFAULT_BATCH_SIZE = 1000
 BATCH_SIZE = os.getenv('CP_CLI_STORAGE_LIST', DEFAULT_BATCH_SIZE)
 
 
@@ -104,13 +104,34 @@ class DataStorageOperations(object):
                           force, quiet, skip_existing, verify_destination, threads, clean, tags, io_threads)
         else:
             items_batch, next_token = source_wrapper.get_paging_items(next_token=None, page_size=BATCH_SIZE)
-            while True:
-                cls._transfer(source_wrapper, destination_wrapper, items_batch, manager, permission_to_check, include,
-                              exclude, force, quiet, skip_existing, verify_destination, threads, clean, tags,
-                              io_threads)
-                if not next_token:
-                    return
-                items_batch, next_token = source_wrapper.get_paging_items(next_token=next_token, page_size=BATCH_SIZE)
+            cls._transfer_batch_items(source_wrapper, destination_wrapper, items_batch, manager, permission_to_check,
+                                      include, exclude, force, quiet, skip_existing, verify_destination, threads,
+                                      clean, tags, io_threads, next_token)
+
+    @classmethod
+    def _transfer_batch_items(cls, source_wrapper, destination_wrapper, items_batch, manager, permission_to_check,
+                              include, exclude, force, quiet, skip_existing, verify_destination, threads, clean, tags,
+                              io_threads, next_token):
+        while True:
+            workers = []
+            transfer_process = multiprocessing.Process(target=cls._transfer,
+                                                       args=(source_wrapper, destination_wrapper, items_batch,
+                                                             manager, permission_to_check, include,
+                                                             exclude, force, quiet, skip_existing,
+                                                             verify_destination, threads, clean, tags, io_threads))
+            workers.append(transfer_process)
+            if not next_token:
+                transfer_process.start()
+                cls._handle_keyboard_interrupt(workers)
+                return
+            listing_results = multiprocessing.Queue()
+            listing_process = multiprocessing.Process(target=source_wrapper.get_paging_items,
+                                                      args=(next_token, BATCH_SIZE, listing_results))
+            workers.append(listing_process)
+            transfer_process.start()
+            listing_process.start()
+            cls._handle_keyboard_interrupt(workers)
+            items_batch, next_token = listing_results.get()
 
     @classmethod
     def _transfer(cls, source_wrapper, destination_wrapper, items_part, manager, permission_to_check,

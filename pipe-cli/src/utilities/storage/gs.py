@@ -437,7 +437,7 @@ class GsListingManager(GsManager, AbstractListingManager):
             count += 1
         return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), count, size]
 
-    def get_paging_items(self, relative_path, next_token, page_size):
+    def get_paging_items(self, relative_path, next_token, page_size, results=None):
         return self.get_items(relative_path), None
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
