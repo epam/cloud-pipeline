@@ -61,9 +61,9 @@ import localization from '../../../../utils/localization';
 
 import hints from './hints';
 import FireCloudMethodSnapshotConfigurationsRequest
-from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
+  from '../../../../models/firecloud/FireCloudMethodSnapshotConfigurations';
 import FireCloudMethodParameters
-from '../../../../models/firecloud/FireCloudMethodParameters';
+  from '../../../../models/firecloud/FireCloudMethodParameters';
 import LoadingView from '../../../special/LoadingView';
 import {getSpotTypeName} from '../../../special/spot-instance-names';
 import DTSClusterInfo from '../../../../models/dts/DTSClusterInfo';
@@ -1924,8 +1924,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               initialValue: value,
               onChange: () => { this.forceValidation = true; }
             })(
-            this.props.isDetachedConfiguration
-              ? <AutoCompleteForParameter
+            this.props.isDetachedConfiguration ? (
+              <AutoCompleteForParameter
                 readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 placeholder={'Value'}
                 parameterKey={key}
@@ -1934,11 +1934,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 rootEntityId={this.state.rootEntityId}
                 showWithButton
               />
-              : <Input
+            ) : (
+              <Input
                 disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 placeholder="Value"
                 className={styles.parameterValue}
               />
+            )
           )
         }
       </FormItem>
@@ -1982,11 +1984,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               {
                 enumeration
                   .filter(e => e.isVisible(parameters))
-                  .map(e => {
-                  return (
-                    <Select.Option key={e.name} value={e.name}>{e.name}</Select.Option>
-                  );
-                })
+                  .map(e => (
+                    <Select.Option
+                      key={e.name}
+                      value={e.name}
+                    >
+                      {e.name}
+                    </Select.Option>
+                  ))
               }
             </Select>
           )
@@ -2046,7 +2051,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     {key, value, required, readOnly, validator},
     type,
     system,
-    visible,
+    visible
   ) => {
     let icon;
     switch (type) {
@@ -2091,8 +2096,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             initialValue: value,
             onChange: () => { this.forceValidation = true; }
           })(
-            this.props.isDetachedConfiguration
-              ? <AutoCompleteForParameter
+            this.props.isDetachedConfiguration ? (
+              <AutoCompleteForParameter
                 readOnly={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 placeholder={'Path'}
                 parameterKey={key}
@@ -2105,7 +2110,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.openBucketBrowser(sectionName, selectKey, selectValue, type);
                 }}
               />
-              : <Input
+            ) : (
+              <Input
                 disabled={(this.props.readOnly && !this.props.canExecute) || readOnly}
                 style={{width: '100%'}}
                 addonBefore={
@@ -2118,6 +2124,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   </div>}
                 placeholder="Path"
               />
+            )
           )
         }
       </FormItem>
@@ -3468,8 +3475,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     if (this.state.isDts && this.props.detached) {
       return undefined;
     }
-    const instanceTypeStr = (t) =>
-      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`;
+    const instanceTypeStr = (t) => ([
+      `${t.name} (CPU: ${this.cpuMapper(t.vcpu)}, `,
+      `RAM: ${t.memory}${t.gpu ? `, GPU: ${t.gpu}` : ''})`
+    ]).join('');
     return (
       <FormItem
         className={getFormItemClassName(styles.formItem, 'type')}
@@ -3825,7 +3834,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
+                <div
+                  key={index}
+                  className={classNames(
+                    styles.summaryItem,
+                    'cp-exec-env-summary-item'
+                  )}
+                >
                   {l}
                 </div>
               ))
@@ -4227,7 +4242,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 Do not mount storages
               </Checkbox>
               <div style={{marginLeft: 7, marginTop: 3}}>
-                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.doNotMountStoragesHint)}
+                {hints.renderHint(
+                  this.localizedStringWithSpotDictionaryFn,
+                  hints.doNotMountStoragesHint
+                )}
               </div>
             </Row>
             <Row
@@ -4368,7 +4386,13 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 (this.props.readOnly && !this.props.canExecute) ||
                 (this.state.pipeline && this.props.detached)
               }
-              onChange={(e) => this.setState({startIdle: e.target.checked, useDefaultCmd: false}, this.formFieldsChanged)}
+              onChange={(e) => this.setState(
+                {
+                  startIdle: e.target.checked,
+                  useDefaultCmd: false
+                },
+                this.formFieldsChanged
+              )}
               checked={this.state.startIdle}>
               Start idle
             </Checkbox>
@@ -4383,11 +4407,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     (this.props.readOnly && !this.props.canExecute) ||
                     (this.state.pipeline && this.props.detached)
                   }
-                  onChange={(e) => this.setState({useDefaultCmd: e.target.checked, startIdle: false}, this.formFieldsChanged)}
+                  onChange={(e) => this.setState(
+                    {
+                      useDefaultCmd: e.target.checked,
+                      startIdle: false
+                    },
+                    this.formFieldsChanged
+                  )}
                   checked={this.state.useDefaultCmd}>
                   Use default command
                 </Checkbox>
-                {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.useDefaultCommandHint)}
+                {hints.renderHint(
+                  this.localizedStringWithSpotDictionaryFn,
+                  hints.useDefaultCommandHint
+                )}
               </Row>
             )
           }
@@ -5250,8 +5283,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                       )
                     }
                     {this.renderFormItemRow(this.renderDiskFormItem, hints.diskHint)}
-                    {
-                      !this.isWindowsPlatform && !this.state.fireCloudMethodName && !this.state.isDts &&
+                    {!this.isWindowsPlatform &&
+                    !this.state.fireCloudMethodName &&
+                    !this.state.isDts && (
                       <Row type="flex" justify="end" style={{paddingRight: 30, marginBottom: 10}}>
                         <a
                           onClick={this.openConfigureClusterDialog}
@@ -5261,7 +5295,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                           {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>
                       </Row>
-                    }
+                    )}
                     <ConfigureClusterDialog
                       instanceName={this.getSectionFieldValue(EXEC_ENVIRONMENT)('type')}
                       launchCluster={this.state.launchCluster}

@@ -57,7 +57,9 @@ import {
 } from '../../pipelines/launch/form/utilities/run-capabilities';
 
 // Mark class with @submitsRun if it may launch pipelines / tools
-export const submitsRun = (...opts) => inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
+export const submitsRun = (...opts) => {
+  return inject('spotInstanceTypes', 'onDemandInstanceTypes')(...opts);
+};
 
 export function run (parent, callback) {
   if (!parent) {
@@ -116,8 +118,7 @@ export function openReRunForm (run, props) {
       pipelineId,
       version: runVersion,
       id,
-      configName,
-      dockerImage
+      configName
     } = run;
     Promise.resolve()
       .then(() => {
@@ -172,13 +173,17 @@ export function modifyPayloadForAllowedInstanceTypes (payload, allowedInstanceTy
   if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
     let availableInstanceTypes = [];
     if (payload.dockerImage) {
-      availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || [])
-        .map(i => i.name);
+      availableInstanceTypes = (
+        allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || []
+      ).map(i => i.name);
     } else {
-      availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || [])
-        .map(i => i.name);
+      availableInstanceTypes = (
+        allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || []
+      ).map(i => i.name);
     }
-    const availablePriceTypes = (allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []).map(p => {
+    const availablePriceTypes = (
+      allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []
+    ).map(p => {
       if (p === 'spot') {
         return true;
       } else if (p === 'on_demand') {
@@ -248,13 +253,17 @@ function runFn (
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
-        availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || [])
-          .map(i => i);
+        availableInstanceTypes = (
+          allowedInstanceTypesRequest.value[names.allowedToolInstanceTypes] || []
+        ).map(i => i);
       } else {
-        availableInstanceTypes = (allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || [])
-          .map(i => i);
+        availableInstanceTypes = (
+          allowedInstanceTypesRequest.value[names.allowedInstanceTypes] || []
+        ).map(i => i);
       }
-      availablePriceTypes = (allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []).map(p => {
+      availablePriceTypes = (
+        allowedInstanceTypesRequest.value[names.allowedPriceTypes] || []
+      ).map(p => {
         if (p === 'spot') {
           return true;
         } else if (p === 'on_demand') {
@@ -488,11 +497,11 @@ function runFn (
   });
 }
 
-function isUniqueInArray(element, index, array) {
+function isUniqueInArray (element, index, array) {
   return array.filter(e => e === element).length === 1;
 }
 
-function notUniqueInArray(element, index, array) {
+function notUniqueInArray (element, index, array) {
   return array.filter(e => e === element).length > 1;
 }
 
@@ -700,11 +709,26 @@ export class RunConfirmation extends React.Component {
               <Tooltip
                 overlayClassName="limit-mounts-warning"
                 title={s.pathMask}>
-                <div style={{height: 30, display: 'flex', flexDirection: 'column', position: 'relative'}}>
+                <div
+                  style={{
+                    height: 30,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative'
+                  }}
+                >
                   <b style={{height: 20, lineHeight: '20px'}}>
                     <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} /> {s.name}
                   </b>
-                  <span style={{position: 'absolute', height: 12, lineHeight: '12px', top: 20, left: 5}}>
+                  <span
+                    style={{
+                      position: 'absolute',
+                      height: 12,
+                      lineHeight: '12px',
+                      top: 20,
+                      left: 5
+                    }}
+                  >
                     {s.pathMask}
                   </span>
                 </div>
@@ -773,20 +797,38 @@ export class RunConfirmation extends React.Component {
             message={
               <div>
                 <Row style={{marginBottom: 5}}>
-                  <b>You are going to launch a job using a {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance.</b>
+                  <b>
+                    {`You are going to launch a job using a ${
+                      getSpotTypeName(true, this.currentCloudProvider)
+                        .toUpperCase()
+                    } instance.`}
+                  </b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  <b>While this is much cheaper, this type of instance may be OCCASIONALLY STOPPED, without a notification and you will NOT be able to PAUSE this run, only STOP.
-                  Consider {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} instance for batch jobs and short living runs.</b>
+                  <b>
+                    While this is much cheaper, this type of instance may be OCCASIONALLY STOPPED,
+                    without a notification and you will NOT be able to PAUSE this run, only STOP.
+                    Consider {
+                      getSpotTypeName(true, this.currentCloudProvider)
+                        .toUpperCase()
+                    } instance for batch jobs and short living runs.
+                  </b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
-                  To change this setting use <b>ADVANCED -> PRICE TYPE</b> option within a launch form.
+                  To change this setting
+                  use <b>ADVANCED {'->'} PRICE TYPE</b> option
+                  within a launch form.
                 </Row>
                 <Row type="flex" justify="center" style={{marginBottom: 5}}>
                   <Button
                     onClick={() => this.setOnDemand(true)}
                     type="primary"
-                    size="small">Set {getSpotTypeName(false, this.currentCloudProvider).toUpperCase()} price type</Button>
+                    size="small"
+                  >
+                    Set {getSpotTypeName(false, this.currentCloudProvider)
+                      .toUpperCase()
+                    } price type
+                  </Button>
                 </Row>
               </div>
             } />
@@ -801,7 +843,12 @@ export class RunConfirmation extends React.Component {
             message={
               <div>
                 <Row style={{marginBottom: 5}}>
-                  <b>You are going to launch a job using a {getSpotTypeName(false, this.currentCloudProvider).toUpperCase()} instance.</b>
+                  <b>
+                    You are going to launch a job using a {
+                      getSpotTypeName(false, this.currentCloudProvider)
+                        .toUpperCase()
+                    } instance.
+                  </b>
                 </Row>
                 <Row style={{marginBottom: 5}}>
                   You will be able to PAUSE this run.
@@ -809,7 +856,12 @@ export class RunConfirmation extends React.Component {
                 <Row type="flex" justify="center" style={{marginBottom: 5}}>
                   <Button
                     onClick={() => this.setOnDemand(false)}
-                    size="small">Set {getSpotTypeName(true, this.currentCloudProvider).toUpperCase()} price type</Button>
+                    size="small"
+                  >
+                    Set {getSpotTypeName(true, this.currentCloudProvider)
+                      .toUpperCase()
+                    } price type
+                  </Button>
                 </Row>
               </div>
             } />
@@ -822,7 +874,10 @@ export class RunConfirmation extends React.Component {
             showIcon
             message={
               <Row>
-                Note that clusters cannot be paused, even if {getSpotTypeName(false, this.currentCloudProvider).toLowerCase()} price is selected
+                Note that clusters cannot be paused, even
+                if {getSpotTypeName(false, this.currentCloudProvider)
+                  .toLowerCase()
+                } price is selected
               </Row>
             } />
         }
@@ -888,7 +943,10 @@ export class RunConfirmation extends React.Component {
                       .filter((familyName, index, array) => array.indexOf(familyName) === index)
                       .map(instanceFamily => {
                         return (
-                          <Select.OptGroup key={instanceFamily || 'Other'} label={instanceFamily || 'Other'}>
+                          <Select.OptGroup
+                            key={instanceFamily || 'Other'}
+                            label={instanceFamily || 'Other'}
+                          >
                             {
                               this.getInstanceTypes()
                                 .filter(t => t.instanceFamily === instanceFamily)
