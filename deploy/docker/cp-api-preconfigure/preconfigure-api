@@ -38,10 +38,11 @@ function is_dir_empty {
 function configure_icon_win_distribution() {
     # Check and change windows icon if exists
     CLOUD_DATA_WIN_ICO_NAME=${CLOUD_DATA_WIN_ICO_NAME:-"favicon.ico"}
+    CLOUD_DATA_WIN_ICO_PATH="$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_WIN_ICO_NAME"
     if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
-        if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_WIN_ICO_NAME" ]; then
-            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CP_PREF_API_STATIC_DIRECTORY_EXT/favicon.ico -mask ICONGROUP,MAINICON,
-            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CP_PREF_API_STATIC_DIRECTORY_EXT/favicon.ico -mask ICONGROUP,1,1033
+        if [ -f "$CLOUD_DATA_WIN_ICO_PATH" ]; then
+            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CLOUD_DATA_WIN_ICO_PATH -mask ICONGROUP,MAINICON,
+            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CLOUD_DATA_WIN_ICO_PATH -mask ICONGROUP,1,1033
         else
             echo "Windows icon doesn't not exist. The cloud data icon will not be changed."
         fi
