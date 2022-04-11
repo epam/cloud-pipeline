@@ -42,6 +42,9 @@ public class PipelineCLIImpl implements PipelineCLI {
 
     private static final String PIPE_CP_TEMPLATE = "'%s' storage cp '%s' '%s' %s";
     private static final String PIPE_LS_TEMPLATE = "'%s' storage ls '%s' -l";
+    private static final String PIPE_TUNNEL_TRANSMIT_TEMPLATE = "'%s' tunnel transmit -f " +
+            "-th '%s' -tp '%s' -oh '%s' -op '%s'";
+
     private static final String SPACE = " ";
     private static final String FOLDER = "Folder";
     private static final String SEPARATOR = "/";
@@ -173,6 +176,22 @@ public class PipelineCLIImpl implements PipelineCLI {
             }
             return remoteFileDescription;
         };
+    }
+
+    @Override
+    public void transmitTunnel(final String tunnelHost, final String tunnelPort,
+                               final String outputHost, final String outputPort) {
+        log.info(String.format("Transmitting tunnel connections from tunnel host %s:%s to output host %s:%s...",
+                tunnelHost, tunnelPort, outputHost, outputPort));
+        cmdExecutor.executeCommand(pipeTunnelTransmit(tunnelHost, tunnelPort, outputHost, outputPort));
+        log.info("Stopped transmitting tunnel connections.");
+    }
+
+    private String pipeTunnelTransmit(final String tunnelHost, final String tunnelPort,
+                                      final String outputHost, final String outputPort) {
+        return String.format(PIPE_TUNNEL_TRANSMIT_TEMPLATE, pipelineCliExecutable,
+                tunnelHost, tunnelPort,
+                outputHost, outputPort);
     }
 
     private String pipeCP(final String source,

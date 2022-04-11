@@ -2142,7 +2142,7 @@ def dts():
 
 
 @dts.command(name='create')
-@click.option('--url', '-u', required=True, type=str)
+@click.option('--url', '-u', required=False, type=str)
 @click.option('--name', '-n', required=True, type=str)
 @click.option('--schedulable', '-s', required=False, is_flag=True)
 @click.option('--prefix', required=True, type=str, multiple=True,
@@ -2158,13 +2158,18 @@ def create_dts(url, name, schedulable, prefix, preference, json_out):
 
     Examples:
 
-    I.  Registers data transfer service which can be used for input / output data transferring in runs.
+    I.   Registers a data transfer service which can be used for input / output data transferring in runs.
 
-        pipe dts create -n "dtsname" -u "https://exampledtsurl/restapi" -p "/path/prefix/to/example/dts/local/paths"
+        pipe dts create -n "dtsname" -u "https://exampledtsurl/restapi" --prefix "/path/prefix/to/example/dts/local/paths"
 
-    II. Registers data transfer service which can be used for autonomous local data synchronisation.
+    II.  Registers a data transfer service which can be used for autonomous local data synchronisation.
 
-        pipe dts create -n "autonomousdtshostname" -u "autonomousdtshostname" -p "autonomousdtshostname"
+        pipe dts create -n "autonomousdtshostname" -u "autonomousdtshostname" --prefix "autonomousdtshostname"
+
+    III. Registers a data transfer service which can be used for input / output data transferring in runs via
+        data transfer service tunnel urls support.
+
+        pipe dts create -n "tunneldtshostname" --prefix "/path/prefix/to/example/dts/local/paths"
 
     """
     DtsOperationsManager().create(url, name, schedulable, prefix, preference, json_out)

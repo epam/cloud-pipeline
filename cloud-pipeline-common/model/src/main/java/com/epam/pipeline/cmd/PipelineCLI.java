@@ -71,4 +71,7 @@ public interface PipelineCLI {
      * @return Remote file description if one was found.
      */
     Optional<RemoteFileDescription> retrieveDescription(String targetPath);
+
+    void transmitTunnel(String tunnelHost, String tunnelPort,
+                        String outputHost, String outputPort);
 }

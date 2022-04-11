@@ -25,8 +25,11 @@ import com.epam.pipeline.dao.dts.DtsRegistryDao;
 import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.entity.dts.DtsStatus;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.preference.AbstractSystemPreference;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,8 +39,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,11 +50,21 @@ import java.util.stream.Collectors;
  * {@link DtsRegistryManager} provides CRUD methods for Data Transfer Service registry.
  */
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class DtsRegistryManager {
-    private DtsRegistryDao dtsRegistryDao;
-    private DtsRegistryMapper dtsRegistryMapper;
-    private MessageHelper messageHelper;
+
+    private static final String DTS_TUNNEL_ENABLED_KEY = "dts.tunnel.enabled";
+    private static final String DTS_TUNNEL_HOST_KEY = "dts.tunnel.host";
+    private static final String DTS_TUNNEL_INPUT_PORT_KEY = "dts.tunnel.input.port";
+    private static final String DTS_TUNNEL_OUTPUT_PORT_KEY = "dts.tunnel.output.port";
+    private static final String FALLBACK_DTS_TUNNEL_URL_TEMPLATE = "http://%s:%s/dts/restapi";
+    private static final String TRUE_STRING = "true";
+
+    private final DtsRegistryDao dtsRegistryDao;
+    private final DtsRegistryMapper dtsRegistryMapper;
+    private final DtsTunnelResolver dtsTunnelResolver;
+    private final PreferenceManager preferenceManager;
+    private final MessageHelper messageHelper;
 
     /**
      * Loads all existing {@link DtsRegistry}s.
@@ -105,7 +120,44 @@ public class DtsRegistryManager {
         validateDtsRegistryDoesNotExist(dtsRegistryVO.getName());
         DtsRegistry dtsRegistry = dtsRegistryMapper.toDtsRegistry(dtsRegistryVO);
         dtsRegistry.setStatus(DtsStatus.OFFLINE);
-        return dtsRegistryDao.create(dtsRegistry);
+        return dtsRegistryDao.create(StringUtils.isBlank(dtsRegistryVO.getUrl())
+                ? withTunnelUrl(dtsRegistry)
+                : dtsRegistry);
+    }
+
+    private DtsRegistry withTunnelUrl(final DtsRegistry dts) {
+        return dtsTunnelResolver.resolve()
+                .map(address -> withTunnelUrl(dts, address))
+                .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DTS_REGISTRY_TUNNEL_URL_UNAVAILABLE)));
+    }
+
+    private DtsRegistry withTunnelUrl(final DtsRegistry dts, final DtsTunnelAddress address) {
+        dts.setUrl(getTunnelUrl(address));
+        dts.setPreferences(getTunnelPreferences(address));
+        return dts;
+    }
+
+    private String getTunnelUrl(final DtsTunnelAddress address) {
+        return String.format(getTunnelUrlTemplate(), address.getHost(), address.getInputPort());
+    }
+
+    private String getTunnelUrlTemplate() {
+        return getSystemPreference(SystemPreferences.DTS_TUNNEL_URL_TEMPLATE)
+                .orElse(FALLBACK_DTS_TUNNEL_URL_TEMPLATE);
+    }
+
+    private Map<String, String> getTunnelPreferences(final DtsTunnelAddress address) {
+        final Map<String, String> preferences = new HashMap<>();
+        preferences.put(DTS_TUNNEL_ENABLED_KEY, TRUE_STRING);
+        preferences.put(DTS_TUNNEL_HOST_KEY, address.getHost());
+        preferences.put(DTS_TUNNEL_INPUT_PORT_KEY, address.getInputPort().toString());
+        preferences.put(DTS_TUNNEL_OUTPUT_PORT_KEY, address.getOutputPort().toString());
+        return preferences;
+    }
+
+    private <T> Optional<T> getSystemPreference(final AbstractSystemPreference<T> preference) {
+        return Optional.of(preference).map(preferenceManager::getPreference);
     }
 
     /**
@@ -231,8 +283,6 @@ public class DtsRegistryManager {
 
     private void validateDtsRegistryVO(DtsRegistryVO dtsRegistryVO) {
         Assert.notNull(dtsRegistryVO, messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_IS_EMPTY));
-        Assert.state(StringUtils.isNotBlank(dtsRegistryVO.getUrl()),
-                messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_URL_IS_EMPTY));
         Assert.state(CollectionUtils.isNotEmpty(dtsRegistryVO.getPrefixes()),
                 messageHelper.getMessage(MessageConstants.ERROR_DTS_REGISTRY_PREFIXES_ARE_EMPTY));
         final String dtsName = dtsRegistryVO.getName();

@@ -89,6 +89,7 @@ sudo -E $DEPLOY_DIR/pipectl install \
     -env CP_BILLING_CENTER_KEY="billing-group" \
     -s cp-share-srv \
     -s cp-monitoring-srv \
+    -s cp-dts-tunnel \
     -m \
     --external-host-dns \
     -demo

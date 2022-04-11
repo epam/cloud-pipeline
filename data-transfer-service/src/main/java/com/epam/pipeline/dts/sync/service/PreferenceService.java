@@ -26,5 +26,8 @@ public interface PreferenceService {
     Optional<List<AutonomousSyncRule>> getSyncRules();
     boolean isShutdownRequired();
     boolean isHeartbeatEnabled();
+    boolean isTunnelEnabled();
+    Optional<String> getTunnelHost();
+    Optional<String> getTunnelOutputPort();
     void clearShutdownFlag();
 }
