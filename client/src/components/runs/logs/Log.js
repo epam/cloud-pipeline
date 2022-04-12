@@ -44,7 +44,6 @@ import ResumePipeline from '../../../models/pipelines/ResumePipeline';
 import PipelineRunInfo from '../../../models/pipelines/PipelineRunInfo';
 import PipelineExportLog from '../../../models/pipelines/PipelineExportLog';
 import pipelineRunSSHCache from '../../../models/pipelines/PipelineRunSSHCache';
-import PipelineRunTagsUpdate from '../../../models/pipelines/PipelineRunTagsUpdate';
 import PipelineRunKubeServicesLoad from '../../../models/pipelines/PipelineRunKubeServicesLoad';
 import pipelineRunFSBrowserCache from '../../../models/pipelines/PipelineRunFSBrowserCache';
 import PipelineRunCommit from '../../../models/pipelines/PipelineRunCommit';
@@ -156,8 +155,7 @@ class Logs extends localization.LocalizedReactComponent {
     scheduleSaveInProgress: false,
     showLaunchCommands: false,
     commitAllowed: false,
-    commitAllowedCheckedForDockerImage: undefined,
-    runNameAliasPending: false
+    commitAllowedCheckedForDockerImage: undefined
   };
 
   componentDidMount () {
@@ -1359,23 +1357,6 @@ class Logs extends localization.LocalizedReactComponent {
     );
   };
 
-  onChangeRunNameAlias = (alias) => {
-    this.setState({
-      runNameAliasPending: true
-    }, async () => {
-      const hide = message.loading('Updating run name alias...', -1);
-      const request = new PipelineRunTagsUpdate(this.props.runId, false);
-      await request.send({tags: {alias}});
-      hide();
-      if (request.error) {
-        message.error(request.error);
-      } else {
-        await this.props.run.fetch();
-      }
-      this.setState({runNameAliasPending: false});
-    });
-  };
-
   refreshRun = () => {
     if (this.props.run) {
       return this.props.run.fetch();
@@ -2002,9 +1983,7 @@ class Logs extends localization.LocalizedReactComponent {
         <Row>
           <Col span={18}>
             <Row type="flex" justify="space-between">
-              <Spin spinning={this.state.runNameAliasPending}>
-                {Title}
-              </Spin>
+              {Title}
             </Row>
             {
               this.props.run.value.stateReasonMessage &&
