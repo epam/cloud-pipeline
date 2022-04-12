@@ -831,9 +831,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
     def get_items(self, relative_path):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
 
-    def get_paging_items(self, relative_path, next_token, page_size, results=None):
-        return S3BucketOperations.get_paging_items(self.bucket, page_size=page_size, next_token=next_token,
-                                                   session=self.session, results=results)
+    def get_paging_items(self, relative_path, start_token, page_size):
+        return S3BucketOperations.get_paging_items(self.bucket, page_size=page_size, session=self.session,
+                                                   start_token=start_token)
 
     def get_file_tags(self, relative_path):
         return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
@@ -957,6 +957,11 @@ class S3BucketOperations(object):
 
     @classmethod
     def get_items(cls, storage_wrapper, session=None):
+        results, _ = cls.get_paging_items(storage_wrapper, session=session)
+        return results
+
+    @classmethod
+    def get_paging_items(cls, storage_wrapper, page_size=None, session=None, start_token=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
@@ -969,50 +974,29 @@ class S3BucketOperations(object):
 
         prefix = cls.get_prefix(delimiter, storage_wrapper.path)
         operation_parameters['Prefix'] = prefix
+
+        if page_size:
+            operation_parameters['PaginationConfig'] = {
+                'PageSize': page_size,
+                'MaxKeys': page_size
+            }
+
+        if start_token:
+            operation_parameters['ContinuationToken'] = start_token
+
         page_iterator = paginator.paginate(**operation_parameters)
+        results = []
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
                     name = cls.get_item_name(file['Key'], prefix=prefix)
                     if name.endswith(delimiter):
                         continue
-                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'])
-
-    @classmethod
-    def get_paging_items(cls, storage_wrapper, page_size, next_token=None, session=None, results=None):
-        if session is None:
-            session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
-
-        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
-        client = cls._get_client(session, storage_wrapper.bucket.region)
-        paginator = client.get_paginator('list_objects_v2')
-        prefix = cls.get_prefix(delimiter, storage_wrapper.path)
-        operation_parameters = {
-            'Bucket': storage_wrapper.bucket.path,
-            'Prefix': prefix,
-            'PaginationConfig':
-                {
-                    'PageSize': page_size,
-                    'MaxKeys': page_size
-                }
-        }
-
-        if next_token:
-            operation_parameters['ContinuationToken'] = next_token
-
-        page_iterator = paginator.paginate(**operation_parameters)
-        res = []
-        for page in page_iterator:
-            if 'Contents' in page:
-                for file in page['Contents']:
-                    name = cls.get_item_name(file['Key'], prefix=prefix)
-                    if name.endswith(delimiter):
-                        continue
-                    res.append(('File', file['Key'], cls.get_prefix(delimiter, name), file['Size']))
+                    results.append(('File', file['Key'], cls.get_prefix(delimiter, name), file['Size']))
             next_page_token = page.get('NextContinuationToken', None) if page else None
-            if results is not None:
-                results.put((res, next_page_token))
-            return res, next_page_token
+            if page_size:
+                return results, next_page_token
+        return results, None
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):

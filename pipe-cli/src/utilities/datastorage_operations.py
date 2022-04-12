@@ -115,24 +115,24 @@ class DataStorageOperations(object):
                               include, exclude, force, quiet, skip_existing, verify_destination, threads, clean, tags,
                               io_threads, next_token):
         while True:
-            workers = []
             transfer_process = multiprocessing.Process(target=cls._transfer,
                                                        args=(source_wrapper, destination_wrapper, items_batch,
                                                              manager, permission_to_check, include,
                                                              exclude, force, quiet, skip_existing,
                                                              verify_destination, threads, clean, tags, io_threads))
-            workers.append(transfer_process)
             if not next_token:
                 transfer_process.start()
-                cls._handle_keyboard_interrupt(workers)
+                cls._handle_keyboard_interrupt([transfer_process])
                 return
             listing_results = multiprocessing.Queue()
-            listing_process = multiprocessing.Process(target=source_wrapper.get_paging_items,
-                                                      args=(next_token, BATCH_SIZE, listing_results))
-            workers.append(listing_process)
+
+            def get_paging_items():
+                listing_results.put(source_wrapper.get_paging_items(next_token, BATCH_SIZE))
+
+            listing_process = multiprocessing.Process(target=get_paging_items)
             transfer_process.start()
             listing_process.start()
-            cls._handle_keyboard_interrupt(workers)
+            cls._handle_keyboard_interrupt([transfer_process, listing_process])
             items_batch, next_token = listing_results.get()
 
     @classmethod

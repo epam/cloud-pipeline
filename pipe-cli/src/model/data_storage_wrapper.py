@@ -233,8 +233,8 @@ class CloudDataStorageWrapper(DataStorageWrapper):
     def get_items(self):
         return self.get_list_manager().get_items(self.path)
 
-    def get_paging_items(self, next_token, page_size, results=None):
-        return self.get_list_manager().get_paging_items(self.path, next_token, page_size, results=results)
+    def get_paging_items(self, next_token, page_size):
+        return self.get_list_manager().get_paging_items(self.path, next_token, page_size)
 
     def is_empty(self, relative=None):
         if not self.exists():
