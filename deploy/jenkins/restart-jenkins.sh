@@ -44,7 +44,7 @@ docker run  -d \
             -e SQS_QUEUE=$SQS_QUEUE \
             -e SQS_POLL_SEC=$SQS_POLL_SEC \
             -e JENKINS_USER=$JENKINS_USER \
-            -e JENKINS_PASS=$JENKINS_USER \
+            -e JENKINS_PASS=$JENKINS_PASS \
             -e JENKINS_API_TOKEN= \
             -e JENKINS_HOST=$JENKINS_HOST \
             -e JENKINS_PORT=$JENKINS_PORT \
