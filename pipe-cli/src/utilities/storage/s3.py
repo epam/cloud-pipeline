@@ -44,8 +44,6 @@ from src.utilities.storage.common import StorageOperations, AbstractListingManag
     AbstractRestoreManager, AbstractTransferManager, TransferResult, UploadResult
 from src.config import Config
 
-S3_DEFAULT_BATCH_SIZE = 1000
-
 
 class UploadedObjectsContainer:
 
@@ -520,7 +518,7 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         self.bucket = bucket
 
     def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
-                     page_size=S3_DEFAULT_BATCH_SIZE):
+                     page_size=StorageOperations.DEFAULT_PAGE_SIZE):
         client = self._get_client()
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = self.bucket.bucket.path
@@ -631,8 +629,8 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         else:
             return self.list_objects(client, prefix, operation_parameters, recursive, page_size)
 
-    def list_paging_items(self, relative_path=None, recursive=False, page_size=S3_DEFAULT_BATCH_SIZE,
-                          next_token=None):
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None):
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         client = self._get_client()
         operation_parameters = {
@@ -645,7 +643,7 @@ class ListingManager(StorageItemManager, AbstractListingManager):
         if relative_path:
             operation_parameters['Prefix'] = prefix
 
-        return self.list_paging_objects(client, prefix, operation_parameters, recursive, next_token)
+        return self.list_paging_objects(client, prefix, operation_parameters, recursive, start_token)
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
@@ -779,9 +777,9 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 break
         return items
 
-    def list_paging_objects(self, client, prefix, operation_parameters, recursive, next_token):
-        if next_token:
-            operation_parameters['ContinuationToken'] = next_token
+    def list_paging_objects(self, client, prefix, operation_parameters, recursive, start_token):
+        if start_token:
+            operation_parameters['ContinuationToken'] = start_token
 
         paginator = client.get_paginator('list_objects_v2')
         page_iterator = paginator.paginate(**operation_parameters)

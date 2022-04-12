@@ -437,6 +437,10 @@ class GsListingManager(GsManager, AbstractListingManager):
             count += 1
         return [StorageOperations.PATH_SEPARATOR.join([self.bucket.path, relative_path]), count, size]
 
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None):
+        return self.list_items(relative_path, recursive, page_size, show_all=False), None
+
     def get_paging_items(self, relative_path, next_token, page_size):
         return self.get_items(relative_path), None
 

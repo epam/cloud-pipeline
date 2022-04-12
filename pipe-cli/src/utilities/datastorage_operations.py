@@ -105,7 +105,7 @@ class DataStorageOperations(object):
             cls._transfer(source_wrapper, destination_wrapper, items, manager, permission_to_check, include, exclude,
                           force, quiet, skip_existing, verify_destination, threads, clean, tags, io_threads)
         else:
-            items_batch, next_token = source_wrapper.get_paging_items(next_token=None, page_size=BATCH_SIZE)
+            items_batch, next_token = source_wrapper.get_paging_items(start_token=None, page_size=BATCH_SIZE)
             cls._transfer_batch_items(source_wrapper, destination_wrapper, items_batch, manager, permission_to_check,
                                       include, exclude, force, quiet, skip_existing, verify_destination, threads,
                                       clean, tags, io_threads, next_token)
@@ -472,7 +472,7 @@ class DataStorageOperations(object):
             manager = wrapper.get_list_manager(show_versions=show_versions)
             if paging_allowed:
                 items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
-                                                                   page_size=BATCH_SIZE, next_token=None)
+                                                                   page_size=BATCH_SIZE, start_token=None)
             else:
                 items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
         else:
@@ -500,7 +500,7 @@ class DataStorageOperations(object):
         items_table.header = False
         while True:
             items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
-                                                               page_size=BATCH_SIZE, next_token=next_page_token)
+                                                               page_size=BATCH_SIZE, start_token=next_page_token)
             cls.__print_items(bucket_model, items, show_details, items_table, False, show_versions)
             if not next_page_token:
                 click.echo()

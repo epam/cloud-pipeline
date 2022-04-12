@@ -291,6 +291,19 @@ class AbstractListingManager:
         pass
 
     @abstractmethod
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None):
+        """
+        Lists files and folders on the specified page by a relative path in the current storage.
+
+        :param relative_path: Storage relative path to be listed.
+        :param recursive: Specifies if the listing has to be recursive.
+        :param page_size: Max number of items on the page.
+        :param start_token: Paging continuation token.
+        """
+        pass
+
+    @abstractmethod
     def get_summary_with_depth(self, max_depth, relative_path=None):
         """
         Returns tree with storage usage statistic under the given relative path and according to given depth.
@@ -330,7 +343,7 @@ class AbstractListingManager:
             yield ('File', item.name, item_relative_path, item.size)
 
     @abstractmethod
-    def get_paging_items(self, relative_path, next_token, page_size):
+    def get_paging_items(self, relative_path, start_token, page_size):
         pass
 
     def folder_exists(self, relative_path, delimiter=StorageOperations.PATH_SEPARATOR):
