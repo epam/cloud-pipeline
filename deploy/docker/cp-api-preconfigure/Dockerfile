@@ -58,6 +58,7 @@ RUN apt-get update -y \
 	    unrar \
 	    wget \
 	    acl \
+	    jq \
 	&& apt-get clean
 
 # Install wine and related packages

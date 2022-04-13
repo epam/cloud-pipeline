@@ -126,15 +126,18 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
-function copy_cloud_data_win_distribution() {
+function copy_cloud_data_distribution() {
     local _output_dir="$1"
+    local _cloud_data_dist="$2"
+    local _cloud_data_checksum_json="$3"
+
     local _cloud_data_name="cloud-data"
     if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
-        local _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
         _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
     fi
-    if [ -f "$CP_API_COMMON_DIR/${_cloud_data_name}-win64.zip" ]; then
-        mv "$CP_API_COMMON_DIR/${_cloud_data_name}-win64.zip" "$_output_dir/${_cloud_data_name}-win64.zip"
+    if [ -f "$CP_API_COMMON_DIR/${_cloud_data_name}-${_cloud_data_dist}.zip" ]; then
+        mv "$CP_API_COMMON_DIR/${_cloud_data_name}-${_cloud_data_dist}.zip" "$_output_dir/${_cloud_data_name}-${_cloud_data_dist}.zip"
+        mv "$CP_API_COMMON_DIR/${_cloud_data_checksum_json}" "${CP_PREF_API_ETC_DIRECTORY}/${_cloud_data_checksum_json}"
     fi
 }
 
@@ -248,7 +251,7 @@ echo "Copying DTS windows bundle to static resources"
 cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
 
 export CP_API_COMMON_DIR="${CP_API_COMMON_DIR:-$CP_API_HOME/common}"
-copy_cloud_data_win_distribution "$CP_API_SRV_STATIC_DIR"
+copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "win64" "cloud_data_win_checksum.json"
 
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"

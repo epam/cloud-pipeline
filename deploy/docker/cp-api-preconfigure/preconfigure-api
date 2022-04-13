@@ -35,14 +35,46 @@ function is_dir_empty {
     return $result
 }
 
+function check_win_distribution_updates() {
+    local _cloud_data_checksum_json="$1"
+    local _cloud_data_exe_checksum="$2"
+    local _cloud_data_icon_checksum="$3"
+    local _cloud_data_dist_os="$4"
+
+    local _cloud_data_checksum_json_path="${CP_PREF_API_ETC_DIRECTORY}/$_cloud_data_checksum_json"
+    if [ ! -f "$_cloud_data_checksum_json_path" ]; then
+        return 0
+    fi
+    executable_sum=$(jq -r '.executable_sum' "$_cloud_data_checksum_json_path")
+    icon_sum=$(jq -r '.icon_sum' "$_cloud_data_checksum_json_path")
+    if [ "$executable_sum" == "$_cloud_data_exe_checksum" ] && [ "$icon_sum" == "$_cloud_data_icon_checksum" ]; then
+        echo "${_cloud_data_dist_os} Cloud Data executable has not been changed. Skip settings."
+        return 1
+    else
+        return 0
+    fi
+}
+
+function create_checksum_file() {
+    local _cloud_data_checksum_json_path="$1"
+    local _cloud_data_exe_checksum="$2"
+    local _cloud_data_icon_checksum="$3"
+
+cat > "$_cloud_data_checksum_json_path" <<EOF
+{
+ "executable_sum": "$_cloud_data_exe_checksum",
+ "icon_sum": "$_cloud_data_icon_checksum"
+}
+EOF
+}
+
 function configure_icon_win_distribution() {
     # Check and change windows icon if exists
-    CLOUD_DATA_WIN_ICO_NAME=${CLOUD_DATA_WIN_ICO_NAME:-"favicon.ico"}
-    CLOUD_DATA_WIN_ICO_PATH="$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_WIN_ICO_NAME"
+    local _cloud_data_win_ico_path="$1"
     if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
-        if [ -f "$CLOUD_DATA_WIN_ICO_PATH" ]; then
-            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CLOUD_DATA_WIN_ICO_PATH -mask ICONGROUP,MAINICON,
-            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $CLOUD_DATA_WIN_ICO_PATH -mask ICONGROUP,1,1033
+        if [ -f "$_cloud_data_win_ico_path" ]; then
+            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $_cloud_data_win_ico_path -mask ICONGROUP,MAINICON,
+            xvfb-run -f $JENKINS_HOME/.Xauthority -a wine $JENKINS_HOME/reshack/ResourceHacker.exe -open $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -save $CP_COMMON/cloud-data-win32-x64/cloud-data.exe -action addoverwrite -res $_cloud_data_win_ico_path -mask ICONGROUP,1,1033
         else
             echo "Windows icon doesn't not exist. The cloud data icon will not be changed."
         fi
@@ -71,18 +103,46 @@ EOF
     rm -rf ${_cloud_data_name}-win32-x64
 }
 
+function configure_cloud_data_win_distribution() {
+    TEMP_PROCESSING_FILE="$CP_COMMON/win_processing.txt"
+    if [ -f "$TEMP_PROCESSING_FILE" ]; then
+        echo "Customizing Windows Cloud Data icon is already in a progress. Skip an icon settings."
+        return 0
+    else
+        touch "$TEMP_PROCESSING_FILE"
+    fi
+    unzip -p "$CP_COMMON/pipeline.jar" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
+    unzip -qq cloud-data-win64.zip
+    rm -f cloud-data-win64.zip
+
+    CLOUD_DATA_WIN_ICO_NAME=${CLOUD_DATA_WIN_ICO_NAME:-"favicon.ico"}
+    CLOUD_DATA_WIN_ICO_PATH="$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_WIN_ICO_NAME"
+
+    CLOUD_DATA_EXE_CHECKSUM=($(sha1sum "${CP_COMMON}/cloud-data-win32-x64/cloud-data.exe"))
+    CLOUD_DATA_ISO_CHECKSUM=($(sha1sum "${CLOUD_DATA_WIN_ICO_PATH}"))
+    CLOUD_DATA_WIN_CHECKSUM_JSON="cloud_data_win_checksum.json"
+
+    check_win_distribution_updates "$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM" "Windows"
+    if [ $? -ne 0 ]; then
+        echo "Windows Cloud Data executable will not be changed. Skip configuring."
+        return 0
+    fi
+
+    # Change an icon to the "cloud data" application:
+    echo "Customizing Windows Cloud Data icon for a specific deployment"
+    configure_icon_win_distribution "$CLOUD_DATA_WIN_ICO_PATH"
+
+    # Add a deployment specific configuration to the "cloud data" application:
+    # - API URL
+    # - DAV URL
+    # - Application name
+    echo "Configuring Cloud Data with the deployment specific settings"
+    configure_and_publish_cloud_data_win_distribution
+
+    create_checksum_file "${CP_API_COMMON_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM"
+    rm -f "$TEMP_PROCESSING_FILE"
+}
+
 cd $CP_COMMON
-unzip -p "$CP_COMMON/pipeline.jar" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
-unzip -qq cloud-data-win64.zip
-rm -f cloud-data-win64.zip
 
-# Change an icon to the "cloud data" application:
-echo "Customizing Windows Cloud Data icon for a specific deployment"
-configure_icon_win_distribution
-
-# Add a deployment specific configuration to the "cloud data" application:
-# - API URL
-# - DAV URL
-# - Application name
-echo "Configuring Cloud Data with the deployment specific settings"
-configure_and_publish_cloud_data_win_distribution
+configure_cloud_data_win_distribution

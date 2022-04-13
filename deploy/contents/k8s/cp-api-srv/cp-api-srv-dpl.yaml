@@ -29,6 +29,8 @@ spec:
               name: api-common
             - mountPath: ${CP_PREF_API_STATIC_DIRECTORY_EXT}
               name: api-static-assets
+            - mountPath: ${CP_PREF_API_ETC_DIRECTORY}
+              name: api-etc-assets
       containers:
         - name: cp-api-srv-leader-elector
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
