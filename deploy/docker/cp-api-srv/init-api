@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -126,33 +126,16 @@ function sign_and_publish_pipe_win_distribution() {
     rm -rf pipe
 }
 
-function configure_and_publish_cloud_data_win_distribution() {
-    local _jar_path="$1"
-    local _output_dir="$2"
+function copy_cloud_data_win_distribution() {
+    local _output_dir="$1"
     local _cloud_data_name="cloud-data"
     if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
         local _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
         _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
     fi
-    
-    unzip -p "$_jar_path" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
-    unzip -qq cloud-data-win64.zip
-    rm -f cloud-data-win64.zip
-
-    
-cat > cloud-data-win32-x64/settings.json <<EOF
-{
- "certificates": [],
- "ignoreCertificateErrors": true,
- "api": "https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT}/pipeline/restapi/",
- "server": "https://${CP_EDGE_EXTERNAL_HOST}:${CP_EDGE_EXTERNAL_PORT}/webdav/<USER_ID>",
- "username": "<USER_ID>" $_cloud_data_name_json
-}
-EOF
-    mv cloud-data-win32-x64/cloud-data.exe cloud-data-win32-x64/${_cloud_data_name}.exe
-    mv cloud-data-win32-x64 ${_cloud_data_name}-win32-x64
-    zip -q -r "$_output_dir/${_cloud_data_name}-win64.zip" ${_cloud_data_name}-win32-x64
-    rm -rf ${_cloud_data_name}-win32-x64
+    if [ -f "$CP_API_COMMON_DIR/${_cloud_data_name}-win64.zip" ]; then
+        mv -f "$CP_API_COMMON_DIR/${_cloud_data_name}-win64.zip" "$_output_dir/${_cloud_data_name}-win64.zip"
+    fi
 }
 
 # Validate SSO and SSL certificates
@@ -264,13 +247,6 @@ openssl dgst -sha256 -hex -r -sign "$CP_API_SRV_CERT_DIR/ssl-private-key.pem" \
 echo "Copying DTS windows bundle to static resources"
 cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
 
-# Add a deployment specific configuration to the "cloud data" application:
-# - API URL
-# - DAV URL
-# - Application name
-echo "Configuring Cloud Data with the deployment specific settings"
-configure_and_publish_cloud_data_win_distribution "$CP_API_HOME/pipeline.jar" "$CP_API_SRV_STATIC_DIR"
-
 echo "Importing API SSL cert into global java keystore"
 /update-trust $CP_API_SRV_CERT_DIR/ssl-public-cert.pem "cp-api-srv"
 
@@ -288,6 +264,9 @@ keytool  -import \
 update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EXT" "config.json"
 update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
 update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
+
+export CP_API_COMMON_DIR="${CP_API_COMMON_DIR:-$CP_API_HOME/common}"
+copy_cloud_data_win_distribution "$CP_API_SRV_STATIC_DIR"
 
 # Add any other static assets
 if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
