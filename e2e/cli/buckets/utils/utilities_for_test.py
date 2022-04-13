@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-from common_utils.pipe_cli import create_data_storage, delete_data_storage
+from common_utils.pipe_cli import create_data_storage, delete_data_storage, pipe_storage_cp
 from buckets.utils.cloud.utilities import wait_for_bucket_creation, wait_for_bucket_deletion
 
 
@@ -46,3 +46,9 @@ def prepare_paths_with_slash(source, destination, has_source_slash, has_destinat
     if has_source_slash:
         source += "/"
     return source, destination
+
+
+def create_batch_items_on_cloud(bucket_name, file_name, local_file, items_count):
+    for i in range(items_count):
+        item_name = "cp://%s/%d%s" % (bucket_name, i, file_name)
+        pipe_storage_cp(local_file, item_name)
