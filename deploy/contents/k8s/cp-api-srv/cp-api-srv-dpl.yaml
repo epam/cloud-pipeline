@@ -17,6 +17,12 @@ spec:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
       initContainers:
+        - name: cp-api-preconfigure-access
+          image: busybox
+          command: [ "/bin/sh", "-c", "mkdir -p ${CP_CLOUD_DATA_PATCHING_DIR} && chown -R ${CP_CLOUD_DATA_PRECONFIGURE_UID}:${CP_CLOUD_DATA_PRECONFIGURE_UID} ${CP_CLOUD_DATA_PATCHING_DIR}" ]
+          volumeMounts:
+            - name: api-etc-assets
+              mountPath: ${CP_PREF_API_ETC_DIRECTORY}
         - name: cp-api-preconfigure
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-preconfigure-$CP_VERSION
           imagePullPolicy: "Always"

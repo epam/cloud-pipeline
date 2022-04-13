@@ -140,12 +140,12 @@ docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
 docker push "$CP_API_DIST_NAME"
 
 # Preconfigure API
-CP_API_UID=${CP_API_UID:-11}
+CP_CLOUD_DATA_PRECONFIGURE_UID=${CP_CLOUD_DATA_PRECONFIGURE_UID:-11}
 CP_API_PRECONFIGURE_DIST_NAME=${CP_API_PRECONFIGURE_DIST_NAME:-"$CP_DIST_REPO_NAME:api-preconfigure-${DOCKERS_VERSION}"}
 docker build    $DOCKERS_SOURCES_PATH/cp-api-preconfigure \
                 -t "$CP_API_PRECONFIGURE_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" \
-                --build-arg myuid="$CP_API_UID" --build-arg mygid="$CP_API_UID" && \
+                --build-arg myuid="$CP_CLOUD_DATA_PRECONFIGURE_UID" --build-arg mygid="$CP_CLOUD_DATA_PRECONFIGURE_UID" && \
 docker push "$CP_API_PRECONFIGURE_DIST_NAME"
 
 # Basic IdP
