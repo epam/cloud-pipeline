@@ -54,6 +54,8 @@ CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT=/opt/api/ext/templates/error-templat
 CP_PREF_API_STATIC_DIRECTORY_EXT=/opt/api/ext/templates/static
 CP_PREF_API_ETC_DIRECTORY=/opt/api/etc
 CP_API_COMMON_DIR=/opt/api/common
+CP_CLOUD_DATA_PATCHING_DIR=/opt/api/etc/cp_common
+CP_CLOUD_DATA_PRECONFIGURE_UID=11
 
 # cp-git config
 GITLAB_DATABASE_ADAPTER=postgresql

@@ -36,12 +36,11 @@ function is_dir_empty {
 }
 
 function check_win_distribution_updates() {
-    local _cloud_data_checksum_json="$1"
+    local _cloud_data_checksum_json_path="$1"
     local _cloud_data_exe_checksum="$2"
     local _cloud_data_icon_checksum="$3"
     local _cloud_data_dist_os="$4"
 
-    local _cloud_data_checksum_json_path="${CP_PREF_API_ETC_DIRECTORY}/$_cloud_data_checksum_json"
     if [ ! -f "$_cloud_data_checksum_json_path" ]; then
         return 0
     fi
@@ -104,7 +103,7 @@ EOF
 }
 
 function configure_cloud_data_win_distribution() {
-    TEMP_PROCESSING_FILE="$CP_COMMON/win_processing.txt"
+    TEMP_PROCESSING_FILE="${CP_CLOUD_DATA_PATCHING_DIR}/win_processing.txt"
     if [ -f "$TEMP_PROCESSING_FILE" ]; then
         echo "Customizing Windows Cloud Data icon is already in a progress. Skip an icon settings."
         return 0
@@ -122,9 +121,10 @@ function configure_cloud_data_win_distribution() {
     CLOUD_DATA_ISO_CHECKSUM=($(sha1sum "${CLOUD_DATA_WIN_ICO_PATH}"))
     CLOUD_DATA_WIN_CHECKSUM_JSON="cloud_data_win_checksum.json"
 
-    check_win_distribution_updates "$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM" "Windows"
+    check_win_distribution_updates "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM" "Windows"
     if [ $? -ne 0 ]; then
         echo "Windows Cloud Data executable will not be changed. Skip configuring."
+        rm -f "$TEMP_PROCESSING_FILE"
         return 0
     fi
 
@@ -139,7 +139,7 @@ function configure_cloud_data_win_distribution() {
     echo "Configuring Cloud Data with the deployment specific settings"
     configure_and_publish_cloud_data_win_distribution
 
-    create_checksum_file "${CP_API_COMMON_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM"
+    create_checksum_file "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM"
     rm -f "$TEMP_PROCESSING_FILE"
 }
 

@@ -17,7 +17,7 @@
 # docker build . \
 #   -t ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-preconfigure-${DOCKERS_VERSION} \
 #   --build-arg CP_API_DIST_URL="https://..."
-#   --build-arg myuid=${CP_API_UID:-11} --build-arg mygid=${CP_API_UID:-11}
+#   --build-arg myuid=${CP_CLOUD_DATA_PRECONFIGURE_UID:-11} --build-arg mygid=${CP_CLOUD_DATA_PRECONFIGURE_UID:-11}
 
 FROM ubuntu:18.04
 
