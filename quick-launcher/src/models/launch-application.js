@@ -174,6 +174,7 @@ async function launchTool(application, user, options) {
     const prettyUrlString = prettyUrlObj
       ? `${prettyUrlObj?.domain || ''};${prettyUrlObj?.path || ''}${options?.__validation__ ? ';validation' : ''}`
       : undefined;
+    const toolId = application.toolId || application.id;
     const userRuns = await getApplicationRun(
       application.id,
       user?.userName,
@@ -182,7 +183,10 @@ async function launchTool(application, user, options) {
       appSettings.checkRunPrettyUrl && prettyUrlObj && !(options?.__skip_pretty_url_check__)
         ? prettyUrlString
         : undefined,
-      options?.__check_run_parameters__
+      {
+        ...(options?.__check_run_parameters__ || {}),
+        ...(application.__launch_parameters__ || {})
+      }
     );
     // find user run
     const run = findUserRun(
@@ -202,7 +206,7 @@ async function launchTool(application, user, options) {
           user
         }
       );
-      const settings = await getToolSettings(application.id, version);
+      const settings = await getToolSettings(toolId, version);
       const node = await getAvailableNodeWrapper(appSettings);
       if (settings.useParentNodeId) {
         if (node) {
@@ -326,6 +330,10 @@ async function launchTool(application, user, options) {
       payload.parameters = attachParameters(
         payload.parameters,
         options.__parameters__ || {}
+      )
+      payload.parameters = attachParameters(
+        payload.parameters,
+        application.__launch_parameters__ || {}
       )
       if (appSettings?.isAnonymous) {
         const parameter = appSettings?.anonymousAccess?.anonymousAccessParameter ||

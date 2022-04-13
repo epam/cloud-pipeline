@@ -18,7 +18,7 @@ function App({launch, location}) {
     appExtendedSettings
   );
   const [application, setApplication] = useState(undefined);
-  const {applications, error, pending, user} = useApplications();
+  const {applications, error, pending, user} = useApplications(settings);
   const back = useCallback(() => {
     setApplication(undefined);
   }, [setApplication]);

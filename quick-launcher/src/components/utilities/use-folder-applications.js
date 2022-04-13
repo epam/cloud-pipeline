@@ -17,7 +17,7 @@ export default function useFolderApplications(options, useServiceUser = true, ..
   ))].join(',');
   useEffect(() => {
     let ignore = false;
-    if (settings) {
+    if (settings && /^folder$/i.test(settings.applicationsSourceMode)) {
       setPending(true);
       const uniqueUsers = [
         useServiceUser && settings.serviceUser

@@ -4,12 +4,12 @@ const runHasParameterWithValue = (parameter, valueRegExp) => run => (run.pipelin
   .find(p => p.name === parameter && valueRegExp.test(`${p.value}`));
 
 export default function getApplicationRun(
-    application,
-    user,
-    dockerImage,
-    storageUser = undefined,
-    prettyUrl,
-    parametersToCheck = {}
+  application,
+  user,
+  dockerImage,
+  storageUser = undefined,
+  prettyUrl,
+  parametersToCheck = {}
 ) {
   const dockerImageRegExp = dockerImage ? new RegExp(`^${dockerImage}$`, 'i') : /.*/;
   const storageUserRegExp = storageUser ? new RegExp(`^${storageUser}$`, 'i') : undefined;
@@ -36,8 +36,9 @@ export default function getApplicationRun(
       const conditions = [];
       Object.entries(parametersToCheck || {})
         .forEach(([key, value]) => {
-          searchCriteriaDescriptions.push(`${key} parameter is "${value}"`);
-          const regExp = new RegExp(`^${value}$`, 'i');
+          const parameterValue = value && value.value ? value.value : value;
+          searchCriteriaDescriptions.push(`${key} parameter is "${parameterValue}"`);
+          const regExp = new RegExp(`^${parameterValue}$`, 'i');
           conditions.push(runHasParameterWithValue(key, regExp));
         });
       parametersCheck = run => conditions
@@ -61,10 +62,10 @@ export default function getApplicationRun(
                 .length > 0
             )
             && (
-                !prettyUrlRegExp ||
-                (run.pipelineRunParameters || [])
-                  .filter(p => p.name === 'RUN_PRETTY_URL' && prettyUrlRegExp.test(`${p.value}`))
-                  .length > 0
+              !prettyUrlRegExp ||
+              (run.pipelineRunParameters || [])
+                .filter(p => p.name === 'RUN_PRETTY_URL' && prettyUrlRegExp.test(`${p.value}`))
+                .length > 0
             )
             && parametersCheck(run)
           )

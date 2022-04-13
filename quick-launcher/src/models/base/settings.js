@@ -106,6 +106,7 @@ const defaultSettings = {
   sessionInfoPath: undefined,
   userStoragesAttribute: undefined,
   applicationsMode: 'folder', //one of "docker", "folder",
+  applicationsSourceMode: 'folder', //one of "docker", "folder",
   serviceUser: "PIPE_ADMIN",
   folderApplicationLaunchLinkFormat: '/[user]/[version]/[app]',
   folderApplicationAdvancedUserRoleName: ['ROLE_ADVANCED_USER'],
@@ -326,6 +327,46 @@ function impersonateAsAnonymous(settings) {
   });
 }
 
+function correctApplicationsMode(settings) {
+  const correct = (name, o) => {
+    if (/^(docker|folder)$/i.test(o)) {
+      return o;
+    }
+    if (!o) {
+      return undefined;
+    }
+    console.error(`${name}: unknown value "${o}". Supported values: "docker", "folder"`);
+    return undefined;
+  }
+  settings.applicationsMode = correct('settings.applicationsMode', settings.applicationsMode);
+  settings.applicationsSourceMode = correct('settings.applicationsSourceMode', settings.applicationsSourceMode);
+  if (!settings.applicationsMode) {
+    settings.applicationsMode = settings.applicationsSourceMode || 'docker';
+    if (settings.applicationsSourceMode) {
+      console.log(
+        `settings.applicationsMode is not set - using settings.applicationsSourceMode ("${settings.applicationsSourceMode}")`
+      );
+    } else {
+      console.log('settings.applicationsMode is not set - using default "docker"');
+    }
+  } else {
+    console.log(`settings.applicationsMode: "${settings.applicationsMode}"`);
+  }
+  if (!settings.applicationsSourceMode) {
+    settings.applicationsSourceMode = settings.applicationsMode;
+    console.log(
+      `settings.applicationsSourceMode is not set - using settings.applicationsMode ("${settings.applicationsMode}")`
+    );
+  } else {
+    console.log(`settings.applicationsSourceMode: "${settings.applicationsSourceMode}"`);
+  }
+  if (/^folder$/i.test(settings.applicationsMode) && /^docker$/i.test(settings.applicationsSourceMode)) {
+    settings.applicationsMode = 'docker';
+    console.log(`"docker" applications can only be displayed in "docker" mode - switching settings.applicationsMode to "docker"`);
+  }
+  return settings;
+}
+
 export default function fetchSettings() {
   if (settings) {
     return Promise.resolve(settings);
@@ -357,6 +398,7 @@ export default function fetchSettings() {
         settings.parseUrl = parseUrl.bind(settings);
         return Promise.resolve(settings);
       })
+      .then(correctApplicationsMode)
       .then(settings => {
         Object.defineProperty(settings, 'isAnonymous', {
           get () {
