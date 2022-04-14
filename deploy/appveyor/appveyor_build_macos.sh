@@ -32,9 +32,7 @@ cd pipe-cli
 DIST_TGZ_NAME=pipe-osx-full.$APPVEYOR_BUILD_NUMBER.tar.gz
 tar -zcf $DIST_TGZ_NAME dist
 if [ "$APPVEYOR_REPO_NAME" == "epam/cloud-pipeline" ]; then
-    if [ "$APPVEYOR_REPO_BRANCH" == "develop" ] || [[ "$GITHUB_REF_NAME" == "issue_2577_cloud_data_macos_change_executable_icon" ]] || [ "$APPVEYOR_REPO_BRANCH" == "master" ] || [[ "$APPVEYOR_REPO_BRANCH" == "release/"* ]] || [[ "$APPVEYOR_REPO_BRANCH" == "stage/"* ]] ; then
-        aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
-    fi
+    aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/temp/
 fi
 
 deactivate

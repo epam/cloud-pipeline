@@ -34,8 +34,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-zip -vr /cloud-data/out/cloud-data-darwin-x64.zip cloud-data-darwin-x64
-
+cd out
+zip -vr /cloud-data/out/cloud-data-darwin-x64.zip cloud-data-darwin-x64/
 chmod -R 777 /cloud-data/out
 
 EOL
