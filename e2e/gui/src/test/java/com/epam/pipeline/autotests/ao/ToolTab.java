@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
@@ -81,7 +82,9 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleContains("Are you sure you want to launch tool.*with default settings?")
+                .ensure(byXpath("//div[@class='cp-run-name-title']"),
+                        text("Are you sure you want to launch"),
+                        text("with default settings?"))
                 .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
     }
