@@ -274,6 +274,7 @@ fi
 
 export CP_API_COMMON_DIR="${CP_API_COMMON_DIR:-$CP_API_HOME/common}"
 copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "win64"
+copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "darwin-x64"
 
 # Configure logging and launch
 API_LOG_HOME="/var/log/cp-api/${CP_API_SRV_INSTANCE_NAME:-$CP_API_CURRENT_NODE_NAME}"

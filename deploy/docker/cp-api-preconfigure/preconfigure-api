@@ -35,7 +35,7 @@ function is_dir_empty {
     return $result
 }
 
-function check_win_distribution_updates() {
+function check_distribution_updates() {
     local _cloud_data_checksum_json_path="$1"
     local _cloud_data_exe_checksum="$2"
     local _cloud_data_icon_checksum="$3"
@@ -80,14 +80,42 @@ function configure_icon_win_distribution() {
     fi
 }
 
-function configure_and_publish_cloud_data_win_distribution() {
+function configure_icon_mac_distribution() {
+    # Check and change macOS icon if exists
+    local _cloud_data_mac_icns_path="$1"
+    if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
+        if [ -f "$_cloud_data_mac_icns_path" ]; then
+            cp -f $_cloud_data_mac_icns_path $CP_COMMON/cloud-data-darwin-x64/cloud-data.app/Contents/Resources/electron.icns
+            touch $CP_COMMON/cloud-data-darwin-x64/cloud-data.app
+        else
+            echo "MacOS icon doesn't not exist. The cloud data icon will not be changed."
+        fi
+    fi
+}
+
+function configure_and_publish_cloud_data_distribution() {
+    local _cloud_data_dir_name="$1"
+    local _cloud_data_dir_suffix="$2"
+    local _cloud_data_dist="$3"
+    local _cloud_data_executable="$4"
     local _cloud_data_name="cloud-data"
     if [ "$CP_CLOUD_DATA_APP_NAME" ]; then
         _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
         _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
     fi
+    if [ -z "$_cloud_data_dist" ]; then
+        _cloud_data_dist="$_cloud_data_dir_suffix"
+    fi
+    if [ -z "$_cloud_data_executable" ]; then
+        _old_cloud_data_executable="$_cloud_data_dir_name"
+        _new_cloud_data_executable="$_cloud_data_name"
+    else
+        _old_cloud_data_executable="${_cloud_data_dir_name}.${_cloud_data_executable}"
+        _new_cloud_data_executable="${_cloud_data_name}.${_cloud_data_executable}"
+    fi
+    local _cloud_data_dir="${_cloud_data_dir_name}-${_cloud_data_dir_suffix}"
 
-cat > cloud-data-win32-x64/settings.json <<EOF
+cat > $_cloud_data_dir/settings.json <<EOF
 {
  "certificates": [],
  "ignoreCertificateErrors": true,
@@ -96,10 +124,19 @@ cat > cloud-data-win32-x64/settings.json <<EOF
  "username": "<USER_ID>" $_cloud_data_name_json
 }
 EOF
-    mv cloud-data-win32-x64/cloud-data.exe cloud-data-win32-x64/${_cloud_data_name}.exe
-    mv cloud-data-win32-x64 ${_cloud_data_name}-win32-x64
-    zip -q -r "${CP_API_COMMON_DIR}/${_cloud_data_name}-win64.zip" ${_cloud_data_name}-win32-x64
-    rm -rf ${_cloud_data_name}-win32-x64
+    mv $_cloud_data_dir/${_old_cloud_data_executable} $_cloud_data_dir/${_new_cloud_data_executable}
+    mv $_cloud_data_dir "${_cloud_data_name}-${_cloud_data_dir_suffix}"
+    zip -q -r "${CP_API_COMMON_DIR}/${_cloud_data_name}-${_cloud_data_dist}.zip" "${_cloud_data_name}-${_cloud_data_dir_suffix}"
+    rm -rf "${_cloud_data_name}-${_cloud_data_dir_suffix}"
+}
+
+function extract_cloud_data_zip() {
+    local _cloud_data_name="$1"
+    local _cloud_data_dist="$2"
+    local _cloud_data_dist_zip="${_cloud_data_name}-${_cloud_data_dist}.zip"
+    unzip -p "$CP_COMMON/pipeline.jar" BOOT-INF/classes/static/$_cloud_data_dist_zip > $_cloud_data_dist_zip
+    unzip -qq $_cloud_data_dist_zip
+    rm -f $_cloud_data_dist_zip
 }
 
 function configure_cloud_data_win_distribution() {
@@ -110,9 +147,7 @@ function configure_cloud_data_win_distribution() {
     else
         touch "$TEMP_PROCESSING_FILE"
     fi
-    unzip -p "$CP_COMMON/pipeline.jar" BOOT-INF/classes/static/cloud-data-win64.zip > cloud-data-win64.zip
-    unzip -qq cloud-data-win64.zip
-    rm -f cloud-data-win64.zip
+    extract_cloud_data_zip "cloud-data" "win64"
 
     CLOUD_DATA_WIN_ICO_NAME=${CLOUD_DATA_WIN_ICO_NAME:-"favicon.ico"}
     CLOUD_DATA_WIN_ICO_PATH="$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_WIN_ICO_NAME"
@@ -121,7 +156,7 @@ function configure_cloud_data_win_distribution() {
     CLOUD_DATA_ISO_CHECKSUM=($(sha1sum "${CLOUD_DATA_WIN_ICO_PATH}"))
     CLOUD_DATA_WIN_CHECKSUM_JSON="cloud_data_win_checksum.json"
 
-    check_win_distribution_updates "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM" "Windows"
+    check_distribution_updates "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM" "Windows"
     if [ $? -ne 0 ]; then
         echo "Windows Cloud Data executable will not be changed. Skip configuring."
         rm -f "$TEMP_PROCESSING_FILE"
@@ -137,12 +172,52 @@ function configure_cloud_data_win_distribution() {
     # - DAV URL
     # - Application name
     echo "Configuring Cloud Data with the deployment specific settings"
-    configure_and_publish_cloud_data_win_distribution
+    configure_and_publish_cloud_data_distribution "cloud-data" "win32-x64" "win64" "exe"
 
     create_checksum_file "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM"
+    rm -f "$TEMP_PROCESSING_FILE"
+}
+
+function configure_cloud_data_mac_distribution() {
+    TEMP_PROCESSING_FILE="${CP_CLOUD_DATA_PATCHING_DIR}/mac_processing.txt"
+    if [ -f "$TEMP_PROCESSING_FILE" ]; then
+        echo "Customizing MacOS Cloud Data icon is already in a progress. Skip an icon settings."
+        return 0
+    else
+        touch "$TEMP_PROCESSING_FILE"
+    fi
+    extract_cloud_data_zip "cloud-data" "darwin-x64"
+
+    CLOUD_DATA_MAC_ICNS_NAME=${CLOUD_DATA_MAC_ICNS_NAME:-"electron.icns"}
+    CLOUD_DATA_MAC_ICNS_PATH="$CP_PREF_API_STATIC_DIRECTORY_EXT/$CLOUD_DATA_MAC_ICNS_NAME"
+
+    CLOUD_DATA_EXE_CHECKSUM=($(sha1sum "${CP_COMMON}/cloud-data-darwin-x64/cloud-data.app/Contents/Resources/electron.icns"))
+    CLOUD_DATA_ICNS_CHECKSUM=($(sha1sum "${CLOUD_DATA_MAC_ICNS_PATH}"))
+    CLOUD_DATA_MAC_CHECKSUM_JSON="cloud_data_mac_checksum.json"
+
+    check_distribution_updates "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_MAC_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ICNS_CHECKSUM" "MacOS"
+    if [ $? -ne 0 ]; then
+        echo "MacOS Cloud Data executable will not be changed. Skip configuring."
+        rm -f "$TEMP_PROCESSING_FILE"
+        return 0
+    fi
+
+    # Change an icon to the "cloud data" application:
+    echo "Customizing MacOS Cloud Data icon for a specific deployment"
+    configure_icon_mac_distribution "$CLOUD_DATA_MAC_ICNS_PATH"
+
+    # Add a deployment specific configuration to the "cloud data" application:
+    # - API URL
+    # - DAV URL
+    # - Application name
+    echo "Configuring Cloud Data with the deployment specific settings"
+    configure_and_publish_cloud_data_distribution "cloud-data" "darwin-x64"
+
+    create_checksum_file "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_MAC_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ICNS_CHECKSUM"
     rm -f "$TEMP_PROCESSING_FILE"
 }
 
 cd $CP_COMMON
 
 configure_cloud_data_win_distribution
+configure_cloud_data_mac_distribution
