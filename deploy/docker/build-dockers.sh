@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -138,6 +138,15 @@ docker build    $DOCKERS_SOURCES_PATH/cp-api-srv \
                 -t "$CP_API_DIST_NAME" \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" && \
 docker push "$CP_API_DIST_NAME"
+
+# Preconfigure API
+CP_API_UID=${CP_API_UID:-11}
+CP_API_PRECONFIGURE_DIST_NAME=${CP_API_PRECONFIGURE_DIST_NAME:-"$CP_DIST_REPO_NAME:api-preconfigure-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-api-preconfigure \
+                -t "$CP_API_PRECONFIGURE_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL" \
+                --build-arg myuid="$CP_API_UID" --build-arg mygid="$CP_API_UID" && \
+docker push "$CP_API_PRECONFIGURE_DIST_NAME"
 
 # Basic IdP
 CP_IDP_DIST_NAME=${CP_IDP_DIST_NAME:-"$CP_DIST_REPO_NAME:idp-${DOCKERS_VERSION}"}
