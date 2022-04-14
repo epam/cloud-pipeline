@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,6 +82,7 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
+                .ensureTitleIs("")
                 .ensure(byXpath("//div[@class='cp-run-name-title']"),
                         text("Are you sure you want to launch"),
                         text("with default settings?"))
