@@ -16,14 +16,19 @@
 
 package com.epam.pipeline.acl.dts;
 
+import com.epam.pipeline.entity.dts.CreateDtsTransferRequest;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsSubmission;
+import com.epam.pipeline.entity.dts.DtsTransfer;
 import com.epam.pipeline.manager.dts.DtsListingManager;
 import com.epam.pipeline.manager.dts.DtsSubmissionManager;
+import com.epam.pipeline.manager.dts.DtsTransferManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
 
@@ -32,6 +37,7 @@ import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USE
 public class DtsOperationsApiService {
     private final DtsListingManager dtsListingManager;
     private final DtsSubmissionManager dtsSubmissionManager;
+    private final DtsTransferManager dtsTransferManager;
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsDataStorageListing list(String path, Long dtsId, Integer pageSize, String marker) {
@@ -46,5 +52,20 @@ public class DtsOperationsApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsClusterConfiguration getClusterConfiguration(Long dtsId) {
         return dtsSubmissionManager.getClusterConfiguration(dtsId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<DtsTransfer> findTransfers() {
+        return dtsTransferManager.findTransfers();
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<DtsTransfer> findTransfers(final Long dtsId) {
+        return dtsTransferManager.findTransfers(dtsId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public DtsTransfer createTransfer(final Long dtsId, final CreateDtsTransferRequest request) {
+        return dtsTransferManager.createTransfer(dtsId, request);
     }
 }

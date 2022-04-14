@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsDataStorageListingRequest;
 import com.epam.pipeline.entity.dts.DtsSubmission;
+import com.epam.pipeline.entity.dts.DtsTransfer;
+import com.epam.pipeline.entity.dts.DtsTransferCreation;
 import com.epam.pipeline.exception.DtsRequestException;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -31,6 +33,7 @@ import retrofit2.http.Query;
 import retrofit2.http.PUT;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Objects;
 
 public interface DtsClient {
@@ -50,6 +53,12 @@ public interface DtsClient {
 
     @PUT("submission/stop")
     Call<Result<DtsSubmission>> stopSubmission(@Query("runId") Long runId);
+
+    @POST("transfer")
+    Call<Result<DtsTransfer>> createTransfer(@Body DtsTransferCreation transfer);
+
+    @GET("transfer")
+    Call<Result<List<DtsTransfer>>> findTransfers();
 
     static  <T> T executeRequest(Call<T> request) {
         try {

@@ -16,12 +16,14 @@
 
 package com.epam.pipeline.controller.dts;
 
+import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.dts.CreateDtsTransferRequest;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsSubmission;
-import com.epam.pipeline.acl.dts.DtsOperationsApiService;
+import com.epam.pipeline.entity.dts.DtsTransfer;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -30,9 +32,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @Api(value = "Listing Data Transfer Service items management")
@@ -57,6 +63,36 @@ public class DtsOperationsController extends AbstractRestController {
         return Result.success(dtsOperationsApiService.list(path, dtsId, pageSize, marker));
     }
 
+    @GetMapping(value = "/transfer")
+    @ApiOperation(
+            value = "Returns DTS transfers by DTS registry ID.",
+            notes = "Returns DTS transfers by DTS registry ID.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<DtsTransfer>> findTransfers() {
+        return Result.success(dtsOperationsApiService.findTransfers());
+    }
+
+    @GetMapping(value = "/transfer/{dtsId}")
+    @ApiOperation(
+            value = "Returns DTS transfers by DTS registry ID.",
+            notes = "Returns DTS transfers by DTS registry ID.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<DtsTransfer>> findTransfers(@PathVariable Long dtsId) {
+        return Result.success(dtsOperationsApiService.findTransfers(dtsId));
+    }
+
+    @PostMapping(value = "/transfer/{dtsId}")
+    @ApiOperation(
+            value = "Create DTS transfer.",
+            notes = "Create DTS transfer.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<DtsTransfer> createTransfer(@PathVariable Long dtsId,
+                                              @RequestBody CreateDtsTransferRequest request) {
+        return Result.success(dtsOperationsApiService.createTransfer(dtsId, request));
+    }
 
     @GetMapping(value = "/{dtsId}/submission")
     @ApiOperation(
