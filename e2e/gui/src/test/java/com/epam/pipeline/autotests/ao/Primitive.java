@@ -312,5 +312,15 @@ public enum Primitive {
     ENDS_ON,
     ENDS_ON_TIME,
     AUTOSCALED,
-    PROTOCOL
+    PROTOCOL,
+    QUOTAS,
+    COMPUTE_INSTANCES,
+    STORAGES,
+    ADD_QUOTA,
+    QUOTA,
+    ACTIONS,
+    PERIOD,
+    THRESHOLD,
+    ADD_ACTION,
+    BILLING_CENTER
 }
