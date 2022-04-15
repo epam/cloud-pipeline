@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.TestCase;
@@ -126,15 +127,18 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateElementNotPresent(file.getName());
         logout();
 
-        loginAs(admin)
+        loginAs(admin);
+        final StorageContentAO storageContentAO = navigationMenu()
                 .library()
-                .selectStorage(storageName)
+                .selectStorage(storageName);
+        storageContentAO
                 .showFilesVersions(true)
                 .validateElementIsPresent(file.getName())
                 .selectFile(file.getName())
                 .showVersions()
                 .selectFile(file.getName() + " (latest)")
-                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
+                .validateHasSize(0);
+        storageContentAO
                 .selectNthFileWithName(1, file.getName())
                 .ensureVisible(DOWNLOAD, RELOAD);
     }

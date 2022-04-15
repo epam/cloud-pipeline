@@ -189,7 +189,7 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                 .ensureLaunchTitleIs(format("Are you sure you want to launch %s:%s with default settings?",
                         nameWithoutGroup(tool), customTag))
                 .ensure(byClassName("ob-estimated-price-info__info"), visible)
-                .click(LAUNCH);
+                .ok();
         sleep(1, SECONDS);
         test.addRunId(Utils.getToolRunId(tool, customTag));
         return new RunsMenuAO();

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
