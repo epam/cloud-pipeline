@@ -18,6 +18,7 @@ package com.epam.pipeline.dts.configuration;
 
 import com.epam.pipeline.dts.common.json.JsonMapper;
 import com.epam.pipeline.dts.listing.configuration.ListingRestConfiguration;
+import com.epam.pipeline.dts.remove.configuration.RemoveRestConfiguration;
 import com.epam.pipeline.dts.submission.configuration.SubmissionRestConfiguration;
 import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -98,6 +99,7 @@ public class RestConfiguration implements WebMvcConfigurer {
         applicationContext.register(
                 ListingRestConfiguration.class,
                 TransferRestConfiguration.class,
+                RemoveRestConfiguration.class,
                 SubmissionRestConfiguration.class);
         dispatcherServlet.setApplicationContext(applicationContext);
         return bean;
