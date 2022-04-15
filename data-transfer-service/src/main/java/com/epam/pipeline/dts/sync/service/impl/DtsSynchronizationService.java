@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.dts.sync.service.impl;
 
 import com.epam.pipeline.dts.sync.model.AutonomousSyncCronDetails;
+import com.epam.pipeline.dts.sync.model.TransferTrigger;
 import com.epam.pipeline.dts.sync.service.PreferenceService;
 import com.epam.pipeline.dts.sync.service.ShutdownService;
 import com.epam.pipeline.dts.sync.model.AutonomousSyncRule;
@@ -31,6 +32,8 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -40,9 +43,16 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -50,7 +60,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @Service
@@ -59,6 +71,7 @@ import java.util.stream.Collectors;
 public class DtsSynchronizationService {
 
     private static final String SCHEMA_DELIMITER = "://";
+    private static final String SYNC_DEST_DELIMITER = "/";
 
     private final TaskRepository taskRepository;
     private final TransferService transferService;
@@ -68,11 +81,13 @@ public class DtsSynchronizationService {
     private final Map<AutonomousSyncRule, AutonomousSyncCronDetails> activeSyncRules;
     private final Map<AutonomousSyncRule, TransferTask> activeTransferTasks;
     private final String defaultCronExpression;
+    private final Integer maxSearchDepth;
 
     @Autowired
     public DtsSynchronizationService(final @Value("${dts.api.url}") String pipeApiUrl,
                                      final @Value("${dts.api.token}") String pipeApiToken,
                                      final @Value("${dts.autonomous.sync.cron}") String defaultCronExpression,
+                                     final @Value("${dts.sync.transfer.triggers.max.depth:3}") Integer maxSearchDepth,
                                      final TransferService autonomousTransferService,
                                      final TaskRepository taskRepository,
                                      final PreferenceService preferenceService,
@@ -84,6 +99,7 @@ public class DtsSynchronizationService {
         this.preferenceService = preferenceService;
         this.activeSyncRules = new ConcurrentHashMap<>();
         this.activeTransferTasks = new ConcurrentHashMap<>();
+        this.maxSearchDepth = maxSearchDepth;
         this.defaultCronExpression = Optional.of(defaultCronExpression)
             .filter(CronSequenceGenerator::isValidExpression)
             .orElseThrow(() -> new IllegalStateException("Default FS sync cron is invalid!"));
@@ -120,7 +136,8 @@ public class DtsSynchronizationService {
     }
 
     private AutonomousSyncRule mapToRuleWithoutCron(final AutonomousSyncRule rule) {
-        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null);
+        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null,
+                                      ListUtils.emptyIfNull(rule.getTransferTriggers()));
     }
 
     private AutonomousSyncCronDetails mapRuleToCronDetails(final AutonomousSyncRule newRule) {
@@ -157,6 +174,8 @@ public class DtsSynchronizationService {
     private void submitTasksForAwaitingRules() {
         final Date now = getCurrentDate();
         final Map<AutonomousSyncRule, TransferTask> newSubmittedTasks = activeSyncRules.entrySet().stream()
+            .filter(this::syncSourceExists)
+            .flatMap(this::expandSyncEntry)
             .filter(entry -> shouldBeTriggered(now, entry))
             .filter(entry -> noMatchingActiveTransferTask(entry.getKey()))
             .map(Map.Entry::getKey)
@@ -168,6 +187,106 @@ public class DtsSynchronizationService {
             .map(AutonomousSyncCronDetails::getLastExecution)
             .forEach(execution -> execution.setTime(now.getTime()));
         activeTransferTasks.putAll(newSubmittedTasks);
+    }
+
+    private boolean syncSourceExists(final Map.Entry<AutonomousSyncRule, ?> entry) {
+        return Optional.of(entry.getKey())
+            .map(AutonomousSyncRule::getSource)
+            .map(Paths::get)
+            .filter(Files::exists)
+            .isPresent();
+    }
+
+    private Stream<Map.Entry<AutonomousSyncRule, AutonomousSyncCronDetails>> expandSyncEntry(
+        final Map.Entry<AutonomousSyncRule, AutonomousSyncCronDetails> entry) {
+        final AutonomousSyncRule syncRule = entry.getKey();
+        final String syncSource = syncRule.getSource();
+        if (!Files.isDirectory(Paths.get(syncSource))) {
+            log.debug("File sync source [{}] can't be expanded, skip triggers checking...", syncSource);
+            return Stream.of(entry);
+        }
+        final List<TransferTrigger> transferTriggers = syncRule.getTransferTriggers().stream()
+            .filter(Objects::nonNull)
+            .map(this::processGlobMatchers)
+            .filter(trigger -> CollectionUtils.isNotEmpty(trigger.getGlobMatchers()))
+            .collect(Collectors.toList());
+        return CollectionUtils.isNotEmpty(transferTriggers)
+               ? expandSyncEntryWithTriggers(entry.getKey(), entry.getValue(), transferTriggers)
+               : Stream.of(entry);
+    }
+
+    private TransferTrigger processGlobMatchers(final TransferTrigger trigger) {
+        final List<String> globMatchers = ListUtils.emptyIfNull(trigger.getGlobMatchers()).stream()
+            .filter(StringUtils::isNotBlank)
+            .collect(Collectors.toList());
+        return new TransferTrigger(trigger.getMaxSearchDepth(), globMatchers);
+    }
+
+    private Stream<Map.Entry<AutonomousSyncRule, AutonomousSyncCronDetails>> expandSyncEntryWithTriggers(
+        final AutonomousSyncRule syncRule,
+        final AutonomousSyncCronDetails cronDetails,
+        final List<TransferTrigger> transferTriggers) {
+        final String syncDestination = syncRule.getDestination();
+        final String syncSource = syncRule.getSource();
+        return transferTriggers.stream()
+            .map(trigger -> searchForGivenTrigger(syncSource, trigger))
+            .flatMap(Collection::stream)
+            .map(absolutePath -> absolutePath.substring(syncSource.length() + 1))
+            .map(relativePath -> new AutonomousSyncRule(Paths.get(syncSource, relativePath).toString(),
+                                                        String.join(SYNC_DEST_DELIMITER, syncDestination, relativePath),
+                                                        null, null))
+            .map(rule -> new AbstractMap.SimpleEntry<>(rule, cronDetails));
+    }
+
+    private List<String> searchForGivenTrigger(final String dirPath, final TransferTrigger transferTrigger) {
+        final List<String> lookupDirectories = new ArrayList<>(Collections.singletonList(dirPath));
+        final List<String> matchingDirectories = new ArrayList<>();
+        final CountDownLatch searchLatch = extractSearchLatch(transferTrigger);
+        while (CollectionUtils.isNotEmpty(lookupDirectories) && searchLatch.getCount() > -1) {
+            lookupTargetDirectories(lookupDirectories, matchingDirectories, transferTrigger.getGlobMatchers());
+            searchLatch.countDown();
+        }
+        return matchingDirectories;
+    }
+
+    private void lookupTargetDirectories(final List<String> lookupDirectories, final List<String> matchingDirectories,
+                                         final List<String> globMatchers) {
+        final List<String> nestedDirs = lookupDirectories.stream()
+            .flatMap(directory -> {
+                if (directoryHasAnyMatch(directory, globMatchers)) {
+                    matchingDirectories.add(directory);
+                    return Stream.empty();
+                } else {
+                    return getNestedDirStream(directory);
+                }
+            })
+            .collect(Collectors.toList());
+        lookupDirectories.clear();
+        lookupDirectories.addAll(nestedDirs);
+    }
+
+    private CountDownLatch extractSearchLatch(final TransferTrigger transferTrigger) {
+        return new CountDownLatch(Optional.ofNullable(transferTrigger.getMaxSearchDepth()).orElse(maxSearchDepth));
+    }
+
+    private Stream<String> getNestedDirStream(final String directory) {
+        return Stream.of(new File(directory).listFiles())
+            .filter(File::isDirectory)
+            .map(File::getAbsolutePath);
+    }
+
+    private boolean directoryHasAnyMatch(final String directory, final List<String> expressions) {
+        final AntPathMatcher pathMatcher = new AntPathMatcher();
+        return Stream.of(new File(directory).listFiles())
+            .filter(File::isFile)
+            .map(File::getName)
+            .anyMatch(name -> nameMatchingGlob(name, pathMatcher, expressions));
+    }
+
+    private boolean nameMatchingGlob(final String name, final AntPathMatcher matcher, final List<String> expressions) {
+        return CollectionUtils.emptyIfNull(expressions)
+            .stream()
+            .anyMatch(glob -> matcher.match(glob, name));
     }
 
     private boolean shouldBeTriggered(final Date now,
