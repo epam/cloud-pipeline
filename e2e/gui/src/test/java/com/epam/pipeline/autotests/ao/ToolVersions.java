@@ -70,6 +70,7 @@ import static com.epam.pipeline.autotests.utils.Conditions.backgroundColor;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconClass;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.deleteButton;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
@@ -185,10 +186,8 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                         ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .find(byId(format("run-%s-button", customTag))).shouldBe(visible).click();
         new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensure(byXpath("//div[@class='cp-run-name-title']"),
-                        text("Are you sure you want to launch"),
-                        text(format("%s:%s", Utils.nameWithoutGroup(tool), customTag)),
-                        text("with default settings?"))
+                .ensureLaunchTitleIs(format("Are you sure you want to launch %s:%s with default settings?",
+                        nameWithoutGroup(tool), customTag))
                 .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .click(LAUNCH);
         sleep(1, SECONDS);

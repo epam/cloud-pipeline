@@ -32,6 +32,8 @@ import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
@@ -67,26 +69,23 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
     }
 
     public RunsMenuAO run(final AbstractSinglePipelineRunningTest test) {
-        runToolWithDefaultSettings();
+        runToolWithDefaultSettings(toolName, "latest");
         test.setRunId(Utils.getToolRunId(toolName));
         return new RunsMenuAO();
     }
 
     public RunsMenuAO run(final AbstractSeveralPipelineRunningTest test) {
-        runToolWithDefaultSettings();
+        runToolWithDefaultSettings(toolName, "latest");
         test.addRunId(Utils.getToolRunId(toolName));
         return new RunsMenuAO();
     }
 
-    private RunsMenuAO runToolWithDefaultSettings() {
+    private RunsMenuAO runToolWithDefaultSettings(String tool, String version) {
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
-                .ensureTitleIs("")
-                .ensure(byXpath("//div[@class='cp-run-name-title']"),
-                        text("Are you sure you want to launch"),
-                        text("with default settings?"))
-                .ensure(byClassName("ob-estimated-price-info__info"), visible)
+                .ensureLaunchTitleIs(format("Are you sure you want to launch %s:%s with default settings?",
+                                nameWithoutGroup(tool), version))
                 .ok();
     }
 
