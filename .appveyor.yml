@@ -5,7 +5,6 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
-    - issue_2577_cloud_data_macos_change_executable_icon
 
 skip_tags: true
 max_jobs: 1
