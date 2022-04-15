@@ -20,8 +20,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum TaskStatus {
-    SUCCESS(0, true, false), FAILURE(1, true, false), RUNNING(2, false, false), STOPPED(3, true, false),
-    PAUSING(4, false, true), PAUSED(5, false, true), RESUMING(6, false, true);
+
+    SUCCESS(0, true, false),
+    FAILURE(1, true, false),
+    RUNNING(2, false, false),
+    STOPPED(3, true, false),
+    PAUSING(4, false, true),
+    PAUSED(5, false, true),
+    RESUMING(6, false, true);
 
     private final long id;
     private final boolean finalStatus;

@@ -48,7 +48,7 @@ public class ImpersonatingTransferServiceImpl implements TransferService {
                                         @NonNull final StorageItem destination,
                                         final List<String> included) {
         final String impersonatingUser = getImpersonatingUser(source, destination);
-        final TransferTask transferTask = taskService.createTask(source, destination, included, impersonatingUser);
+        final TransferTask transferTask = taskService.create(source, destination, included, impersonatingUser);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
         return transferTask;
@@ -69,7 +69,7 @@ public class ImpersonatingTransferServiceImpl implements TransferService {
 
     @Override
     public void failRunningTasks() {
-        List<TransferTask> runningTasks = taskService.loadRunningTasks();
+        List<TransferTask> runningTasks = taskService.loadRunning();
         if (CollectionUtils.isEmpty(runningTasks)) {
             return;
         }

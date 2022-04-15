@@ -54,7 +54,7 @@ public class TaskServiceTest extends AbstractTransferTest {
         final StorageItem source = s3Item();
         final StorageItem destination = nonExistingLocalItem();
 
-        final TransferTask task = taskService.createTask(source, destination);
+        final TransferTask task = taskService.create(source, destination);
 
         assertThat(task.getSource(), is(source));
         assertThat(task.getDestination(), is(destination));
@@ -62,14 +62,14 @@ public class TaskServiceTest extends AbstractTransferTest {
 
     @Test
     void createTaskShouldSetTransferTaskStatusToCreated() {
-        final TransferTask task = taskService.createTask(s3Item(), nonExistingLocalItem());
+        final TransferTask task = taskService.create(s3Item(), nonExistingLocalItem());
 
         assertThat(task.getStatus(), is(TaskStatus.CREATED));
     }
 
     @Test
     void createTaskShouldSetTransferTaskCreatedDate() {
-        final TransferTask task = taskService.createTask(s3Item(), nonExistingLocalItem());
+        final TransferTask task = taskService.create(s3Item(), nonExistingLocalItem());
 
         assertNotNull(task.getCreated());
     }
@@ -78,7 +78,7 @@ public class TaskServiceTest extends AbstractTransferTest {
     void createTaskShouldSetTransferTaskIncludedListIfItWasPassed() {
         final List<String> included = Arrays.asList("a", "b", "c");
 
-        final TransferTask task = taskService.createTask(s3Item(), nonExistingLocalItem(), included);
+        final TransferTask task = taskService.create(s3Item(), nonExistingLocalItem(), included);
 
         assertThat(task.getIncluded(), is(included));
     }
@@ -88,7 +88,7 @@ public class TaskServiceTest extends AbstractTransferTest {
         final StorageItem source = s3Item();
         final StorageItem destination = nonExistingLocalItem();
 
-        taskService.createTask(source, destination);
+        taskService.create(source, destination);
 
         verify(taskRepository).save(argThat(hasSourceAndDestination(source, destination)));
     }
@@ -178,7 +178,7 @@ public class TaskServiceTest extends AbstractTransferTest {
             .build();
         when(taskRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> taskService.updateTask(task));
+        assertThrows(RuntimeException.class, () -> taskService.update(task));
     }
 
     @Test
@@ -189,7 +189,7 @@ public class TaskServiceTest extends AbstractTransferTest {
         final TransferTask updatedTask = task.withStatus(TaskStatus.FAILURE).withReason("Reason");
         when(taskRepository.findById(any())).thenReturn(Optional.of(updatedTask));
 
-        taskService.updateTask(updatedTask);
+        taskService.update(updatedTask);
 
         verify(taskRepository).save(eq(updatedTask));
     }
@@ -220,7 +220,7 @@ public class TaskServiceTest extends AbstractTransferTest {
         final Long taskId = 1L;
         when(taskRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> taskService.loadTask(taskId));
+        assertThrows(RuntimeException.class, () -> taskService.load(taskId));
     }
 
     @Test
@@ -231,7 +231,7 @@ public class TaskServiceTest extends AbstractTransferTest {
             .build();
         when(taskRepository.findById(any())).thenReturn(Optional.of(expectedTask));
 
-        final TransferTask actualTask = taskService.loadTask(taskId);
+        final TransferTask actualTask = taskService.load(taskId);
 
         assertThat(actualTask, is(expectedTask));
     }
@@ -264,7 +264,7 @@ public class TaskServiceTest extends AbstractTransferTest {
     void loadRunningTasksShouldReturnEmptyListIfNoTasksExistsInTaskRepository() {
         when(taskRepository.findAllByStatus(eq(TaskStatus.RUNNING))).thenReturn(Collections.emptyList());
 
-        final List<TransferTask> transferTasks = taskService.loadRunningTasks();
+        final List<TransferTask> transferTasks = taskService.loadRunning();
 
         assertThat(transferTasks, empty());
     }
@@ -278,7 +278,7 @@ public class TaskServiceTest extends AbstractTransferTest {
         );
         when(taskRepository.findAllByStatus(TaskStatus.RUNNING)).thenReturn(expectedTasks);
 
-        final List<TransferTask> actualTasks = taskService.loadRunningTasks();
+        final List<TransferTask> actualTasks = taskService.loadRunning();
 
         assertThat(actualTasks, hasSize(expectedTasks.size()));
         assertThat(actualTasks, containsInAnyOrder(expectedTasks.toArray()));

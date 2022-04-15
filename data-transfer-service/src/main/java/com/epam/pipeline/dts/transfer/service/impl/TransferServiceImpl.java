@@ -39,7 +39,7 @@ public class TransferServiceImpl implements TransferService {
     public TransferTask runTransferTask(@NonNull StorageItem source,
                                         @NonNull StorageItem destination,
                                         List<String> included) {
-        TransferTask transferTask = taskService.createTask(source, destination, included);
+        TransferTask transferTask = taskService.create(source, destination, included);
         taskService.updateStatus(transferTask.getId(), TaskStatus.RUNNING);
         dataUploaderProviderManager.transferData(transferTask);
         return transferTask;
@@ -47,7 +47,7 @@ public class TransferServiceImpl implements TransferService {
 
     @Override
     public void failRunningTasks() {
-        List<TransferTask> runningTasks = taskService.loadRunningTasks();
+        List<TransferTask> runningTasks = taskService.loadRunning();
         if (CollectionUtils.isEmpty(runningTasks)) {
             return;
         }

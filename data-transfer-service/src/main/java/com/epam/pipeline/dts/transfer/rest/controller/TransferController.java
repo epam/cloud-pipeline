@@ -90,7 +90,7 @@ public class TransferController extends AbstractRestController {
             value = "Returns an existing task by id.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Result<TransferDTO> getTask(@PathVariable Long taskId) {
-        return Result.success(taskMapper.modelToDto(taskService.loadTask(taskId)));
+        return Result.success(taskMapper.modelToDto(taskService.load(taskId)));
     }
 
     @DeleteMapping(path = "/{taskId}")

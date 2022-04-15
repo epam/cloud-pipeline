@@ -25,20 +25,30 @@ import java.util.List;
 
 public interface TaskService {
 
-    default TransferTask createTask(final StorageItem source, final StorageItem destination) {
-        return createTask(source, destination, Collections.emptyList());
+    default TransferTask create(StorageItem source, StorageItem destination) {
+        return create(source, destination, Collections.emptyList());
     }
 
-    default TransferTask createTask(StorageItem source, StorageItem destination, List<String> included) {
-        return createTask(source, destination, included, null);
+    default TransferTask create(StorageItem source, StorageItem destination, List<String> included) {
+        return create(source, destination, included, null);
     }
 
-    TransferTask createTask(StorageItem source, StorageItem destination, List<String> included, String user);
-    TransferTask updateStatus(Long id, TaskStatus status);
-    TransferTask updateStatus(Long id, TaskStatus status, String reason);
-    TransferTask updateTask(TransferTask transferTask);
-    void deleteTask(Long id);
-    TransferTask loadTask(Long id);
-    List<TransferTask> loadRunningTasks();
+    TransferTask create(StorageItem source, StorageItem destination, List<String> included, String user);
+
+    default List<TransferTask> loadRunning() {
+        return loadByStatus(TaskStatus.RUNNING);
+    }
+
+    TransferTask load(Long id);
+    List<TransferTask> loadByStatus(TaskStatus running);
     List<TransferTask> loadAll();
+
+    default TransferTask updateStatus(Long id, TaskStatus status) {
+        return updateStatus(id, status, null);
+    }
+
+    TransferTask updateStatus(Long id, TaskStatus status, String reason);
+    TransferTask update(TransferTask transferTask);
+
+    void deleteTask(Long id);
 }

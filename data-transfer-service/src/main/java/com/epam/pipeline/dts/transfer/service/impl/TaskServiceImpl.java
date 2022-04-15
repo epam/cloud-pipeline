@@ -25,23 +25,24 @@ import com.epam.pipeline.dts.util.Utils;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
+
     private final TaskRepository taskRepository;
 
     @Override
-    public TransferTask createTask(@NonNull StorageItem source,
-                                   @NonNull StorageItem destination,
-                                   List<String> included,
-                                   String user) {
-        TransferTask transferTask = TransferTask.builder()
+    public TransferTask create(@NonNull final StorageItem source,
+                               @NonNull final StorageItem destination,
+                               final List<String> included,
+                               final String user) {
+        return taskRepository.save(TransferTask.builder()
                 .source(source)
                 .destination(destination)
                 .status(TaskStatus.CREATED)
@@ -49,51 +50,18 @@ public class TaskServiceImpl implements TaskService {
                 .reason("New transfer task created")
                 .included(included)
                 .user(user)
-                .build();
-        return taskRepository.save(transferTask);
+                .build());
     }
 
     @Override
-    public TransferTask updateStatus(Long id, TaskStatus status) {
-        return updateStatus(id, status, null);
+    public TransferTask load(final Long id) {
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException(String.format("Failed to find transfer task #%s", id)));
     }
 
     @Override
-    public TransferTask updateStatus(Long id, TaskStatus status, String reason) {
-        TransferTask task = loadTask(id);
-        if (task.getStatus() == status) {
-            log.debug("Status is already set");
-            return task;
-        }
-        buildTaskWithStatus(task, status);
-        task.setReason(reason);
-        return taskRepository.save(task);
-    }
-
-    @Override
-    public TransferTask updateTask(final TransferTask transferTask) {
-        TransferTask loaded = loadTask(transferTask.getId());
-        if (loaded.getStatus() != transferTask.getStatus()) {
-            buildTaskWithStatus(transferTask, transferTask.getStatus());
-        }
-        return taskRepository.save(transferTask);
-    }
-
-    @Override
-    public void deleteTask(Long id) {
-        loadTask(id);
-        taskRepository.deleteById(id);
-    }
-
-    @Override
-    public TransferTask loadTask(Long id) {
-        Optional<TransferTask> task = taskRepository.findById(id);
-        return task.orElseThrow(() -> new IllegalArgumentException("Failed to find task"));
-    }
-
-    @Override
-    public List<TransferTask> loadRunningTasks() {
-        return Utils.iterableToList(taskRepository.findAllByStatus(TaskStatus.RUNNING));
+    public List<TransferTask> loadByStatus(final TaskStatus status) {
+        return taskRepository.findAllByStatus(status);
     }
 
     @Override
@@ -101,13 +69,38 @@ public class TaskServiceImpl implements TaskService {
         return Utils.iterableToList(taskRepository.findAll());
     }
 
-    private TransferTask buildTaskWithStatus(TransferTask task, TaskStatus status) {
-        task.setStatus(status);
-        if (status.isFinalStatus()) {
-            task.setFinished(Utils.now());
-        } else if (status == TaskStatus.RUNNING) {
-            task.setStarted(Utils.now());
+    @Override
+    public TransferTask updateStatus(final Long id, final TaskStatus status, final String reason) {
+        final TransferTask loaded = load(id);
+        if (loaded.getStatus() == status) {
+            log.debug(String.format("Status %s is already set for transfer task #%s", status, id));
+            return loaded;
         }
+        return taskRepository.save(withStatus(loaded, status, reason));
+    }
+
+    @Override
+    public TransferTask update(final TransferTask task) {
+        final TransferTask loaded = load(task.getId());
+        return taskRepository.save(loaded.getStatus() != task.getStatus()
+                ? withStatus(task, task.getStatus())
+                : task);
+    }
+
+    @Override
+    public void deleteTask(final Long id) {
+        taskRepository.delete(load(id));
+    }
+
+    private TransferTask withStatus(final TransferTask task, final TaskStatus status) {
+        return withStatus(task, status, null);
+    }
+
+    private TransferTask withStatus(final TransferTask task, final TaskStatus status, final String reason) {
+        task.setStatus(status);
+        if (StringUtils.isNotBlank(reason)) task.setReason(reason);
+        if (status == TaskStatus.RUNNING) task.setStarted(Utils.now());
+        if (status.isFinalStatus()) task.setFinished(Utils.now());
         return task;
     }
 }

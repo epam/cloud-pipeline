@@ -23,7 +23,11 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum TaskStatus {
 
-    CREATED(false), RUNNING(false), SUCCESS(true), FAILURE(true), STOPPED(false);
+    CREATED(false),
+    RUNNING(false),
+    SUCCESS(true),
+    FAILURE(true),
+    STOPPED(false);
 
-    private boolean finalStatus;
+    private final boolean finalStatus;
 }
