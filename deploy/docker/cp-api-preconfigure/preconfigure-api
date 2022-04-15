@@ -103,16 +103,8 @@ function configure_and_publish_cloud_data_distribution() {
         _cloud_data_name_json=", \"name\": \"${CP_CLOUD_DATA_APP_NAME}\""
         _cloud_data_name="$CP_CLOUD_DATA_APP_NAME"
     fi
-    if [ -z "$_cloud_data_dist" ]; then
-        _cloud_data_dist="$_cloud_data_dir_suffix"
-    fi
-    if [ -z "$_cloud_data_executable" ]; then
-        _old_cloud_data_executable="$_cloud_data_dir_name"
-        _new_cloud_data_executable="$_cloud_data_name"
-    else
-        _old_cloud_data_executable="${_cloud_data_dir_name}.${_cloud_data_executable}"
-        _new_cloud_data_executable="${_cloud_data_name}.${_cloud_data_executable}"
-    fi
+    local _old_cloud_data_executable="${_cloud_data_dir_name}.${_cloud_data_executable}"
+    local _new_cloud_data_executable="${_cloud_data_name}.${_cloud_data_executable}"
     local _cloud_data_dir="${_cloud_data_dir_name}-${_cloud_data_dir_suffix}"
 
 cat > $_cloud_data_dir/settings.json <<EOF
@@ -171,7 +163,7 @@ function configure_cloud_data_win_distribution() {
     # - API URL
     # - DAV URL
     # - Application name
-    echo "Configuring Cloud Data with the deployment specific settings"
+    echo "Configuring Windows Cloud Data with the deployment specific settings"
     configure_and_publish_cloud_data_distribution "cloud-data" "win32-x64" "win64" "exe"
 
     create_checksum_file "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_WIN_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ISO_CHECKSUM"
@@ -210,8 +202,8 @@ function configure_cloud_data_mac_distribution() {
     # - API URL
     # - DAV URL
     # - Application name
-    echo "Configuring Cloud Data with the deployment specific settings"
-    configure_and_publish_cloud_data_distribution "cloud-data" "darwin-x64"
+    echo "Configuring MacOS Cloud Data with the deployment specific settings"
+    configure_and_publish_cloud_data_distribution "cloud-data" "darwin-x64" "darwin-x64" "app"
 
     create_checksum_file "${CP_CLOUD_DATA_PATCHING_DIR}/$CLOUD_DATA_MAC_CHECKSUM_JSON" "$CLOUD_DATA_EXE_CHECKSUM" "$CLOUD_DATA_ICNS_CHECKSUM"
     rm -f "$TEMP_PROCESSING_FILE"

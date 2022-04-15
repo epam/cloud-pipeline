@@ -266,15 +266,15 @@ update_resources_templates "templates.directory" "CP_PREF_TEMPLATES_DIRECTORY_EX
 update_resources_templates "templates.folder.directory" "CP_PREF_TEMPLATES_FOLDER_DIRECTORY_EXT" "template.json"
 update_resources_templates "templates.error.pages.directory" "CP_PREF_TEMPLATES_ERROR_PAGES_DIRECTORY_EXT" "*.html"
 
+export CP_API_COMMON_DIR="${CP_API_COMMON_DIR:-$CP_API_HOME/common}"
+copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "win64"
+copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "darwin-x64"
+
 # Add any other static assets
 if [ "$CP_PREF_API_STATIC_DIRECTORY_EXT" ] && ! is_dir_empty "$CP_PREF_API_STATIC_DIRECTORY_EXT"; then
     echo "Importing static assets from $CP_PREF_API_STATIC_DIRECTORY_EXT to $CP_API_SRV_STATIC_DIR"
     \cp -r $CP_PREF_API_STATIC_DIRECTORY_EXT/* "$CP_API_SRV_STATIC_DIR/"
 fi
-
-export CP_API_COMMON_DIR="${CP_API_COMMON_DIR:-$CP_API_HOME/common}"
-copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "win64"
-copy_cloud_data_distribution "$CP_PREF_API_STATIC_DIRECTORY_EXT" "darwin-x64"
 
 # Configure logging and launch
 API_LOG_HOME="/var/log/cp-api/${CP_API_SRV_INSTANCE_NAME:-$CP_API_CURRENT_NODE_NAME}"
