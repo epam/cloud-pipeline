@@ -50,6 +50,8 @@ class TestCopyWithFolders(object):
         create_test_file(os.path.abspath(cls.test_file_1), TestFiles.DEFAULT_CONTENT)
         # ./test_folder/test_file.txt
         create_test_file(os.path.abspath(cls.test_folder + cls.test_file_1), TestFiles.DEFAULT_CONTENT)
+        # ./test_folder/test_file2.txt
+        create_test_file(os.path.abspath(cls.test_folder + cls.test_file_2), TestFiles.DEFAULT_CONTENT)
         # ./test_folder/test_file.json
         create_test_file(os.path.abspath(cls.test_folder + cls.test_file_with_other_extension),
                          TestFiles.DEFAULT_CONTENT)
@@ -62,6 +64,9 @@ class TestCopyWithFolders(object):
         create_test_file(os.path.abspath(cls.test_file_3), TestFiles.COPY_CONTENT)
         # ~/test_cp_home_dir/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_file_1),
+                         TestFiles.DEFAULT_CONTENT)
+        # ~/test_cp_home_dir/test_file2.txt
+        create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_file_2),
                          TestFiles.DEFAULT_CONTENT)
         # ~/test_cp_home_dir/other/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_folder,
@@ -116,6 +121,7 @@ class TestCopyWithFolders(object):
         if force:
             create_test_files_on_bucket(os.path.abspath(self.test_file_2), self.bucket_name,
                                         os.path.join(test_case, self.test_file_1),
+                                        os.path.join(test_case, self.test_file_2),
                                         os.path.join(test_case, self.test_folder, self.test_file_1))
         if source.startswith("~"):
             source_to_check = os.path.join(os.path.expanduser('~'), source.strip("~/"))
@@ -123,13 +129,18 @@ class TestCopyWithFolders(object):
             source_to_check = source
         if switch_dir:
             dir_path = os.path.abspath(os.path.join(self.checkout_dir))
-            create_test_files(TestFiles.DEFAULT_CONTENT, os.path.join(dir_path, self.test_file_1),
+            create_test_files(TestFiles.DEFAULT_CONTENT,
+                              os.path.join(dir_path, self.test_file_1),
+                              os.path.join(dir_path, self.test_file_2),
                               os.path.join(dir_path, self.test_folder, self.test_file_1))
             os.chdir(dir_path)
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_cp(source, destination, force=force, recursive=True)
         assert_copied_object_info(ObjectInfo(True).build(os.path.join(source_to_check, self.test_file_1)),
                                   ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_1)),
+                                  test_case)
+        assert_copied_object_info(ObjectInfo(True).build(os.path.join(source_to_check, self.test_file_2)),
+                                  ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_2)),
                                   test_case)
         assert_copied_object_info(ObjectInfo(True).build(os.path.join(source_to_check, self.test_folder,
                                                                       self.test_file_1)),
