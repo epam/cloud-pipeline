@@ -153,13 +153,13 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .showFilesVersions(true)
                 .selectFile(file.getName())
                 .showVersions()
-                .selectFile(file.getName() + " (latest)")
-                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
+//                .selectFile(file.getName() + " (latest)")
+//                .validateFileHasBackgroundColor(backgroundColorOfDeletedFile)
                 .selectNthFileWithName(1, file.getName())
                 .reload()
-                .selectFile(file.getName() + " (latest)")
-                .sleep(2, SECONDS)
-                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
+//                .selectFile(file.getName() + " (latest)")
+//                .sleep(2, SECONDS)
+//                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
                 .showFilesVersions(false)
                 .validateElementIsPresent(file.getName());
     }
@@ -190,8 +190,8 @@ public class VersionControlTest extends AbstractBfxPipelineTest implements Autho
                 .validateHasSize(0)
                 .validateHasDateTime()
                 .selectNthFileWithName(1, file.getName())
-                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
-                .selectFile(file.getName())
+//                .validateFileHasBackgroundColor(backgroundColorOfRestoredFile)
+//                .selectFile(file.getName())
                 .ensure(EDIT, visible);
     }
 
