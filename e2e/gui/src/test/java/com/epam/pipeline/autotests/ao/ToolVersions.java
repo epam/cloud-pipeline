@@ -61,6 +61,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.DEFAULT_COMMAND;
 import static com.epam.pipeline.autotests.ao.Primitive.DELETE;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
+import static com.epam.pipeline.autotests.ao.Primitive.LAUNCH;
 import static com.epam.pipeline.autotests.ao.Primitive.PRICE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.RUN;
 import static com.epam.pipeline.autotests.ao.Primitive.VERSIONS;
@@ -183,10 +184,13 @@ public class ToolVersions extends ToolTab<ToolVersions> {
                 .find(byXpath(format(
                         ".//tr[contains(@class, 'ant-table-row-level-0') and contains(., '%s')]", customTag)))
                 .find(byId(format("run-%s-button", customTag))).shouldBe(visible).click();
-        new RunsMenuAO()
-                .messageShouldAppear(format(
-                        "Are you sure you want to launch tool (version %s) with default settings?", customTag))
-                .click(button("Launch"));
+        new ConfirmationPopupAO<>(new RunsMenuAO())
+                .ensure(byXpath("//div[@class='cp-run-name-title']"),
+                        text("Are you sure you want to launch"),
+                        text(format("%s:%s", Utils.nameWithoutGroup(tool), customTag)),
+                        text("with default settings?"))
+                .ensure(byClassName("ob-estimated-price-info__info"), visible)
+                .click(LAUNCH);
         sleep(1, SECONDS);
         test.addRunId(Utils.getToolRunId(tool, customTag));
         return new RunsMenuAO();

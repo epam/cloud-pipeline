@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.LogAO;
 import com.epam.pipeline.autotests.ao.NodePage;
 import com.epam.pipeline.autotests.ao.Template;
@@ -159,7 +158,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
             .showLog(runId)
             .ensure(runId(), have(text(String.format("Run #%s", runId))))
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))))
-            .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
+            .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN).toLowerCase())))
             .waitForCompletion()
             .ensure(taskWithName("Task1"), Status.SUCCESS.reached);
         runsMenu()
