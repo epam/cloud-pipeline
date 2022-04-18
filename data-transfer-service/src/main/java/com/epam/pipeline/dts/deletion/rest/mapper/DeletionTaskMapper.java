@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.service;
+package com.epam.pipeline.dts.deletion.rest.mapper;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
-import com.epam.pipeline.dts.transfer.model.StorageItem;
-import lombok.NonNull;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
+import com.epam.pipeline.dts.deletion.rest.dto.DeletionDTO;
+import org.mapstruct.Mapper;
 
-import java.util.List;
-
-public interface RemoveService {
-
-    RemoveTask schedule(@NonNull StorageItem target,
-                        List<String> included);
+@Mapper(componentModel = "spring")
+public interface DeletionTaskMapper {
+    DeletionDTO modelToDto(DeletionTask task);
 }

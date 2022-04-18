@@ -14,14 +14,21 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.configuration;
+package com.epam.pipeline.dts.deletion.rest.dto;
 
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import com.epam.pipeline.dts.transfer.rest.dto.StorageItemWithCredentialsDTO;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Configuration
-@EnableWebMvc
-@ComponentScan(basePackages = {"com.epam.pipeline.dts.remove.rest.controller"})
-public class RemoveRestConfiguration {
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Data
+@NoArgsConstructor
+public class DeletionTaskCreationDTO {
+
+    private StorageItemWithCredentialsDTO target;
+    private List<String> included = new ArrayList<>();
+    private LocalDateTime scheduled;
 }

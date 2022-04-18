@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.model;
+package com.epam.pipeline.dts.deletion.model;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
@@ -45,7 +45,7 @@ import java.util.List;
 @Wither
 @AllArgsConstructor
 @NoArgsConstructor
-public class RemoveTask {
+public class DeletionTask {
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE)

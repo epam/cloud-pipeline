@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.service.impl;
+package com.epam.pipeline.dts.deletion.service.impl;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
-import com.epam.pipeline.dts.remove.service.RemoveTaskService;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
+import com.epam.pipeline.dts.deletion.service.DeletionTaskService;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
@@ -37,29 +37,29 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BackgroundDataRemovalService {
+public class BackgroundDataDeletionService {
 
-    private final RemoveTaskService taskService;
+    private final DeletionTaskService taskService;
 
-    @Scheduled(fixedDelayString = "${dts.remove.poll:60000}")
-    public void remove() {
+    @Scheduled(fixedDelayString = "${dts.delete.poll:60000}")
+    public void delete() {
         taskService.loadCreated().stream()
                 .filter(this::isReadyToFire)
-                .forEach(this::remove);
+                .forEach(this::delete);
     }
 
-    private boolean isReadyToFire(final RemoveTask task) {
+    private boolean isReadyToFire(final DeletionTask task) {
         return Optional.ofNullable(task.getScheduled())
                 .map(DateUtils.nowUTC()::isAfter)
                 .orElse(true);
     }
 
-    private void remove(final RemoveTask task) {
+    private void delete(final DeletionTask task) {
         final StorageItem target = task.getTarget();
         try {
             log.info(String.format("Removing storage file/directory %s...", target.getPath()));
             taskService.updateStatus(task.getId(), TaskStatus.RUNNING);
-            remove(target);
+            delete(target);
             log.info(String.format("Storage file/directory has been successfully removed %s.", target.getPath()));
             taskService.updateStatus(task.getId(), TaskStatus.SUCCESS);
         } catch (RuntimeException | IOException e) {
@@ -69,7 +69,7 @@ public class BackgroundDataRemovalService {
         }
     }
 
-    private void remove(final StorageItem item) throws IOException {
+    private void delete(final StorageItem item) throws IOException {
         if (item.getType() == StorageType.LOCAL) {
             final Path path = Paths.get(item.getPath()).toAbsolutePath();
             if (Files.isDirectory(path)) {
@@ -78,7 +78,7 @@ public class BackgroundDataRemovalService {
                 Files.delete(path);
             }
         } else {
-            throw new IllegalArgumentException(String.format("Remove storage item type %s is not yet supported.",
+            throw new IllegalArgumentException(String.format("Deletion storage item type %s is not yet supported.",
                     item.getType()));
         }
     }

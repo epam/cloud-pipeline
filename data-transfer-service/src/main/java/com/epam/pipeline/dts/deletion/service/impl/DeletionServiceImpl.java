@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.service.impl;
+package com.epam.pipeline.dts.deletion.service.impl;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
-import com.epam.pipeline.dts.remove.service.RemoveTaskService;
-import com.epam.pipeline.dts.remove.service.RemoveService;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
+import com.epam.pipeline.dts.deletion.service.DeletionTaskService;
+import com.epam.pipeline.dts.deletion.service.DeletionService;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +30,13 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RemoveServiceImpl implements RemoveService {
+public class DeletionServiceImpl implements DeletionService {
 
-    private final RemoveTaskService taskService;
+    private final DeletionTaskService taskService;
 
     @Override
-    public RemoveTask schedule(@NonNull StorageItem target,
-                               List<String> included) {
+    public DeletionTask schedule(@NonNull StorageItem target,
+                                 List<String> included) {
         return taskService.create(target, included);
     }
 }

@@ -20,7 +20,7 @@ import com.epam.pipeline.dts.configuration.CommonConfiguration;
 import com.epam.pipeline.dts.configuration.DataSourceConfiguration;
 import com.epam.pipeline.dts.configuration.RestConfiguration;
 import com.epam.pipeline.dts.listing.ListingConfiguration;
-import com.epam.pipeline.dts.remove.RemoveConfiguration;
+import com.epam.pipeline.dts.deletion.DeletionConfiguration;
 import com.epam.pipeline.dts.security.JWTSecurityConfiguration;
 import com.epam.pipeline.dts.submission.SubmissionConfiguration;
 import com.epam.pipeline.dts.sync.SyncConfiguration;
@@ -39,7 +39,7 @@ import org.springframework.context.annotation.Import;
         JWTSecurityConfiguration.class,
         ListingConfiguration.class,
         TransferConfiguration.class,
-        RemoveConfiguration.class,
+        DeletionConfiguration.class,
         SubmissionConfiguration.class,
         SyncConfiguration.class})
 @ComponentScan(basePackages = "com.epam.pipeline.dts.configuration")

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.rest.dto;
+package com.epam.pipeline.dts.deletion.rest.dto;
 
 import com.epam.pipeline.dts.transfer.rest.dto.StorageItemDTO;
 import com.epam.pipeline.entity.dts.transfer.TaskStatus;
@@ -26,7 +26,7 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
-public class RemoveDTO {
+public class DeletionDTO {
 
     private Long id;
     private StorageItemDTO target;

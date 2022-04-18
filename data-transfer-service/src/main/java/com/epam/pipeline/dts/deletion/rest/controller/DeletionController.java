@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.rest.controller;
+package com.epam.pipeline.dts.deletion.rest.controller;
 
 import com.epam.pipeline.dts.common.rest.Result;
 import com.epam.pipeline.dts.common.rest.controller.AbstractRestController;
-import com.epam.pipeline.dts.remove.model.RemoveTask;
-import com.epam.pipeline.dts.remove.rest.dto.RemoveDTO;
-import com.epam.pipeline.dts.remove.rest.dto.RemoveTaskCreationDTO;
-import com.epam.pipeline.dts.remove.rest.mapper.RemoveTaskMapper;
-import com.epam.pipeline.dts.remove.service.RemoveService;
-import com.epam.pipeline.dts.remove.service.RemoveTaskService;
+import com.epam.pipeline.dts.deletion.rest.dto.DeletionTaskCreationDTO;
+import com.epam.pipeline.dts.deletion.rest.dto.DeletionDTO;
+import com.epam.pipeline.dts.deletion.rest.mapper.DeletionTaskMapper;
+import com.epam.pipeline.dts.deletion.service.DeletionService;
+import com.epam.pipeline.dts.deletion.service.DeletionTaskService;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.rest.mapper.StorageItemMapper;
 import io.swagger.annotations.Api;
@@ -48,66 +47,59 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.API_STATUS_DESCRIPTION;
 import static com.epam.pipeline.dts.common.rest.controller.AbstractRestController.HTTP_STATUS_OK;
 
-@RequestMapping("remove")
-@Api(value = "Remove tasks management")
+@RequestMapping("delete")
+@Api(value = "Deletion tasks management")
 @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
 @RestController
 @RequiredArgsConstructor
-public class RemoveController extends AbstractRestController {
+public class DeletionController extends AbstractRestController {
 
-    private final RemoveTaskService taskService;
-    private final RemoveService service;
+    private final DeletionTaskService taskService;
+    private final DeletionService service;
     private final StorageItemMapper storageItemMapper;
-    private final RemoveTaskMapper taskMapper;
+    private final DeletionTaskMapper taskMapper;
 
     @PostMapping
-    @ApiOperation(
-            value = "Creates and schedules a new remove task.",
+    @ApiOperation(value = "Creates and schedules new deletion task.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result<RemoveDTO> createTask(@RequestBody RemoveTaskCreationDTO taskCreationDTO) {
-        RemoveTask task = service.schedule(
+    public Result<DeletionDTO> create(@RequestBody DeletionTaskCreationDTO taskCreationDTO) {
+        return Result.success(taskMapper.modelToDto(service.schedule(
                 storageItemMapper.dtoToModel(taskCreationDTO.getTarget()),
-                taskCreationDTO.getIncluded());
-        return Result.success(taskMapper.modelToDto(task));
-    }
-
-    @PutMapping(path = "/{taskId}")
-    @ApiOperation(
-            value = "Updates status of existing task.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result<RemoveDTO> updateStatus(@PathVariable Long taskId,
-                                            @RequestParam TaskStatus status,
-                                            @RequestParam(required = false) String reason) {
-        RemoveTask task = taskService.updateStatus(taskId, status, reason);
-        return Result.success(taskMapper.modelToDto(task));
+                taskCreationDTO.getIncluded())));
     }
 
     @GetMapping(path = "/{taskId}")
-    @ApiOperation(
-            value = "Returns an existing task by id.",
+    @ApiOperation(value = "Returns an existing deletion task by id.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result<RemoveDTO> getTask(@PathVariable Long taskId) {
+    public Result<DeletionDTO> get(@PathVariable Long taskId) {
         return Result.success(taskMapper.modelToDto(taskService.load(taskId)));
     }
 
-    @DeleteMapping(path = "/{taskId}")
-    @ApiOperation(
-            value = "Deletes an existing task by id.",
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result deleteTask(@PathVariable Long taskId) {
-        taskService.delete(taskId);
-        return Result.success(null);
-    }
-
     @GetMapping
-    @ApiOperation(
-            value = "Returns all tasks.",
+    @ApiOperation(value = "Returns all deletion tasks.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result<List<RemoveDTO>> getAll() {
+    public Result<List<DeletionDTO>> getAll() {
         return Result.success(taskService
                 .loadAll()
                 .stream()
                 .map(taskMapper::modelToDto)
                 .collect(Collectors.toList()));
+    }
+
+    @PutMapping(path = "/{taskId}")
+    @ApiOperation(value = "Updates status of an existing deletion task.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result<DeletionDTO> updateStatus(@PathVariable Long taskId,
+                                            @RequestParam TaskStatus status,
+                                            @RequestParam(required = false) String reason) {
+        return Result.success(taskMapper.modelToDto(taskService.updateStatus(taskId, status, reason)));
+    }
+
+    @DeleteMapping(path = "/{taskId}")
+    @ApiOperation(value = "Deletes an existing deletion task by id.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public Result delete(@PathVariable Long taskId) {
+        taskService.delete(taskId);
+        return Result.success(null);
     }
 }

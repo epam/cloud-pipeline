@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.service.impl;
+package com.epam.pipeline.dts.deletion.service.impl;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
-import com.epam.pipeline.dts.remove.repository.RemoveTaskRepository;
-import com.epam.pipeline.dts.remove.service.RemoveTaskService;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
+import com.epam.pipeline.dts.deletion.repository.DeletionTaskRepository;
+import com.epam.pipeline.dts.deletion.service.DeletionTaskService;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.util.Utils;
@@ -33,45 +33,45 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class RemoveTaskServiceImpl implements RemoveTaskService {
+public class DeletionTaskServiceImpl implements DeletionTaskService {
 
-    private final RemoveTaskRepository repository;
+    private final DeletionTaskRepository repository;
 
     @Override
-    public RemoveTask create(@NonNull final StorageItem target,
-                             final List<String> included,
-                             final String user) {
-        return repository.save(RemoveTask.builder()
+    public DeletionTask create(@NonNull final StorageItem target,
+                               final List<String> included,
+                               final String user) {
+        return repository.save(DeletionTask.builder()
                 .target(target)
                 .status(TaskStatus.CREATED)
                 .created(Utils.now())
-                .reason("New remove task created")
+                .reason("New deletion task created")
                 .included(included)
                 .user(user)
                 .build());
     }
 
     @Override
-    public RemoveTask load(final Long id) {
+    public DeletionTask load(final Long id) {
         return repository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(String.format("Failed to find remove task #%s", id)));
+                .orElseThrow(() -> new IllegalArgumentException(String.format("Failed to find deletion task #%s", id)));
     }
 
     @Override
-    public List<RemoveTask> loadByStatus(final TaskStatus status) {
+    public List<DeletionTask> loadByStatus(final TaskStatus status) {
         return repository.findAllByStatus(status);
     }
 
     @Override
-    public List<RemoveTask> loadAll() {
+    public List<DeletionTask> loadAll() {
         return Utils.iterableToList(repository.findAll());
     }
 
     @Override
-    public RemoveTask updateStatus(final Long id, final TaskStatus status, final String reason) {
-        final RemoveTask task = load(id);
+    public DeletionTask updateStatus(final Long id, final TaskStatus status, final String reason) {
+        final DeletionTask task = load(id);
         if (task.getStatus() == status) {
-            log.debug(String.format("Status %s is already set for remove task #%s", status, id));
+            log.debug(String.format("Status %s is already set for deletion task #%s", status, id));
             return task;
         }
         return repository.save(withStatus(task, status, reason));
@@ -82,7 +82,7 @@ public class RemoveTaskServiceImpl implements RemoveTaskService {
         repository.delete(load(id));
     }
 
-    private RemoveTask withStatus(final RemoveTask task, final TaskStatus status, final String reason) {
+    private DeletionTask withStatus(final DeletionTask task, final TaskStatus status, final String reason) {
         task.setStatus(status);
         if (StringUtils.isNotBlank(reason)) task.setReason(reason);
         if (status == TaskStatus.RUNNING) task.setStarted(Utils.now());

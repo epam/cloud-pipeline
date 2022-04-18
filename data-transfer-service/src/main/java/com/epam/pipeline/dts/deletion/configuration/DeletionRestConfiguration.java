@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.rest.mapper;
+package com.epam.pipeline.dts.deletion.configuration;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
-import com.epam.pipeline.dts.remove.rest.dto.RemoveDTO;
-import org.mapstruct.Mapper;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-@Mapper(componentModel = "spring")
-public interface RemoveTaskMapper {
-    RemoveDTO modelToDto(RemoveTask task);
+@Configuration
+@EnableWebMvc
+@ComponentScan(basePackages = {"com.epam.pipeline.dts.deletion.rest.controller"})
+public class DeletionRestConfiguration {
 }

@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.rest.dto;
+package com.epam.pipeline.dts.deletion.service;
 
-import com.epam.pipeline.dts.transfer.rest.dto.StorageItemWithCredentialsDTO;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
+import com.epam.pipeline.dts.transfer.model.StorageItem;
+import lombok.NonNull;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-public class RemoveTaskCreationDTO {
+public interface DeletionService {
 
-    private StorageItemWithCredentialsDTO target;
-    private List<String> included = new ArrayList<>();
-    private LocalDateTime scheduled;
+    DeletionTask schedule(@NonNull StorageItem target,
+                          List<String> included);
 }

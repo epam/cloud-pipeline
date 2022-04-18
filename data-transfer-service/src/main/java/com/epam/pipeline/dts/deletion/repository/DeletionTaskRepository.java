@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.repository;
+package com.epam.pipeline.dts.deletion.repository;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.List;
 
-public interface RemoveTaskRepository extends PagingAndSortingRepository<RemoveTask, Long> {
+public interface DeletionTaskRepository extends PagingAndSortingRepository<DeletionTask, Long> {
 
-    List<RemoveTask> findAllByStatus(TaskStatus status);
+    List<DeletionTask> findAllByStatus(TaskStatus status);
 }

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove;
+package com.epam.pipeline.dts.deletion;
 
-import com.epam.pipeline.dts.remove.configuration.RemoveRestConfiguration;
+import com.epam.pipeline.dts.deletion.configuration.DeletionRestConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.ComponentScan;
@@ -25,10 +25,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.stereotype.Controller;
 
 @SpringBootConfiguration
-@EntityScan(basePackages = {"com.epam.pipeline.dts.remove.model"})
-@EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.remove.repository"})
+@EntityScan(basePackages = {"com.epam.pipeline.dts.deletion.model"})
+@EnableJpaRepositories(basePackages = {"com.epam.pipeline.dts.deletion.repository"})
 @ComponentScan(excludeFilters = {
-        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = RemoveRestConfiguration.class),
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = DeletionRestConfiguration.class),
         @ComponentScan.Filter(type = FilterType.ANNOTATION, value = Controller.class)})
-public class RemoveConfiguration {
+public class DeletionConfiguration {
 }

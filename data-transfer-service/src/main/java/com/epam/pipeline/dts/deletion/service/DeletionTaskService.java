@@ -14,40 +14,40 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.remove.service;
+package com.epam.pipeline.dts.deletion.service;
 
-import com.epam.pipeline.dts.remove.model.RemoveTask;
+import com.epam.pipeline.dts.deletion.model.DeletionTask;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 
 import java.util.Collections;
 import java.util.List;
 
-public interface RemoveTaskService {
+public interface DeletionTaskService {
 
-    default RemoveTask create(StorageItem target) {
+    default DeletionTask create(StorageItem target) {
         return create(target, Collections.emptyList());
     }
 
-    default RemoveTask create(StorageItem target, List<String> included) {
+    default DeletionTask create(StorageItem target, List<String> included) {
         return create(target, included, null);
     }
 
-    RemoveTask create(StorageItem target, List<String> included, String user);
+    DeletionTask create(StorageItem target, List<String> included, String user);
 
-    default List<RemoveTask> loadCreated() {
+    default List<DeletionTask> loadCreated() {
         return loadByStatus(TaskStatus.CREATED);
     }
 
-    RemoveTask load(Long id);
-    List<RemoveTask> loadAll();
-    List<RemoveTask> loadByStatus(TaskStatus status);
+    DeletionTask load(Long id);
+    List<DeletionTask> loadAll();
+    List<DeletionTask> loadByStatus(TaskStatus status);
 
-    default RemoveTask updateStatus(Long id, TaskStatus status) {
+    default DeletionTask updateStatus(Long id, TaskStatus status) {
         return updateStatus(id, status, null);
     }
 
-    RemoveTask updateStatus(Long id, TaskStatus status, String reason);
+    DeletionTask updateStatus(Long id, TaskStatus status, String reason);
 
     void delete(Long id);
 }
