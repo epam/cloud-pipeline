@@ -73,8 +73,19 @@ public class DtsRuleExpanderService {
     private TransferTrigger processGlobMatchers(final TransferTrigger trigger) {
         final List<String> globMatchers = ListUtils.emptyIfNull(trigger.getGlobMatchers()).stream()
             .filter(StringUtils::isNotBlank)
+            .sorted(this::compareGlobsByPriority)
             .collect(Collectors.toList());
         return new TransferTrigger(trigger.getMaxSearchDepth(), globMatchers);
+    }
+
+    private int compareGlobsByPriority(final String expression1, final String expression2) {
+        if (expression1.endsWith(SYNC_DEST_DELIMITER)) {
+            return -1;
+        } else if (expression2.endsWith(SYNC_DEST_DELIMITER)) {
+            return 1;
+        } else {
+            return 0;
+        }
     }
 
     private Stream<Map.Entry<AutonomousSyncRule, AutonomousSyncCronDetails>> expandSyncEntryWithTriggers(
@@ -86,7 +97,9 @@ public class DtsRuleExpanderService {
         return transferTriggers.stream()
             .map(trigger -> searchForGivenTrigger(syncSource, trigger))
             .flatMap(Collection::stream)
-            .map(absolutePath -> absolutePath.substring(syncSource.length() + 1))
+            .map(absolutePath -> syncSource.length() < absolutePath.length()
+                                 ? absolutePath.substring(syncSource.length() + 1)
+                                 : StringUtils.EMPTY)
             .map(relativePath -> new AutonomousSyncRule(Paths.get(syncSource, relativePath).toString(),
                                                         String.join(SYNC_DEST_DELIMITER, syncDestination, relativePath),
                                                         null, null))
@@ -130,9 +143,7 @@ public class DtsRuleExpanderService {
     private boolean directoryHasAnyMatch(final String directory, final List<String> expressions) {
         final AntPathMatcher pathMatcher = new AntPathMatcher();
         return directoryElementsStream(directory)
-            .filter(File::isFile)
-            .map(File::getName)
-            .anyMatch(name -> nameMatchingGlob(name, pathMatcher, expressions));
+            .anyMatch(file -> fileMatchingGlob(file, pathMatcher, expressions));
     }
 
     private Stream<File> directoryElementsStream(final String directory) {
@@ -141,7 +152,9 @@ public class DtsRuleExpanderService {
             .orElseGet(Stream::empty);
     }
 
-    private boolean nameMatchingGlob(final String name, final AntPathMatcher matcher, final List<String> expressions) {
+    private boolean fileMatchingGlob(final File file, final AntPathMatcher matcher, final List<String> expressions) {
+        final String nameSuffix = file.isDirectory() ? SYNC_DEST_DELIMITER : StringUtils.EMPTY;
+        final String name = file.getName() + nameSuffix;
         return CollectionUtils.emptyIfNull(expressions)
             .stream()
             .anyMatch(glob -> matcher.match(glob, name));
