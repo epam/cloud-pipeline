@@ -25,4 +25,9 @@ public class TransferTrigger {
 
     private Integer maxSearchDepth;
     private List<String> globMatchers;
+
+    public TransferTrigger addAllMatchers(final TransferTrigger anotherTrigger) {
+        globMatchers.addAll(anotherTrigger.getGlobMatchers());
+        return this;
+    }
 }

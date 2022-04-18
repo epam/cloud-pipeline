@@ -19,6 +19,7 @@ package com.epam.pipeline.dts.sync.service.impl;
 import com.epam.pipeline.dts.sync.model.AutonomousSyncCronDetails;
 import com.epam.pipeline.dts.sync.model.AutonomousSyncRule;
 import com.epam.pipeline.dts.sync.model.TransferTrigger;
+import com.epam.pipeline.dts.sync.model.TransferMatcher;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -28,16 +29,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.AntPathMatcher;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,9 +51,12 @@ import java.util.stream.Stream;
 public class DtsRuleExpanderService {
 
     private static final String SYNC_DEST_DELIMITER = "/";
+
+    private final AntPathMatcher pathMatcher;
     private final Integer defaultMaxSearchDepth;
 
     public DtsRuleExpanderService(final @Value("${dts.sync.transfer.triggers.max.depth:3}") Integer maxSearchDepth) {
+        this.pathMatcher =  new AntPathMatcher();
         this.defaultMaxSearchDepth = maxSearchDepth;
     }
 
@@ -62,8 +70,12 @@ public class DtsRuleExpanderService {
         }
         final List<TransferTrigger> transferTriggers = syncRule.getTransferTriggers().stream()
             .filter(Objects::nonNull)
-            .map(this::processGlobMatchers)
+            .collect(Collectors.toMap(TransferTrigger::getMaxSearchDepth, Function.identity(),
+                                      TransferTrigger::addAllMatchers))
+            .values()
+            .stream()
             .filter(trigger -> CollectionUtils.isNotEmpty(trigger.getGlobMatchers()))
+            .map(this::processGlobMatchers)
             .collect(Collectors.toList());
         return CollectionUtils.isNotEmpty(transferTriggers)
                ? expandSyncEntryWithTriggers(entry.getKey(), entry.getValue(), transferTriggers)
@@ -73,6 +85,7 @@ public class DtsRuleExpanderService {
     private TransferTrigger processGlobMatchers(final TransferTrigger trigger) {
         final List<String> globMatchers = ListUtils.emptyIfNull(trigger.getGlobMatchers()).stream()
             .filter(StringUtils::isNotBlank)
+            .distinct()
             .sorted(this::compareGlobsByPriority)
             .collect(Collectors.toList());
         return new TransferTrigger(trigger.getMaxSearchDepth(), globMatchers);
@@ -97,32 +110,48 @@ public class DtsRuleExpanderService {
         return transferTriggers.stream()
             .map(trigger -> searchForGivenTrigger(syncSource, trigger))
             .flatMap(Collection::stream)
-            .map(absolutePath -> syncSource.length() < absolutePath.length()
-                                 ? absolutePath.substring(syncSource.length() + 1)
-                                 : StringUtils.EMPTY)
-            .map(relativePath -> new AutonomousSyncRule(Paths.get(syncSource, relativePath).toString(),
-                                                        String.join(SYNC_DEST_DELIMITER, syncDestination, relativePath),
-                                                        null, null))
+            .map(absolutePath -> buildNestedDirRelativePath(syncSource, absolutePath))
+            .map(relativePath -> buildRelativeSyncRule(syncSource, syncDestination, relativePath))
             .map(rule -> new AbstractMap.SimpleEntry<>(rule, cronDetails));
+    }
+
+    private String buildNestedDirRelativePath(final String absoluteRootPath, final String absoluteNestedPath) {
+        return absoluteRootPath.length() < absoluteNestedPath.length()
+               ? absoluteNestedPath.substring(absoluteRootPath.length() + 1)
+               : StringUtils.EMPTY;
+    }
+
+    private AutonomousSyncRule buildRelativeSyncRule(final String syncSourceRoot, final String syncDestinationRoot,
+                                                     final String relativePath) {
+        final String syncSource = Paths.get(syncSourceRoot, relativePath).toString();
+        final String syncDestination = Optional.of(relativePath)
+            .filter(StringUtils::isNotBlank)
+            .map(suffix -> String.join(SYNC_DEST_DELIMITER, syncDestinationRoot, suffix))
+            .orElse(syncDestinationRoot);
+        return new AutonomousSyncRule(syncSource, syncDestination, null, null);
     }
 
     private List<String> searchForGivenTrigger(final String dirPath, final TransferTrigger transferTrigger) {
         final List<String> lookupDirectories = new ArrayList<>(Collections.singletonList(dirPath));
         final List<String> matchingDirectories = new ArrayList<>();
+        final List<TransferMatcher> transferMatchers = transferTrigger.getGlobMatchers().stream()
+            .map(TransferMatcher::new)
+            .sorted(Comparator.comparing(TransferMatcher::getSearchDepth))
+            .collect(Collectors.toList());
         Integer searchDepth = Optional.ofNullable(transferTrigger.getMaxSearchDepth())
             .orElse(defaultMaxSearchDepth);
         while (CollectionUtils.isNotEmpty(lookupDirectories) && searchDepth > -1) {
-            lookupTargetDirectories(lookupDirectories, matchingDirectories, transferTrigger.getGlobMatchers());
+            lookupTargetDirectories(lookupDirectories, matchingDirectories, transferMatchers);
             searchDepth--;
         }
         return matchingDirectories;
     }
 
     private void lookupTargetDirectories(final List<String> lookupDirectories, final List<String> matchingDirectories,
-                                         final List<String> globMatchers) {
+                                         final List<TransferMatcher> transferMatchers) {
         final List<String> nestedDirs = lookupDirectories.stream()
             .flatMap(directory -> {
-                if (directoryHasAnyMatch(directory, globMatchers)) {
+                if (directoryHasAnyMatch(directory, transferMatchers)) {
                     matchingDirectories.add(directory);
                     return Stream.empty();
                 } else {
@@ -140,10 +169,34 @@ public class DtsRuleExpanderService {
             .map(File::getAbsolutePath);
     }
 
-    private boolean directoryHasAnyMatch(final String directory, final List<String> expressions) {
-        final AntPathMatcher pathMatcher = new AntPathMatcher();
-        return directoryElementsStream(directory)
-            .anyMatch(file -> fileMatchingGlob(file, pathMatcher, expressions));
+    private boolean directoryHasAnyMatch(final String directory, final List<TransferMatcher> transferMatchers) {
+        final int searchDepth = getMaxSearchDepth(transferMatchers);
+        final List<String> triggerMatchers = normalizeGlobMatchers(directory, transferMatchers);
+        final Path rootPath = Paths.get(directory);
+        try {
+            return Files.find(rootPath, searchDepth, (path, basicFileAttributes) ->
+                    !rootPath.equals(path) && isPathMatchingGlob(path, triggerMatchers))
+                .findAny()
+                .isPresent();
+        } catch (IOException e) {
+            log.error("An error occurred during [{}] directory traversing, skipping: {}", directory, e.getMessage());
+            return false;
+        }
+    }
+
+    private int getMaxSearchDepth(final List<TransferMatcher> transferMatchers) {
+        return transferMatchers.stream()
+            .mapToInt(TransferMatcher::getSearchDepth)
+            .max()
+            .orElse(1);
+    }
+
+    private List<String> normalizeGlobMatchers(final String directory, final List<TransferMatcher> transferMatchers) {
+        final String normalizedDirRoot = normalizePath(directory);
+        return transferMatchers.stream()
+            .map(TransferMatcher::getExpression)
+            .map(path -> normalizedDirRoot + SYNC_DEST_DELIMITER + path)
+            .collect(Collectors.toList());
     }
 
     private Stream<File> directoryElementsStream(final String directory) {
@@ -152,11 +205,15 @@ public class DtsRuleExpanderService {
             .orElseGet(Stream::empty);
     }
 
-    private boolean fileMatchingGlob(final File file, final AntPathMatcher matcher, final List<String> expressions) {
-        final String nameSuffix = file.isDirectory() ? SYNC_DEST_DELIMITER : StringUtils.EMPTY;
-        final String name = file.getName() + nameSuffix;
+    private String normalizePath(final String path) {
+        return path.contains("\\") ? path.replaceAll("\\\\", SYNC_DEST_DELIMITER) : path;
+    }
+
+    private boolean isPathMatchingGlob(final Path path, final List<String> expressions) {
+        final String nameSuffix = path.toFile().isDirectory() ? SYNC_DEST_DELIMITER : StringUtils.EMPTY;
+        final String name = normalizePath(path.toString()) + nameSuffix;
         return CollectionUtils.emptyIfNull(expressions)
             .stream()
-            .anyMatch(glob -> matcher.match(glob, name));
+            .anyMatch(glob -> pathMatcher.match(glob, name));
     }
 }
