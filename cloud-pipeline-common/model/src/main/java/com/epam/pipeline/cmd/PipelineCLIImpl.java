@@ -41,6 +41,7 @@ import java.util.stream.Collectors;
 public class PipelineCLIImpl implements PipelineCLI {
 
     private static final String PIPE_CP_TEMPLATE = "'%s' storage cp '%s' '%s' %s";
+    private static final String PIPE_MV_TEMPLATE = "'%s' storage mv '%s' '%s' %s";
     private static final String PIPE_LS_TEMPLATE = "'%s' storage ls '%s' -l";
     private static final String SPACE = " ";
     private static final String FOLDER = "Folder";
@@ -59,7 +60,8 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public String uploadData(String source, String destination, List<String> include, String username) {
+    public String uploadData(String source, String destination, List<String> include, String username,
+                             boolean deleteSource) {
         if (!forceUpload && isFileAlreadyLoaded(source, destination)) {
             log.info(String.format("Skip file %s uploading. " +
                     "It already exists in the remote bucket: %s", source, destination));
@@ -71,7 +73,10 @@ public class PipelineCLIImpl implements PipelineCLI {
 
             while (attempts < retryCount) {
                 try {
-                    cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
+                    final String command = deleteSource
+                            ? pipeMV(source, destination, include)
+                            : pipeCP(source, destination, include);
+                    cmdExecutor.executeCommand(command, username);
                     log.info(String.format("Successfully uploaded from %s to %s", source, destination));
                     return destination;
                 } catch (CmdExecutionException e) {
@@ -93,14 +98,18 @@ public class PipelineCLIImpl implements PipelineCLI {
     }
 
     @Override
-    public void downloadData(String source, String destination, List<String> include, String username) {
+    public void downloadData(String source, String destination, List<String> include, String username,
+                             boolean deleteSource) {
         log.info(String.format("Download from %s to %s", source, destination));
         int attempts = 0;
         CmdExecutionException lastException = null;
 
         while (attempts < retryCount) {
             try {
-                cmdExecutor.executeCommand(pipeCP(source, destination, include), username);
+                final String command = deleteSource
+                        ? pipeMV(source, destination, include)
+                        : pipeCP(source, destination, include);
+                cmdExecutor.executeCommand(command, username);
                 log.info(String.format("Successfully downloaded from %s to %s", source, destination));
                 return;
             } catch (CmdExecutionException e) {
@@ -179,14 +188,20 @@ public class PipelineCLIImpl implements PipelineCLI {
                           final String destination,
                           final List<String> include) {
         String command = String.format(PIPE_CP_TEMPLATE, pipelineCliExecutable, source, destination, pipeCpSuffix);
-        if (CollectionUtils.isEmpty(include)) {
-            return command;
-        }
-        command = command + SPACE + include.stream()
+        return CollectionUtils.isEmpty(include) ? command : command + SPACE + getIncludesArguments(include);
+    }
+
+    private String pipeMV(final String source,
+                          final String destination,
+                          final List<String> include) {
+        String command = String.format(PIPE_MV_TEMPLATE, pipelineCliExecutable, source, destination, pipeCpSuffix);
+        return CollectionUtils.isEmpty(include) ? command : command + SPACE + getIncludesArguments(include);
+    }
+
+    private String getIncludesArguments(final List<String> include) {
+        return include.stream()
                 .map(s -> String.format("--include '%s'", s))
                 .collect(Collectors.joining(SPACE));
-
-        return command;
     }
 
     private String pipeLS(final String destination) {

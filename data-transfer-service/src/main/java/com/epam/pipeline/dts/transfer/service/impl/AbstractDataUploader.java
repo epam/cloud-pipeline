@@ -31,10 +31,12 @@ public abstract class AbstractDataUploader implements DataUploader {
         final StorageItem destination = transferTask.getDestination();
         if (source.getType() == StorageType.LOCAL) {
             checkStoragePath(destination.getPath());
-            upload(source, destination, transferTask.getIncluded(), transferTask.getUser());
+            upload(source, destination, transferTask.getIncluded(), transferTask.getUser(),
+                    transferTask.isDeleteSource());
         } else {
             checkStoragePath(source.getPath());
-            download(source, destination, transferTask.getIncluded(), transferTask.getUser());
+            download(source, destination, transferTask.getIncluded(), transferTask.getUser(),
+                    transferTask.isDeleteSource());
         }
     }
 
@@ -44,9 +46,11 @@ public abstract class AbstractDataUploader implements DataUploader {
             String.format("%s path must have %s scheme.", getStorageType(), expectedPathPrefix));
     }
 
-    public abstract void upload(StorageItem source, StorageItem destination, List<String> include, String username);
+    public abstract void upload(StorageItem source, StorageItem destination, List<String> include, String username,
+                                boolean deleteSource);
 
-    public abstract void download(StorageItem source, StorageItem destination, List<String> include, String username);
+    public abstract void download(StorageItem source, StorageItem destination, List<String> include, String username,
+                                  boolean deleteSource);
 
     public abstract String getFilesPathPrefix();
 }

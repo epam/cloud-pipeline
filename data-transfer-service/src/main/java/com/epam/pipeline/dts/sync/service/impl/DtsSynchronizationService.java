@@ -217,7 +217,9 @@ public class DtsSynchronizationService {
                                                final StorageItem transferDestination) {
         try {
             transferDestination.setCredentials(getPipeCredentialsAsString());
-            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList());
+            return transferService.runTransferTask(transferSource, transferDestination,
+                    Collections.emptyList(),
+                    preferenceService.isSourceDeletionEnabled());
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {

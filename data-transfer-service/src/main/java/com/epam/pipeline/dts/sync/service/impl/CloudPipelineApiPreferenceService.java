@@ -50,6 +50,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final String dtsShutdownKey;
     private final String dtsSyncRulesKey;
     private final String dtsHeartbeatEnabledKey;
+    private final String dtsSourceDeletionEnabledKey;
 
     @Autowired
     public CloudPipelineApiPreferenceService(
@@ -59,6 +60,8 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             final String dtsSyncRulesKey,
             @Value("${dts.preference.heartbeat.enabled.key:dts.heartbeat.enabled}")
             final String dtsHeartbeatEnabledKey,
+            @Value("${dts.preference.source.deletion.enabled.key:dts.source.deletion.enabled}")
+            final String dtsSourceDeletionEnabledKey,
             final CloudPipelineAPIClient apiClient,
             final IdentificationService identificationService) {
         this.apiClient = apiClient;
@@ -67,6 +70,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.dtsShutdownKey = dtsShutdownKey;
         this.dtsSyncRulesKey = dtsSyncRulesKey;
         this.dtsHeartbeatEnabledKey = dtsHeartbeatEnabledKey;
+        this.dtsSourceDeletionEnabledKey = dtsSourceDeletionEnabledKey;
         log.info("Synchronizing preferences for current host: `{}`", identificationService.getId());
     }
 
@@ -100,6 +104,11 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     @Override
     public boolean isHeartbeatEnabled() {
         return getBooleanPreference(dtsHeartbeatEnabledKey);
+    }
+
+    @Override
+    public boolean isSourceDeletionEnabled() {
+        return getBooleanPreference(dtsSourceDeletionEnabledKey);
     }
 
     private boolean getBooleanPreference(final String preference) {

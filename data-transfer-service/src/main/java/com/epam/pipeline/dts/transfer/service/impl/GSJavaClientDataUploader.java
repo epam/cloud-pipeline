@@ -50,10 +50,11 @@ public class GSJavaClientDataUploader extends AbstractDataUploader {
     /**
      * @param include Is not supported yet.
      * @param username not supported.
+     * @param deleteSource Is not supported yet.
      */
     @Override
     public void upload(final StorageItem source, final StorageItem destination, final List<String> include,
-                       final String username) {
+                       final String username, final boolean deleteSource) {
         upload(source.getPath(), destination.getPath(), destination.getCredentials());
     }
 
@@ -81,10 +82,11 @@ public class GSJavaClientDataUploader extends AbstractDataUploader {
     /**
      * @param include Is not supported yet.
      * @param username not supported.
+     * @param deleteSource Is not supported yet.
      */
     @Override
     public void download(final StorageItem source, final StorageItem destination, final List<String> include,
-                         final String username) {
+                         final String username, final boolean deleteSource) {
         download(source.getPath(), destination.getPath(), source.getCredentials());
     }
 
