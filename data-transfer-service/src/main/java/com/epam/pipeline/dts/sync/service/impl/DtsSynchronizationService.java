@@ -120,7 +120,8 @@ public class DtsSynchronizationService {
     }
 
     private AutonomousSyncRule mapToRuleWithoutCron(final AutonomousSyncRule rule) {
-        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null);
+        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null,
+                rule.getDeleteSource());
     }
 
     private AutonomousSyncCronDetails mapRuleToCronDetails(final AutonomousSyncRule newRule) {
@@ -203,7 +204,8 @@ public class DtsSynchronizationService {
 
     private TransferTask runTransferTask(final AutonomousSyncRule rule) {
         return buildTransferDestination(rule)
-            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination))
+            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination,
+                    rule.getDeleteSource()))
             .map(submittedTask -> {
                 log.info("Transfer task from `{}` to `{}` submitted successfully [id=`{}`]!",
                          rule.getSource(), rule.getDestination(), submittedTask.getId());
@@ -214,12 +216,13 @@ public class DtsSynchronizationService {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private TransferTask trySubmitTransferTask(final StorageItem transferSource,
-                                               final StorageItem transferDestination) {
+                                               final StorageItem transferDestination,
+                                               final Boolean deleteTransferSource) {
         try {
             transferDestination.setCredentials(getPipeCredentialsAsString());
             return transferService.runTransferTask(transferSource, transferDestination,
                     Collections.emptyList(),
-                    preferenceService.isSourceDeletionEnabled());
+                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()));
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {
@@ -235,7 +238,6 @@ public class DtsSynchronizationService {
             .map(path -> path.split(SCHEMA_DELIMITER, 2)[0])
             .map(StringUtils::upperCase)
             .map(schema -> EnumUtils.getEnum(StorageType.class, schema))
-            .filter(Objects::nonNull)
             .map(type -> {
                 final StorageItem destinationItem = new StorageItem();
                 destinationItem.setType(type);

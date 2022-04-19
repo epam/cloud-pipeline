@@ -23,9 +23,10 @@ import org.thymeleaf.util.StringUtils;
 @Value
 public class AutonomousSyncRule {
 
-    private String source;
-    private String destination;
-    private String cron;
+    String source;
+    String destination;
+    String cron;
+    Boolean deleteSource;
 
     public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
         return StringUtils.equals(source, anotherRule.getSource())
