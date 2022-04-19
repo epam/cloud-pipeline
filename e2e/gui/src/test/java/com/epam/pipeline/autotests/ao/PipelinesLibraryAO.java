@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors.Combiners;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
@@ -229,6 +230,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         $(byId("edit-storage-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
+        $(byId("edit-storage-delete-dialog-delete-button")).waitUntil(enabled, C.DEFAULT_TIMEOUT);
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;

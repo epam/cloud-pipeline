@@ -56,6 +56,7 @@ import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -571,6 +572,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             return this;
         }
 
+        public FileAO validateHasNotSize(long expectedSize) {
+            assertNotEquals(size(), expectedSize);
+            return this;
+        }
+
         public StorageContentAO validateHasDateTime() {
             String date = context().find(byCssSelector("td:nth-child(5)")).shouldBe(visible).getText();
             assertTrue(date.matches("\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}"));
@@ -811,8 +817,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                     .ensure(CANCEL, visible);
         }
 
-        public EditStoragePopUpAO editForNfsMount() {
-            if (!filesAndFolderElements().isEmpty()) {
+        public EditStoragePopUpAO editForNfsMount(boolean isAccessible) {
+            if (!filesAndFolderElements().isEmpty() && isAccessible) {
                 $(byClassName("edit-storage-button")).shouldBe(enabled).click();
             }
             return this;
