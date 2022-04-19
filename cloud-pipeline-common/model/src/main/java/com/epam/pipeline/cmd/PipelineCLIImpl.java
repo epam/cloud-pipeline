@@ -73,9 +73,7 @@ public class PipelineCLIImpl implements PipelineCLI {
 
             while (attempts < retryCount) {
                 try {
-                    final String command = deleteSource
-                            ? pipeMV(source, destination, include)
-                            : pipeCP(source, destination, include);
+                    final String command = buildPipeTransferCommand(source, destination, include, deleteSource);
                     cmdExecutor.executeCommand(command, username);
                     log.info(String.format("Successfully uploaded from %s to %s", source, destination));
                     return destination;
@@ -106,9 +104,7 @@ public class PipelineCLIImpl implements PipelineCLI {
 
         while (attempts < retryCount) {
             try {
-                final String command = deleteSource
-                        ? pipeMV(source, destination, include)
-                        : pipeCP(source, destination, include);
+                final String command = buildPipeTransferCommand(source, destination, include, deleteSource);
                 cmdExecutor.executeCommand(command, username);
                 log.info(String.format("Successfully downloaded from %s to %s", source, destination));
                 return;
@@ -184,17 +180,20 @@ public class PipelineCLIImpl implements PipelineCLI {
         };
     }
 
-    private String pipeCP(final String source,
-                          final String destination,
-                          final List<String> include) {
-        String command = String.format(PIPE_CP_TEMPLATE, pipelineCliExecutable, source, destination, pipeCpSuffix);
-        return CollectionUtils.isEmpty(include) ? command : command + SPACE + getIncludesArguments(include);
+    private String buildPipeTransferCommand(final String source,
+                                            final String destination,
+                                            final List<String> include,
+                                            final boolean deleteSource) {
+        return deleteSource
+                ? buildPipeTransferCommand(PIPE_MV_TEMPLATE, source, destination, include)
+                : buildPipeTransferCommand(PIPE_CP_TEMPLATE, source, destination, include);
     }
 
-    private String pipeMV(final String source,
-                          final String destination,
-                          final List<String> include) {
-        String command = String.format(PIPE_MV_TEMPLATE, pipelineCliExecutable, source, destination, pipeCpSuffix);
+    private String buildPipeTransferCommand(final String template,
+                                            final String source,
+                                            final String destination,
+                                            final List<String> include) {
+        final String command = String.format(template, pipelineCliExecutable, source, destination, pipeCpSuffix);
         return CollectionUtils.isEmpty(include) ? command : command + SPACE + getIncludesArguments(include);
     }
 
