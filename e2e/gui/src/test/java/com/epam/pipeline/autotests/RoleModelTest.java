@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -832,14 +832,16 @@ public class RoleModelTest
                 .switchToUserManagement()
                 .switchToUsers()
                 .clickSearch()
-                .pressEnter();
+                .pressEnter()
+                .ensure(SEARCH, enabled);
 
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
                 .clickSearch()
-                .ensure(SEARCH, cssClass("ant-input-affix-wrapper"));
+                .pressMagnifierIcon()
+                .ensure(SEARCH, enabled);
     }
 
     private PermissionTabAO.UserPermissionsTableAO getUserPipelinePermissions(final Account user,
