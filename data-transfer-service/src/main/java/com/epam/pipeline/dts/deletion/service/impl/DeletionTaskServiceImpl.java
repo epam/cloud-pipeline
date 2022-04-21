@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -39,12 +40,14 @@ public class DeletionTaskServiceImpl implements DeletionTaskService {
 
     @Override
     public DeletionTask create(@NonNull final StorageItem target,
+                               final LocalDateTime scheduled,
                                final List<String> included,
                                final String user) {
         return repository.save(DeletionTask.builder()
                 .target(target)
                 .status(TaskStatus.CREATED)
                 .created(Utils.now())
+                .scheduled(scheduled)
                 .reason("New deletion task created")
                 .included(included)
                 .user(user)

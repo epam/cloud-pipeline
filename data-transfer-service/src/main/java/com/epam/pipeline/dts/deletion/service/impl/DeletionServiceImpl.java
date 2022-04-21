@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,7 +37,8 @@ public class DeletionServiceImpl implements DeletionService {
 
     @Override
     public DeletionTask schedule(@NonNull StorageItem target,
+                                 LocalDateTime scheduled,
                                  List<String> included) {
-        return taskService.create(target, included);
+        return taskService.create(target, scheduled, included);
     }
 }

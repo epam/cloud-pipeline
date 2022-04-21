@@ -33,6 +33,7 @@ public class DeletionDTO {
     private TaskStatus status;
     private String reason;
     private LocalDateTime created;
+    private LocalDateTime scheduled;
     private LocalDateTime started;
     private LocalDateTime finished;
     private List<String> included;

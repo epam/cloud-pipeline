@@ -65,6 +65,7 @@ public class DeletionController extends AbstractRestController {
     public Result<DeletionDTO> create(@RequestBody DeletionTaskCreationDTO taskCreationDTO) {
         return Result.success(taskMapper.modelToDto(service.schedule(
                 storageItemMapper.dtoToModel(taskCreationDTO.getTarget()),
+                taskCreationDTO.getScheduled(),
                 taskCreationDTO.getIncluded())));
     }
 

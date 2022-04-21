@@ -20,20 +20,25 @@ import com.epam.pipeline.dts.deletion.model.DeletionTask;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import com.epam.pipeline.dts.transfer.model.TaskStatus;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
 public interface DeletionTaskService {
 
     default DeletionTask create(StorageItem target) {
-        return create(target, Collections.emptyList());
+        return create(target, null);
     }
 
-    default DeletionTask create(StorageItem target, List<String> included) {
-        return create(target, included, null);
+    default DeletionTask create(StorageItem target, LocalDateTime scheduled) {
+        return create(target, scheduled, Collections.emptyList());
     }
 
-    DeletionTask create(StorageItem target, List<String> included, String user);
+    default DeletionTask create(StorageItem target, LocalDateTime scheduled, List<String> included) {
+        return create(target, scheduled, included, null);
+    }
+
+    DeletionTask create(StorageItem target, LocalDateTime scheduled, List<String> included, String user);
 
     default List<DeletionTask> loadCreated() {
         return loadByStatus(TaskStatus.CREATED);

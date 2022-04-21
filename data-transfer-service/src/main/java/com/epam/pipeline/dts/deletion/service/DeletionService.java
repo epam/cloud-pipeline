@@ -20,10 +20,12 @@ import com.epam.pipeline.dts.deletion.model.DeletionTask;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
 import lombok.NonNull;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface DeletionService {
 
     DeletionTask schedule(@NonNull StorageItem target,
+                          LocalDateTime scheduled,
                           List<String> included);
 }
