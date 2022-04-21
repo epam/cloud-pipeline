@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public enum DtsTransferStatus {
+public enum DtsTaskStatus {
 
     CREATED(false), RUNNING(false), SUCCESS(true), FAILURE(true), STOPPED(false);
 

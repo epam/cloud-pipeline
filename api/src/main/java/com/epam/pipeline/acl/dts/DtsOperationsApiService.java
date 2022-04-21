@@ -16,11 +16,14 @@
 
 package com.epam.pipeline.acl.dts;
 
+import com.epam.pipeline.entity.dts.CreateDtsDeletionRequest;
 import com.epam.pipeline.entity.dts.CreateDtsTransferRequest;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
+import com.epam.pipeline.entity.dts.DtsDeletion;
 import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.entity.dts.DtsTransfer;
+import com.epam.pipeline.manager.dts.DtsDeletionManager;
 import com.epam.pipeline.manager.dts.DtsListingManager;
 import com.epam.pipeline.manager.dts.DtsSubmissionManager;
 import com.epam.pipeline.manager.dts.DtsTransferManager;
@@ -38,6 +41,7 @@ public class DtsOperationsApiService {
     private final DtsListingManager dtsListingManager;
     private final DtsSubmissionManager dtsSubmissionManager;
     private final DtsTransferManager dtsTransferManager;
+    private final DtsDeletionManager dtsDeletionManager;
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsDataStorageListing list(String path, Long dtsId, Integer pageSize, String marker) {
@@ -67,5 +71,20 @@ public class DtsOperationsApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public DtsTransfer createTransfer(final Long dtsId, final CreateDtsTransferRequest request) {
         return dtsTransferManager.createTransfer(dtsId, request);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<DtsDeletion> findDeletions() {
+        return dtsDeletionManager.findDeletions();
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public List<DtsDeletion> findDeletions(final Long dtsId) {
+        return dtsDeletionManager.findDeletions(dtsId);
+    }
+
+    @PreAuthorize(ADMIN_OR_GENERAL_USER)
+    public DtsDeletion createDeletion(final Long dtsId, final CreateDtsDeletionRequest request) {
+        return dtsDeletionManager.createDeletion(dtsId, request);
     }
 }

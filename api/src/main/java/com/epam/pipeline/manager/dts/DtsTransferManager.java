@@ -1,12 +1,14 @@
 package com.epam.pipeline.manager.dts;
 
+import com.epam.pipeline.entity.dts.CreateDtsDeletionRequest;
+import com.epam.pipeline.entity.dts.CreateDtsDeletionRequestStorageItem;
 import com.epam.pipeline.entity.dts.CreateDtsTransferRequest;
 import com.epam.pipeline.entity.dts.CreateDtsTransferRequestStorageItem;
+import com.epam.pipeline.entity.dts.DtsCreateTransferRequest;
 import com.epam.pipeline.entity.dts.DtsPipelineCredentials;
 import com.epam.pipeline.entity.dts.DtsRegistry;
+import com.epam.pipeline.entity.dts.DtsTaskStorageItem;
 import com.epam.pipeline.entity.dts.DtsTransfer;
-import com.epam.pipeline.entity.dts.DtsTransferCreation;
-import com.epam.pipeline.entity.dts.DtsTransferStorageItem;
 import com.epam.pipeline.exception.DtsRequestException;
 import com.epam.pipeline.exception.SystemPreferenceNotSetException;
 import com.epam.pipeline.manager.preference.AbstractSystemPreference;
@@ -31,6 +33,7 @@ public class DtsTransferManager {
 
     private final AuthManager authManager;
     private final DtsRegistryManager dtsRegistryManager;
+    private final DtsDeletionManager dtsDeletionManager;
     private final DtsClientBuilder clientBuilder;
     private final PreferenceManager preferenceManager;
 
@@ -72,24 +75,37 @@ public class DtsTransferManager {
     }
 
     private DtsTransfer createTransfer(final DtsRegistry dts, final CreateDtsTransferRequest request) {
-        return createTransfer(getDtsClient(dts), request);
-    }
-
-    private DtsTransfer createTransfer(final DtsClient client, final CreateDtsTransferRequest request) {
-        return DtsClient.executeRequest(client.createTransfer(toTransferCreation(request))).getPayload();
-    }
-
-    private DtsTransferCreation toTransferCreation(final CreateDtsTransferRequest request) {
-        final DtsPipelineCredentials credentials = getTransferStorageItemCredentials();
-        final DtsTransferCreation transfer = new DtsTransferCreation();
-        transfer.setSource(toStorageItem(request.getSource(), credentials));
-        transfer.setDestination(toStorageItem(request.getDestination(), credentials));
+        final DtsClient client = getDtsClient(dts);
+        final DtsTransfer transfer = createTransfer(client, request);
+        createDeletionIfRequired(dts, request);
         return transfer;
     }
 
-    private DtsTransferStorageItem toStorageItem(final CreateDtsTransferRequestStorageItem item,
-                                                 final DtsPipelineCredentials credentials) {
-        final DtsTransferStorageItem source = new DtsTransferStorageItem();
+    private void createDeletionIfRequired(final DtsRegistry dts, final CreateDtsTransferRequest request) {
+        Optional.ofNullable(request.getDeleteDestinationOn())
+                .ifPresent(deleteDestinationOn -> dtsDeletionManager.createDeletion(dts.getId(),
+                        new CreateDtsDeletionRequest(toDeletionItem(request.getDestination()), deleteDestinationOn)));
+    }
+
+    private CreateDtsDeletionRequestStorageItem toDeletionItem(final CreateDtsTransferRequestStorageItem item) {
+        return new CreateDtsDeletionRequestStorageItem(item.getPath(), item.getType());
+    }
+
+    private DtsTransfer createTransfer(final DtsClient client, final CreateDtsTransferRequest request) {
+        return DtsClient.executeRequest(client.createTransfer(toDtsRequest(request))).getPayload();
+    }
+
+    private DtsCreateTransferRequest toDtsRequest(final CreateDtsTransferRequest request) {
+        final DtsPipelineCredentials credentials = getTransferStorageItemCredentials();
+        final DtsCreateTransferRequest dtsRequest = new DtsCreateTransferRequest();
+        dtsRequest.setSource(toStorageItem(request.getSource(), credentials));
+        dtsRequest.setDestination(toStorageItem(request.getDestination(), credentials));
+        return dtsRequest;
+    }
+
+    private DtsTaskStorageItem toStorageItem(final CreateDtsTransferRequestStorageItem item,
+                                             final DtsPipelineCredentials credentials) {
+        final DtsTaskStorageItem source = new DtsTaskStorageItem();
         source.setPath(item.getPath());
         source.setType(item.getType());
         source.setCredentials(credentials);
@@ -111,4 +127,5 @@ public class DtsTransferManager {
     private String getApiToken() {
         return authManager.issueTokenForCurrentUser().getToken();
     }
+
 }

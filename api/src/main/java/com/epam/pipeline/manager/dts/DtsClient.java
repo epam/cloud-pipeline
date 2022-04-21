@@ -20,9 +20,11 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
 import com.epam.pipeline.entity.dts.DtsDataStorageListingRequest;
+import com.epam.pipeline.entity.dts.DtsDeletion;
+import com.epam.pipeline.entity.dts.DtsCreateDeletionRequest;
 import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.entity.dts.DtsTransfer;
-import com.epam.pipeline.entity.dts.DtsTransferCreation;
+import com.epam.pipeline.entity.dts.DtsCreateTransferRequest;
 import com.epam.pipeline.exception.DtsRequestException;
 import retrofit2.Call;
 import retrofit2.Response;
@@ -55,10 +57,16 @@ public interface DtsClient {
     Call<Result<DtsSubmission>> stopSubmission(@Query("runId") Long runId);
 
     @POST("transfer")
-    Call<Result<DtsTransfer>> createTransfer(@Body DtsTransferCreation transfer);
+    Call<Result<DtsTransfer>> createTransfer(@Body DtsCreateTransferRequest transfer);
 
     @GET("transfer")
     Call<Result<List<DtsTransfer>>> findTransfers();
+
+    @POST("delete")
+    Call<Result<DtsDeletion>> createDeletion(@Body DtsCreateDeletionRequest transfer);
+
+    @GET("delete")
+    Call<Result<List<DtsDeletion>>> findDeletions();
 
     static  <T> T executeRequest(Call<T> request) {
         try {

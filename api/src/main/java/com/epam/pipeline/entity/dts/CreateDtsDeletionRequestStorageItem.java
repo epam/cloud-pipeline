@@ -3,7 +3,7 @@ package com.epam.pipeline.entity.dts;
 import lombok.Value;
 
 @Value
-public class CreateDtsTransferRequestStorageItem {
+public class CreateDtsDeletionRequestStorageItem {
     String path;
     DtsTaskStorageType type;
 }

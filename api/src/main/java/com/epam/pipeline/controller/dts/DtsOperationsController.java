@@ -19,9 +19,11 @@ package com.epam.pipeline.controller.dts;
 import com.epam.pipeline.acl.dts.DtsOperationsApiService;
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.dts.CreateDtsDeletionRequest;
 import com.epam.pipeline.entity.dts.CreateDtsTransferRequest;
 import com.epam.pipeline.entity.dts.DtsClusterConfiguration;
 import com.epam.pipeline.entity.dts.DtsDataStorageListing;
+import com.epam.pipeline.entity.dts.DtsDeletion;
 import com.epam.pipeline.entity.dts.DtsSubmission;
 import com.epam.pipeline.entity.dts.DtsTransfer;
 import io.swagger.annotations.Api;
@@ -92,6 +94,37 @@ public class DtsOperationsController extends AbstractRestController {
     public Result<DtsTransfer> createTransfer(@PathVariable Long dtsId,
                                               @RequestBody CreateDtsTransferRequest request) {
         return Result.success(dtsOperationsApiService.createTransfer(dtsId, request));
+    }
+
+    @GetMapping(value = "/delete")
+    @ApiOperation(
+            value = "Returns DTS deletions by DTS registry ID.",
+            notes = "Returns DTS deletions by DTS registry ID.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<DtsDeletion>> findDeletions() {
+        return Result.success(dtsOperationsApiService.findDeletions());
+    }
+
+    @GetMapping(value = "/delete/{dtsId}")
+    @ApiOperation(
+            value = "Returns DTS deletions by DTS registry ID.",
+            notes = "Returns DTS deletions by DTS registry ID.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<List<DtsDeletion>> findDeletions(@PathVariable Long dtsId) {
+        return Result.success(dtsOperationsApiService.findDeletions(dtsId));
+    }
+
+    @PostMapping(value = "/delete/{dtsId}")
+    @ApiOperation(
+            value = "Create DTS deletion.",
+            notes = "Create DTS deletion.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<DtsDeletion> createDeletion(@PathVariable Long dtsId,
+                                              @RequestBody CreateDtsDeletionRequest request) {
+        return Result.success(dtsOperationsApiService.createDeletion(dtsId, request));
     }
 
     @GetMapping(value = "/{dtsId}/submission")

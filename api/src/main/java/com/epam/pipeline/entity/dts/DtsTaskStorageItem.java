@@ -9,8 +9,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DtsTransferStorageItem {
+public class DtsTaskStorageItem {
     private String path;
-    private DtsTransferStorageType type;
+    private DtsTaskStorageType type;
     private DtsPipelineCredentials credentials;
 }

@@ -12,14 +12,14 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DtsTransfer {
+public class DtsDeletion {
     private Long id;
     private Long dtsId;
-    private DtsTaskStorageItem source;
-    private DtsTaskStorageItem destination;
+    private DtsTaskStorageItem target;
     private DtsTaskStatus status;
     private String reason;
     private LocalDateTime created;
+    private LocalDateTime scheduled;
     private LocalDateTime started;
     private LocalDateTime finished;
     private List<String> included;

@@ -1,6 +1,6 @@
 package com.epam.pipeline.entity.dts;
 
-public enum DtsTransferStorageType {
+public enum DtsTaskStorageType {
 
     /**
      * Local storage.
