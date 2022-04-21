@@ -1,0 +1,27 @@
+.circle-container {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+  height: 100%;
+}
+
+.bar-value {
+  text-align: center;
+  color:black;
+}
+.quota-value-text {
+  padding-top: 2px;
+  text-align: right;
+}
+
+.actions-divider {
+  margin: 10px 0px;
+}
+
+.tags-container {
+  margin-bottom: 5px;
+}
+
+.tag {
+  height: 20px;
+}

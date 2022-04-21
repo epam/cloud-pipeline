@@ -23,6 +23,7 @@ import {QuotaAction} from './quota-actions';
 import {periodNames} from './quota-periods';
 import {numberFormatter} from '../../reports/utilities';
 import styles from './quota-description.css';
+import QuotaLimitIndicator from './quota-indicator';
 
 function sortActionsByThreshold (a, b) {
   const {threshold: aThreshold} = a;
@@ -49,6 +50,14 @@ function QuotaDescription (
     period = 'MONTH',
     id
   } = quota;
+
+  const actionIsTriggered = (action) => {
+    const currentValue = quota.currentValue || 720;
+    const ratio = currentValue / quota.value;
+    const percent = Math.round(ratio * 100);
+    return percent >= action.threshold;
+  };
+
   const quotaValue = (
     <span className={styles.quotaValue}>
       {numberFormatter(value)}$ per {(periodNames[period] || period).toLowerCase()}
@@ -74,13 +83,14 @@ function QuotaDescription (
       onClick={onClick}
     >
       <div className={styles.description}>
-        <div>
+        <div style={{display: 'flex', alignItems: 'center'}}>
           <QuotaTarget
             addonAfter=":"
             quota={quota}
             roles={roles}
           />
           {quotaValue}
+          <QuotaLimitIndicator quota={quota} />
         </div>
       </div>
       <div className={styles.actionsContainer}>
@@ -90,7 +100,10 @@ function QuotaDescription (
               .sort(sortActionsByThreshold)
               .map((action, index) => (
                 <QuotaAction
-                  className={styles.action}
+                  className={classNames(
+                    styles.action,
+                    {'cp-billing-quota-action-triggered': actionIsTriggered(action)}
+                  )}
                   key={`action-${index}`}
                   action={action}
                   onDelete={onRemoveQuota}

@@ -24,6 +24,7 @@ import {
   Input,
   Dropdown,
   Card,
+  Collapse,
   Icon,
   Button,
   message,
@@ -44,6 +45,10 @@ import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
 import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
+import BillingQuotasList from '../../../models/billing/quotas/list';
+import quotaTypes from '../../billing/quotas/utilities/quota-types';
+import {quotaGroupNames} from '../../billing/quotas/utilities/quota-groups';
+import {actionNames} from '../../billing/quotas/utilities/quota-actions';
 
 const PAGE_SIZE = 20;
 
@@ -72,7 +77,8 @@ const USERS_FILTERS = {
   usersStore: users,
   authenticatedUserInfo,
   roles: new Roles(),
-  userMetadataKeys
+  userMetadataKeys,
+  quotas: new BillingQuotasList()
 }))
 @observer
 export default class UsersManagement extends React.Component {
@@ -100,6 +106,14 @@ export default class UsersManagement extends React.Component {
   get isReader () {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
+
+  @computed
+  get quotas () {
+    const {quotas} = this.props;
+    return quotas && quotas.loaded
+      ? quotas.value.filter(quota => quota.type === quotaTypes.user)
+      : [];
+  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -454,6 +468,47 @@ export default class UsersManagement extends React.Component {
               </span>
             );
           }
+          const preventOpeningForm = (e) => e.stopPropagation();
+          const renderQuotaInfo = (quota) => (
+            <div>
+              <span>
+                {quotaGroupNames[quota.quotaGroup]}&nbsp;
+                ${quota.value} per {quota.period.toLowerCase()}&#44;&nbsp;
+                {quota.actions.map((item, idx) => {
+                  const isSeveralActions = item.actions && item.actions.length;
+                  return <span key={idx} className="cp-quota-info-text">
+                    {item.threshold}%&nbsp;&#40;
+                    {item.actions.map((a, index) => {
+                      const postfix = (isSeveralActions && index < item.actions.length - 1)
+                        ? ', '
+                        : '';
+                      return actionNames[a] + postfix;
+                    })
+                    }&#x2769;
+                    {idx < quota.actions.length - 1 ? ', ' : ''}
+                  </span>;
+                })}
+              </span>
+            </div>);
+
+          const quota = this.quotas.find(quota => quota.subject === user.userName);
+          const userQuota = quota && quota.actions
+            ? (
+              <div onClick={preventOpeningForm}>
+                <Collapse bordered={false} className={classNames(styles.quotaCollapse, 'cp-quota-collapse')}>
+                  <Collapse.Panel
+                    header="Billing quotas exceeded"
+                    key="quota"
+                    className={classNames(
+                      styles.quotaCollapsePanel,
+                      'cp-quota-collapse-panel'
+                    )}>
+                    {renderQuotaInfo(quota)}
+                  </Collapse.Panel>
+                </Collapse>
+              </div>)
+            : null;
+
           const userStatus = this.isAdmin
             ? (
               <Tooltip
@@ -496,6 +551,7 @@ export default class UsersManagement extends React.Component {
                   >
                     {attributesString}
                   </span>
+                  {userQuota}
                 </Row>
               </Row>
             );
@@ -681,10 +737,12 @@ export default class UsersManagement extends React.Component {
   }
 
   componentDidMount () {
+    this.props.quotas.fetchIfNeededOrWait();
     this.props.users.fetch();
   }
 
   componentWillUnmount () {
+    this.props.quotas.invalidateCache();
     this.props.usersStore.fetch();
   }
 }

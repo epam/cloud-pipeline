@@ -111,3 +111,37 @@
   stroke: @color-grey;
   fill: transparent;
 }
+
+.cp-quota-collapse > .cp-quota-collapse-panel > .ant-collapse-header {
+  background-color: transparent;
+  color: @color-warning;;
+  padding: 0px 0px 0px 20px;
+  display: flex;
+  align-items: center;
+  line-height: 1rem;
+  font-size: 0.8rem;
+  border: none;
+}
+
+.cp-quota-collapse > .cp-quota-collapse-panel > .ant-collapse-header > i.arrow  {
+  left: 5px;
+  bottom: 0px;
+  color:  @color-warning;;
+  height: 1rem;
+  line-height: 1rem;
+}
+
+.cp-quota-collapse > .cp-quota-collapse-panel > .ant-collapse-header:hover {
+  color: fadeout(@color-warning, 50%);
+  background-color: transparent;
+  cursor: pointer;
+}
+
+.cp-quota-collapse > .cp-quota-collapse-panel,
+.cp-quota-collapse > .cp-quota-collapse-panel > .ant-collapse-content.ant-collapse-content-active {
+  border: none;
+}
+
+.cp-quota-info-text {
+  color: @color-warning;
+}

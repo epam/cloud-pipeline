@@ -52,6 +52,7 @@ export default {
     '@color-pink-light': '#fef0ef',
     '@color-blue-dimmed': '#458',
     '@color-grey': '#777',
+    '@color-grey-semi-transparent': 'fadeout(@color-grey, 90%)',
     '@spinner': '@primary-color',
     '@element-hover-color': '@application-color',
     '@element-hover-background-color': '#ecf6fd',
