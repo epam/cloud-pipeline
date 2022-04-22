@@ -40,7 +40,8 @@ public class TaskServiceImpl implements TaskService {
     public TransferTask createTask(@NonNull StorageItem source,
                                    @NonNull StorageItem destination,
                                    List<String> included,
-                                   String user) {
+                                   String user,
+                                   boolean deleteSource) {
         TransferTask transferTask = TransferTask.builder()
                 .source(source)
                 .destination(destination)
@@ -49,6 +50,7 @@ public class TaskServiceImpl implements TaskService {
                 .reason("New transfer task created")
                 .included(included)
                 .user(user)
+                .deleteSource(deleteSource)
                 .build();
         return taskRepository.save(transferTask);
     }

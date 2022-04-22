@@ -97,9 +97,13 @@ class CloudPipelineThemes {
     this.listeners = [];
     (this.initialize)();
     if (window.matchMedia) {
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-        this.applyTheme();
-      });
+      const matchMedia = window.matchMedia('(prefers-color-scheme: dark)');
+      if (matchMedia && typeof matchMedia.addEventListener === 'function') {
+        matchMedia.addEventListener('change', this.applyTheme.bind(this));
+      } else if (matchMedia && typeof matchMedia.addListener === 'function') {
+        // IE support
+        matchMedia.addListener(this.applyTheme.bind(this));
+      }
     }
     if (DEBUG) {
       window.addEventListener('keydown', e => {

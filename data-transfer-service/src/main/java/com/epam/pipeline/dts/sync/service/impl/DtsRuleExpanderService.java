@@ -111,7 +111,8 @@ public class DtsRuleExpanderService {
             .map(trigger -> searchForGivenTrigger(syncSource, trigger))
             .flatMap(Collection::stream)
             .map(absolutePath -> buildNestedDirRelativePath(syncSource, absolutePath))
-            .map(relativePath -> buildRelativeSyncRule(syncSource, syncDestination, relativePath))
+            .map(relativePath -> buildRelativeSyncRule(syncSource, syncDestination, relativePath,
+                                                       syncRule.getDeleteSource()))
             .map(rule -> new AbstractMap.SimpleEntry<>(rule, cronDetails));
     }
 
@@ -122,13 +123,13 @@ public class DtsRuleExpanderService {
     }
 
     private AutonomousSyncRule buildRelativeSyncRule(final String syncSourceRoot, final String syncDestinationRoot,
-                                                     final String relativePath) {
+                                                     final String relativePath, final Boolean deleteSource) {
         final String syncSource = Paths.get(syncSourceRoot, relativePath).toString();
         final String syncDestination = Optional.of(relativePath)
             .filter(StringUtils::isNotBlank)
             .map(suffix -> String.join(SYNC_DEST_DELIMITER, syncDestinationRoot, suffix))
             .orElse(syncDestinationRoot);
-        return new AutonomousSyncRule(syncSource, syncDestination, null, null);
+        return new AutonomousSyncRule(syncSource, syncDestination, null, deleteSource, null);
     }
 
     private List<String> searchForGivenTrigger(final String dirPath, final TransferTrigger transferTrigger) {

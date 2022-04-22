@@ -34,21 +34,25 @@ public abstract class AbstractPipeCliDataUploader extends AbstractDataUploader {
     public void upload(final StorageItem source,
                        final StorageItem destination,
                        final List<String> included,
-                       final String username) {
+                       final String username,
+                       final boolean deleteSource) {
         final PipelineCredentials credentials = PipelineCredentials.from(destination.getCredentials());
         final PipelineCLI pipelineCLI =
                 pipelineCliProvider.getPipelineCLI(credentials.getApi(), credentials.getApiToken());
-        pipelineCLI.uploadData(source.getPath(), destination.getPath(), included, username);
+        pipelineCLI.uploadData(source.getPath(), destination.getPath(), included, username,
+                deleteSource);
     }
 
     @Override
     public void download(final StorageItem source,
                          final StorageItem destination,
                          final List<String> included,
-                         final String username) {
+                         final String username,
+                         final boolean deleteSource) {
         final PipelineCredentials credentials = PipelineCredentials.from(source.getCredentials());
         final PipelineCLI pipelineCLI =
                 pipelineCliProvider.getPipelineCLI(credentials.getApi(), credentials.getApiToken());
-        pipelineCLI.downloadData(source.getPath(), destination.getPath(), included, username);
+        pipelineCLI.downloadData(source.getPath(), destination.getPath(), included, username,
+                deleteSource);
     }
 }

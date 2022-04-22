@@ -25,10 +25,11 @@ import java.util.List;
 @Value
 public class AutonomousSyncRule {
 
-    private String source;
-    private String destination;
-    private String cron;
-    private List<TransferTrigger> transferTriggers;
+    String source;
+    String destination;
+    String cron;
+    Boolean deleteSource;
+    List<TransferTrigger> transferTriggers;
 
     public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
         return StringUtils.equals(source, anotherRule.getSource())

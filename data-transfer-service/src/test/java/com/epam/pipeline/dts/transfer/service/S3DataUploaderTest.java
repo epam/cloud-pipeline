@@ -102,7 +102,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull());
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull(), eq(false));
     }
 
     @Test
@@ -112,7 +112,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).downloadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull());
+        verify(pipelineCli).downloadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull(), eq(false));
     }
 
     @Test
@@ -136,7 +136,7 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(taskOf(source, destination));
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull());
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), any(), isNull(), eq(false));
     }
 
     @Test
@@ -154,7 +154,8 @@ public class S3DataUploaderTest extends AbstractTransferTest {
 
         dataUploader.transfer(transferTask);
 
-        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), eq(included), eq(username));
+        verify(pipelineCli).uploadData(eq(source.getPath()), eq(destination.getPath()), eq(included), eq(username),
+                                       eq(false));
     }
 
     private StorageItem existingLocalItem() {
