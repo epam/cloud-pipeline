@@ -136,6 +136,7 @@ jacocoTestReport {
 
 def jreURL = "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/"
 def windowsJre = "OpenJDK8U-jre_x64_windows_hotspot_8u292b10.zip"
+def linuxJre = "openjdk-1.8.0_222_linux-x64_bin.tar.gz"
 def windowsJrePath = "jdk8u292-b10-jre"
 
 task customStartScriptsWin(type: CreateStartScripts) {
