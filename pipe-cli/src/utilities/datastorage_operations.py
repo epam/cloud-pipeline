@@ -38,6 +38,8 @@ from src.utilities.storage.umount import Umount
 
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
+DEFAULT_BATCH_SIZE = 1000
+BATCH_SIZE = os.getenv('CP_CLI_STORAGE_LIST', DEFAULT_BATCH_SIZE)
 
 
 class DataStorageOperations(object):
@@ -97,8 +99,47 @@ class DataStorageOperations(object):
         command = 'mv' if clean else 'cp'
         permission_to_check = os.R_OK if command == 'cp' else os.W_OK
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
-        items = files_to_copy if file_list else source_wrapper.get_items()
-        items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
+
+        if verify_destination or file_list or not source_wrapper.get_type() == WrapperType.S3:
+            items = files_to_copy if file_list else source_wrapper.get_items()
+            cls._transfer(source_wrapper, destination_wrapper, items, manager, permission_to_check, include, exclude,
+                          force, quiet, skip_existing, verify_destination, threads, clean, tags, io_threads)
+        else:
+            items_batch, next_token = source_wrapper.get_paging_items(start_token=None, page_size=BATCH_SIZE)
+            cls._transfer_batch_items(source_wrapper, destination_wrapper, items_batch, manager, permission_to_check,
+                                      include, exclude, force, quiet, skip_existing, verify_destination, threads,
+                                      clean, tags, io_threads, next_token)
+
+    @classmethod
+    def _transfer_batch_items(cls, source_wrapper, destination_wrapper, items_batch, manager, permission_to_check,
+                              include, exclude, force, quiet, skip_existing, verify_destination, threads, clean, tags,
+                              io_threads, next_token):
+        while True:
+            transfer_process = multiprocessing.Process(target=cls._transfer,
+                                                       args=(source_wrapper, destination_wrapper, items_batch,
+                                                             manager, permission_to_check, include,
+                                                             exclude, force, quiet, skip_existing,
+                                                             verify_destination, threads, clean, tags, io_threads))
+            if not next_token:
+                transfer_process.start()
+                cls._handle_keyboard_interrupt([transfer_process])
+                return
+            listing_results = multiprocessing.Queue()
+
+            def get_paging_items():
+                listing_results.put(source_wrapper.get_paging_items(next_token, BATCH_SIZE))
+
+            listing_process = multiprocessing.Process(target=get_paging_items)
+            transfer_process.start()
+            listing_process.start()
+            cls._handle_keyboard_interrupt([transfer_process, listing_process])
+            items_batch, next_token = listing_results.get()
+
+    @classmethod
+    def _transfer(cls, source_wrapper, destination_wrapper, items_part, manager, permission_to_check,
+                  include, exclude, force, quiet, skip_existing, verify_destination, threads,
+                  clean, tags, io_threads):
+        items = cls._filter_items(items_part, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination)
         sorted_items = list()
         transfer_results = []
@@ -213,7 +254,8 @@ class DataStorageOperations(object):
 
         manager = source_wrapper.get_delete_manager(versioning=version or hard_delete)
         manager.delete_items(source_wrapper.path, version=version, hard_delete=hard_delete,
-                             exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file())
+                             exclude=exclude, include=include, recursive=recursive and not source_wrapper.is_file(),
+                             page_size=BATCH_SIZE)
         click.echo(' done.')
 
     @classmethod
@@ -421,11 +463,18 @@ class DataStorageOperations(object):
                                       show_versions=False, show_all=False, show_extended=False):
 
         items = []
-        header = None
+        next_page_token = None
+        manager = None
+        paging_allowed = recursive and not page_size and not show_versions and bucket_model is not None \
+                         and bucket_model.type == WrapperType.S3
         if bucket_model is not None:
             wrapper = DataStorageWrapper.get_cloud_wrapper_for_bucket(bucket_model, relative_path)
             manager = wrapper.get_list_manager(show_versions=show_versions)
-            items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
+            if paging_allowed:
+                items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
+                                                                   page_size=BATCH_SIZE, start_token=None)
+            else:
+                items = manager.list_items(relative_path, recursive=recursive, page_size=page_size, show_all=show_all)
         else:
             hidden_object_manager = HiddenObjectManager()
             # If no argument is specified - list brief details of all buckets
@@ -435,22 +484,31 @@ class DataStorageOperations(object):
                 click.echo("No datastorages available.")
                 sys.exit(0)
 
-        if recursive and header is not None:
-            click.echo(header)
+        items_table = cls.__init_items_table(show_versions, show_extended, items)
+        cls.__print_items(bucket_model, items, show_details, items_table, show_extended, show_versions)
 
+        if not next_page_token:
+            click.echo()
+            return
+
+        cls.__print_paging_storage_contents(manager, bucket_model, items_table, relative_path,
+                                            recursive, show_details, next_page_token, show_versions)
+
+    @classmethod
+    def __print_paging_storage_contents(cls, manager, bucket_model, items_table, relative_path,
+                                        recursive, show_details, next_page_token, show_versions):
+        items_table.header = False
+        while True:
+            items, next_page_token = manager.list_paging_items(relative_path=relative_path, recursive=recursive,
+                                                               page_size=BATCH_SIZE, start_token=next_page_token)
+            cls.__print_items(bucket_model, items, show_details, items_table, False, show_versions)
+            if not next_page_token:
+                click.echo()
+                return
+
+    @classmethod
+    def __print_items(cls, bucket_model, items, show_details, items_table, show_extended, show_versions=False):
         if show_details:
-            items_table = prettytable.PrettyTable()
-            fields = ["Type", "Labels", "Modified", "Size", "Name"]
-            if show_versions:
-                fields.append("Version")
-            if show_extended:
-                fields.extend(["Mount status", "Mount limits", "Metadata"])
-                cls.assign_metadata_to_items(items)
-            items_table.field_names = fields
-            items_table.align = "l"
-            items_table.border = False
-            items_table.padding_width = 2
-            items_table.align['Size'] = 'r'
             for item in items:
                 name = item.name
                 changed = ''
@@ -490,15 +548,31 @@ class DataStorageOperations(object):
                         version_label = "{} (latest)".format(version.version) if version.latest else version.version
                         labels = STORAGE_DETAILS_SEPARATOR.join(map(lambda i: i.value, version.labels))
                         size = '' if version.size is None else version.size
-                        row = [version_type, labels, version.changed.strftime('%Y-%m-%d %H:%M:%S'), size, name, version_label]
+                        row = [version_type, labels, version.changed.strftime('%Y-%m-%d %H:%M:%S'), size, name,
+                               version_label]
                         items_table.add_row(row)
 
             click.echo(items_table)
-            click.echo()
+            items_table.clear_rows()
         else:
             for item in items:
                 click.echo('{}\t\t'.format(item.path), nl=False)
-            click.echo()
+
+    @classmethod
+    def __init_items_table(cls, show_versions,  show_extended, items):
+        items_table = prettytable.PrettyTable()
+        fields = ["Type", "Labels", "Modified", "Size", "Name"]
+        if show_versions:
+            fields.append("Version")
+        if show_extended:
+            fields.extend(["Mount status", "Mount limits", "Metadata"])
+            cls.assign_metadata_to_items(items)
+        items_table.field_names = fields
+        items_table.align = "l"
+        items_table.border = False
+        items_table.padding_width = 2
+        items_table.align['Size'] = 'r'
+        return items_table
 
     @classmethod
     def assign_metadata_to_items(cls, items):

@@ -88,6 +88,13 @@ class AzureListingManager(AzureManager, AbstractListingManager):
         absolute_items = [self._to_storage_item(blob) for blob in blobs_generator]
         return absolute_items if recursive else [self._to_local_item(item, prefix) for item in absolute_items]
 
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None):
+        return self.list_items(relative_path, recursive, page_size, show_all=False), None
+
+    def get_paging_items(self, relative_path, start_token, page_size):
+        return self.get_items(relative_path), None
+
     def get_summary(self, relative_path=None):
         prefix = StorageOperations.get_prefix(relative_path)
         blobs_generator = self.service.list_blobs(self.bucket.path,
@@ -146,7 +153,8 @@ class AzureDeleteManager(AzureManager, AbstractDeleteManager):
         self.delimiter = StorageOperations.PATH_SEPARATOR
         self.listing_manager = AzureListingManager(self.service, self.bucket)
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=None):
         if version or hard_delete:
             raise RuntimeError('Versioning is not supported by AZURE cloud provider')
         prefix = StorageOperations.get_prefix(relative_path)

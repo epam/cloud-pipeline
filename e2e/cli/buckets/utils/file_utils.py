@@ -23,6 +23,7 @@ class TestFiles(object):
     TEST_FILE1 = "test_file.txt"
     TEST_FILE_WITH_OTHER_EXTENSION = "test_file.json"
     TEST_FILE2 = "test_file2.txt"
+    TEST_FILE3 = "test_file3.txt"
     TEST_FOLDER = "test_folder/"
     TEST_FOLDER_FOR_OUTPUT = "test_folder_outputs/"
     TEST_FOLDER2 = "other/"

@@ -31,6 +31,7 @@ class TestCopyWithFolders(object):
     test_file_1 = "cp-folders-" + TestFiles.TEST_FILE1
     test_file_with_other_extension = "cp-folders-" + TestFiles.TEST_FILE_WITH_OTHER_EXTENSION
     test_file_2 = "cp-folders-" + TestFiles.TEST_FILE2
+    test_file_3 = "cp-folders-" + TestFiles.TEST_FILE3
     test_folder = "cp-folders-" + TestFiles.TEST_FOLDER
     test_folder_2 = "cp-folders-" + TestFiles.TEST_FOLDER2
     test_folder_structure = "cp-folders-structure"
@@ -49,6 +50,8 @@ class TestCopyWithFolders(object):
         create_test_file(os.path.abspath(cls.test_file_1), TestFiles.DEFAULT_CONTENT)
         # ./test_folder/test_file.txt
         create_test_file(os.path.abspath(cls.test_folder + cls.test_file_1), TestFiles.DEFAULT_CONTENT)
+        # ./test_folder/test_file2.txt
+        create_test_file(os.path.abspath(cls.test_folder + cls.test_file_2), TestFiles.DEFAULT_CONTENT)
         # ./test_folder/test_file.json
         create_test_file(os.path.abspath(cls.test_folder + cls.test_file_with_other_extension),
                          TestFiles.DEFAULT_CONTENT)
@@ -57,8 +60,13 @@ class TestCopyWithFolders(object):
                          TestFiles.DEFAULT_CONTENT)
         # ./test_file2.txt
         create_test_file(os.path.abspath(cls.test_file_2), TestFiles.COPY_CONTENT)
+        # ./test_file3.txt
+        create_test_file(os.path.abspath(cls.test_file_3), TestFiles.COPY_CONTENT)
         # ~/test_cp_home_dir/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_file_1),
+                         TestFiles.DEFAULT_CONTENT)
+        # ~/test_cp_home_dir/test_file2.txt
+        create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_file_2),
                          TestFiles.DEFAULT_CONTENT)
         # ~/test_cp_home_dir/other/test_file.txt
         create_test_file(os.path.join(os.path.expanduser('~'), cls.home_dir, cls.test_folder,
@@ -83,6 +91,7 @@ class TestCopyWithFolders(object):
         delete_buckets(cls.bucket_name, cls.other_bucket_name)
         clean_test_data(os.path.abspath(cls.test_file_1))
         clean_test_data(os.path.abspath(cls.test_file_2))
+        clean_test_data(os.path.abspath(cls.test_file_3))
         clean_test_data(os.path.abspath(cls.test_folder))
         clean_test_data(os.path.abspath(cls.output_folder))
         clean_test_data(os.path.join(os.path.expanduser('~'), cls.home_dir))
@@ -112,6 +121,7 @@ class TestCopyWithFolders(object):
         if force:
             create_test_files_on_bucket(os.path.abspath(self.test_file_2), self.bucket_name,
                                         os.path.join(test_case, self.test_file_1),
+                                        os.path.join(test_case, self.test_file_2),
                                         os.path.join(test_case, self.test_folder, self.test_file_1))
         if source.startswith("~"):
             source_to_check = os.path.join(os.path.expanduser('~'), source.strip("~/"))
@@ -119,13 +129,18 @@ class TestCopyWithFolders(object):
             source_to_check = source
         if switch_dir:
             dir_path = os.path.abspath(os.path.join(self.checkout_dir))
-            create_test_files(TestFiles.DEFAULT_CONTENT, os.path.join(dir_path, self.test_file_1),
+            create_test_files(TestFiles.DEFAULT_CONTENT,
+                              os.path.join(dir_path, self.test_file_1),
+                              os.path.join(dir_path, self.test_file_2),
                               os.path.join(dir_path, self.test_folder, self.test_file_1))
             os.chdir(dir_path)
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_cp(source, destination, force=force, recursive=True)
         assert_copied_object_info(ObjectInfo(True).build(os.path.join(source_to_check, self.test_file_1)),
                                   ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_1)),
+                                  test_case)
+        assert_copied_object_info(ObjectInfo(True).build(os.path.join(source_to_check, self.test_file_2)),
+                                  ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_2)),
                                   test_case)
         assert_copied_object_info(ObjectInfo(True).build(os.path.join(source_to_check, self.test_folder,
                                                                       self.test_file_1)),
@@ -156,6 +171,9 @@ class TestCopyWithFolders(object):
             create_test_file(destination + self.test_file_1, TestFiles.COPY_CONTENT)
             assert os.path.exists(destination + self.test_file_1), \
                 "Test file {} does not exist".format(destination + self.test_file_1)
+            create_test_file(destination + self.test_file_2, TestFiles.COPY_CONTENT)
+            assert os.path.exists(destination + self.test_file_2), \
+                "Test file {} does not exist".format(destination + self.test_file_2)
             create_test_file(destination + self.test_folder + self.test_file_1, TestFiles.COPY_CONTENT)
             assert os.path.exists(destination + self.test_folder + self.test_file_1), \
                 "Test file {} does not exist".format(destination + self.test_folder + self.test_file_1)
@@ -172,6 +190,10 @@ class TestCopyWithFolders(object):
         assert_copied_object_info(ObjectInfo(False).build(self.bucket_name,
                                                           "{}/{}".format(test_case, self.test_file_1)),
                                   ObjectInfo(True).build(os.path.join(destination_to_check, self.test_file_1)),
+                                  test_case)
+        assert_copied_object_info(ObjectInfo(False).build(self.bucket_name,
+                                                          "{}/{}".format(test_case, self.test_file_2)),
+                                  ObjectInfo(True).build(os.path.join(destination_to_check, self.test_file_2)),
                                   test_case)
         assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, "{}/{}".format(
             test_case, self.test_folder + self.test_file_1)),
@@ -197,12 +219,16 @@ class TestCopyWithFolders(object):
         if force:
             create_test_files_on_bucket(os.path.abspath(self.test_file_2), self.other_bucket_name,
                                         os.path.join(test_case, self.test_file_1),
+                                        os.path.join(test_case, self.test_file_2),
                                         os.path.join(test_case, self.test_folder, self.test_file_1))
         logging.info("Ready to perform operation from {} to {}".format(source, destination))
         pipe_storage_cp(source, destination, force=force, recursive=True)
         assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_1)),
                                   ObjectInfo(False).build(self.other_bucket_name,
                                                           os.path.join(test_case, self.test_file_1)), test_case)
+        assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, os.path.join(test_case, self.test_file_2)),
+                                  ObjectInfo(False).build(self.other_bucket_name,
+                                                          os.path.join(test_case, self.test_file_2)), test_case)
         assert_copied_object_info(ObjectInfo(False).build(self.bucket_name, os.path.join(
             test_case, self.test_folder, self.test_file_1)),
                                   ObjectInfo(False).build(self.other_bucket_name, os.path.join(
@@ -645,6 +671,7 @@ class TestCopyWithFolders(object):
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination1 = os.path.join(destination_folder, self.test_file_1)
         destination2 = os.path.join(destination_folder, self.test_file_2)
+        destination3 = os.path.join(destination_folder, self.test_file_3)
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         try:
             create_test_file(destination1, TestFiles.DEFAULT_CONTENT)
@@ -652,12 +679,15 @@ class TestCopyWithFolders(object):
 
             pipe_storage_cp(os.path.abspath(self.test_file_1), source_folder)
             pipe_storage_cp(os.path.abspath(self.test_file_2), source_folder)
+            pipe_storage_cp(os.path.abspath(self.test_file_3), source_folder)
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
 
             pipe_storage_cp(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert os.path.exists(destination1)
             assert os.path.exists(destination2)
+            assert os.path.exists(destination3)
             actual = ObjectInfo(True).build(destination1)
             assert expected.size == actual.size, \
                 "Sizes must be the same.\nExpected %s\nActual %s" % (expected.size, actual.size)
@@ -674,6 +704,7 @@ class TestCopyWithFolders(object):
         destination_folder = os.path.abspath(os.path.join(self.output_folder, case))
         destination1 = os.path.join(destination_folder, self.test_file_1)
         destination2 = os.path.join(destination_folder, self.test_file_2)
+        destination3 = os.path.join(destination_folder, self.test_file_3)
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         try:
             create_test_file(destination1, TestFiles.COPY_CONTENT)
@@ -681,12 +712,15 @@ class TestCopyWithFolders(object):
 
             pipe_storage_cp(os.path.abspath(self.test_file_1), source_folder)
             pipe_storage_cp(os.path.abspath(self.test_file_2), source_folder)
+            pipe_storage_cp(os.path.abspath(self.test_file_3), source_folder)
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_1))
             assert object_exists(self.bucket_name, os.path.join(case, self.test_file_2))
+            assert object_exists(self.bucket_name, os.path.join(case, self.test_file_3))
 
             pipe_storage_cp(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert os.path.exists(destination1)
             assert os.path.exists(destination2)
+            assert os.path.exists(destination3)
             actual = ObjectInfo(True).build(destination1)
             assert not expected.size == actual.size, "Sizes must be the different."
             assert not expected.last_modified == actual.last_modified, \
@@ -702,17 +736,21 @@ class TestCopyWithFolders(object):
         destination_folder = "cp://%s/%s/" % (self.other_bucket_name, case)
         key1 = os.path.join(case, self.test_file_1)
         key2 = os.path.join(case, self.test_file_2)
+        key3 = os.path.join(case, self.test_file_3)
         try:
             expected = create_file_on_bucket(self.other_bucket_name, key1, os.path.abspath(self.test_file_1))
 
             pipe_storage_cp(os.path.abspath(self.test_file_1), "cp://%s/%s" % (self.bucket_name, key1))
             pipe_storage_cp(os.path.abspath(self.test_file_2), "cp://%s/%s" % (self.bucket_name, key2))
+            pipe_storage_cp(os.path.abspath(self.test_file_3), "cp://%s/%s" % (self.bucket_name, key3))
             assert object_exists(self.bucket_name, key1)
             assert object_exists(self.bucket_name, key2)
+            assert object_exists(self.bucket_name, key3)
 
             pipe_storage_cp(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert object_exists(self.other_bucket_name, key1)
             assert object_exists(self.other_bucket_name, key2)
+            assert object_exists(self.other_bucket_name, key3)
             actual = ObjectInfo(False).build(self.other_bucket_name, key1)
             assert expected.size == actual.size, \
                 "Sizes must be the same.\nExpected %s\nActual %s" % (expected.size, actual.size)
@@ -728,6 +766,7 @@ class TestCopyWithFolders(object):
         case = "TC-PIPE-STORAGE-109"
         key1 = os.path.join(case, self.test_file_1)
         key2 = os.path.join(case, self.test_file_2)
+        key3 = os.path.join(case, self.test_file_3)
         source_folder = "cp://%s/%s/" % (self.bucket_name, case)
         destination_folder = "cp://%s/%s/" % (self.other_bucket_name, case)
         try:
@@ -735,12 +774,15 @@ class TestCopyWithFolders(object):
 
             pipe_storage_cp(os.path.abspath(self.test_file_1), "cp://%s/%s" % (self.bucket_name, key1))
             pipe_storage_cp(os.path.abspath(self.test_file_2), "cp://%s/%s" % (self.bucket_name, key2))
+            pipe_storage_cp(os.path.abspath(self.test_file_3), "cp://%s/%s" % (self.bucket_name, key3))
             assert object_exists(self.bucket_name, key1)
             assert object_exists(self.bucket_name, key2)
+            assert object_exists(self.bucket_name, key3)
 
             pipe_storage_cp(source_folder, destination_folder, force=True, recursive=True, skip_existing=True)
             assert object_exists(self.other_bucket_name, key1)
             assert object_exists(self.other_bucket_name, key2)
+            assert object_exists(self.other_bucket_name, key3)
             actual = ObjectInfo(False).build(self.other_bucket_name, key1)
             assert not expected.size == actual.size, "Sizes must be the different."
             assert not expected.last_modified == actual.last_modified, \

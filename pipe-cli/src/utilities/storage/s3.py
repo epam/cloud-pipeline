@@ -517,7 +517,8 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         super(DeleteManager, self).__init__(session, region_name=region_name)
         self.bucket = bucket
 
-    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False):
+    def delete_items(self, relative_path, recursive=False, exclude=[], include=[], version=None, hard_delete=False,
+                     page_size=StorageOperations.DEFAULT_PAGE_SIZE):
         client = self._get_client()
         delimiter = S3BucketOperations.S3_PATH_SEPARATOR
         bucket = self.bucket.bucket.path
@@ -552,7 +553,10 @@ class DeleteManager(StorageItemManager, AbstractDeleteManager):
         else:
             operation_parameters = {
                 'Bucket': bucket,
-                'Prefix': prefix
+                'Prefix': prefix,
+                'PaginationConfig': {
+                    'PageSize': page_size
+                }
             }
             if hard_delete:
                 paginator = client.get_paginator('list_object_versions')
@@ -624,6 +628,22 @@ class ListingManager(StorageItemManager, AbstractListingManager):
             return self.list_versions(client, prefix, operation_parameters, recursive, page_size)
         else:
             return self.list_objects(client, prefix, operation_parameters, recursive, page_size)
+
+    def list_paging_items(self, relative_path=None, recursive=False, page_size=StorageOperations.DEFAULT_PAGE_SIZE,
+                          start_token=None):
+        delimiter = S3BucketOperations.S3_PATH_SEPARATOR
+        client = self._get_client()
+        operation_parameters = {
+            'Bucket': self.bucket.bucket.path,
+            'PaginationConfig': {
+                'PageSize': page_size
+            }
+        }
+        prefix = S3BucketOperations.get_prefix(delimiter, relative_path)
+        if relative_path:
+            operation_parameters['Prefix'] = prefix
+
+        return self.list_paging_objects(client, prefix, operation_parameters, recursive, start_token)
 
     def get_summary_with_depth(self, max_depth, relative_path=None):
         bucket_name = self.bucket.bucket.path
@@ -757,6 +777,26 @@ class ListingManager(StorageItemManager, AbstractListingManager):
                 break
         return items
 
+    def list_paging_objects(self, client, prefix, operation_parameters, recursive, start_token):
+        if start_token:
+            operation_parameters['ContinuationToken'] = start_token
+
+        paginator = client.get_paginator('list_objects_v2')
+        page_iterator = paginator.paginate(**operation_parameters)
+        items = []
+
+        for page in page_iterator:
+            if 'CommonPrefixes' in page:
+                for folder in page['CommonPrefixes']:
+                    name = S3BucketOperations.get_item_name(folder['Prefix'], prefix=prefix)
+                    items.append(self.get_folder_object(name))
+            if 'Contents' in page:
+                for file in page['Contents']:
+                    name = self.get_file_name(file, prefix, recursive)
+                    item = self.get_file_object(file, name)
+                    items.append(item)
+            return items, page.get('NextContinuationToken', None) if page else None
+
     def get_file_object(self, file, name, version=False, storage_class=True):
         item = DataStorageItemModel()
         item.type = 'File'
@@ -788,6 +828,10 @@ class ListingManager(StorageItemManager, AbstractListingManager):
 
     def get_items(self, relative_path):
         return S3BucketOperations.get_items(self.bucket, session=self.session)
+
+    def get_paging_items(self, relative_path, start_token, page_size):
+        return S3BucketOperations.get_paging_items(self.bucket, page_size=page_size, session=self.session,
+                                                   start_token=start_token)
 
     def get_file_tags(self, relative_path):
         return ObjectTaggingManager.get_object_tagging(ObjectTaggingManager(
@@ -911,6 +955,11 @@ class S3BucketOperations(object):
 
     @classmethod
     def get_items(cls, storage_wrapper, session=None):
+        results, _ = cls.get_paging_items(storage_wrapper, session=session)
+        return results
+
+    @classmethod
+    def get_paging_items(cls, storage_wrapper, page_size=None, session=None, start_token=None):
         if session is None:
             session = cls.assumed_session(storage_wrapper.bucket.identifier, None, 'cp')
 
@@ -923,14 +972,29 @@ class S3BucketOperations(object):
 
         prefix = cls.get_prefix(delimiter, storage_wrapper.path)
         operation_parameters['Prefix'] = prefix
+
+        if page_size:
+            operation_parameters['PaginationConfig'] = {
+                'PageSize': page_size,
+                'MaxKeys': page_size
+            }
+
+        if start_token:
+            operation_parameters['ContinuationToken'] = start_token
+
         page_iterator = paginator.paginate(**operation_parameters)
+        results = []
         for page in page_iterator:
             if 'Contents' in page:
                 for file in page['Contents']:
                     name = cls.get_item_name(file['Key'], prefix=prefix)
                     if name.endswith(delimiter):
                         continue
-                    yield ('File', file['Key'], cls.get_prefix(delimiter, name), file['Size'])
+                    results.append(('File', file['Key'], cls.get_prefix(delimiter, name), file['Size']))
+            next_page_token = page.get('NextContinuationToken', None) if page else None
+            if page_size:
+                return results, next_page_token
+        return results, None
 
     @classmethod
     def path_exists(cls, storage_wrapper, relative_path, session=None):
