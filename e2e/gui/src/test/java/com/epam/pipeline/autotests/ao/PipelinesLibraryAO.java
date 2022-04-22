@@ -230,6 +230,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         $(byId("edit-storage-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
+        sleep(1, SECONDS);
         $(byId("edit-storage-delete-dialog-delete-button")).waitUntil(enabled, C.DEFAULT_TIMEOUT);
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);

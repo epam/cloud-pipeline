@@ -282,6 +282,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public EditStoragePopUpAO clickEditStorageButton() {
+        get(REFRESH).shouldBe(enabled);
         click(EDIT_STORAGE);
         return new EditStoragePopUpAO();
     }
