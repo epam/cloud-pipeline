@@ -67,6 +67,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
                 .ensure(byText(metadataFolder), visible);
         String instanceDate = library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(format("%s [", sampleSetFolder))
                 .validateFields("ID", createDateField, "Name", "Samples")
@@ -99,6 +100,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
     public void checkAnErrorOnDuplicatedMetadataEntitiesIDs() {
         String id = library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(format("%s [", sampleFolder))
                 .getRow(1)
@@ -121,6 +123,7 @@ public class SampleProcessingModuleTest extends AbstractBfxPipelineTest implemen
                 .ensure(byText(metadataFolder), visible);
         library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(format("%s [", sampleFolder))
                 .performForEachRow(sampleRow ->

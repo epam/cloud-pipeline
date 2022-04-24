@@ -160,6 +160,9 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     public MetadataSamplesAO metadataSamples(String metadataFolder) {
         sleep(5, SECONDS);
         $(byId("pipelines-library-tree-container")).shouldBe(visible)
+                .find(titleOfTreeItem(treeItem("Metadata"))).parent().parent()
+                .should(cssClass("ant-tree-node-content-wrapper-open"));
+        $(byId("pipelines-library-tree-container")).shouldBe(visible)
                 .find(withText(metadataFolder)).shouldBe(visible).click();
         sleep(1, SECONDS);
         return new MetadataSamplesAO();
