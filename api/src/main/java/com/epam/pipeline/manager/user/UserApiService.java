@@ -109,8 +109,8 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public PipelineUser loadUser(Long id) {
-        return userManager.loadUserById(id);
+    public PipelineUser loadUser(Long id, final boolean quotas) {
+        return userManager.loadUserById(id, quotas);
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
@@ -129,13 +129,13 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public List<PipelineUser> loadUsers() {
-        return new ArrayList<>(userManager.loadAllUsers());
+    public List<PipelineUser> loadUsers(final boolean loadQuotas) {
+        return new ArrayList<>(userManager.loadAllUsers(loadQuotas));
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public List<PipelineUser> loadUsersWithActivityStatus() {
-        return new ArrayList<>(userManager.loadUsersWithActivityStatus());
+    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas));
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)

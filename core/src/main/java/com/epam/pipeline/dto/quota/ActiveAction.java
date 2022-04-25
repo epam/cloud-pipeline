@@ -21,15 +21,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class QuotaAction {
-    private Long id;
-    private Double threshold;
-    private List<QuotaActionType> actions;
-    private ActiveAction activeAction;
+public class ActiveAction {
+    private LocalDate from;
+    private LocalDate to;
+    private Double expense;
 }

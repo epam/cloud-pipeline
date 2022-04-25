@@ -831,6 +831,9 @@ public class SystemPreferences {
             "billing.quotas.enabled", false, BILLING_QUOTAS_GROUP, pass);
     public static final IntPreference BILLING_QUOTAS_MONITORING_PERIOD_SECONDS = new IntPreference(
             "billing.quotas.period.seconds", Constants.SECONDS_IN_DAY, BILLING_QUOTAS_GROUP, isGreaterThan(10));
+    public static final IntPreference BILLING_QUOTAS_CLEARING_PERIOD_SECONDS = new IntPreference(
+            "billing.quotas.clear.period.seconds", Constants.SECONDS_IN_DAY * 30,
+            BILLING_QUOTAS_GROUP, isGreaterThan(10));
 
     // Lustre FS
     public static final IntPreference LUSTRE_FS_DEFAULT_SIZE_GB = new IntPreference(
