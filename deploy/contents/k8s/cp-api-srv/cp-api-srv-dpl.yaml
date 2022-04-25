@@ -16,6 +16,27 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      initContainers:
+        - name: cp-api-preconfigure-access
+          image: busybox
+          command: [ "/bin/sh", "-c", "mkdir -p ${CP_CLOUD_DATA_PATCHING_DIR} && chown -R ${CP_CLOUD_DATA_PRECONFIGURE_UID}:${CP_CLOUD_DATA_PRECONFIGURE_UID} ${CP_CLOUD_DATA_PATCHING_DIR}" ]
+          volumeMounts:
+            - name: api-etc-assets
+              mountPath: ${CP_PREF_API_ETC_DIRECTORY}
+        - name: cp-api-preconfigure
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:api-preconfigure-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/preconfigure-api"]
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          volumeMounts:
+            - mountPath: /opt/api/common
+              name: api-common
+            - mountPath: ${CP_PREF_API_STATIC_DIRECTORY_EXT}
+              name: api-static-assets
+            - mountPath: ${CP_PREF_API_ETC_DIRECTORY}
+              name: api-etc-assets
       containers:
         - name: cp-api-srv-leader-elector
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
@@ -96,6 +117,8 @@ spec:
             - name: cp-cluster-ssh-key
               mountPath: "/etc/cp_ssh"
               readOnly: true
+            - mountPath: /opt/api/common
+              name: api-common
           readinessProbe:
             httpGet:
               path: /pipeline/launch.sh
@@ -157,5 +180,8 @@ spec:
             secretName: cp-cluster-ssh-key
             # Kube accepts mode in decimal. So 384 gives 600, which is required for SSH keys
             defaultMode: 384
+        - name: api-common
+          emptyDir:
+            medium: Memory
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret
