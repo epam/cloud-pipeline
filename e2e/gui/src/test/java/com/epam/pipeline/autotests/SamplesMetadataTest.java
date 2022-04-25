@@ -234,7 +234,7 @@ public class SamplesMetadataTest
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .performIf(hideMetadata, visible, ms -> ms.click(hideMetadata))
-                .click(columnHeader(idField))
+                .initializeSorting(idField)
                 .sleep(5, SECONDS)
                 .performForEachRow(row -> {
 
