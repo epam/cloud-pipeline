@@ -1,0 +1,12 @@
+{
+    "short_description": "Basic R development environment with RStudio Web GUI",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "50",
+    "default_command": "/start.sh",
+    "endpoints": [
+        "{ \"name\": \"Shiny\", \"nginx\": { \"port\": \"3838\", \"additional\": \"CP_EDGE_NO_PATH_CROP CP_EDGE_EXTERNAL_APP proxy_redirect / ${CP_DOLLAR}route_location_root;proxy_set_header X-Forwarded-For ${CP_DOLLAR}proxy_add_x_forwarded_for;proxy_set_header X-Real-IP ${CP_DOLLAR}remote_addr;proxy_set_header Host ${CP_DOLLAR}http_host;proxy_http_version 1.1;proxy_buffering off;proxy_set_header Upgrade ${CP_DOLLAR}http_upgrade;proxy_set_header Connection \\\"upgrade\\\";proxy_read_timeout 86400;proxy_set_header Accept-Encoding \\\"\\\";sub_filter_once on;sub_filter '</head>' '<script type=\\\"text/javascript\\\" language=\\\"javascript\\\"  src=\\\"https://${CP_APPLICATION_LAUNCHER_EXTERNAL_HOST}/ext-js/shiny-session.js\\\"></script></head>'; sub_filter '<body' '<body onload=\\\"startControl()\\\"';\" }, \"isDefault\": false }"
+    ],
+    "metadata": {
+        "app_type": "${CP_APPLICATION_LAUNCHER_EXTERNAL_HOST}"
+    }
+}

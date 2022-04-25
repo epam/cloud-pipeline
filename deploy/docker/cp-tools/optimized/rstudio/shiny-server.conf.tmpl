@@ -1,0 +1,11 @@
+run_as shiny;
+preserve_logs true;
+log_file_mode 0666;
+server {
+  listen 3838;
+  location /${R_JOB_OWNER}/${R_APPS_OWNER}/${R_VERSION} {
+    site_dir /cloud-home/${R_APPS_OWNER_UPPER}/ShinyApps/${R_VERSION};
+    log_dir /cloud-home/${OWNER}/ShinyApps/log;
+    directory_index on;
+  }
+}
