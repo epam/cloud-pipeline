@@ -62,7 +62,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                         .library()
                         .selectStorage(s)
                         .clickEditStorageButton()
-                        .editForNfsMount(true)
+                        .editForNfsMount()
                         .clickDeleteStorageButton()
                         .clickDelete());
         navigationMenu()
@@ -92,7 +92,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
-                .editForNfsMount(true)
+                .editForNfsMount()
                 .validateEditFormElementsNfsMount()
                 .clickCancel();
     }
@@ -103,7 +103,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
-                .editForNfsMount(true)
+                .editForNfsMount()
                 .setAlias(tempAlias)
                 .clickSaveButton()
                 .validateStorage(tempAlias);
@@ -111,7 +111,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(tempAlias)
                 .clickEditStorageButton()
-                .editForNfsMount(true)
+                .editForNfsMount()
                 .setAlias(storage)
                 .clickSaveButton()
                 .validateStorage(storage);
@@ -285,7 +285,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .createFolder(folder)
                 .uploadFile(file)
                 .clickEditStorageButton()
-                .editForNfsMount(true)
+                .editForNfsMount()
                 .clickDeleteStorageButton()
                 .clickUnregister()
                 .validateStorageIsNotPresent(deletableStorage)
