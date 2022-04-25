@@ -69,6 +69,16 @@ function docker_register_image {
         return 1
     fi
 
+    local metadata="$(docker_get_spec_value "metadata" $docker_spec_path)"
+    for key in $(echo $metadata | jq '. | keys[]'); do
+      local tag_value=$(echo $metadata | jq ".$key")
+      api_tag_object_with_metadata "$tool_id" \
+                                   "TOOL" \
+                                   "$key" \
+                                   "String" \
+                                   "$tag_value"
+    done
+
     if [ -f "$docker_icon_path" ]; then
         api_set_docker_image_icon   $docker_image_id \
                                     $docker_icon_path

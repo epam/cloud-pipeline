@@ -606,6 +606,45 @@ EOF
     return $call_api_register_image_result
 }
 
+function api_tag_object_with_metadata() {
+    local object_id="$1"
+    local object_type="$2"
+    local metadata_key="$3"
+    local metadata_type="${4:-String}"
+    local metadata_value="$5"
+
+read -r -d '' payload <<-EOF
+{
+  "entity": {
+    "entityId": $object_id,
+    "entityClass": "$object_type"
+  },
+  "data": {
+    "$metadata_key": {
+      "type": "$metadata_type",
+      "value": "$metadata_value"
+    }
+  }
+}
+EOF
+
+    call_api_update_metadata_response=$(call_api "/metadata/updateKeys" "$CP_API_JWT_ADMIN" "$payload")
+    call_api_update_metadata_result=$?
+    if [ $call_api_update_metadata_result -ne 0 ]; then
+        print_err "Error occured while updating metadata for object: ($object_type) id: ($object_id):"
+        echo "========"
+        echo "Request:"
+        echo "$payload"
+        echo "========"
+        echo "Response:"
+        echo "$call_api_update_metadata_response"
+        echo "========"
+    else
+        print_ok "Metadata (key: $metadata_key value: $metadata_value) for object: ($object_type) id: ($object_id) updated"
+    fi
+    return $call_api_register_image_result
+}
+
 function api_set_docker_image_icon {
     local docker_image_id="$1"
     local docker_image_icon="$2"
