@@ -71,12 +71,19 @@ function build_and_push_tool {
         shift
     fi
 
+    local apply_condition_flag=""
+    if [ "$1" == "--apply-condition" ]; then
+        apply_condition_flag="$2"
+        shift
+        shift
+    fi
+
     docker build "$docker_context_path" -t "$docker_name" -f "$docker_file_path" "$@"
     docker push "$docker_name"
 
     docker_manifest_file_path=$DOCKERS_MANIFEST_PATH/manifest.txt
     mkdir -p $DOCKERS_MANIFEST_PATH
-    echo "$docker_name,$docker_pretty_name" >> "$docker_manifest_file_path"
+    echo "$docker_name,$docker_pretty_name,$apply_condition_flag" >> "$docker_manifest_file_path"
 
     mkdir -p $DOCKERS_MANIFEST_PATH/$docker_pretty_name
     
@@ -421,6 +428,30 @@ build_and_push_tool $RESEARCH_TOOLS_DOCKERS_SOURCES_PATH/qupath "$CP_DIST_REPO_N
 MD_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/md
 
 # FIXME: Add gromacs and namd
+
+########################
+# Optimized dockers
+########################
+
+if [ "$DOCKERS_INCLUDE_OPTIMIZED" == "yes" ]; then
+
+    OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH=$DOCKERS_SOURCES_PATH/cp-tools/optimized
+
+    # RStudio optimized images
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-optimized-rstudio-${DOCKERS_VERSION}" "optimized/shiny:3.5.1" --spec "shiny" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED"
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-optimized-rstudio-${DOCKERS_VERSION}" "optimized/shiny:4.0.0" --spec "shiny" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED"
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-optimized-rstudio-${DOCKERS_VERSION}" "optimized/shiny:latest" --spec "shiny" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED"
+
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-optimized-rstudio-${DOCKERS_VERSION}" "optimized/rstudio-v3.5.1" --spec "rstudio" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED"
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-optimized-rstudio-${DOCKERS_VERSION}" "optimized/rstudio-v4.0.0" --spec "rstudio" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED"
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-optimized-rstudio-${DOCKERS_VERSION}" "optimized/rstudio:latest" --spec "rstudio" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED"
+
+    #Jupiter optimized images
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-optimized-jupyter-2-${DOCKERS_VERSION}" "optimized/jupyter:conda-2" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED" --build-arg BASE_IMAGE="library/jupyter:conda-2"
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-optimized-jupyter-3-${DOCKERS_VERSION}" "optimized/jupyter:conda-3" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED" --build-arg BASE_IMAGE="library/jupyter:conda-3"
+    build_and_push_tool $OPTIMIZED_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-optimized-jupyter-${DOCKERS_VERSION}" "optimized/jupyter:latest" --apply_condition "DOCKERS_INCLUDE_OPTIMIZED" --build-arg BASE_IMAGE="library/jupyter:latest"
+
+fi
 
 
 ########################

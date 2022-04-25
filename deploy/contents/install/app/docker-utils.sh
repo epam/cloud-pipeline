@@ -110,12 +110,18 @@ function docker_push_manifest {
 
     # Iterate over manifest entries and push images
     local push_result=0
-    while IFS=, read -r docker_name docker_pretty_name
+    while IFS=, read -r docker_name docker_pretty_name apply_condition
     do
         if ! array_contains_or_empty "$docker_pretty_name" "${CP_DOCKERS_TO_INIT[@]}"; then
             print_warn "Skipping docker $docker_pretty_name as it is not present in the explicit list of dockers"
             continue
         fi
+
+        if [ $apply_condition != "" ] && [ "${!apply_condition}" != "true" ]; then
+            print_warn "Skipping docker $docker_pretty_name as apply condition $apply_condition is not enabled"
+            continue
+        fi
+
         docker_full_pretty_name="$registry_path/$docker_pretty_name"
         print_info "Pushing docker image from \"$docker_name\" to \"$docker_full_pretty_name\""
 
