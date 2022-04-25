@@ -6,10 +6,16 @@ var pty = require('pty.js');
 var request = require("sync-request");
 var child_process = require('child_process');
 
+const checkMaintenanceMode = require('./maintenance');
+
 // Constants
 var ENV_TAG_RUNID_NAME = 'CP_ENV_TAG_RUNID';
 var CONN_QUOTA_PER_PIPELINE_ID = process.env.CP_EDGE_MAX_SSH_CONNECTIONS || 25;
 
+const CP_MAINTENANCE_SKIP_ROLES = (process.env.CP_MAINTENANCE_SKIP_ROLES || '')
+    .split(',')
+    .map(o => o.trim().toUpperCase())
+    .filter(o => o.length);
 
 function call_api(api_method, auth_key) {
     var options = {
@@ -51,11 +57,21 @@ function get_current_user(auth_key) {
     payload = call_api('/whoami', auth_key);
     if (payload) {
         return {
-            'name': payload.userName
+            'name': payload.userName,
+            'admin': payload.admin,
+            'roles': (payload.groups || []).concat((payload.roles || []).map(function (role) { return role.name; }))
         };
     } else {
         return payload;
     }
+}
+
+function get_platform_name(auth_key) {
+    const payload = call_api('/preferences/ui.pipeline.deployment.name', auth_key);
+    if (payload && payload.value) {
+        return payload.value;
+    }
+    return 'Cloud Pipeline';
 }
 
 function get_boolean(value) {
@@ -84,7 +100,7 @@ function conn_quota_available(pipeline_id) {
     try {
         var stdout = child_process.execSync(running_pids_command).toString();
         running_pids_count = stdout.split(/\r\n|\r|\n/).filter(item => item).length;
-    } 
+    }
     catch (err) {
         // (1) means that there is no match (i.e. no ssh processes with the correct "tag")
         // This is totally ok behavior and we consider that quota IS available
@@ -171,6 +187,8 @@ httpserv = http.createServer(app).listen(opts.port, function() {
     console.log('http on port ' + opts.port);
 });
 
+const {addListener} = checkMaintenanceMode();
+
 var io = server(httpserv,{path: '/ssh/socket.io'});
 io.on('connection', function(socket) {
     var sshhost = 'localhost';
@@ -178,6 +196,8 @@ io.on('connection', function(socket) {
     var request = socket.request;
     console.log((new Date()) + ' Connection accepted for ' + request.headers.referer);
     var term;
+    let current_user;
+    let platformName = 'Cloud Pipeline';
     if (match = request.headers.referer.match('/ssh/(pipeline|container)/(.+)$')) {
         pipeline_id = match[2];
         if (!pipeline_id) {
@@ -212,9 +232,11 @@ io.on('connection', function(socket) {
                     run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'owner';
                 }
             }
+            current_user = get_current_user(auth_key);
+            platformName = get_platform_name(auth_key);
             switch (run_ssh_mode) {
                 case 'user':
-                    user = get_current_user(auth_key);
+                    user = current_user;
                     sshuser = user.name;
                     sshpass = user.name;
                     break
@@ -246,7 +268,26 @@ io.on('connection', function(socket) {
         socket.disconnect();
         return;
     }
+    const currentUserIsAdmin = current_user &&
+        (
+            current_user.admin ||
+            (current_user.roles || [])
+                .map(role => role.toUpperCase())
+                .some(role => CP_MAINTENANCE_SKIP_ROLES.includes(role))
+        );
 
+    const onMaintenanceModeChange = (active) => {
+        if (active) {
+            socket.emit('output', `\r\n\n\u001b[32m${platformName}\u001b[0m is in the \u001b[31mmaintenance mode\u001b[0m.${currentUserIsAdmin ? '' : ' Current session will be closed.'}\n\r\n`);
+        } else {
+            socket.emit('output', `\r\n\n\u001b[32m${platformName}\u001b[0m is back from the \u001b[31mmaintenance mode\u001b[0m.\n\r\n`);
+        }
+        if (!currentUserIsAdmin && active) {
+            socket.disconnect();
+        }
+    }
+
+    const stopListeningMaintenanceModeChange = addListener(onMaintenanceModeChange);
 
     console.log((new Date()) + " PID=" + term.pid + " STARTED to IP=" + sshhost + ", RUNNO=" + pipeline_id + " on behalf of user=" + sshuser);
     term.on('data', function(data) {
@@ -262,6 +303,7 @@ io.on('connection', function(socket) {
         term.write(data);
     });
     socket.on('disconnect', function() {
+        stopListeningMaintenanceModeChange();
         console.log((new Date()) + " Disconnecting PID=" + term.pid);
         term.end();
         try {
