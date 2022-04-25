@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ class DataStorageModel(DataStorageItemModel):
         self.mask = 0
         self.policy = StoragePolicy()
         self.region = None
+        self.mount_status = None
+        self.tools_to_mount = set()
 
     @classmethod
     def load(cls, json):
@@ -48,6 +50,9 @@ class DataStorageModel(DataStorageItemModel):
         instance.policy = StoragePolicy()
         if 'storagePolicy' in json:
             cls.parse_policy(instance.policy, json['storagePolicy'])
+        if 'toolsToMount' in json:
+            cls.parse_tool_to_mount(instance, json)
+        cls.parse_mount_status(instance, json)
         return instance
 
     @classmethod
@@ -84,6 +89,29 @@ class DataStorageModel(DataStorageItemModel):
             policy.sts_duration = int(json['shortTermStorageDuration'])
         if 'longTermStorageDuration' in json:
             policy.lts_duration = int(json['longTermStorageDuration'])
+
+    @classmethod
+    def parse_tool_to_mount(cls, instance, json):
+        tools_to_mount = json['toolsToMount']
+        for tool in tools_to_mount:
+            tool_name = '{}/{}'.format(tool['registry'], tool['image'])
+            if 'versions' in tool:
+                tool_versions = tool['versions']
+                if tool_versions:
+                    instance.tools_to_mount.update(['{}:{}'.format(tool_name, version['version'])
+                                                    for version in tool_versions])
+                    continue
+            instance.tools_to_mount.add(tool_name)
+
+    @classmethod
+    def parse_mount_status(cls, instance, json):
+        is_mount_disabled = json['mountDisabled'] if 'mountDisabled' in json else False
+        if is_mount_disabled:
+            instance.mount_status = 'DISABLED'
+        elif instance.type == 'NFS' and 'mountStatus' in json:
+            instance.mount_status = json['mountStatus']
+        else:
+            instance.mount_status = 'ACTIVE'
 
     def root_path(self):
         if self.type is not None and self.type in WrapperType.cloud_types():

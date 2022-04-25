@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,8 @@ import java.util.Set;
 public class NFSQuotaNotificationEntry {
 
     public static final NFSQuotaNotificationEntry NO_ACTIVE_QUOTAS_NOTIFICATION =
-        new NFSQuotaNotificationEntry(0.0, StorageQuotaType.GIGABYTES, Collections.singleton(StorageQuotaAction.EMAIL));
+        new NFSQuotaNotificationEntry(-1.0,
+                                      StorageQuotaType.GIGABYTES, Collections.singleton(StorageQuotaAction.EMAIL));
 
     private final Double value;
     private final StorageQuotaType type;

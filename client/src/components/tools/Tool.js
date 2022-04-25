@@ -1483,15 +1483,21 @@ export default class Tool extends localization.LocalizedReactComponent {
         : undefined,
       cloudRegionId: cloudRegionIdValue
     }, allowedInstanceTypesRequest);
-    const title = version
-      ? `Are you sure you want to launch tool (version ${version}) with default settings?`
-      : 'Are you sure you want to launch tool with default settings?';
+    const titleFn = (runName) => ([
+      <span key="launch">
+        Are you sure you want to launch
+      </span>,
+      runName,
+      <span key="question">
+        with default settings?
+      </span>
+    ]);
     const info = this.getVersionRunningInformation(version || this.defaultTag);
     const platform = this.defaultVersionPlatform;
     if (await run(this)(
       payload,
       true,
-      title,
+      titleFn,
       info.launchTooltip,
       allowedInstanceTypesRequest,
       undefined,

@@ -1002,7 +1002,7 @@ li.ant-calendar-time-picker-select-option-selected {
 .ant-select.ant-select-disabled .ant-select-selection {
   color: @application-color-disabled;
   background-color: @input-background-disabled;
-  border-color: currentColor;
+  border-color: @input-border;
 }
 
 .ant-select-selection:hover {
@@ -1148,6 +1148,10 @@ li.ant-calendar-time-picker-select-option-selected {
 
 .ant-select-selection--multiple .ant-select-selection__choice__remove:hover {
   color: @application-color;
+}
+
+.ant-select-disabled .ant-select-selection--multiple .ant-select-selection__choice {
+  color: currentColor;
 }
 
 .ant-select-dropdown-menu-item-group-title {

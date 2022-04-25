@@ -48,6 +48,8 @@ public class VMNotificationServiceImpl implements VMNotificationService {
     private final String platformName;
     private final String deploymentName;
     private final String subjectPrefix;
+    private final String externalHost;
+    private final String externalPort;
 
     public VMNotificationServiceImpl(
             final NotificationSender notificationSender,
@@ -55,13 +57,17 @@ public class VMNotificationServiceImpl implements VMNotificationService {
             @Value("${cloud.pipeline.deployment.name}") final String deploymentName,
             @Value("${notification.to-user}") final String toUser,
             @Value("${notification.copy-users}") final String copyUsers,
-            @Value("${notification.subject.prefix:}") final String subjectPrefix) {
+            @Value("${notification.subject.prefix:}") final String subjectPrefix,
+            @Value("${cloud.pipeline.external.host:}") final String externalHost,
+            @Value("${cloud.pipeline.external.port:}") final String externalPort) {
         this.notificationSender = notificationSender;
         this.platformName = platformName;
         this.deploymentName = deploymentName;
         this.subjectPrefix = subjectPrefix;
         this.toUser = toUser;
         this.copyUsers = Arrays.asList(copyUsers.split(","));
+        this.externalHost = externalHost;
+        this.externalPort = externalPort;
     }
 
     @Override
@@ -87,6 +93,8 @@ public class VMNotificationServiceImpl implements VMNotificationService {
         commonParams.put("platformName", platformName);
         commonParams.put("deploymentName", deploymentName);
         commonParams.put("fullPlatformName", StringUtils.defaultIfBlank(deploymentName, platformName));
+        commonParams.put("externalPort", externalPort);
+        commonParams.put("externalHost", externalHost);
 
         if (MapUtils.isEmpty(parameters)) {
             return commonParams;

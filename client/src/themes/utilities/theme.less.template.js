@@ -926,7 +926,7 @@ export default `
 @THEME .ant-select.ant-select-disabled .ant-select-selection {
   color: @application-color-disabled;
   background-color: @input-background-disabled;
-  border-color: currentColor;
+  border-color: @input-border;
 }
 @THEME .ant-select-selection:hover {
   border-color: @primary-color;
@@ -1050,6 +1050,9 @@ export default `
 }
 @THEME .ant-select-selection--multiple .ant-select-selection__choice__remove:hover {
   color: @application-color;
+}
+@THEME .ant-select-disabled .ant-select-selection--multiple .ant-select-selection__choice {
+  color: currentColor;
 }
 @THEME .ant-select-dropdown-menu-item-group-title {
   color: @application-color-faded;
@@ -2006,7 +2009,14 @@ export default `
   border: @menu-active-color;
   color: @application-color;
 }
-
+@THEME .cp-run-name.editable {
+  outline: 1px solid transparent;
+  padding: 0 2px;
+}
+@THEME .cp-run-name.editable:hover {
+  outline: 1px solid @panel-border-color;
+  background-color: @element-selected-background-color !important;
+}
 
 @THEME .cp-billing-menu {
   width: fit-content;
@@ -2427,6 +2437,7 @@ export default `
 @THEME .cp-conflict-scroller .bar.hovered {
   background-color: fade(@application-color, 50%);
 }
+
 @THEME .cp-library-metadata-item-key {
   background-color: @tag-key-background-color;
   border-bottom: 1px solid @tag-key-value-divider-color;

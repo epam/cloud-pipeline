@@ -144,6 +144,8 @@ public class PipelineConfiguration {
     @JsonProperty(value = SHARED_WITH_ROLES)
     private List<RunSid> sharedWithRoles;
 
+    private Map<String, String> tags;
+
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {
         this.parameters = parameters;

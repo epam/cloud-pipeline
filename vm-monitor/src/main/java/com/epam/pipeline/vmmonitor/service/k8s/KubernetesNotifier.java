@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 
 package com.epam.pipeline.vmmonitor.service.k8s;
 
+import com.epam.pipeline.vmmonitor.model.k8s.TinyproxyThresholdEvent;
 import com.epam.pipeline.vmmonitor.service.notification.VMNotificationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -33,18 +35,24 @@ public class KubernetesNotifier {
     private final String missingDeploymentTemplate;
     private final String notReadyDeploymentSubject;
     private final String notReadyDeploymentTemplate;
+    private final String tinyproxyThresholdSubject;
+    private final String tinyproxyThresholdTemplate;
 
     public KubernetesNotifier(
             final VMNotificationService notificationService,
             final @Value("${notification.missing-deploy.subject}") String missingDeploymentSubject,
             final @Value("${notification.missing-deploy.template}") String missingDeploymentTemplate,
             final @Value("${notification.not-ready-deploy.subject}") String notReadyDeploymentSubject,
-            final @Value("${notification.not-ready-deploy.template}") String notReadyDeploymentTemplate) {
+            final @Value("${notification.not-ready-deploy.template}") String notReadyDeploymentTemplate,
+            final @Value("${notification.tinyproxy.subject}") String tinyproxyThresholdSubject,
+            final @Value("${notification.tinyproxy.template}") String tinyproxyThresholdTemplate) {
         this.notificationService = notificationService;
         this.missingDeploymentSubject = missingDeploymentSubject;
         this.missingDeploymentTemplate = missingDeploymentTemplate;
         this.notReadyDeploymentSubject = notReadyDeploymentSubject;
         this.notReadyDeploymentTemplate = notReadyDeploymentTemplate;
+        this.tinyproxyThresholdSubject = tinyproxyThresholdSubject;
+        this.tinyproxyThresholdTemplate = tinyproxyThresholdTemplate;
     }
 
     public void notifyMissingDeployment(final String deploymentName) {
@@ -60,5 +68,10 @@ public class KubernetesNotifier {
         parameters.put("requiredReplicas", required);
         parameters.put("readyReplicas", ready);
         notificationService.sendMessage(parameters, notReadyDeploymentSubject, notReadyDeploymentTemplate);
+    }
+
+    public void notifyTinyproxyThreshold(final List<TinyproxyThresholdEvent> events) {
+        notificationService.sendMessage(Collections.singletonMap("thresholdEvents", events),
+                                        tinyproxyThresholdSubject, tinyproxyThresholdTemplate);
     }
 }

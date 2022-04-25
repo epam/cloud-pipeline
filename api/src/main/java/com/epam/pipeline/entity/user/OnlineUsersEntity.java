@@ -20,6 +20,8 @@ import com.epam.pipeline.entity.utils.TimestampConverter;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
@@ -46,5 +48,6 @@ public class OnlineUsersEntity {
     private LocalDateTime logDate;
 
     @ElementCollection
+    @Fetch(FetchMode.SUBSELECT)
     private List<Long> userIds;
 }

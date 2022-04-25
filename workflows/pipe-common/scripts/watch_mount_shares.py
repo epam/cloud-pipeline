@@ -33,6 +33,7 @@ from logging.handlers import RotatingFileHandler
 
 NFS_UNMOUNT_CMD_PATTERN = "umount -l -f \"{}\""
 NFS_MOUNT_CMD_PATTERN = 'mount -t {} -o \"{}\" \"{}\" \"{}\"'
+REMOUNT_OPTION = 'remount'
 READ_WRITE_OPTION = 'rw'
 READ_ONLY_OPTION = 'ro'
 MODIFIED_MNT_SEPARATOR = '|'
@@ -552,12 +553,9 @@ class NFSMountWatcher:
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         elif new_mount_status == MOUNT_STATUS_ACTIVE:
-            if NFSMountWatcher.try_to_unmount(modified_mount_details):
-                if NFSMountWatcher._try_mount_storage(modified_mount_details, False):
-                    NFSMountWatcher.save_details_status_active(modified_mount_details)
-                    mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
-                else:
-                    NFSMountWatcher.save_details_status_disabled(modified_mount_details)
+            if NFSMountWatcher._try_remount_storage(modified_mount_details, False):
+                NFSMountWatcher.save_details_status_active(modified_mount_details)
+                mount_points[modified_mount_details.mount_point] = modified_mount_details.mount_source
             else:
                 NFSMountWatcher.save_details_status_readonly(modified_mount_details)
         else:
@@ -588,11 +586,8 @@ class NFSMountWatcher:
                 NFSMountWatcher.save_details_status_disabled(mount_details, use_tmp_file=False)
                 return
         elif new_mount_status == MOUNT_STATUS_READ_ONLY:
-            if NFSMountWatcher.try_to_unmount(mount_details):
-                if NFSMountWatcher._try_mount_storage(mount_details, True):
-                    NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
-                else:
-                    NFSMountWatcher.save_details_status_disabled(mount_details, use_tmp_file=False)
+            if NFSMountWatcher._try_remount_storage(mount_details, True):
+                NFSMountWatcher.save_details_status_readonly(mount_details, use_tmp_file=False)
                 return
         elif new_mount_status != MOUNT_STATUS_ACTIVE:
                 logging.info(format_message('Received unknown status [{}] for [{}]'.format(new_mount_status,
@@ -627,12 +622,22 @@ class NFSMountWatcher:
             modified_mounts.write(NEWLINE + original_mount_summary)
 
     @staticmethod
+    def _try_remount_storage(mount_details, read_only):
+        return NFSMountWatcher._execute_mount_command(mount_details, read_only, True)
+
+    @staticmethod
     def _try_mount_storage(mount_details, read_only):
+        return NFSMountWatcher._execute_mount_command(mount_details, read_only, False)
+
+    @staticmethod
+    def _execute_mount_command(mount_details, read_only, add_remount_flag):
         mount_options = mount_details.mount_attributes.split(COMMA)
         if read_only:
             mount_options = [READ_ONLY_OPTION if option == READ_WRITE_OPTION else option for option in mount_options]
         else:
             mount_options = [READ_WRITE_OPTION if option == READ_ONLY_OPTION else option for option in mount_options]
+        if add_remount_flag:
+            mount_options.append(REMOUNT_OPTION)
         mount_options = COMMA.join(mount_options)
         mkdir(mount_details.mount_point)
         mount_command = NFS_MOUNT_CMD_PATTERN.format(

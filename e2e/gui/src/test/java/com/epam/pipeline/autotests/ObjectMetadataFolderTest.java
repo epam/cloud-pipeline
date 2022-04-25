@@ -63,6 +63,7 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         navigationMenu()
                 .library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(subfolder)
                 .removeFolder(subfolder)
                 .removeFolder(folder);

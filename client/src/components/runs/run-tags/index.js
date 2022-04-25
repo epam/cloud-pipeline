@@ -34,7 +34,7 @@ const isKnownTag = (tag) => {
 };
 
 const skipTag = (tag, tags) => {
-  return `${tags[tag]}` === 'false';
+  return `${tags[tag]}` === 'false' || /^alias$/i.test(tag);
 };
 
 function Tag (

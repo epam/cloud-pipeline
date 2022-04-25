@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -62,7 +62,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                         .library()
                         .selectStorage(s)
                         .clickEditStorageButton()
-                        .editForNfsMount()
+                        .editForNfsMount(true)
                         .clickDeleteStorageButton()
                         .clickDelete());
         navigationMenu()
@@ -92,7 +92,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
-                .editForNfsMount()
+                .editForNfsMount(true)
                 .validateEditFormElementsNfsMount()
                 .clickCancel();
     }
@@ -103,7 +103,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(storage)
                 .clickEditStorageButton()
-                .editForNfsMount()
+                .editForNfsMount(true)
                 .setAlias(tempAlias)
                 .clickSaveButton()
                 .validateStorage(tempAlias);
@@ -111,7 +111,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
         navigateToLibrary()
                 .selectStorage(tempAlias)
                 .clickEditStorageButton()
-                .editForNfsMount()
+                .editForNfsMount(true)
                 .setAlias(storage)
                 .clickSaveButton()
                 .validateStorage(storage);
@@ -285,7 +285,7 @@ public class NfsDataStorageTest extends AbstractBfxPipelineTest implements Navig
                 .createFolder(folder)
                 .uploadFile(file)
                 .clickEditStorageButton()
-                .editForNfsMount()
+                .editForNfsMount(true)
                 .clickDeleteStorageButton()
                 .clickUnregister()
                 .validateStorageIsNotPresent(deletableStorage)

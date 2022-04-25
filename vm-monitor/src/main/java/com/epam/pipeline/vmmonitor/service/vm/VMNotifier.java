@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,10 @@
 package com.epam.pipeline.vmmonitor.service.vm;
 
 import com.epam.pipeline.entity.cluster.NodeInstance;
+import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.vmmonitor.model.vm.MissingLabelsSummary;
+import com.epam.pipeline.vmmonitor.model.vm.MissingNodeSummary;
 import com.epam.pipeline.vmmonitor.model.vm.VirtualMachine;
 import com.epam.pipeline.vmmonitor.service.notification.VMNotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +44,7 @@ public class VMNotifier {
     private final String missingNodeTemplatePath;
     private final String missingLabelsSubject;
     private final String missingLabelsTemplatePath;
-    private final Queue<VirtualMachine> missingNodes;
+    private final Queue<MissingNodeSummary> missingNodes;
     private final Queue<MissingLabelsSummary> missingLabelsSummaries;
 
     public VMNotifier(
@@ -65,12 +68,16 @@ public class VMNotifier {
                                "missingLabelsSummaries");
     }
 
-    public void queueMissingNodeNotification(final VirtualMachine vm) {
-        missingNodes.add(vm);
+    public void queueMissingNodeNotification(final VirtualMachine vm, final List<PipelineRun> matchingRuns,
+                                             final Long matchingPoolId) {
+        missingNodes.add(new MissingNodeSummary(vm, matchingRuns, matchingPoolId));
     }
 
-    public void queueMissingLabelsNotification(final NodeInstance node, final List<String> labels) {
-        missingLabelsSummaries.add(new MissingLabelsSummary(node.getName(), labels));
+    public void queueMissingLabelsNotification(final NodeInstance node, final VirtualMachine vm,
+                                               final List<String> labels, final RunStatus runStatus,
+                                               final Long poolId) {
+        missingLabelsSummaries.add(new MissingLabelsSummary(node.getName(), labels, vm.getInstanceType(),
+                                                            node.getCreationTimestamp(), runStatus, poolId));
     }
 
     private void notifyOnQueuedElements(final String emailSubject, final String emailTemplatePath,

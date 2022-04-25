@@ -21,6 +21,7 @@ import argparse
 import platform
 import re
 import os
+import time
 import traceback
 from abc import ABCMeta, abstractmethod
 
@@ -108,6 +109,7 @@ class MountStorageTask:
 
     def __init__(self, task):
         self.api = PipelineAPI(os.environ['API'], 'logs')
+        self.run_id = int(os.getenv('RUN_ID', -1))
         self.task_name = task
         if platform.system() == 'Windows':
             available_mounters = [S3Mounter, GCPMounter]
@@ -139,9 +141,40 @@ class MountStorageTask:
                 result.append(storage_id)
         return result
 
+    # Any conditions to wait for before starting the mount procedure
+    def wait_before_mount(self):
+        try:
+            wait_before_mount_attempts = int(os.getenv('CP_SENSITIVE_RUN_WAIT_POD_IP_SEC', 10))
+            wait_before_mount_timeout_sec = 3
+
+            # 1. If it's a sensitive job - we shall be sure that a "Run" has a Pod IP assigned.
+            #    Otherwise we won't be able to mount sensitive storages. API will consider this job as "outside of the sensitive context"
+            is_sensitive_job = os.getenv('CP_SENSITIVE_RUN')
+            if is_sensitive_job == 'true':
+                Logger.info('A sensitive job detected, will wait for the Pod IP assignment', task_name=self.task_name)
+                current_wait_iteration = 1
+                while current_wait_iteration <= wait_before_mount_attempts:
+                    current_run = self.api.load_run(self.run_id)
+                    if current_run == None:
+                        Logger.warn('Cannot load run info, while waiting for the sensitive pod IP assignment. Will not wait anymore', task_name=self.task_name)
+                        break
+                    else:
+                        if 'podIP' in current_run and current_run['podIP'] != '' and current_run['podIP'] != None:
+                            Logger.info('Pod IP is assigned, proceeding further', task_name=self.task_name)
+                            break
+                        Logger.info('Pod IP is NOT available yet, waiting...', task_name=self.task_name)
+                        current_wait_iteration = current_wait_iteration + 1
+                        time.sleep(wait_before_mount_timeout_sec)
+            # 2. ... Add more conditions here ...
+            #    ...
+        except Exception as e:
+            Logger.fail('An error occured while waiting for the mounts prerequisites: {}.'.format(str(e.message)), task_name=self.task_name)
+
     def run(self, mount_root, tmp_dir):
         try:
             Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
+
+            self.wait_before_mount()
 
             # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
             cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
@@ -149,12 +182,10 @@ class MountStorageTask:
                 Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
                  and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
 
-            run_id = int(os.getenv('RUN_ID', -1))
-
             run = None
-            if run_id != -1:
+            if self.run_id != -1:
                 Logger.info('Fetching run info...', task_name=self.task_name)
-                run = self.api.load_run(run_id)
+                run = self.api.load_run(self.run_id)
             else:
                 Logger.warn('Cannot load run info, run id is not specified.', task_name=self.task_name)
 

@@ -1,3 +1,17 @@
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import io
 import logging
 from abc import abstractmethod, ABCMeta
@@ -88,6 +102,10 @@ class StorageHighLevelFileSystemClient(FileSystemClientDecorator):
 
     def download_range(self, fh, buf, path, offset=0, length=0):
         source_path = path.lstrip(self._delimiter)
+        mpu = self._mpus.get(path, None)
+        if mpu:
+            logging.info('Flushing MPU inside READ: %d:%s' % (fh, path))
+            self.flush(fh, path)
         self._inner.download_range(fh, buf, source_path, offset, length)
 
     def upload_range(self, fh, buf, path, offset=0):

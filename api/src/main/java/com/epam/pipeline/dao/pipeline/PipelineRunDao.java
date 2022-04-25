@@ -363,7 +363,7 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
      * Updates tags the provided run in a database
      * @param run run with updated tags
      **/
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.REQUIRED)
     public void updateRunTags(final PipelineRun run) {
         getNamedParameterJdbcTemplate().update(updateTagsQuery, PipelineRunParameters
                 .getParameters(run, getConnection()));

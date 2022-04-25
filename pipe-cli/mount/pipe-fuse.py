@@ -128,10 +128,6 @@ def start(mountpoint, webdav, bucket,
         client = CachingFileSystemClient(client, cache)
     else:
         logging.info('Caching is disabled.')
-    if write_buffer_size > 0:
-        client = BufferingWriteFileSystemClient(client, capacity=write_buffer_size)
-    else:
-        logging.info('Write buffering is disabled.')
     if read_buffer_size > 0:
         client = BufferingReadAheadFileSystemClient(client,
                                                     read_ahead_min_size=read_ahead_min_size,
@@ -140,6 +136,10 @@ def start(mountpoint, webdav, bucket,
                                                     capacity=read_buffer_size)
     else:
         logging.info('Read buffering is disabled.')
+    if write_buffer_size > 0:
+        client = BufferingWriteFileSystemClient(client, capacity=write_buffer_size)
+    else:
+        logging.info('Write buffering is disabled.')
     if trunc_buffer_size > 0:
         if webdav:
             client = CopyOnDownTruncateFileSystemClient(client, capacity=trunc_buffer_size)

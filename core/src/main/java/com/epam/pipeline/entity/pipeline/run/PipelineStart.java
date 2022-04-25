@@ -56,4 +56,5 @@ public class PipelineStart {
 
     @JsonDeserialize(using = PipelineConfValuesMapDeserializer.class)
     private Map<String, PipeConfValueVO> params;
+    private Map<String, String> tags;
 }
