@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2021-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ public interface QuotaMapper {
 
     QuotaSidEntity recipientToEntity(SidImpl dto);
 
+    @Mapping(target = "activeAction", ignore = true)
     QuotaAction actionToEntity(QuotaActionEntity entity);
 
     @Mapping(target = "quota", ignore = true)

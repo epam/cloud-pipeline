@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -314,6 +314,9 @@ public class UserDao extends NamedParameterJdbcDaoSupport {
                         Role role = new Role();
                         RoleParameters.parseRole(rs, role, false);
                         user.getRoles().add(role);
+                        if (role.getName().equals(DefaultRoles.ROLE_ADMIN.getName())) {
+                            user.setAdmin(true);
+                        }
                     }
                 }
                 return users.values();

@@ -15,13 +15,16 @@
 
 package com.epam.pipeline.manager.quota;
 
+import com.epam.pipeline.dto.quota.Quota;
+import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.dto.quota.QuotaActionType;
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.manager.quota.handler.QuotaHandler;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.math3.util.Precision;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -31,6 +34,7 @@ import java.util.Map;
 @Slf4j
 public class QuotaHandlerService {
 
+    private static final double DELTA = 0.01;
     private final Map<QuotaActionType, QuotaHandler> handlers;
     private final QuotaService quotaService;
 
@@ -46,12 +50,40 @@ public class QuotaHandlerService {
         if (CollectionUtils.isNotEmpty(activeActions)) {
             log.debug("{} action(s) are already applied for quota {}", activeActions.size(),
                     appliedQuota.getQuota());
+            //Update current expense if required
+            activeActions.stream()
+                    .filter(previous -> quotaChanged(appliedQuota, previous))
+                    .forEach(previous -> {
+                        previous.setFrom(appliedQuota.getFrom());
+                        previous.setTo(appliedQuota.getTo());
+                        previous.setExpense(appliedQuota.getExpense());
+                        quotaService.createAppliedQuota(previous);
+                    });
             return;
         }
         quotaService.createAppliedQuota(appliedQuota);
         ListUtils.emptyIfNull(appliedQuota.getAction().getActions())
                 .forEach(type -> handlers.getOrDefault(type, new EmptyQuotaHandler())
                         .applyActionType(appliedQuota, type));
+    }
+
+    public void clearAction(final Quota quota, final QuotaAction action) {
+        final List<AppliedQuota> activeActions = quotaService.findActiveQuotaForAction(
+                action.getId());
+        if (CollectionUtils.isNotEmpty(activeActions)) {
+            log.debug("Cancelling {} non-relevant action(s) for quota {}", activeActions.size(), quota);
+            quotaService.deleteAppliedQuotas(activeActions);
+        }
+    }
+
+    private boolean quotaChanged(final AppliedQuota appliedQuota, final AppliedQuota previousQuota) {
+        if (!appliedQuota.getFrom().equals(previousQuota.getFrom())) {
+            return true;
+        }
+        if (!appliedQuota.getTo().equals(previousQuota.getTo())) {
+            return true;
+        }
+        return Precision.compareTo(previousQuota.getExpense(), appliedQuota.getExpense(), DELTA) != 0;
     }
 
     static class EmptyQuotaHandler implements QuotaHandler {

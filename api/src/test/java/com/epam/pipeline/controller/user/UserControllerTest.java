@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -251,11 +251,11 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadUser() {
-        doReturn(pipelineUser).when(mockUserApiService).loadUser(ID);
+        doReturn(pipelineUser).when(mockUserApiService).loadUser(ID, false);
 
         final MvcResult mvcResult = performRequest(get(String.format(USER_ID_URL, ID)));
 
-        verify(mockUserApiService).loadUser(ID);
+        verify(mockUserApiService).loadUser(ID, false);
         assertResponse(mvcResult, pipelineUser, UserCreatorUtils.PIPELINE_USER_INSTANCE_TYPE);
     }
 
@@ -314,11 +314,11 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadUsers() {
-        doReturn(pipelineUserList).when(mockUserApiService).loadUsers();
+        doReturn(pipelineUserList).when(mockUserApiService).loadUsers(false);
 
         final MvcResult mvcResult = performRequest(get(USERS_URL));
 
-        verify(mockUserApiService).loadUsers();
+        verify(mockUserApiService).loadUsers(false);
         assertResponse(mvcResult, pipelineUserList, UserCreatorUtils.PIPELINE_USER_LIST_INSTANCE_TYPE);
     }
 

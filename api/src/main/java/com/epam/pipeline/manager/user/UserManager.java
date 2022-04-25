@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
@@ -119,6 +120,9 @@ public class UserManager {
     @Autowired
     private PipelineUserRepository userRepository;
 
+    @Autowired
+    private QuotaService quotaService;
+
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser createUser(String name, List<Long> roles,
@@ -186,9 +190,16 @@ public class UserManager {
         return userDao.loadUsersByNames(names);
     }
 
-    public PipelineUser loadUserById(Long id) {
-        PipelineUser user = userDao.loadUserById(id);
+    public PipelineUser loadUserById(final Long id) {
+        return loadUserById(id, false);
+    }
+
+    public PipelineUser loadUserById(final Long id, final boolean quotas) {
+        final PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
+        if (quotas && !user.isAdmin()) {
+            user.setActiveQuotas(quotaService.loadActiveQuotasForUser(user));
+        }
         return user;
     }
 
@@ -202,14 +213,26 @@ public class UserManager {
     }
 
     public Collection<PipelineUser> loadAllUsers() {
-        return userDao.loadAllUsers();
+        return loadAllUsers(false);
     }
 
-    public Collection<PipelineUser> loadUsersWithActivityStatus() {
+    public Collection<PipelineUser> loadAllUsers(final boolean loadQuotas) {
+        final  Collection<PipelineUser> pipelineUsers = userDao.loadAllUsers();
+        if (loadQuotas) {
+            attachQuotaInfo(pipelineUsers);
+        }
+        return pipelineUsers;
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
         final PipelineUser currentUser = getCurrentUser();
-        return currentUser.isAdmin()
+        final Collection<PipelineUser> pipelineUsers = currentUser.isAdmin()
                 ? userDao.loadUsersWithActivityStatus()
                 : loadAllUsers();
+        if (loadQuotas) {
+            attachQuotaInfo(pipelineUsers);
+        }
+        return pipelineUsers;
     }
 
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
@@ -557,5 +580,12 @@ public class UserManager {
             userRoles.add(roleUserId);
         }
         return userRoles;
+    }
+
+    private void attachQuotaInfo(final Collection<PipelineUser> pipelineUsers) {
+        if (CollectionUtils.isEmpty(pipelineUsers)) {
+            return;
+        }
+        quotaService.attachQuotaInfo(pipelineUsers);
     }
 }
