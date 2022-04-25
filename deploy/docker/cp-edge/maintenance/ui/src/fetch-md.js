@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-import md from './maintenance.md';
+import md from './templates/maintenance.md';
 
 export default async function fetchMd() {
   const response = await fetch(md);

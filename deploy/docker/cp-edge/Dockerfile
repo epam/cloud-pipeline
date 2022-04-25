@@ -103,7 +103,7 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
 ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
-COPY maintenance*.lua /etc/nginx
+COPY maintenance*.lua /etc/nginx/
 
 ## DAV auth page
 ADD dav-auth /etc/nginx/dav/webdav/auth-sso
@@ -126,7 +126,7 @@ RUN cd /etc/ssh-proxy/wetty && \
 COPY --from=maintenance /etc/maintenance/build /etc/nginx/maintenance
 
 # Configure maintenance cron and refresh script
-COPY maintenance/scripts/* /etc/maintenance
+COPY maintenance/scripts/* /etc/maintenance/
 RUN touch /var/log/maintenance.log
 
 ## Disable tls checks for wetty -> API

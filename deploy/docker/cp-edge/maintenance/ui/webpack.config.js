@@ -48,6 +48,9 @@ module.exports = (env, args) => {
               if (/\.(png|svg|jpg)$/i.test(pathData.filename)) {
                 return 'images/[name][ext]';
               }
+              if (/templates\/.+\.md$/.test(pathData.filename)) {
+                return 'templates/[name][ext]';
+              }
               return '[name][ext]';
             }
         },
