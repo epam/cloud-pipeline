@@ -586,7 +586,7 @@ public class DetachedConfigurationsTest
                         configuration.selectPipeline(pipeline1)
                                 .click(SAVE)
                                 .addProfile(secondConfigurationProfile)
-                                .sleep(2, SECONDS)
+                                .sleep(10, SECONDS)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
                                 .click(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
