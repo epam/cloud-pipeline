@@ -53,8 +53,6 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
         return this.parent();
     }
 
-
-
     public CreateNfsMountPopupAO setNfsMountPath(String nfsMountPath) {
         $(byId("edit-storage-storage-path-input")).shouldBe(visible).setValue(nfsMountPath);
         return this;

@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.StorageContentAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -61,6 +60,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
     private static final String DISABLED_MOUNT_STATUS = "MOUNT IS DISABLED";
     private static final String READ_ONLY_MOUNT_STATUS = "READ-ONLY";
     private static final String GRACE_PERIOD_JSON = "/gracePeriod.json";
+    private static final String DISABLE_MOUNT = "Disable mount";
+    private static final String MAKE_READ_ONLY = "Make read-only";
     private final String nfsPrefix = C.NFS_PREFIX.replace(":/", "");
     private final String storage = "epmcmbi-test-nfs-" + Utils.randomSuffix();
     private final String storage2 = "epmcmbi-test-nfs-" + Utils.randomSuffix();
@@ -161,8 +162,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .configureNotification()
                 .addRecipient(user.login)
                 .ensure(CLEAR_ALL_RECIPIENTS, enabled)
-                .addNotification(String.valueOf(1), "Disable mount")
-                .addNotification(String.valueOf(2), "Make read-only")
+                .addNotification(String.valueOf(1), DISABLE_MOUNT)
+                .addNotification(String.valueOf(2), MAKE_READ_ONLY)
                 .ensure(CLEAR_ALL_NOTIFICATIONS, enabled)
                 .ok()
                 .checkConfiguredNotificationsLink(2, 1);
@@ -175,8 +176,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .configureNotification()
                 .checkConfigureNotificationIsNotAvailable()
                 .checkRecipients(Collections.singletonList(user.login))
-                .checkNotification(String.valueOf(1), "Disable mount")
-                .checkNotification(String.valueOf(2), "Make read-only")
+                .checkNotification(String.valueOf(1), DISABLE_MOUNT)
+                .checkNotification(String.valueOf(2), MAKE_READ_ONLY)
                 .click(CANCEL);
         logout();
         navigationMenu()
@@ -212,8 +213,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .configureNotification()
                 .addRecipient(user.login)
-                .addNotification(String.valueOf(1), "Disable mount")
-                .addNotification(String.valueOf(2), "Make read-only")
+                .addNotification(String.valueOf(1), DISABLE_MOUNT)
+                .addNotification(String.valueOf(2), MAKE_READ_ONLY)
                 .ok()
                 .checkConfiguredNotificationsLink(2, 1);
 
@@ -243,7 +244,7 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .rmFile(fileName)
                 .validateElementNotPresent(fileName);
         checkStorageReadOnlyStatusInActiveRun(userRunId, fileName);
-        String lastRunId = checkStorageReadOnlyStatusInNewRun(fileName);
+        final String lastRunId = checkStorageReadOnlyStatusInNewRun(fileName);
         runsMenu()
                 .stopRun(lastRunId);
         logout();
@@ -375,8 +376,8 @@ public class NFSQuotasTest extends AbstractSeveralPipelineRunningTest implements
                 .showMetadata()
                 .configureNotification()
                 .addRecipient(user.login)
-                .addNotification("0.001", "Make read-only")
-                .addNotification("0.002", "Disable mount")
+                .addNotification("0.001", MAKE_READ_ONLY)
+                .addNotification("0.002", DISABLE_MOUNT)
                 .ok()
                 .checkConfiguredNotificationsLink(2, 1);
 
