@@ -150,7 +150,10 @@ def stacktracing(func, ctx, *args, **kwargs):
     except click.Abort:
         raise
     except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if sys.version_info >= (3, 0):
+            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+        else:
+            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
