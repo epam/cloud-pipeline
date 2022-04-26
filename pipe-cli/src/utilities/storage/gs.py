@@ -24,6 +24,8 @@ from requests.adapters import HTTPAdapter
 from s3transfer import TransferConfig, MultipartUploader, OSUtils, MultipartDownloader
 from urllib3.connection import VerifiedHTTPSConnection
 
+from src.utilities.encoding_utilities import to_string
+
 try:
     import http.client as http_client  # Python 3
     from http import HTTPStatus  # Python 3
@@ -787,10 +789,11 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
         if size > transfer_config.multipart_threshold:
             bucket = self.client.bucket(source_wrapper.bucket.path)
             blob = self.custom_blob(bucket, source_key, None, size)
-            download_client = GsRangeDownloadClient(source_wrapper.bucket.path, destination_key, self.client,
+            download_client = GsRangeDownloadClient(source_wrapper.bucket.path, to_string(destination_key), self.client,
                                                     blob_object=blob)
             downloader = MultipartDownloader(client=download_client, config=transfer_config, osutil=OSUtils())
-            downloader.download_file(bucket=source_wrapper.bucket.path, key=source_key, filename=destination_key,
+            downloader.download_file(bucket=source_wrapper.bucket.path, key=source_key,
+                                     filename=to_string(destination_key),
                                      object_size=size, extra_args={},
                                      callback=progress_callback)
         else:
@@ -799,7 +802,7 @@ class GsDownloadManager(GsManager, AbstractTransferManager):
                 blob = bucket.blob(source_key)
             else:
                 blob = self.custom_blob(bucket, source_key, progress_callback, size)
-            self._download_to_file(blob, destination_key)
+            self._download_to_file(blob, to_string(destination_key))
         if clean:
             blob.delete()
 
@@ -869,14 +872,14 @@ class GsUploadManager(GsManager, AbstractTransferManager):
                                                     destination_tags,
                                                     self.client, progress_callback)
             uploader = MultipartUploader(client=upload_client, config=transfer_config, osutil=OSUtils())
-            uploader.upload_file(filename=source_key, bucket=destination_wrapper.bucket.path, key=destination_key,
+            uploader.upload_file(filename=to_string(source_key), bucket=destination_wrapper.bucket.path, key=destination_key,
                                  callback=None, extra_args={})
             generation = upload_client.generation
         else:
             bucket = self.client.bucket(destination_wrapper.bucket.path)
             blob = self.custom_blob(bucket, destination_key, progress_callback, size)
             blob.metadata = destination_tags
-            blob.upload_from_filename(source_key)
+            blob.upload_from_filename(to_string(source_key))
             generation = blob.generation
         if clean:
             source_wrapper.delete_item(source_key)

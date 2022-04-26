@@ -23,6 +23,7 @@ import jwt
 
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.encoding_utilities import is_safe_chars, to_ascii, to_string
 
 TransferResult = namedtuple('TransferResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
 
@@ -163,8 +164,12 @@ class StorageOperations:
                 continue
             value = parts[1]
             value = value.replace('\\', '/')
-            if not value or value.isspace() or bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
-                click.echo("The tag value you have provided is invalid: %s. The tag %s will be skipped." % (value, key))
+            if not value or value.isspace():
+                click.echo("The tag value you have provided is blank. The tag %s will be skipped." % key)
+                continue
+            if bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
+                click.echo("The tag value you have provided contains unsafe characters: %s. "
+                           "The tag %s will be skipped." % (value, key))
                 continue
             if len(value) > cls.MAX_VALUE_LENGTH:
                 value = value[:cls.MAX_VALUE_LENGTH - len(cls.TAG_SHORTEN_SUFFIX)] + cls.TAG_SHORTEN_SUFFIX
@@ -182,7 +187,8 @@ class StorageOperations:
     @classmethod
     def generate_tags(cls, raw_tags, source):
         tags = StorageOperations.parse_tags(raw_tags)
-        tags[StorageOperations.CP_SOURCE_TAG] = source
+        tags[StorageOperations.CP_SOURCE_TAG] = source if is_safe_chars(source) \
+            else to_ascii(source, replacing=True, replacing_with='-')
         tags[StorageOperations.CP_OWNER_TAG] = StorageOperations.get_user()
         return tags
 
@@ -263,7 +269,7 @@ class AbstractTransferManager:
 
     @staticmethod
     def create_local_folder(destination_key, lock):
-        folder = os.path.dirname(destination_key)
+        folder = to_string(os.path.dirname(destination_key))
         if lock:
             lock.acquire()
         try:
