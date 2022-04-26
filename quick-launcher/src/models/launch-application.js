@@ -128,6 +128,7 @@ async function launchTool(application, user, options) {
     user: appOwner,
     version
   } = options || {};
+  console.log('launchTool.application', application);
   console.log('launchTool.options', options);
   const getAppOwnerInfo = () => {
     return new Promise((resolve, reject) => {

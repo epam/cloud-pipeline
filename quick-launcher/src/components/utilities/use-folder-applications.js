@@ -2,6 +2,7 @@ import {useCallback, useEffect, useState} from 'react';
 import fetchFolderApplications from '../../models/fetch-folder-applications';
 import {useSettings} from '../use-settings';
 import {safePromise as fetchDataStorages} from "../../models/cloud-pipeline-api/data-storage-available";
+import {nameSorter} from '../../models/applications';
 
 export default function useFolderApplications(options, useServiceUser = true, ...users) {
   const [applications, setApplications] = useState([]);
@@ -17,7 +18,7 @@ export default function useFolderApplications(options, useServiceUser = true, ..
   ))].join(',');
   useEffect(() => {
     let ignore = false;
-    if (settings && /^folder$/i.test(settings.applicationsSourceMode)) {
+    if (settings && /^(folder|docker\+folder|folder\+docker)$/i.test(settings.applicationsSourceMode)) {
       setPending(true);
       const uniqueUsers = [
         useServiceUser && settings.serviceUser
@@ -45,7 +46,7 @@ export default function useFolderApplications(options, useServiceUser = true, ..
     };
   }, [userNames, settings, setApplications, setPending, sync]);
   return {
-    applications,
+    applications: applications.sort(nameSorter),
     pending,
     reload
   };

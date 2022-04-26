@@ -60,6 +60,8 @@ const defaultSettings = {
   tag: TAG,
   tagValue: TAG_VALUE,
   tagValueRegExp: TAG_VALUE_REGEXP,
+  folderAppTag: undefined,
+  folderAppTagValue: undefined,
   initialPollingDelay: INITIAL_POLLING_DELAY || POLLING_INTERVAL || 1000,
   pollingInterval: POLLING_INTERVAL || 1000,
   limitMounts: LIMIT_MOUNTS || 'default',
@@ -106,7 +108,7 @@ const defaultSettings = {
   sessionInfoPath: undefined,
   userStoragesAttribute: undefined,
   applicationsMode: 'folder', //one of "docker", "folder",
-  applicationsSourceMode: 'folder', //one of "docker", "folder",
+  applicationsSourceMode: 'folder', //one of "docker", "folder", "folder+docker"
   serviceUser: "PIPE_ADMIN",
   folderApplicationLaunchLinkFormat: '/[user]/[version]/[app]',
   folderApplicationAdvancedUserRoleName: ['ROLE_ADVANCED_USER'],
@@ -329,7 +331,7 @@ function impersonateAsAnonymous(settings) {
 
 function correctApplicationsMode(settings) {
   const correct = (name, o) => {
-    if (/^(docker|folder)$/i.test(o)) {
+    if (/^(docker|folder|docker\+folder|folder\+docker)$/i.test(o)) {
       return o;
     }
     if (!o) {
@@ -343,10 +345,16 @@ function correctApplicationsMode(settings) {
   if (!settings.applicationsMode) {
     settings.applicationsMode = settings.applicationsSourceMode || 'docker';
     if (settings.applicationsSourceMode) {
+      if (/^folder$/i.test(settings.applicationsSourceMode)) {
+        settings.applicationsMode = 'folder';
+      } else {
+        settings.applicationsMode = 'docker';
+      }
       console.log(
-        `settings.applicationsMode is not set - using settings.applicationsSourceMode ("${settings.applicationsSourceMode}")`
+        `settings.applicationsMode is not set - using settings.applicationsSourceMode (source: "${settings.applicationsSourceMode}", mode: "${settings.applicationsMode}")`
       );
     } else {
+      settings.applicationsMode = 'docker';
       console.log('settings.applicationsMode is not set - using default "docker"');
     }
   } else {
@@ -360,7 +368,7 @@ function correctApplicationsMode(settings) {
   } else {
     console.log(`settings.applicationsSourceMode: "${settings.applicationsSourceMode}"`);
   }
-  if (/^folder$/i.test(settings.applicationsMode) && /^docker$/i.test(settings.applicationsSourceMode)) {
+  if (/^folder$/i.test(settings.applicationsMode) && /^(docker|folder\+docker|docker\+folder)$/i.test(settings.applicationsSourceMode)) {
     settings.applicationsMode = 'docker';
     console.log(`"docker" applications can only be displayed in "docker" mode - switching settings.applicationsMode to "docker"`);
   }

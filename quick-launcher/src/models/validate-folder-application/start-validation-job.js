@@ -31,11 +31,12 @@ export default function startValidationJob (application, callbacks = {}) {
       .then((settings) => {
         progressCallback('settings fetched', 1);
         progressCallback('fetching tools...', 2);
-        return wrapRequest(getApplications(true), 'applicationsPayload', {settings});
+        return wrapRequest(getApplications({silent: true, folder: true}), 'applicationsPayload', {settings});
       })
       .then((payload) => {
         const {settings, applicationsPayload = {}} = payload;
-        const {applications = [], userInfo = {}} = applicationsPayload;
+        const {applications: allApplications = [], userInfo = {}} = applicationsPayload;
+        const applications = allApplications.filter(application => application._folder_);
         progressCallback(`${applications.length} tool${applications.length > 1 ? 's' : ''} fetched`, 4);
         const [applicationToLaunch] = applications;
         if (!applicationToLaunch) {
