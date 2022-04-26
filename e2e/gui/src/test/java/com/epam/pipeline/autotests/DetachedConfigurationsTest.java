@@ -155,22 +155,22 @@ public class DetachedConfigurationsTest
             .editConfiguration(pipelineDefaultProfile, profile -> {
                 refresh();
                 profile.expandTab(EXEC_ENVIRONMENT)
-                                .setValue(DISK, defaultDisk)
-                                .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                                .click(SAVE);
+                    .setValue(DISK, defaultDisk)
+                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                    .click(SAVE);
             })
             .sleep(5, SECONDS)
             .editConfiguration(pipelineProfile1611, profile -> {
                 refresh();
                 profile
-                        .addStringParameter(stringParameter, stringParameterValue)
-                        .addPathParameter(pathParameter, pathParameterValue)
-                        .addCommonParameter(commonParameter, commonParameterValue)
-                        .addInputParameter(inputParameter, inputParameterValue)
-                        .addOutputParameter(outputParameter, outputParameterValue)
-                        .sleep(3, SECONDS)
-                        .click(SAVE)
-                        .waitUntilSaveEnding(pipelineProfile1611);
+                    .addStringParameter(stringParameter, stringParameterValue)
+                    .addPathParameter(pathParameter, pathParameterValue)
+                    .addCommonParameter(commonParameter, commonParameterValue)
+                    .addInputParameter(inputParameter, inputParameterValue)
+                    .addOutputParameter(outputParameter, outputParameterValue)
+                    .sleep(3, SECONDS)
+                    .click(SAVE)
+                    .waitUntilSaveEnding(pipelineProfile1611);
             });
         refresh();
         library().clickRoot();
@@ -586,6 +586,7 @@ public class DetachedConfigurationsTest
                         configuration.selectPipeline(pipeline1)
                                 .click(SAVE)
                                 .addProfile(secondConfigurationProfile)
+                                .sleep(2, SECONDS)
                                 .selectPipeline(pipeline1, pipelineCustomProfile)
                                 .click(SAVE)
                                 .expandTabs(execEnvironmentTab, advancedTab, parametersTab)
