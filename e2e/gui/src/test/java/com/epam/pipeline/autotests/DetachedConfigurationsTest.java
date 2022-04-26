@@ -152,24 +152,26 @@ public class DetachedConfigurationsTest
                     .click(SAVE)
             )
             .sleep(5, SECONDS)
-            .editConfiguration(pipelineDefaultProfile, profile ->
+            .editConfiguration(pipelineDefaultProfile, profile -> {
+                refresh();
                 profile.expandTab(EXEC_ENVIRONMENT)
-                    .setValue(DISK, defaultDisk)
-                    .selectValue(INSTANCE_TYPE, defaultInstanceType)
-                    .click(SAVE)
-            )
+                                .setValue(DISK, defaultDisk)
+                                .selectValue(INSTANCE_TYPE, defaultInstanceType)
+                                .click(SAVE);
+            })
             .sleep(5, SECONDS)
-            .editConfiguration(pipelineProfile1611, profile ->
+            .editConfiguration(pipelineProfile1611, profile -> {
+                refresh();
                 profile
-                    .addStringParameter(stringParameter, stringParameterValue)
-                    .addPathParameter(pathParameter, pathParameterValue)
-                    .addCommonParameter(commonParameter, commonParameterValue)
-                    .addInputParameter(inputParameter, inputParameterValue)
-                    .addOutputParameter(outputParameter, outputParameterValue)
-                    .sleep(3, SECONDS)
-                    .click(SAVE)
-                    .waitUntilSaveEnding(pipelineProfile1611)
-            );
+                        .addStringParameter(stringParameter, stringParameterValue)
+                        .addPathParameter(pathParameter, pathParameterValue)
+                        .addCommonParameter(commonParameter, commonParameterValue)
+                        .addInputParameter(inputParameter, inputParameterValue)
+                        .addOutputParameter(outputParameter, outputParameterValue)
+                        .sleep(3, SECONDS)
+                        .click(SAVE)
+                        .waitUntilSaveEnding(pipelineProfile1611);
+            });
         refresh();
         library().clickRoot();
     }
