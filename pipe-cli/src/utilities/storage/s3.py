@@ -15,8 +15,8 @@
 from boto3.s3.transfer import TransferConfig
 from botocore.endpoint import BotocoreHTTPSession, MAX_POOL_CONNECTIONS
 
+from src.utilities.encoding_utilities import to_string, to_ascii, is_safe_chars
 from src.utilities.storage.s3_proxy_utils import AwsProxyConnectWithHeadersHTTPSAdapter
-
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
@@ -24,7 +24,6 @@ try:
 except ImportError:
     from urllib2 import urlopen  # Python 2
 
-import click
 import collections
 import jwt
 import os
@@ -65,16 +64,11 @@ class StorageItemManager(object):
         return StorageOperations.show_progress(quiet, size, lock)
 
     @classmethod
-    def _get_user(cls):
-        return StorageOperations.get_user()
-
-    @classmethod
     def _convert_tags_to_url_string(cls, tags):
         if not tags:
             return tags
-        parsed_tags = StorageOperations.parse_tags(tags)
-        formatted_tags = ['%s=%s' % (key, value) for key, value in parsed_tags.items()]
-        return '&'.join(formatted_tags)
+        tags = StorageOperations.preprocess_tags(tags)
+        return '&'.join(['%s=%s' % (key, value) for key, value in tags.items()])
 
     def _get_client(self):
         _boto_config = S3BucketOperations.get_proxy_config()
@@ -133,11 +127,12 @@ class DownloadManager(StorageItemManager, AbstractTransferManager):
         self.create_local_folder(destination_key, lock)
         transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
-            self.bucket.download_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
-                                      Config=transfer_config)
+            progress_callback = ProgressPercentage(relative_path, size)
         else:
-            self.bucket.download_file(source_key, destination_key,
-                                      Config=transfer_config)
+            progress_callback = None
+        self.bucket.download_file(source_key, to_string(destination_key),
+                                  Callback=progress_callback,
+                                  Config=transfer_config)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -164,8 +159,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        tags += ("CP_SOURCE={}".format(source_key),)
-        tags += ("CP_OWNER={}".format(self._get_user()),)
+        tags = StorageOperations.generate_tags(tags, source_key)
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
             'ACL': 'bucket-owner-full-control'
@@ -173,10 +167,13 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         TransferManager.ALLOWED_UPLOAD_ARGS.append('Tagging')
         transfer_config = self.get_transfer_config(io_threads)
         if StorageItemManager.show_progress(quiet, size, lock):
-            self.bucket.upload_file(source_key, destination_key, Callback=ProgressPercentage(relative_path, size),
-                                    Config=transfer_config, ExtraArgs=extra_args)
+            progress_callback = ProgressPercentage(relative_path, size)
         else:
-            self.bucket.upload_file(source_key, destination_key, Config=transfer_config, ExtraArgs=extra_args)
+            progress_callback = None
+        self.bucket.upload_file(to_string(source_key), destination_key,
+                                Callback=progress_callback,
+                                Config=transfer_config,
+                                ExtraArgs=extra_args)
         if clean:
             source_wrapper.delete_item(source_key)
 
@@ -206,8 +203,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        tags += ("CP_SOURCE={}".format(source_key),)
-        tags += ("CP_OWNER={}".format(self._get_user()),)
+        tags = StorageOperations.generate_tags(tags, source_key)
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
             'ACL': 'bucket-owner-full-control'
@@ -256,7 +252,8 @@ class TransferBetweenBucketsManager(StorageItemManager, AbstractTransferManager)
         if not self.has_required_tag(tags, 'CP_SOURCE'):
             tags += ('CP_SOURCE=s3://{}/{}'.format(source_bucket, path),)
         if not self.has_required_tag(tags, 'CP_OWNER'):
-            tags += ('CP_OWNER={}'.format(self._get_user()),)
+            tags += ('CP_OWNER={}'.format(StorageOperations.get_user()),)
+        tags = StorageOperations.extract_tags(tags)
         TransferManager.ALLOWED_COPY_ARGS.append('Tagging')
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
