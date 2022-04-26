@@ -35,6 +35,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.SecuredEntityManager;
@@ -96,6 +97,9 @@ public class PipelineManager implements SecuredEntityManager {
     @Autowired
     private RunScheduleManager runScheduleManager;
 
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
+
     private static final Logger LOGGER = LoggerFactory.getLogger(PipelineManager.class);
 
     public Pipeline create(final PipelineVO pipelineVO) throws GitClientException {
@@ -105,9 +109,10 @@ public class PipelineManager implements SecuredEntityManager {
             pipelineVO.setPipelineType(PipelineType.PIPELINE);
         }
         if (StringUtils.isEmpty(pipelineVO.getRepository())) {
-            Assert.isTrue(!gitManager.checkProjectExists(pipelineVO.getName()),
+            Assert.isTrue(!pipelineRepositoryService
+                            .checkRepositoryExists(pipelineVO.getRepositoryType(), pipelineVO.getName()),
                     messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_REPO_EXISTS, pipelineVO.getName()));
-            final GitProject project = createGitRepository(pipelineVO);
+            final GitProject project = pipelineRepositoryService.createRepository(pipelineVO);
             pipelineVO.setRepository(project.getRepoUrl());
             pipelineVO.setRepositorySsh(project.getRepoSsh());
         } else {
@@ -119,8 +124,8 @@ public class PipelineManager implements SecuredEntityManager {
                 GitProject project = createGitRepositoryWithRepoUrl(pipelineVO);
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {
-                GitProject project = gitManager.getRepository(pipelineVO.getRepository(),
-                        pipelineVO.getRepositoryToken());
+                final GitProject project = pipelineRepositoryService.getRepository(pipelineVO.getRepositoryType(),
+                        pipelineVO.getRepository(), pipelineVO.getRepositoryToken());
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             }
         }
@@ -341,19 +346,6 @@ public class PipelineManager implements SecuredEntityManager {
 
     public String getPipelineCloneUrl(Long pipelineId) {
         return gitManager.getGitCredentials(pipelineId, false, true).getUrl();
-    }
-
-    private GitProject createGitRepository(final PipelineVO pipelineVO) throws GitClientException {
-        GitProject project;
-        if (pipelineVO.getPipelineType() == PipelineType.PIPELINE) {
-            project = gitManager.createRepository(
-                    pipelineVO.getTemplateId() == null ? defaultTemplate : pipelineVO.getTemplateId(),
-                    pipelineVO.getName(),
-                    pipelineVO.getDescription());
-        } else  {
-            project = gitManager.createRepository(pipelineVO.getName(), pipelineVO.getDescription());
-        }
-        return project;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)

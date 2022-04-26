@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import org.junit.Assert;
@@ -65,6 +66,9 @@ public class PipelineManagerTest {
     private GitManager gitManager;
 
     @Mock
+    private PipelineRepositoryService pipelineRepositoryService;
+
+    @Mock
     @SuppressWarnings("PMD.UnusedPrivateField")
     private MessageHelper messageHelper;
 
@@ -96,14 +100,14 @@ public class PipelineManagerTest {
         final GitProject gitProject = new GitProject();
         gitProject.setRepoUrl(REPOSITORY_HTTPS);
         gitProject.setRepoSsh(REPOSITORY_SSH);
-        when(gitManager.createRepository(any(), eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
-        when(gitManager.createRepository(eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
+        when(pipelineRepositoryService.createRepository(any())).thenReturn(gitProject);
         when(gitManager.createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
                 .thenReturn(gitProject);
         when(gitManager.createEmptyRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
                 .thenReturn(gitProject);
-        when(gitManager.getRepository(eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN))).thenReturn(gitProject);
-        when(gitManager.checkProjectExists(eq(REPOSITORY_NAME))).thenReturn(false);
+        when(pipelineRepositoryService.getRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
+                .thenReturn(gitProject);
+        when(pipelineRepositoryService.checkRepositoryExists(any(), eq(REPOSITORY_NAME))).thenReturn(false);
         when(crudManager.save(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
         when(crudManager.savePipeline(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
     }
@@ -115,7 +119,7 @@ public class PipelineManagerTest {
 
         pipelineManager.create(pipelineVO);
 
-        verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
+        verify(pipelineRepositoryService).createRepository(pipelineVO);
     }
 
     @Test
@@ -125,7 +129,7 @@ public class PipelineManagerTest {
         pipelineVO.setPipelineType(PipelineType.VERSIONED_STORAGE);
         Pipeline pipeline = pipelineManager.create(pipelineVO);
 
-        verify(gitManager).createRepository(eq(REPOSITORY_NAME), any());
+        verify(pipelineRepositoryService).createRepository(pipelineVO);
         Assert.assertEquals(pipeline.getPipelineType(), PipelineType.VERSIONED_STORAGE);
     }
 
@@ -135,7 +139,7 @@ public class PipelineManagerTest {
         pipelineVO.setName(REPOSITORY_NAME);
         Pipeline pipeline = pipelineManager.create(pipelineVO);
 
-        verify(gitManager).createRepository(any(), eq(REPOSITORY_NAME), any());
+        verify(pipelineRepositoryService).createRepository(pipelineVO);
         Assert.assertEquals(pipeline.getPipelineType(), PipelineType.PIPELINE);
     }
 
@@ -201,7 +205,7 @@ public class PipelineManagerTest {
 
         pipelineManager.create(pipelineVO);
 
-        verify(gitManager, times(0)).createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN));
+        verify(pipelineRepositoryService, times(0)).createRepository(any());
     }
 
     @Test

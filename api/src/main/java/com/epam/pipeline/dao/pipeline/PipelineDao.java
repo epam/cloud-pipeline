@@ -166,7 +166,9 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(CREATED_DATE.name(), pipeline.getCreatedDate());
             params.addValue(OWNER.name(), pipeline.getOwner());
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
-            params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
+            params.addValue(REPOSITORY_TYPE.name(), Optional.ofNullable(pipeline.getRepositoryType())
+                    .map(RepositoryType::getId)
+                    .orElse(null));
             params.addValue(PIPELINE_TYPE.name(),
                     Optional.ofNullable(pipeline.getPipelineType())
                             .map(PipelineType::getId)

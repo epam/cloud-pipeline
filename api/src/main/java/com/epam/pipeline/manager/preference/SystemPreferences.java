@@ -268,17 +268,25 @@ public class SystemPreferences {
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
+    public static final StringPreference BITBUCKET_HOST =
+            new StringPreference("git.bitbucket.host", null, GIT_GROUP, pass);
     public static final StringPreference GIT_READER_HOST =
             new StringPreference("git.reader.service.host", null, GIT_GROUP, pass);
     public static final StringPreference GIT_EXTERNAL_URL =
             new StringPreference("git.external.url", null, GIT_GROUP, pass);
     public static final StringPreference GIT_TOKEN = new StringPreference("git.token", null, GIT_GROUP, null);
+    public static final StringPreference BITBUCKET_APP_PASS =
+            new StringPreference("git.bitbucket.app.pass", null, GIT_GROUP, pass);
     public static final IntPreference GIT_USER_ID = new IntPreference("git.user.id", null, GIT_GROUP, null);
     public static final StringPreference GIT_USER_NAME = new StringPreference("git.user.name", null, GIT_GROUP, null);
+    public static final StringPreference BITBUCKET_USER_NAME =
+            new StringPreference("git.bitbucket.user.name", null, GIT_GROUP, pass);
     public static final StringPreference GIT_CLI_CONFIG_TEMPLATE =
             new StringPreference("ui.git.cli.configure.template", null, GIT_GROUP, pass);
     public static final BooleanPreference GIT_REPOSITORY_INDEXING_ENABLED = new BooleanPreference(
             "git.repository.indexing.enabled", true, GIT_GROUP, pass);
+    public static final BooleanPreference BITBUCKET_REPOSITORY_INDEXING_ENABLED = new BooleanPreference(
+            "git.bitbucket.repository.indexing.enabled", false, GIT_GROUP, pass);
     public static final StringPreference GIT_REPOSITORY_HOOK_URL = new StringPreference(
             "git.repository.hook.url", null, GIT_GROUP, PreferenceValidators.isValidUrl);
     public static final IntPreference GIT_FORK_WAIT_TIMEOUT = new IntPreference("git.fork.wait.timeout", 500,
