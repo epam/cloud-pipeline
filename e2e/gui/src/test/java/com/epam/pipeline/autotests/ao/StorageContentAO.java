@@ -818,8 +818,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                     .ensure(CANCEL, visible);
         }
 
-        public EditStoragePopUpAO editForNfsMount(boolean isAccessible) {
-            if (!filesAndFolderElements().isEmpty() && isAccessible) {
+        public EditStoragePopUpAO editForNfsMount() {
+            if (!filesAndFolderElements().isEmpty()) {
                 $(byClassName("edit-storage-button")).shouldBe(enabled).click();
             }
             return this;
