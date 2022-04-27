@@ -16,9 +16,12 @@
 
 import React from 'react';
 import classNames from 'classnames';
-import QuotaActions, {getTriggeredActions} from './quota-actions';
+import {Popover} from 'antd';
 
-import styles from './quota-indicator.css';
+import QuotaActions, {getTriggeredActions, quotaHasTriggeredActions} from './quota-actions';
+import {quotaGroupSpendingNames} from './quota-groups';
+import {periodNames} from './quota-periods';
+import styles from './quota-indicator.css'; ;
 
 const statusClassNames = {
   active: 'cp-quota-status-green',
@@ -47,10 +50,23 @@ const getStatus = (quota) => {
   return statuses.warning;
 };
 
+const getQuotaExpense = (quota) => {
+  const {actions = []} = quota || {};
+  const {activeAction} = actions.find(action => action.activeAction) || {};
+  const {expense = 0} = activeAction || {};
+  const percent = Math.round(expense / quota.value * 100);
+  return (
+    <div className={styles.expenseContainer}>
+      <span>Current expenses:</span>
+      <b>{Math.round(expense * 100) / 100}$</b>
+      <span>{`(${percent}%)`}</span>
+    </div>);
+};
+
 function QuotaLimitIndicator (props) {
   const {quota} = props;
   const status = getStatus(quota);
-  return (
+  const renderIndicator = () => (
     <div className={styles.circleContainer}>
       <svg height="10" width="10">
         <circle
@@ -68,6 +84,19 @@ function QuotaLimitIndicator (props) {
       </svg>
     </div>
   );
+  if (quotaHasTriggeredActions(quota)) {
+    return (
+      <Popover
+        content={getQuotaExpense(quota)}
+        title={false}
+        trigger="hover"
+      >
+        {renderIndicator()}
+      </Popover>
+    );
+  } else {
+    return renderIndicator();
+  }
 }
 
 export default QuotaLimitIndicator;
