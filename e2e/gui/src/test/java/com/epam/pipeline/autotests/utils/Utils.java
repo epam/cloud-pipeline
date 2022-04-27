@@ -72,6 +72,7 @@ public class Utils {
     public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
     public static final String SPOT = "Spot";
+    public static final String LATEST_VERSION = "latest";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);

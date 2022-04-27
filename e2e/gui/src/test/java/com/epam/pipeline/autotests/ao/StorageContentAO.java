@@ -56,6 +56,7 @@ import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -281,6 +282,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public EditStoragePopUpAO clickEditStorageButton() {
+        get(REFRESH).shouldBe(enabled);
         click(EDIT_STORAGE);
         return new EditStoragePopUpAO();
     }
@@ -568,6 +570,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         public FileAO validateHasSize(long expectedSize) {
             assertEquals(size(), expectedSize);
+            return this;
+        }
+
+        public FileAO validateHasNotSize(long expectedSize) {
+            assertNotEquals(size(), expectedSize);
             return this;
         }
 

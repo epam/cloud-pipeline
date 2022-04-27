@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -230,10 +230,11 @@ public class SamplesMetadataTest
         final String nonExistingPath = "prefix://unexisting-storage-path";
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .performIf(hideMetadata, visible, ms -> ms.click(hideMetadata))
-                .click(columnHeader(idField))
+                .initializeSorting(idField)
                 .sleep(5, SECONDS)
                 .performForEachRow(row -> {
 
@@ -267,6 +268,7 @@ public class SamplesMetadataTest
     public void viewMetadata() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleSetFolder, metadata -> {
                             metadata.validateFields(idField, createDateField, nameField, samplesField)
@@ -292,6 +294,7 @@ public class SamplesMetadataTest
     public void navigateToStorageFromMetadataEntity() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .getRow(1)
@@ -307,6 +310,7 @@ public class SamplesMetadataTest
         final By idHeader = columnHeader(idField);
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .initializeSorting(idField)
@@ -325,6 +329,7 @@ public class SamplesMetadataTest
         final String substring = "D70";
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .setValue(searchMetadata, substring)
@@ -341,6 +346,7 @@ public class SamplesMetadataTest
     public void columnsListCustomization() {
         library()
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .metadataSamples(sampleFolder)
                 .showColumnsMenu()
@@ -694,6 +700,7 @@ public class SamplesMetadataTest
                                         .click(run(), MetadataSelection::new)
                 )
                 .cd(project)
+                .sleep(1, SECONDS)
                 .cd(metadataFolder)
                 .cd("SampleSet")
                 .samples(samples -> samples.getRowByCellValue("NA12878_3_rep").selectRow())

@@ -158,6 +158,10 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
     }
 
     public MetadataSamplesAO metadataSamples(String metadataFolder) {
+        sleep(5, SECONDS);
+        $(byId("pipelines-library-tree-container")).shouldBe(visible)
+                .find(titleOfTreeItem(treeItem("Metadata"))).parent().parent()
+                .should(cssClass("ant-tree-node-content-wrapper-open"));
         $(byId("pipelines-library-tree-container")).shouldBe(visible)
                 .find(withText(metadataFolder)).shouldBe(visible).click();
         sleep(1, SECONDS);
@@ -231,6 +235,8 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
         $(byId("edit-storage-button")).shouldBe(visible).click();
         sleep(1, SECONDS);
         $(byId("edit-storage-dialog-delete-button")).shouldBe(visible).click();
+        sleep(1, SECONDS);
+        $(byId("edit-storage-delete-dialog-delete-button")).waitUntil(enabled, C.DEFAULT_TIMEOUT);
         $(byId("edit-storage-delete-dialog-delete-button")).shouldBe(visible).click();
         $(byClassName("ant-modal-content")).shouldNotBe(visible);
         return this;
