@@ -25,7 +25,6 @@ import {
   quotaActionTriggered,
   quotaHasTriggeredActions
 } from '../../billing/quotas/utilities/quota-actions';
-import quotaTypes from '../../billing/quotas/utilities/quota-types';
 import periods, {periodNames} from '../../billing/quotas/utilities/quota-periods';
 import styles from './quota-info.css';
 
@@ -191,47 +190,50 @@ SubjectQuotaInfoComponent.propTypes = {
 
 const SubjectQuotaInfo = inject('quotas')(observer(SubjectQuotaInfoComponent));
 
-function UserQuotasInfo (props) {
+function QuotasInfo (props) {
   const {
-    user,
+    subject,
+    type,
     ...otherProps
   } = props;
   return (
     <SubjectQuotaInfo
       {...otherProps}
-      subject={user}
-      type={quotaTypes.user}
+      subject={subject}
+      type={type}
     />
   );
 }
 
-UserQuotasInfo.propTypes = {
+QuotasInfo.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   quotaClassName: PropTypes.string,
   quotaStyle: PropTypes.string,
-  user: PropTypes.string,
+  subject: PropTypes.string,
+  type: PropTypes.string,
   onlyTriggered: PropTypes.bool
 };
 
-function UserQuotasDisclaimerComponent (
+function QuotasDisclaimerComponent (
   {
     className,
     style,
-    user,
+    type,
+    subject,
     quotas
   }
 ) {
-  if (!quotas || !quotas.loaded || !user) {
+  if (!quotas || !quotas.loaded || !subject || !type) {
     return null;
   }
-  const userQuotas = (quotas.value || [])
-    .filter(quota => quota.type === quotaTypes.user && quota.subject === user)
+  const exceededQuotas = (quotas.value || [])
+    .filter(quota => quota.type === type && quota.subject === subject)
     .filter(quota => quotaHasTriggeredActions(quota));
-  if (userQuotas.length > 0) {
+  if (exceededQuotas.length > 0) {
     return (
       <Popover
-        content={<UserQuotasInfo user={user} onlyTriggered />}
+        content={<QuotasInfo subject={subject} type={type} onlyTriggered />}
       >
         <div
           className={classNames('cp-warning', className)}
@@ -245,16 +247,17 @@ function UserQuotasDisclaimerComponent (
   return null;
 }
 
-UserQuotasDisclaimerComponent.propTypes = {
+QuotasDisclaimerComponent.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  user: PropTypes.string
+  subject: PropTypes.string,
+  type: PropTypes.string
 };
 
-const UserQuotasDisclaimer = inject('quotas')(observer(UserQuotasDisclaimerComponent));
+const QuotasDisclaimer = inject('quotas')(observer(QuotasDisclaimerComponent));
 
 export {
   QuotaInfo,
   SubjectQuotaInfo,
-  UserQuotasDisclaimer
+  QuotasDisclaimer
 };
