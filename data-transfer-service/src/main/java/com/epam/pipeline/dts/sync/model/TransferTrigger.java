@@ -17,22 +17,17 @@
 package com.epam.pipeline.dts.sync.model;
 
 import lombok.Value;
-import org.thymeleaf.util.StringUtils;
 
 import java.util.List;
 
-
 @Value
-public class AutonomousSyncRule {
+public class TransferTrigger {
 
-    String source;
-    String destination;
-    String cron;
-    Boolean deleteSource;
-    List<TransferTrigger> transferTriggers;
+    private Integer maxSearchDepth;
+    private List<String> globMatchers;
 
-    public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
-        return StringUtils.equals(source, anotherRule.getSource())
-               && StringUtils.equals(destination, anotherRule.getDestination());
+    public TransferTrigger addAllMatchers(final TransferTrigger anotherTrigger) {
+        globMatchers.addAll(anotherTrigger.getGlobMatchers());
+        return this;
     }
 }
