@@ -2141,19 +2141,8 @@ export default `
   fill: @color-error;
   background-color: @color-error;
 }
-@THEME .cp-status-bar {
-  background-color: @color-grey-semi-transparent;
-}
 @THEME .cp-billing-action-tag .ant-tag-text {
   background-color: @color-warning;
-}
-@THEME .cp-billing-quota-action-triggered {
-  color: @color-warning;
-  // border: 1px solid @color-warning;
-  // border-radius: 1px;
-  // padding: 1px 2px;
-  // background-color: @color-warning;
-  // text-shadow: 0 0 1.5px @color-warning;
 }
 
 @THEME .cp-search-clear-filters-button {
