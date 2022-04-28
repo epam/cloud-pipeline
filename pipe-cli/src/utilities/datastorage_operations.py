@@ -193,6 +193,7 @@ class DataStorageOperations(object):
                     relative_path = to_ascii(relative_path, removing=True)
                 else:
                     logging.warn(u'Ignoring unsafe characters in path {}...'.format(full_path))
+                item = (item[0], full_path, relative_path, source_size)
 
             if relative_path.endswith(FOLDER_MARKER):
                 filtered_items.append(item)
