@@ -46,7 +46,7 @@ import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
 import quotaTypes from '../../billing/quotas/utilities/quota-types';
 import {quotaHasTriggeredActions} from '../../billing/quotas/utilities/quota-actions';
-import {UserQuotasDisclaimer} from './quota-info';
+import {QuotasDisclaimer} from './quota-info';
 
 const PAGE_SIZE = 20;
 
@@ -500,8 +500,9 @@ export default class UsersManagement extends React.Component {
                   >
                     {attributesString}
                   </span>
-                  <UserQuotasDisclaimer
-                    user={user.userName}
+                  <QuotasDisclaimer
+                    subject={user.userName}
+                    type={quotaTypes.user}
                     style={{fontSize: 'smaller', cursor: 'pointer'}}
                   />
                 </Row>

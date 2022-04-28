@@ -39,6 +39,8 @@ import {
   getRoleType,
   splitRoleName
 } from './utilities';
+import {QuotasDisclaimer} from './quota-info';
+import quotaTypes from '../../billing/quotas/utilities/quota-types';
 import styles from '../UserManagementForm.css';
 
 const PAGE_SIZE = 20;
@@ -201,6 +203,11 @@ export default class GroupsManagement extends React.Component {
             <span>
               {name}
               {blockedSpan}
+              <QuotasDisclaimer
+                subject={name}
+                type={quotaTypes.group}
+                style={{fontSize: 'smaller', cursor: 'pointer'}}
+              />
             </span>
           );
         }

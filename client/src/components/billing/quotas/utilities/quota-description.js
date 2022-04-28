@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import {Button, Modal} from 'antd';
 
 import QuotaTarget from './quota-target';
-import {QuotaAction, quotaActionTriggered} from './quota-actions';
+import {QuotaAction} from './quota-actions';
 import {periodNames} from './quota-periods';
 import {numberFormatter} from '../../reports/utilities';
 import styles from './quota-description.css';
@@ -93,10 +93,7 @@ function QuotaDescription (
               .sort(sortActionsByThreshold)
               .map((action, index) => (
                 <QuotaAction
-                  className={classNames(
-                    styles.action,
-                    {'cp-billing-quota-action-triggered': quotaActionTriggered(action)}
-                  )}
+                  className={styles.action}
                   key={`action-${index}`}
                   action={action}
                   onDelete={onRemoveQuota}
