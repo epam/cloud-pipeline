@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,8 @@ import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
   from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
-import Metadata from '../../special/metadata/Metadata';
+import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
+import ItemsTable, {isJson} from '../../special/metadata/items-table';
 import Issues from '../../special/issues/Issues';
 import {
   ContentIssuesMetadataPanel,
@@ -240,12 +241,58 @@ export default class Folder extends localization.LocalizedReactComponent {
     });
   };
 
-  renderMetadataKeyValue = (key, value) => {
+  renderMetadataKeyValue = (key, metadata) => {
+    if (!metadata) {
+      return null;
+    }
+    const {value} = metadata;
+    const renderSpecialMetadataComponent = () => {
+      const SpecialMetadataComponent = SpecialTags[key];
+      return (
+        <div
+          key={`${key}_value`}
+          className="cp-text"
+        >
+          <SpecialMetadataComponent
+            key={key}
+            metadata={metadata}
+            showOnlySummary
+          />
+        </div>
+      );
+    };
+    const renderJSONComponent = () => {
+      return (
+        <div
+          key={`${key}_value`}
+        >
+          <ItemsTable
+            title={key}
+            showOnlySummary
+            value={value}
+            containerStyle={{display: 'grid', padding: 0}}
+            className="cp-text"
+          />
+        </div>
+      );
+    };
+    let metadataValue;
+    let wrapValue;
+    if (SpecialTags.hasOwnProperty(key)) {
+      metadataValue = renderSpecialMetadataComponent();
+      wrapValue = true;
+    } else if (isJson(value)) {
+      metadataValue = renderJSONComponent();
+    } else {
+      metadataValue = value;
+    }
     return (
       <Tooltip key={key} overlay={
         <Row>
           <Row>{key}:</Row>
-          <Row>{value}</Row>
+          <Row style={{wordBreak: 'break-word'}}>
+            {value}
+          </Row>
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
@@ -257,9 +304,10 @@ export default class Folder extends localization.LocalizedReactComponent {
           </Row>
           <Row className={classNames(
             styles.metadataItemValue,
+            {[styles.wrap]: wrapValue},
             'cp-library-metadata-item-value'
           )}>
-            {value}
+            {metadataValue}
           </Row>
         </div>
       </Tooltip>
@@ -273,7 +321,9 @@ export default class Folder extends localization.LocalizedReactComponent {
     const items = [];
     for (let key in metadata) {
       if (metadata.hasOwnProperty(key)) {
-        items.push(this.renderMetadataKeyValue(key, metadata[key].value));
+        items.push(
+          this.renderMetadataKeyValue(key, metadata[key])
+        );
       }
     }
     if (items.length > MAX_INLINE_METADATA_KEYS) {
@@ -352,6 +402,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     },
     {
       key: 'region',
+      className: styles.treeItemRegion,
       render: (item) => {
         if (item.type === ItemTypes.storage) {
           return <AWSRegionTag regionId={item.regionId} />;
