@@ -52,24 +52,17 @@ const getStatus = (quota) => {
 
 const getQuotaExpense = (quota) => {
   const {actions = []} = quota || {};
-  const expense = actions
-    .reduce((expense, action) => {
-      if (action.activeAction) {
-        expense = action.activeAction.expense;
-      }
-      return expense;
-    }, 0);
+  const {activeAction} = actions.find(action => action.activeAction) || {};
+  const {expense = 0} = activeAction || {};
   const percent = Math.round(expense / quota.value * 100);
   return (
-    <span>
-      {quotaGroupSpendingNames[quota.quotaGroup]} expenses per current {periodNames[quota.period].toLowerCase()}:
-      &nbsp;
+    <div className={styles.expenseContainer}>
+      <span>{quotaGroupSpendingNames[quota.quotaGroup]}</span>
+      <span>expenses per current</span>
+      <span>{periodNames[quota.period].toLowerCase()}:</span>
       <b>{expense}$</b>
-      &nbsp;
-      &#40;
-      {percent}%
-      &#x2769;
-    </span>);
+      <span>{`(${percent}%)`}</span>
+    </div>);
 };
 
 function QuotaLimitIndicator (props) {
