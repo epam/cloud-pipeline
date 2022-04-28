@@ -1783,4 +1783,4 @@ export default class Metadata extends localization.LocalizedReactComponent {
   }
 }
 
-export {ApplyChanges};
+export {ApplyChanges, SpecialTags};

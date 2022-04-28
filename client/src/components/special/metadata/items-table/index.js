@@ -36,8 +36,11 @@ class ItemsTable extends React.Component {
   static propTypes = {
     title: PropTypes.string,
     disabled: PropTypes.bool,
+    showOnlySummary: PropTypes.bool,
     value: PropTypes.string,
-    onChange: PropTypes.func
+    onChange: PropTypes.func,
+    containerStyle: PropTypes.object,
+    className: PropTypes.string
   };
 
   state = {
@@ -232,7 +235,12 @@ class ItemsTable extends React.Component {
   };
 
   render () {
-    const {title} = this.props;
+    const {
+      title,
+      showOnlySummary,
+      containerStyle,
+      className
+    } = this.props;
     const {
       editMode,
       expanded
@@ -240,10 +248,12 @@ class ItemsTable extends React.Component {
     return (
       <div
         className={styles.container}
+        style={containerStyle}
       >
         <a
+          className={className}
           id="items-table-expand"
-          onClick={this.toggleExpandMode(true)}
+          onClick={showOnlySummary ? undefined : this.toggleExpandMode(true)}
         >
           {plural(this.items.length, 'item')}
         </a>

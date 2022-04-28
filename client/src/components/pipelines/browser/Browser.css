@@ -84,6 +84,10 @@ tbody[class*="ant-table-tbody"] .tree-item-name {
   cursor: pointer;
 }
 
+.tree-item-region:hover {
+  cursor: pointer;
+}
+
 .tree-item-actions {
   cursor: pointer;
   min-width: min-content;
@@ -396,6 +400,7 @@ tr.table-row-selected {
   margin-bottom: 3px;
   margin-right: 10px;
   font-size: smaller;
+  vertical-align: top;
 }
 
 .metadata-popover .metadata-item-container {
@@ -415,6 +420,10 @@ tr.table-row-selected {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.metadata-item-value.wrap {
+  white-space: initial;
 }
 
 .metadata-popover .metadata-item-value {
