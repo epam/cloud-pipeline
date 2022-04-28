@@ -26,13 +26,12 @@ if sys.version_info >= (3, 0):
 
 
     def to_ascii(value, replacing=False, replacing_with='?', removing=False):
-        if not isinstance(value, str):
-            return to_ascii(to_string(value))
+        value = to_string(value)
         if replacing:
             if replacing_with == '?':
                 return to_string(value.encode('ascii', errors='replace'))
             else:
-                return ''.join([replacing_with if ord(c) > 128 else c for c in value])
+                return ''.join([c if ord(c) < 128 else replacing_with for c in value])
         if removing:
             return to_string(value.encode('ascii', errors='ignore'))
         return to_string(value.encode('ascii'))
@@ -57,13 +56,12 @@ else:
 
 
     def to_ascii(value, replacing=False, replacing_with='?', removing=False):
-        if not isinstance(value, unicode):
-            return to_ascii(to_unicode(value))
+        value = to_unicode(value)
         if replacing:
             if replacing_with == '?':
                 return value.encode('ascii', errors='replace')
             else:
-                return ''.join([replacing_with if ord(c) > 128 else c for c in value])
+                return ''.join([c if ord(c) < 128 else replacing_with for c in to_string(value)])
         if removing:
             return value.encode('ascii', errors='ignore')
         return value.encode('ascii')
