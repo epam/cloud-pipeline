@@ -36,6 +36,7 @@ class ItemsTable extends React.Component {
   static propTypes = {
     title: PropTypes.string,
     disabled: PropTypes.bool,
+    onlySummary: PropTypes.bool,
     value: PropTypes.string,
     onChange: PropTypes.func,
     containerStyle: PropTypes.object,
@@ -236,6 +237,7 @@ class ItemsTable extends React.Component {
   render () {
     const {
       title,
+      onlySummary,
       containerStyle,
       className
     } = this.props;
@@ -251,7 +253,7 @@ class ItemsTable extends React.Component {
         <a
           className={className}
           id="items-table-expand"
-          onClick={this.toggleExpandMode(true)}
+          onClick={onlySummary ? undefined : this.toggleExpandMode(true)}
         >
           {plural(this.items.length, 'item')}
         </a>

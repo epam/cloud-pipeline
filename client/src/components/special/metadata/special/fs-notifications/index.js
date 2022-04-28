@@ -626,9 +626,11 @@ class FSNotifications extends React.Component {
     const {
       authenticatedUserInfo,
       readOnly: readOnlyRaw,
-      info = {}
+      info = {},
+      disabled
     } = this.props;
-    const readOnly = readOnlyRaw ||
+    const readOnly = disabled ||
+      readOnlyRaw ||
       !authenticatedUserInfo ||
       !authenticatedUserInfo.loaded ||
       !authenticatedUserInfo.value ||
@@ -653,7 +655,10 @@ class FSNotifications extends React.Component {
     return (
       <div
         className={styles.container}
-        onClick={readOnly && notifications.length === 0 ? undefined : this.onOpenEditDialog}
+        onClick={disabled || (readOnly && notifications.length === 0)
+          ? undefined
+          : this.onOpenEditDialog
+        }
       >
         {
           empty && !readOnly
@@ -678,6 +683,7 @@ class FSNotifications extends React.Component {
 FSNotifications.propTypes = {
   metadata: PropTypes.object,
   readOnly: PropTypes.bool,
+  disabled: PropTypes.bool,
   onChange: PropTypes.func,
   info: PropTypes.object
 };

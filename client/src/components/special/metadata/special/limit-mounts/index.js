@@ -53,11 +53,13 @@ class LimitMountsUserPreference extends React.Component {
 
   render () {
     const {
-      readOnly,
-      metadata = {}
+      readOnly: readOnlyRaw,
+      metadata = {},
+      disabled
     } = this.props;
     const {value = undefined} = metadata;
     const doNotMountStorages = /^none$/i.test(value);
+    const readOnly = disabled || readOnlyRaw;
     return (
       <div>
         <div
@@ -108,6 +110,7 @@ LimitMountsUserPreference.metatadaKey = CP_CAP_LIMIT_MOUNTS;
 LimitMountsUserPreference.propTypes = {
   metadata: PropTypes.object,
   readOnly: PropTypes.bool,
+  disabled: PropTypes.bool,
   onChange: PropTypes.func,
   onRemove: PropTypes.func,
   info: PropTypes.object

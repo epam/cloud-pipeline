@@ -248,12 +248,13 @@ export default class Folder extends localization.LocalizedReactComponent {
         <div
           onClick={e => e.stopPropagation()}
           key={`${key}_value`}
-          className="cp-link"
+          className="cp-text"
+          style={{pointerEvents: 'none'}}
         >
           <SpecialMetadataComponent
             key={key}
             metadata={metadata}
-            readOnly
+            disabled
           />
         </div>
       );
@@ -265,17 +266,19 @@ export default class Folder extends localization.LocalizedReactComponent {
         >
           <ItemsTable
             title={key}
-            disabled
+            onlySummary
             value={value}
             containerStyle={{display: 'grid', padding: 0}}
-            className="underline-on-hover"
+            className="cp-text"
           />
         </div>
       );
     };
     let metadataValue;
+    let wrapValue;
     if (SpecialTags.hasOwnProperty(key)) {
       metadataValue = renderSpecialMetadataComponent();
+      wrapValue = true;
     } else if (isJson(value)) {
       metadataValue = renderJSONComponent();
     } else {
@@ -297,6 +300,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           </Row>
           <Row className={classNames(
             styles.metadataItemValue,
+            {[styles.wrap]: wrapValue},
             'cp-library-metadata-item-value'
           )}>
             {metadataValue}
