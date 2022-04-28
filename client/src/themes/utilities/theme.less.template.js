@@ -154,6 +154,9 @@ export default `
 @THEME a.underline {
   text-decoration: underline;
 }
+@THEME a.underline-on-hover:hover {
+  text-decoration: underline;
+}
 @THEME a.cp-danger:hover,
 @THEME a.cp-danger:focus,
 @THEME .cp-link.cp-danger:hover,
