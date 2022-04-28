@@ -43,9 +43,13 @@ PLANE_COORDINATES_DELIMITER = os.getenv('HCS_CLOUD_FILES_SCHEMA', '_')
 DEFAULT_CHANNEL_WIDTH = os.getenv('HCS_DEFAULT_CHANNEL_WIDTH', 1080)
 DEFAULT_CHANNEL_HEIGHT = os.getenv('HCS_DEFAULT_CHANNEL_HEIGHT', 1080)
 
+HCS_PROCESSING_OUTPUT_FOLDER = os.getenv('HCS_PARSING_OUTPUT_FOLDER')
 HCS_PROCESSING_TASK_NAME = 'HCS processing'
-HCS_INDEX_FILE = 'Index.xml'
-MEASUREMENT_INDEX_FILE_PATH = '/Images/' + HCS_INDEX_FILE
+HCS_OME_COMPATIBLE_INDEX_FILE_NAME = 'Index.xml'
+OVERVIEW_DIR_NAME = 'overview'
+HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
+HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
+MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 TAGS_MAPPING_RULE_DELIMITER = ','
@@ -81,7 +85,22 @@ class HcsParsingUtils:
 
     @staticmethod
     def build_preview_file_path(hcs_root_folder_path):
-        return HcsParsingUtils.get_file_without_extension(hcs_root_folder_path) + '.hcs'
+        index_file_abs_path = os.path.join(HcsParsingUtils.get_file_without_extension(hcs_root_folder_path),
+                                           HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+        hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
+        hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
+        file_name = HcsParsingUtils.get_file_without_extension(hcs_root_folder_path)
+        name_xml_element = HcsFileParser.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix)\
+            .find(hcs_schema_prefix + 'Name')
+        if name_xml_element is not None:
+            file_pretty_name = name_xml_element.text
+            if file_pretty_name is not None:
+                file_name = file_pretty_name
+        preview_file_basename = file_name + '.hcs'
+        parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
+            if HCS_PROCESSING_OUTPUT_FOLDER \
+            else os.path.dirname(hcs_root_folder_path)
+        return os.path.join(parent_folder, preview_file_basename)
 
     @staticmethod
     def get_stat_active_file_name(hcs_img_path):
@@ -148,6 +167,7 @@ class HcsProcessingDirsGenerator:
 
     def generate_paths(self):
         hcs_roots = self.find_all_hcs_roots()
+        log_info('Found {} HCS files'.format(len(hcs_roots)))
         return filter(lambda p: self.is_processing_required(p), hcs_roots)
 
     def find_all_hcs_roots(self):
@@ -411,8 +431,9 @@ class HcsFileParser:
         return PLANE_COORDINATES_DELIMITER.join([str(x_coord), str(y_coord)])
 
     @staticmethod
-    def extract_plate_from_hcs_xml(hcs_xml_info_root):
-        hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
+    def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
+        if not hcs_schema_prefix:
+            hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
         plate = plates_list.find(hcs_schema_prefix + 'Plate')
         return plate
@@ -492,6 +513,10 @@ class HcsFileParser:
         self.log_processing_info('Generating XML description')
         HcsParsingUtils.create_service_dir_if_not_exist(self.hcs_img_path)
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
+        if HCS_INDEX_FILE_NAME != HCS_OME_COMPATIBLE_INDEX_FILE_NAME:
+            compatible_index_path = os.path.join(self.hcs_img_service_dir, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
+            shutil.copy(hcs_index_file_path, compatible_index_path)
+            hcs_index_file_path = compatible_index_path
         self.generate_bioformats_ome_xml(hcs_index_file_path, self.ome_xml_info_file_path)
 
     def build_parsing_details(self):
@@ -626,7 +651,17 @@ class HcsFileParser:
         self._mkdir(sequence_data_local_dir)
         src_images_dir = os.path.dirname(hcs_local_index_file_path)
         sequence_image_ids = set()
-        for image in images_list.findall(hcs_schema_prefix + 'Image'):
+        images = images_list.findall(hcs_schema_prefix + 'Image')
+        image_subfolders = set()
+        for image in images:
+            file_name = image.find(hcs_schema_prefix + 'URL').text
+            last_delim_index = file_name.rfind('/')
+            if last_delim_index > 0:
+                image_subfolders.add(file_name[:last_delim_index])
+        for path in image_subfolders:
+            self._mkdir(os.path.join(sequence_data_local_dir, path))
+            self._mkdir(os.path.join(sequence_data_local_dir, OVERVIEW_DIR_NAME, path))
+        for image in images:
             sequence_id = image.find(hcs_schema_prefix + 'SequenceID').text
             if sequence_id != target_sequence_id:
                 images_list.remove(image)
@@ -653,16 +688,17 @@ class HcsFileParser:
         for well in plate.findall(hcs_schema_prefix + 'Well'):
             if well.get('id') not in sequence_wells:
                 plate.remove(well)
-        sequence_index_file_path = os.path.join(sequence_data_local_dir, HCS_INDEX_FILE)
+        sequence_index_file_path = os.path.join(sequence_data_local_dir, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         ET.register_namespace('', hcs_schema_prefix[1:-1])
         hcs_xml_info_tree.write(sequence_index_file_path)
         return sequence_index_file_path
 
     def build_wells_map(self, sequence_id):
-        hcs_index_file_path = os.path.join(self.tmp_local_dir, sequence_id, HCS_INDEX_FILE)
+        hcs_index_file_path = os.path.join(self.tmp_local_dir, sequence_id, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         ome_xml_file_path = os.path.join(os.path.dirname(hcs_index_file_path), 'Index.ome.xml')
         self.generate_bioformats_ome_xml(hcs_index_file_path, ome_xml_file_path)
-        preview_hcs_index_file_path = os.path.join(self.tmp_local_dir, sequence_id, 'overview', HCS_INDEX_FILE)
+        preview_hcs_index_file_path = os.path.join(self.tmp_local_dir, sequence_id, OVERVIEW_DIR_NAME,
+                                                   HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         preview_ome_xml_file_path = os.path.join(os.path.dirname(preview_hcs_index_file_path), 'Index.ome.xml')
         self.generate_bioformats_ome_xml(preview_hcs_index_file_path, preview_ome_xml_file_path)
         hcs_xml_info_root = ET.parse(hcs_index_file_path).getroot()
@@ -771,7 +807,7 @@ class HcsFileParser:
         hcs_xml_info_tree = ET.parse(sequence_index_file_path)
         hcs_xml_info_root = hcs_xml_info_tree.getroot()
         sequence_data_root_path = os.path.dirname(sequence_index_file_path)
-        sequence_preview_dir_path = os.path.join(sequence_data_root_path, 'overview')
+        sequence_preview_dir_path = os.path.join(sequence_data_root_path, OVERVIEW_DIR_NAME)
         self._mkdir(sequence_preview_dir_path)
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         original_images_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Images')
@@ -788,7 +824,7 @@ class HcsFileParser:
             self.merge_well_layers(original_images_list, sequence_preview_dir_path, well, well_layers,
                                    well_grid_missing_values)
         hcs_xml_info_root.append(original_images_list)
-        preview_sequence_index_file_path = os.path.join(sequence_preview_dir_path, HCS_INDEX_FILE)
+        preview_sequence_index_file_path = os.path.join(sequence_preview_dir_path, HCS_OME_COMPATIBLE_INDEX_FILE_NAME)
         ET.register_namespace('', hcs_schema_prefix[1:-1])
         hcs_xml_info_tree.write(preview_sequence_index_file_path)
         return preview_sequence_index_file_path
