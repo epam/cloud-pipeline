@@ -26,5 +26,6 @@ public interface PreferenceService {
     Optional<List<AutonomousSyncRule>> getSyncRules();
     boolean isShutdownRequired();
     boolean isHeartbeatEnabled();
+    boolean isSourceDeletionEnabled();
     void clearShutdownFlag();
 }

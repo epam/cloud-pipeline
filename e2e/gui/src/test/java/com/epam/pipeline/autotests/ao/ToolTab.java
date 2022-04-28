@@ -33,6 +33,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.String.format;
+import static com.epam.pipeline.autotests.utils.Utils.LATEST_VERSION;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
@@ -68,18 +69,18 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
     }
 
     public RunsMenuAO run(final AbstractSinglePipelineRunningTest test) {
-        runToolWithDefaultSettings(toolName, "latest");
+        runToolWithDefaultSettings(toolName, LATEST_VERSION);
         test.setRunId(Utils.getToolRunId(toolName));
         return new RunsMenuAO();
     }
 
     public RunsMenuAO run(final AbstractSeveralPipelineRunningTest test) {
-        runToolWithDefaultSettings(toolName, "latest");
+        runToolWithDefaultSettings(toolName, LATEST_VERSION);
         test.addRunId(Utils.getToolRunId(toolName));
         return new RunsMenuAO();
     }
 
-    private RunsMenuAO runToolWithDefaultSettings(String tool, String version) {
+    private RunsMenuAO runToolWithDefaultSettings(final String tool, final String version) {
         sleep(2, SECONDS);
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())

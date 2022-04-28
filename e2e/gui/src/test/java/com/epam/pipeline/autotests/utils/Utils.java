@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -71,6 +72,7 @@ public class Utils {
     public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
     public static final String SPOT = "Spot";
+    public static final String LATEST_VERSION = "latest";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -260,6 +262,14 @@ public class Utils {
 
     public static File createTempFile() throws RuntimeException {
         return createTempFile("");
+    }
+
+    public static File createTempFileWithSpecificSize(final long sizeInBytes) throws IOException {
+        final File tempFile = createTempFile();
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(tempFile, "rw");
+        randomAccessFile.setLength(sizeInBytes);
+        randomAccessFile.close();
+        return tempFile;
     }
 
     public static File createTempFile(String suffix) throws RuntimeException {

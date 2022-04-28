@@ -18,3 +18,8 @@
   font-weight: bold;
   text-align: center;
 }
+
+.quota-summary .quota-summary-title:not(:last-child)::after {
+  content: ' - ';
+  white-space: pre;
+}

@@ -1182,6 +1182,7 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     }
     return (
       <div
+        className="cp-run-name-title"
         style={{
           marginTop: '-16px',
           marginBottom: '6px',

@@ -347,7 +347,7 @@ class InstanceReport extends React.Component {
                           <Summary
                             compute={summary}
                             computeDiscounts={computeDiscounts}
-                            quota={false}
+                            quota
                             title={this.getSummaryTitle()}
                             style={{width, height}}
                           />

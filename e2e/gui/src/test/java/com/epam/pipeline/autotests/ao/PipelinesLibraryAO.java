@@ -198,6 +198,7 @@ public class PipelinesLibraryAO implements AccessObject<PipelinesLibraryAO> {
 
     public PipelinesLibraryAO createNfsMount(String nfsMountPath, String nfsMountName) {
         return clickOnCreateNfsMountButton()
+                .setNfsMount(C.NFS_PREFIX)
                 .setNfsMountPath(nfsMountPath)
                 .setNfsMountAlias(nfsMountName)
                 .ok();

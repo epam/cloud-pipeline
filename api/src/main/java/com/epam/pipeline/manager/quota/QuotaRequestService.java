@@ -18,13 +18,13 @@ package com.epam.pipeline.manager.quota;
 import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaUsage;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.exception.search.SearchException;
 import com.epam.pipeline.manager.billing.BillingManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 
 
 @Service
@@ -38,20 +38,27 @@ public class QuotaRequestService {
     public QuotaUsage getQuotaUsage(final Quota quota) {
         final LocalDate from = getStartDate(quota);
         final LocalDate to = DateUtils.nowUTC().toLocalDate();
+        final LocalDate endDate = getEndDate(quota);
         return QuotaUsage
                 .builder()
                 .from(from)
-                .to(to)
-                .expense(fetchExpense(quota, from, to) / MILLICENTS_IN_DOLLAR)
+                .to(endDate)
+                .expense(billingManager.getQuotaExpense(quota, from, to) / MILLICENTS_IN_DOLLAR)
                 .build();
     }
 
-    private Double fetchExpense(final Quota quota, final LocalDate from, final LocalDate to) {
-        try {
-            return billingManager.getQuotaExpense(quota, from, to);
-        } catch (SearchException e) {
-            log.error("Failed to load expense for quota:" + e.getMessage(), e);
-            return 0.0;
+    private LocalDate getEndDate(final Quota quota) {
+        final LocalDate now = DateUtils.nowUTC().toLocalDate();
+        switch (quota.getPeriod()) {
+            case MONTH:
+                return now.with(TemporalAdjusters.lastDayOfMonth());
+            case QUARTER:
+                return getFirstDayOfQuarter(now).plusMonths(2)
+                        .with(TemporalAdjusters.lastDayOfMonth());
+            case YEAR:
+                return now.with(TemporalAdjusters.lastDayOfYear());
+            default:
+                return now;
         }
     }
 
@@ -61,11 +68,15 @@ public class QuotaRequestService {
             case MONTH:
                 return now.withDayOfMonth(1);
             case QUARTER:
-                return now.with(now.getMonth().firstMonthOfQuarter()).withDayOfMonth(1);
+                return getFirstDayOfQuarter(now);
             case YEAR:
                 return now.withDayOfYear(1);
             default:
                 return now;
         }
+    }
+
+    private LocalDate getFirstDayOfQuarter(final LocalDate now) {
+        return now.with(now.getMonth().firstMonthOfQuarter()).with(TemporalAdjusters.firstDayOfMonth());
     }
 }

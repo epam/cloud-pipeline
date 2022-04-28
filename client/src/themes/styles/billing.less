@@ -148,3 +148,27 @@
 .cp-billing-layout .react-grid-item {
   transition: none;
 }
+
+.cp-quota-status-green {
+  fill: @color-success;
+  background-color: @color-success;
+}
+
+.cp-quota-status-green.hide {
+  fill: transparent;
+  background-color: transparent;
+}
+
+.cp-quota-status-yellow {
+  fill: @color-warning;
+  background-color: @color-warning;
+}
+
+.cp-quota-status-red {
+  fill: @color-error;
+  background-color: @color-error;
+}
+
+.cp-billing-action-tag .ant-tag-text{
+  background-color: @color-warning;
+}

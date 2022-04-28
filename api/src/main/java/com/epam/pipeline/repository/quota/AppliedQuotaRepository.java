@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,13 @@ import com.epam.pipeline.entity.quota.AppliedQuotaEntity;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.CrudRepository;
 
+import java.time.LocalDate;
+
 
 @SuppressWarnings({"PMD.MethodNamingConventions"})
 public interface AppliedQuotaRepository extends CrudRepository<AppliedQuotaEntity, Long>,
         JpaSpecificationExecutor<AppliedQuotaEntity> {
     void deleteAllByAction_Quota_Id(Long quotaId);
     void deleteAllByAction_Id(Long actionId);
+    void deleteByToBefore(LocalDate to);
 }

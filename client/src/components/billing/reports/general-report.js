@@ -19,7 +19,7 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Pagination, Radio, Table} from 'antd';
 import {
-  BarChart,
+  BarChartWithQuota,
   GroupedBarChart,
   BillingTable,
   PieChart,
@@ -43,6 +43,7 @@ import {
 } from './utilities';
 import {GeneralReportLayout, Layout} from './layout';
 import roleModel from '../../../utils/roleModel';
+import QuotaTypes from '../quotas/utilities/quota-types';
 import styles from './reports.css';
 
 function injection (stores, props) {
@@ -141,7 +142,7 @@ class BillingCenters extends React.Component {
 
   render () {
     const {
-      request,
+      requests,
       discounts: discountsFn,
       onSelect,
       height,
@@ -171,8 +172,9 @@ class BillingCenters extends React.Component {
         </Radio.Group>
         {
           mode === BillingCentersDisplayModes.bar && (
-            <BarChart
-              request={request}
+            <BarChartWithQuota
+              requests={requests}
+              quotaType={QuotaTypes.billingCenter}
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
@@ -183,7 +185,7 @@ class BillingCenters extends React.Component {
         {
           mode === BillingCentersDisplayModes.pie && (
             <PieChart
-              request={request}
+              request={requests}
               discounts={discountsFn}
               title={title}
               onSelect={onSelect}
@@ -197,7 +199,7 @@ class BillingCenters extends React.Component {
 }
 
 BillingCenters.propTypes = {
-  request: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  requests: PropTypes.array,
   discounts: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onSelect: PropTypes.func,
   title: PropTypes.node,
@@ -284,6 +286,7 @@ function UserReport ({
                             'Compute instances': computeDiscounts
                           }}
                           title="Resources"
+                          displayQuotasSummary
                           onSelect={onResourcesSelect}
                           height={height}
                         />
@@ -396,7 +399,7 @@ class UsersChartComponent extends React.Component {
 
   render () {
     const {
-      request,
+      requests,
       discounts,
       title,
       onSelect,
@@ -405,8 +408,9 @@ class UsersChartComponent extends React.Component {
       preferences
     } = this.props;
     return (
-      <BarChart
-        request={request}
+      <BarChartWithQuota
+        quotaType={QuotaTypes.user}
+        requests={requests}
         discounts={discounts}
         title={title}
         onSelect={onSelect}
@@ -540,6 +544,7 @@ function GroupReport ({
                             'Compute instances': computeDiscounts
                           }}
                           title="Resources"
+                          displayQuotasSummary
                           onSelect={onResourcesSelect}
                           height={height}
                         />
@@ -555,7 +560,7 @@ function GroupReport ({
                       ({height}) => (
                         <div>
                           <UsersChart
-                            request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                            requests={[billingCentersComputeRequest, billingCentersStorageRequest]}
                             discounts={[computeDiscounts, storageDiscounts]}
                             title={title}
                             onSelect={onUserSelect}
@@ -675,6 +680,7 @@ function GeneralReport ({
                           }}
                           onSelect={onResourcesSelect}
                           title="Resources"
+                          displayQuotasSummary
                           height={height}
                         />
                       )
@@ -692,7 +698,10 @@ function GeneralReport ({
                         {
                           ({height}) => (
                             <BillingCenters
-                              request={[billingCentersComputeRequest, billingCentersStorageRequest]}
+                              requests={[
+                                billingCentersComputeRequest,
+                                billingCentersStorageRequest
+                              ]}
                               discounts={[computeDiscounts, storageDiscounts]}
                               onSelect={onBillingCenterSelect}
                               title="Billing centers"

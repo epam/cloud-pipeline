@@ -2125,6 +2125,25 @@ export default `
 @THEME .cp-billing-layout .react-grid-item {
   transition: none;
 }
+@THEME .cp-quota-status-green {
+  fill: @color-success;
+  background-color: @color-success;
+}
+@THEME .cp-quota-status-green.hide {
+  fill: transparent;
+  background-color: transparent;
+}
+@THEME .cp-quota-status-yellow {
+  fill: @color-warning;
+  background-color: @color-warning;
+}
+@THEME .cp-quota-status-red {
+  fill: @color-error;
+  background-color: @color-error;
+}
+@THEME .cp-billing-action-tag .ant-tag-text {
+  background-color: @color-warning;
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;

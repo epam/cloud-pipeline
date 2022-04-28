@@ -31,7 +31,11 @@ To synchronise some data directory as well as dts logs directory every minute th
 pipe dts preferences update "$DTS_NAME" -p 'dts.local.sync.rules=[{
                                                 "source": "c:\\local\\path\\to\\source\\directory",
                                                 "destination": "s3://data/storage/path/to/destination/directory",
-                                                "cron": "0 0/1 * ? * *"
+                                                "cron": "0 0/1 * ? * *",
+                                                "transferTriggers": [
+                                                  { "maxSearchDepth":3, "globMatchers": [ "file_prefix*.extension" ] },
+                                                  { "maxSearchDepth": 2, "globMatchers": [ "file_name" ] }
+                                                ]
                                             }, {
                                                 "source": "c:\\Program Files\\CloudPipeline\\DTS\\logs",
                                                 "destination": "s3://data/storage/path/to/logs/directory",
@@ -58,3 +62,28 @@ The following cron expressions can be used as a template in synchronisation rule
 - `0 0/1 * ? * *` - every minute (00:00, 00:01, ..., 00:00, 00:01, ...)
 - `0 0 * ? * *` - every hour (00:00, 01:00, ..., 00:00, 01:00, ...)
 - `0 30 14 ? * *` - every day at 14:30 (14:30, 14:30, ..., 14:30, 14:30, ...)
+
+## Transfer triggers
+Some directories (pipeline results, for example) should be synchronized only when a certain file(s) appears in it.
+Such file triggers could be configured via `transferTriggers` attribute and contains objects with the following properties:
+- `maxDepthSearch` - value, which is limiting the search depth (0 means 'check sync source directory only')
+- `globMatchers` - list of UNIX-like glob expressions, describing target file patterns; 
+                   In case multiple globs are specified for the same trigger they are interpreted using `OR` logical operator
+
+```json
+{
+    "source": ...,
+    "destination": ...,
+    "cron": ...,
+    "transferTriggers": [
+        {
+          "maxSearchDepth": 3, // might be omitted - default value, configured in DTS, will be used instead
+          "globMatchers": [
+            "file_prefix*.extension",
+            "file_name"
+          ]
+        },
+        ...
+    ]
+}
+```

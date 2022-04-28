@@ -16,9 +16,9 @@
 
 import createSnapshot from './utilities/create-snapshot';
 
-const LOG_MESSAGE = Symbol('log message');
-const LOG_ERROR = Symbol('log error');
-const CALLBACKS = Symbol('callbacks');
+const LOG_MESSAGE = 'LOG_MESSAGE';
+const LOG_ERROR = 'LOG_ERROR';
+const CALLBACKS = 'CALLBACKS';
 
 /**
  * @typedef {Object} OverviewOptions
