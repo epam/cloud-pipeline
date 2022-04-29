@@ -44,9 +44,7 @@ import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
 import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
-import quotaTypes from '../../billing/quotas/utilities/quota-types';
-import {quotaHasTriggeredActions} from '../../billing/quotas/utilities/quota-actions';
-import {UserQuotasDisclaimer} from './quota-info';
+import {QuotasDisclaimerComponent} from './quota-info';
 
 const PAGE_SIZE = 20;
 
@@ -68,7 +66,7 @@ const USERS_FILTERS = {
 };
 
 @roleModel.authenticationInfo
-@inject('dataStorages', 'usersWithActivity', 'userMetadataKeys', 'users', 'quotas')
+@inject('dataStorages', 'usersWithActivity', 'userMetadataKeys', 'users')
 @inject(({usersWithActivity, authenticatedUserInfo, userMetadataKeys, users}) => ({
   users: usersWithActivity,
   usersStore: users,
@@ -102,14 +100,6 @@ export default class UsersManagement extends React.Component {
   get isReader () {
     return roleModel.hasRole('ROLE_USER_READER')(this);
   };
-
-  @computed
-  get quotas () {
-    const {quotas} = this.props;
-    return quotas && quotas.loaded
-      ? quotas.value.filter(quota => quota.type === quotaTypes.user)
-      : [];
-  }
 
   operationWrapper = (operation) => (...props) => {
     this.setState({
@@ -224,9 +214,7 @@ export default class UsersManagement extends React.Component {
             return user.online;
           }
           case USERS_FILTERS.quota: {
-            const quotas = this.quotas
-              .filter(quota => quota.subject === user.userName);
-            return quotas.some(quotaHasTriggeredActions);
+            return (user.activeQuotas || []).length > 0;
           }
         }
       });
@@ -500,9 +488,9 @@ export default class UsersManagement extends React.Component {
                   >
                     {attributesString}
                   </span>
-                  <UserQuotasDisclaimer
-                    user={user.userName}
+                  <QuotasDisclaimerComponent
                     style={{fontSize: 'smaller', cursor: 'pointer'}}
+                    quotas={user.activeQuotas || []}
                   />
                 </Row>
               </Row>
@@ -689,12 +677,10 @@ export default class UsersManagement extends React.Component {
   }
 
   componentDidMount () {
-    this.props.quotas.fetchIfNeededOrWait();
     this.props.users.fetch();
   }
 
   componentWillUnmount () {
-    this.props.quotas.invalidateCache();
     this.props.usersStore.fetch();
   }
 }

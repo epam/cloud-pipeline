@@ -33,17 +33,14 @@ import {
 } from './quotas';
 
 ChartJS.Tooltip.positioners.custom = function (elements, eventPosition) {
-  /** @type {Chart.Tooltip} */
   const [chart] = elements.map(element => element._chart);
   const chartWidth = chart?.width || 0;
+  const chartHeight = chart?.height || 0;
   const width = Math.max(0, ...elements.map(element => element._view?.width || 0));
   const x = Math.max(0, ...elements.map(element => element._view?.x || 0));
-  const y = elements
-    .map(element => element._view?.y || 0)
-    .reduce((r, c) => r + c, 0) / elements.length;
   return {
     x: x > chartWidth / 2.0 ? (x - width / 2.0) : (x + width / 2.0),
-    y
+    y: chartHeight / 2.0
   };
 };
 

@@ -16,6 +16,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import quotaGroups from './quota-groups';
+import classNames from 'classnames';
 
 const actions = {
   notify: 'NOTIFY',
@@ -45,7 +46,8 @@ function QuotaAction (
   }
   const {
     threshold = 0,
-    actions = []
+    actions = [],
+    activeAction
   } = action;
   if (actions.length === 0) {
     return null;
@@ -55,7 +57,14 @@ function QuotaAction (
       .toLowerCase()).join(', ');
   return (
     <span
-      className={className}
+      className={
+        classNames(
+          className,
+          {
+            'cp-warning': !!activeAction
+          }
+        )
+      }
       style={style}
     >
       {Math.round(100.0 * Number(threshold)) / 100.0}%: {actionsDescription}
