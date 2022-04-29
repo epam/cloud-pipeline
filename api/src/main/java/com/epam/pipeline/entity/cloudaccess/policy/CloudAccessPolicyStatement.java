@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.cloudaccess;
+package com.epam.pipeline.entity.cloudaccess.policy;
 
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessPolicy;
-import com.epam.pipeline.entity.region.CloudProvider;
+import lombok.Builder;
+import lombok.Value;
 
-public interface CloudPolicyMapper {
+import java.util.List;
 
-    CloudProvider getCloudProvider();
-    String map(CloudUserAccessPolicy policy);
-    CloudUserAccessPolicy parse(String cloudPolicy);
-
+@Value
+@Builder
+public class CloudAccessPolicyStatement {
+    CloudAccessPolicyEffect effect;
+    List<CloudAccessPolicyAction> actions;
+    String resource;
 }

@@ -25,7 +25,8 @@ import lombok.Value;
 public class CloudUserAccessKeys {
 
     String id;
-    String raw;
+    String credentialsFile;
+    String configFile;
     CloudProvider cloudProvider;
 
 }

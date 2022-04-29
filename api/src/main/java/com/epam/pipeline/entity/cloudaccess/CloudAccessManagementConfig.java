@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.cloudaccess;
 
-import com.epam.pipeline.entity.region.CloudProvider;
 import lombok.Builder;
 import lombok.Value;
 
@@ -24,7 +23,7 @@ import lombok.Value;
 @Builder
 public class CloudAccessManagementConfig {
 
-    CloudProvider cloudProvider;
+    Long regionId;
     boolean enabled;
     String markdownTemplate;
 

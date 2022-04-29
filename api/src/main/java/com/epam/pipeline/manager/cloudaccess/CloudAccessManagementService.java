@@ -16,25 +16,27 @@
 
 package com.epam.pipeline.manager.cloudaccess;
 
-import com.epam.pipeline.entity.cloudaccess.CloudUser;
 import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessPolicy;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 
-public interface CloudAccessManagementService extends CloudAwareService {
+public interface CloudAccessManagementService<T extends AbstractCloudRegion> extends CloudAwareService {
 
-    boolean doesCloudUserExist(String username);
+    boolean doesCloudUserExist(T region, String username);
 
-    CloudUser createCloudUser(String username);
+    void createCloudUser(T region, String username);
 
-    CloudUser deleteCloudUser(String username);
+    void deleteCloudUser(T region, String username);
 
-    CloudUserAccessPolicy grantCloudUserPermissions(String policyName, CloudUserAccessPolicy userPolicy);
+    void grantCloudUserPermissions(T region, String username,
+                                                    String policyName, CloudAccessPolicy userPolicy);
 
-    boolean revokeCloudUserPermissions(String policyName);
+    void revokeCloudUserPermissions(T region, String username, String policyName);
 
-    CloudUserAccessKeys generateCloudKeysForUser(String username);
+    CloudUserAccessKeys generateCloudKeysForUser(T region, String username);
 
-    boolean revokeCloudKeysForUser(String username, String keyId);
+    void revokeCloudKeysForUser(T region, String username, String keyId);
 
+    CloudAccessPolicy getCloudUserPermissions(T region, String username, String format);
 }

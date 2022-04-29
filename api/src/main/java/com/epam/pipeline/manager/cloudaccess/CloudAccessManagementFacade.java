@@ -17,14 +17,22 @@
 package com.epam.pipeline.manager.cloudaccess;
 
 import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessPolicy;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
+import com.epam.pipeline.entity.user.PipelineUser;
 
 public interface CloudAccessManagementFacade {
 
-    CloudUserAccessKeys generateKeys(String username, CloudUserAccessPolicy accessPolicy);
+    <R extends AbstractCloudRegion> CloudUserAccessKeys generateKeys(R region, PipelineUser user,
+                                                                     CloudAccessPolicy accessPolicy);
 
-    CloudUserAccessKeys updateKeys(String username, CloudUserAccessPolicy accessPolicy);
+    <R extends AbstractCloudRegion> CloudAccessPolicy updateCloudUserAccessPolicy(R region, PipelineUser user,
+                                                                                  CloudAccessPolicy accessPolicy);
 
-    void revokeKeys(String username, String keysId);
+    <R extends AbstractCloudRegion> void revokeKeys(R region,  PipelineUser user, String keysId);
+
+    <R extends AbstractCloudRegion> void revokeCloudUserAccessPolicy(R region, PipelineUser user);
+
+    <R extends AbstractCloudRegion> CloudAccessPolicy getCloudUserAccessPolicy(R region, PipelineUser user);
 
 }

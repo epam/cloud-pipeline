@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cloudaccess;
+package com.epam.pipeline.entity.cloudaccess.policy;
 
 import lombok.Builder;
 import lombok.Value;
@@ -23,6 +23,7 @@ import java.util.List;
 
 @Value
 @Builder
-public class CloudUserAccessPolicy {
-    List<CloudUserAccessPolicyStatement> statements;
+public class CloudAccessPolicy {
+    String name;
+    List<CloudAccessPolicyStatement> statements;
 }

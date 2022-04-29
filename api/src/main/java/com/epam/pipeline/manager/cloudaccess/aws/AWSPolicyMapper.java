@@ -16,24 +16,193 @@
 
 package com.epam.pipeline.manager.cloudaccess.aws;
 
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessPolicy;
-import com.epam.pipeline.entity.region.CloudProvider;
-import com.epam.pipeline.manager.cloudaccess.CloudPolicyMapper;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyAction;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyEffect;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyStatement;
+import com.epam.pipeline.entity.cloudaccess.policy.aws.AWSAccessPolicyDocument;
+import com.epam.pipeline.entity.cloudaccess.policy.aws.AWSAccessPolicyStatement;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class AWSPolicyMapper implements CloudPolicyMapper {
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
-    @Override
-    public CloudProvider getCloudProvider() {
-        return CloudProvider.AWS;
+public class AWSPolicyMapper {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    public static final String AWS_EFFECT = "Effect";
+    public static final String AWS_ACTION = "Action";
+    public static final String AWS_RESOURCE = "Resource";
+    public static final String AWS_STATEMENT = "Statement";
+    public static final Pattern AWS_S3_ANY_RESOURCE_PATTERN = Pattern.compile("arn:aws:s3:::([a-z\\d\\-]{3,63})/?.*");
+    public static final Pattern AWS_S3_BUCKET_PATTERN = Pattern.compile("arn:aws:s3:::([a-z\\d\\-]{3,63})");
+    public static final Pattern AWS_S3_OBJECTS_PATTERN = Pattern.compile("arn:aws:s3:::([a-z\\d\\-]{3,63})/.*");
+    public static final Set<String> AWS_S3_OBJECT_READ_ACTIONS = new HashSet<>(
+            Arrays.asList("s3:GetObject", "s3:GetObjectAcl"));
+    public static final Set<String> AWS_S3_BUCKET_READ_ACTIONS = new HashSet<>(
+            Arrays.asList("s3:ListBucket", "s3:GetBucketLocation"));
+    public static final Set<String> AWS_S3_OBJECT_WRITE_ACTIONS = new HashSet<>(
+            Arrays.asList("s3:PutObject", "s3:PutObjectAcl", "s3:DeleteObject"));
+
+
+    public static CloudAccessPolicy toCloudUserAccessPolicy(final String policyName,
+                                                            final String policyDocument) {
+        return CloudAccessPolicy.builder().name(policyName)
+                .statements(parsePolicyDocumentToStatements(policyDocument)).build();
     }
 
-    @Override
-    public String map(CloudUserAccessPolicy policy) {
-        return null;
+    public static String toPolicyDocument(final CloudAccessPolicy policy, final String awsApiVersion) {
+        try {
+            final List<AWSAccessPolicyStatement> statements = policy
+                    .getStatements()
+                    .stream()
+                    .flatMap(statement -> mapToAWSPolicyStatements(statement).stream())
+                    .collect(Collectors.toList());
+            return OBJECT_MAPPER.writeValueAsString(AWSAccessPolicyDocument.builder()
+                    .version(awsApiVersion)
+                    .statements(statements).build());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
-    @Override
-    public CloudUserAccessPolicy parse(String cloudPolicy) {
-        return null;
+    // TODO any refactor?
+    private static List<CloudAccessPolicyStatement> parsePolicyDocumentToStatements(final String policyDocument) {
+        try {
+            final List<CloudAccessPolicyStatement> result = new ArrayList<>();
+
+            final Map<String, List<AWSAccessPolicyStatement>> statementsByResource =
+                    groupStatementsByResourceFromPolicy(policyDocument);
+
+            statementsByResource.forEach((storage, statements) -> {
+                final List<CloudAccessPolicyAction> actions = new ArrayList<>();
+
+                boolean readStatementFound = statements.stream()
+                        .filter(st -> AWS_S3_BUCKET_READ_ACTIONS.containsAll(st.getActions()))
+                        .anyMatch(st -> AWS_S3_BUCKET_PATTERN.matcher(st.getResource()).find())
+                        && statements.stream().filter(st -> AWS_S3_OBJECT_READ_ACTIONS.containsAll(st.getActions()))
+                        .anyMatch(st -> AWS_S3_OBJECTS_PATTERN.matcher(st.getResource()).find());
+                if (readStatementFound) {
+                    actions.add(CloudAccessPolicyAction.READ);
+                }
+
+                boolean writeStatementFound = statements.stream()
+                        .filter(st -> AWS_S3_OBJECT_WRITE_ACTIONS.containsAll(st.getActions()))
+                        .anyMatch(st -> AWS_S3_OBJECTS_PATTERN.matcher(st.getResource()).find());
+                if (writeStatementFound) {
+                    actions.add(CloudAccessPolicyAction.WRITE);
+                }
+
+                if (!actions.isEmpty()) {
+                    result.add(CloudAccessPolicyStatement.builder().actions(actions)
+                            .effect(CloudAccessPolicyEffect.ALLOW).resource(storage).build());
+                }
+            });
+            return result;
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    private static List<AWSAccessPolicyStatement> mapToAWSPolicyStatements(
+            final CloudAccessPolicyStatement statement) {
+        return statement.getActions().stream().flatMap(action -> {
+            switch (action){
+                case WRITE:
+                    return Stream.of(
+                            mapToAwsAccessStatement(
+                                    statement.getResource(),
+                                    AWS_S3_OBJECT_WRITE_ACTIONS,
+                                    AWSPolicyMapper::mapToS3BucketInternalResources
+                            )
+                    );
+                case READ:
+                    return Stream.of(
+                            mapToAwsAccessStatement(
+                                    statement.getResource(),
+                                    AWS_S3_OBJECT_READ_ACTIONS,
+                                    AWSPolicyMapper::mapToS3BucketInternalResources
+                            ),
+                            mapToAwsAccessStatement(
+                                    statement.getResource(),
+                                    AWS_S3_BUCKET_READ_ACTIONS,
+                                    AWSPolicyMapper::mapToS3Bucket
+                            )
+                    );
+                default:
+                    throw new IllegalArgumentException(String.format("Unsupported action: %s", action));
+            }
+        }).collect(Collectors.toList());
+    }
+
+    private static Map<String, List<AWSAccessPolicyStatement>> groupStatementsByResourceFromPolicy(
+            final String policyDocument) throws IOException {
+        return Optional.ofNullable(OBJECT_MAPPER.readTree(policyDocument).get(AWS_STATEMENT))
+                .filter(JsonNode::isArray)
+                .map(statements -> StreamSupport
+                        .stream(
+                                Spliterators.spliteratorUnknownSize(statements.elements(), Spliterator.ORDERED),
+                                false
+                        ).map(statement ->
+                                AWSAccessPolicyStatement.builder()
+                                        .effect(statement.get(AWS_EFFECT).asText())
+                                        .actions(
+                                                StreamSupport.stream(
+                                                        Spliterators.spliteratorUnknownSize(
+                                                                statement.get(AWS_ACTION).elements(),
+                                                                Spliterator.ORDERED
+                                                        ), false
+                                                ).map(JsonNode::asText).collect(Collectors.toSet())
+                                        )
+                                        .resource(statement.get(AWS_RESOURCE).asText())
+                                        .build()
+                        ).collect(Collectors.groupingBy(
+                                statement -> parseStorageNameFromAWSResourcePolicy(statement.getResource())))
+                ).orElseThrow(() -> new IllegalArgumentException(
+                        "Policy document can't be parsed: " + policyDocument));
+    }
+
+    private static AWSAccessPolicyStatement mapToAwsAccessStatement(final String resource,
+                                                                    final Set<String> actions,
+                                                                    final Function<String, String> resourceMapper) {
+        return AWSAccessPolicyStatement.builder()
+                .effect(CloudAccessPolicyEffect.ALLOW.awsValue)
+                .actions(actions)
+                .resource(resourceMapper.apply(resource))
+                .build();
+    }
+
+    private static String mapToS3BucketInternalResources(final String resource) {
+        return String.format("arn:aws:s3:::%s/*", resource);
+    }
+
+    private static String mapToS3Bucket(final String resource) {
+        return String.format("arn:aws:s3:::%s", resource);
+    }
+
+    private static String parseStorageNameFromAWSResourcePolicy(final String awsResource) {
+        final Matcher resourceMatcher = AWS_S3_ANY_RESOURCE_PATTERN.matcher(awsResource);
+        if (resourceMatcher.find()) {
+            return resourceMatcher.group(1);
+        } else {
+            throw new IllegalArgumentException(String.format("Can't parse aws resource arn: %s", awsResource));
+        }
     }
 }
