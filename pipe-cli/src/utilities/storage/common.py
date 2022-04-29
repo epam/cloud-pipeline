@@ -185,10 +185,13 @@ class StorageOperations:
         raise RuntimeError('Cannot find user info.')
 
     @classmethod
+    def to_ascii(cls, value):
+        return value if is_safe_chars(value) else to_ascii(value, replacing=True, replacing_with='-')
+
+    @classmethod
     def generate_tags(cls, raw_tags, source):
         tags = StorageOperations.parse_tags(raw_tags)
-        tags[StorageOperations.CP_SOURCE_TAG] = source if is_safe_chars(source) \
-            else to_ascii(source, replacing=True, replacing_with='-')
+        tags[StorageOperations.CP_SOURCE_TAG] = StorageOperations.to_ascii(source)
         tags[StorageOperations.CP_OWNER_TAG] = StorageOperations.get_user()
         return tags
 

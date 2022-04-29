@@ -111,16 +111,10 @@ class StorageItemManager(object):
         return StorageOperations.show_progress(quiet, size, lock)
 
     @classmethod
-    def _get_user(cls):
-        return StorageOperations.get_user()
-
-    @classmethod
     def _convert_tags_to_url_string(cls, tags):
         if not tags:
             return tags
-        parsed_tags = StorageOperations.parse_tags(tags)
-        formatted_tags = ['%s=%s' % (key, value) for key, value in parsed_tags.items()]
-        return '&'.join(formatted_tags)
+        return '&'.join(['%s=%s' % (key, value) for key, value in tags.items()])
 
     def _get_client(self):
         _boto_config = S3BucketOperations.get_proxy_config()
@@ -224,10 +218,7 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        tags += ("{}={}".format(StorageOperations.CP_SOURCE_TAG,
-                                source_key if is_safe_chars(source_key)
-                                else to_ascii(source_key, replacing=True, replacing_with='-')),)
-        tags += ("{}={}".format(StorageOperations.CP_OWNER_TAG, self._get_user()),)
+        tags = StorageOperations.generate_tags(tags, source_key)
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
             'ACL': 'bucket-owner-full-control'
@@ -244,7 +235,6 @@ class UploadManager(StorageItemManager, AbstractTransferManager):
                                 ExtraArgs=extra_args)
         if clean:
             source_wrapper.delete_item(source_key)
-        tags = StorageOperations.parse_tags(tags)
         version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
                             tags=tags)
@@ -275,10 +265,7 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
         source_key = self.get_source_key(source_wrapper, path)
         destination_key = self.get_destination_key(destination_wrapper, relative_path)
 
-        tags += ("{}={}".format(StorageOperations.CP_SOURCE_TAG,
-                                source_key if is_safe_chars(source_key)
-                                else to_ascii(source_key, replacing=True, replacing_with='-')),)
-        tags += ("{}={}".format(StorageOperations.CP_OWNER_TAG, self._get_user()),)
+        tags = StorageOperations.generate_tags(tags, source_key)
         extra_args = {
             'Tagging': self._convert_tags_to_url_string(tags),
             'ACL': 'bucket-owner-full-control'
@@ -290,7 +277,6 @@ class TransferFromHttpOrFtpToS3Manager(StorageItemManager, AbstractTransferManag
                                        ExtraArgs=extra_args)
         else:
             self.bucket.upload_fileobj(file_stream, destination_key, ExtraArgs=extra_args)
-        tags = StorageOperations.parse_tags(tags)
         version = self.get_uploaded_s3_file_version(destination_wrapper.bucket.path, destination_key)
         return UploadResult(source_key=source_key, destination_key=destination_key, destination_version=version,
                             tags=tags)
