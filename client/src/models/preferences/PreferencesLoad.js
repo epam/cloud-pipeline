@@ -327,7 +327,8 @@ class PreferencesLoad extends Remote {
 
   @computed
   get systemMaintenanceMode () {
-    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true';
+    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
+      `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true';
   }
 
   @computed
