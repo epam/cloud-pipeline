@@ -151,30 +151,41 @@ class StorageOperations:
         if not tags:
             return {}
         if len(tags) > cls.MAX_TAGS_NUMBER:
-            raise ValueError(
-                "Maximum allowed number of tags is {}. Provided {} tags.".format(cls.MAX_TAGS_NUMBER, len(tags)))
-        tags_dict = {}
-        for tag in tags:
-            if "=" not in tag:
-                raise ValueError("Tags must be specified as KEY=VALUE pair.")
-            parts = tag.split("=", 1)
+            raise ValueError('Maximum allowed number of tags is {}. Provided {} tags.'
+                             .format(cls.MAX_TAGS_NUMBER, len(tags)))
+        return cls.preprocess_tags(cls.extract_tags(tags))
+
+    @classmethod
+    def extract_tags(cls, raw_tags):
+        tags = {}
+        for tag in raw_tags:
+            if '=' not in tag:
+                raise ValueError('Tags must be specified as KEY=VALUE pair.')
+            parts = tag.split('=', 1)
             key = parts[0]
-            if len(key) > cls.MAX_KEY_LENGTH:
-                click.echo("Maximum key value is {}. Provided key {}.".format(cls.MAX_KEY_LENGTH, key))
-                continue
             value = parts[1]
+            tags[key] = value
+        return tags
+
+    @classmethod
+    def preprocess_tags(cls, tags):
+        preprocessed_tags = {}
+        for key, value in tags.items():
+            if len(key) > cls.MAX_KEY_LENGTH:
+                click.echo('Maximum key value is {}. Provided key {}.'.format(cls.MAX_KEY_LENGTH, key))
+                continue
             value = value.replace('\\', '/')
             if not value or value.isspace():
-                click.echo("The tag value you have provided is blank. The tag %s will be skipped." % key)
+                click.echo('The tag value you have provided is blank. The tag %s will be skipped.' % key)
                 continue
             if bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
-                click.echo("The tag value you have provided contains unsafe characters: %s. "
-                           "The tag %s will be skipped." % (value, key))
+                click.echo('The tag value you have provided contains unsafe characters: %s. '
+                           'The tag %s will be skipped.' % (value, key))
                 continue
             if len(value) > cls.MAX_VALUE_LENGTH:
                 value = value[:cls.MAX_VALUE_LENGTH - len(cls.TAG_SHORTEN_SUFFIX)] + cls.TAG_SHORTEN_SUFFIX
-            tags_dict[key] = value
-        return tags_dict
+            preprocessed_tags[key] = value
+        return preprocessed_tags
 
     @classmethod
     def get_user(cls):

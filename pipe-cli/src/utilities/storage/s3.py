@@ -114,6 +114,7 @@ class StorageItemManager(object):
     def _convert_tags_to_url_string(cls, tags):
         if not tags:
             return tags
+        tags = StorageOperations.preprocess_tags(tags)
         return '&'.join(['%s=%s' % (key, value) for key, value in tags.items()])
 
     def _get_client(self):
