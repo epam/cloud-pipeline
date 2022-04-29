@@ -92,7 +92,7 @@ import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
-import com.epam.pipeline.mapper.git.BitbucketRepositoryMapper;
+import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
 import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
@@ -436,5 +436,5 @@ public class AspectTestBeans {
     protected NodePoolUsageMapper nodePoolUsageMapper;
 
     @MockBean
-    protected BitbucketRepositoryMapper bitbucketRepositoryMapper;
+    protected BitbucketMapper bitbucketMapper;
 }

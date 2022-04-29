@@ -17,22 +17,27 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
-import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.entity.pipeline.Revision;
+
+import java.util.List;
 
 public interface GitClientService {
 
     RepositoryType getType();
 
-    boolean checkRepositoryExists(String name);
-
-    GitProject createEmptyRepository(String name, String description) throws GitClientException;
-
-    void handleHooks(GitProject project);
-
-    void createFile(GitProject project, String path, String content);
-
-    byte[] getFileContents(GitProject project, String path, String revision);
+    GitProject createRepository(String description, String repositoryPath, String token);
 
     GitProject getRepository(String repository, String token);
+
+    void handleHooks(GitProject project, String token);
+
+    void createFile(GitProject project, String path, String content, String token);
+
+    byte[] getFileContents(GitProject project, String path, String revision, String token);
+
+    List<Revision> getTags(Pipeline pipeline);
+
+    Revision getLastRevision(Pipeline pipeline);
 }

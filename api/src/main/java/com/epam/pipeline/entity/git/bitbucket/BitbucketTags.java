@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo;
+package com.epam.pipeline.entity.git.bitbucket;
 
-import com.epam.pipeline.entity.pipeline.RepositoryType;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
-@EqualsAndHashCode
-public class CheckRepositoryVO {
-    private String repository;
-    private String token;
-    private boolean repositoryExists;
-    private RepositoryType type;
+import java.util.List;
+
+@Data
+public class BitbucketTags {
+    private Long pagelen;
+    private Long page;
+    private List<BitbucketTag> values;
 }

@@ -17,11 +17,18 @@
 package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.manager.git.bibucket.BitbucketService;
 import com.epam.pipeline.manager.git.gitlab.GitLabService;
+import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,46 +37,52 @@ public class PipelineRepositoryProviderService {
     private final BitbucketService bitbucketService;
     private final GitLabService gitLabService;
 
-    public boolean checkRepositoryExists(final RepositoryType repositoryType, final String name) {
-        return repositoryType == RepositoryType.BITBUCKET
-                ? bitbucketService.checkRepositoryExists(name)
-                : gitLabService.checkRepositoryExists(name);
+    private Map<RepositoryType, GitClientService> providers;
+
+    @Autowired
+    public void setProviders(final List<GitClientService> repositoryProviders) {
+        providers = CommonUtils.groupByKey(repositoryProviders, GitClientService::getType);
     }
 
-    public GitProject createEmptyRepository(final RepositoryType repositoryType, final String name,
-                                            final String description) {
-        return repositoryType == RepositoryType.BITBUCKET
-                ? bitbucketService.createEmptyRepository(name, description)
-                : gitLabService.createEmptyRepository(name, description);
-    }
-
-    public void handleHook(final RepositoryType repositoryType, final GitProject repository) {
-        if (repositoryType == RepositoryType.BITBUCKET) {
-            bitbucketService.handleHooks(repository);
-            return;
+    public GitClientService getProvider(final RepositoryType repositoryType) {
+        final GitClientService provider = RepositoryType.GITHUB.equals(repositoryType)
+                ? providers.get(RepositoryType.GITLAB)
+                : providers.get(repositoryType);
+        if (provider == null) {
+            throw new IllegalArgumentException(String.format("Repository provider '%s' not supported", repositoryType));
         }
-        gitLabService.handleHooks(repository);
+        return provider;
+    }
+
+    public GitProject createRepository(final RepositoryType repositoryType, final String description,
+                                       final String repositoryPath, final String token) {
+        return getProvider(repositoryType).createRepository(description, repositoryPath, token);
+    }
+
+    public void handleHook(final RepositoryType repositoryType, final GitProject repository, final String token) {
+        getProvider(repositoryType).handleHooks(repository, token);
     }
 
     public void createFile(final RepositoryType repositoryType, final GitProject project,
-                           final String path, final String content) {
-        if (repositoryType == RepositoryType.BITBUCKET) {
-            bitbucketService.createFile(project, path, content);
-            return;
-        }
-        gitLabService.createFile(project, path, content);
+                           final String path, final String content, final String token) {
+        getProvider(repositoryType).createFile(project, path, content, token);
     }
 
     public byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
-                                  final String path, final String revision) {
-        return repositoryType == RepositoryType.BITBUCKET
-                ? bitbucketService.getFileContents(repository, path, revision)
-                : gitLabService.getFileContents(repository, path, revision);
+                                  final String path, final String revision, final String token) {
+        return getProvider(repositoryType).getFileContents(repository, path, revision, token);
     }
 
-    public GitProject getRepository(final RepositoryType repositoryType, final String path, final String token) {
-        return repositoryType == RepositoryType.BITBUCKET
-                ? bitbucketService.getRepository(path, token)
-                : gitLabService.getRepository(path, token);
+    public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
+                                    final String token) {
+        return getProvider(repositoryType).getRepository(repositoryPath, token);
+    }
+
+    public List<Revision> getTags(final RepositoryType repositoryType, final Pipeline pipeline) {
+        return getProvider(repositoryType).getTags(pipeline);
+    }
+
+    public Revision getLastCommit(final RepositoryType repositoryType, final Pipeline pipeline) {
+        return getProvider(repositoryType).getLastRevision(pipeline);
     }
 }

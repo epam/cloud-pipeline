@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.manager.git.bibucket;
 
+import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
 import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -49,4 +51,10 @@ public interface BitbucketApi {
     @POST("/2.0/repositories/{workspace}/{name}/src")
     Call<ResponseBody> createFile(@Path(WORKSPACE) String workspace, @Path(NAME) String name,
                                   @Part MultipartBody.Part file);
+
+    @GET("/2.0/repositories/{workspace}/{name}/refs/tags")
+    Call<BitbucketTags> getTags(@Path(WORKSPACE) String workspace, @Path(NAME) String name);
+
+    @GET("/2.0/repositories/{workspace}/{name}/commits")
+    Call<BitbucketCommits> getCommits(@Path(WORKSPACE) String workspace, @Path(NAME) String name);
 }

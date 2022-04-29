@@ -17,8 +17,11 @@
 package com.epam.pipeline.manager.git.gitlab;
 
 import com.amazonaws.util.StringUtils;
+import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.git.GitlabClient;
@@ -26,7 +29,15 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -41,55 +52,70 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
-    public boolean checkRepositoryExists(final String name) {
+    public GitProject createRepository(final String description, final String repositoryPath, final String token)
+            throws GitClientException {
+        return getGitlabClientForRepository(repositoryPath, token, true).createRepo(description);
+    }
+
+    @Override
+    public GitProject getRepository(final String repositoryPath, final String token) {
         try {
-            return getDefaultGitlabClient().projectExists(name);
+            return getGitlabClientForRepository(repositoryPath, token, false).getProject();
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 
     @Override
-    public GitProject createEmptyRepository(final String name, final String description) throws GitClientException {
-        return getDefaultGitlabClient().createRepo(name, description);
-    }
-
-    @Override
-    public void handleHooks(final GitProject project) {
+    public void handleHooks(final GitProject project, final String token) {
         final boolean indexingEnabled = preferenceManager
                 .getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED);
         if (indexingEnabled) {
             final String hookUrl = preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL);
-            getDefaultGitlabClient().addProjectHook(String.valueOf(project.getId()), hookUrl);
+            getGitlabClientForRepository(project.getRepoUrl(), token, true)
+                    .addProjectHook(String.valueOf(project.getId()), hookUrl);
         }
     }
 
     @Override
-    public void createFile(final GitProject project, final String path, final String content) {
-        getDefaultGitlabClient().createFile(project, path, content);
+    public void createFile(final GitProject project, final String path, final String content, final String token) {
+        getGitlabClientForRepository(project.getRepoUrl(), token, true)
+                .createFile(project, path, content);
     }
 
     @Override
-    public byte[] getFileContents(final GitProject project, final String path, final String revision) {
-        return getDefaultGitlabClient().getFileContents(String.valueOf(project.getId()), path, revision);
+    public byte[] getFileContents(final GitProject project, final String path, final String revision,
+                                  final String token) {
+        return getGitlabClientForRepository(project.getRepoUrl(), token, true)
+                .getFileContents(String.valueOf(project.getId()), path, revision);
     }
 
     @Override
-    public GitProject getRepository(final String repository, final String token) {
-        try {
-            return getGitlabClientForRepository(repository, token, false).getProject();
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
+    public List<Revision> getTags(final Pipeline pipeline) {
+        return getGitlabClientForPipeline(pipeline).getRepositoryRevisions().stream()
+                .map(tag -> new Revision(tag.getName(), tag.getMessage(),
+                        parseGitDate(tag.getCommit().getAuthoredDate()), tag.getCommit().getId(),
+                        tag.getCommit().getAuthorName(), tag.getCommit().getAuthorEmail()))
+                .collect(Collectors.toList());
     }
 
-    private GitlabClient getDefaultGitlabClient() {
-        final String gitHost = preferenceManager.getPreference(SystemPreferences.GIT_HOST);
-        final String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
-        final Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
-        final String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
-        return GitlabClient.initializeGitlabClientFromHostAndToken(
-                gitHost, gitToken, authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
+    @Override
+    public Revision getLastRevision(final Pipeline pipeline) {
+        final List<GitCommitEntry> commits = getGitlabClientForPipeline(pipeline).getCommits();
+        return ListUtils.emptyIfNull(commits).stream()
+                .findFirst()
+                .map(commit -> new Revision(commit.getShortId(), commit.getMessage(),
+                        parseGitDate(commit.getCreatedAt()), commit.getId(), null,
+                        commit.getAuthorName(), commit.getAuthorEmail()))
+                .orElse(null);
+    }
+
+    private GitlabClient getGitlabClientForPipeline(final Pipeline pipeline) {
+        return getGitlabClientForPipeline(pipeline, false);
+    }
+
+    private GitlabClient getGitlabClientForPipeline(final Pipeline pipeline, final boolean rootClient) {
+        return getGitlabClientForRepository(pipeline.getRepository(), pipeline.getRepositoryToken(), rootClient);
     }
 
     private GitlabClient getGitlabClientForRepository(final String repository, final String providedToken,
@@ -97,11 +123,15 @@ public class GitLabService implements GitClientService {
         final Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         final String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
         final boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
-        final String token = externalHost ? providedToken :
-                preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
-        final String user = rootClient ? adminName : authManager.getAuthorizedUser();
+        final String token = externalHost ? providedToken
+                : preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
-                user, repository, token, adminId, adminName, externalHost);
+                rootClient ? adminName : authManager.getAuthorizedUser(),
+                repository, token, adminId, adminName, externalHost);
     }
 
+    private Date parseGitDate(final String dateStr) {
+        final LocalDateTime localDateTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
+    }
 }

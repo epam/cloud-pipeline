@@ -17,11 +17,17 @@
 package com.epam.pipeline.entity.git.bitbucket;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class BitbucketRepository {
     private String name;
     private String description;

@@ -19,14 +19,16 @@ package com.epam.pipeline.manager.git;
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
-import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,9 +42,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -60,6 +65,9 @@ public class PipelineRepositoryService {
             + "3. Launch you job using `RUN` button\n";
     private static final String DEFAULT_README = "docs/README.md";
     private static final String DEFAULT_BRANCH = "master";
+    private static final String DRAFT_PREFIX = "draft-";
+    private static final String GITKEEP_FILE = ".gitkeep";
+    private static final String GITKEEP_CONTENT = "keep";
 
     private final PipelineRepositoryProviderService providerService;
     private final String defaultTemplate;
@@ -73,74 +81,63 @@ public class PipelineRepositoryService {
         this.templatesDirectoryPath = templatesDirectoryPath;
     }
 
-    public boolean checkRepositoryExists(final RepositoryType repositoryType, final String name) {
-        return providerService.checkRepositoryExists(repositoryType, name);
-    }
-
-    public GitProject createRepository(final PipelineVO pipelineVO) throws GitClientException {
+    public GitProject createGitRepositoryWithRepoUrl(final PipelineVO pipelineVO) throws GitClientException {
         if (pipelineVO.getPipelineType() == PipelineType.PIPELINE) {
-            return createTemplateRepository(pipelineVO);
+            return createTemplateRepository(
+                    pipelineVO.getRepositoryType(),
+                    pipelineVO.getTemplateId(),
+                    pipelineVO.getDescription(),
+                    pipelineVO.getRepository(),
+                    pipelineVO.getRepositoryToken());
         }
-        return providerService.createEmptyRepository(pipelineVO.getRepositoryType(),
-                GitUtils.convertPipeNameToProject(pipelineVO.getName()),
-                pipelineVO.getDescription());
+        return createEmptyRepository(pipelineVO.getRepositoryType(), pipelineVO.getDescription(),
+                pipelineVO.getRepository(), pipelineVO.getRepositoryToken(), true);
     }
 
-    public GitProject getRepository(final RepositoryType repositoryType, final String path, final String token) {
-        return providerService.getRepository(repositoryType, path, token);
+    public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
+                                    final String token) {
+        return providerService.getRepository(repositoryType, repositoryPath, token);
     }
 
-    private GitProject createTemplateRepository(final PipelineVO pipelineVO) {
-        final RepositoryType repositoryType = pipelineVO.getRepositoryType();
-        final String repoName = GitUtils.convertPipeNameToProject(pipelineVO.getName());
-
-        final String templateId = Optional.ofNullable(pipelineVO.getTemplateId()).orElse(defaultTemplate);
-        final TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
-        final Template template = templatesScanner.listTemplates().get(templateId);
-        Assert.notNull(template, "There is no such a template: " + templateId);
-
-        final GitProject repository = providerService.createEmptyRepository(repositoryType, repoName,
-                pipelineVO.getDescription());
-        providerService.handleHook(repositoryType, repository);
-
-        uploadFolder(repositoryType, template, repoName, repository);
-
-        try {
-            boolean fileExists = Objects.nonNull(getFileContents(repositoryType, repository,
-                    DEFAULT_README, DEFAULT_BRANCH));
-            if (!fileExists) {
-                providerService.createFile(repositoryType, repository, DEFAULT_README, README_DEFAULT_CONTENTS);
-            }
-        } catch (UnexpectedResponseStatusException e) {
-            providerService.createFile(repositoryType, repository, DEFAULT_README, README_DEFAULT_CONTENTS);
-        } catch (GitClientException exception) {
-            log.debug(exception.getMessage(), exception);
+    public List<Revision> getPipelineRevisions(final RepositoryType repositoryType, final Pipeline pipeline) {
+        final List<Revision> tags = providerService.getTags(repositoryType, pipeline).stream()
+                .filter(revision -> Objects.nonNull(revision.getCreatedDate()))
+                .sorted(Comparator.comparing(Revision::getCreatedDate).reversed())
+                .collect(Collectors.toList());
+        final Revision commit = providerService.getLastCommit(repositoryType, pipeline);
+        final List<Revision> revisions = new ArrayList<>(tags.size());
+        if (isDraftCommit(tags, commit)) {
+            commit.setName(DRAFT_PREFIX + commit.getName());
+            commit.setDraft(true);
+            revisions.add(commit);
         }
-        return repository;
+        CollectionUtils.addAll(revisions, tags);
+        return revisions;
     }
 
     private byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
-                                   final String path, final String revision) {
+                                   final String path, final String revision, final String token) {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
         Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
-        return providerService.getFileContents(repositoryType, repository, path, revision);
+        return providerService.getFileContents(repositoryType, repository, path, revision, token);
     }
 
-    private void uploadFolder(final RepositoryType repositoryType, final Template template, final String repoName,
-                              final GitProject project) throws GitClientException {
+    private void uploadFolder(final RepositoryType repositoryType, final Template template,
+                              final GitProject project, final String token) throws GitClientException {
         final String templateRootFolder = Paths.get(template.getDirPath()).toAbsolutePath().toString();
         if (!Paths.get(template.getDirPath()).toFile().exists()) {
             return;
         }
         try (Stream<Path> walk = Files.walk(Paths.get(template.getDirPath()))) {
-            walk.forEach(path -> uploadFile(repositoryType, repoName, project, templateRootFolder, path));
+            walk.forEach(path -> uploadFile(repositoryType, project, templateRootFolder, path, token));
         } catch (IOException e) {
             throw new GitClientException(e.getMessage());
         }
     }
 
-    private void uploadFile(final RepositoryType repositoryType, final String repoName, final GitProject project,
-                            final String templateRootFolder, final Path path) {
+    private void uploadFile(final RepositoryType repositoryType, final GitProject project,
+                            final String templateRootFolder, final Path path, final String token) {
+        final String repoName = project.getName();
         final File file = path.toFile();
         if (!file.isFile()) {
             return;
@@ -151,12 +148,12 @@ public class PipelineRepositoryService {
         }
         if (relativePath.equals(CONFIG_JSON)) {
             final String content = getFileContent(file.getAbsolutePath()).replaceAll(TEMPLATE_PLACEHOLDER, repoName);
-            providerService.createFile(repositoryType, project, CONFIG_JSON, content);
+            providerService.createFile(repositoryType, project, CONFIG_JSON, content, token);
             return;
         }
         providerService.createFile(repositoryType, project,
                 normalizePath(relativePath.replaceAll(TEMPLATE_PLACEHOLDER, repoName)),
-                getFileContent(file.getAbsolutePath()));
+                getFileContent(file.getAbsolutePath()), token);
     }
 
     private String getFileContent(final String path) {
@@ -174,5 +171,57 @@ public class PipelineRepositoryService {
             return path.replaceAll("\\\\", "/");
         }
         return path;
+    }
+
+    private boolean isDraftCommit(final List<Revision> tags, final Revision lastCommit) {
+        if (Objects.isNull(lastCommit)) {
+            return false;
+        }
+        if (CollectionUtils.isEmpty(tags)) {
+            return true;
+        }
+        return !Objects.equals(tags.get(0).getCommitId(), String.valueOf(lastCommit.getCommitId()));
+    }
+
+    private GitProject createEmptyRepository(final RepositoryType repositoryType, final String description,
+                                             final String repositoryPath, final String token, final boolean initCommit)
+            throws GitClientException {
+        final GitProject repository = providerService.createRepository(repositoryType, description,
+                repositoryPath, token);
+
+        providerService.handleHook(repositoryType, repository, token);
+
+        if (initCommit) {
+            providerService.createFile(repositoryType, repository, GITKEEP_FILE, GITKEEP_CONTENT, token);
+        }
+
+        return repository;
+    }
+
+    private GitProject createTemplateRepository(final RepositoryType repositoryType, final String pipelineTemplateId,
+                                                final String description, final String repositoryPath,
+                                                final String token) {
+        final String templateId = Optional.ofNullable(pipelineTemplateId).orElse(defaultTemplate);
+        final TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
+        final Template template = templatesScanner.listTemplates().get(templateId);
+        Assert.notNull(template, "There is no such a template: " + templateId);
+
+        final GitProject repository = createEmptyRepository(repositoryType, description, repositoryPath,
+                token, false);
+
+        uploadFolder(repositoryType, template, repository, token);
+
+        try {
+            boolean fileExists = Objects.nonNull(getFileContents(repositoryType, repository,
+                    DEFAULT_README, DEFAULT_BRANCH, token));
+            if (!fileExists) {
+                providerService.createFile(repositoryType, repository, DEFAULT_README, README_DEFAULT_CONTENTS, token);
+            }
+        } catch (UnexpectedResponseStatusException e) {
+            providerService.createFile(repositoryType, repository, DEFAULT_README, README_DEFAULT_CONTENTS, token);
+        } catch (GitClientException exception) {
+            log.debug(exception.getMessage(), exception);
+        }
+        return repository;
     }
 }
