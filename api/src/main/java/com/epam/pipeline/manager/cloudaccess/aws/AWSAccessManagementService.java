@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloudaccess.aws;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
 import com.amazonaws.services.identitymanagement.model.AccessKey;
+import com.amazonaws.services.identitymanagement.model.AccessKeyMetadata;
 import com.amazonaws.services.identitymanagement.model.CreateAccessKeyRequest;
 import com.amazonaws.services.identitymanagement.model.CreateAccessKeyResult;
 import com.amazonaws.services.identitymanagement.model.CreateUserRequest;
@@ -30,6 +31,8 @@ import com.amazonaws.services.identitymanagement.model.GetUserPolicyRequest;
 import com.amazonaws.services.identitymanagement.model.GetUserPolicyResult;
 import com.amazonaws.services.identitymanagement.model.GetUserRequest;
 import com.amazonaws.services.identitymanagement.model.GetUserResult;
+import com.amazonaws.services.identitymanagement.model.ListAccessKeysRequest;
+import com.amazonaws.services.identitymanagement.model.ListAccessKeysResult;
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException;
 import com.amazonaws.services.identitymanagement.model.PutUserPolicyRequest;
 import com.amazonaws.services.identitymanagement.model.User;
@@ -39,11 +42,16 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessManagementService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.httpclient.URIException;
+import org.apache.commons.httpclient.util.URIUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class AWSAccessManagementService implements CloudAccessManagementService<AwsRegion> {
 
@@ -79,12 +87,35 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
     }
 
     @Override
-    public void grantCloudUserPermissions(final AwsRegion region, final String policyName,
-                                          final String username,
+    public CloudAccessPolicy getCloudUserPermissions(final AwsRegion region, final String username,
+                                                     final String policyName) {
+        try {
+            final GetUserPolicyResult userPolicy = getIAMClient(region).getUserPolicy(
+                    new GetUserPolicyRequest().withUserName(username).withPolicyName(policyName)
+            );
+            final String policyDocument;
+            try {
+                policyDocument = URIUtil.decode(userPolicy.getPolicyDocument());
+                Assert.hasText(userPolicy.getUserName(), "Empty cloud user name!");
+                Assert.hasText(policyDocument, "Empty policy document!");
+            } catch (URIException e) {
+                throw new IllegalStateException(
+                        String.format("Can't parse policy document %s", userPolicy.getPolicyDocument()), e);
+            }
+            return AWSPolicyMapper.toCloudUserAccessPolicy(userPolicy.getPolicyName(), policyDocument);
+        } catch (NoSuchEntityException e) {
+            log.debug(String.format("No user policy with name: %s", policyName));
+            return null;
+        }
+    }
+
+    @Override
+    public void grantCloudUserPermissions(final AwsRegion region, final String username,
+                                          final String policyName,
                                           final CloudAccessPolicy userPolicy) {
         final PutUserPolicyRequest putUserPolicyRequest = new PutUserPolicyRequest()
                 .withUserName(username)
-                .withPolicyName(userPolicy.getName())
+                .withPolicyName(policyName)
                 .withPolicyDocument(AWSPolicyMapper.toPolicyDocument(userPolicy, AWS_IAM_API_VERSION));
         getIAMClient(region).putUserPolicy(putUserPolicyRequest);
     }
@@ -95,6 +126,26 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
                 .withUserName(username)
                 .withPolicyName(policyName);
         getIAMClient(region).deleteUserPolicy(putUserPolicyRequest);
+    }
+
+    @Override
+    public CloudUserAccessKeys getAccessKeysForUser(final AwsRegion region, final String username,
+                                                    final String keyId) {
+        try {
+            final ListAccessKeysResult accessKeyListing = getIAMClient(region)
+                    .listAccessKeys(new ListAccessKeysRequest().withUserName(username));
+            return ListUtils.emptyIfNull(accessKeyListing.getAccessKeyMetadata())
+                    .stream()
+                    .filter(accessKey -> keyId.equals(accessKey.getAccessKeyId()))
+                    .findFirst().map(accessKey ->
+                            CloudUserAccessKeys.builder().cloudProvider(getProvider())
+                                    .id(accessKey.getAccessKeyId())
+                                    .configFile(generateAwsConfigFile(region))
+                                    .build()
+                    ).orElse(null);
+        } catch (NoSuchEntityException e) {
+            return null;
+        }
     }
 
     @Override
@@ -115,17 +166,6 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
         );
     }
 
-    @Override
-    public CloudAccessPolicy getCloudUserPermissions(final AwsRegion region, final String username,
-                                                     final String policyName) {
-        final GetUserPolicyResult userPolicy = getIAMClient(region).getUserPolicy(
-                new GetUserPolicyRequest().withUserName(username).withPolicyName(policyName)
-        );
-        Assert.hasText(userPolicy.getUserName(), "Empty cloud user name!");
-        Assert.hasText(userPolicy.getPolicyDocument(), "Empty policy document!");
-        return AWSPolicyMapper.toCloudUserAccessPolicy(userPolicy.getPolicyName(), userPolicy.getPolicyDocument());
-    }
-
     public AmazonIdentityManagement getIAMClient(final AwsRegion awsRegion) {
         return AmazonIdentityManagementClientBuilder
                 .standard()
@@ -141,6 +181,6 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
 
     private String generateAwsConfigFile(final AwsRegion region) {
         return String.format("[default]\n" +
-                "aws_access_key_id = %s", region.getRegionCode());
+                "region = %s", region.getRegionCode());
     }
 }

@@ -50,39 +50,27 @@ public class CloudAccessManagementFacadeImp implements CloudAccessManagementFaca
     }
 
     @Override
-    public <R extends AbstractCloudRegion> CloudUserAccessKeys generateKeys(final R region,
-                                                                            final PipelineUser user,
-                                                                            final CloudAccessPolicy accessPolicy) {
+    public <R extends AbstractCloudRegion> CloudUserAccessKeys generateAccessKeys(final R region,
+                                                                                  final PipelineUser user) {
         final CloudAccessManagementService<R> accessManagementService = getCloudAccessManagementService(region);
 
         if (!accessManagementService.doesCloudUserExist(region, user.getUserName())) {
             accessManagementService.createCloudUser(region, user.getUserName());
         }
 
-        updateCloudUserAccessPolicy(region, user, accessPolicy);
         return accessManagementService.generateCloudKeysForUser(region, user.getUserName());
     }
 
     @Override
-    public <R extends AbstractCloudRegion> CloudAccessPolicy updateCloudUserAccessPolicy(
-            final R region, final PipelineUser user, final CloudAccessPolicy accessPolicy) {
+    public <R extends AbstractCloudRegion> CloudUserAccessKeys getAccessKeys(R region, PipelineUser user,
+                                                                             String keyId) {
         final CloudAccessManagementService<R> accessManagementService = getCloudAccessManagementService(region);
 
-        final String accessPolicyPrefix = preferenceManager.getPreference(
-                SystemPreferences.CLOUD_ACCESS_MANAGEMENT_POLICY_PREFIX);
-        accessManagementService.grantCloudUserPermissions(region,user.getUserName(),
-                String.format("%s-%s", accessPolicyPrefix, user.getUserName()), accessPolicy);
-        return accessPolicy;
-    }
-
-    @Override
-    public <R extends AbstractCloudRegion> void revokeCloudUserAccessPolicy(final R region, final PipelineUser user) {
-        final CloudAccessManagementService<R> accessManagementService =
-                getCloudAccessManagementService(region);
-        final String accessPolicyPrefix = preferenceManager.getPreference(
-                SystemPreferences.CLOUD_ACCESS_MANAGEMENT_POLICY_PREFIX);
-        accessManagementService.revokeCloudUserPermissions(region, user.getUserName(),
-                String.format("%s-%s", accessPolicyPrefix, user.getUserName()));
+        if (!accessManagementService.doesCloudUserExist(region, user.getUserName())) {
+            throw new IllegalArgumentException(
+                    String.format("There is no cloud user with name: %s!", user.getUserName()));
+        }
+        return accessManagementService.getAccessKeysForUser(region, user.getUserName(), keyId);
     }
 
     @Override
@@ -90,18 +78,69 @@ public class CloudAccessManagementFacadeImp implements CloudAccessManagementFaca
                                                            final String keysId) {
         final CloudAccessManagementService<R> accessManagementService =
                 getCloudAccessManagementService(region);
+
+        validateCloudUser(accessManagementService, region, user);
         accessManagementService.revokeCloudKeysForUser(region, user.getUserName(), keysId);
     }
 
     @Override
-    public <R extends AbstractCloudRegion> CloudAccessPolicy getCloudUserAccessPolicy(final R region,
-                                                                                      final PipelineUser user) {
+    public <R extends AbstractCloudRegion> void deleteUser(R region, PipelineUser user) {
+        getCloudAccessManagementService(region).deleteCloudUser(region, user.getUserName());
+    }
+
+    @Override
+    public <R extends AbstractCloudRegion> CloudAccessPolicy getCloudUserAccessPermissions(final R region,
+                                                                                           final PipelineUser user) {
         final CloudAccessManagementService<R> accessManagementService =
                 getCloudAccessManagementService(region);
+
+        validateCloudUser(accessManagementService, region, user);
+
+        final String policyName = constructCloudUserPolicyName(user);
+        return accessManagementService.getCloudUserPermissions(region, user.getUserName(), policyName);
+    }
+
+    @Override
+    public <R extends AbstractCloudRegion> CloudAccessPolicy updateCloudUserAccessPolicy(
+            final R region, final PipelineUser user, final CloudAccessPolicy accessPolicy) {
+        final CloudAccessManagementService<R> accessManagementService = getCloudAccessManagementService(region);
+
+        if (!accessManagementService.doesCloudUserExist(region, user.getUserName())) {
+            accessManagementService.createCloudUser(region, user.getUserName());
+        }
+
+        final String policyName = constructCloudUserPolicyName(user);
+        accessManagementService.grantCloudUserPermissions(region, user.getUserName(),
+                policyName, accessPolicy);
+        return accessPolicy;
+    }
+
+    @Override
+    public <R extends AbstractCloudRegion> void revokeCloudUserAccessPermissions(final R region,
+                                                                                 final PipelineUser user) {
+        final CloudAccessManagementService<R> accessManagementService =
+                getCloudAccessManagementService(region);
+
+        validateCloudUser(accessManagementService, region, user);
+
+        final String policyName = constructCloudUserPolicyName(user);
+        accessManagementService.revokeCloudUserPermissions(region, user.getUserName(), policyName);
+    }
+
+    private String constructCloudUserPolicyName(PipelineUser user) {
         final String accessPolicyPrefix = preferenceManager.getPreference(
                 SystemPreferences.CLOUD_ACCESS_MANAGEMENT_POLICY_PREFIX);
-        return accessManagementService.getCloudUserPermissions(region, user.getUserName(),
-                String.format("%s-%s", accessPolicyPrefix, user.getUserName()));
+        return String.format("%s-%s", accessPolicyPrefix, user.getUserName());
+    }
+
+    private <R extends AbstractCloudRegion> void validateCloudUser(
+            final CloudAccessManagementService<R> accessManagementService,
+            final R region,
+            final PipelineUser user) {
+        if (!accessManagementService.doesCloudUserExist(region, user.getUserName())) {
+            throw new IllegalArgumentException(
+                    String.format("There is no cloud user with name: %s!", user.getUserName()));
+        }
     }
 
     @SuppressWarnings("unchecked")

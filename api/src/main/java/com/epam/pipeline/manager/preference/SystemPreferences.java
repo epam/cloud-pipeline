@@ -1034,6 +1034,10 @@ public class SystemPreferences {
             "cloud.access.management.policy.prefix", "Cloud_Pipeline_Share_Policy",
             CLOUD, PreferenceValidators.isNotBlank);
 
+    public static final StringPreference CLOUD_ACCESS_KEY_USER_METADATA_TAG = new StringPreference(
+            "cloud.access.key.user.metadata.tag", "cloud_access_key",
+            CLOUD, pass);
+
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
     private static final Map<String, AbstractSystemPreference<?>> PREFERENCE_MAP;

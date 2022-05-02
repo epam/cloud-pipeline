@@ -29,12 +29,13 @@ public interface CloudAccessManagementService<T extends AbstractCloudRegion> ext
 
     void deleteCloudUser(T region, String username);
 
-    void grantCloudUserPermissions(T region, String username,
-                                                    String policyName, CloudAccessPolicy userPolicy);
+    void grantCloudUserPermissions(T region, String username, String policyName, CloudAccessPolicy userPolicy);
 
     void revokeCloudUserPermissions(T region, String username, String policyName);
 
     CloudUserAccessKeys generateCloudKeysForUser(T region, String username);
+
+    CloudUserAccessKeys getAccessKeysForUser(T region, String username, String keyId);
 
     void revokeCloudKeysForUser(T region, String username, String keyId);
 
