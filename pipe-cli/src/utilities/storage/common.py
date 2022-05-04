@@ -23,6 +23,7 @@ import jwt
 
 from src.config import Config
 from src.model.data_storage_wrapper_type import WrapperType
+from src.utilities.encoding_utilities import is_safe_chars, to_ascii, to_string
 
 TransferResult = namedtuple('TransferResult', ['source_key', 'destination_key', 'destination_version', 'tags'])
 
@@ -150,26 +151,41 @@ class StorageOperations:
         if not tags:
             return {}
         if len(tags) > cls.MAX_TAGS_NUMBER:
-            raise ValueError(
-                "Maximum allowed number of tags is {}. Provided {} tags.".format(cls.MAX_TAGS_NUMBER, len(tags)))
-        tags_dict = {}
-        for tag in tags:
-            if "=" not in tag:
-                raise ValueError("Tags must be specified as KEY=VALUE pair.")
-            parts = tag.split("=", 1)
+            raise ValueError('Maximum allowed number of tags is {}. Provided {} tags.'
+                             .format(cls.MAX_TAGS_NUMBER, len(tags)))
+        return cls.preprocess_tags(cls.extract_tags(tags))
+
+    @classmethod
+    def extract_tags(cls, raw_tags):
+        tags = {}
+        for tag in raw_tags:
+            if '=' not in tag:
+                raise ValueError('Tags must be specified as KEY=VALUE pair.')
+            parts = tag.split('=', 1)
             key = parts[0]
-            if len(key) > cls.MAX_KEY_LENGTH:
-                click.echo("Maximum key value is {}. Provided key {}.".format(cls.MAX_KEY_LENGTH, key))
-                continue
             value = parts[1]
+            tags[key] = value
+        return tags
+
+    @classmethod
+    def preprocess_tags(cls, tags):
+        preprocessed_tags = {}
+        for key, value in tags.items():
+            if len(key) > cls.MAX_KEY_LENGTH:
+                click.echo('Maximum key value is {}. Provided key {}.'.format(cls.MAX_KEY_LENGTH, key))
+                continue
             value = value.replace('\\', '/')
-            if not value or value.isspace() or bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
-                click.echo("The tag value you have provided is invalid: %s. The tag %s will be skipped." % (value, key))
+            if not value or value.isspace():
+                click.echo('The tag value you have provided is blank. The tag %s will be skipped.' % key)
+                continue
+            if bool(StorageOperations.TAGS_VALIDATION_PATTERN.search(value)):
+                click.echo('The tag value you have provided contains unsafe characters: %s. '
+                           'The tag %s will be skipped.' % (value, key))
                 continue
             if len(value) > cls.MAX_VALUE_LENGTH:
                 value = value[:cls.MAX_VALUE_LENGTH - len(cls.TAG_SHORTEN_SUFFIX)] + cls.TAG_SHORTEN_SUFFIX
-            tags_dict[key] = value
-        return tags_dict
+            preprocessed_tags[key] = value
+        return preprocessed_tags
 
     @classmethod
     def get_user(cls):
@@ -180,9 +196,13 @@ class StorageOperations:
         raise RuntimeError('Cannot find user info.')
 
     @classmethod
+    def to_ascii(cls, value):
+        return value if is_safe_chars(value) else to_ascii(value, replacing=True, replacing_with='-')
+
+    @classmethod
     def generate_tags(cls, raw_tags, source):
         tags = StorageOperations.parse_tags(raw_tags)
-        tags[StorageOperations.CP_SOURCE_TAG] = source
+        tags[StorageOperations.CP_SOURCE_TAG] = StorageOperations.to_ascii(source)
         tags[StorageOperations.CP_OWNER_TAG] = StorageOperations.get_user()
         return tags
 
@@ -263,7 +283,7 @@ class AbstractTransferManager:
 
     @staticmethod
     def create_local_folder(destination_key, lock):
-        folder = os.path.dirname(destination_key)
+        folder = to_string(os.path.dirname(destination_key))
         if lock:
             lock.acquire()
         try:
