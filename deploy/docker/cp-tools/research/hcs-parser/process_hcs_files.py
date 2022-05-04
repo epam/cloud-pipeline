@@ -98,7 +98,7 @@ class HcsParsingUtils:
                 file_name = file_pretty_name
         preview_file_basename = file_name + '.hcs'
         parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
-            if HCS_PROCESSING_OUTPUT_FOLDER \
+            if HCS_PROCESSING_OUTPUT_FOLDER is not None \
             else os.path.dirname(hcs_root_folder_path)
         return os.path.join(parent_folder, preview_file_basename)
 
@@ -113,7 +113,9 @@ class HcsParsingUtils:
     @staticmethod
     def get_service_directory(hcs_img_path):
         name_without_extension = HcsParsingUtils.get_basename_without_extension(hcs_img_path)
-        parent_dir = os.path.dirname(hcs_img_path)
+        parent_dir = HCS_PROCESSING_OUTPUT_FOLDER \
+            if HCS_PROCESSING_OUTPUT_FOLDER is not None \
+            else os.path.dirname(hcs_img_path)
         return os.path.join(parent_dir, '.hcsparser', name_without_extension)
 
     @staticmethod
@@ -549,7 +551,7 @@ class HcsFileParser:
             shutil.rmtree(self.tmp_local_dir)
 
     def _write_hcs_file(self, time_series_details, plate_width, plate_height, comment=None):
-        if os.getenv('HCS_PARSING_USE_ABSOLUTE_PATH'):
+        if os.getenv('HCS_PARSING_PREVIEW_FIELDS_USE_ABSOLUTE_PATHS') == 'true':
             source_dir = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
             preview_dir = HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
         else:
@@ -592,19 +594,28 @@ class HcsFileParser:
         return localization_result == 0
 
     def process_file(self):
+        """Process the specified HCS file
+
+        Returns
+        -------
+        exit_code
+            an integer, describing whether operation was successful or not:
+            0 - processed successfully
+            1 - some errors occurred during the processing
+            2 - processing is skipped
+        """
         self.log_processing_info('Start processing')
         self.parsing_start_time = datetime.datetime.now()
         if os.path.exists(self.tmp_stat_file_path) \
                 and not HcsParsingUtils.active_processing_exceed_timeout(self.tmp_stat_file_path):
             self.log_processing_info('This file is processed by another parser, skipping...')
-            return 0
+            return 2
         self.create_tmp_stat_file()
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
         time_series_details = self._extract_time_series_details(hcs_index_file_path)
         self.generate_ome_xml_info_file()
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
         plate_width, plate_height = self._get_plate_configuration(xml_info_tree)
-        self._write_hcs_file(time_series_details, plate_width, plate_height)
         tags_processing_result = self.try_process_tags(xml_info_tree)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
@@ -640,6 +651,7 @@ class HcsFileParser:
             self.log_processing_info('Results transfer was not successful...')
             return 1
         self.create_stat_file()
+        self._write_hcs_file(time_series_details, plate_width, plate_height)
         return 0
 
     def extract_sequence_data(self, target_sequence_id, hcs_local_index_file_path):
@@ -1033,6 +1045,7 @@ class HcsFileParser:
 
 def try_process_hcs(hcs_root_dir):
     parser = None
+    processing_result = 1
     try:
         parser = HcsFileParser(hcs_root_dir)
         processing_result = parser.process_file()
@@ -1042,7 +1055,8 @@ def try_process_hcs(hcs_root_dir):
         print(traceback.format_exc())
     finally:
         if parser:
-            parser.clear_tmp_stat_file()
+            if processing_result != 2:
+                parser.clear_tmp_stat_file()
             parser.clear_tmp_local_dir()
 
 
@@ -1063,7 +1077,7 @@ def process_hcs_files():
         log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
                  .format(processing_threads))
         processing_threads = 1
-    log_info('{} threads enabled for HCS processing'.format(processing_threads))
+    log_info('{} thread(s) enabled for HCS processing'.format(processing_threads))
     if TAGS_PROCESSING_ONLY:
         log_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
     if processing_threads == 1:
