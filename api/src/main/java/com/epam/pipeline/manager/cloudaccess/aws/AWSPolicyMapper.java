@@ -54,6 +54,8 @@ import java.util.stream.StreamSupport;
 public class AWSPolicyMapper {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    public static final String AWS_IAM_API_VERSION = "2012-10-17";
     public static final String AWS_EFFECT = "Effect";
     public static final String AWS_ACTION = "Action";
     public static final String AWS_RESOURCE = "Resource";
@@ -75,7 +77,7 @@ public class AWSPolicyMapper {
                 .statements(parsePolicyDocumentToCloudPolicyStatements(policyDocument)).build();
     }
 
-    public static String toPolicyDocument(final CloudAccessPolicy policy, final String awsApiVersion) {
+    public static String toPolicyDocument(final CloudAccessPolicy policy) {
         try {
             final List<AWSAccessPolicyStatement> statements = policy
                     .getStatements()
@@ -83,7 +85,7 @@ public class AWSPolicyMapper {
                     .flatMap(statement -> mapToAWSPolicyStatements(statement).stream())
                     .collect(Collectors.toList());
             return OBJECT_MAPPER.writeValueAsString(AWSAccessPolicyDocument.builder()
-                    .version(awsApiVersion)
+                    .version(AWS_IAM_API_VERSION)
                     .statements(statements).build());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -107,11 +109,17 @@ public class AWSPolicyMapper {
                         final List<CloudAccessPolicyAction> actions = new ArrayList<>();
 
                         boolean hasBucketRead = statements.stream()
-                                .filter(st -> AWS_S3_BUCKET_READ_ACTIONS.containsAll(st.getActions()))
+                                .filter(awsAccessPolicyStatement ->
+                                        CloudAccessPolicyEffect.ALLOW.awsValue.equals(
+                                                awsAccessPolicyStatement.getEffect())
+                                ).filter(st -> AWS_S3_BUCKET_READ_ACTIONS.containsAll(st.getActions()))
                                 .anyMatch(st -> AWS_S3_BUCKET_PATTERN.matcher(st.getResource()).find());
 
                         boolean hasBucketObjectRead = statements.stream()
-                                .filter(st -> AWS_S3_OBJECT_READ_ACTIONS.containsAll(st.getActions()))
+                                .filter(awsAccessPolicyStatement ->
+                                        CloudAccessPolicyEffect.ALLOW.awsValue.equals(
+                                                awsAccessPolicyStatement.getEffect())
+                                ).filter(st -> AWS_S3_OBJECT_READ_ACTIONS.containsAll(st.getActions()))
                                 .anyMatch(st -> AWS_S3_OBJECTS_PATTERN.matcher(st.getResource()).find());
 
                         if (hasBucketRead && hasBucketObjectRead) {
@@ -119,7 +127,10 @@ public class AWSPolicyMapper {
                         }
 
                         boolean hasBucketObjectWrite = statements.stream()
-                                .filter(st -> AWS_S3_OBJECT_WRITE_ACTIONS.containsAll(st.getActions()))
+                                .filter(awsAccessPolicyStatement ->
+                                        CloudAccessPolicyEffect.ALLOW.awsValue.equals(
+                                                awsAccessPolicyStatement.getEffect())
+                                ).filter(st -> AWS_S3_OBJECT_WRITE_ACTIONS.containsAll(st.getActions()))
                                 .anyMatch(st -> AWS_S3_OBJECTS_PATTERN.matcher(st.getResource()).find());
 
                         if (hasBucketObjectWrite) {

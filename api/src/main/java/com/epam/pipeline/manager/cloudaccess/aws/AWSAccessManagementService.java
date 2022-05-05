@@ -54,8 +54,6 @@ import java.util.Optional;
 @Service
 public class AWSAccessManagementService implements CloudAccessManagementService<AwsRegion> {
 
-    private static final String AWS_IAM_API_VERSION = "2012-10-17";
-
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
@@ -115,7 +113,7 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
         final PutUserPolicyRequest putUserPolicyRequest = new PutUserPolicyRequest()
                 .withUserName(username)
                 .withPolicyName(policyName)
-                .withPolicyDocument(AWSPolicyMapper.toPolicyDocument(userPolicy, AWS_IAM_API_VERSION));
+                .withPolicyDocument(AWSPolicyMapper.toPolicyDocument(userPolicy));
         getIAMClient(region).putUserPolicy(putUserPolicyRequest);
     }
 
