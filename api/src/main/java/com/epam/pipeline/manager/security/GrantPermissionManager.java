@@ -418,22 +418,23 @@ public class GrantPermissionManager {
     }
 
     public void filterTree(AbstractHierarchicalEntity entity, Permission permission) {
-        filterTree(getSids(), entity, permission);
+        filterTree(getSids(), entity, permission, authManager.getAuthorizedUser());
     }
 
     public void filterTree(AclSid aclSid, AbstractHierarchicalEntity entity, Permission permission) {
         if (aclSid.isPrincipal()) {
             filterTree(aclSid.getName(), entity, permission);
         } else {
-            filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission);
+            filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission, null);
         }
     }
 
     public void filterTree(String userName, AbstractHierarchicalEntity entity, Permission permission) {
-        filterTree(convertUserToSids(userName), entity, permission);
+        filterTree(convertUserToSids(userName), entity, permission, userName);
     }
 
-    private void filterTree(List<Sid> sids, AbstractHierarchicalEntity entity, Permission permission) {
+    private void filterTree(List<Sid> sids, AbstractHierarchicalEntity entity, Permission permission,
+                            String userName) {
         if (entity == null) {
             return;
         }
@@ -441,7 +442,7 @@ public class GrantPermissionManager {
             return;
         }
         processHierarchicalEntity(0, entity, new HashMap<>(), permission, true,
-                sids, findStorageQuota());
+                sids, findStorageQuota(userName));
     }
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
@@ -1218,8 +1219,15 @@ public class GrantPermissionManager {
         return Optional.empty();
     }
 
-    private Optional<AppliedQuota> findStorageQuota() {
-        return quotaService.findActiveActionForUser(authManager.getCurrentUser(),
+    private Optional<AppliedQuota> findStorageQuota(final String userName) {
+        if (StringUtils.isBlank(userName)) {
+            return Optional.empty();
+        }
+        final PipelineUser pipelineUser = userManager.loadUserByName(userName);
+        if (Objects.isNull(pipelineUser)) {
+            return Optional.empty();
+        }
+        return quotaService.findActiveActionForUser(pipelineUser,
                     QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
     }
 
