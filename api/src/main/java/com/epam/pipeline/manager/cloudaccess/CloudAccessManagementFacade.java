@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloudaccess;
 
+import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -23,18 +24,24 @@ import com.epam.pipeline.entity.user.PipelineUser;
 
 public interface CloudAccessManagementFacade {
 
-    <R extends AbstractCloudRegion> CloudUserAccessKeys generateAccessKeys(R region, PipelineUser user);
+    <R extends AbstractCloudRegion> CloudUserAccessKeys generateAccessKeys(CloudAccessManagementConfig config,
+                                                                           R region, PipelineUser user);
 
-    <R extends AbstractCloudRegion> CloudUserAccessKeys getAccessKeys(R region, PipelineUser user, String keyId);
+    <R extends AbstractCloudRegion> CloudUserAccessKeys getAccessKeys(CloudAccessManagementConfig config,
+                                                                      R region, PipelineUser user, String keyId);
 
-    <R extends AbstractCloudRegion> void revokeKeys(R region,  PipelineUser user, String keysId);
+    <R extends AbstractCloudRegion> void revokeKeys(CloudAccessManagementConfig config,
+                                                    R region,  PipelineUser user, String keysId);
 
-    <R extends AbstractCloudRegion> CloudAccessPolicy updateCloudUserAccessPolicy(R region, PipelineUser user,
+    <R extends AbstractCloudRegion> CloudAccessPolicy updateCloudUserAccessPolicy(CloudAccessManagementConfig config,
+                                                                                  R region, PipelineUser user,
                                                                                   CloudAccessPolicy accessPolicy);
 
-    <R extends AbstractCloudRegion> void revokeCloudUserAccessPermissions(R region, PipelineUser user);
+    <R extends AbstractCloudRegion> void revokeCloudUserAccessPermissions(CloudAccessManagementConfig config,
+                                                                          R region, PipelineUser user);
 
-    <R extends AbstractCloudRegion> void deleteUser(R region, PipelineUser user);
+    <R extends AbstractCloudRegion> void deleteUser(CloudAccessManagementConfig config, R region, PipelineUser user);
 
-    <R extends AbstractCloudRegion> CloudAccessPolicy getCloudUserAccessPermissions(R region, PipelineUser user);
+    <R extends AbstractCloudRegion> CloudAccessPolicy getCloudUserAccessPermissions(CloudAccessManagementConfig config,
+                                                                                    R region, PipelineUser user);
 }

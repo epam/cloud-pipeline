@@ -122,7 +122,6 @@ public class SystemPreferences {
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
-
     private static final String CLOUD = "Cloud";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
@@ -1030,13 +1029,6 @@ public class SystemPreferences {
                     "cloud.access.management.config", Collections.emptyList(),
                     new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
                     isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
-    public static final StringPreference CLOUD_ACCESS_MANAGEMENT_POLICY_PREFIX = new StringPreference(
-            "cloud.access.management.policy.prefix", "Cloud_Pipeline_Share_Policy",
-            CLOUD, PreferenceValidators.isNotBlank);
-
-    public static final StringPreference CLOUD_ACCESS_KEY_USER_METADATA_TAG = new StringPreference(
-            "cloud.access.key.user.metadata.tag", "cloud_access_key",
-            CLOUD, pass);
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

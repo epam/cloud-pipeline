@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.cloudaccess.aws;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
 import com.amazonaws.services.identitymanagement.model.AccessKey;
-import com.amazonaws.services.identitymanagement.model.AccessKeyMetadata;
 import com.amazonaws.services.identitymanagement.model.CreateAccessKeyRequest;
 import com.amazonaws.services.identitymanagement.model.CreateAccessKeyResult;
 import com.amazonaws.services.identitymanagement.model.CreateUserRequest;
@@ -140,7 +139,6 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
                     .findFirst().map(accessKey ->
                             CloudUserAccessKeys.builder().cloudProvider(getProvider())
                                     .id(accessKey.getAccessKeyId())
-                                    .configFile(generateAwsConfigFile(region))
                                     .build()
                     ).orElse(null);
         } catch (NoSuchEntityException e) {

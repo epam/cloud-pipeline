@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloudaccess;
 
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
+import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -33,6 +34,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 
 import java.util.Collections;
 import java.util.Objects;
@@ -40,7 +42,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-// TODO refactor code to put all system preferences to CloudAccessManagementConfig.java
 public class CloudAccessManager {
 
     private final CloudAccessManagementFacade cloudAccessManagementFacade;
@@ -50,19 +51,21 @@ public class CloudAccessManager {
     private final PreferenceManager preferenceManager;
 
     public CloudUserAccessKeys getKeys(final Long regionId, final String username) {
+        final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
         final PipelineUser user = fetchPipelineUserByName(username);
         final AbstractCloudRegion region = regionManager.load(regionId);
-        return fetchCloudAccessKeyIdAttachedForUser(user)
-                .map(kId -> cloudAccessManagementFacade.getAccessKeys(region, user, kId))
+        return fetchCloudAccessKeyIdAttachedForUser(cloudAccessConfig, user)
+                .map(kId -> cloudAccessManagementFacade.getAccessKeys(cloudAccessConfig, region, user, kId))
                 .orElse(null);
     }
 
     public CloudUserAccessKeys generateKeys(final Long regionId, final String username, final boolean force) {
+        final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
         final PipelineUser user = fetchPipelineUserByName(username);
         final AbstractCloudRegion region = regionManager.load(regionId);
 
-        fetchCloudAccessKeyIdAttachedForUser(user).ifPresent(kId -> {
-            if (cloudAccessManagementFacade.getAccessKeys(region, user, kId) != null) {
+        fetchCloudAccessKeyIdAttachedForUser(cloudAccessConfig, user).ifPresent(kId -> {
+            if (cloudAccessManagementFacade.getAccessKeys(cloudAccessConfig, region, user, kId) != null) {
                 if (force) {
                     // re-generate keys if specified
                     revokeKeys(regionId, username);
@@ -73,11 +76,12 @@ public class CloudAccessManager {
             }
         });
 
-        final CloudUserAccessKeys cloudKeys = cloudAccessManagementFacade.generateAccessKeys(region, user);
+        final CloudUserAccessKeys cloudKeys = cloudAccessManagementFacade
+                .generateAccessKeys(cloudAccessConfig, region, user);
         final MetadataVO cloudKeyMetadata = new MetadataVO(
                 new EntityVO(user.getId(), AclClass.PIPELINE_USER),
                 Collections.singletonMap(
-                        fetchCloudAccessKeyUserMetadataTag(),
+                        fetchCloudAccessKeyUserMetadataTag(cloudAccessConfig),
                         new PipeConfValue(PipeConfValueType.STRING.toString(), cloudKeys.getId())
                 )
         );
@@ -87,52 +91,74 @@ public class CloudAccessManager {
     }
 
     public void revokeKeys(final Long regionId, final String username) {
+        final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
         final PipelineUser user = fetchPipelineUserByName(username);
         final AbstractCloudRegion region = regionManager.load(regionId);
-        final String keysId = fetchCloudAccessKeyIdAttachedForUser(user)
+        final String keysId = fetchCloudAccessKeyIdAttachedForUser(cloudAccessConfig, user)
                 .orElseThrow(() -> new IllegalArgumentException(
                         String.format("User %s has no cloud access keys attached", user.getUserName())));
         revokeCloudUserAccessPermissions(regionId, username);
-        cloudAccessManagementFacade.revokeKeys(region, user, keysId);
-        cloudAccessManagementFacade.deleteUser(region, user);
+        cloudAccessManagementFacade.revokeKeys(cloudAccessConfig, region, user, keysId);
+        cloudAccessManagementFacade.deleteUser(cloudAccessConfig, region, user);
         metadataManager.deleteMetadataItemKey(
                 new EntityVO(user.getId(), AclClass.PIPELINE_USER),
-                fetchCloudAccessKeyUserMetadataTag()
+                fetchCloudAccessKeyUserMetadataTag(cloudAccessConfig)
         );
     }
 
     public CloudAccessPolicy updateCloudUserAccessPermissions(final Long regionId, final String username,
                                                               final CloudAccessPolicy accessPolicy) {
+        final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
         final PipelineUser user = fetchPipelineUserByName(username);
         final AbstractCloudRegion region = regionManager.load(regionId);
-        return cloudAccessManagementFacade.updateCloudUserAccessPolicy(region, user, accessPolicy);
+        return cloudAccessManagementFacade.updateCloudUserAccessPolicy(cloudAccessConfig, region, user, accessPolicy);
     }
 
     public void revokeCloudUserAccessPermissions(final Long regionId, final String username) {
+        final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
         final PipelineUser user = fetchPipelineUserByName(username);
         final AbstractCloudRegion region = regionManager.load(regionId);
         if (getCloudUserAccessPermissions(regionId, username) == null) {
             return;
         }
-        cloudAccessManagementFacade.revokeCloudUserAccessPermissions(region, user);
+        cloudAccessManagementFacade.revokeCloudUserAccessPermissions(cloudAccessConfig, region, user);
     }
 
     public CloudAccessPolicy getCloudUserAccessPermissions(final Long regionId, final String username) {
+        final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
         final PipelineUser user = fetchPipelineUserByName(username);
         final AbstractCloudRegion region = regionManager.load(regionId);
-        return cloudAccessManagementFacade.getCloudUserAccessPermissions(region, user);
+        return cloudAccessManagementFacade.getCloudUserAccessPermissions(cloudAccessConfig, region, user);
     }
 
-    private Optional<String> fetchCloudAccessKeyIdAttachedForUser(final PipelineUser user) {
+    private Optional<String> fetchCloudAccessKeyIdAttachedForUser(final CloudAccessManagementConfig cloudAccessConfig,
+                                                                  final PipelineUser user) {
         return ListUtils.emptyIfNull(
                         metadataManager.listMetadataItems(
                                 Collections.singletonList(new EntityVO(user.getId(), AclClass.PIPELINE_USER)))
                 ).stream()
                 .map(metadataEntry -> metadataEntry.getData()
-                        .get(fetchCloudAccessKeyUserMetadataTag()))
+                        .get(fetchCloudAccessKeyUserMetadataTag(cloudAccessConfig)))
                 .filter(Objects::nonNull)
                 .findFirst()
                 .map(PipeConfValue::getValue);
+    }
+
+    private CloudAccessManagementConfig validateAndGetCloudAccessConfig(final Long regionId) {
+        final CloudAccessManagementConfig cloudAccessConfig = getCloudAccessConfig(regionId);
+        Assert.isTrue(cloudAccessConfig.isEnabled(),
+                String.format("Cloud access feature is not enabled for region %s", regionId));
+        return cloudAccessConfig;
+    }
+
+    private CloudAccessManagementConfig getCloudAccessConfig(final Long regionId) {
+        return preferenceManager.getPreference(
+                SystemPreferences.CLOUD_ACCESS_MANAGEMENT_CONFIG).stream()
+                .filter(config -> regionId.equals(config.getRegionId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException(
+                        String.format("No cloud access config found for region %s", regionId)));
+
     }
 
     private PipelineUser fetchPipelineUserByName(final String username) {
@@ -143,12 +169,14 @@ public class CloudAccessManager {
         return user;
     }
 
-    private String fetchCloudAccessKeyUserMetadataTag() {
+    private String fetchCloudAccessKeyUserMetadataTag(final CloudAccessManagementConfig config) {
+        final CloudAccessManagementConfig cloudAccessConfig = getCloudAccessConfig(config.getRegionId());
         return Optional.ofNullable(
-                preferenceManager.getPreference(SystemPreferences.CLOUD_ACCESS_KEY_USER_METADATA_TAG)
-        ).orElseThrow(() -> new IllegalStateException(
-                String.format("Preference %s is not defined",
-                        SystemPreferences.CLOUD_ACCESS_KEY_USER_METADATA_TAG.getKey()))
+                cloudAccessConfig.getCloudAccessKeyUserMetadataPrefix()
+        ).map(p -> String.format("%s%d", p, config.getRegionId()))
+         .orElseThrow(() -> new IllegalStateException(
+                String.format("User metadata tag prefix ('cloudAccessKeyUserMetadataPrefix') for cloud access " +
+                        "key is not defined for region %s", config.getRegionId()))
         );
     }
 }

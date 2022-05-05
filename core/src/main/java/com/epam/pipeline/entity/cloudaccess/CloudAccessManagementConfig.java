@@ -25,6 +25,30 @@ public class CloudAccessManagementConfig {
 
     Long regionId;
     boolean enabled;
+
+    /**
+     * Prefix for name of cloud policy to be created and attached to cloud user.
+     * e.g. AWS user inline policy.
+     * */
+    String cloudAccessPolicyPrefix;
+
+    /**
+     * Prefix for cloud-pipeline user metadata tag to mark that user has a cloud access key for specific region
+     * */
+    String cloudAccessKeyUserMetadataPrefix;
+
+    /**
+     * Prefix to be added to username when user is created on the cloud.
+     * e.g.: cloud-pipeline username: test_user, cloudUserNamePrefix = 'cp-',
+     *       then cloud user name would be 'cp-test_user'.
+     *       Such approach will allow to bound set of permission that cloud-pipeline will need
+     *       to be able to enable this feature
+     * */
+    String cloudUserNamePrefix;
+
+    /**
+     * Template of the message to show to user when cloud keys are generated
+     * */
     String markdownTemplate;
 
 }
