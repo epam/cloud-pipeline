@@ -246,15 +246,13 @@ export default class Folder extends localization.LocalizedReactComponent {
       const SpecialMetadataComponent = SpecialTags[key];
       return (
         <div
-          onClick={e => e.stopPropagation()}
           key={`${key}_value`}
           className="cp-text"
-          style={{pointerEvents: 'none'}}
         >
           <SpecialMetadataComponent
             key={key}
             metadata={metadata}
-            disabled
+            showOnlySummary
           />
         </div>
       );
@@ -266,7 +264,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         >
           <ItemsTable
             title={key}
-            onlySummary
+            showOnlySummary
             value={value}
             containerStyle={{display: 'grid', padding: 0}}
             className="cp-text"
@@ -288,7 +286,9 @@ export default class Folder extends localization.LocalizedReactComponent {
       <Tooltip key={key} overlay={
         <Row>
           <Row>{key}:</Row>
-          <Row>{value}</Row>
+          <Row style={{wordBreak: 'break-word'}}>
+            {value}
+          </Row>
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
@@ -398,6 +398,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     },
     {
       key: 'region',
+      className: styles.treeItemRegion,
       render: (item) => {
         if (item.type === ItemTypes.storage) {
           return <AWSRegionTag regionId={item.regionId} />;

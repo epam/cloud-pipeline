@@ -31,7 +31,9 @@ export class LimitMountsInput extends React.Component {
     onChange: PropTypes.func,
     value: PropTypes.string,
     disabled: PropTypes.bool,
-    allowSensitive: PropTypes.bool
+    showOnlySummary: PropTypes.bool,
+    allowSensitive: PropTypes.bool,
+    className: PropTypes.string
   };
 
   static defaultProps = {
@@ -140,6 +142,14 @@ export class LimitMountsInput extends React.Component {
     return this.availableNonSensitiveStorages;
   }
 
+  get filteredSelectedStorages () {
+    return (this.selectedStorages || [])
+      .filter(filterNFSStorages(
+        this.nfsSensitivePolicy,
+        this.hasSelectedSensitiveStorages
+      ));
+  }
+
   get hasSelectedSensitiveStorages () {
     return !!this.selectedStorages.find(s => s.sensitive);
   }
@@ -183,6 +193,7 @@ export class LimitMountsInput extends React.Component {
   };
 
   renderContent = () => {
+    const {showOnlySummary} = this.props;
     if (this.selectedStorages.length === 0) {
       return (
         <span>No storages will be mounted</span>
@@ -202,17 +213,27 @@ export class LimitMountsInput extends React.Component {
         </span>
       );
     }
-    return this.selectedStorages
-      .filter(filterNFSStorages(this.nfsSensitivePolicy, this.hasSelectedSensitiveStorages))
-      .map(s => (
-        <span
-          key={s.id}
-          className={classNames(styles.storage, 'cp-limit-mounts-input-tag')}
-        >
-          <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
-          {s.name}
-        </span>
+    const filteredSelectedStorages = this.selectedStorages
+      .filter(filterNFSStorages(
+        this.nfsSensitivePolicy,
+        this.hasSelectedSensitiveStorages
       ));
+    if (showOnlySummary) {
+      return (
+        <p>
+          {filteredSelectedStorages.map(s => s.id).join(',')}
+        </p>
+      );
+    }
+    return filteredSelectedStorages.map(s => (
+      <span
+        key={s.id}
+        className={classNames(styles.storage, 'cp-limit-mounts-input-tag')}
+      >
+        <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
+        {s.name}
+      </span>
+    ));
   };
 
   render () {
@@ -223,11 +244,13 @@ export class LimitMountsInput extends React.Component {
         tabIndex={0}
         className={
           classNames(
+            this.props.className,
             styles.limitMountsInput,
             'cp-limit-mounts-input',
             {
               disabled: this.props.disabled,
-              [styles.disabled]: this.props.disabled
+              [styles.disabled]: this.props.disabled,
+              [styles.summary]: this.props.showOnlySummary
             }
           )
         }

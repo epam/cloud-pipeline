@@ -370,7 +370,7 @@ export default `
 @THEME .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
 @THEME .ant-input-number:hover:not(.ant-input-number-disabled),
-@THEME .cp-limit-mounts-input:hover {
+@THEME .cp-limit-mounts-input:not(.disabled):hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
