@@ -75,7 +75,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "PMD.AvoidCatchingGenericException"})
 @Service
 @AclSync
 public class DockerRegistryManager implements SecuredEntityManager {
@@ -378,6 +378,9 @@ public class DockerRegistryManager implements SecuredEntityManager {
             return jwtRawToken;
         } catch (IllegalArgumentException e) {
             throw new DockerAuthorizationException(dockerRegistryHost, e.getMessage());
+        } catch (Exception e) {
+            LOGGER.error(e.getMessage(), e);
+            throw e;
         }
     }
 
