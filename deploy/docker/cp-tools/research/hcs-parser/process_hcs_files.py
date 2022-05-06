@@ -1060,18 +1060,26 @@ def try_process_hcs(hcs_root_dir):
             parser.clear_tmp_local_dir()
 
 
+def remove_not_empty_string(string_list):
+    return filter(lambda string: string is not None and len(string.strip()) > 0, string_list)
+
+
 def process_hcs_files():
-    lookup_paths = os.getenv('HCS_TARGET_DIRECTORIES', '').split(',')
-    if not lookup_paths:
-        log_success('No paths for HCS processing specified')
-        exit(0)
-    log_info('Following paths are specified for processing: {}'.format(lookup_paths))
-    log_info('Lookup for unprocessed files')
-    paths_to_hcs_files = HcsProcessingDirsGenerator(lookup_paths).generate_paths()
-    if not paths_to_hcs_files:
-        log_success('Found no files requires processing in the target directories.')
-        exit(0)
-    log_info('Found {} files for processing.'.format(len(paths_to_hcs_files)))
+    paths_to_hcs_roots = remove_not_empty_string(os.getenv('HCS_TARGET_DIRECTORIES', '').split(','))
+    if len(paths_to_hcs_roots) == 0:
+        lookup_paths = remove_not_empty_string(os.getenv('HCS_LOOKUP_DIRECTORIES', '').split(','))
+        if not lookup_paths:
+            log_success('No paths for HCS processing specified')
+            exit(0)
+        log_info('Following paths are specified for processing: {}'.format(lookup_paths))
+        log_info('Lookup for unprocessed files')
+        paths_to_hcs_roots = HcsProcessingDirsGenerator(lookup_paths).generate_paths()
+        if not paths_to_hcs_roots:
+            log_success('Found no files requires processing in the target directories.')
+            exit(0)
+        log_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
+    else:
+        log_info('{} files for processing are specified.'.format(len(paths_to_hcs_roots)))
     processing_threads = int(os.getenv('HCS_PARSING_THREADS', 1))
     if processing_threads < 1:
         log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
@@ -1081,11 +1089,11 @@ def process_hcs_files():
     if TAGS_PROCESSING_ONLY:
         log_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
     if processing_threads == 1:
-        for file_path in paths_to_hcs_files:
+        for file_path in paths_to_hcs_roots:
             try_process_hcs(file_path)
     else:
         pool = multiprocessing.Pool(processing_threads)
-        pool.map(try_process_hcs, paths_to_hcs_files)
+        pool.map(try_process_hcs, paths_to_hcs_roots)
     log_success('Finished HCS files processing')
     exit(0)
 
