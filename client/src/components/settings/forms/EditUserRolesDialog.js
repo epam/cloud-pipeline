@@ -45,6 +45,7 @@ import InstanceTypesManagementForm from './InstanceTypesManagementForm';
 import AWSRegionTag from '../../special/AWSRegionTag';
 import UserName from '../../special/UserName';
 import ShareWithForm from '../../runs/logs/forms/ShareWithForm';
+import StorageAccess from './storage-access';
 
 @roleModel.authenticationInfo
 @inject('dataStorages', 'metadataCache', 'cloudCredentialProfiles', 'impersonation')
@@ -1062,6 +1063,9 @@ export default class EditUserRolesDialog extends React.Component {
                   onClose={this.closeShareDialog}
                 />
               </div>
+              <StorageAccess
+                style={{marginTop: 5, padding: 2}}
+              />
               <InstanceTypesManagementForm
                 className={styles.instanceTypesManagementForm}
                 key="instance types management form"

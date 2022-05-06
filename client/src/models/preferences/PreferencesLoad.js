@@ -355,6 +355,36 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get storageOutsideAccessCredentials () {
+    const value = this.getPreferenceValue('storage.outside.access.credentials');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "storage.outside.access.credentials":', e.message);
+      }
+    }
+    return {
+      AWS: [
+        {
+          cloudRegion: 'eu-east1',
+          credentialsTemplate: '**Token:** {token}'
+        },
+        {
+          cloudRegion: 'eu-west2',
+          credentialsTemplate: '**Token:** {token}<br/>**Key:** {private_key}'
+        }
+      ],
+      GCP: [
+        {
+          cloudRegion: 'us-east1',
+          credentialsTemplate: '**Public key:** {public_key}<br/>**Private key:** {private_key}'
+        }
+      ]
+    };
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }
