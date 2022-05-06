@@ -142,14 +142,6 @@ export class LimitMountsInput extends React.Component {
     return this.availableNonSensitiveStorages;
   }
 
-  get filteredSelectedStorages () {
-    return (this.selectedStorages || [])
-      .filter(filterNFSStorages(
-        this.nfsSensitivePolicy,
-        this.hasSelectedSensitiveStorages
-      ));
-  }
-
   get hasSelectedSensitiveStorages () {
     return !!this.selectedStorages.find(s => s.sensitive);
   }
