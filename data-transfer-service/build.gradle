@@ -137,6 +137,8 @@ jacocoTestReport {
 def jreURL = "https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/java/"
 def windowsJre = "OpenJDK8U-jre_x64_windows_hotspot_8u292b10.zip"
 def windowsJrePath = "jdk8u292-b10-jre"
+def linuxJre = "openjdk-1.8.0_222_linux-x64_bin.tar.gz"
+def linuxJrePath = "openjdk-8u222-b10"
 
 task customStartScriptsWin(type: CreateStartScripts) {
     applicationName = 'dts'
@@ -179,3 +181,46 @@ task bundleWindows(type: Zip) {
     baseName = 'dts'
     archiveName = 'data-transfer-service-windows.zip'
 }
+
+task customStartScriptsLinux(type: CreateStartScripts) {
+    applicationName = 'dts'
+    mainClassName = 'org.springframework.boot.loader.JarLauncher'
+    classpath = files('data-transfer-service.jar')
+    defaultJvmOpts = ["-Xms512m", "-Xmx2g"]
+    outputDir = file("$buildDir/scripts")
+    doLast {
+        unixScript.text = unixScript.text.replace("# Determine the Java command to use to start the JVM.",
+                "export JAVA_HOME=\$APP_HOME/jre/")
+    }
+}
+
+task downloadJreLinux(type: Download) {
+    dependsOn bootJar
+    src jreURL + linuxJre
+    dest "$buildDir/downloads/$linuxJre"
+    overwrite true
+}
+
+task unpackJreLinux(type: Copy) {
+    dependsOn downloadJreLinux
+    from(tarTree(resources.gzip("$buildDir/downloads/$linuxJre")))
+    into("$buildDir/downloads")
+}
+
+task bundleLinux(type: Zip) {
+    dependsOn unpackJreLinux, customStartScriptsLinux, bootJar
+    from ("$buildDir/downloads/$linuxJrePath") {
+        include '**/*'
+        into('jre')
+    }
+    from("$buildDir/libs") {
+        include '**/*.jar'
+        into('lib')
+    }
+    from("$buildDir/scripts") {
+        into('bin')
+    }
+    baseName = 'dts'
+    archiveName = 'data-transfer-service-linux.zip'
+}
+
