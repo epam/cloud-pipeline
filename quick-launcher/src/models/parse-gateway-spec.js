@@ -3,6 +3,12 @@ import getDataStorageItemContent from './cloud-pipeline-api/data-storage-item-co
 import fetchMountsForPlaceholders from './parse-limit-mounts-placeholders-config';
 import parseStoragePlaceholder from './parse-storage-placeholder';
 
+export function processGatewaySpecParameters(parameters) {
+  return Object.keys(parameters || {})
+    .map((key) => ({ [key]: { value: parameters[key], type: 'string' }}))
+    .reduce((r, c) => ({ ...r, ...c }), {});
+}
+
 function processGatewaySpec (appSettings, content, resolve) {
   try {
     const json = JSON.parse(content);
@@ -10,6 +16,7 @@ function processGatewaySpec (appSettings, content, resolve) {
       instance,
       users = [],
       mounts,
+      parameters,
       ...placeholders
     } = json;
     let instance_size;
@@ -68,14 +75,16 @@ function processGatewaySpec (appSettings, content, resolve) {
             instance_size,
             limitMountsPlaceholders,
             users,
-            limitMounts
+            limitMounts,
+            gatewaySpecParameters: processGatewaySpecParameters(parameters)
           });
         });
     } else {
       resolve({
         instance_size,
         limitMounts,
-        users
+        users,
+        gatewaySpecParameters: processGatewaySpecParameters(parameters)
       });
     }
   } catch (e) {

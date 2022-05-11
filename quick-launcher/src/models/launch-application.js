@@ -376,6 +376,10 @@ async function launchTool(application, user, options) {
         console.log(`${joinedLaunchOptions.instance_size} instance will be used`);
         payload.instance_size = joinedLaunchOptions.instance_size;
       }
+      payload.parameters = attachParameters(
+        payload.parameters,
+        joinedLaunchOptions.gatewaySpecParameters || {}
+      )
       const launchedRun = await launchToolRequest(
         application.id,
         `${application.image}:${version || 'latest'}`,

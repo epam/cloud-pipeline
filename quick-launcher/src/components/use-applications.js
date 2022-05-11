@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import getApplications, {nameSorter} from '../models/applications';
 import {safePromise as fetchDataStorages} from "../models/cloud-pipeline-api/data-storage-available";
 import useFolderApplications from "./utilities/use-folder-applications";
+import { processGatewaySpecParameters } from '../models/parse-gateway-spec';
 
 const ApplicationsContext = React.createContext([]);
 const UserContext = React.createContext(undefined);
@@ -80,7 +81,8 @@ export function useApplications (settings) {
       hasIcon: !!folderApplication.icon,
       __launch_parameters__: {
         FOLDER_APPLICATION_STORAGE: {value: folderApplication.storage, type: 'number'},
-        FOLDER_APPLICATION_PATH: {value: folderApplication.path, type: 'string'}
+        FOLDER_APPLICATION_PATH: {value: folderApplication.path, type: 'string'},
+        ...processGatewaySpecParameters(folderApplication?.info?.parameters || {})
       }
     });
     const extend = (original) => [
