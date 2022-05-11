@@ -23,4 +23,9 @@ import java.util.List;
 @Data
 public class BitbucketCommits {
     private List<BitbucketCommit> values;
+    private Long size;
+    private boolean isLastPage;
+    private Long start;
+    private Long limit;
+    private String nextPageStart;
 }

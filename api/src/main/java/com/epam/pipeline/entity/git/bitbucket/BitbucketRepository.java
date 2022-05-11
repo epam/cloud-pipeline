@@ -22,21 +22,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class BitbucketRepository {
+    private Long id;
     private String name;
     private String description;
-    private String uuid;
     private BitbucketLinks links;
-    @JsonProperty("full_name")
-    private String path;
-    @JsonProperty("created_on")
-    private Date createdDate;
-    @JsonProperty("is_private")
-    private boolean isPrivate;
+    private BitbucketProject project;
+    @JsonProperty("public")
+    private boolean isPublic;
 }

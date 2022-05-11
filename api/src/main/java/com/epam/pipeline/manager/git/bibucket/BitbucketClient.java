@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.git.bibucket;
 
+import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
@@ -32,49 +33,59 @@ import retrofit2.HttpException;
 import retrofit2.Response;
 
 import java.io.IOException;
-import java.util.Objects;
+import java.io.InputStream;
 
 public class BitbucketClient {
     private static final String AUTHORIZATION = "Authorization";
+    private static final String CONTENT = "content";
+    private static final String MESSAGE = "message";
 
-    private final BitbucketApi bitbucketApi;
-    private final String workspace;
+    private final BitbucketServerApi bitbucketServerApi;
+    private final String projectName;
     private final String repositoryName;
 
     public BitbucketClient(final String baseUrl, final String credentials, final String dateFormat,
-                           final String workspace, final String repositoryName) {
-        this.workspace = workspace;
+                           final String projectName, final String repositoryName) {
+        this.bitbucketServerApi = buildClient(baseUrl, credentials, dateFormat);
+        this.projectName  = projectName;
         this.repositoryName = repositoryName;
-        this.bitbucketApi = buildClient(baseUrl, credentials, dateFormat);
     }
 
     public BitbucketRepository getRepository() {
-        return RestApiUtils.execute(bitbucketApi.getRepository(workspace, repositoryName));
+        return RestApiUtils.execute(bitbucketServerApi.getRepository(projectName, repositoryName));
     }
 
     public BitbucketRepository createRepository(final BitbucketRepository bitbucketRepository) {
-        return RestApiUtils.execute(bitbucketApi.createRepository(workspace, repositoryName, bitbucketRepository));
+        bitbucketRepository.setName(repositoryName);
+        return RestApiUtils.execute(bitbucketServerApi.createRepository(projectName, bitbucketRepository));
     }
 
     public byte[] getFileContent(final String commit, final String path) {
         try {
-            final Call<ResponseBody> filesRawContent = bitbucketApi
-                    .getFileContents(workspace, repositoryName, commit, path);
+            final Call<ResponseBody> filesRawContent = bitbucketServerApi
+                    .getFileContents(projectName, repositoryName, path, commit);
             final ResponseBody body = filesRawContent.execute().body();
-            return Objects.nonNull(body) ? body.bytes() : new byte[]{};
+            if (body == null) {
+                return new byte[0];
+            }
+            try (InputStream inputStream = body.byteStream()) {
+                final int bufferSize = (int) body.contentLength();
+                final byte[] receivedContent = new byte[bufferSize];
+                inputStream.read(receivedContent);
+                return receivedContent;
+            }
         } catch (IOException e) {
             throw new GitClientException("Error receiving raw file content!", e);
         }
     }
 
-    public void createFile(final String path, final String content) {
+    public void createFile(final String path, final String content, final String message) {
         try {
-            final RequestBody contentBody = RequestBody.create(MediaType.parse(
-                    ContentType.TEXT_PLAIN.toString()), content);
-            final MultipartBody.Part multipartBody =
-                    MultipartBody.Part.createFormData(path, path, contentBody);
-            final Response<ResponseBody> response = bitbucketApi
-                    .createFile(workspace, repositoryName, multipartBody).execute();
+            final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, path,
+                    RequestBody.create(MediaType.parse(ContentType.TEXT_PLAIN.toString()), content));
+            final MultipartBody.Part messageBody = MultipartBody.Part.createFormData(MESSAGE, message);
+            final Response<ResponseBody> response = bitbucketServerApi
+                    .createFile(projectName, repositoryName, path, contentBody, messageBody).execute();
             if (!response.isSuccessful()) {
                 throw new HttpException(response);
             }
@@ -84,14 +95,18 @@ public class BitbucketClient {
     }
 
     public BitbucketTags getTags() {
-        return RestApiUtils.execute(bitbucketApi.getTags(workspace, repositoryName));
+        return RestApiUtils.execute(bitbucketServerApi.getTags(projectName, repositoryName));
     }
 
     public BitbucketCommits getCommits() {
-        return RestApiUtils.execute(bitbucketApi.getCommits(workspace, repositoryName));
+        return RestApiUtils.execute(bitbucketServerApi.getCommits(projectName, repositoryName));
     }
 
-    private BitbucketApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
-        return new ApiBuilder<>(BitbucketApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
+    public BitbucketCommit getCommit(final String commitId) {
+        return RestApiUtils.execute(bitbucketServerApi.getCommit(projectName, repositoryName, commitId));
+    }
+
+    private BitbucketServerApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
+        return new ApiBuilder<>(BitbucketServerApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
     }
 }

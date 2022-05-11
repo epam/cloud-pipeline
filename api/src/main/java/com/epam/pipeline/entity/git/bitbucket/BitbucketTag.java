@@ -16,15 +16,20 @@
 
 package com.epam.pipeline.entity.git.bitbucket;
 
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.util.Date;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class BitbucketTag {
-    private String name;
-    private String message;
-    private Date date;
-    private BitbucketCommit target;
-    private BitbucketAuthor tagger;
+    private String id;
+    private String displayId;
+    private String latestCommit;
+    private BitbucketCommit commit;
 }

@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.bitbucket.BitbucketCloneEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCloneHrefType;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketLinks;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketProject;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -31,6 +32,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,27 +40,29 @@ import java.util.stream.Collectors;
 @Mapper(componentModel = "spring")
 public interface BitbucketMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "projectId", ignore = true)
+    @Mapping(target = "projectId", source = "project.id")
     @Mapping(target = "repoUrl", ignore = true)
     @Mapping(target = "repoSsh", ignore = true)
+    @Mapping(target = "path", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
     GitProject toGitRepository(BitbucketRepository bitbucket);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "draft", ignore = true)
-    @Mapping(target = "authorEmail", ignore = true)
-    @Mapping(target = "createdDate", source = "date")
-    @Mapping(target = "commitId", source = "target.hash")
-    @Mapping(target = "author", source = "tagger.user.name")
+    @Mapping(target = "commitId", source = "latestCommit")
+    @Mapping(target = "name", source = "displayId")
+    @Mapping(target = "author", source = "commit.author.displayName")
+    @Mapping(target = "authorEmail", source = "commit.author.emailAddress")
+    @Mapping(target = "createdDate", expression = "java(fillDate(bitbucketTag.getCommit()))")
     Revision tagToRevision(BitbucketTag bitbucketTag);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "draft", ignore = true)
-    @Mapping(target = "authorEmail", ignore = true)
-    @Mapping(target = "createdDate", source = "date")
-    @Mapping(target = "commitId", source = "hash")
-    @Mapping(target = "name", ignore = true)
-    @Mapping(target = "author", source = "author.user.name")
+    @Mapping(target = "createdDate", expression = "java(fillDate(bitbucketCommit))")
+    @Mapping(target = "commitId", source = "id")
+    @Mapping(target = "name", source = "displayId")
+    @Mapping(target = "author", source = "author.displayName")
+    @Mapping(target = "authorEmail", source = "author.emailAddress")
     Revision commitToRevision(BitbucketCommit bitbucketCommit);
 
     @AfterMapping
@@ -69,25 +73,27 @@ public interface BitbucketMapper {
         }
         final Map<BitbucketCloneHrefType, String> repoUrls = ListUtils.emptyIfNull(repositoryLinks.getClone()).stream()
                 .collect(Collectors.toMap(BitbucketCloneEntry::getName, BitbucketCloneEntry::getHref));
-        gitProject.setRepoUrl(repoUrls.get(BitbucketCloneHrefType.https));
+        gitProject.setRepoUrl(repoUrls.getOrDefault(BitbucketCloneHrefType.https,
+                repoUrls.get(BitbucketCloneHrefType.http)));
         gitProject.setRepoSsh(repoUrls.get(BitbucketCloneHrefType.ssh));
     }
 
     @AfterMapping
-    default void fillCommit(final BitbucketCommit commit, final @MappingTarget Revision revision) {
-        if (Objects.nonNull(commit.getAuthor())) {
-            revision.setAuthorEmail(parseAuthorEmail(commit.getAuthor().getRaw()));
+    default void fillRepositoryPath(final BitbucketRepository repository, final @MappingTarget GitProject gitProject) {
+        final BitbucketProject project = repository.getProject();
+        if (StringUtils.isNotBlank(repository.getName())) {
+            gitProject.setName(repository.getName());
         }
+        if (Objects.isNull(project) || StringUtils.isBlank(project.getKey())
+                || StringUtils.isBlank(project.getName())) {
+            return;
+        }
+        gitProject.setPath(String.format("%s/%s", project.getKey(), repository.getName()));
     }
 
-    @AfterMapping
-    default void fillTag(final BitbucketTag tag, final @MappingTarget Revision revision) {
-        if (Objects.nonNull(tag.getTagger())) {
-            revision.setAuthorEmail(parseAuthorEmail(tag.getTagger().getRaw()));
-        }
-    }
-
-    static String parseAuthorEmail(final String raw) {
-        return StringUtils.substringBetween(raw, "<", ">");
+    default Date fillDate(final BitbucketCommit commit) {
+        return Objects.nonNull(commit) && Objects.nonNull(commit.getAuthorTimestamp())
+                ? new Date(commit.getAuthorTimestamp())
+                : null;
     }
 }

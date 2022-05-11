@@ -281,8 +281,6 @@ public class SystemPreferences {
             new StringPreference("ui.git.cli.configure.template", null, GIT_GROUP, pass);
     public static final BooleanPreference GIT_REPOSITORY_INDEXING_ENABLED = new BooleanPreference(
             "git.repository.indexing.enabled", true, GIT_GROUP, pass);
-    public static final BooleanPreference BITBUCKET_REPOSITORY_INDEXING_ENABLED = new BooleanPreference(
-            "git.bitbucket.repository.indexing.enabled", false, GIT_GROUP, pass);
     public static final StringPreference GIT_REPOSITORY_HOOK_URL = new StringPreference(
             "git.repository.hook.url", null, GIT_GROUP, PreferenceValidators.isValidUrl);
     public static final IntPreference GIT_FORK_WAIT_TIMEOUT = new IntPreference("git.fork.wait.timeout", 500,

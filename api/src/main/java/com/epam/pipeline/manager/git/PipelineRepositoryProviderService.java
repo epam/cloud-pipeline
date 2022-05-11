@@ -20,8 +20,6 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
-import com.epam.pipeline.manager.git.bibucket.BitbucketService;
-import com.epam.pipeline.manager.git.gitlab.GitLabService;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,9 +31,6 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class PipelineRepositoryProviderService {
-
-    private final BitbucketService bitbucketService;
-    private final GitLabService gitLabService;
 
     private Map<RepositoryType, GitClientService> providers;
 

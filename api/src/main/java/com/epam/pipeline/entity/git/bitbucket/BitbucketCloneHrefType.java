@@ -17,5 +17,5 @@
 package com.epam.pipeline.entity.git.bitbucket;
 
 public enum BitbucketCloneHrefType {
-    https, ssh
+    http, https, ssh
 }

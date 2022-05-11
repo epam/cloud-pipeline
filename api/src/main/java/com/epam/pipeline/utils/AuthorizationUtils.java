@@ -25,6 +25,7 @@ import java.util.Base64;
 public interface AuthorizationUtils {
 
     String BASIC_AUTH = "Basic";
+    String BEARER_AUTH = "Bearer ";
 
     static String[] parseBasicAuth(final String authorization) {
         if (authorization != null && authorization.startsWith(BASIC_AUTH)) {
@@ -40,10 +41,5 @@ public interface AuthorizationUtils {
             return values;
         }
         return null;
-    }
-
-    static String buildBasicAuth(final String username, final String password) {
-        return BASIC_AUTH + Constants.SPACE + Base64.getEncoder()
-                .encodeToString((username + Constants.COLON + password).getBytes(StandardCharsets.UTF_8));
     }
 }

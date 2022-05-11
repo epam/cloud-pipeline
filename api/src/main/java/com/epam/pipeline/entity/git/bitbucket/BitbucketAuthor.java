@@ -16,10 +16,14 @@
 
 package com.epam.pipeline.entity.git.bitbucket;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@AllArgsConstructor
+@Builder
 public class BitbucketAuthor {
-    private String raw;
-    private BitbucketUser user;
+    private String displayName;
+    private String emailAddress;
 }

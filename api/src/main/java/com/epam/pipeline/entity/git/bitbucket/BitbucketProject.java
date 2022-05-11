@@ -16,11 +16,15 @@
 
 package com.epam.pipeline.entity.git.bitbucket;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class BitbucketUser {
-    @JsonProperty("display_name")
+@AllArgsConstructor
+@Builder
+public class BitbucketProject {
+    private Long id;
     private String name;
+    private String key;
 }

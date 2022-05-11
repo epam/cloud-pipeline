@@ -22,7 +22,8 @@ import java.util.List;
 
 @Data
 public class BitbucketTags {
-    private Long pagelen;
-    private Long page;
+    private Long size;
+    private Long limit;
+    private boolean isLastPage;
     private List<BitbucketTag> values;
 }
