@@ -324,6 +324,18 @@ public class Utils {
         return uploadedFile;
     }
 
+    public static File createTempFileWithContent(String name, String content) {
+        Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
+        try {
+            Files.write(path, content.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        File file = path.toFile();
+        file.deleteOnExit();
+        return file;
+    }
+
     public static File createFileAndFillWithString(String name,
                                                    String repeatingString,
                                                    int totalNumberOfChars) {

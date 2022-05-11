@@ -329,5 +329,6 @@ public enum Primitive {
     THRESHOLD,
     ADD_ACTION,
     BILLING_CENTER,
-    REINDEX
+    REINDEX,
+    REMOVE
 }

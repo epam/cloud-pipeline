@@ -15,50 +15,69 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import org.openqa.selenium.By;
 
+import java.util.Arrays;
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.cssClass;
-import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selectors.byTitle;
 import static com.codeborne.selenide.Selectors.byXpath;
+import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
+import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.ACTIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ACTION;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_QUOTA;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
+import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.COMPUTE_INSTANCES;
+import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
 import static com.epam.pipeline.autotests.ao.Primitive.PERIOD;
 import static com.epam.pipeline.autotests.ao.Primitive.QUOTA;
 import static com.epam.pipeline.autotests.ao.Primitive.QUOTAS;
+import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
+import static com.epam.pipeline.autotests.ao.Primitive.REMOVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.THRESHOLD;
+import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.testng.Assert.assertTrue;
 
 
 public class BillingTabAO implements AccessObject<BillingTabAO> {
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(QUOTAS, $(byXpath("//div[@title='Quotas']"))),
-            entry(COMPUTE_INSTANCES, $(byId("quotas$Menu")).$(byXpath("//li[.='Compute instances']")))
+            entry(COMPUTE_INSTANCES, $(byId("quotas$Menu")).$(byXpath("//li[.='Compute instances']"))),
+            entry(STORAGES, $(byId("quotas$Menu")).$(byXpath("//li[.='Storages']")))
     );
 
-    public QuotasSection getQuotasSection(String section) {
+    public QuotasSection getQuotasSection(BillingQuotaType section) {
         sleep(1, SECONDS);
         SelenideElement entry = context().$$(By.className("uotas__section-container"))
-                .findBy(text(section)).shouldBe(visible);
+                .findBy(text(section.type)).shouldBe(visible);
         return new QuotasSection(this, entry);
+    }
+
+    public BillingTabAO checkQuotasSections(BillingQuotaType ... sections) {
+        Arrays.stream(sections).forEach(section ->
+                $$(By.className("uotas__section-container"))
+                        .findBy(text(section.type)).exists());
+        return this;
     }
 
     @Override
@@ -89,17 +108,39 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
             return new QuotaPopUp(this);
         }
 
+        public QuotaEntry getQuotaEntry(String entity, String quota) {
+            return new QuotaEntry(this, quotaEntry(entity, quota));
+        }
+
+        public QuotaPopUp openQuotaEntry(String entity, String quota) {
+            quotaEntry(entity, quota).click();
+            return new QuotaPopUp(this);
+        }
+
+        public QuotasSection checkQuotaEntryNotExist() {
+
+            return this;
+        }
+
+        private SelenideElement quotaEntry(String entity, String quota) {
+            sleep(1, SECONDS);
+            return entry.$$(By.className("uota-description__container"))
+                    .filter(text(entity))
+                    .filter(text(quota))
+                    .first().shouldBe(visible);
+        }
+
+        private void confirmRemoving() {
+            new ConfirmationPopupAO<>(this)
+                    .ensureTitleIs("Are you sure you want to remove quota?")
+                    .sleep(1, SECONDS)
+                    .click(button(OK.name()));
+        }
 
         @Override
         public Map<Primitive, SelenideElement> elements() {
             return elements;
         }
-
-        @Override
-        public SelenideElement context() {
-            return $(byId("root-content"));
-        }
-
 
         public class QuotaPopUp extends PopupAO<QuotaPopUp, QuotasSection> implements AccessObject<QuotaPopUp> {
             public final Map<Primitive, SelenideElement> elements = initialiseElements(
@@ -107,15 +148,63 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                     entry(PERIOD, context().find(byText("$"))
                             .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
                     entry(THRESHOLD, context().find(byAttribute("placeholder","Threshold"))),
-                    entry(ACTIONS, context().find(byText("%"))
+                    entry(ACTIONS, context().find(withText("%"))
+                            .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
+                    entry(RECIPIENTS, context().find(byText("Recipients:"))
                             .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
                     entry(ADD_ACTION, context().$(button(" Add action"))),
                     entry(SAVE, context().find(button("SAVE"))),
-                    entry(CANCEL, context().find(button("CANCEL")))
+                    entry(CANCEL, context().find(button("CANCEL"))),
+                    entry(REMOVE, context().find(button("REMOVE"))),
+                    entry(CLOSE, context().find(button("CLOSE"))),
+                    entry(TITLE, context().find(byClassName("ant-modal-title")))
             );
 
             public QuotaPopUp(QuotasSection parentAO) {
                 super(parentAO);
+            }
+
+            public QuotaPopUp ensureActionsList(String... actions) {
+                click(ACTIONS);
+                sleep(1, SECONDS);
+                ElementsCollection list = $$(byXpath(
+                        ".//li[@role = 'menuitem' and contains(@class, 'ant-select-dropdown-menu-item')]"));
+                Arrays.stream(actions).forEach(action ->
+                        assertTrue(list.texts().contains(action), format("Action '%s' isn't contained in list", action)));
+                return this;
+            }
+
+            public QuotaPopUp addRecipient(final String recipient) {
+                click(RECIPIENTS);
+                actions().sendKeys(recipient).perform();
+                enter();
+                click(byText("Recipients:"));
+                return this;
+            }
+
+            public QuotaPopUp setAction(final String billingThreshold, final String ... actions) {
+                setValue(THRESHOLD, billingThreshold);
+                Arrays.stream(actions).forEach(act -> {
+                        selectValue(ACTIONS, act);
+                        click(byText("Actions:"));
+                });
+                return this;
+            }
+
+            public QuotaPopUp ensureComboboxFieldDisabled(Primitive ... elements) {
+                Arrays.stream(elements).forEach(el ->
+                        assertTrue(get(el).parent().has(cssClass("ant-select-disabled"))));
+                return this;
+            }
+
+            public QuotasSection close() {
+                return click(CLOSE).parent();
+            }
+
+            public QuotasSection removeQuota() {
+                click(REMOVE);
+                confirmRemoving();
+                return parent();
             }
 
             @Override
@@ -132,6 +221,77 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
             public QuotasSection ok() {
                 return click(SAVE).parent();
             }
+
+            @Override
+            public QuotasSection cancel() {
+                context().find(button("CANCEL")).shouldBe(visible).click();
+                return this.parent();
+            }
+
+            public QuotaPopUp errorMessageShouldAppear(BillingQuotaType type, BillingQuotaPeriod period) {
+                screenshot("error_message");
+                $(byClassName("uotas__message")).should(appear)
+                        .should(text(format("%squota %salready exists", type.type,
+                                period.period.replace(" ", ""))));
+                return this;
+            }
+        }
+
+        public class QuotaEntry implements AccessObject<QuotaEntry> {
+            private final QuotasSection parentAO;
+            private SelenideElement entry;
+            private final Map<Primitive, SelenideElement> elements;
+
+            public QuotaEntry(QuotasSection parentAO, SelenideElement entry) {
+                this.parentAO = parentAO;
+                this.entry = entry;
+                this.elements = initialiseElements(
+                        entry(DELETE_ICON, entry.$(byClassName("anticon-close")).parent()),
+                        entry(ACTIONS, entry.$(byClassName("uota-description__actions-container")))
+                );
+            }
+
+            public QuotaEntry checkEntryActions(String ... actions) {
+                Arrays.stream(actions).forEach(act -> ensure(ACTIONS, text(act)));
+                return this;
+            }
+
+            public QuotasSection removeQuota() {
+                click(DELETE_ICON);
+                confirmRemoving();
+                return parentAO;
+            }
+
+            @Override
+            public Map<Primitive, SelenideElement> elements() {
+                return elements;
+            }
         }
     }
+
+    public enum BillingQuotaType {
+        OVERALL("Overall"),
+        BILLING_CENTERS("Billing centers"),
+        GROUPS("Groups"),
+        USERS("Users");
+
+        public final String type;
+
+        BillingQuotaType(String type) {
+            this.type = type;
+        }
+    }
+
+    public enum BillingQuotaPeriod {
+        PER_MONTH("per month"),
+        PER_YEAR("per year"),
+        PER_QUARTER("per quarter");
+
+        public final String period;
+
+        BillingQuotaPeriod(String period) {
+            this.period = period;
+        }
+    }
+
 }

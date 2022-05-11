@@ -120,7 +120,6 @@ public class NavigationMenuAO {
     }
 
     public NavigationMenuAO checkBillingVisible(boolean bool) {
-        screenshot("screen123");
         assertEquals($(byId("navigation-button-billing")).is(visible), bool);
         return this;
     }
