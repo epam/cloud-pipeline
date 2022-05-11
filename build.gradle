@@ -162,6 +162,7 @@ task installDist() {
                 "$rootDir/elasticsearch-agent/build/libs/elasticsearch-agent.jar",
                 "$rootDir/data-transfer-service/build/libs/data-transfer-service.jar",
                 "$rootDir/data-transfer-service/build/distributions/data-transfer-service-windows.zip",
+                "$rootDir/data-transfer-service/build/distributions/data-transfer-service-linux.zip",
                 "$rootDir/vm-monitor/build/libs/vm-monitor.jar",
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
                 "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
