@@ -18,7 +18,6 @@ import os
 import multiprocessing
 import datetime
 import math
-from PIL import Image
 import shutil
 import sys
 import tempfile
@@ -32,16 +31,17 @@ from functools import cmp_to_key
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
 from pipeline.common import get_path_with_trailing_delimiter, get_path_without_trailing_delimiter
+from PIL import Image
 
 
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('HCS_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
-HCS_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('HCS_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
+HCS_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('HCS_PARSING_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
 TAGS_PROCESSING_ONLY = os.getenv('HCS_PARSING_TAGS_ONLY', 'false') == 'true'
-FORCE_PROCESSING = os.getenv('HCS_FORCE_PROCESSING', 'false') == 'true'
-HCS_CLOUD_FILES_SCHEMA = os.getenv('HCS_CLOUD_FILES_SCHEMA', 's3')
-PLANE_COORDINATES_DELIMITER = os.getenv('HCS_CLOUD_FILES_SCHEMA', '_')
-DEFAULT_CHANNEL_WIDTH = os.getenv('HCS_DEFAULT_CHANNEL_WIDTH', 1080)
-DEFAULT_CHANNEL_HEIGHT = os.getenv('HCS_DEFAULT_CHANNEL_HEIGHT', 1080)
+FORCE_PROCESSING = os.getenv('HCS_PARSING_FORCE_PROCESSING', 'false') == 'true'
+HCS_CLOUD_FILES_SCHEMA = os.getenv('HCS_PARSING_CLOUD_FILES_SCHEMA', 's3')
+PLANE_COORDINATES_DELIMITER = os.getenv('HCS_PARSING_PLANE_COORDINATES_DELIMITER', '_')
+DEFAULT_CHANNEL_WIDTH = os.getenv('HCS_PARSING_DEFAULT_CHANNEL_WIDTH', 1080)
+DEFAULT_CHANNEL_HEIGHT = os.getenv('HCS_PARSING_DEFAULT_CHANNEL_HEIGHT', 1080)
 
 HCS_PROCESSING_OUTPUT_FOLDER = os.getenv('HCS_PARSING_OUTPUT_FOLDER')
 HCS_PROCESSING_TASK_NAME = 'HCS processing'
@@ -558,7 +558,7 @@ class HcsFileParser:
             hcs_file_root_dir = os.path.dirname(self.hcs_img_path)
             source_dir = os.path.relpath(self.hcs_root_dir, hcs_file_root_dir)
             preview_dir = os.path.relpath(self.hcs_img_service_dir, hcs_file_root_dir)
-        ome_data_file_name = os.getenv('HCS_PARSER_OME_TIFF_FILE_NAME', 'data.ome.tiff')
+        ome_data_file_name = os.getenv('HCS_PARSING_OME_TIFF_FILE_NAME', 'data.ome.tiff')
         ome_offsets_file_name = ome_data_file_name[:ome_data_file_name.find('.')] + '.offsets.json'
         details = {
             'sourceDir': source_dir,
@@ -616,42 +616,43 @@ class HcsFileParser:
         self.generate_ome_xml_info_file()
         xml_info_tree = ET.parse(self.ome_xml_info_file_path).getroot()
         plate_width, plate_height = self._get_plate_configuration(xml_info_tree)
+        if not TAGS_PROCESSING_ONLY:
+            if not self._localize_related_files():
+                self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
+                return 1
+            else:
+                self.log_processing_info('Localization is finished.')
+            local_preview_dir = os.path.join(self.tmp_local_dir, 'preview')
+            hcs_local_index_file_path = get_path_without_trailing_delimiter(self.tmp_local_dir) \
+                                        + MEASUREMENT_INDEX_FILE_PATH
+            for sequence_id, timepoints in time_series_details.items():
+                self.log_processing_info('Processing sequence with id={}'.format(sequence_id))
+                sequence_index_file_path = self.extract_sequence_data(sequence_id, hcs_local_index_file_path)
+                conversion_result = os.system('bash "{}" "{}" "{}" {}'.format(
+                    self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_index_file_path, local_preview_dir, sequence_id))
+                if conversion_result != 0:
+                    self.log_processing_info('File processing was not successful...')
+                    return 1
+                sequence_overview_index_file_path = self.build_sequence_overview_index(sequence_index_file_path)
+                conversion_result = os.system('bash "{}" "{}" "{}" {} "{}"'.format(
+                    self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_overview_index_file_path, local_preview_dir,
+                    sequence_id, 'overview_data.ome.tiff'))
+                if conversion_result != 0:
+                    self.log_processing_info('File processing was not successful: well preview generation failure')
+                    return 1
+                self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
+                                        self.build_wells_map(sequence_id))
+            cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
+                                              .format(local_preview_dir,
+                                                      HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
+            if cloud_transfer_result != 0:
+                self.log_processing_info('Results transfer was not successful...')
+                return 1
+        self._write_hcs_file(time_series_details, plate_width, plate_height)
         tags_processing_result = self.try_process_tags(xml_info_tree)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
-        if not self._localize_related_files():
-            self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
-            return 1
-        else:
-            self.log_processing_info('Localization is finished.')
-        local_preview_dir = os.path.join(self.tmp_local_dir, 'preview')
-        hcs_local_index_file_path = get_path_without_trailing_delimiter(self.tmp_local_dir) \
-                                    + MEASUREMENT_INDEX_FILE_PATH
-        for sequence_id, timepoints in time_series_details.items():
-            self.log_processing_info('Processing sequence with id={}'.format(sequence_id))
-            sequence_index_file_path = self.extract_sequence_data(sequence_id, hcs_local_index_file_path)
-            conversion_result = os.system('bash "{}" "{}" "{}" {}'.format(
-                self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_index_file_path, local_preview_dir, sequence_id))
-            if conversion_result != 0:
-                self.log_processing_info('File processing was not successful...')
-                return 1
-            sequence_overview_index_file_path = self.build_sequence_overview_index(sequence_index_file_path)
-            conversion_result = os.system('bash "{}" "{}" "{}" {} "{}"'.format(
-                self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_overview_index_file_path, local_preview_dir,
-                sequence_id, 'overview_data.ome.tiff'))
-            if conversion_result != 0:
-                self.log_processing_info('File processing was not successful: well preview generation failure')
-                return 1
-            self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
-                                    self.build_wells_map(sequence_id))
-        cloud_transfer_result = os.system('pipe storage cp -f -r "{}" "{}"'
-                                          .format(local_preview_dir,
-                                                  HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
-        if cloud_transfer_result != 0:
-            self.log_processing_info('Results transfer was not successful...')
-            return 1
         self.create_stat_file()
-        self._write_hcs_file(time_series_details, plate_width, plate_height)
         return 0
 
     def extract_sequence_data(self, target_sequence_id, hcs_local_index_file_path):
@@ -1075,12 +1076,12 @@ def process_hcs_files():
         log_info('Lookup for unprocessed files')
         paths_to_hcs_roots = HcsProcessingDirsGenerator(lookup_paths).generate_paths()
         if not paths_to_hcs_roots:
-            log_success('Found no files requires processing in the target directories.')
+            log_success('Found no files requires processing in the lookup directories.')
             exit(0)
         log_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
     else:
         log_info('{} files for processing are specified.'.format(len(paths_to_hcs_roots)))
-    processing_threads = int(os.getenv('HCS_PARSING_THREADS', 1))
+    processing_threads = int(os.getenv('HCS_PARSER_PROCESSING_THREADS', 1))
     if processing_threads < 1:
         log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
                  .format(processing_threads))

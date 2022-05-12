@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-source $ANACONDA_HOME/etc/profile.d/conda.sh
-conda activate hcs
-python2 "$HCS_TOOLS_HOME/scripts/process_hcs_files.py" > "$ANALYSIS_DIR/hcs-parser-$RUN_ID.log" 2>&1
+qmod -d "main.q@$HOSTNAME"
+python2 "$HCS_TOOLS_HOME/scripts/process_hcs_files_cluster.py" > $ANALYSIS_DIR/hcs-parser-master-$RUN_ID.log 2>&1
+pipe storage cp "$ANALYSIS_DIR/hcs-parser-master-$RUN_ID.log" "$HCS_PARSING_LOGS_OUTPUT/$RUN_ID/"

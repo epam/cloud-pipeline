@@ -15,6 +15,42 @@
 ARG BASE_IMAGE="centos:7"
 FROM $BASE_IMAGE
 
+ENV LANG="en_US.UTF-8"
+ENV LANGUAGE=en_US
+
+# Install common dependencies
+RUN yum install -y curl \
+                   git \
+                   openssh-server \
+                   wget \
+                   unzip \
+                   python && \
+    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python - && \
+    pip install pillow
+
+ARG ANACONDA_VERSION="3-latest"
+ENV ANACONDA_HOME=/opt/local/anaconda
+ENV PATH="$PATH:$ANACONDA_HOME/bin"
+
+ARG CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
+
+RUN mkdir -p "$ANACONDA_HOME" && \
+    setfacl -d -m g::rwx "$ANACONDA_HOME" && \
+    wget -q "https://repo.anaconda.com/miniconda/Miniconda${ANACONDA_VERSION}-Linux-x86_64.sh" -O /tmp/Anaconda_Install.sh && \
+    bash /tmp/Anaconda_Install.sh -f -b -p "$ANACONDA_HOME" && \
+    rm -f /tmp/Anaconda_Install.sh && \
+    conda init bash && \
+    source $ANACONDA_HOME/etc/profile.d/conda.sh && \
+    conda create -y -n hcs && \
+    conda activate hcs && \
+    yum install -y epel-release && \
+    yum clean all && \
+    yum install -y blosc \
+                   ImageMagick \
+                   java-1.8.0-openjdk-devel && \
+    pip3 install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7 && \
+    conda deactivate
+
 ARG BIOFORMATS_TO_RAW_VERSION=0.4.0
 ARG BIOFORMATS_TO_RAW_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bioformats2raw/bioformats2raw-$BIOFORMATS_TO_RAW_VERSION.zip"
 
@@ -24,33 +60,9 @@ ARG RAW_TO_OMETIFF_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com
 ARG BFTOOLS_VERSION=6.8.0
 ARG BFTOOLS_DISTR_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/bftools/bftools-cli-$BFTOOLS_VERSION.zip"
 
-ARG PYTHON_3_9_DISTRIBUTION_URL="https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/python/3/Python-3.9.6.tgz"
-
 ENV HCS_TOOLS_HOME="/opt/local/hcs-tools"
-ENV LANG="en_US.UTF-8"
-ENV LANGUAGE=en_US
 
-# Install common dependencies
-RUN yum install -y curl \
-                   git \
-                   openssh-server \
-                   wget \
-                   unzip && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
-
-ARG CP_PIP_EXTRA_ARGS="--index-url http://cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com/tools/python/pypi/simple --trusted-host cloud-pipeline-oss-builds.s3-website-us-east-1.amazonaws.com"
-
-# Install HCS-tools and their dependencies
-RUN yum install -y -q epel-release && \
-    yum update -y && \
-    yum install -y -q blosc \
-                      gcc \
-                      ImageMagick \
-                      java-1.8.0-openjdk-devel \
-                      make \
-                      openssl-devel \
-                      xz-devel && \
-    mkdir -p "$HCS_TOOLS_HOME" && \
+RUN mkdir -p "$HCS_TOOLS_HOME" && \
     wget -q "$BIOFORMATS_TO_RAW_DISTR_URL" -O "$HCS_TOOLS_HOME/bioformats2raw.zip" && \
     unzip "$HCS_TOOLS_HOME/bioformats2raw.zip" -d "$HCS_TOOLS_HOME/bioformats2raw" && \
     rm -f "$HCS_TOOLS_HOME/bioformats2raw.zip" && \
@@ -61,21 +73,14 @@ RUN yum install -y -q epel-release && \
     chmod +x "$HCS_TOOLS_HOME/raw2ometiff/bin/raw2ometiff" && \
     wget "$BFTOOLS_DISTR_URL" -O "$HCS_TOOLS_HOME/bftools-cli.zip" && \
     unzip "$HCS_TOOLS_HOME/bftools-cli.zip" -d "$HCS_TOOLS_HOME" && \
-    rm -f "$HCS_TOOLS_HOME/bftools-cli.zip" && \
-    pip install pillow && \
-    wget "$PYTHON_3_9_DISTRIBUTION_URL" -O python3.tgz  && \
-    tar xzf python3.tgz && \
-    cd Python-* && \
-    ./configure --enable-optimizations && \
-    make altinstall && \
-    cd .. && \
-    rm -rf Python-* && \
-    python3.9 -m pip install $CP_PIP_EXTRA_ARGS -I -q generate-tiff-offsets==0.1.7
+    rm -f "$HCS_TOOLS_HOME/bftools-cli.zip"
 
 ENV PATH="$HCS_TOOLS_HOME/bftools:$HCS_TOOLS_HOME/bioformats2raw/bin:$HCS_TOOLS_HOME/raw2ometiff/bin:$PATH"
 
-ADD process_hcs_files.py "$HCS_TOOLS_HOME/scripts/process_hcs_files.py"
-ADD convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
-ADD start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
+COPY process_hcs_files.py "$HCS_TOOLS_HOME/scripts/process_hcs_files.py"
+COPY process_hcs_files_cluster.py "$HCS_TOOLS_HOME/scripts/process_hcs_files_cluster.py"
+COPY convert_to_ome_tiff.sh "$HCS_TOOLS_HOME/scripts/convert_to_ome_tiff.sh"
+COPY start.sh "$HCS_TOOLS_HOME/scripts/start.sh"
+COPY start_cluster.sh "$HCS_TOOLS_HOME/scripts/start_cluster.sh"
 
 RUN chmod +x $HCS_TOOLS_HOME/scripts/*.sh
