@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.cloudaccess;
 
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
+import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;

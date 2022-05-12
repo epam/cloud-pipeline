@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.manager.cloudaccess;
 
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
+import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cloud.CloudAwareService;

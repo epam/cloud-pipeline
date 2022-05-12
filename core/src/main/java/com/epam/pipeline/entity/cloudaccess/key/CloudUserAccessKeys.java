@@ -14,19 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.cloudaccess;
+package com.epam.pipeline.entity.cloudaccess.key;
 
 import com.epam.pipeline.entity.region.CloudProvider;
-import lombok.Builder;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
-@Value
-@Builder
+@Getter
+@AllArgsConstructor
 public class CloudUserAccessKeys {
 
-    String id;
-    String credentialsFile;
-    String configFile;
-    CloudProvider cloudProvider;
+    public final String id;
+    public final CloudProvider cloudProvider;
 
 }

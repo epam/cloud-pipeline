@@ -18,7 +18,7 @@ package com.epam.pipeline.controller.cloudaccess;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
+import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import io.swagger.annotations.Api;

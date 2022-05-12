@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.cloudaccess.aws;
 
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagement;
 import com.amazonaws.services.identitymanagement.AmazonIdentityManagementClientBuilder;
-import com.amazonaws.services.identitymanagement.model.AccessKey;
 import com.amazonaws.services.identitymanagement.model.CreateAccessKeyRequest;
 import com.amazonaws.services.identitymanagement.model.CreateAccessKeyResult;
 import com.amazonaws.services.identitymanagement.model.CreateUserRequest;
@@ -35,7 +34,8 @@ import com.amazonaws.services.identitymanagement.model.ListAccessKeysResult;
 import com.amazonaws.services.identitymanagement.model.NoSuchEntityException;
 import com.amazonaws.services.identitymanagement.model.PutUserPolicyRequest;
 import com.amazonaws.services.identitymanagement.model.User;
-import com.epam.pipeline.entity.cloudaccess.CloudUserAccessKeys;
+import com.epam.pipeline.entity.cloudaccess.key.AWSCloudUserAccessKeys;
+import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
@@ -135,8 +135,8 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
                     .stream()
                     .filter(accessKey -> keyId.equals(accessKey.getAccessKeyId()))
                     .findFirst().map(accessKey ->
-                            CloudUserAccessKeys.builder().cloudProvider(getProvider())
-                                    .id(accessKey.getAccessKeyId())
+                            AWSCloudUserAccessKeys.builder().provider(getProvider())
+                                    .accessKeyId(accessKey.getAccessKeyId())
                                     .build()
                     ).orElse(null);
         } catch (NoSuchEntityException e) {
@@ -148,10 +148,9 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
     public CloudUserAccessKeys generateCloudKeysForUser(final AwsRegion region, final String username) {
         final CreateAccessKeyResult accessKey = getIAMClient(region)
                 .createAccessKey(new CreateAccessKeyRequest().withUserName(username));
-        return CloudUserAccessKeys.builder().cloudProvider(getProvider())
-                .id(accessKey.getAccessKey().getAccessKeyId())
-                .credentialsFile(generateAwsCredentialsFile(accessKey.getAccessKey()))
-                .configFile(generateAwsConfigFile(region))
+        return AWSCloudUserAccessKeys.builder().provider(getProvider())
+                .accessKeyId(accessKey.getAccessKey().getAccessKeyId())
+                .secretKey(accessKey.getAccessKey().getSecretAccessKey())
                 .build();
     }
 
@@ -167,16 +166,5 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
                 .standard()
                 .withCredentials(AWSUtils.getCredentialsProvider(awsRegion))
                 .build();
-    }
-
-    private String generateAwsCredentialsFile(final AccessKey accessKey) {
-        return String.format("[default]\n" +
-                "aws_access_key_id = %s\n" +
-                "aws_secret_access_key = %s", accessKey.getAccessKeyId(), accessKey.getSecretAccessKey());
-    }
-
-    private String generateAwsConfigFile(final AwsRegion region) {
-        return String.format("[default]\n" +
-                "region = %s", region.getRegionCode());
     }
 }
