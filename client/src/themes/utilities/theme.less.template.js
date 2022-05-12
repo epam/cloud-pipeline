@@ -2694,6 +2694,16 @@ export default `
   stroke: @color-grey;
   fill: transparent;
 }
+@THEME .cp-user-storage-access-card,
+@THEME .cp-user-storage-access-card-title,
+@THEME .cp-user-storage-access-card-content {
+  background-color:  @card-background-color;
+  color: @application-color;
+  border-color: @input-border;
+}
+@THEME .cp-user-storage-access-card-title {
+  background-color: @input-background-disabled;
+}
 
 @THEME .code-highlight {
   color: @application-color;

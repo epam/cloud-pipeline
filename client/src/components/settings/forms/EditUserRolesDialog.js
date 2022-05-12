@@ -1065,6 +1065,7 @@ export default class EditUserRolesDialog extends React.Component {
               </div>
               <StorageAccess
                 style={{marginTop: 5, padding: 2}}
+                user={this.props.user.userName}
               />
               <InstanceTypesManagementForm
                 className={styles.instanceTypesManagementForm}
