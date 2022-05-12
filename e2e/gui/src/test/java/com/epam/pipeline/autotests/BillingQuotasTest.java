@@ -143,8 +143,8 @@ public class BillingQuotasTest
                 .createNfsMount(format("/%s", testFsStorage), testFsStorage)
                 .selectStorage(testFsStorage);
         fsStorageID = Utils.entityIDfromURL();
-
-        library()
+//        fsStorageID = "";
+                library()
                 .selectStorage(dataStorage)
                 .uploadFile(getFile(importScript))
                 .uploadFile(updateDataBillingFile());
@@ -166,9 +166,6 @@ public class BillingQuotasTest
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[3], dataStorage.toLowerCase()))
                         .close());
     }
-
-
-
 
     @AfterClass(alwaysRun=true)
     public void resetPreferencesValue() {
@@ -297,7 +294,7 @@ public class BillingQuotasTest
                 .selectValue(PERIOD, PER_YEAR.period)
                 .ok()
                 .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
-                .checkQuotaStatus(YELLOW)
+                .checkQuotaStatus(GREEN)
                 .removeQuota()
                 .openQuotaEntry("", quotaEntry(quota[1], PER_YEAR))
                 .removeQuota();
