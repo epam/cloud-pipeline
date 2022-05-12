@@ -39,6 +39,7 @@ import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.ACTIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_ACTION;
 import static com.epam.pipeline.autotests.ao.Primitive.ADD_QUOTA;
+import static com.epam.pipeline.autotests.ao.Primitive.BILLING_CENTER;
 import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.COMPUTE_INSTANCES;
@@ -50,9 +51,11 @@ import static com.epam.pipeline.autotests.ao.Primitive.QUOTAS;
 import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
 import static com.epam.pipeline.autotests.ao.Primitive.REMOVE;
 import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
+import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.THRESHOLD;
 import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
+import static com.epam.pipeline.autotests.ao.Primitive.USER_NAME;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -130,7 +133,7 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                     .first().shouldBe(visible);
         }
 
-        private void confirmRemoving() {
+        private void removeConfirmation() {
             new ConfirmationPopupAO<>(this)
                     .ensureTitleIs("Are you sure you want to remove quota?")
                     .sleep(1, SECONDS)
@@ -151,6 +154,10 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                     entry(ACTIONS, context().find(withText("%"))
                             .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
                     entry(RECIPIENTS, context().find(byText("Recipients:"))
+                            .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
+                    entry(BILLING_CENTER, context().find(byText("Billing center"))
+                            .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
+                    entry(USER_NAME, context().find(byText("User"))
                             .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
                     entry(ADD_ACTION, context().$(button(" Add action"))),
                     entry(SAVE, context().find(button("SAVE"))),
@@ -182,6 +189,22 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                 return this;
             }
 
+            public QuotaPopUp addBillingCenter(final String billingCenter) {
+                click(BILLING_CENTER);
+                actions().sendKeys(billingCenter).perform();
+                enter();
+                click(byText("Billing center"));
+                return this;
+            }
+
+            public QuotaPopUp addUser(final String user) {
+                click(USER_NAME);
+                actions().sendKeys(user).perform();
+                enter();
+                click(byText("User"));
+                return this;
+            }
+
             public QuotaPopUp setAction(final String billingThreshold, final String ... actions) {
                 setValue(THRESHOLD, billingThreshold);
                 Arrays.stream(actions).forEach(act -> {
@@ -203,7 +226,7 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
 
             public QuotasSection removeQuota() {
                 click(REMOVE);
-                confirmRemoving();
+                removeConfirmation();
                 return parent();
             }
 
@@ -247,7 +270,9 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                 this.entry = entry;
                 this.elements = initialiseElements(
                         entry(DELETE_ICON, entry.$(byClassName("anticon-close")).parent()),
-                        entry(ACTIONS, entry.$(byClassName("uota-description__actions-container")))
+                        entry(ACTIONS, entry.$(byClassName("uota-description__actions-container"))
+                                .$(By.xpath(".//span"))),
+                        entry(STATUS, entry.find("circle"))
                 );
             }
 
@@ -258,8 +283,16 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
 
             public QuotasSection removeQuota() {
                 click(DELETE_ICON);
-                confirmRemoving();
+                removeConfirmation();
                 return parentAO;
+            }
+
+            public QuotaEntry checkQuotaStatus(BillingQuotaStatus status) {
+                return ensure(STATUS, cssClass(status.status));
+            }
+
+            public QuotaEntry checkQuotaWarning() {
+                return ensure(ACTIONS, cssClass("cp-warning"));
             }
 
             @Override
@@ -294,4 +327,15 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
         }
     }
 
+    public enum BillingQuotaStatus {
+        GREEN("cp-quota-status-green"),
+        YELLOW("cp-quota-status-yellow"),
+        RED("cp-quota-status-red");
+
+        public final String status;
+
+        BillingQuotaStatus(String status) {
+            this.status = status;
+        }
+    }
 }

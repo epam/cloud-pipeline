@@ -15,8 +15,8 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.BillingTabAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO;
+import com.epam.pipeline.autotests.ao.SystemDictionariesAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
@@ -36,10 +36,11 @@ import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaPeriod;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaPeriod.*;
-import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaType;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaType.*;
+import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaStatus.*;
 import static com.epam.pipeline.autotests.ao.Primitive.ACTIONS;
 import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
+import static com.epam.pipeline.autotests.ao.Primitive.BILLING_CENTER;
 import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
 import static com.epam.pipeline.autotests.ao.Primitive.COMPUTE_INSTANCES;
 import static com.epam.pipeline.autotests.ao.Primitive.PERIOD;
@@ -51,6 +52,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.ao.Primitive.STORAGES;
 import static com.epam.pipeline.autotests.ao.Primitive.THRESHOLD;
 import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
+import static com.epam.pipeline.autotests.ao.Primitive.USER_NAME;
 import static com.epam.pipeline.autotests.utils.Utils.DATE_PATTERN;
 import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
@@ -71,6 +73,9 @@ public class BillingQuotasTest
     private final String BILLING_REPORTS_ENABLED_ADMINS = "billing.reports.enabled.admins";
     private final String BILLING_REPORTS_ENABLED = "billing.reports.enabled";
     private final String BILLING_QUOTAS_PERIOD_SECONDS = "billing.quotas.period.seconds";
+    private final String LAUNCH_ERROR_MESSAGE =
+            "Launch of new compute instances is forbidden due to exceeded billing quota";
+    private final int BILLING_QUOTAS_PERIOD = 120;
     private final String NOTIFY = "Notify";
     private final String READ_ONLY_MODE = "Read-only mode";
     private final String DISABLE_NEW_JOBS = "Disable new jobs";
@@ -84,14 +89,15 @@ public class BillingQuotasTest
     private final String billingCenter1 = "group3";
     private final String billingCenter2 = "group2";
     private final String[] billing = {"70", "80", "100", "80", "90", "120"};
-    private final String[] quota = {"10000", "20000", billing[3]};
-    private final String[] threshold = {"90", "80"};
+    private final String[] quota = {"10000", "20000", billing[3], "1", billing[3], billing[4]};
+    private final String[] threshold = {"90", "80", "90", "80", "90", "70"};
     private String[] prefQuotasPeriodInitial;
     private boolean[] prefReportsEnabledAdminsInitial;
     private boolean[] prefReportsEnabledInitial;
     private String[] runId = new String[4];
     private String[] storageID = new String[2];
     private String fsStorageID;
+    private boolean billingGroupDictionaryExist = true;
 
     @BeforeClass
     public void setPreferencesValue() {
@@ -111,8 +117,10 @@ public class BillingQuotasTest
         prefQuotasPeriodInitial = preferencesAO
                 .getLinePreference(BILLING_QUOTAS_PERIOD_SECONDS);
         preferencesAO
-                .setPreference(BILLING_QUOTAS_PERIOD_SECONDS, "120", true)
+                .setPreference(BILLING_QUOTAS_PERIOD_SECONDS,
+                        Integer.toString(BILLING_QUOTAS_PERIOD), true)
                 .saveIfNeeded();
+        createBillingCenter("billing-group", billingCenter1);
     }
 
     @BeforeClass
@@ -134,7 +142,8 @@ public class BillingQuotasTest
         library()
                 .createNfsMount(format("/%s", testFsStorage), testFsStorage)
                 .selectStorage(testFsStorage);
-        Utils.entityIDfromURL();
+        fsStorageID = Utils.entityIDfromURL();
+
         library()
                 .selectStorage(dataStorage)
                 .uploadFile(getFile(importScript))
@@ -157,6 +166,9 @@ public class BillingQuotasTest
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[3], dataStorage.toLowerCase()))
                         .close());
     }
+
+
+
 
     @AfterClass(alwaysRun=true)
     public void resetPreferencesValue() {
@@ -186,6 +198,7 @@ public class BillingQuotasTest
                         .execute(format("python import_billing_data.py --operation remove --data-file billing-test.txt --elastic-url %s", ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[3], dataStorage.toLowerCase()))
                         .close());
+        deleteBillingCenter("billing-group", billingCenter1);
     }
 
     @AfterClass(alwaysRun=true)
@@ -201,7 +214,7 @@ public class BillingQuotasTest
 
     @Test
     @TestCase(value = {"762_1"})
-    public void runToolThatHaveNoNginxEndpoint() {
+    public void checkGlobalQuotaCreation() {
         try {
             logout();
             loginAs(user)
@@ -269,7 +282,7 @@ public class BillingQuotasTest
         }
         }
 
-    @Test(dependsOnMethods = "runToolThatHaveNoNginxEndpoint")
+    @Test(dependsOnMethods = "checkGlobalQuotaCreation")
     @TestCase(value = {"762_2"})
     public void checkCreationDeletionGlobalQuotaWithTheSameAndDifferentQuotaPeriod() {
         billingMenu()
@@ -284,12 +297,13 @@ public class BillingQuotasTest
                 .selectValue(PERIOD, PER_YEAR.period)
                 .ok()
                 .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
+                .checkQuotaStatus(YELLOW)
                 .removeQuota()
                 .openQuotaEntry("", quotaEntry(quota[1], PER_YEAR))
                 .removeQuota();
     }
 
-    @Test//(dependsOnMethods = "runToolThatHaveNoNginxEndpoint")
+    @Test
     @TestCase(value = {"762_3"})
     public void checkOverallComputeInstancesQuota() {
         billingMenu()
@@ -297,8 +311,112 @@ public class BillingQuotasTest
                 .checkQuotasSections(OVERALL, BILLING_CENTERS, GROUPS, USERS)
                 .getQuotasSection(OVERALL)
                 .addQuota()
-                .ensure(TITLE, text("Create compute instances quota"));
+                .ensure(TITLE, text("Create compute instances quota"))
+                .setValue(QUOTA, quota[2])
+                .selectValue(PERIOD, PER_YEAR.period)
+                .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
+                .setAction(threshold[2], NOTIFY)
+                .addRecipient(admin.login)
+                .ok()
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .getQuotaEntry("", quotaEntry(quota[2], PER_YEAR))
+                .checkQuotaStatus(YELLOW)
+                .checkEntryActions(format("%s%%: %s", threshold[0], NOTIFY.toLowerCase()))
+                .checkQuotaWarning()
+                .removeQuota();
+    }
 
+    @Test
+    @TestCase(value = {"762_4"})
+    public void checkGroupsComputeInstancesQuota() {
+
+    }
+
+    @Test
+    @TestCase(value = {"762_5"})
+    public void checkBillingCenterAndUsersComputeInstancesQuota() {
+        logout();
+        loginAs(user);
+        String nonAdminRunId = launchTool();
+        logout();
+        loginAs(admin);
+        String adminRunId = launchTool();
+
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(BILLING_CENTERS)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, BILLING_CENTER)
+                .ensure(PERIOD, text(PER_MONTH.period))
+                .ensureNotVisible(RECIPIENTS)
+                .ensureDisable(SAVE)
+                .addBillingCenter(billingCenter1)
+                .setValue(QUOTA, quota[4])
+                .selectValue(PERIOD, PER_QUARTER.period)
+                .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
+                .setAction(threshold[4], DISABLE_NEW_JOBS)
+                .ok()
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[4], PER_QUARTER))
+                .checkEntryActions(format("%s%%: %s", threshold[4], DISABLE_NEW_JOBS.toLowerCase()));
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(USERS)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, USER_NAME)
+                .ensure(PERIOD, text(PER_MONTH.period))
+                .ensureDisable(SAVE)
+                .addUser(user.login)
+                .setValue(QUOTA, quota[5])
+                .selectValue(PERIOD, PER_YEAR.period)
+                .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
+                .setAction(threshold[4], STOP_ALL_JOBS)
+                .ok()
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .getQuotaEntry(user.login, quotaEntry(quota[5], PER_YEAR))
+                .checkQuotaStatus(RED)
+                .checkEntryActions(format("%s%%: %s", threshold[4], STOP_ALL_JOBS.toLowerCase()))
+                .checkQuotaWarning();
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(BILLING_CENTERS)
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[4], PER_QUARTER))
+                .checkQuotaStatus(RED)
+                .checkQuotaWarning();
+
+        logout();
+        loginAs(user)
+                .runs()
+                .completedRuns()
+                .shouldContainRun("pipeline", nonAdminRunId);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .launchWithError(LAUNCH_ERROR_MESSAGE);
+
+        logout();
+        loginAs(admin)
+                .runs()
+                .showLog(adminRunId)
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(adminRunId)
+                        .execute(format("pipe run -di %s -u %s",
+                                tool, user.login))
+                        .waitForLog("Error: Failed to fetch data from server. " +
+                                "Server responded with message: Launch of new compute instances " +
+                                "is forbidden due to exceeded billing quota.")
+                        .close());
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(BILLING_CENTERS)
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[4], PER_QUARTER))
+                .removeQuota();
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(USERS)
+                .getQuotaEntry(user.login, quotaEntry(quota[5], PER_YEAR))
+                .removeQuota();
     }
 
     private File updateDataBillingFile() {
@@ -340,11 +458,35 @@ public class BillingQuotasTest
                 period.period);
     }
 
-    private String quotaPopupTitle(BillingQuotaType type) {
-        return format("%s quota", type.type);
+    public void createBillingCenter(String dict, String billingCenter) {
+        SystemDictionariesAO systemDictionariesAO = navigationMenu()
+                .settings()
+                .switchToSystemDictionaries();
+        billingGroupDictionaryExist = systemDictionariesAO
+                .systemDictionaryIsExist(dict);
+        if (!billingGroupDictionaryExist) {
+            systemDictionariesAO
+                    .addNewDictionary(dict, billingCenter);
+        } else {
+            systemDictionariesAO
+                    .openSystemDictionary(dict)
+                    .addDictionaryValue(billingCenter);
+        }
     }
 
-    private String createQuotaPopupTitle(BillingQuotaType type) {
-        return format("Create %s quota", type.type.toLowerCase());
+    public void deleteBillingCenter(String dict, String billingCenter){
+        SystemDictionariesAO systemDictionariesAO = navigationMenu()
+                .settings()
+                .switchToSystemDictionaries();
+        if (!billingGroupDictionaryExist) {
+            systemDictionariesAO
+                    .openSystemDictionary(dict)
+                    .deleteDictionary(dict);
+        } else {
+            systemDictionariesAO
+                    .openSystemDictionary(dict)
+                    .deleteDictionaryValue(billingCenter)
+                    .click(SAVE);
+        }
     }
 }

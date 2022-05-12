@@ -330,5 +330,8 @@ public enum Primitive {
     ADD_ACTION,
     BILLING_CENTER,
     REINDEX,
-    REMOVE
+    REMOVE,
+    SYSTEM_DICTIONARIES,
+    ADD_DICTIONARY,
+    ADD_VALUE
 }

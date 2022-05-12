@@ -72,6 +72,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             entry(EMAIL_NOTIFICATIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Email notifications')]"))),
             entry(CLOUD_REGIONS_TAB, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'Cloud regions')]"))),
             entry(MY_PROFILE, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'My Profile')]"))),
+            entry(SYSTEM_DICTIONARIES, context().find(byXpath("//*[contains(@class, 'ant-menu-item') and contains(., 'System Dictionaries')]"))),
             entry(OK, context().find(byId("settings-form-ok-button")))
     );
 
@@ -113,6 +114,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
     public MyProfileAO switchToMyProfile() {
         click(MY_PROFILE);
         return new MyProfileAO();
+    }
+
+    public SystemDictionariesAO switchToSystemDictionaries() {
+        click(SYSTEM_DICTIONARIES);
+        return new SystemDictionariesAO(parentAO);
     }
 
     @Override
