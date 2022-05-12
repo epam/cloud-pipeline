@@ -43,6 +43,19 @@ public final class GitRepositoryUrl {
             + "(?:/(?<namespace>" + PATH_PART_PATTERN + "))?"     // Optional namespace
             + "(?:/(?<project>" + PATH_PART_PATTERN + ")\\.git)?$" // Optional repository that ends with .git suffix
     );
+    private static final Pattern BITBUCKET_REPOSITORY_URL_PATTERN = Pattern.compile(
+            "^(?<protocol>" + PROTOCOL_PATTERN + "://)"      // Any url supposed to start with protocol
+                    + "(?:"                                     // Open optional non-capturing group for authentication
+                    + "(?<username>" + USERNAME_PATTERN + ")"   // If authentication group present it should contain username
+                    + "(?::"
+                    + "(?<password>" + PASS_PATTERN + "))?" // Optional password
+                    + "@"                                       // that group should end with @ symbol
+                    + ")?"                                      // Close optional non-capturing group for authentication
+                    + "(?<host>" + HOST_PATTERN + ")"           // Host with optional port
+                    + "/scm"
+                    + "(?:/(?<namespace>" + PATH_PART_PATTERN + "))?"     // Optional namespace
+                    + "(?:/(?<project>" + PATH_PART_PATTERN + ")\\.git)?$" // Optional repository that ends with .git suffix
+    );
 
     private final String protocol;
     private final String username;
@@ -67,15 +80,12 @@ public final class GitRepositoryUrl {
 
     public static GitRepositoryUrl from(final String url) {
         final Matcher matcher = GIT_REPOSITORY_URL_PATTERN.matcher(url);
-        Assert.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
-        return new GitRepositoryUrl(
-            matcher.group("protocol"),
-            matcher.group("username"),
-            matcher.group("password"),
-            matcher.group("host"),
-            matcher.group("namespace"),
-            matcher.group("project")
-        );
+        return parseUrl(matcher);
+    }
+
+    public static GitRepositoryUrl fromBitbucket(final String url) {
+        final Matcher matcher = BITBUCKET_REPOSITORY_URL_PATTERN.matcher(url);
+        return parseUrl(matcher);
     }
 
     public static String asString(final String protocol,
@@ -168,6 +178,18 @@ public final class GitRepositoryUrl {
         return String.format(
             "GitRepositoryUrl{protocol='%s', host='%s', username='%s', namespace='%s', project='%s'}",
             protocol, host, username, namespace, project
+        );
+    }
+
+    private static GitRepositoryUrl parseUrl(final Matcher matcher) {
+        Assert.isTrue(matcher.matches(), INVALID_URL_FORMAT_MESSAGE);
+        return new GitRepositoryUrl(
+                matcher.group("protocol"),
+                matcher.group("username"),
+                matcher.group("password"),
+                matcher.group("host"),
+                matcher.group("namespace"),
+                matcher.group("project")
         );
     }
 }

@@ -268,6 +268,8 @@ public class SystemPreferences {
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
+    public static final StringPreference BITBUCKET_API_HOST =
+            new StringPreference("git.bitbucket.api.host", "https://api.bitbucket.org/", GIT_GROUP, pass);
     public static final StringPreference GIT_READER_HOST =
             new StringPreference("git.reader.service.host", null, GIT_GROUP, pass);
     public static final StringPreference GIT_EXTERNAL_URL =
