@@ -49,6 +49,7 @@ public interface BitbucketMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "draft", ignore = true)
+    @Mapping(target = "message", ignore = true)
     @Mapping(target = "commitId", source = "latestCommit")
     @Mapping(target = "name", source = "displayId")
     @Mapping(target = "author", source = "commit.author.displayName")
