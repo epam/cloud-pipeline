@@ -213,7 +213,7 @@ class PreferencesLoad extends Remote {
           } = entry;
           return {
             value: `CP_CAP_CUSTOM_${key}`,
-            name: key,
+            name: entry?.name || key,
             description: entry?.description,
             platforms: parsePlatforms(entry?.platforms),
             cloud: parseCloudProviders(entry?.cloud),
