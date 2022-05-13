@@ -138,8 +138,11 @@ pipe_log_info "--> Remotes were localized fine, see output above" "$LOCALIZE_FRO
 # Replace remote URLs with the localized
 pipe_log_info "Replacing remote URLs with the localized path across the files" "$LOCALIZE_FROM_FILES_TASK_NAME"
 for _path in ${_files_to_localize[@]}; do
-    pipe_log_info "--> Processing: $_path" "$LOCALIZE_FROM_FILES_TASK_NAME"
-    _file_as_env_var=$(sed -E 's/[^[:alnum:][:space:]]+/_/g' <<< "$_path")
+    _env_name=$(echo "$_path" | cut -f1 -d':')
+    _real_path=$(echo "$_path" | cut -f2 -d':')
+    
+    pipe_log_info "--> Processing: $_real_path" "$LOCALIZE_FROM_FILES_TASK_NAME"
+    _file_as_env_var=$(sed -E 's/[^[:alnum:][:space:]]+/_/g' <<< "$_real_path")
     i=1
     while true; do
         _local_path="${_file_as_env_var}_${i}"
@@ -153,12 +156,12 @@ for _path in ${_files_to_localize[@]}; do
 
         # Escape any special symbols (e.g. asterisk) as they confuse 'sed'
         _remote_path=$(printf '%s\n' "$_remote_path" | sed -e 's/[]\/$*.^[]/\\&/g')
-        sed -i "s|$_remote_path|$_local_path|g" "$_path"
+        sed -i "s|$_remote_path|$_local_path|g" "$_real_path"
 
         i=$((i+1))
 
         if (($i>1000)); then
-            pipe_log_want "Looks like we've ran into an endless loop for ${_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
+            pipe_log_want "Looks like we've ran into an endless loop for ${_real_path} file, skipping further iterations" "$LOCALIZE_FROM_FILES_TASK_NAME"
             break
         fi
     done
