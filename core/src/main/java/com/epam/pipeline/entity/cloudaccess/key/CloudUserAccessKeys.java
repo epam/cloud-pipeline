@@ -25,6 +25,7 @@ import lombok.Getter;
 public class CloudUserAccessKeys {
 
     public final String id;
+    public final Long regionId;
     public final CloudProvider cloudProvider;
 
 }

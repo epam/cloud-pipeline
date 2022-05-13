@@ -135,7 +135,9 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
                     .stream()
                     .filter(accessKey -> keyId.equals(accessKey.getAccessKeyId()))
                     .findFirst().map(accessKey ->
-                            AWSCloudUserAccessKeys.builder().provider(getProvider())
+                            AWSCloudUserAccessKeys.builder()
+                                    .regionId(region.getId())
+                                    .provider(getProvider())
                                     .accessKeyId(accessKey.getAccessKeyId())
                                     .build()
                     ).orElse(null);
@@ -148,7 +150,9 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
     public CloudUserAccessKeys generateCloudKeysForUser(final AwsRegion region, final String username) {
         final CreateAccessKeyResult accessKey = getIAMClient(region)
                 .createAccessKey(new CreateAccessKeyRequest().withUserName(username));
-        return AWSCloudUserAccessKeys.builder().provider(getProvider())
+        return AWSCloudUserAccessKeys.builder()
+                .regionId(region.getId())
+                .provider(getProvider())
                 .accessKeyId(accessKey.getAccessKey().getAccessKeyId())
                 .secretKey(accessKey.getAccessKey().getSecretAccessKey())
                 .build();

@@ -26,8 +26,8 @@ public class AWSCloudUserAccessKeys extends CloudUserAccessKeys {
     String secretKey;
 
     @Builder
-    public AWSCloudUserAccessKeys(CloudProvider provider, String accessKeyId, String secretKey) {
-        super(accessKeyId, provider);
+    public AWSCloudUserAccessKeys(CloudProvider provider, Long regionId, String accessKeyId, String secretKey) {
+        super(accessKeyId, regionId, provider);
         this.accessKeyId = accessKeyId;
         this.secretKey = secretKey;
     }
