@@ -27,8 +27,12 @@ spec:
           ports:
             - containerPort: 8080
           env:
+            - name: CP_SEARCH_DISABLE_NFS_FILE
+              value: "false"
             - name: CP_SEARCH_DISABLE_NFS_OBSERVER_SYNC
               value: "true"
+            - name: LANG
+              value: en_US.UTF-8
           envFrom:
           - configMapRef:
               name: cp-config-global
