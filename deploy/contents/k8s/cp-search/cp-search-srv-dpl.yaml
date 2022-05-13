@@ -26,6 +26,9 @@ spec:
           command: ["/init"]
           ports:
             - containerPort: 8080
+          env:
+            - name: CP_SEARCH_DISABLE_NFS_OBSERVER_SYNC
+              value: "true"
           envFrom:
           - configMapRef:
               name: cp-config-global
