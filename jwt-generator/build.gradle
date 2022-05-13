@@ -10,7 +10,7 @@ group "com.epam.pipeline"
 version ""
 
 repositories  {
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
