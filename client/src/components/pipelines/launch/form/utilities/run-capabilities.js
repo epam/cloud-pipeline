@@ -360,14 +360,14 @@ export function isCustomCapability (parameterName, preferences) {
   if (!preferences) {
     return false;
   }
-  return !!preferences.launchCapabilities.find(o => o.value === parameterName);
+  return !!plainList(preferences.launchCapabilities).find(o => o.value === parameterName);
 }
 
 export function getCustomCapability (parameterName, preferences) {
   if (!preferences) {
     return undefined;
   }
-  return preferences.launchCapabilities.find(o => o.value === parameterName);
+  return plainList(preferences.launchCapabilities).find(o => o.value === parameterName);
 }
 
 export function getRunCapabilitiesSkippedParameters () {
@@ -446,14 +446,28 @@ export function applyCustomCapabilitiesParameters (parameters, preferences) {
     }
     return 'string';
   };
+  const parseStringValues = (string) => `${string || ''}`
+    .split(',')
+    .map(o => o.trim())
+    .filter(o => o.length);
+  const mergeValues = (newValue, previousValue) => {
+    const values = [...(new Set([
+      ...parseStringValues(newValue),
+      ...parseStringValues(previousValue)
+    ]))];
+    return values.join(',');
+  };
   for (const customCapability of customCapabilities) {
     const customCapabilityParameters = Object.entries(customCapability.params || {});
     for (const [parameter, value] of customCapabilityParameters) {
       if (value !== undefined) {
         const type = getParameterType(value);
+        const previous = result[parameter] ? result[parameter].value : undefined;
         result[parameter] = {
           type,
-          value: type === 'boolean' ? value : `${value}`
+          value: type === 'boolean'
+            ? value
+            : mergeValues(`${value}`, previous)
         };
       }
     }
@@ -468,7 +482,7 @@ export function hasPlatformSpecificCapabilities (platform, preferences) {
 export function checkRunCapabilitiesModified (capabilities1, capabilities2, preferences) {
   const wellKnownCapabilities = Object.values(RUN_CAPABILITIES)
     .concat(
-      (preferences ? preferences.launchCapabilities : [])
+      (preferences ? plainList(preferences.launchCapabilities) : [])
         .map(o => o.value)
     );
   const sorted = array => [
