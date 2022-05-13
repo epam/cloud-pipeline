@@ -17,7 +17,7 @@
 import React from 'react';
 import {Icon, Tooltip} from 'antd';
 
-const Capability = ({capability}) => {
+const Capability = ({capability, selected, style, nested = []}) => {
   if (!capability) {
     return null;
   }
@@ -85,18 +85,58 @@ const Capability = ({capability}) => {
         overlayStyle={{zIndex: 1051}}
         placement="left"
       >
-        <span>{name}</span>
-        <Icon
-          type="question-circle-o"
-          style={{marginLeft: 5}}
-        />
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            ...(style || {})
+          }}
+        >
+          <div>
+            <span>{name}</span>
+            <Icon
+              type="question-circle-o"
+              style={{marginLeft: 5}}
+            />
+          </div>
+          <div>
+            {
+              nested.length > 0 && (
+                <Icon type="ellipsis" />
+              )
+            }
+            {
+              selected && (<Icon type="check-circle" className="cp-primary" />)
+            }
+          </div>
+        </div>
       </Tooltip>
     );
   }
   return (
-    <span>
-      {name}
-    </span>
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        ...(style || {})
+      }}
+    >
+      <span>
+        {name}
+      </span>
+      <div>
+        {
+          nested.length > 0 && (
+            <Icon type="ellipsis" />
+          )
+        }
+        {
+          selected && (<Icon type="check-circle" className="cp-primary" />)
+        }
+      </div>
+    </div>
   );
 };
 

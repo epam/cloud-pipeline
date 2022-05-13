@@ -290,6 +290,7 @@ export default `
 @THEME .ant-input-number-input,
 @THEME .ant-input-number-handler-wrap,
 @THEME .cp-limit-mounts-input,
+@THEME .cp-run-capabilities-input,
 @THEME .ant-upload {
   background-color: @input-background;
   border-color: @input-border;
@@ -332,7 +333,8 @@ export default `
 @THEME .ant-input-number-disabled,
 @THEME .ant-input-number-disabled .ant-input-number-handler-wrap,
 @THEME .ant-input-number-input[disabled],
-@THEME .cp-limit-mounts-input.disabled {
+@THEME .cp-limit-mounts-input.disabled,
+@THEME .cp-run-capabilities-input.disabled {
   background-color: @input-background-disabled;
   color: @application-color-disabled;
 }
@@ -355,7 +357,8 @@ export default `
 @THEME .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
 @THEME .ant-input-number:hover:not(.ant-input-number-disabled),
-@THEME .cp-limit-mounts-input:hover {
+@THEME .cp-limit-mounts-input:hover,
+@THEME .cp-run-capabilities-input:hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
@@ -1022,7 +1025,8 @@ export default `
   background-color: @element-selected-background-color;
 }
 @THEME .ant-select-selection--multiple .ant-select-selection__choice,
-@THEME .cp-limit-mounts-input .cp-limit-mounts-input-tag {
+@THEME .cp-limit-mounts-input .cp-limit-mounts-input-tag,
+@THEME .cp-run-capabilities-input .cp-run-capabilities-input-tag {
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;
