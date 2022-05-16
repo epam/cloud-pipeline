@@ -240,6 +240,7 @@ class HcsFileSgeParser:
             return
         self.log_info('Total size: {} Gb'.format(hcs_root_size))
         memory_requirement_slots = int(math.ceil(hcs_root_size / HCS_CLUSTER_PROCESSING_MEMORY_SIZE_SLOT_FACTOR))
+        memory_requirement_slots = max(memory_requirement_slots, 1)
         memory_requirement_gb = memory_requirement_slots * HCS_CLUSTER_PROCESSING_MEMORY_CLUSTER_SLOT
         self.log_info('Memory requirements: [{} slot(s), {} Gb]'.format(memory_requirement_slots,
                                                                         memory_requirement_gb))
