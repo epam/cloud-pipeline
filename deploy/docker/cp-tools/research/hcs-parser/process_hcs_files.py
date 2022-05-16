@@ -54,6 +54,12 @@ UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
 TAGS_MAPPING_RULE_DELIMITER = ','
 TAGS_MAPPING_KEYS_DELIMITER = '='
+PATH_DELIMITER = '/'
+
+EXTENDED_TAGS_OWNER_TAG_KEY = 'OWNER'
+EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY = 'CHANNELTYPE'
+EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY = 'PLANES'
+EXTENDED_TAGS_TIMECOURSE_FLAG_TAG_KEY = 'TIMEPOINTS'
 
 
 def log_success(message):
@@ -150,7 +156,7 @@ class HcsParsingUtils:
 
     @staticmethod
     def replace_special_chars(file_path):
-        return file_path.replace('/', '|')
+        return file_path.replace(PATH_DELIMITER, '|')
 
     @staticmethod
     def quote_string(string):
@@ -237,7 +243,8 @@ class HcsFileTagProcessor:
 
     CATEGORICAL_ATTRIBUTE = '/categoricalAttribute'
 
-    def __init__(self, hcs_img_path, xml_info_tree):
+    def __init__(self, hcs_root_dir, hcs_img_path, xml_info_tree):
+        self.hcs_root_dir = hcs_root_dir
         self.hcs_img_path = hcs_img_path
         self.xml_info_tree = xml_info_tree
         self.api = PipelineAPI(os.environ['API'], 'logs')
@@ -264,7 +271,7 @@ class HcsFileTagProcessor:
         return metadata_dict
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
-        log_info('[{}] {}'.format(self.hcs_img_path, message), status=status)
+        log_info('[{}] {}'.format(self.hcs_root_dir, message), status=status)
 
     def process_tags(self):
         existing_attributes_dictionary = self.load_existing_attributes()
@@ -274,6 +281,7 @@ class HcsFileTagProcessor:
             self.log_processing_info('No metadata found for file, skipping tags processing...')
             return 0
         metadata_dict = self.map_to_metadata_dict(ome_schema, metadata)
+        self.add_custom_metadata(metadata_dict)
         tags_to_push = self.build_tags_dictionary(metadata_dict, existing_attributes_dictionary)
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
@@ -283,6 +291,52 @@ class HcsFileTagProcessor:
         self.log_processing_info('Following tags will be assigned to the file: {}'.format(tags_to_push_str))
         url_encoded_cloud_file_path = HcsParsingUtils.extract_cloud_path(urllib.quote(self.hcs_img_path))
         return os.system('pipe storage set-object-tags "{}" {}'.format(url_encoded_cloud_file_path, tags_to_push_str))
+
+    def add_custom_metadata(self, metadata_dict):
+        experiment_id = os.path.basename(self.hcs_root_dir)
+        keyword_file_name = experiment_id[:experiment_id.rfind('-')] + '.kw.txt'
+        keyword_file_path = os.path.join(self.hcs_root_dir, keyword_file_name)
+        keyword_file_content = self.try_extract_keyword_file_content(keyword_file_path)
+        if keyword_file_content is None:
+            return
+        self.add_owner_info_if_present(keyword_file_content, metadata_dict)
+        self.add_channel_type_info_if_present(keyword_file_content, metadata_dict)
+        self.add_timepoints_info_if_present(keyword_file_content, metadata_dict)
+        self.add_plane_info_if_present(keyword_file_content, metadata_dict)
+
+    @staticmethod
+    def try_extract_keyword_file_content(keyword_file_path):
+        if os.path.isfile(keyword_file_path):
+            with open(keyword_file_path, "r") as keyword_file:
+                data = keyword_file.read()
+                json_data = data[data.find('{'):data.rfind('}') + 1]
+                return json.loads(json_data)
+        return None
+
+    @staticmethod
+    def add_plane_info_if_present(keyword_file_content, metadata_dict):
+        if EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY in keyword_file_content:
+            planes_count = int(keyword_file_content[EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY])
+            metadata_dict[EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY] = 'Yes' if planes_count > 1 else 'No'
+
+    @staticmethod
+    def add_timepoints_info_if_present(keyword_file_content, metadata_dict):
+        if EXTENDED_TAGS_TIMECOURSE_FLAG_TAG_KEY in keyword_file_content:
+            timepoints_count = int(keyword_file_content[EXTENDED_TAGS_TIMECOURSE_FLAG_TAG_KEY])
+            metadata_dict[EXTENDED_TAGS_TIMECOURSE_FLAG_TAG_KEY] = 'Yes' if timepoints_count > 1 else 'No'
+
+    @staticmethod
+    def add_channel_type_info_if_present(keyword_file_content, metadata_dict):
+        if EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY in keyword_file_content:
+            channel_type = keyword_file_content[EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY]
+            if isinstance(channel_type, list):
+                channel_type = PATH_DELIMITER.join(channel_type.sort())
+            metadata_dict[EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY] = channel_type
+
+    @staticmethod
+    def add_owner_info_if_present(keyword_file_content, metadata_dict):
+        if EXTENDED_TAGS_OWNER_TAG_KEY in keyword_file_content:
+            metadata_dict[EXTENDED_TAGS_OWNER_TAG_KEY] = keyword_file_content[EXTENDED_TAGS_OWNER_TAG_KEY].upper()
 
     def build_tags_dictionary(self, metadata_dict, existing_attributes_dictionary):
         tags_dictionary = dict()
@@ -652,7 +706,7 @@ class HcsFileParser:
             if cloud_transfer_result != 0:
                 self.log_processing_info('Results transfer was not successful...')
                 return 1
-        self._write_hcs_file(time_series_details, plate_width, plate_height)
+            self._write_hcs_file(time_series_details, plate_width, plate_height)
         tags_processing_result = self.try_process_tags(xml_info_tree)
         if TAGS_PROCESSING_ONLY:
             return tags_processing_result
@@ -672,7 +726,7 @@ class HcsFileParser:
         image_subfolders = set()
         for image in images:
             file_name = image.find(hcs_schema_prefix + 'URL').text
-            last_delim_index = file_name.rfind('/')
+            last_delim_index = file_name.rfind(PATH_DELIMITER)
             if last_delim_index > 0:
                 image_subfolders.add(file_name[:last_delim_index])
         for path in image_subfolders:
@@ -811,7 +865,7 @@ class HcsFileParser:
     def try_process_tags(self, xml_info_tree):
         tags_processing_result = 0
         try:
-            if HcsFileTagProcessor(self.hcs_img_path, xml_info_tree).process_tags() != 0:
+            if HcsFileTagProcessor(self.hcs_root_dir, self.hcs_img_path, xml_info_tree).process_tags() != 0:
                 self.log_processing_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
@@ -936,7 +990,6 @@ class HcsFileParser:
                     well_grid_missing_values[channel_id] = {well_id: grid_details.get_values_dict()}
                 else:
                     well_grid_missing_values[channel_id][well_id] = grid_details.get_values_dict()
-        print(well_grid_missing_values)
         for image in original_images_list:
             well_id = self.add_image_summary_to_mapping(hcs_schema_prefix, image, well_grouping)
             original_images_root.remove(image)
