@@ -19,14 +19,22 @@ package com.epam.pipeline.manager.cloudaccess;
 import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
+import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicyStatement;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
+import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -40,6 +48,7 @@ import java.util.stream.Collectors;
 public class CloudAccessManagementFacade {
 
     private Map<CloudProvider, CloudAccessManagementService> cloudAccessServices;
+    private final DataStorageManager storageManager;
 
     @Autowired
     public void setCloudAccessServices(final List<CloudAccessManagementService<?>> services) {
@@ -103,6 +112,8 @@ public class CloudAccessManagementFacade {
             final CloudAccessPolicy accessPolicy) {
         final CloudAccessManagementService<R> accessManagementService = getCloudAccessManagementService(region);
 
+        accessPolicy.getStatements().forEach(statement -> validateStorage(region, statement));
+
         if (!accessManagementService.doesCloudUserExist(region, getCloudUsername(config, user))) {
             accessManagementService.createCloudUser(region, getCloudUsername(config, user));
         }
@@ -122,6 +133,34 @@ public class CloudAccessManagementFacade {
 
         final String policyName = constructCloudUserPolicyName(config, user);
         accessManagementService.revokeCloudUserPermissions(region, getCloudUsername(config, user), policyName);
+    }
+
+    private <R extends AbstractCloudRegion> void validateStorage(R region, CloudAccessPolicyStatement statement) {
+        final AbstractDataStorage storage = storageManager.loadByPathOrId(statement.getResource());
+        final DataStorageType requiredStorageType;
+        final Long storageRegionId;
+        switch (region.getProvider()) {
+            case AWS:
+                requiredStorageType = DataStorageType.S3;
+                storageRegionId = ((S3bucketDataStorage) storage).getRegionId();
+                break;
+            case GCP:
+                requiredStorageType = DataStorageType.GS;
+                storageRegionId = ((GSBucketStorage) storage).getRegionId();
+                break;
+            case AZURE:
+                requiredStorageType = DataStorageType.AZ;
+                storageRegionId = ((AzureBlobStorage) storage).getRegionId();
+                break;
+            default:
+                throw new IllegalArgumentException("Wrong Cloud Provider: " + region.getProvider());
+        }
+        Assert.isTrue(requiredStorageType.equals(storage.getType()),
+                String.format("Storage %s has wrong type %s, should be %s",
+                        storage.getPath(), storage.getType(), requiredStorageType));
+        Assert.isTrue(requiredStorageType.equals(storage.getType()),
+                String.format("Storage %s from regionId %s, but you try to provide permission in region %s",
+                        storage.getPath(), storageRegionId, region.getId()));
     }
 
     private String constructCloudUserPolicyName(final CloudAccessManagementConfig config, final PipelineUser user) {
