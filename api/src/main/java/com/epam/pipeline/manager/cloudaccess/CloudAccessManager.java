@@ -19,8 +19,11 @@ package com.epam.pipeline.manager.cloudaccess;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.MetadataVO;
 import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
+import com.epam.pipeline.entity.cloudaccess.CloudUserAccessProfile;
+import com.epam.pipeline.entity.cloudaccess.CloudUserAccessRegionProfile;
 import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
+import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.metadata.PipeConfValueType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
@@ -37,8 +40,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,6 +54,22 @@ public class CloudAccessManager {
     private final CloudRegionManager regionManager;
     private final MetadataManager metadataManager;
     private final PreferenceManager preferenceManager;
+
+
+    public CloudUserAccessProfile getCloudUserProfile(final String username) {
+        final PipelineUser user = fetchPipelineUserByName(username);
+        Map<Long, CloudUserAccessRegionProfile> profiles = regionManager.loadAll()
+                .stream().filter(region -> {
+                    CloudAccessManagementConfig cloudAccessConfig = getCloudAccessConfig(region.getId());
+                    return cloudAccessConfig.isEnabled();
+                }).map(region -> {
+                    final CloudUserAccessKeys keys = getKeys(region.getId(), user.getUserName());
+                    final CloudAccessPolicy policy = getCloudUserAccessPermissions(region.getId(), user.getUserName());
+                    return CloudUserAccessRegionProfile.builder().regionId(region.getId()).keys(keys)
+                            .policy(policy).build();
+                }).collect(Collectors.toMap(CloudUserAccessRegionProfile::getRegionId, p -> p));
+        return CloudUserAccessProfile.builder().user(user).profiles(profiles).build();
+    }
 
     public CloudUserAccessKeys getKeys(final Long regionId, final String username) {
         final CloudAccessManagementConfig cloudAccessConfig = validateAndGetCloudAccessConfig(regionId);
