@@ -96,7 +96,7 @@ class HcsParsingUtils:
             file_pretty_name = name_xml_element.text
             if file_pretty_name is not None:
                 file_name = file_pretty_name
-        preview_file_basename = file_name + '.hcs'
+        preview_file_basename = HcsParsingUtils.replace_special_chars(file_name) + '.hcs'
         parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
             if HCS_PROCESSING_OUTPUT_FOLDER is not None \
             else os.path.dirname(hcs_root_folder_path)
@@ -147,6 +147,10 @@ class HcsParsingUtils:
         if len(path_chunks) != 2:
             raise RuntimeError('Unable to determine cloud path of [{}]'.format(file_path))
         return '{}://{}'.format(cloud_scheme, path_chunks[1])
+
+    @staticmethod
+    def replace_special_chars(file_path):
+        return file_path.replace('/', '|')
 
     @staticmethod
     def quote_string(string):
