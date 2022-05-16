@@ -289,7 +289,7 @@ def root_device(ec2, ins_img, kms_encyr_key_id):
 
         device_spec = {
             "DeviceName": block_device_name,
-            "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
+            "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp3"}
         }
         if kms_encyr_key_id:
             device_spec["Ebs"]["Encrypted"] = True
@@ -306,7 +306,7 @@ def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
         "DeviceName": name,
         "Ebs": {
             "VolumeSize": ins_hdd,
-            "VolumeType": "gp2",
+            "VolumeType": "gp3",
             "DeleteOnTermination": True,
             "Encrypted": True
         }
