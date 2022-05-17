@@ -16,7 +16,9 @@
 
 package com.epam.pipeline.mapper.git;
 
+import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCloneEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCloneHrefType;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
@@ -38,6 +40,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public interface BitbucketMapper {
 
     @Mapping(target = "projectId", source = "project.id")
@@ -65,6 +68,23 @@ public interface BitbucketMapper {
     @Mapping(target = "author", source = "author.displayName")
     @Mapping(target = "authorEmail", source = "author.emailAddress")
     Revision commitToRevision(BitbucketCommit bitbucketCommit);
+
+    @Mapping(target = "title", ignore = true)
+    @Mapping(target = "authoredDate", ignore = true)
+    @Mapping(target = "committerName", ignore = true)
+    @Mapping(target = "committerEmail", ignore = true)
+    @Mapping(target = "parentIds", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "committedDate", ignore = true)
+    @Mapping(target = "shortId", source = "displayId")
+    @Mapping(target = "authorName", source = "author.displayName")
+    @Mapping(target = "authorEmail", source = "author.emailAddress")
+    GitCommitEntry bitbucketCommitToCommitEntry(BitbucketCommit bitbucketCommit);
+
+    @Mapping(target = "release", ignore = true)
+    @Mapping(target = "message", ignore = true)
+    @Mapping(target = "name", source = "displayId")
+    GitTagEntry bitbucketTagToTagEntry(BitbucketTag tag);
 
     @AfterMapping
     default void fillRepositoryUrls(final BitbucketRepository bitbucket, final @MappingTarget GitProject gitProject) {

@@ -18,7 +18,11 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.PipelineVO;
+import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
@@ -94,6 +98,10 @@ public class PipelineRepositoryService {
                 pipelineVO.getRepository(), pipelineVO.getRepositoryToken(), true);
     }
 
+    public void deletePipelineRepository(final Pipeline pipeline) {
+        providerService.deleteRepository(pipeline.getRepositoryType(), pipeline);
+    }
+
     public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
                                     final String token) {
         return providerService.getRepository(repositoryType, repositoryPath, token);
@@ -113,6 +121,42 @@ public class PipelineRepositoryService {
         }
         CollectionUtils.addAll(revisions, tags);
         return revisions;
+    }
+
+    public byte[] getFileContents(final Pipeline pipeline, final String revision, final String path) {
+        final RepositoryType repositoryType = pipeline.getRepositoryType();
+        final String token = pipeline.getRepositoryToken();
+        final GitProject gitProject = new GitProject();
+        gitProject.setRepoUrl(pipeline.getRepository());
+        return getFileContents(repositoryType, gitProject, path, getRevisionName(revision), token);
+    }
+
+    public GitCredentials getPipelineCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
+                                                      final boolean issueToken, final Long duration) {
+        return providerService.getCloneCredentials(pipeline, useEnvVars, issueToken, duration);
+    }
+
+    public GitTagEntry loadRevision(final Pipeline pipeline, final String version) throws GitClientException {
+        Assert.notNull(version, "Revision is required.");
+        if (version.startsWith(DRAFT_PREFIX)) {
+            final GitCommitEntry repositoryCommit = providerService.getCommit(pipeline, getRevisionName(version));
+            if (repositoryCommit == null) {
+                throw new IllegalArgumentException(String.format("Commit %s not found.", version));
+            }
+            return new GitTagEntry(repositoryCommit);
+        } else {
+            final GitTagEntry revision = providerService.getTag(pipeline, version);
+            if (revision == null) {
+                throw new IllegalArgumentException(
+                        String.format("Revision %s not found.", version));
+            }
+            return revision;
+        }
+    }
+
+    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
+                                                          final String version, final boolean recursive) {
+        return providerService.getRepositoryContents(pipeline, path, version, recursive);
     }
 
     private byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
@@ -223,5 +267,9 @@ public class PipelineRepositoryService {
             log.debug(exception.getMessage(), exception);
         }
         return repository;
+    }
+
+    private String getRevisionName(final String version) {
+        return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
     }
 }

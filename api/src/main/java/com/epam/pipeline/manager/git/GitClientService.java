@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -29,6 +33,8 @@ public interface GitClientService {
 
     GitProject createRepository(String description, String repositoryPath, String token);
 
+    void deleteRepository(Pipeline pipeline);
+
     GitProject getRepository(String repository, String token);
 
     void handleHooks(GitProject project, String token);
@@ -40,4 +46,12 @@ public interface GitClientService {
     List<Revision> getTags(Pipeline pipeline);
 
     Revision getLastRevision(Pipeline pipeline);
+
+    GitCredentials getCloneCredentials(Pipeline pipeline, boolean useEnvVars, boolean issueToken, Long duration);
+
+    GitTagEntry getTag(Pipeline pipeline, String revisionName);
+
+    GitCommitEntry getCommit(Pipeline pipeline, String revisionName);
+
+    List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive);
 }

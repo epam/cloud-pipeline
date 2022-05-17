@@ -251,7 +251,7 @@ public class PipelineManager implements SecuredEntityManager {
         Pipeline pipeline = load(id);
         if (!keepRepository) {
             try {
-                gitManager.deletePipelineRepository(pipeline);
+                pipelineRepositoryService.deletePipelineRepository(pipeline);
             } catch (GitClientException | HttpClientErrorException e) {
                 LOGGER.error(e.getMessage(), e);
             }

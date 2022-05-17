@@ -49,6 +49,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -96,6 +97,9 @@ public class PipelineApiService {
 
     @Autowired
     private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
 
     @PreAuthorize("hasRole('ADMIN') OR "
             + "(#pipeline.parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
@@ -216,7 +220,7 @@ public class PipelineApiService {
     @PreAuthorize(PIPELINE_ID_READ)
     public byte[] getPipelineFileContents(Long id, String version, String path)
             throws GitClientException {
-        return gitManager.getPipelineFileContents(pipelineManager.load(id), version, path);
+        return pipelineRepositoryService.getFileContents(pipelineManager.load(id), version, path);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)

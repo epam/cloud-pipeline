@@ -18,8 +18,13 @@ package com.epam.pipeline.manager.git.bibucket;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
+import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
@@ -29,7 +34,9 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.git.GitClientService;
+import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +59,7 @@ public class BitbucketService implements GitClientService {
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
+    private final AuthManager authManager;
 
     @Override
     public RepositoryType getType() {
@@ -72,6 +80,11 @@ public class BitbucketService implements GitClientService {
                 .build();
         final BitbucketRepository repository = getClient(path, token).createRepository(bitbucketRepository);
         return mapper.toGitRepository(repository);
+    }
+
+    @Override
+    public void deleteRepository(final Pipeline pipeline) {
+        getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).deleteRepository();
     }
 
     @Override
@@ -115,6 +128,52 @@ public class BitbucketService implements GitClientService {
                 .orElse(null);
     }
 
+    @Override
+    public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
+                                              final boolean issueToken, final Long duration) {
+        final GitRepositoryUrl repositoryUrl = GitRepositoryUrl.fromBitbucket(pipeline.getRepository());
+        final String token = pipeline.getRepositoryToken();
+        final BitbucketAuthor user = getClient(pipeline.getRepository(), token)
+                .findUser(authManager.getAuthorizedUser());
+        final String username = user.getDisplayName();
+        final String host = repositoryUrl.getHost() + "/scm";
+        return GitCredentials.builder()
+                .url(GitRepositoryUrl.asString(repositoryUrl.getProtocol(), username, token, host,
+                        repositoryUrl.getNamespace().orElseThrow(() -> buildUrlParseError(PROJECT_NAME)),
+                        repositoryUrl.getProject().orElseThrow(() -> buildUrlParseError(REPOSITORY_NAME))))
+                .userName(username)
+                .token(token)
+                .email(user.getEmailAddress())
+                .build();
+    }
+
+    @Override
+    public GitCommitEntry getCommit(final Pipeline pipeline, final String commitId) {
+        final BitbucketCommit commit = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+                .getCommit(commitId);
+        return Optional.ofNullable(commit)
+                .map(mapper::bitbucketCommitToCommitEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public GitTagEntry getTag(final Pipeline pipeline, final String tagName) {
+        final BitbucketTag tag = getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).getTag(tagName);
+        return Optional.ofNullable(tag)
+                .map(mapper::bitbucketTagToTagEntry)
+                .orElse(null);
+    }
+
+    @Override
+    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
+                                                          final String version, final boolean recursive) {
+        return Optional.of(getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).getFiles(path, version))
+                .map(files -> ListUtils.emptyIfNull(files.getValues()).stream()
+                        .map(fileName -> buildGitRepositoryEntry(path, fileName))
+                        .collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
+    }
+
     private BitbucketClient getClient(final String repositoryPath, final String token) {
         return buildClient(repositoryPath, token);
     }
@@ -143,5 +202,13 @@ public class BitbucketService implements GitClientService {
         final BitbucketCommit commit = client.getCommit(tag.getLatestCommit());
         tag.setCommit(commit);
         return tag;
+    }
+
+    private GitRepositoryEntry buildGitRepositoryEntry(final String path, final String fileName) {
+        final GitRepositoryEntry gitRepositoryEntry = new GitRepositoryEntry();
+        gitRepositoryEntry.setName(fileName);
+        gitRepositoryEntry.setPath(String.join(ProviderUtils.DELIMITER,
+                ProviderUtils.withoutTrailingDelimiter(path), fileName));
+        return gitRepositoryEntry;
     }
 }

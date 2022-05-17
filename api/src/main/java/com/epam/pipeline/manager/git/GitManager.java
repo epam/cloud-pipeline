@@ -78,7 +78,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
@@ -141,6 +140,9 @@ public class GitManager {
     @Autowired
     private MessageHelper messageHelper;
 
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
+
     @PostConstruct
     public void configure() {
         File baseDir = new File(workingDirPath);
@@ -185,8 +187,8 @@ public class GitManager {
     public GitCredentials getGitCredentials(Long id, boolean useEnvVars, boolean issueToken) {
         Pipeline pipeline = pipelineManager.load(id);
         try {
-            return getGitlabClientForPipeline(pipeline)
-                    .buildCloneCredentials(useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
+            return pipelineRepositoryService
+                    .getPipelineCloneCredentials(pipeline, useEnvVars, issueToken, DEFAULT_TOKEN_DURATION);
         } catch (GitClientException e) {
             throw new IllegalArgumentException(e.getMessage());
         }
@@ -214,14 +216,15 @@ public class GitManager {
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id);
         try {
-            loadRevision(pipeline, version);
+            pipelineRepositoryService.loadRevision(pipeline, version);
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new IllegalArgumentException(e.getMessage());
         }
-        return this.getGitlabClientForPipeline(pipeline)
-                .getRepositoryContents(path, getRevisionName(version), recursive).stream()
-                .filter(e -> !e.getName().startsWith(".")).collect(Collectors.toList());
+        return pipelineRepositoryService
+                .getRepositoryContents(pipeline, path, getRevisionName(version), recursive).stream()
+                .filter(e -> !e.getName().startsWith("."))
+                .collect(Collectors.toList());
     }
 
     public List<GitRepositoryEntry> getPipelineSources(Long id, String version)
@@ -253,14 +256,14 @@ public class GitManager {
     private GitRepositoryEntry getConfigurationFileEntry(Long id, String version) throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id);
         try {
-            loadRevision(pipeline, version);
+            pipelineRepositoryService.loadRevision(pipeline, version);
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new IllegalArgumentException(e.getMessage());
         }
         GitRepositoryEntry configurationFileEntry = null;
-        List<GitRepositoryEntry> rootEntries = this.getGitlabClientForPipeline(pipeline)
-                .getRepositoryContents("", getRevisionName(version), false);
+        List<GitRepositoryEntry> rootEntries = pipelineRepositoryService
+                .getRepositoryContents(pipeline, "", getRevisionName(version), false);
         for (GitRepositoryEntry rootEntry : rootEntries) {
             if (rootEntry.getName().equalsIgnoreCase(CONFIG_FILE_NAME)) {
                 configurationFileEntry = rootEntry;
@@ -282,17 +285,7 @@ public class GitManager {
 
     public List<Revision> getPipelineRevisions(Pipeline pipeline)
             throws GitClientException {
-        GitlabClient client = this.getGitlabClientForPipeline(pipeline);
-        List<Revision> tags = client.getRepositoryRevisions().stream()
-                .map(i -> new Revision(i.getName(), i.getMessage(),
-                        parseGitDate(i.getCommit().getAuthoredDate()), i.getCommit().getId(),
-                        i.getCommit().getAuthorName(), i.getCommit().getAuthorEmail()))
-                .sorted(Comparator.comparing(Revision::getCreatedDate).reversed())
-                .collect(Collectors.toList());
-        List<Revision> revisions = new ArrayList<>(tags.size());
-        addDraftRevision(client, revisions, tags);
-        CollectionUtils.addAll(revisions, tags);
-        return revisions;
+        return pipelineRepositoryService.getPipelineRevisions(pipeline.getRepositoryType(), pipeline);
     }
 
     public Revision createPipelineRevision(Pipeline pipeline,
@@ -308,20 +301,6 @@ public class GitManager {
                 gitTagEntry.getMessage(),
                 parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId(),
                 gitTagEntry.getCommit().getAuthorName(), gitTagEntry.getCommit().getAuthorEmail());
-    }
-
-    private void addDraftRevision(GitlabClient client, List<Revision> revisions,
-                                  List<Revision> tags) throws GitClientException {
-        List<GitCommitEntry> commits = client.getCommits();
-        if (!CollectionUtils.isEmpty(commits)) {
-            GitCommitEntry commit = commits.get(0);
-            if (CollectionUtils.isEmpty(tags) || !tags.get(0).getCommitId()
-                    .equals(commit.getId())) {
-                revisions.add(new Revision(DRAFT_PREFIX + commit.getShortId(), commit.getMessage(),
-                        parseGitDate(commit.getCreatedAt()), commit.getId(), Boolean.TRUE,
-                        commit.getAuthorName(), commit.getAuthorEmail()));
-            }
-        }
     }
 
     public List<GitCommitEntry> getCommits(Pipeline pipeline, String versionName)
@@ -744,14 +723,15 @@ public class GitManager {
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id);
         try {
-            loadRevision(pipeline, version);
+            pipelineRepositoryService.loadRevision(pipeline, version);
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new IllegalArgumentException(e.getMessage());
         }
-        return this.getGitlabClientForPipeline(pipeline)
-                .getRepositoryContents(docsDirectory, getRevisionName(version), false).stream()
-                .filter(e -> !e.getName().startsWith(".")).collect(Collectors.toList());
+        return pipelineRepositoryService
+                .getRepositoryContents(pipeline, docsDirectory, getRevisionName(version), false).stream()
+                .filter(e -> !e.getName().startsWith("."))
+                .collect(Collectors.toList());
     }
 
     public File getConfigFile(Pipeline pipeline, String version) {
@@ -769,7 +749,7 @@ public class GitManager {
     public String getConfigFileContent(Pipeline pipeline, String version)
             throws GitClientException {
         checkRevision(pipeline, version);
-        byte[] configBytes = getPipelineFileContents(pipeline, getRevisionName(version),
+        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, getRevisionName(version),
                 CONFIG_FILE_NAME);
         String config = new String(configBytes, Charset.defaultCharset());
         Assert.notNull(config, "Config.json is empty.");
@@ -856,7 +836,7 @@ public class GitManager {
 
     private void checkRevision(Pipeline pipeline, String version) {
         try {
-            loadRevision(pipeline, version);
+            pipelineRepositoryService.loadRevision(pipeline, version);
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new IllegalArgumentException(e.getMessage());
@@ -910,15 +890,15 @@ public class GitManager {
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id);
         try {
-            loadRevision(pipeline, version);
+            pipelineRepositoryService.loadRevision(pipeline, version);
         } catch (GitClientException e) {
             LOGGER.error(e.getMessage(), e);
             throw new IllegalArgumentException(e.getMessage());
         }
 
-        return this.getGitlabClientForPipeline(pipeline)
-                .getRepositoryContents(path, getRevisionName(version), true).stream()
-                .filter(e -> !e.getName().startsWith(".")).collect(Collectors.toList());
+        return pipelineRepositoryService.getRepositoryContents(pipeline, path, getRevisionName(version), true).stream()
+                .filter(e -> !e.getName().startsWith("."))
+                .collect(Collectors.toList());
     }
 
     public GitRepositoryEntry addHookToPipelineRepository(Long id) throws GitClientException {

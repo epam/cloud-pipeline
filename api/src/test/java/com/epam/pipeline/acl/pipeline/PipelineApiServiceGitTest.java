@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -77,6 +78,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private GitManager mockGitManager;
     @Autowired
     private PipelineVersionManager mockVersionManager;
+    @Autowired
+    private PipelineRepositoryService mockPipelineRepositoryService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -418,7 +421,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetPipelineFileContentsForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager).getPipelineFileContents(pipeline, TEST_STRING, TEST_STRING);
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService).getFileContents(pipeline, TEST_STRING, TEST_STRING);
 
         assertThat(pipelineApiService.getPipelineFileContents(ID, TEST_STRING, TEST_STRING)).isEqualTo(TEST_ARRAY);
     }
@@ -428,7 +431,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldGetPipelineFileContentsWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.READ);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager).getPipelineFileContents(pipeline, TEST_STRING, TEST_STRING);
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService).getFileContents(pipeline, TEST_STRING, TEST_STRING);
 
         assertThat(pipelineApiService.getPipelineFileContents(ID, TEST_STRING, TEST_STRING)).isEqualTo(TEST_ARRAY);
     }

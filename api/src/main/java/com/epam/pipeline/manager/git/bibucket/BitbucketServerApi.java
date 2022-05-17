@@ -16,14 +16,18 @@
 
 package com.epam.pipeline.manager.git.bibucket;
 
+import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketFiles;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
 import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Multipart;
 import retrofit2.http.POST;
@@ -40,6 +44,8 @@ public interface BitbucketServerApi {
     String REPOSITORY = "repository";
     String AT = "at";
     String COMMIT_ID = "commitId";
+    String USERNAME = "username";
+    String TAG_NAME = "tagName";
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}")
     Call<BitbucketRepository> getRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
@@ -47,6 +53,12 @@ public interface BitbucketServerApi {
     @POST("rest/api/1.0/projects/{project}/repos")
     Call<BitbucketRepository> createRepository(@Path(PROJECT) String project,
                                                @Body BitbucketRepository bitbucketRepository);
+
+    @DELETE("rest/api/1.0/projects/{project}/repos/{repository}")
+    Call<BitbucketRepository> deleteRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
+
+    @GET("rest/api/1.0/users/{username}")
+    Call<BitbucketAuthor> findUser(@Path(USERNAME) String username);
 
     @Streaming
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/raw/{path}")
@@ -68,4 +80,12 @@ public interface BitbucketServerApi {
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits/{commitId}")
     Call<BitbucketCommit> getCommit(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
                                     @Path(COMMIT_ID) String commitId);
+
+    @GET("rest/api/1.0/projects/{project}/repos/{repository}/tags/{tagName}")
+    Call<BitbucketTag> getTag(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                              @Path(TAG_NAME) String tagName);
+
+    @GET("rest/api/1.0/projects/{project}/repos/{repository}/files/{path}")
+    Call<BitbucketFiles> getFiles(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                  @Path(value = PATH, encoded = true) String path, @Query(AT) String reference);
 }

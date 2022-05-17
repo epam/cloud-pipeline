@@ -16,9 +16,12 @@
 
 package com.epam.pipeline.manager.git.bibucket;
 
+import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketFiles;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.ApiBuilder;
@@ -58,6 +61,14 @@ public class BitbucketClient {
     public BitbucketRepository createRepository(final BitbucketRepository bitbucketRepository) {
         bitbucketRepository.setName(repositoryName);
         return RestApiUtils.execute(bitbucketServerApi.createRepository(projectName, bitbucketRepository));
+    }
+
+    public BitbucketRepository deleteRepository() {
+        return RestApiUtils.execute(bitbucketServerApi.deleteRepository(projectName, repositoryName));
+    }
+
+    public BitbucketAuthor findUser(final String username) {
+        return RestApiUtils.execute(bitbucketServerApi.findUser(username));
     }
 
     public byte[] getFileContent(final String commit, final String path) {
@@ -104,6 +115,14 @@ public class BitbucketClient {
 
     public BitbucketCommit getCommit(final String commitId) {
         return RestApiUtils.execute(bitbucketServerApi.getCommit(projectName, repositoryName, commitId));
+    }
+
+    public BitbucketTag getTag(final String tagName) {
+        return RestApiUtils.execute(bitbucketServerApi.getTag(projectName, repositoryName, tagName));
+    }
+
+    public BitbucketFiles getFiles(final String path, final String version) {
+        return RestApiUtils.execute(bitbucketServerApi.getFiles(projectName, repositoryName, path, version));
     }
 
     private BitbucketServerApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
