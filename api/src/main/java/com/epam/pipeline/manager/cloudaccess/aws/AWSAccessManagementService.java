@@ -48,7 +48,10 @@ import org.apache.commons.httpclient.util.URIUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -128,21 +131,27 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
     @Override
     public CloudUserAccessKeys getAccessKeysForUser(final AwsRegion region, final String username,
                                                     final String keyId) {
+        return listAccessKeysForUser(region, username).stream()
+                .filter(accessKey -> keyId.equals(accessKey.getId()))
+                .findFirst().orElse(null);
+    }
+
+    @Override
+    public List<CloudUserAccessKeys> listAccessKeysForUser(AwsRegion region, String username) {
         try {
             final ListAccessKeysResult accessKeyListing = getIAMClient(region)
                     .listAccessKeys(new ListAccessKeysRequest().withUserName(username));
             return ListUtils.emptyIfNull(accessKeyListing.getAccessKeyMetadata())
                     .stream()
-                    .filter(accessKey -> keyId.equals(accessKey.getAccessKeyId()))
-                    .findFirst().map(accessKey ->
+                    .map(accessKey ->
                             AWSCloudUserAccessKeys.builder()
                                     .regionId(region.getId())
                                     .provider(getProvider())
                                     .accessKeyId(accessKey.getAccessKeyId())
                                     .build()
-                    ).orElse(null);
+                    ).collect(Collectors.toList());
         } catch (NoSuchEntityException e) {
-            return null;
+            return Collections.emptyList();
         }
     }
 

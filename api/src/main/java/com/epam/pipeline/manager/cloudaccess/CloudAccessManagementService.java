@@ -21,6 +21,8 @@ import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.cloud.CloudAwareService;
 
+import java.util.List;
+
 public interface CloudAccessManagementService<T extends AbstractCloudRegion> extends CloudAwareService {
 
     boolean doesCloudUserExist(T region, String username);
@@ -40,4 +42,6 @@ public interface CloudAccessManagementService<T extends AbstractCloudRegion> ext
     void revokeCloudKeysForUser(T region, String username, String keyId);
 
     CloudAccessPolicy getCloudUserPermissions(T region, String username, String format);
+
+    List<CloudUserAccessKeys> listAccessKeysForUser(T region, String username);
 }

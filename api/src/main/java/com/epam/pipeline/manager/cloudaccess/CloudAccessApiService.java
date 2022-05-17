@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.manager.cloudaccess;
 
+import com.epam.pipeline.entity.cloudaccess.CloudUserAccessProfile;
 import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,11 @@ import org.springframework.stereotype.Service;
 public class CloudAccessApiService {
 
     private final CloudAccessManager cloudAccessManager;
+
+    @PreAuthorize("hasRole('ADMIN')")
+    public CloudUserAccessProfile getCloudUserProfile(final String username) {
+        return cloudAccessManager.getCloudUserProfile(username);
+    }
 
     @PreAuthorize("hasRole('ADMIN')")
     public CloudUserAccessKeys getKeys(final Long regionId, final String username) {

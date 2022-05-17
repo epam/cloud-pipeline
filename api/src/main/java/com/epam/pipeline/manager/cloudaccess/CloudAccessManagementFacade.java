@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CloudAccessManagementFacade {
 
+    private static final String CP_CLOUD_ACCESS_POLICY_DEFAULT = "cp-cloud-access-policy-";
+
     private Map<CloudProvider, CloudAccessManagementService> cloudAccessServices;
     private final DataStorageManager storageManager;
 
@@ -78,6 +80,18 @@ public class CloudAccessManagementFacade {
                     String.format("There is no cloud user with name: %s!", getCloudUsername(config, user)));
         }
         return accessManagementService.getAccessKeysForUser(region, getCloudUsername(config, user), keyId);
+    }
+
+    public <R extends AbstractCloudRegion> List<CloudUserAccessKeys> listKeys(final CloudAccessManagementConfig config,
+                                                                              final R region,
+                                                                              final PipelineUser user) {
+        final CloudAccessManagementService<R> accessManagementService = getCloudAccessManagementService(region);
+
+        if (!accessManagementService.doesCloudUserExist(region, getCloudUsername(config, user))) {
+            throw new IllegalArgumentException(
+                    String.format("There is no cloud user with name: %s!", getCloudUsername(config, user)));
+        }
+        return accessManagementService.listAccessKeysForUser(region, getCloudUsername(config, user));
     }
 
     public <R extends AbstractCloudRegion> void revokeKeys(final CloudAccessManagementConfig config,
@@ -164,7 +178,8 @@ public class CloudAccessManagementFacade {
     }
 
     private String constructCloudUserPolicyName(final CloudAccessManagementConfig config, final PipelineUser user) {
-        final String accessPolicyPrefix = config.getCloudAccessPolicyPrefix();
+        final String accessPolicyPrefix = Optional.ofNullable(config.getCloudAccessPolicyPrefix())
+                .orElse(CP_CLOUD_ACCESS_POLICY_DEFAULT);
         return String.format("%s%s", accessPolicyPrefix, getCloudUsername(config, user));
     }
 

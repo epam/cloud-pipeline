@@ -18,6 +18,7 @@ package com.epam.pipeline.controller.cloudaccess;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
+import com.epam.pipeline.entity.cloudaccess.CloudUserAccessProfile;
 import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
@@ -44,6 +45,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class CloudAccessController extends AbstractRestController {
 
     private final CloudAccessApiService cloudAccessApiService;
+
+    @GetMapping("/profile")
+    @ApiOperation(value = "Gets cloud access profile for specified user across all regions",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<CloudUserAccessProfile> getCloudPermissions(@RequestParam final String username) {
+        return Result.success(cloudAccessApiService.getCloudUserProfile(username));
+    }
 
     @GetMapping
     @ApiOperation(value = "Gets cloud access policy for specified user and cloud region",
