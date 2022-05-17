@@ -80,7 +80,7 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             .flatMap(apiClient::findDtsRegistryByNameOrId)
             .map(DtsRegistry::getPreferences)
             .orElse(Collections.emptyMap());
-        log.warn("Following preferences received during sync iteration: {}", updatedPreferences.toString());
+        log.info("Following preferences received during sync iteration: {}", updatedPreferences.toString());
         preferences.clear();
         preferences.putAll(updatedPreferences);
     }

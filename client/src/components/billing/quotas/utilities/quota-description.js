@@ -23,6 +23,7 @@ import {QuotaAction} from './quota-actions';
 import {periodNames} from './quota-periods';
 import {numberFormatter} from '../../reports/utilities';
 import styles from './quota-description.css';
+import QuotaLimitIndicator from './quota-indicator';
 
 function sortActionsByThreshold (a, b) {
   const {threshold: aThreshold} = a;
@@ -49,6 +50,7 @@ function QuotaDescription (
     period = 'MONTH',
     id
   } = quota;
+
   const quotaValue = (
     <span className={styles.quotaValue}>
       {numberFormatter(value)}$ per {(periodNames[period] || period).toLowerCase()}
@@ -74,7 +76,8 @@ function QuotaDescription (
       onClick={onClick}
     >
       <div className={styles.description}>
-        <div>
+        <div style={{display: 'flex', alignItems: 'center'}}>
+          <QuotaLimitIndicator quota={quota} />
           <QuotaTarget
             addonAfter=":"
             quota={quota}

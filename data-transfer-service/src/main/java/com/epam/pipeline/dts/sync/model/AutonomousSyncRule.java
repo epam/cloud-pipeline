@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package com.epam.pipeline.dts.sync.model;
 import lombok.Value;
 import org.thymeleaf.util.StringUtils;
 
+import java.util.List;
+
 
 @Value
 public class AutonomousSyncRule {
@@ -27,6 +29,7 @@ public class AutonomousSyncRule {
     String destination;
     String cron;
     Boolean deleteSource;
+    List<TransferTrigger> transferTriggers;
 
     public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
         return StringUtils.equals(source, anotherRule.getSource())

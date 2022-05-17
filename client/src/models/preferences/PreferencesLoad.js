@@ -289,18 +289,25 @@ class PreferencesLoad extends Remote {
             .map(o => o.trim().toLowerCase())
             .filter(o => o.length);
         };
-        return Object
-          .entries(capabilities || {})
-          .map(([key, entry]) => ({
+        const mapCapability = ([key, entry]) => {
+          const {
+            capabilities = {}
+          } = entry;
+          return {
             value: `CP_CAP_CUSTOM_${key}`,
-            name: key,
+            name: entry?.name || key,
             description: entry?.description,
             platforms: parsePlatforms(entry?.platforms),
             cloud: parseCloudProviders(entry?.cloud),
             os: parseOS(entry?.os),
             custom: true,
-            params: entry?.params || {}
-          }));
+            params: entry?.params || {},
+            capabilities: Object.entries(capabilities).map(mapCapability)
+          };
+        };
+        return Object
+          .entries(capabilities || {})
+          .map(mapCapability);
       } catch (e) {
         console.warn(
           'Error parsing "launch.capabilities" preference:',
@@ -327,7 +334,8 @@ class PreferencesLoad extends Remote {
 
   @computed
   get systemMaintenanceMode () {
-    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true';
+    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
+      `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true';
   }
 
   @computed

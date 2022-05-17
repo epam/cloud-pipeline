@@ -113,6 +113,7 @@ public class GlobalSearchTest extends AbstractSeveralPipelineRunningTest impleme
         navigationMenu()
                 .library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(innerFolder1)
                 .createFolder(innerFolder2);
         navigationMenu()

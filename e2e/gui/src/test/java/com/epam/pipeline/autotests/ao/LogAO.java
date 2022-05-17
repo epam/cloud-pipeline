@@ -402,7 +402,7 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public static By runId() {
-        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(text(), 'Run #')]");
+        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(@class, 'cp-run-name editable')]");
     }
 
     public static By pipelineLink() {

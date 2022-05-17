@@ -51,6 +51,19 @@ CP_GITLAB_BLOCK_AUTO_CREATED_USERS="${CP_GITLAB_BLOCK_AUTO_CREATED_USERS:-"false
 CP_GITLAB_EXTERNAL_URL="${CP_GITLAB_EXTERNAL_URL:-https://${CP_GITLAB_INTERNAL_HOST}:${CP_GITLAB_INTERNAL_PORT}}"
 CP_GITLAB_SSO_ENDPOINT_ID="${CP_GITLAB_SSO_ENDPOINT_ID:-https://${CP_GITLAB_EXTERNAL_HOST}:${CP_GITLAB_EXTERNAL_PORT}}"
 CP_GITLAB_SAML_USER_ATTRIBUTES="${CP_GITLAB_SAML_USER_ATTRIBUTES:-email: ['email']}"
+CP_GITLAB_CA_CERT_PATH="${CP_GITLAB_CA_CERT_PATH:-/opt/common/pki/ca-public-cert.pem}"
+
+if [ -f "$CP_GITLAB_CA_CERT_PATH" ]; then
+  \cp "$CP_GITLAB_CA_CERT_PATH" /etc/gitlab/trusted-certs/
+  echo
+  echo "${CP_GITLAB_CA_CERT_PATH} added to /etc/gitlab/trusted-certs/"
+  echo
+else
+  echo
+  echo "CP_GITLAB_CA_CERT_PATH is set to ${CP_GITLAB_CA_CERT_PATH}, but the file does not exist. It will not be added to /etc/gitlab/trusted-certs/"
+  echo
+fi
+
 
 echo
 echo "idp_sso_target_url: $CP_GITLAB_SSO_TARGET_URL"
@@ -59,10 +72,12 @@ echo
 
 # If the proxies are not set via env vars, gitlab will consider empty values as "no proxy set"
 CP_GITLAB_HTTP_PROXY="${CP_GITLAB_HTTP_PROXY:-$http_proxy}"
-CP_GITLAB_HTTPS_PROXY="${CP_GITLAB_HTTP_PROXY:-$https_proxy}"
+CP_GITLAB_HTTPS_PROXY="${CP_GITLAB_HTTPS_PROXY:-$https_proxy}"
+CP_GITLAB_NO_PROXY="${CP_GITLAB_NO_PROXY:-$no_proxy}"
 GIT_PROXIES="gitlab_rails['env'] = {
   \"http_proxy\" => \"$CP_GITLAB_HTTP_PROXY\",
-  \"https_proxy\" => \"$CP_GITLAB_HTTPS_PROXY\"
+  \"https_proxy\" => \"$CP_GITLAB_HTTPS_PROXY\",
+  \"no_proxy\" => \"$CP_GITLAB_NO_PROXY\"
 }"
 
 # If the smtp configuration is available - add it to gitlab as well

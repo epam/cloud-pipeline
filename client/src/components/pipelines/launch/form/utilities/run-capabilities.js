@@ -1,7 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Select} from 'antd';
+import {Icon} from 'antd';
+import Dropdown from 'rc-dropdown';
+import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
 import {
   CP_CAP_DIND_CONTAINER,
@@ -16,6 +19,7 @@ import {
 } from './parameters';
 import fetchToolOS from './fetch-tool-os';
 import Capability from './capability';
+import styles from './run-capabilities.css';
 
 export const RUN_CAPABILITIES = {
   dinD: 'DinD',
@@ -101,6 +105,19 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     !capability.cloud ||
     capability.cloud.length === 0 ||
     capability.cloud.some(p => p.toLowerCase() === provider.toLowerCase());
+  const mapCapability = (capability) => {
+    const {
+      capabilities = [],
+      ...capabilityInfo
+    } = capability;
+    const enabledByOS = filterByOS(capability);
+    const enabledByCloudProvider = filterByCloudProvider(capability);
+    return {
+      ...capabilityInfo,
+      capabilities: capabilities.map(mapCapability),
+      disabled: !enabledByOS || !enabledByCloudProvider
+    };
+  };
   return capabilities.map(o => ({
     value: o,
     name: o,
@@ -108,19 +125,24 @@ function getAllPlatformCapabilities (preferences, platformInfo = {}) {
     cloud: CAPABILITIES_CLOUD_FILTERS[o]
   }))
     .concat((custom || []).filter(filterCustomCapability))
-    .map(capability => {
-      const enabledByOS = filterByOS(capability);
-      const enabledByCloudProvider = filterByCloudProvider(capability);
-      return {
-        ...capability,
-        disabled: !enabledByOS || !enabledByCloudProvider
-      };
-    });
+    .map(mapCapability);
+}
+
+function plainList (capabilities = []) {
+  const getPlain = (capability) => {
+    const {capabilities: nested = []} = capability;
+    return [capability, ...nested.map(getPlain).reduce((r, c) => ([...r, ...c]), [])];
+  };
+  return (capabilities || [])
+    .map(getPlain)
+    .reduce((r, c) => ([...r, ...c]), []);
 }
 
 function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
-  return getAllPlatformCapabilities(preferences, platformInfo)
-    .filter(capability => !capability.disabled);
+  return plainList(
+    getAllPlatformCapabilities(preferences, platformInfo)
+      .filter(capability => !capability.disabled)
+  );
 }
 
 @inject('preferences', 'dockerRegistries')
@@ -216,33 +238,122 @@ class RunCapabilities extends React.Component {
     const all = getAllPlatformCapabilities(preferences, {platform, os, provider});
     const filteredValues = (values || [])
       .filter(value => capabilities.find(o => o.value === value));
+    const toggleValue = (value) => {
+      const selected = [...filteredValues];
+      const index = selected.indexOf(value);
+      if (index >= 0) {
+        selected.splice(index, 1);
+      } else {
+        selected.push(value);
+      }
+      this.onSelectionChanged(selected);
+    };
+    const onCapabilityClick = ({domEvent, key}) => {
+      domEvent.stopPropagation();
+      domEvent.preventDefault();
+      toggleValue(key);
+    };
+    const renderCapability = (capability) => {
+      const {
+        capabilities = []
+      } = capability;
+      if (capabilities.length === 0) {
+        return (
+          <MenuItem
+            key={capability.value}
+            value={capability.value}
+            title={capability.description || capability.name}
+            disabled={capability.disabled}
+          >
+            <Capability
+              capability={capability}
+              selected={filteredValues.includes(capability.value)}
+              style={{width: '100%'}}
+            />
+          </MenuItem>
+        );
+      }
+      return (
+        <SubMenu
+          key={capability.value}
+          value={capability.value}
+          title={(
+            <Capability
+              capability={capability}
+              selected={filteredValues.includes(capability.value)}
+              style={{width: '100%', paddingRight: 20}}
+              nested={
+                capabilities
+                  .filter(child => filteredValues.includes(child.value))
+                  .map(child => child.value)
+              }
+            />
+          )}
+          disabled={capability.disabled}
+          onTitleClick={onCapabilityClick}
+          onClick={onCapabilityClick}
+        >
+          {
+            capabilities.map(renderCapability)
+          }
+        </SubMenu>
+      );
+    };
     return (
-      <Select
-        allowClear
-        disabled={disabled}
-        mode="multiple"
-        onChange={this.onSelectionChanged}
-        placeholder="None selected"
-        size="large"
-        value={filteredValues || []}
-        filterOption={
-          (input, option) => option.props.children.toLowerCase().includes(input.toLowerCase())
-        }
+      <Dropdown
+        overlay={(
+          <div>
+            <Menu
+              mode="vertical"
+              selectedKeys={[]}
+              onClick={onCapabilityClick}
+            >
+              {all.map(renderCapability)}
+            </Menu>
+          </div>
+        )}
+        trigger={['click']}
       >
-        {
-          all
-            .map(capability => (
-              <Select.Option
-                key={capability.value}
-                value={capability.value}
-                title={capability.description || capability.name}
-                disabled={capability.disabled}
-              >
-                <Capability capability={capability} />
-              </Select.Option>
-            ))
-        }
-      </Select>
+        <div
+          tabIndex={0}
+          className={
+            classNames(
+              styles.runCapabilitiesInput,
+              'cp-run-capabilities-input',
+              {
+                disabled,
+                [styles.disabled]: disabled
+              }
+            )
+          }
+        >
+          {
+            filteredValues.length === 0 && '\u00A0'
+          }
+          {
+            plainList(all)
+              .filter(capability => filteredValues.includes(capability.value))
+              .map((capability) => (
+                <div
+                  key={capability.value}
+                  className={
+                    classNames(
+                      styles.runCapabilitiesInputTag,
+                      'cp-run-capabilities-input-tag'
+                    )
+                  }
+                >
+                  <Capability capability={capability} />
+                  <Icon
+                    type="close"
+                    className={styles.runCapabilitiesInputTagClose}
+                    onClick={(domEvent) => onCapabilityClick({domEvent, key: capability.value})}
+                  />
+                </div>
+              ))
+          }
+        </div>
+      </Dropdown>
     );
   }
 }
@@ -251,14 +362,14 @@ export function isCustomCapability (parameterName, preferences) {
   if (!preferences) {
     return false;
   }
-  return !!preferences.launchCapabilities.find(o => o.value === parameterName);
+  return !!plainList(preferences.launchCapabilities).find(o => o.value === parameterName);
 }
 
 export function getCustomCapability (parameterName, preferences) {
   if (!preferences) {
     return undefined;
   }
-  return preferences.launchCapabilities.find(o => o.value === parameterName);
+  return plainList(preferences.launchCapabilities).find(o => o.value === parameterName);
 }
 
 export function getRunCapabilitiesSkippedParameters () {
@@ -337,14 +448,28 @@ export function applyCustomCapabilitiesParameters (parameters, preferences) {
     }
     return 'string';
   };
+  const parseStringValues = (string) => `${string || ''}`
+    .split(',')
+    .map(o => o.trim())
+    .filter(o => o.length);
+  const mergeValues = (newValue, previousValue) => {
+    const values = [...(new Set([
+      ...parseStringValues(newValue),
+      ...parseStringValues(previousValue)
+    ]))];
+    return values.join(',');
+  };
   for (const customCapability of customCapabilities) {
     const customCapabilityParameters = Object.entries(customCapability.params || {});
     for (const [parameter, value] of customCapabilityParameters) {
       if (value !== undefined) {
         const type = getParameterType(value);
+        const previous = result[parameter] ? result[parameter].value : undefined;
         result[parameter] = {
           type,
-          value: type === 'boolean' ? value : `${value}`
+          value: type === 'boolean'
+            ? value
+            : mergeValues(`${value}`, previous)
         };
       }
     }
@@ -359,7 +484,7 @@ export function hasPlatformSpecificCapabilities (platform, preferences) {
 export function checkRunCapabilitiesModified (capabilities1, capabilities2, preferences) {
   const wellKnownCapabilities = Object.values(RUN_CAPABILITIES)
     .concat(
-      (preferences ? preferences.launchCapabilities : [])
+      (preferences ? plainList(preferences.launchCapabilities) : [])
         .map(o => o.value)
     );
   const sorted = array => [

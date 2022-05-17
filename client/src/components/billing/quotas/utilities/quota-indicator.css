@@ -1,0 +1,10 @@
+.circle-container {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+
+.expense-container > span,
+.expense-container > b {
+  padding-right: 3px;
+}

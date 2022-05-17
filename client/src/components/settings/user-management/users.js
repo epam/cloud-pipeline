@@ -44,6 +44,7 @@ import {alphabeticSorter} from './utilities';
 import styles from '../UserManagementForm.css';
 import UserStatus from './user-status-indicator';
 import displayDate from '../../../utils/displayDate';
+import {QuotasDisclaimerComponent} from './quota-info';
 
 const PAGE_SIZE = 20;
 
@@ -60,9 +61,8 @@ function usersFilter (criteria) {
 const USERS_FILTERS = {
   all: 'all',
   blocked: 'blocked',
-  notBlocked: 'notBlocked',
   online: 'online',
-  offline: 'offline'
+  quota: 'quota'
 };
 
 @roleModel.authenticationInfo
@@ -210,14 +210,11 @@ export default class UsersManagement extends React.Component {
           case USERS_FILTERS.blocked: {
             return user.blocked;
           }
-          case USERS_FILTERS.notBlocked: {
-            return !user.blocked;
-          }
           case USERS_FILTERS.online: {
             return user.online;
           }
-          case USERS_FILTERS.offline: {
-            return !user.online;
+          case USERS_FILTERS.quota: {
+            return (user.activeQuotas || []).length > 0;
           }
         }
       });
@@ -280,18 +277,13 @@ export default class UsersManagement extends React.Component {
           value={this.state.filterUsers}
           style={{width: 175, marginLeft: 5}}
           onChange={this.onChangeUsersFilters}
+          dropdownMatchSelectWidth={false}
         >
           <Select.Option
             key={USERS_FILTERS.all}
             value={USERS_FILTERS.all}
           >
             Show all users
-          </Select.Option>
-          <Select.Option
-            key={USERS_FILTERS.notBlocked}
-            value={USERS_FILTERS.notBlocked}
-          >
-            Show not blocked users
           </Select.Option>
           <Select.Option
             key={USERS_FILTERS.blocked}
@@ -309,10 +301,10 @@ export default class UsersManagement extends React.Component {
           }
           { this.isAdmin && (
             <Select.Option
-              key={USERS_FILTERS.offline}
-              value={USERS_FILTERS.offline}
+              key={USERS_FILTERS.quota}
+              value={USERS_FILTERS.quota}
             >
-              Show offline users
+              Show exceeded spending quotas
             </Select.Option>)
           }
         </Select>
@@ -496,6 +488,10 @@ export default class UsersManagement extends React.Component {
                   >
                     {attributesString}
                   </span>
+                  <QuotasDisclaimerComponent
+                    style={{fontSize: 'smaller', cursor: 'pointer'}}
+                    quotas={user.activeQuotas || []}
+                  />
                 </Row>
               </Row>
             );

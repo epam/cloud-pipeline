@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+import logging
 import multiprocessing
 import os
 import platform
-import sys
 
 import click
+import datetime
 import prettytable
+import sys
 from future.utils import iteritems
 from operator import itemgetter
 
@@ -30,9 +31,10 @@ from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
 from src.utilities.du import DataUsageHelper
 from src.utilities.du_format_type import DuFormatType
+from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
-from src.utilities.storage.common import TransferResult, UploadResult
+from src.utilities.storage.common import TransferResult
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
@@ -40,10 +42,25 @@ FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
 
 
+class AllowedUnsafeCharsValues(object):
+    FAIL = 'fail'
+    SKIP = 'skip'
+    REPLACE = 'replace'
+    REMOVE = 'remove'
+    ALLOW = 'allow'
+
+
+class AllowedFailuresValues(object):
+    FAIL = 'fail'
+    FAIL_AFTER = 'fail-after'
+    SKIP = 'skip'
+
+
 class DataStorageOperations(object):
     @classmethod
     def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           io_threads, clean=False, skip_existing=False, verify_destination=False):
+           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+           clean=False, skip_existing=False, verify_destination=False):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
         files_to_copy = []
@@ -99,46 +116,36 @@ class DataStorageOperations(object):
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
         items = files_to_copy if file_list else source_wrapper.get_items()
         items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                                  include, exclude, force, quiet, skip_existing, verify_destination)
-        sorted_items = list()
-        transfer_results = []
-        for item in items:
-            full_path = item[1]
-            relative_path = item[2]
-            size = item[3]
-            if threads:
-                sorted_items.append(item)
-            else:
-                transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
-                                                   relative_path=relative_path, clean=clean, quiet=quiet, size=size,
-                                                   tags=tags, io_threads=io_threads)
-                if not destination_wrapper.is_local() and transfer_result:
-                    transfer_results.append(transfer_result)
-                    transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                                                   transfer_results, clean=clean)
+                                  include, exclude, force, quiet, skip_existing, verify_destination,
+                                  on_unsafe_chars, on_unsafe_chars_replacement)
         if threads:
-            cls._multiprocess_transfer_items(sorted_items, threads, manager, source_wrapper, destination_wrapper,
-                                             clean, quiet, tags, io_threads)
+            cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
+                                             clean, quiet, tags, io_threads, on_failures)
         else:
-            if not destination_wrapper.is_local():
-                cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                            transfer_results, clean=clean, flush_size=1)
+            cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
+                                clean, quiet, tags, io_threads, on_failures)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
-                      include, exclude, force, quiet, skip_existing, verify_destination):
+                      include, exclude, force, quiet, skip_existing, verify_destination,
+                      unsafe_chars, unsafe_chars_replacement):
         filtered_items = []
         for item in items:
             full_path = item[1]
             relative_path = item[2]
             source_size = item[3]
 
+            item = cls._process_unsafe_chars(item, quiet, unsafe_chars, unsafe_chars_replacement)
+
+            if not item:
+                continue
+
             if relative_path.endswith(FOLDER_MARKER):
                 filtered_items.append(item)
                 continue
 
             # check that we have corresponding permission for the file before take action
-            if source_wrapper.is_local() and not os.access(full_path, permission_to_check):
+            if source_wrapper.is_local() and not os.access(to_string(full_path), permission_to_check):
                 continue
             if source_wrapper.is_file() and not source_wrapper.path == full_path:
                 continue
@@ -153,12 +160,12 @@ class DataStorageOperations(object):
                         continue
             if not PatternMatcher.match_any(relative_path, include):
                 if not quiet:
-                    click.echo("Skipping file {} since it doesn't match any of include patterns [{}]."
+                    click.echo(u"Skipping file {} since it doesn't match any of include patterns [{}]."
                                .format(full_path, ",".join(include)))
                 continue
             if PatternMatcher.match_any(relative_path, exclude, default=False):
                 if not quiet:
-                    click.echo("Skipping file {} since it matches exclude patterns [{}]."
+                    click.echo(u"Skipping file {} since it matches exclude patterns [{}]."
                                .format(full_path, ",".join(exclude)))
                 continue
 
@@ -571,7 +578,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, io_threads):
+                                     quiet, tags, io_threads, on_failures):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -588,18 +595,37 @@ class DataStorageOperations(object):
                                                     quiet,
                                                     tags,
                                                     io_threads,
+                                                    on_failures,
                                                     lock))
             process.start()
             workers.append(process)
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads, lock):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads,
+                        on_failures, lock=None):
         transfer_results = []
+        fail_after_exception = None
         for item in items:
-            full_path = item[1]
-            relative_path = item[2]
-            size = item[3]
+            transfer_results, fail_after_exception = cls._transfer_item(item, manager,
+                                                                        source_wrapper, destination_wrapper,
+                                                                        transfer_results,
+                                                                        clean, quiet, tags, io_threads,
+                                                                        on_failures, lock)
+        if not destination_wrapper.is_local():
+            cls._flush_transfer_results(source_wrapper, destination_wrapper,
+                                        transfer_results, clean=clean, flush_size=1)
+        if fail_after_exception:
+            raise fail_after_exception
+
+    @classmethod
+    def _transfer_item(cls, item, manager, source_wrapper, destination_wrapper, transfer_results,
+                       clean, quiet, tags, io_threads, on_failures, lock):
+        full_path = item[1]
+        relative_path = item[2]
+        size = item[3]
+        fail_after_exception = None
+        try:
             transfer_result = manager.transfer(source_wrapper, destination_wrapper, path=full_path,
                                                relative_path=relative_path, clean=clean, quiet=quiet, size=size,
                                                tags=tags, io_threads=io_threads, lock=lock)
@@ -607,9 +633,25 @@ class DataStorageOperations(object):
                 transfer_results.append(transfer_result)
                 transfer_results = cls._flush_transfer_results(source_wrapper, destination_wrapper,
                                                                transfer_results, clean=clean)
-        if not destination_wrapper.is_local():
-            cls._flush_transfer_results(source_wrapper, destination_wrapper,
-                                        transfer_results, clean=clean, flush_size=1)
+        except Exception as e:
+            if on_failures == AllowedFailuresValues.FAIL:
+                err_msg = u'File transferring has failed {}. Exiting...'.format(full_path)
+                logging.warn(err_msg)
+                if not quiet:
+                    click.echo(err_msg)
+                raise
+            elif on_failures == AllowedFailuresValues.FAIL_AFTER:
+                err_msg = u'File transferring has failed {}. Proceeding...'.format(full_path)
+                logging.warn(err_msg)
+                if not quiet:
+                    click.echo(err_msg)
+                fail_after_exception = e
+            else:
+                err_msg = u'File transferring has failed {}. Proceeding...'.format(full_path)
+                logging.warn(err_msg)
+                if not quiet:
+                    click.echo(err_msg)
+        return transfer_results, fail_after_exception
 
     @classmethod
     def _flush_transfer_results(cls, source_wrapper, destination_wrapper, transfer_results,
@@ -665,3 +707,29 @@ class DataStorageOperations(object):
     def _force_required():
         click.echo('Flag --force (-f) is required to overwrite files in the destination data.', err=True)
         sys.exit(1)
+
+    @classmethod
+    def _process_unsafe_chars(cls, item, quiet, unsafe_chars, unsafe_chars_replacement):
+        full_path = item[1]
+        relative_path = item[2]
+        if is_safe_chars(relative_path):
+            return item
+        if unsafe_chars == AllowedUnsafeCharsValues.FAIL:
+            err_msg = u'Unsafe characters have been found in path {}. Exiting...'.format(full_path)
+            logging.warn(err_msg)
+            raise RuntimeError(err_msg)
+        elif unsafe_chars == AllowedUnsafeCharsValues.SKIP:
+            err_msg = u'Skipping path with unsafe characters {}...'.format(full_path)
+            logging.warn(err_msg)
+            if not quiet:
+                click.echo(err_msg)
+            return None
+        elif unsafe_chars == AllowedUnsafeCharsValues.REPLACE:
+            logging.warn(u'Replacing unsafe characters in path {}...'.format(full_path))
+            relative_path = to_ascii(relative_path, replacing=True, replacing_with=unsafe_chars_replacement)
+        elif unsafe_chars == AllowedUnsafeCharsValues.REMOVE:
+            logging.warn(u'Removing unsafe characters from path {}...'.format(full_path))
+            relative_path = to_ascii(relative_path, removing=True)
+        else:
+            logging.warn(u'Ignoring unsafe characters in path {}...'.format(full_path))
+        return item[0], full_path, relative_path, item[3]

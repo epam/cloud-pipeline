@@ -578,6 +578,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return this;
             }
 
+            public UsersTabAO pressMagnifierIcon() {
+                $(byClassName("user-management-form__container"))
+                        .$(byClassName("ant-input-search-icon")).shouldBe(enabled).click();
+                return this;
+            }
+
             public UsersTabAO searchUser(String name) {
                 sleep(1, SECONDS);
                 clear(SEARCH);

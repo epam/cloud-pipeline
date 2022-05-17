@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,7 @@ import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.dto.quota.QuotaAction;
 import com.epam.pipeline.dto.quota.AppliedQuota;
 import com.epam.pipeline.dto.quota.QuotaUsage;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import lombok.RequiredArgsConstructor;
@@ -27,9 +28,10 @@ import net.javacrumbs.shedlock.core.SchedulerLock;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -57,25 +59,40 @@ public class BillingQuotasMonitor {
         log.debug("Finished billing quotas monitoring.");
     }
 
+    @SchedulerLock(name = "BillingQuotasMonitor_checkQuotas", lockAtMostForString = "PT10M")
+    public void clearQuotas() {
+        if (!preferenceManager.getPreference(SystemPreferences.BILLING_QUOTAS_ENABLED)) {
+            log.debug("Billing quotas monitoring is disabled.");
+            return;
+        }
+        log.debug("Clearing obsolete active quotas.");
+        quotaService.deleteObsoleteQuotas(DateUtils.nowUTC().toLocalDate());
+        log.debug("Finished cleaning obsolete active quotas.");
+    }
+
 
     private void applyQuota(final Quota quota) {
         try {
             log.debug("Processing quota {}", quota);
             final QuotaUsage usage = requestService.getQuotaUsage(quota);
-            final Optional<QuotaAction> activeAction = ListUtils.emptyIfNull(quota.getActions())
+            final Map<Boolean, List<QuotaAction>> actionsStatus = ListUtils.emptyIfNull(quota.getActions())
                     .stream()
-                    .filter(action -> exceedsLimit(quota, action, usage))
-                    .max(Comparator.comparing(QuotaAction::getThreshold));
-            activeAction.ifPresent(action -> {
-                final AppliedQuota applied = AppliedQuota.builder()
-                        .quota(quota)
-                        .action(action)
-                        .from(usage.getFrom())
-                        .to(usage.getTo())
-                        .expense(usage.getExpense())
-                        .build();
-                quotaHandler.applyAction(applied);
-            });
+                    .collect(Collectors.partitioningBy(action -> exceedsLimit(quota, action, usage)));
+            //process active actions
+            ListUtils.emptyIfNull(actionsStatus.get(true))
+                    .forEach(action -> {
+                        final AppliedQuota applied = AppliedQuota.builder()
+                                .quota(quota)
+                                .action(action)
+                                .from(usage.getFrom())
+                                .to(usage.getTo())
+                                .expense(usage.getExpense())
+                                .build();
+                        quotaHandler.applyAction(applied);
+                    });
+            //ensure non-active actions are not applied
+            ListUtils.emptyIfNull(actionsStatus.get(false))
+                    .forEach(action -> quotaHandler.clearAction(quota, action));
         } catch (Exception e) {
             log.debug("An error occurred during quota processing " + quota, e);
         }

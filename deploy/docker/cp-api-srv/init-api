@@ -263,6 +263,7 @@ openssl dgst -sha256 -hex -r -sign "$CP_API_SRV_CERT_DIR/ssl-private-key.pem" \
 
 echo "Copying DTS windows bundle to static resources"
 cp "$CP_API_HOME/data-transfer-service-windows.zip" "$CP_API_SRV_STATIC_DIR"
+cp "$CP_API_HOME/data-transfer-service-linux.zip" "$CP_API_SRV_STATIC_DIR"
 
 # Add a deployment specific configuration to the "cloud data" application:
 # - API URL

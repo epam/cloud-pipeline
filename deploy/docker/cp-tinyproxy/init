@@ -151,13 +151,22 @@ if [ -z "$CP_TP_CLUSTER_RESOLVER" ]; then
     echo "Cluster resolver is NOT set by CP_TP_CLUSTER_RESOLVER and CP_PREF_CLUSTER_PROXIES_DNS_POST, defaulting to $CP_TP_CLUSTER_RESOLVER"
 fi
 
+CP_TP_NGINX_ACCESS_LOG="${CP_TP_NGINX_ACCESS_LOG:-false}"
+CP_TP_NGINX_ACCESS_LOG_DISABLED="access_log off;"
+if [ "$CP_TP_NGINX_ACCESS_LOG" == "true" ]; then
+    CP_TP_NGINX_ACCESS_LOG_DISABLED=""
+fi
+
+CP_TP_NGINX_LOG_DIR="${CP_TP_NGINX_LOG_DIR:-/opt/tinyproxy/logs/stream}"
+mkdir -p "$CP_TP_NGINX_LOG_DIR"
+
 if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ]; then
 
 # Add general nginx config
 cat > "$CP_TP_NGINX_CONFIG" <<EOF
 user nginx;
 worker_processes auto;
-error_log /opt/tinyproxy/nginx/logs/error.log;
+error_log $CP_TP_NGINX_LOG_DIR/error.log;
 pid /run/nginx.pid;
 
 include /usr/share/nginx/modules/*.conf;
@@ -167,6 +176,14 @@ events {
 }
 
 stream {
+    log_format basic '\$remote_addr [\$time_local] '
+                    '\$protocol \$status \$bytes_sent \$bytes_received '
+                    '\$session_time "\$upstream_addr" '
+                    '"\$upstream_bytes_sent" "\$upstream_bytes_received" "\$upstream_connect_time"';
+
+    access_log $CP_TP_NGINX_LOG_DIR/access.log basic;
+    $CP_TP_NGINX_ACCESS_LOG_DISABLED
+
     resolver $CP_TP_CLUSTER_RESOLVER;
     resolver_timeout 5s;
     include $CP_TP_NGINX_DNS_MAPS/*.conf;

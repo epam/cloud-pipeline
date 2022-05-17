@@ -18,6 +18,7 @@ import {SERVER, API_PATH} from '../../config';
 import defer from '../../utils/defer';
 import {observable, action, computed} from 'mobx';
 import {authorization} from './Authorization';
+import maintenanceCheck from './maintenance-check';
 
 class Remote {
   static defaultValue = {};
@@ -117,6 +118,7 @@ class Remote {
           }
           fetchOptions.headers = headers;
           const response = await fetch(`${prefix}${this.url}`, fetchOptions);
+          maintenanceCheck(response);
           this.responseError = !response.ok;
           this.responseStatus = response.status;
           this.responseStatusText = response.statusText;
@@ -148,6 +150,7 @@ class Remote {
       }
       fetchOptions.headers = headers;
       const response = await fetch(`${prefix}${this.url}`, fetchOptions);
+      maintenanceCheck(response);
       const data = this.constructor.isJson ? (await response.json()) : (await response.blob());
       this.update(data);
     } catch (e) {

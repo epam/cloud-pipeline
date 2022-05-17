@@ -150,7 +150,10 @@ def stacktracing(func, ctx, *args, **kwargs):
     except click.Abort:
         raise
     except Exception as runtime_error:
-        click.echo('Error: {}'.format(str(runtime_error)), err=True)
+        if sys.version_info >= (3, 0):
+            click.echo(u'Error: {}'.format(str(runtime_error)), err=True)
+        else:
+            click.echo(u'Error: {}'.format(unicode(runtime_error)), err=True)
         if trace:
             traceback.print_exc()
         sys.exit(1)
@@ -1126,28 +1129,54 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be moved. This file "
                                                         "should be tab delimited and consist of two columns: "
                                                         "relative path to a file and size")
-@click.option('-sl', '--symlinks', required=False, default="follow",
+@click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
-              help="Describe symlinks processing strategy for local sources. Possible values: "
-              "follow - follow symlinks (default); "
-              "skip - do not follow symlinks; "
-              "filter - follow symlinks but check for cyclic links")
+              help='Describe symlinks processing strategy for local sources. '
+                   'Allowed values: \n'
+                   '[follow] follows symlinks (default); \n'
+                   '[skip] does not follow symlinks; \n'
+                   '[filter] follows symlinks but checks for cyclic links.')
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to move a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
 @click.option('-nio', '--io-threads', type=int, required=False,
               help='The number of threads to be used for a single file io operations')
+@click.option('--on-unsafe-chars', required=False, default='skip',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS',
+              type=click.Choice(['fail', 'skip', 'replace', 'remove', 'allow']),
+              help='Configure how unsafe characters in file paths should be handled. '
+                   'By default only ascii characters are safe. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately; \n'
+                   '[skip] skips paths with unsafe characters (default); \n'
+                   '[replace] replaces unsafe characters in paths; \n'
+                   '[remove] removes unsafe characters from paths; \n'
+                   '[allow] allows unsafe characters in paths.')
+@click.option('--on-unsafe-chars-replacement', required=False, default='-',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS_REPLACEMENT',
+              help='Specify a string to replace unsafe characters with. '
+                   'The option has effect only if --unsafe-chars option is set to replace value.')
+@click.option('--on-failures', required=False, default='fail',
+              envvar='CP_CLI_TRANSFER_FAILURES',
+              type=click.Choice(['fail', 'fail-after', 'skip']),
+              help='Configure how singular file processing failures should affect overall command execution. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately (default); \n'
+                   '[fail-after] fails only after all files are processed; \n'
+                   '[skip] skips all failures.')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
 def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, verify_destination):
-    """ Moves a file or a folder from one datastorage to another one
-    or between the local filesystem and a datastorage (in both directions)
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                      verify_destination):
+    """
+    Moves files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, io_threads, clean=True, skip_existing=skip_existing,
-                             verify_destination=verify_destination)
+                             symlinks, threads, io_threads,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                             clean=True, skip_existing=skip_existing, verify_destination=verify_destination)
 
 
 @storage.command('cp')
@@ -1160,8 +1189,6 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-i', '--include', required=False, multiple=True,
               help='Include only files matching this pattern into processing')
 @click.option('-q', '--quiet', is_flag=True, help='Quiet mode')
-@click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
-                                                          'size matching source')
 @click.option('-t', '--tags', required=False, multiple=True, help="Set object tags during copy. Tags can be specified "
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
@@ -1169,28 +1196,56 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be copied. This file "
                                                         "should be tab delimited and consist of two columns: "
                                                         "relative path to a file and size")
-@click.option('-sl', '--symlinks', required=False, default="follow",
+@click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
-              help="Describe symlinks processing strategy for local sources. Possible values: "
-              "follow - follow symlinks (default); "
-              "skip - do not follow symlinks; "
-              "filter - follow symlinks but check for cyclic links")
+              help='Describe symlinks processing strategy for local sources. '
+                   'Allowed values: \n'
+                   '[follow] follows symlinks (default); \n'
+                   '[skip] does not follow symlinks; \n'
+                   '[filter] follows symlinks but checks for cyclic links.')
 @click.option('-n', '--threads', type=int, required=False,
               help='The number of threads that will work to perform operation. Allowed for folders only. '
                    'Use to copy a huge number of small files. Not supported for Windows OS. Progress bar is disabled')
 @click.option('-nio', '--io-threads', type=int, required=False,
               help='The number of threads to be used for a single file io operations')
+@click.option('--on-unsafe-chars', required=False, default='skip',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS',
+              type=click.Choice(['fail', 'skip', 'replace', 'remove', 'allow']),
+              help='Configure how unsafe characters in file paths should be handled. '
+                   'By default only ascii characters are safe. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately; \n'
+                   '[skip] skips paths with unsafe characters (default); \n'
+                   '[replace] replaces unsafe characters in paths; \n'
+                   '[remove] removes unsafe characters from paths; \n'
+                   '[allow] allows unsafe characters in paths.')
+@click.option('--on-unsafe-chars-replacement', required=False, default='-',
+              envvar='CP_CLI_TRANSFER_UNSAFE_CHARS_REPLACEMENT',
+              help='Specify a string to replace unsafe characters with. '
+                   'The option has effect only if --unsafe-chars option is set to replace value.')
+@click.option('--on-failures', required=False, default='fail',
+              envvar='CP_CLI_TRANSFER_FAILURES',
+              type=click.Choice(['fail', 'fail-after', 'skip']),
+              help='Configure how singular file processing failures should affect overall command execution. '
+                   'Allowed values: \n'
+                   '[fail] fails immediately (default); \n'
+                   '[fail-after] fails only after all files are processed; \n'
+                   '[skip] skips all failures.')
+@click.option('-s', '--skip-existing', is_flag=True, help='Skip files existing in destination, if they have '
+                                                          'size matching source')
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
-def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, verify_destination):
-    """ Copies files from one datastorage to another one
-    or between the local filesystem and a datastorage (in both directions)
+def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
+                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                      skip_existing, verify_destination):
+    """
+    Copies files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads, skip_existing=skip_existing,
-                             verify_destination=verify_destination)
+                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
+                             on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+                             clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
 
 
 @storage.command('du')

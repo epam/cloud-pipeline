@@ -12,6 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Building 'maintenance' page
+FROM node:14-alpine AS maintenance
+
+ENV CP_MAINTENANCE_PUBLIC_URL="/maintenance"
+
+WORKDIR /etc/maintenance
+
+COPY ./maintenance/ui/package*.json ./
+
+RUN npm ci
+
+COPY ./maintenance/ui .
+
+RUN npm run build
+
 FROM library/centos:7
 
 ENV PATH $PATH:/usr/local/openresty/bin:/usr/local/openresty/nginx/sbin:/etc/ssh-proxy/node-v6.11.3-linux-x64/bin/
@@ -88,6 +103,7 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
 ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
+COPY maintenance*.lua /etc/nginx/
 
 ## DAV auth page
 ADD dav-auth /etc/nginx/dav/webdav/auth-sso
@@ -105,6 +121,13 @@ ADD wetty /etc/ssh-proxy/wetty
 RUN cd /etc/ssh-proxy/wetty && \
     npm install && \
     cd /
+
+## Install maintenance page
+COPY --from=maintenance /etc/maintenance/build /etc/nginx/maintenance
+
+# Configure maintenance cron and refresh script
+COPY maintenance/scripts/* /etc/maintenance/
+RUN touch /var/log/maintenance.log
 
 ## Disable tls checks for wetty -> API
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0

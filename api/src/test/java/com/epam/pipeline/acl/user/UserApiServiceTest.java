@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -179,17 +179,17 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUserForAdmin() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID);
+        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID, false);
 
-        assertThat(userApiService.loadUser(ID)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUserForUserReader() {
-        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID);
+        doReturn(pipelineUser).when(mockUserManager).loadUserById(ID, false);
 
-        assertThat(userApiService.loadUser(ID)).isEqualTo(pipelineUser);
+        assertThat(userApiService.loadUser(ID, false)).isEqualTo(pipelineUser);
     }
 
     @Test
@@ -197,7 +197,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadUserForNotUserReader() {
         doReturn(pipelineUser).when(mockUserManager).loadUserById(ID);
 
-        assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID));
+        assertThrows(AccessDeniedException.class, () -> userApiService.loadUser(ID, false));
     }
 
     @Test
@@ -261,17 +261,17 @@ public class UserApiServiceTest extends AbstractAclTest {
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadUsersForAdmin() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers();
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
 
-        assertThat(userApiService.loadUsers()).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
     }
 
     @Test
     @WithMockUser(roles = USER_READER_ROLE)
     public void shouldLoadUsersForUserReader() {
-        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers();
+        doReturn(pipelineUserList).when(mockUserManager).loadAllUsers(false);
 
-        assertThat(userApiService.loadUsers()).isEqualTo(pipelineUserList);
+        assertThat(userApiService.loadUsers(false)).isEqualTo(pipelineUserList);
     }
 
     @Test
@@ -279,7 +279,7 @@ public class UserApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadUsersForNotUserReader() {
         doReturn(pipelineUserList).when(mockUserManager).loadAllUsers();
 
-        assertThrows(AccessDeniedException.class, () -> userApiService.loadUsers());
+        assertThrows(AccessDeniedException.class, () -> userApiService.loadUsers(false));
     }
 
     @Test

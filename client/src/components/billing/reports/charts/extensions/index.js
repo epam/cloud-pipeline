@@ -15,6 +15,7 @@
  */
 
 import SummaryChart from './summary-chart';
+import './previous-line-bar';
 import './quota-bar';
 import * as BarchartDataLabelPlugin from './barchart-data-label-plugin';
 import * as ChartClickPlugin from './chart-click-plugin';

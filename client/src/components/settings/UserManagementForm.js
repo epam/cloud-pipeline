@@ -24,9 +24,11 @@ import SubSettings from './sub-settings';
 import UsersManagement from './user-management/users';
 import GroupsManagement from './user-management/groups';
 import UsageReport from './user-management/usage-report';
+import BillingQuotasList from '../../models/billing/quotas/list';
 
 const roles = new Roles();
-const usersWithActivity = new Users(true);
+const usersWithActivity = new Users(true, true);
+const quotas = new BillingQuotasList();
 
 function UserManagementForm (
   {
@@ -51,7 +53,11 @@ function UserManagementForm (
     );
   }
   return (
-    <Provider roles={roles} usersWithActivity={usersWithActivity}>
+    <Provider
+      roles={roles}
+      usersWithActivity={usersWithActivity}
+      quotas={quotas}
+    >
       <SubSettings
         sections={[
           {
