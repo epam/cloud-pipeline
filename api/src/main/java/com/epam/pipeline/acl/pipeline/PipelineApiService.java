@@ -172,7 +172,7 @@ public class PipelineApiService {
 
     @PreAuthorize(PIPELINE_ID_READ)
     public GitTagEntry loadRevision(Long id, String version) throws GitClientException {
-        return gitManager.loadRevision(pipelineManager.load(id), version);
+        return pipelineRepositoryService.loadRevision(pipelineManager.load(id), version);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)

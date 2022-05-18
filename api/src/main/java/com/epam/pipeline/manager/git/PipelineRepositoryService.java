@@ -33,6 +33,7 @@ import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
@@ -156,7 +157,16 @@ public class PipelineRepositoryService {
 
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version, final boolean recursive) {
-        return providerService.getRepositoryContents(pipeline, path, version, recursive);
+        return getRepositoryContents(pipeline, path, version, recursive, false);
+    }
+
+    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
+                                                          final String version, final boolean recursive,
+                                                          final boolean showHiddenFiles) {
+        return ListUtils.emptyIfNull(providerService
+                .getRepositoryContents(pipeline, path, getRevisionName(version), recursive)).stream()
+                .filter(entry -> showHiddenFiles || !entry.getName().startsWith(Constants.DOT))
+                .collect(Collectors.toList());
     }
 
     private byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,

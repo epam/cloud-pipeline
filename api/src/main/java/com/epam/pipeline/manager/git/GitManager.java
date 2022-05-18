@@ -214,17 +214,9 @@ public class GitManager {
      */
     public List<GitRepositoryEntry> getPipelineSources(Long id, String version, String path, boolean recursive)
             throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        try {
-            pipelineRepositoryService.loadRevision(pipeline, version);
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IllegalArgumentException(e.getMessage());
-        }
-        return pipelineRepositoryService
-                .getRepositoryContents(pipeline, path, getRevisionName(version), recursive).stream()
-                .filter(e -> !e.getName().startsWith("."))
-                .collect(Collectors.toList());
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+
+        return pipelineRepositoryService.getRepositoryContents(pipeline, path, version, recursive);
     }
 
     public List<GitRepositoryEntry> getPipelineSources(Long id, String version)
@@ -254,16 +246,11 @@ public class GitManager {
     }
 
     private GitRepositoryEntry getConfigurationFileEntry(Long id, String version) throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        try {
-            pipelineRepositoryService.loadRevision(pipeline, version);
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+
         GitRepositoryEntry configurationFileEntry = null;
         List<GitRepositoryEntry> rootEntries = pipelineRepositoryService
-                .getRepositoryContents(pipeline, "", getRevisionName(version), false);
+                .getRepositoryContents(pipeline, "", version, false);
         for (GitRepositoryEntry rootEntry : rootEntries) {
             if (rootEntry.getName().equalsIgnoreCase(CONFIG_FILE_NAME)) {
                 configurationFileEntry = rootEntry;
@@ -721,17 +708,9 @@ public class GitManager {
      */
     public List<GitRepositoryEntry> getPipelineDocs(Long id, String version)
             throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        try {
-            pipelineRepositoryService.loadRevision(pipeline, version);
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IllegalArgumentException(e.getMessage());
-        }
-        return pipelineRepositoryService
-                .getRepositoryContents(pipeline, docsDirectory, getRevisionName(version), false).stream()
-                .filter(e -> !e.getName().startsWith("."))
-                .collect(Collectors.toList());
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+
+        return pipelineRepositoryService.getRepositoryContents(pipeline, docsDirectory, version, false);
     }
 
     public File getConfigFile(Pipeline pipeline, String version) {
@@ -888,17 +867,9 @@ public class GitManager {
      */
     public List<GitRepositoryEntry> getRepositoryContents(Long id, String version, String path)
             throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        try {
-            pipelineRepositoryService.loadRevision(pipeline, version);
-        } catch (GitClientException e) {
-            LOGGER.error(e.getMessage(), e);
-            throw new IllegalArgumentException(e.getMessage());
-        }
+        final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
 
-        return pipelineRepositoryService.getRepositoryContents(pipeline, path, getRevisionName(version), true).stream()
-                .filter(e -> !e.getName().startsWith("."))
-                .collect(Collectors.toList());
+        return pipelineRepositoryService.getRepositoryContents(pipeline, path, version, true);
     }
 
     public GitRepositoryEntry addHookToPipelineRepository(Long id) throws GitClientException {

@@ -45,6 +45,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -57,6 +59,8 @@ public class BitbucketService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String INITIAL_COMMIT = "Initial commit";
+    private static final String BLOB = "blob";
+    private static final String TREE = "tree";
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
@@ -178,9 +182,18 @@ public class BitbucketService implements GitClientService {
             nextPage = collectValues(client.getFiles(path, version, nextPage), values);
         }
 
-        return values.stream()
-                .map(fileName -> buildGitRepositoryEntry(path, fileName))
+        final List<GitRepositoryEntry> blobs = values.stream()
+                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
+                .map(value -> buildGitRepositoryEntry(path, value, BLOB))
                 .collect(Collectors.toList());
+        final List<GitRepositoryEntry> trees = values.stream()
+                .map(this::trimFileName)
+                .filter(StringUtils::isNotBlank)
+                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
+                .distinct()
+                .map(folderPath -> buildGitRepositoryEntry(path, folderPath, TREE))
+                .collect(Collectors.toList());
+        return new ArrayList<>(CollectionUtils.union(blobs, trees));
     }
 
     private BitbucketClient getClient(final String repositoryPath, final String token) {
@@ -213,11 +226,14 @@ public class BitbucketService implements GitClientService {
         return tag;
     }
 
-    private GitRepositoryEntry buildGitRepositoryEntry(final String path, final String fileName) {
+    private GitRepositoryEntry buildGitRepositoryEntry(final String path, final String relativePath,
+                                                       final String type) {
         final GitRepositoryEntry gitRepositoryEntry = new GitRepositoryEntry();
-        gitRepositoryEntry.setName(fileName);
-        gitRepositoryEntry.setPath(String.join(ProviderUtils.DELIMITER,
-                ProviderUtils.withoutTrailingDelimiter(path), fileName));
+        gitRepositoryEntry.setName(Paths.get(relativePath).getFileName().toString());
+        gitRepositoryEntry.setType(type);
+        gitRepositoryEntry.setPath(StringUtils.isNotBlank(path) && !ProviderUtils.DELIMITER.equals(path)
+                ? String.join(ProviderUtils.DELIMITER, ProviderUtils.withoutTrailingDelimiter(path), relativePath)
+                : relativePath);
         return gitRepositoryEntry;
     }
 
@@ -226,5 +242,11 @@ public class BitbucketService implements GitClientService {
             values.addAll(results.getValues());
         }
         return results.getNextPageStart();
+    }
+
+    private String trimFileName(final String filePath) {
+        return Optional.ofNullable(Paths.get(filePath).getParent())
+                .map(Path::toString)
+                .orElse(null);
     }
 }

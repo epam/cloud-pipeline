@@ -85,7 +85,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadRevisionForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
+        doReturn(gitTagEntry).when(mockPipelineRepositoryService).loadRevision(pipeline, TEST_STRING);
 
         assertThat(pipelineApiService.loadRevision(ID, TEST_STRING)).isEqualTo(gitTagEntry);
     }
@@ -95,7 +95,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldLoadRevisionWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.READ);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
+        doReturn(gitTagEntry).when(mockPipelineRepositoryService).loadRevision(pipeline, TEST_STRING);
 
         assertThat(pipelineApiService.loadRevision(ID, TEST_STRING)).isEqualTo(gitTagEntry);
     }
