@@ -886,6 +886,8 @@ function api_setup_base_preferences {
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
     api_set_preference "launch.cmd.template" "${CP_PREF_LAUNCH_CMD_TEMPLATE}" "true"
     api_set_preference "launch.run.visibility" "${CP_PREF_LAUNCH_RUN_VISIBILITY:-INHERIT}" "true"
+    api_set_preference "launch.kube.pod.search.path" "${CP_PREF_LAUNCH_KUBE_POD_SEARCH_PATH:-"pods.default.svc.cluster.local"}" "true"
+    api_set_preference "launch.kube.pod.domains.enabled" "${CP_PREF_LAUNCH_KUBE_POD_DOMAINS_ENABLED:-"true"}" "true"
 
     ## Docker
     api_set_preference "security.tools.jwt.token.expiration" "${CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION:-3600}" "false"
