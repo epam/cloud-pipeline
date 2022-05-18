@@ -108,7 +108,7 @@ const defaultSettings = {
   sessionInfoPath: undefined,
   userStoragesAttribute: undefined,
   applicationsMode: 'folder', //one of "docker", "folder",
-  applicationsSourceMode: 'folder', //one of "docker", "folder", "folder+docker"
+  // applicationsSourceMode: 'docker', //one of "docker", "folder", "folder+docker"
   serviceUser: "PIPE_ADMIN",
   folderApplicationLaunchLinkFormat: '/[user]/[version]/[app]',
   folderApplicationAdvancedUserRoleName: ['ROLE_ADVANCED_USER'],

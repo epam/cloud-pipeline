@@ -148,19 +148,19 @@ function useLaunch (application, user, options) {
   };
 }
 
-function useStopLaunch (application, user) {
+function useStopLaunch (applicationId, userName) {
   useEffect(() => {
-    if (application && user) {
+    if (applicationId && userName) {
       return () => {
-        console.log('Stopping application', application.name, `(${user?.userName})`);
-        stopApplication(application, user)
+        console.log(`Stopping application #${applicationId}`, `(${userName || 'unknown user'})`);
+        stopApplication(applicationId, userName)
           .then(() => {
-            console.log('Application stopped', application.name, `(${user?.userName})`);
+            console.log(`Application stopped #${applicationId}`, `(${userName || 'unknown user'})`);
           })
           .catch(console.error)
       };
     }
-  }, [application, user]);
+  }, [applicationId, userName]);
 }
 
 export default function Application ({id: applicationId, name: appName, launchOptions, goBack}) {
@@ -194,7 +194,7 @@ export default function Application ({id: applicationId, name: appName, launchOp
     }
   }, [stopJobs, stopRunsError, reLaunch, setStopping]);
   const settings = useContext(SettingsContext);
-  useStopLaunch(application, user);
+  useStopLaunch(applicationId, user?.userName);
   if (!application) {
     return (
       <div className="content error">

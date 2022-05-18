@@ -106,11 +106,11 @@ function App({launch, location}) {
         className="apps"
       >
         {
-          applications.map((application) => (
+          applications.map((anApp) => (
             <ApplicationCard
-              key={application.id}
-              application={application}
-              onClick={(extended) => onSelectApplication(application.id, extended)}
+              key={anApp.id}
+              application={anApp}
+              onClick={(extended) => onSelectApplication(anApp.id, extended)}
               options={options}
             />
           ))

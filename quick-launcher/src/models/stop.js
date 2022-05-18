@@ -1,12 +1,12 @@
 import launches from './cloud-pipeline-api/active-launches';
 import stopRun from './cloud-pipeline-api/stop-run';
 
-export default function stopApplication(application, user) {
+export default function stopApplication(applicationId, user) {
   if (!CPAPI) {
     return Promise.resolve();
   } else {
     // Cloud Pipeline ID:
-    const runIdKey = `${application.id}-${user?.userName}`;
+    const runIdKey = `${applicationId}-${user || ''}`;
     if (launches.has(runIdKey)) {
       if (TOOLS) {
         launches.delete(runIdKey);

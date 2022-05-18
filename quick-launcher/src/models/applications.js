@@ -118,7 +118,6 @@ async function fetchTools(opts = {}) {
     ...dockerTools,
     ...folderTools,
   ];
-  console.log(tools);
   !silent && console.log('apps', tools);
   const uniqueTools = new Set(
     tools
