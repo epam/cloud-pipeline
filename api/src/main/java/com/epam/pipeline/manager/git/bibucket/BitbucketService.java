@@ -26,10 +26,9 @@ import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -40,13 +39,15 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -105,22 +106,24 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public List<Revision> getTags(final Pipeline pipeline) {
-        final BitbucketClient client = getClient(pipeline.getRepository(),
-                pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
 
-        final BitbucketTags tags = client.getTags();
-        return Optional.ofNullable(tags)
-                .map(values -> ListUtils.emptyIfNull(values.getValues()).stream()
-                        .map(tag -> fillCommitInfo(tag, client))
-                        .map(mapper::tagToRevision)
-                        .collect(Collectors.toList()))
-                .orElse(Collections.emptyList());
+        final List<BitbucketTag> values = new ArrayList<>();
+        String nextPage = collectValues(client.getTags(null), values);
+        while (StringUtils.isNotBlank(nextPage)) {
+            nextPage = collectValues(client.getTags(nextPage), values);
+        }
+
+        return values.stream()
+                .map(tag -> fillCommitInfo(tag, client))
+                .map(mapper::tagToRevision)
+                .collect(Collectors.toList());
     }
 
     @Override
     public Revision getLastRevision(final Pipeline pipeline) {
-        final BitbucketCommits commits = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
-                .getCommits();
+        final BitbucketPagedResponse<BitbucketCommit> commits = getClient(pipeline.getRepository(),
+                pipeline.getRepositoryToken()).getCommits();
         return Optional.ofNullable(commits)
                 .flatMap(value -> ListUtils.emptyIfNull(value.getValues()).stream()
                         .findFirst()
@@ -167,11 +170,17 @@ public class BitbucketService implements GitClientService {
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version, final boolean recursive) {
-        return Optional.of(getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).getFiles(path, version))
-                .map(files -> ListUtils.emptyIfNull(files.getValues()).stream()
-                        .map(fileName -> buildGitRepositoryEntry(path, fileName))
-                        .collect(Collectors.toList()))
-                .orElse(Collections.emptyList());
+        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+
+        final List<String> values = new ArrayList<>();
+        String nextPage = collectValues(client.getFiles(path, version, null), values);
+        while (StringUtils.isNotBlank(nextPage)) {
+            nextPage = collectValues(client.getFiles(path, version, nextPage), values);
+        }
+
+        return values.stream()
+                .map(fileName -> buildGitRepositoryEntry(path, fileName))
+                .collect(Collectors.toList());
     }
 
     private BitbucketClient getClient(final String repositoryPath, final String token) {
@@ -210,5 +219,12 @@ public class BitbucketService implements GitClientService {
         gitRepositoryEntry.setPath(String.join(ProviderUtils.DELIMITER,
                 ProviderUtils.withoutTrailingDelimiter(path), fileName));
         return gitRepositoryEntry;
+    }
+
+    private <T> String collectValues(final BitbucketPagedResponse<T> results, final List<T> values) {
+        if (Objects.nonNull(results) && CollectionUtils.isNotEmpty(results.getValues())) {
+            values.addAll(results.getValues());
+        }
+        return results.getNextPageStart();
     }
 }

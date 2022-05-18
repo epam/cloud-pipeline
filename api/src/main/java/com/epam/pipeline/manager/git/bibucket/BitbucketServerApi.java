@@ -18,11 +18,9 @@ package com.epam.pipeline.manager.git.bibucket;
 
 import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketFiles;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
 import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -46,6 +44,8 @@ public interface BitbucketServerApi {
     String COMMIT_ID = "commitId";
     String USERNAME = "username";
     String TAG_NAME = "tagName";
+    String LIMIT = "limit";
+    String START = "start";
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}")
     Call<BitbucketRepository> getRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
@@ -72,10 +72,13 @@ public interface BitbucketServerApi {
                                   @Part MultipartBody.Part message);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/tags")
-    Call<BitbucketTags> getTags(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
+    Call<BitbucketPagedResponse<BitbucketTag>> getTags(@Path(PROJECT) String project,
+                                                       @Path(REPOSITORY) String repository,
+                                                       @Query(LIMIT) Integer limit, @Query(START) String start);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits")
-    Call<BitbucketCommits> getCommits(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
+    Call<BitbucketPagedResponse<BitbucketCommit>> getCommits(@Path(PROJECT) String project,
+                                                             @Path(REPOSITORY) String repository);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits/{commitId}")
     Call<BitbucketCommit> getCommit(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
@@ -86,6 +89,8 @@ public interface BitbucketServerApi {
                               @Path(TAG_NAME) String tagName);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/files/{path}")
-    Call<BitbucketFiles> getFiles(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
-                                  @Path(value = PATH, encoded = true) String path, @Query(AT) String reference);
+    Call<BitbucketPagedResponse<String>> getFiles(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                                  @Path(value = PATH, encoded = true) String path,
+                                                  @Query(AT) String reference, @Query(LIMIT) Integer limit,
+                                                  @Query(START) String start);
 }

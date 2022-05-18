@@ -21,11 +21,11 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class BitbucketFiles {
-    private List<String> values;
+public class BitbucketPagedResponse<T> {
+    private List<T> values;
+    private String nextPageStart;
     private Long size;
     private boolean isLastPage;
     private Long start;
     private Long limit;
-    private String nextPageStart;
 }
