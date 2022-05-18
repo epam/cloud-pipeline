@@ -48,7 +48,6 @@ function fetchWithTimeout (url, timeoutMS = 2000) {
     };
     request.open('GET', url);
     request.timeout = timeoutMS;
-    request.setRequestHeader('Content-Type', 'application/json');
     request.ontimeout = function () {
       reject(new Error('Timeout'));
     };
