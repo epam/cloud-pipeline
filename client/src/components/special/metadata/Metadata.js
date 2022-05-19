@@ -1035,7 +1035,8 @@ export default class Metadata extends localization.LocalizedReactComponent {
           className={
             classNames(
               'cp-metadata-item-row',
-              'value'
+              'value',
+              'editable'
             )
           }
         >
