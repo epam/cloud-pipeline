@@ -818,11 +818,12 @@ class HcsFileParser:
             x_coord_padding = int(round((well_radius + x_coords[0]) / field_cell_width)) + radius_rounding_padding
             y_coord_padding = int(round((well_radius + y_coords[0]) / field_cell_width)) + radius_rounding_padding
         else:
-            well_viewer_radius = None
-            x_coord_padding = 0
-            y_coord_padding = 0
-            well_view_width = len(x_coords)
-            well_view_height = len(y_coords)
+            # This branch is covering the case, when only a single field is presented inside the well.
+            # In that case there is not enough info to build the well's grid,
+            # so some 'static' grid with the field at the well's center is used
+            well_viewer_radius = 1
+            x_coord_padding = y_coord_padding = 1
+            well_view_width = well_view_height = 3
         to_ome_mapping = dict()
         for field in fields_list:
             field_x_coord = x_coords.index(field.x) + 1 + x_coord_padding
