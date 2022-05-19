@@ -68,12 +68,13 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
         return this;
     }
 
-    public CreateNfsMountPopupAO setNfsMount(final String nfsMount) {
+    public CreateNfsMountPopupAO setNfsMount(String nfsMount) {
         final String pathInput = "edit-storage-storage-path-input";
         final String fsMountValue = $(byId(pathInput)).parent().find(By.xpath("div//div//div[2]")).getText();
         final String fsMount = fsMountValue.startsWith(": ")
                 ? fsMountValue.replace(": ", "")
                 : fsMountValue;
+        nfsMount.replace(":/", "");
         if (nfsMount.equalsIgnoreCase(fsMount)) {
             return this;
         }

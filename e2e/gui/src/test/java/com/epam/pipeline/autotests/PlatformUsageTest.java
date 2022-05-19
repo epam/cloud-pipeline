@@ -31,7 +31,6 @@ import static java.time.format.DateTimeFormatter.ofPattern;
 public class PlatformUsageTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
 
     static final String showOnlineUsers = "Show online users";
-    static final String showOfflineUsers = "Show offline users";
 
     @Test
     @TestCase(value = {"2433"})
@@ -46,7 +45,7 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
         usersTabAO
                 .searchUserEntry(user.login)
                 .ensureNotVisible(STATUS);
-        usersTabAO.checkValueIsNotInDropDown(SHOW_USERS, showOnlineUsers, showOfflineUsers);
+        usersTabAO.checkValueIsNotInDropDown(SHOW_USERS, showOnlineUsers);
         logout();
         loginAs(admin);
         navigationMenu()
@@ -57,11 +56,9 @@ public class PlatformUsageTest extends AbstractBfxPipelineTest implements Naviga
                 .searchUserEntry(user.login)
                 .validateUserStatus("offline")
                 .validateStatusTooltipText(lastVisited)
-                .selectValue(SHOW_USERS, showOfflineUsers);
+                .selectValue(SHOW_USERS, showOnlineUsers);
         usersTabAO
-                .checkUserExist(user.login)
-                .clear(SEARCH);
-        usersTabAO.selectValue(SHOW_USERS, showOnlineUsers);
-        usersTabAO.checkUserExist(admin.login);
+                .checkUserExist(admin.login)
+                .checkUserNotExist(user.login);
     }
 }
