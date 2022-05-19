@@ -14,15 +14,14 @@
 
 COMMAND=$1
 
-if [ ${COMMAND} == "install" ];
-then
+if [ ${COMMAND} == "install" ]; then
   echo "Installing data transfer service..."
   echo "Checking required environment variables..."
-  if [ -z $API] || [ -z $API_TOKEN] || [ -z $DISTRIBUTION_URL] || [ -z $DTS_NAME] || [ -z $DTS_DIR ] || [ -z API_PUBLIC_KEY];
-  then
+
+  if [ -z $API ] || [ -z $API_TOKEN ] || [ -z $DISTRIBUTION_URL ] || [ -z $DTS_NAME ] || [ -z $DTS_DIR ] || [ -z API_PUBLIC_KEY ]; then
     echo "Please set all the required environment variables and restart the installation: API, API_TOKEN, DISTRIBUTION_URL, DTS_NAME, DTS_DIR and API_PUBLIC_KEY."
     exit 1
-  done
+  fi
 
   echo "Changing working directory..."
   cd "${DTS_DIR}"
@@ -38,21 +37,21 @@ export JAVA_HOME="$DTS_DIR/app/jre"
 export PIPE_DIR="$DTS_DIR/pipe"
 export DTS_LOGS_DIR="$DTS_DIR/logs"
 export DTS_LAUNCHER_LOG_PATH="$DTS_DIR/logs/launcher.log"
-export DTS_RESTART_DELAY_SECONDS = "10"
-export DTS_FINISH_DELAY_SECONDS = "10"
-export DTS_RESTART_INTERVAL = "PT1M"
+export DTS_RESTART_DELAY_SECONDS="10"
+export DTS_FINISH_DELAY_SECONDS="10"
+export DTS_RESTART_INTERVAL="PT1M"
 export DTS_LAUNCHER_URL="$DISTRIBUTION_URL/deploy_dts.sh"
 export DTS_LAUNCHER_PATH="$DTS_DIR/deploy_dts.sh"
 export DTS_DISTRIBUTION_URL="$DISTRIBUTION_URL/data-transfer-service-linux.zip"
 export DTS_DISTRIBUTION_PATH="$DTS_DIR/data-transfer-service-linux.zip"
-export PIPE_DISTRIBUTION_URL="$DISTRIBUTION_URL/pipe.zip"
-export PIPE_DISTRIBUTION_PATH="$DTS_DIR/pipe.zip"
+export PIPE_DISTRIBUTION_URL="$DISTRIBUTION_URL/pipe"
+export PIPE_DISTRIBUTION_PATH="$DTS_DIR/pipe"
 export CP_API_URL="$API"
 export CP_API_JWT_TOKEN="$API_TOKEN"
 export CP_API_JWT_KEY_PUBLIC="$API_PUBLIC_KEY"
 export DTS_LOCAL_NAME="$DTS_NAME"
-export DTS_IMPERSONATION_ENABLED = "false"
-export DTS_PIPE_EXECUTABLE="$DTS_DIR/pipe/pipe/pipe.exe"
+export DTS_IMPERSONATION_ENABLED="false"
+export DTS_PIPE_EXECUTABLE="$DTS_DIR/pipe/pipe"
 EOF
 
   echo "Loading environment..."
@@ -61,7 +60,7 @@ EOF
   echo "Creating scheduled task if it doesn't exist..."
   #TODO: setup CRON
 
-done
+fi
 
 echo "Changing working directory..."
 cd "$DTS_DIR"
@@ -74,7 +73,7 @@ if [ ! -f ./dts_env.sh ];
 then
   echo "Environment script doesn't exist. Exiting..."
   exit 1
-done
+fi
 
 echo "Loading environment..."
 source ./dts_env.sh
@@ -85,14 +84,14 @@ mkdir -p "$DTS_LOGS_DIR"
 echo "Stopping startup logs capturing..."
 echo "Starting logs capturing..."
 
-while [ true ];
-then
+while [ true ]; do
   echo "Starting cycle..."
   echo "Stopping existing data transfer service processes..."
-  processes=$(ps aux | grep 'data-transfer-service' | awk '{print $2}')
+  processes=$(ps aux | grep 'data-transfer-service' | grep -v grep | awk '{print $2}')
   for i in "${processes[@]}"
   do
      echo "Stopping existing data transfer service process #$i..."
+     kill -9 $i
      echo "Waiting for $DTS_FINISH_DELAY_SECONDS seconds before proceeding..."
      sleep "$DTS_FINISH_DELAY_SECONDS"
   done
@@ -104,13 +103,10 @@ then
   rm -rf "$APP_HOME"
 
   echo "Downloading data transfer service distribution..."
-  wget "$DTS_DISTRIBUTION_URL" -O "$DTS_DISTRIBUTION_PATH"
+  wget "$DTS_DISTRIBUTION_URL" -O "$DTS_DISTRIBUTION_PATH" --no-check-certificate -q
 
   echo "Unpacking data transfer service distribution..."
-  tar -xvf "$DTS_DISTRIBUTION_PATH" -C "$APP_HOME"
-
-  echo "Unpacking data transfer service distribution..."
-  tar -xvf "$DTS_DISTRIBUTION_PATH" -C "$APP_HOME"
+  unzip -qq "$DTS_DISTRIBUTION_PATH" -d "$APP_HOME"
 
   echo "Removing existing pipe distribution..."
   rm -rf "$PIPE_DISTRIBUTION_PATH"
@@ -119,19 +115,19 @@ then
   rm -rf "$PIPE_DIR"
 
   echo "Downloading pipe distribution..."
-  wget "$PIPE_DISTRIBUTION_URL" -O "$PIPE_DISTRIBUTION_PATH"
+  wget "$PIPE_DISTRIBUTION_URL" -O "$PIPE_DISTRIBUTION_PATH" --no-check-certificate -q
 
-  echo "Unpacking pipe distribution..."
-  tar -xvf "$PIPE_DISTRIBUTION_PATH" -C "$PIPE_DIR"
+  echo "Enabling pipe distribution..."
+  chmod +x "$PIPE_DISTRIBUTION_PATH"
 
-  echo "Launching data transfer service..." & bash "$APP_HOME/bin/dts.bat" >$null 2>&1
+  echo "Launching data transfer service..." & bash "$APP_HOME/bin/dts" 1>/dev/null 2> dts.stderr.log
   echo "Data transfer service has exited."
 
   echo "Removing existing temporary data transfer service launcher..."
   rm -rf "$DTS_LAUNCHER_PATH.new"
 
   echo "Downloading data transfer service launcher..."
-  wget "$DTS_LAUNCHER_URL" -O "$DTS_LAUNCHER_PATH.new")
+  wget "$DTS_LAUNCHER_URL" -O "$DTS_LAUNCHER_PATH.new" --no-check-certificate -q
 
   echo "Replacing existing data transfer service launcher..."
   mv -f "$DTS_LAUNCHER_PATH.new" "$DTS_LAUNCHER_PATH"

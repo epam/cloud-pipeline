@@ -18,8 +18,8 @@ then
   exit 1
 fi
 
-export DISTRIBUTION_URL=${API%"$/restapi/"}
-export DTS_DIR=/opt/DTS/
+export DISTRIBUTION_URL=${API%"/restapi/"}
+export DTS_DIR=/opt/DTS
 export DTS_NAME=$(hostname)
 
 mkdir -p "${DTS_DIR}"
@@ -28,9 +28,9 @@ mkdir -p "${DTS_DIR}/logs"
 INSTALLER_LOG="${DTS_DIR}/logs/installer.log"
 
 echo "Installing Data Transfer Service on $DTS_NAME host..." > "${INSTALLER_LOG}"
-wget "${DISTRIBUTION_URL}/DeployDts.ps1" -O "${DTS_DIR}/deploy_dts.sh"
+wget "${DISTRIBUTION_URL}/deploy_dts.sh" -O "${DTS_DIR}/deploy_dts.sh" --no-check-certificate -q
 
-bash "${DTS_DIR}/deploy_dts.sh" install
+bash "${DTS_DIR}/deploy_dts.sh" install &
 
 echo "Waiting for Data Transfer Service to become ready on $DTS_NAME host..."
 
@@ -48,4 +48,4 @@ then
   echo "Data Transfer Service $DTS_NAME is ready after $duration seconds"
 else
   echo "Data Transfer Service $DTS_NAME is not ready after $duration seconds"
-done
+fi
