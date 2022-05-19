@@ -1346,6 +1346,16 @@ export default class Metadata extends localization.LocalizedReactComponent {
             }
           </Select>
         );
+      } else if (SpecialMetadataValues[key]) {
+        const Component = SpecialMetadataValues[key];
+        valueItem = (
+          <Component
+            onChange={value => onChange('value')({target: {value}})}
+            value={this.state.addKey.value}
+            size="default"
+            style={{minHeight: '28px', width: '100%'}}
+          />
+        );
       } else {
         valueItem = (
           <Input

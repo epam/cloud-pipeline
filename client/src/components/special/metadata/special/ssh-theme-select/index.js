@@ -27,7 +27,8 @@ function SshThemeSelect ({
   value,
   onChange,
   disabled,
-  style
+  style,
+  size = 'small'
 }) {
   const handleChange = value => {
     onChange && onChange(value);
@@ -36,7 +37,7 @@ function SshThemeSelect ({
     <Select
       onChange={handleChange}
       value={value}
-      size="small"
+      size={size}
       disabled={disabled}
       style={style}
     >
@@ -58,7 +59,8 @@ SshThemeSelect.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,
-  style: PropTypes.object
+  style: PropTypes.object,
+  size: PropTypes.oneOf(['small', 'large', 'default'])
 };
 
 export {sshThemesList};

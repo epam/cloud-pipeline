@@ -35,10 +35,6 @@ import {ThemesPreferenceModes, ThemesPreferenceName} from '../../../themes';
 import {sshThemesList} from '../../special/metadata/special/ssh-theme-select';
 import styles from './PreferenceGroup.css';
 
-const predefinedSelectValues = {
-  'ui.ssh.theme': sshThemesList
-};
-
 const formatJson = (string, presentation = true, catchError = true) => {
   if (!string) {
     return string;
@@ -308,8 +304,7 @@ class PreferenceInput extends React.Component {
         </div>
       );
     }
-    if (predefinedSelectValues[this.props.value.name] &&
-      typeof predefinedSelectValues[this.props.value.name] === 'object') {
+    if (value.name === 'ui.ssh.theme') {
       return (
         <Select
           value={this.state.value}
@@ -317,7 +312,7 @@ class PreferenceInput extends React.Component {
           disabled={this.props.disabled}
           size="small"
         >
-          {Object.entries(predefinedSelectValues[this.props.value.name])
+          {Object.entries(sshThemesList)
             .map(([value, text]) => (
               <Select.Option
                 key={value}
