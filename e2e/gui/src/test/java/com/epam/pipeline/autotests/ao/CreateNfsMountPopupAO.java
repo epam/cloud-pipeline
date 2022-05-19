@@ -74,7 +74,6 @@ public class CreateNfsMountPopupAO extends StorageContentAO.AbstractEditStorageP
         final String fsMount = fsMountValue.startsWith(": ")
                 ? fsMountValue.replace(": ", "")
                 : fsMountValue;
-        nfsMount.replace(":/", "");
         if (nfsMount.equalsIgnoreCase(fsMount)) {
             return this;
         }
