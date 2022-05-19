@@ -48,6 +48,7 @@ import static com.epam.pipeline.autotests.utils.PipelineSelectors.buttonByIconCl
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static com.epam.pipeline.autotests.utils.Utils.*;
 import static java.lang.String.format;
+import static java.lang.String.join;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
@@ -740,6 +741,36 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             .has(text(format("%s- blocked", username)));
                 }
 
+                public UserEntry isQuotasExceeded() {
+                    entry.find(byText("Billing quotas exceeded")).shouldBe(exist);
+                    return this;
+                }
+
+                public UserEntry isNotQuotasExceeded() {
+                    entry.find(byText("Billing quotas exceeded")).shouldNotBe(exist);
+                    return this;
+                }
+
+                public UserEntry checkQuotasExceededWarning(String ... messages) {
+                    final List<String> list = exceededUserQuotas();
+                    Arrays.stream(messages).forEach(m -> assertTrue(list.contains(m),
+                            String.format("Message %s isn't found in '%s'", m, list)));
+                    return this;
+                }
+
+                private List<String> exceededUserQuotas() {
+                    entry.find(byText("Billing quotas exceeded")).hover();
+                    sleep(1, SECONDS);
+                    return $$(byClassName("uota-info__quota-info"))
+                                .stream()
+                                .map(el -> format("%s %s %s",
+                                     join(" ", el.$(byClassName("uota-info__description")).$$("span").texts()),
+                                     el.$(byClassName("uota-info__quota-action-title")).text(),
+                                     join("; ", el.$$(byClassName("uota-info__quota-action")).texts())
+                                        .replaceAll("%", "% ")))
+                                .collect(toList());
+                }
+
                 public class EditUserPopup extends PopupAO<EditUserPopup, UsersTabAO> implements AccessObject<EditUserPopup> {
                     private final SelenideElement element = context().find(byText("Add role or group:"))
                             .closest(".ant-row-flex").find(By.className("ant-select-allow-clear"));
@@ -1236,7 +1267,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             String[] prefValue = new String[2];
             List<String> list = context().$(byClassName("CodeMirror-code"))
                     .findAll(byClassName("CodeMirror-line")).texts();
-            prefValue[0] = (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
+            prefValue[0] = (list.size() <= 1 ) ? join("", list) : join("\n", list);
             prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
                     .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
             return prefValue;
@@ -1357,7 +1388,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             String[] strings = context().$(byClassName("CodeMirror-code"))
                     .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
             try {
-                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
+                JsonNode instance = new ObjectMapper().readTree(join("", strings)).get("regions");
                 for (JsonNode node1 : instance) {
                     if (node1.get("name").asText().equals(region)) {
                         for (JsonNode node : node1.get("amis")) {
@@ -1371,7 +1402,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
             } catch (IOException e) {
                 throw new RuntimeException(format("Could not deserialize JSON content %s, cause: %s",
-                        String.join("", strings), e.getMessage()), e);
+                        join("", strings), e.getMessage()), e);
             }
             return ami;
         }

@@ -15,7 +15,9 @@
  */
 package com.epam.pipeline.autotests;
 
+import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO;
+import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO;
 import com.epam.pipeline.autotests.ao.SystemDictionariesAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -143,7 +145,6 @@ public class BillingQuotasTest
                 .createNfsMount(format("/%s", testFsStorage), testFsStorage)
                 .selectStorage(testFsStorage);
         fsStorageID = Utils.entityIDfromURL();
-//        fsStorageID = "";
                 library()
                 .selectStorage(dataStorage)
                 .uploadFile(getFile(importScript))
@@ -282,6 +283,8 @@ public class BillingQuotasTest
     @Test(dependsOnMethods = "checkGlobalQuotaCreation")
     @TestCase(value = {"762_2"})
     public void checkCreationDeletionGlobalQuotaWithTheSameAndDifferentQuotaPeriod() {
+        String message1 = format("Global monthly expenses quota %s$. Actions: %s%% Notify", quota[0], threshold[0]);
+        String message2 = format("Global annual expenses quota %s$. Actions: %s%% Notify", quota[1], threshold[1]);
         billingMenu()
                 .click(QUOTAS)
                 .getQuotasSection(OVERALL)
@@ -294,7 +297,23 @@ public class BillingQuotasTest
                 .selectValue(PERIOD, PER_YEAR.period)
                 .ok()
                 .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
-                .checkQuotaStatus(GREEN)
+                .checkQuotaStatus(GREEN);
+        UsersTabAO usersTabAO = navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers();
+        usersTabAO
+                .searchForUserEntry(user.login)
+                .isQuotasExceeded()
+                .checkQuotasExceededWarning(message1)
+                .checkQuotasExceededWarning(message2);
+        usersTabAO
+                .searchUserEntry(admin.login)
+                        .isNotQuotasExceeded();
+        billingMenu()
+                .click(QUOTAS)
+                .getQuotasSection(OVERALL)
+                .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
                 .removeQuota()
                 .openQuotaEntry("", quotaEntry(quota[1], PER_YEAR))
                 .removeQuota();
@@ -404,6 +423,7 @@ public class BillingQuotasTest
                                 "Server responded with message: Launch of new compute instances " +
                                 "is forbidden due to exceeded billing quota.")
                         .close());
+
         billingMenu()
                 .click(COMPUTE_INSTANCES)
                 .getQuotasSection(BILLING_CENTERS)
@@ -414,6 +434,8 @@ public class BillingQuotasTest
                 .getQuotasSection(USERS)
                 .getQuotaEntry(user.login, quotaEntry(quota[5], PER_YEAR))
                 .removeQuota();
+
+
     }
 
     private File updateDataBillingFile() {
