@@ -11,13 +11,14 @@ var ENV_TAG_RUNID_NAME = 'CP_ENV_TAG_RUNID';
 var CONN_QUOTA_PER_PIPELINE_ID = process.env.CP_EDGE_MAX_SSH_CONNECTIONS || 25;
 
 
-function call_api(api_method, auth_key) {
+function call_api(api_method, auth_key, httpMethod = 'GET', payload = undefined) {
     var options = {
         'headers': {
             'Authorization': 'Bearer ' + auth_key
-        }
+        },
+        json: payload
     };
-    var response = request('GET', process.env.API + api_method, options);
+    var response = request(httpMethod, process.env.API + api_method, options);
     if (response.statusCode == 200) {
         return JSON.parse(response.getBody()).payload;
     }
@@ -51,11 +52,40 @@ function get_current_user(auth_key) {
     payload = call_api('/whoami', auth_key);
     if (payload) {
         return {
+            'id': payload.id,
             'name': payload.userName
         };
     } else {
         return payload;
     }
+}
+
+function get_ssh_theme(auth_key) {
+    const payload = call_api('/preferences/ui.ssh.theme', auth_key);
+    if (payload && payload.value) {
+        return payload.value;
+    }
+    return 'default';
+}
+
+function get_user_attributes_theme(userId, auth_key) {
+    const payload = call_api(
+        '/metadata/load',
+        auth_key,
+        'POST',
+        [{
+            entityClass: 'PIPELINE_USER',
+            entityId: userId
+        }]
+    );
+    if (payload && payload.length) {
+        const {data = {}} = payload[0];
+        const {['ui.ssh.theme']: userDefinedTheme} = data;
+        if (userDefinedTheme && userDefinedTheme.value) {
+            return userDefinedTheme.value;
+        }
+    }
+    return 'default';
 }
 
 function get_boolean(value) {
@@ -178,6 +208,8 @@ io.on('connection', function(socket) {
     var request = socket.request;
     console.log((new Date()) + ' Connection accepted for ' + request.headers.referer);
     var term;
+    let current_user;
+    let theme = 'default';
     if (match = request.headers.referer.match('/ssh/(pipeline|container)/(.+)$')) {
         pipeline_id = match[2];
         if (!pipeline_id) {
@@ -212,9 +244,14 @@ io.on('connection', function(socket) {
                     run_ssh_mode = get_boolean_preference('system.ssh.default.root.user.enabled', auth_key) ? 'root' : 'owner';
                 }
             }
+            current_user = get_current_user(auth_key);
+            const userDefinedTheme = current_user
+                ? get_user_attributes_theme(current_user.id, auth_key)
+                : undefined;
+            theme = userDefinedTheme || get_ssh_theme(auth_key);
             switch (run_ssh_mode) {
                 case 'user':
-                    user = get_current_user(auth_key);
+                    user = current_user;
                     sshuser = user.name;
                     sshpass = user.name;
                     break
@@ -271,4 +308,5 @@ io.on('connection', function(socket) {
             console.log(ex);
         }
     });
+    socket.emit('term.theme', theme);
 })
