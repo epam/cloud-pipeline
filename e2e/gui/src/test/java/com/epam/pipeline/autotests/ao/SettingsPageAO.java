@@ -606,13 +606,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO checkUserExist(String name) {
                 searchUser(name).sleep(1, SECONDS);
-                assertTrue(getUser(name.toUpperCase()).isDisplayed(), format("User %s isn't found in list", name));
+                getUser(name.toUpperCase()).shouldBe(visible);
                 return this;
             }
 
             public UsersTabAO checkUserNotExist(String name) {
                 searchUser(name).sleep(1, SECONDS);
-                assertFalse(getUser(name.toUpperCase()).exists(), format("User %s is found in list", name));
+                getUser(name.toUpperCase()).shouldNotBe(exist);
                 return this;
             }
 
