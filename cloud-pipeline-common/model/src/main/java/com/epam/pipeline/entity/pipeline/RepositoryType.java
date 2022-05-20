@@ -20,18 +20,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum RepositoryType {
-    GITLAB(0), GITHUB(1);
+    GITLAB(0), GITHUB(1), BITBUCKET(2);
 
     private long id;
     private static Map<Long, RepositoryType> idMap = new HashMap<>();
     static {
         idMap.put(GITLAB.id, GITLAB);
         idMap.put(GITHUB.id, GITHUB);
+        idMap.put(BITBUCKET.id, BITBUCKET);
     }
     private static Map<String, RepositoryType> namesMap = new HashMap<>();
     static {
         namesMap.put(GITLAB.name(), GITLAB);
         namesMap.put(GITHUB.name(), GITHUB);
+        namesMap.put(BITBUCKET.name(), BITBUCKET);
     }
 
     RepositoryType(long id) {

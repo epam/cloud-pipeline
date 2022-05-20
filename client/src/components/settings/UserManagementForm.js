@@ -27,7 +27,7 @@ import UsageReport from './user-management/usage-report';
 import BillingQuotasList from '../../models/billing/quotas/list';
 
 const roles = new Roles();
-const usersWithActivity = new Users(true);
+const usersWithActivity = new Users(true, true);
 const quotas = new BillingQuotasList();
 
 function UserManagementForm (

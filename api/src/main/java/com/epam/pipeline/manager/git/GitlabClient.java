@@ -365,8 +365,6 @@ public class GitlabClient {
     }
 
     public byte[] getFileContents(String projectId, String path, String revision) throws GitClientException {
-        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
-        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
         if (StringUtils.isBlank(projectId)) {
             projectId = makeProjectId(namespace, projectName);
         }
@@ -464,7 +462,17 @@ public class GitlabClient {
         return gitlabUser;
     }
 
-    private void createFile(GitProject project, String path, String content) {
+    private GitProject createRepo(String repoName, String description) throws GitClientException {
+        GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
+                .visibility(PUBLIC_VISIBILITY).build();
+        return execute(gitLabApi.createProject(gitProject));
+    }
+
+    public GitProject createRepo(final String description) throws GitClientException {
+        return createRepo(projectName, description);
+    }
+
+    public void createFile(GitProject project, String path, String content) {
         try {
             final Response<GitFile> response = gitLabApi.createFiles(
                     project.getId().toString(), path, buildCreateFileRequest(content)).execute();
@@ -535,13 +543,7 @@ public class GitlabClient {
         return Arrays.asList(trimmed.toUpperCase(), trimmed);
     }
 
-    private GitProject createRepo(String repoName, String description) throws GitClientException {
-        GitProjectRequest gitProject = GitProjectRequest.builder().name(repoName).description(description)
-                .visibility(PUBLIC_VISIBILITY).build();
-        return execute(gitLabApi.createProject(gitProject));
-    }
-
-    private GitRepositoryEntry addProjectHook(String projectId, String hookUrl) throws GitClientException {
+    public GitRepositoryEntry addProjectHook(String projectId, String hookUrl) throws GitClientException {
         return execute(
                 gitLabApi.addProjectHook(
                         projectId,

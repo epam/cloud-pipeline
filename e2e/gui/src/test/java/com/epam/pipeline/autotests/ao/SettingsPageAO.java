@@ -52,6 +52,7 @@ import static java.lang.String.join;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
@@ -612,7 +613,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public UsersTabAO checkUserExist(String name) {
                 searchUser(name).sleep(1, SECONDS);
-                assertTrue(getUser(name.toUpperCase()).isDisplayed(), format("User %s isn't found in list", name));
+                getUser(name.toUpperCase()).shouldBe(visible);
+                return this;
+            }
+
+            public UsersTabAO checkUserNotExist(String name) {
+                searchUser(name).sleep(1, SECONDS);
+                getUser(name.toUpperCase()).shouldNotBe(exist);
                 return this;
             }
 

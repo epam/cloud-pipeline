@@ -16,12 +16,13 @@ from __future__ import absolute_import
 
 import copy
 import io
-import time
-from threading import Lock
-from datetime import timedelta, datetime
 import os
-import click
+from threading import Lock
 
+import time
+from datetime import timedelta, datetime
+
+from src.utilities.encoding_utilities import to_string
 from src.utilities.storage.storage_usage import StorageUsageAccumulator
 
 try:
@@ -281,7 +282,7 @@ class AzureDownloadManager(AzureManager, AbstractTransferManager):
 
         self.create_local_folder(destination_key, lock)
         progress_callback = AzureProgressPercentage.callback(source_key, size, quiet, lock)
-        self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, destination_key,
+        self.service.get_blob_to_path(source_wrapper.bucket.path, source_key, to_string(destination_key),
                                       progress_callback=progress_callback)
         if clean:
             self.service.delete_blob(source_wrapper.bucket.path, source_key)
@@ -309,7 +310,7 @@ class AzureUploadManager(AzureManager, AbstractTransferManager):
         destination_tags = StorageOperations.generate_tags(tags, source_key)
         progress_callback = AzureProgressPercentage.callback(relative_path, size, quiet, lock)
         max_connections = self.get_max_connections(io_threads)
-        self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, source_key,
+        self.service.create_blob_from_path(destination_wrapper.bucket.path, destination_key, to_string(source_key),
                                            metadata=destination_tags,
                                            progress_callback=progress_callback,
                                            max_connections=max_connections)

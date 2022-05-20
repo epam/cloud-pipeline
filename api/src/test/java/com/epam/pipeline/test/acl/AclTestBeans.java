@@ -78,6 +78,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
@@ -553,6 +554,9 @@ public class AclTestBeans {
 
     @MockBean
     protected NodePoolReportService nodePoolReportService;
+
+    @MockBean
+    protected PipelineRepositoryService pipelineRepositoryService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

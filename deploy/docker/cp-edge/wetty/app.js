@@ -17,13 +17,14 @@ const CP_MAINTENANCE_SKIP_ROLES = (process.env.CP_MAINTENANCE_SKIP_ROLES || '')
     .map(o => o.trim().toUpperCase())
     .filter(o => o.length);
 
-function call_api(api_method, auth_key) {
+function call_api(api_method, auth_key, httpMethod = 'GET', payload = undefined) {
     var options = {
         'headers': {
             'Authorization': 'Bearer ' + auth_key
-        }
+        },
+        json: payload
     };
-    var response = request('GET', process.env.API + api_method, options);
+    var response = request(httpMethod, process.env.API + api_method, options);
     if (response.statusCode == 200) {
         return JSON.parse(response.getBody()).payload;
     }
@@ -57,6 +58,7 @@ function get_current_user(auth_key) {
     payload = call_api('/whoami', auth_key);
     if (payload) {
         return {
+            'id': payload.id,
             'name': payload.userName,
             'admin': payload.admin,
             'roles': (payload.groups || []).concat((payload.roles || []).map(function (role) { return role.name; }))
@@ -72,6 +74,34 @@ function get_platform_name(auth_key) {
         return payload.value;
     }
     return 'Cloud Pipeline';
+}
+
+function get_ssh_theme(auth_key) {
+    const payload = call_api('/preferences/ui.ssh.theme', auth_key);
+    if (payload && payload.value) {
+        return payload.value;
+    }
+    return 'default';
+}
+
+function get_user_attributes_theme(userId, auth_key) {
+    const payload = call_api(
+        '/metadata/load',
+         auth_key,
+        'POST',
+        [{
+            entityClass: 'PIPELINE_USER',
+            entityId: userId
+        }]
+    );
+    if (payload && payload.value && payload.value.length) {
+        const {data = {}} = payload.value[0];
+        const {['ui.ssh.theme']: userDefinedTheme} = data;
+        if (userDefinedTheme && userDefinedTheme.value) {
+            return userDefinedTheme.value;
+        }
+    }
+    return 'default';
 }
 
 function get_boolean(value) {
@@ -198,6 +228,7 @@ io.on('connection', function(socket) {
     var term;
     let current_user;
     let platformName = 'Cloud Pipeline';
+    let theme = 'default';
     if (match = request.headers.referer.match('/ssh/(pipeline|container)/(.+)$')) {
         pipeline_id = match[2];
         if (!pipeline_id) {
@@ -234,6 +265,10 @@ io.on('connection', function(socket) {
             }
             current_user = get_current_user(auth_key);
             platformName = get_platform_name(auth_key);
+            const userDefinedTheme = current_user
+                ? get_user_attributes_theme(current_user.id, auth_key)
+                : undefined;
+            theme = userDefinedTheme || get_ssh_theme(auth_key);
             switch (run_ssh_mode) {
                 case 'user':
                     user = current_user;
@@ -313,4 +348,5 @@ io.on('connection', function(socket) {
             console.log(ex);
         }
     });
+    socket.emit('term.theme', theme);
 })

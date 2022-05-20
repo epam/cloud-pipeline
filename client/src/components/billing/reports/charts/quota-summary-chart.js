@@ -118,7 +118,7 @@ function QuotaSummaryChartsTitle (
           }
         )
       }
-      style={Object.assign({textAlign: 'center'}, style)}
+      style={style}
     >
       <span
         style={{cursor: 'pointer'}}

@@ -284,6 +284,16 @@ const checkObjectPermissionsConflict = (mask, sid, sidRoles, objectOwner, object
       write: [...(acc.write || []), cur.write],
       execute: [...(acc.execute || []), cur.execute]
     }), {});
+  if (principal) {
+    // If user has suitable permissions, ignore user's roles permissions
+    const principalConflicts = findConflicts(sid);
+    for (const permission of ['read', 'write', 'execute']) {
+      if (principalConflicts[permission] === false) {
+        // No conflict (i.e., "false") for "permission"
+        merged[permission] = [false];
+      }
+    }
+  }
   return {
     read: getResolution(merged.read),
     write: getResolution(merged.write),

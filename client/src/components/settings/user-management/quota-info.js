@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {inject, observer} from 'mobx-react';
 import {Popover} from 'antd';
 import classNames from 'classnames';
 import {quotaGroupSpendingNames} from '../../billing/quotas/utilities/quota-groups';
@@ -25,8 +24,8 @@ import {
   quotaActionTriggered,
   quotaHasTriggeredActions
 } from '../../billing/quotas/utilities/quota-actions';
-import quotaTypes from '../../billing/quotas/utilities/quota-types';
-import periods, {periodNames} from '../../billing/quotas/utilities/quota-periods';
+import quotaTypes, {quotaSubjectName} from '../../billing/quotas/utilities/quota-types';
+import periods, {periodNamesAdjective} from '../../billing/quotas/utilities/quota-periods';
 import styles from './quota-info.css';
 
 function spending (value) {
@@ -45,7 +44,9 @@ function QuotaInfo ({className, style, quota}) {
     actions = [],
     value,
     period = periods.month,
-    quotaGroup
+    quotaGroup,
+    type: quotaType,
+    subject
   } = quota;
   const {activeAction} = actions.find(action => action.activeAction) || {};
   const {expense = 0} = activeAction || {};
@@ -56,11 +57,16 @@ function QuotaInfo ({className, style, quota}) {
         key="group"
         className={styles.description}
       >
+        {
+          quotaType !== quotaTypes.overall && subject && (
+            <span>{quotaSubjectName[quotaType]} <b>{subject}</b>:</span>
+          )
+        }
         <span>{quotaGroupSpendingNames[quotaGroup]}</span>
-        <span>expenses per current</span>
-        <span>{(periodNames[period] || period).toLowerCase()}:</span>
+        <span>{(periodNamesAdjective[period] || period).toLowerCase()}</span>
+        <span>expenses</span>
         <b>{spending(expense)}$</b>,
-        <span>quota:</span>
+        <span>quota</span>
         <span><b>{spending(value)}$</b>.</span>
       </div>
     );
@@ -70,9 +76,14 @@ function QuotaInfo ({className, style, quota}) {
         key="group"
         className={styles.description}
       >
+        {
+          quotaType !== quotaTypes.overall && subject && (
+            <span>{quotaSubjectName[quotaType]} <b>{subject}</b>:</span>
+          )
+        }
         <span>{quotaGroupSpendingNames[quotaGroup]}</span>
-        <span>quota per current</span>
-        <span>{(periodNames[period] || period).toLowerCase()}:</span>
+        <span>{(periodNamesAdjective[period] || period).toLowerCase()}</span>
+        <span>quota</span>
         <span><b>{spending(value)}$</b>.</span>
       </div>
     );
@@ -132,6 +143,8 @@ QuotaInfo.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   quota: PropTypes.shape({
+    subject: PropTypes.string,
+    quotaType: PropTypes.string,
     quotaGroup: PropTypes.string,
     actions: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
     value: PropTypes.number,
@@ -139,122 +152,129 @@ QuotaInfo.propTypes = {
   })
 };
 
-function SubjectQuotaInfoComponent (
+function QuotasInfo (
   {
     className,
     style,
     quotaStyle,
     quotaClassName,
-    subject,
-    type,
     quotas,
     onlyTriggered
   }
 ) {
-  if (!quotas || !quotas.loaded || !subject || !type) {
+  if (!quotas || !quotas.length) {
     return null;
   }
-  const subjectQuotas = (quotas.value || [])
-    .filter(quota => quota.type === type && quota.subject === subject)
+  const filteredQuotas = (quotas || [])
     .filter(quota => !onlyTriggered || quotaHasTriggeredActions(quota));
-  if (subjectQuotas.length === 0) {
+  if (filteredQuotas.length === 0) {
     return null;
   }
+  const overall = quotas.filter(quota => quota.type === quotaTypes.overall);
+  const user = quotas.filter(quota => quota.type === quotaTypes.user);
+  const group = quotas.filter(quota => quota.type === quotaTypes.group);
+  const billingCenter = quotas.filter(quota => quota.type === quotaTypes.billingCenter);
   return (
     <div
       className={className}
       style={style}
     >
-      {
-        subjectQuotas.map((quota) => (
-          <QuotaInfo
-            className={quotaClassName}
-            style={quotaStyle}
-            key={quota.id}
-            quota={quota}
-          />
-        ))
-      }
+      <div>
+        {
+          overall.map((quota) => (
+            <QuotaInfo
+              className={quotaClassName}
+              style={quotaStyle}
+              key={quota.id}
+              quota={quota}
+            />
+          ))
+        }
+      </div>
+      <div>
+        {
+          user.map((quota) => (
+            <QuotaInfo
+              className={quotaClassName}
+              style={quotaStyle}
+              key={quota.id}
+              quota={quota}
+            />
+          ))
+        }
+      </div>
+      <div>
+        {
+          group.map((quota) => (
+            <QuotaInfo
+              className={quotaClassName}
+              style={quotaStyle}
+              key={quota.id}
+              quota={quota}
+            />
+          ))
+        }
+      </div>
+      <div>
+        {
+          billingCenter.map((quota) => (
+            <QuotaInfo
+              className={quotaClassName}
+              style={quotaStyle}
+              key={quota.id}
+              quota={quota}
+            />
+          ))
+        }
+      </div>
     </div>
   );
 }
 
-SubjectQuotaInfoComponent.propTypes = {
+QuotasInfo.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   quotaClassName: PropTypes.string,
   quotaStyle: PropTypes.object,
-  subject: PropTypes.string,
-  type: PropTypes.string,
   onlyTriggered: PropTypes.bool
 };
 
-const SubjectQuotaInfo = inject('quotas')(observer(SubjectQuotaInfoComponent));
-
-function UserQuotasInfo (props) {
-  const {
-    user,
-    ...otherProps
-  } = props;
-  return (
-    <SubjectQuotaInfo
-      {...otherProps}
-      subject={user}
-      type={quotaTypes.user}
-    />
-  );
-}
-
-UserQuotasInfo.propTypes = {
-  className: PropTypes.string,
-  style: PropTypes.object,
-  quotaClassName: PropTypes.string,
-  quotaStyle: PropTypes.string,
-  user: PropTypes.string,
-  onlyTriggered: PropTypes.bool
-};
-
-function UserQuotasDisclaimerComponent (
+function QuotasDisclaimerComponent (
   {
     className,
     style,
-    user,
     quotas
   }
 ) {
-  if (!quotas || !quotas.loaded || !user) {
+  if (!quotas || !quotas.length) {
     return null;
   }
-  const userQuotas = (quotas.value || [])
-    .filter(quota => quota.type === quotaTypes.user && quota.subject === user)
-    .filter(quota => quotaHasTriggeredActions(quota));
-  if (userQuotas.length > 0) {
-    return (
-      <Popover
-        content={<UserQuotasInfo user={user} onlyTriggered />}
+  return (
+    <Popover
+      content={<QuotasInfo onlyTriggered quotas={quotas} />}
+    >
+      <div
+        className={
+          classNames(
+            'cp-warning',
+            className
+          )
+        }
+        style={style}
       >
-        <div
-          className={classNames('cp-warning', className)}
-          style={style}
-        >
-          <span>Billing quotas exceeded</span>
-        </div>
-      </Popover>
-    );
-  }
-  return null;
+        <span>Billing quotas exceeded</span>
+      </div>
+    </Popover>
+  );
 }
 
-UserQuotasDisclaimerComponent.propTypes = {
+QuotasDisclaimerComponent.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  user: PropTypes.string
+  quotas: PropTypes.oneOfType([PropTypes.array, PropTypes.object])
 };
-
-const UserQuotasDisclaimer = inject('quotas')(observer(UserQuotasDisclaimerComponent));
 
 export {
   QuotaInfo,
-  SubjectQuotaInfo,
-  UserQuotasDisclaimer
+  QuotasDisclaimerComponent
 };

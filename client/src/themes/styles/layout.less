@@ -253,6 +253,7 @@ h6 {
 .ant-input-number-input,
 .ant-input-number-handler-wrap,
 .cp-limit-mounts-input,
+.cp-run-capabilities-input,
 .ant-upload {
   background-color: @input-background;
   border-color: @input-border;
@@ -303,7 +304,8 @@ h6 {
 .ant-input-number-disabled,
 .ant-input-number-disabled .ant-input-number-handler-wrap,
 .ant-input-number-input[disabled],
-.cp-limit-mounts-input.disabled {
+.cp-limit-mounts-input.disabled,
+.cp-run-capabilities-input.disabled {
   background-color: @input-background-disabled;
   color: @application-color-disabled;
 }
@@ -331,7 +333,8 @@ h6 {
 .ant-input:hover:not(.ant-input-disabled),
 .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
 .ant-input-number:hover:not(.ant-input-number-disabled),
-.cp-limit-mounts-input:hover {
+.cp-limit-mounts-input:hover,
+.cp-run-capabilities-input:hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
@@ -1136,7 +1139,8 @@ li.ant-calendar-time-picker-select-option-selected {
 }
 
 .ant-select-selection--multiple .ant-select-selection__choice,
-.cp-limit-mounts-input .cp-limit-mounts-input-tag {
+.cp-limit-mounts-input .cp-limit-mounts-input-tag,
+.cp-run-capabilities-input .cp-run-capabilities-input-tag {
   color: @element-selected-color;
   background-color: @element-selected-background-color;
   border-color: @element-hover-background-color;

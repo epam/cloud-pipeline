@@ -23,6 +23,10 @@
   white-space: pre;
 }
 
+.quota-info .description > *:not(:first-child) {
+  text-transform: lowercase;
+}
+
 .quota-info .quota-action-title::before,
 .quota-info .quota-action-title::after {
   content: ' ';

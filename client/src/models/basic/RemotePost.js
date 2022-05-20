@@ -18,6 +18,7 @@ import {SERVER, API_PATH} from '../../config';
 import defer from '../../utils/defer';
 import {observable, action, computed} from 'mobx';
 import {authorization} from './Authorization';
+import maintenanceCheck from './maintenance-check';
 
 class RemotePost {
   static fetchOptions = {
@@ -88,6 +89,7 @@ class RemotePost {
             ...(abortSignal && {signal: abortSignal})
           }
         );
+        maintenanceCheck(response);
         if (!this.constructor.noResponse) {
           this.responseError = !response.ok;
           this.responseStatus = response.status;
@@ -129,7 +131,7 @@ class RemotePost {
       this.failed = true;
       if (authorization.isAuthorized()) {
         authorization.setAuthorized(false);
-        console.log("Changing authorization to: " + authorization.isAuthorized());
+        console.log('Changing authorization to: ' + authorization.isAuthorized());
         let url = `${SERVER}/saml/logout`;
         window.location = url;
       }
@@ -140,7 +142,7 @@ class RemotePost {
       this.failed = false;
       if (!authorization.isAuthorized()) {
         authorization.setAuthorized(true);
-        console.log("Changing authorization to: " + authorization.isAuthorized());
+        console.log('Changing authorization to: ' + authorization.isAuthorized());
       }
     } else if (!this.constructor.isJson && value instanceof Blob) {
       this._loaded = true;
