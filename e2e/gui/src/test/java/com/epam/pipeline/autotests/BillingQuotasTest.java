@@ -119,8 +119,7 @@ public class BillingQuotasTest
         prefQuotasPeriodInitial = preferencesAO
                 .getLinePreference(BILLING_QUOTAS_PERIOD_SECONDS);
         preferencesAO
-                .setPreference(BILLING_QUOTAS_PERIOD_SECONDS,
-                        Integer.toString(BILLING_QUOTAS_PERIOD), true)
+                .setPreference(BILLING_QUOTAS_PERIOD_SECONDS, Integer.toString(BILLING_QUOTAS_PERIOD), true)
                 .saveIfNeeded();
         createBillingCenter("billing-group", billingCenter1);
     }
@@ -145,7 +144,7 @@ public class BillingQuotasTest
                 .createNfsMount(format("/%s", testFsStorage), testFsStorage)
                 .selectStorage(testFsStorage);
         fsStorageID = Utils.entityIDfromURL();
-                library()
+        library()
                 .selectStorage(dataStorage)
                 .uploadFile(getFile(importScript))
                 .uploadFile(updateDataBillingFile());
@@ -163,7 +162,8 @@ public class BillingQuotasTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runId[3])
                         .execute(format("cd /cloud-data/%s", dataStorage.toLowerCase()))
-                        .execute(format("python import_billing_data.py --operation add --data-file billing-test.txt --elastic-url %s", ELASTIC_URL))
+                        .execute(format("python %s --operation add --data-file %s --elastic-url %s", importScript,
+                                billingData, ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[3], dataStorage.toLowerCase()))
                         .close());
     }
@@ -193,7 +193,8 @@ public class BillingQuotasTest
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runId[3])
                         .execute(format("cd /cloud-data/%s", dataStorage.toLowerCase()))
-                        .execute(format("python import_billing_data.py --operation remove --data-file billing-test.txt --elastic-url %s", ELASTIC_URL))
+                        .execute(format("python %s --operation remove --data-file %s --elastic-url %s", importScript,
+                                billingData, ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[3], dataStorage.toLowerCase()))
                         .close());
         deleteBillingCenter("billing-group", billingCenter1);
@@ -309,7 +310,7 @@ public class BillingQuotasTest
                 .checkQuotasExceededWarning(message2);
         usersTabAO
                 .searchUserEntry(admin.login)
-                        .isNotQuotasExceeded();
+                .isNotQuotasExceeded();
         billingMenu()
                 .click(QUOTAS)
                 .getQuotasSection(OVERALL)
@@ -439,8 +440,8 @@ public class BillingQuotasTest
     }
 
     private File updateDataBillingFile() {
-        LocalDate currentDate = LocalDate.now();
-        String result = Utils.readResourceFully(format("/%s", billingData))
+        final LocalDate currentDate = LocalDate.now();
+        final String result = Utils.readResourceFully(format("/%s", billingData))
                 .replaceAll("<user_name1>", admin.login)
                 .replaceAll("<user_name2>", user.login)
                 .replaceAll("<user_name3>", userWithoutCompletedRuns.login)
@@ -471,13 +472,13 @@ public class BillingQuotasTest
         return getLastRunId();
     }
 
-    private String quotaEntry(String quota, BillingQuotaPeriod period) {
+    private String quotaEntry(final String quota, final BillingQuotaPeriod period) {
         return format("%s$ %s",
                 NumberFormat.getInstance(ENGLISH).format(Integer.valueOf(quota)),
                 period.period);
     }
 
-    public void createBillingCenter(String dict, String billingCenter) {
+    public void createBillingCenter(final String dict, final String billingCenter) {
         SystemDictionariesAO systemDictionariesAO = navigationMenu()
                 .settings()
                 .switchToSystemDictionaries();
@@ -486,26 +487,26 @@ public class BillingQuotasTest
         if (!billingGroupDictionaryExist) {
             systemDictionariesAO
                     .addNewDictionary(dict, billingCenter);
-        } else {
-            systemDictionariesAO
-                    .openSystemDictionary(dict)
-                    .addDictionaryValue(billingCenter);
+            return;
         }
+        systemDictionariesAO
+                .openSystemDictionary(dict)
+                .addDictionaryValue(billingCenter);
     }
 
-    public void deleteBillingCenter(String dict, String billingCenter){
-        SystemDictionariesAO systemDictionariesAO = navigationMenu()
+    public void deleteBillingCenter(final String dict, final String billingCenter) {
+        final SystemDictionariesAO systemDictionariesAO = navigationMenu()
                 .settings()
                 .switchToSystemDictionaries();
         if (!billingGroupDictionaryExist) {
             systemDictionariesAO
                     .openSystemDictionary(dict)
                     .deleteDictionary(dict);
-        } else {
-            systemDictionariesAO
-                    .openSystemDictionary(dict)
-                    .deleteDictionaryValue(billingCenter)
-                    .click(SAVE);
+            return;
         }
+        systemDictionariesAO
+                .openSystemDictionary(dict)
+                .deleteDictionaryValue(billingCenter)
+                .click(SAVE);
     }
 }
