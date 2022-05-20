@@ -115,10 +115,10 @@ public class CloudAccessManagementFacade {
         final CloudAccessManagementService<R> accessManagementService =
                 getCloudAccessManagementService(region);
 
-        validateCloudUser(accessManagementService, config, region, user);
-
         final String policyName = constructCloudUserPolicyName(config, user);
-        return accessManagementService.getCloudUserPermissions(region, getCloudUsername(config, user), policyName);
+        return checkThatStorageExistAndUpdateStatusForStatements(
+                accessManagementService.getCloudUserPermissions(region, getCloudUsername(config, user), policyName)
+        );
     }
 
     public <R extends AbstractCloudRegion> CloudAccessPolicy updateCloudUserAccessPolicy(
@@ -134,7 +134,7 @@ public class CloudAccessManagementFacade {
 
         final String policyName = constructCloudUserPolicyName(config, user);
         accessManagementService.grantCloudUserPermissions(region, getCloudUsername(config, user),
-                policyName, accessPolicy);
+                policyName, updateAccessPolicyWithResources(accessPolicy));
         return accessPolicy;
     }
 
@@ -150,7 +150,8 @@ public class CloudAccessManagementFacade {
     }
 
     private <R extends AbstractCloudRegion> void validateStorage(R region, CloudAccessPolicyStatement statement) {
-        final AbstractDataStorage storage = storageManager.loadByPathOrId(statement.getResource());
+        Assert.notNull(statement.getResourceId(), "ResourceId cannot be null, please specify a resourceId");
+        final AbstractDataStorage storage = storageManager.load(statement.getResourceId());
         final DataStorageType requiredStorageType;
         final Long storageRegionId;
         switch (region.getProvider()) {
@@ -175,6 +176,32 @@ public class CloudAccessManagementFacade {
         Assert.isTrue(requiredStorageType.equals(storage.getType()),
                 String.format("Storage %s from regionId %s, but you try to provide permission in region %s",
                         storage.getPath(), storageRegionId, region.getId()));
+    }
+
+    private CloudAccessPolicy checkThatStorageExistAndUpdateStatusForStatements(final CloudAccessPolicy policy) {
+        if (policy == null) {
+            return null;
+        }
+        return policy.toBuilder().statements(
+                policy.getStatements().stream()
+                        .map(statement -> {
+                            try {
+                                final Long storageId = storageManager.loadByPathOrId(statement.getResource()).getId();
+                                return statement.toBuilder().resourceId(storageId).active(true).build();
+                            } catch (IllegalArgumentException e) {
+                                return statement.toBuilder().active(false).build();
+                            }
+                        }).collect(Collectors.toList())
+        ).build();
+    }
+
+    private CloudAccessPolicy updateAccessPolicyWithResources(final CloudAccessPolicy policy) {
+        return policy.toBuilder().statements(
+                policy.getStatements().stream()
+                        .map(statement -> statement.toBuilder()
+                                .resource(storageManager.load(statement.getResourceId()).getPath()
+                        ).active(true).build()).collect(Collectors.toList())
+        ).build();
     }
 
     private String constructCloudUserPolicyName(final CloudAccessManagementConfig config, final PipelineUser user) {

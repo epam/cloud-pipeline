@@ -65,6 +65,7 @@ public class CloudAccessManager {
                                 .map(CloudAccessManagementConfig::isEnabled).orElse(false))
                 .map(region -> constructCloudUserAccessRegionProfile(user, region))
                 .filter(Objects::nonNull)
+                .filter(profile -> profile.getPolicy() != null || profile.getKeys() != null)
                 .collect(Collectors.toMap(CloudUserAccessRegionProfile::getRegionId, p -> p));
         return CloudUserAccessProfile.builder().user(user).profiles(profiles).build();
     }
