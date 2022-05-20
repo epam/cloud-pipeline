@@ -16,10 +16,11 @@
 
 package com.epam.pipeline.manager.git.bibucket;
 
+import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketCommits;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
-import com.epam.pipeline.entity.git.bitbucket.BitbucketTags;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.ApiBuilder;
 import com.epam.pipeline.manager.git.RestApiUtils;
@@ -39,6 +40,7 @@ public class BitbucketClient {
     private static final String AUTHORIZATION = "Authorization";
     private static final String CONTENT = "content";
     private static final String MESSAGE = "message";
+    private static final Integer LIMIT = 100;
 
     private final BitbucketServerApi bitbucketServerApi;
     private final String projectName;
@@ -58,6 +60,14 @@ public class BitbucketClient {
     public BitbucketRepository createRepository(final BitbucketRepository bitbucketRepository) {
         bitbucketRepository.setName(repositoryName);
         return RestApiUtils.execute(bitbucketServerApi.createRepository(projectName, bitbucketRepository));
+    }
+
+    public BitbucketRepository deleteRepository() {
+        return RestApiUtils.execute(bitbucketServerApi.deleteRepository(projectName, repositoryName));
+    }
+
+    public BitbucketAuthor findUser(final String username) {
+        return RestApiUtils.execute(bitbucketServerApi.findUser(username));
     }
 
     public byte[] getFileContent(final String commit, final String path) {
@@ -94,16 +104,25 @@ public class BitbucketClient {
         }
     }
 
-    public BitbucketTags getTags() {
-        return RestApiUtils.execute(bitbucketServerApi.getTags(projectName, repositoryName));
+    public BitbucketPagedResponse<BitbucketTag> getTags(final String nextPageToken) {
+        return RestApiUtils.execute(bitbucketServerApi.getTags(projectName, repositoryName, LIMIT, nextPageToken));
     }
 
-    public BitbucketCommits getCommits() {
+    public BitbucketPagedResponse<BitbucketCommit> getCommits() {
         return RestApiUtils.execute(bitbucketServerApi.getCommits(projectName, repositoryName));
     }
 
     public BitbucketCommit getCommit(final String commitId) {
         return RestApiUtils.execute(bitbucketServerApi.getCommit(projectName, repositoryName, commitId));
+    }
+
+    public BitbucketTag getTag(final String tagName) {
+        return RestApiUtils.execute(bitbucketServerApi.getTag(projectName, repositoryName, tagName));
+    }
+
+    public BitbucketPagedResponse<String> getFiles(final String path, final String version, final String start) {
+        return RestApiUtils.execute(bitbucketServerApi
+                .getFiles(projectName, repositoryName, path, version, LIMIT, start));
     }
 
     private BitbucketServerApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {

@@ -18,7 +18,10 @@ package com.epam.pipeline.manager.git.gitlab;
 
 import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -37,6 +40,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,6 +59,11 @@ public class GitLabService implements GitClientService {
     public GitProject createRepository(final String description, final String repositoryPath, final String token)
             throws GitClientException {
         return getGitlabClientForRepository(repositoryPath, token, true).createRepo(description);
+    }
+
+    @Override
+    public void deleteRepository(final Pipeline pipeline) {
+        getGitlabClientForPipeline(pipeline, true).deleteRepository();
     }
 
     @Override
@@ -87,7 +96,7 @@ public class GitLabService implements GitClientService {
     public byte[] getFileContents(final GitProject project, final String path, final String revision,
                                   final String token) {
         return getGitlabClientForRepository(project.getRepoUrl(), token, true)
-                .getFileContents(String.valueOf(project.getId()), path, revision);
+                .getFileContents(parseProjectId(project.getId()), path, revision);
     }
 
     @Override
@@ -108,6 +117,29 @@ public class GitLabService implements GitClientService {
                         parseGitDate(commit.getCreatedAt()), commit.getId(), null,
                         commit.getAuthorName(), commit.getAuthorEmail()))
                 .orElse(null);
+    }
+
+    @Override
+    public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
+                                              final boolean issueToken, final Long duration) {
+        return getGitlabClientForPipeline(pipeline).buildCloneCredentials(useEnvVars, issueToken, duration);
+    }
+
+    @Override
+    public GitTagEntry getTag(final Pipeline pipeline, final String revisionName) {
+        return getGitlabClientForPipeline(pipeline).getRepositoryRevision(revisionName);
+    }
+
+    @Override
+    public GitCommitEntry getCommit(final Pipeline pipeline, final String revisionName) {
+        return getGitlabClientForPipeline(pipeline).getRepositoryCommit(revisionName);
+    }
+
+    @Override
+    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
+                                                          final String version, final boolean recursive) {
+        return getGitlabClientForPipeline(pipeline)
+                .getRepositoryContents(path, version, recursive);
     }
 
     private GitlabClient getGitlabClientForPipeline(final Pipeline pipeline) {
@@ -133,5 +165,11 @@ public class GitLabService implements GitClientService {
     private Date parseGitDate(final String dateStr) {
         final LocalDateTime localDateTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
+    }
+
+    private String parseProjectId(final Long projectId) {
+        return Optional.ofNullable(projectId)
+                .map(String::valueOf)
+                .orElse(null);
     }
 }

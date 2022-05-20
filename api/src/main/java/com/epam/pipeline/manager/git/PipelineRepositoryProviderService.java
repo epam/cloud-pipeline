@@ -16,7 +16,11 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -27,6 +31,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -40,6 +45,9 @@ public class PipelineRepositoryProviderService {
     }
 
     public GitClientService getProvider(final RepositoryType repositoryType) {
+        if (Objects.isNull(repositoryType)) {
+            return providers.get(RepositoryType.GITLAB);
+        }
         final GitClientService provider = RepositoryType.GITHUB.equals(repositoryType)
                 ? providers.get(RepositoryType.GITLAB)
                 : providers.get(repositoryType);
@@ -52,6 +60,10 @@ public class PipelineRepositoryProviderService {
     public GitProject createRepository(final RepositoryType repositoryType, final String description,
                                        final String repositoryPath, final String token) {
         return getProvider(repositoryType).createRepository(description, repositoryPath, token);
+    }
+
+    public void deleteRepository(final RepositoryType repositoryType, final Pipeline pipeline) {
+        getProvider(repositoryType).deleteRepository(pipeline);
     }
 
     public void handleHook(final RepositoryType repositoryType, final GitProject repository, final String token) {
@@ -79,5 +91,24 @@ public class PipelineRepositoryProviderService {
 
     public Revision getLastCommit(final RepositoryType repositoryType, final Pipeline pipeline) {
         return getProvider(repositoryType).getLastRevision(pipeline);
+    }
+
+    public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
+                                              final boolean issueToken, final Long duration) {
+        return getProvider(pipeline.getRepositoryType())
+                .getCloneCredentials(pipeline, useEnvVars, issueToken, duration);
+    }
+
+    public GitTagEntry getTag(final Pipeline pipeline, final String version) {
+        return getProvider(pipeline.getRepositoryType()).getTag(pipeline, version);
+    }
+
+    public GitCommitEntry getCommit(final Pipeline pipeline, final String version) {
+        return getProvider(pipeline.getRepositoryType()).getCommit(pipeline, version);
+    }
+
+    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
+                                                          final String version,  final boolean recursive) {
+        return getProvider(pipeline.getRepositoryType()).getRepositoryContents(pipeline, path, version, recursive);
     }
 }
