@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byTitle;
 import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
@@ -45,6 +46,7 @@ import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
+import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 
 public class ToolSettings extends ToolTab<ToolSettings> {
@@ -79,7 +81,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                        .closest(".ant-row").find(by("role", "combobox")))
+                        .closest(".ant-row").find(className("ant-form-item-control ")))
         );
     }
 
@@ -166,6 +168,13 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 .find(withText(priceType))
                 .shouldBe(visible)
                 .click();
+        return this;
+    }
+
+    public ToolSettings selectRunCapability(final String optionQualifier) {
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
+        $(PipelineSelectors.visible(byClassName("rc-dropdown"))).find(byTitle(optionQualifier))
+                .shouldBe(visible).click();
         return this;
     }
 
