@@ -761,7 +761,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public UserEntry checkQuotasExceededWarning(String ... messages) {
                     final List<String> list = exceededUserQuotas();
                     Arrays.stream(messages).forEach(m -> assertTrue(list.contains(m),
-                            String.format("Message %s isn't found in '%s'", m, list)));
+                            format("Message %s isn't found in '%s'", m, list)));
                     return this;
                 }
 
@@ -771,10 +771,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     return $$(byClassName("uota-info__quota-info"))
                                 .stream()
                                 .map(el -> format("%s %s %s",
-                                     join(" ", el.$(byClassName("uota-info__description")).$$("span").texts()),
-                                     el.$(byClassName("uota-info__quota-action-title")).text(),
-                                     join("; ", el.$$(byClassName("uota-info__quota-action")).texts())
-                                        .replaceAll("%", "% ")))
+                                        join(" ", el.$(byClassName("uota-info__description"))
+                                                .$$("span").texts()),
+                                        el.$(byClassName("uota-info__quota-action-title")).text(),
+                                        join("; ", el.$$(byClassName("uota-info__quota-action")).texts())
+                                                .replaceAll("%", "% ")))
                                 .collect(toList());
                 }
 
