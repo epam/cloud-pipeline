@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -333,6 +333,10 @@ function upgrade_installed_packages {
       return $?
 }
 
+function remove_repository_configurations() {
+      rm -f /etc/apt/sources.list.d/cuda.list /etc/apt/sources.list.d/nvidia-ml.list
+}
+
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
@@ -364,6 +368,12 @@ function configure_package_manager {
 
       export CP_OS
       export CP_VER
+
+      CP_REMOVE_REP_CONFIGURATION=${CP_REMOVE_REP_CONFIGURATION:-"true"}
+      # Remove apt repository configurations if needed
+      if [ "$CP_OS" == "ubuntu" ] && [ "$CP_REMOVE_REP_CONFIGURATION" == "true" ]; then
+            remove_repository_configurations
+      fi
 
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
