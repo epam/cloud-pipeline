@@ -41,7 +41,7 @@
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1m42.66s</div>
+<div class="counter">1m45.25s</div>
 <p>duration</p>
 </div>
 </td>
@@ -73,14 +73,13 @@
 <a name="listOfCasesForPipeline - EPMCMBIBPC-915"></a>
 <h3 class="failures">listOfCasesForPipeline - EPMCMBIBPC-915</h3>
 <span class="code">
-<pre>Element not found {visible(By.className: rc-dropdown-menu)}
+<pre>Element not found {By.className: cp-metadata-item-row.filter(have css class 'key')}
 Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1653109309404.110.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1653109309404.110.html
+Screenshot: file:/headless/e2e/gui/build/reports/tests/1653294469472.90.png
+Page source: file:/headless/e2e/gui/build/reports/tests/1653294469472.90.html
 Timeout: 80 s.
-Caused by: NoSuchElementException: Cannot locate an element using visible(By.className: rc-dropdown-menu)
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.ElementFinder.createElementNotFoundError(ElementFinder.java:82)
+Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
+	at com.codeborne.selenide.impl.CollectionElement.createElementNotFoundError(CollectionElement.java:48)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
 	at com.codeborne.selenide.commands.Should.should(Should.java:35)
 	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
@@ -88,10 +87,11 @@ Caused by: NoSuchElementException: Cannot locate an element using visible(By.cla
 	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
 	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
 	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:191)
-	at com.epam.pipeline.autotests.ao.ToolDescription.showMetadata(ToolDescription.java:101)
-	at com.epam.pipeline.autotests.ao.ToolDescription.showMetadata(ToolDescription.java:72)
+	at com.sun.proxy.$Proxy15.shouldBe(Unknown Source)
+	at com.epam.pipeline.autotests.ao.AccessObject.click(AccessObject.java:101)
+	at com.epam.pipeline.autotests.ao.MetadataKeyAO.changeKey(MetadataKeyAO.java:78)
+	at com.epam.pipeline.autotests.ObjectMetadataToolTest.lambda$null$4(ObjectMetadataToolTest.java:79)
+	at com.epam.pipeline.autotests.ao.ToolDescription.showMetadata(ToolDescription.java:73)
 	at com.epam.pipeline.autotests.ObjectMetadataToolTest.lambda$listOfCasesForPipeline$5(ObjectMetadataToolTest.java:76)
 	at java.util.function.Consumer.lambda$andThen$0(Consumer.java:65)
 	at com.epam.pipeline.autotests.ao.ToolGroup.toolWithin(ToolGroup.java:52)
@@ -114,17 +114,12 @@ Caused by: NoSuchElementException: Cannot locate an element using visible(By.cla
 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
 	at java.lang.Thread.run(Thread.java:748)
-Caused by: org.openqa.selenium.NoSuchElementException: Cannot locate an element using visible(By.className: rc-dropdown-menu)
-For documentation on this error, please visit: http://seleniumhq.org/exceptions/no_such_element.html
-Build info: version: '3.8.1', revision: '6e95a6684b', time: '2017-12-01T18:33:54.468Z'
-System info: host: '21118fcf56d9', ip: '172.17.0.3', os.name: 'Linux', os.arch: 'amd64', os.version: '3.10.0-1160.49.1.el7.x86_64', java.version: '1.8.0_262'
-Driver info: driver.version: unknown
-	at org.openqa.selenium.By.findElement(By.java:162)
-	at org.openqa.selenium.remote.RemoteWebElement.findElement(RemoteWebElement.java:175)
-	at com.codeborne.selenide.impl.WebElementSelector.findElement(WebElementSelector.java:29)
-	at com.codeborne.selenide.impl.ElementFinder.getWebElement(ElementFinder.java:56)
+Caused by: java.lang.IndexOutOfBoundsException: Index: 0, Size: 0
+	at java.util.ArrayList.rangeCheck(ArrayList.java:659)
+	at java.util.ArrayList.get(ArrayList.java:435)
+	at com.codeborne.selenide.impl.CollectionElement.getWebElement(CollectionElement.java:36)
 	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 32 more
+	... 33 more
 </pre>
 </span>
 </div>
@@ -141,17 +136,17 @@ Driver info: driver.version: unknown
 </thead>
 <tr>
 <td class="success">addMetadataToToolValidation - EPMCMBIBPC-914</td>
-<td>10.428s</td>
+<td>11.039s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="success">checkMetadataForTool - EPMCMBIBPC-916</td>
-<td>7.644s</td>
+<td>8.034s</td>
 <td class="success">passed</td>
 </tr>
 <tr>
 <td class="failures">listOfCasesForPipeline - EPMCMBIBPC-915</td>
-<td>1m24.59s</td>
+<td>1m26.18s</td>
 <td class="failures">failed</td>
 </tr>
 </table>
@@ -164,7 +159,7 @@ Driver info: driver.version: unknown
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 22, 2022 2:04:19 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 23, 2022 7:25:17 PM</p>
 </div>
 </div>
 </body>
