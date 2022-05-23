@@ -20,6 +20,8 @@ ENV LANG="en_US.UTF-8"
 ENV LANGUAGE=en_US
 ENV DEBIAN_FRONTEND=noninteractive
 
+RUN rm -f /etc/apt/sources.list.d/*
+
 RUN apt-get update -y && \
     apt-get install -y locales && \
     locale-gen en_US.UTF-8 && \
