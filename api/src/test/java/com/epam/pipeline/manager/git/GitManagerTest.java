@@ -150,6 +150,9 @@ public class GitManagerTest extends AbstractManagerTest {
     @InjectMocks
     private GitManager gitManager;
 
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
+
     @Before
     public void describePreferenceManager() {
         when(preferenceManager.getPreference(SystemPreferences.GIT_HOST)).thenReturn(gitHost.asString());
@@ -230,12 +233,13 @@ public class GitManagerTest extends AbstractManagerTest {
         mockFileContentRequest(DOCS + "/created_file.txt", GIT_MASTER_REPOSITORY, FILE_CONTENT);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final Pipeline pipeline = testingPipeline();
-        final GitCommitEntry resultingCommit = gitManager.updateFile(
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.updateFile(
             pipeline,
             DOCS + "/created_file.txt",
             FILE_CONTENT,
             "last commit id doesn't matter",
-            "Create file"
+            "Create file",
+            false
         );
         assertThat(resultingCommit, is(expectedCommit));
     }
@@ -247,7 +251,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final Pipeline pipeline = testingPipeline();
         pipeline.setCurrentVersion(revision);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
-        final GitCommitEntry resultingCommit = gitManager.deleteFile(
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.deleteFile(
             pipeline, DOCS + "/" + README_FILE, pipeline.getCurrentVersion().getCommitId(), "Delete file"
         );
         assertThat(resultingCommit, is(expectedCommit));
@@ -378,7 +382,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .willReturn(okJson(with(expectedCommit)))
         );
         mockFileContentRequest(DOCS + "/" + README_FILE, GIT_MASTER_REPOSITORY, FILE_CONTENT);
-        final GitCommitEntry resultingCommit = gitManager.uploadFiles(
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.uploadFiles(
             pipeline, DOCS, singletonList(file), pipeline.getCurrentVersion().getCommitId(), "Rename the file"
         );
         assertThat(resultingCommit, is(expectedCommit));
@@ -419,7 +423,7 @@ public class GitManagerTest extends AbstractManagerTest {
         sourceItemVOList.setLastCommitId(lastCommit);
         sourceItemVOList.setItems(singletonList(bla));
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
-        final GitCommitEntry resultingCommit = gitManager.updateFiles(pipeline, sourceItemVOList);
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.updateFiles(pipeline, sourceItemVOList);
         assertThat(resultingCommit, is(expectedCommit));
     }
 

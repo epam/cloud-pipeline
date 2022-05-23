@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
@@ -110,5 +112,43 @@ public class PipelineRepositoryProviderService {
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version,  final boolean recursive) {
         return getProvider(pipeline.getRepositoryType()).getRepositoryContents(pipeline, path, version, recursive);
+    }
+
+    public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
+                                     final String message, final boolean fileExists) {
+        return getProvider(pipeline.getRepositoryType()).updateFile(pipeline, path, content, message, fileExists);
+    }
+
+    public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
+                                     final String filePreviousPath, final String filePath) {
+        return getProvider(pipeline.getRepositoryType()).renameFile(pipeline, message, filePreviousPath, filePath);
+    }
+
+    public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
+        return getProvider(pipeline.getRepositoryType()).deleteFile(pipeline, filePath, commitMessage);
+    }
+
+    public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
+                                       final String message) {
+        return getProvider(pipeline.getRepositoryType()).createFolder(pipeline, filesToCreate, message);
+    }
+
+    public GitCommitEntry renameFolder(final Pipeline pipeline, final String message,
+                                       final String folder, final String newFolderName) {
+        return getProvider(pipeline.getRepositoryType()).renameFolder(pipeline, message, folder, newFolderName);
+    }
+
+    public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
+        return getProvider(pipeline.getRepositoryType()).deleteFolder(pipeline, message, folder);
+    }
+
+    public GitCommitEntry updateFiles(final Pipeline pipeline, final PipelineSourceItemsVO sourceItemVOList,
+                                      final String message) {
+        return getProvider(pipeline.getRepositoryType()).updateFiles(pipeline, sourceItemVOList, message);
+    }
+
+    public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
+                                      final String message) {
+        return getProvider(pipeline.getRepositoryType()).uploadFiles(pipeline, files, message);
     }
 }

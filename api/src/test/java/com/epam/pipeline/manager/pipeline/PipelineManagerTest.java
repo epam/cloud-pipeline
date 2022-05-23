@@ -102,11 +102,8 @@ public class PipelineManagerTest {
         gitProject.setRepoSsh(REPOSITORY_SSH);
         when(gitManager.createRepository(any(), eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
         when(gitManager.createRepository(eq(REPOSITORY_NAME), any())).thenReturn(gitProject);
-        when(gitManager.createRepository(any(), any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
+        when(pipelineRepositoryService.getRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
                 .thenReturn(gitProject);
-        when(gitManager.createEmptyRepository(any(), eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN)))
-                .thenReturn(gitProject);
-        when(gitManager.getRepository(eq(REPOSITORY_HTTPS), eq(REPOSITORY_TOKEN))).thenReturn(gitProject);
         when(gitManager.checkProjectExists(eq(REPOSITORY_NAME))).thenReturn(false);
         when(crudManager.save(any())).thenAnswer(invocation -> invocation.getArguments()[0]);
         when(crudManager.savePipeline(any())).thenAnswer(invocation -> invocation.getArguments()[0]);

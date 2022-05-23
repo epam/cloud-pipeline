@@ -67,9 +67,9 @@ public interface BitbucketServerApi {
 
     @Multipart
     @PUT("rest/api/1.0/projects/{project}/repos/{repository}/browse/{path}")
-    Call<ResponseBody> createFile(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
-                                  @Path(value = PATH, encoded = true) String path, @Part MultipartBody.Part content,
-                                  @Part MultipartBody.Part message);
+    Call<BitbucketCommit> createFile(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                     @Path(value = PATH, encoded = true) String path, @Part MultipartBody.Part content,
+                                     @Part MultipartBody.Part message, @Part MultipartBody.Part sourceCommitId);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/tags")
     Call<BitbucketPagedResponse<BitbucketTag>> getTags(@Path(PROJECT) String project,

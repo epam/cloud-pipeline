@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
@@ -54,4 +56,20 @@ public interface GitClientService {
     GitCommitEntry getCommit(Pipeline pipeline, String revisionName);
 
     List<GitRepositoryEntry> getRepositoryContents(Pipeline pipeline, String path, String version, boolean recursive);
+
+    GitCommitEntry updateFile(Pipeline pipeline, String path, String content, String message, boolean fileExists);
+
+    GitCommitEntry renameFile(Pipeline pipeline, String message, String filePreviousPath, String filePath);
+
+    GitCommitEntry deleteFile(Pipeline pipeline, String filePath, String commitMessage);
+
+    GitCommitEntry createFolder(Pipeline pipeline, List<String> filesToCreate, String message);
+
+    GitCommitEntry renameFolder(Pipeline pipeline, String message, String folder, String newFolderName);
+
+    GitCommitEntry deleteFolder(Pipeline pipeline, String message, String folder);
+
+    GitCommitEntry updateFiles(Pipeline pipeline, PipelineSourceItemsVO sourceItemVOList, String message);
+
+    GitCommitEntry uploadFiles(Pipeline pipeline, List<UploadFileMetadata> files, String message);
 }

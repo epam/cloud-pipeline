@@ -28,18 +28,17 @@ import okhttp3.MediaType;
 import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 import okhttp3.ResponseBody;
-import org.apache.http.entity.ContentType;
+import org.apache.commons.lang3.StringUtils;
 import retrofit2.Call;
-import retrofit2.HttpException;
-import retrofit2.Response;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.Objects;
 
 public class BitbucketClient {
     private static final String AUTHORIZATION = "Authorization";
     private static final String CONTENT = "content";
     private static final String MESSAGE = "message";
+    private static final String SOURCE_COMMIT_ID = "sourceCommitId";
     private static final Integer LIMIT = 100;
 
     private final BitbucketServerApi bitbucketServerApi;
@@ -75,33 +74,23 @@ public class BitbucketClient {
             final Call<ResponseBody> filesRawContent = bitbucketServerApi
                     .getFileContents(projectName, repositoryName, path, commit);
             final ResponseBody body = filesRawContent.execute().body();
-            if (body == null) {
-                return new byte[0];
-            }
-            try (InputStream inputStream = body.byteStream()) {
-                final int bufferSize = (int) body.contentLength();
-                final byte[] receivedContent = new byte[bufferSize];
-                inputStream.read(receivedContent);
-                return receivedContent;
-            }
+            return Objects.isNull(body) ? null : body.bytes();
         } catch (IOException e) {
             throw new GitClientException("Error receiving raw file content!", e);
         }
     }
 
-    public void createFile(final String path, final String content, final String message) {
-        try {
-            final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, path,
-                    RequestBody.create(MediaType.parse(ContentType.TEXT_PLAIN.toString()), content));
-            final MultipartBody.Part messageBody = MultipartBody.Part.createFormData(MESSAGE, message);
-            final Response<ResponseBody> response = bitbucketServerApi
-                    .createFile(projectName, repositoryName, path, contentBody, messageBody).execute();
-            if (!response.isSuccessful()) {
-                throw new HttpException(response);
-            }
-        } catch (IOException e) {
-            throw new GitClientException("Failed to upload raw file content!", e);
-        }
+    public BitbucketCommit upsertFile(final String path, final String content, final String message,
+                                      final String commitId) {
+        final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, content);
+        return upsertFile(path, contentBody, message, commitId);
+    }
+
+    public BitbucketCommit upsertFile(final String path, final String contentType, final byte[] content,
+                                      final String message, final String commitId) {
+        final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, path,
+                RequestBody.create(MediaType.parse(contentType), content));
+        return upsertFile(path, contentBody, message, commitId);
     }
 
     public BitbucketPagedResponse<BitbucketTag> getTags(final String nextPageToken) {
@@ -127,5 +116,15 @@ public class BitbucketClient {
 
     private BitbucketServerApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
         return new ApiBuilder<>(BitbucketServerApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
+    }
+
+    private BitbucketCommit upsertFile(final String path, final MultipartBody.Part contentBody, final String message,
+                                       final String commitId) {
+        final MultipartBody.Part messageBody = MultipartBody.Part.createFormData(MESSAGE, message);
+        final MultipartBody.Part commitBody = StringUtils.isNotBlank(commitId)
+                ? MultipartBody.Part.createFormData(SOURCE_COMMIT_ID, commitId)
+                : null;
+        return RestApiUtils.execute(bitbucketServerApi
+                .createFile(projectName, repositoryName, path, contentBody, messageBody, commitBody));
     }
 }

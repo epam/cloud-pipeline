@@ -241,21 +241,22 @@ public class PipelineApiService {
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry modifyFiles(Long id, PipelineSourceItemsVO sourceItemsVO) throws GitClientException {
-        return gitManager.updateFiles(pipelineManager.load(id, true), sourceItemsVO);
+        return pipelineRepositoryService.updateFiles(pipelineManager.load(id, true), sourceItemsVO);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry uploadFiles(Long id, String folder, List<UploadFileMetadata> files)
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id, true);
-        return gitManager.uploadFiles(pipeline, folder, files,
+        return pipelineRepositoryService.uploadFiles(pipeline, folder, files,
                 pipeline.getCurrentVersion().getCommitId(), null);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry deleteFile(Long id, String filePath, String lastCommitId, String commitMessage)
             throws GitClientException {
-        return gitManager.deleteFile(pipelineManager.load(id, true), filePath, lastCommitId, commitMessage);
+        return pipelineRepositoryService
+                .deleteFile(pipelineManager.load(id, true), filePath, lastCommitId, commitMessage);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)

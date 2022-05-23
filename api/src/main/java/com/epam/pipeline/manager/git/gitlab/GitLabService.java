@@ -17,27 +17,37 @@
 package com.epam.pipeline.manager.git.gitlab;
 
 import com.amazonaws.util.StringUtils;
+import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
+import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
+import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.git.GitlabClient;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.utils.GitUtils;
+import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +55,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GitLabService implements GitClientService {
+    private static final String ACTION_CREATE = "create";
+    private static final String ACTION_UPDATE = "update";
+    private static final String ACTION_MOVE = "move";
+    private static final String ACTION_DELETE = "delete";
+    private static final String BASE64_ENCODING = "base64";
 
     private final PreferenceManager preferenceManager;
     private final AuthManager authManager;
@@ -142,6 +158,151 @@ public class GitLabService implements GitClientService {
                 .getRepositoryContents(path, version, recursive);
     }
 
+    @Override
+    public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
+                                     final String message, final boolean fileExists) {
+        final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+        gitPushCommitActionEntry.setAction(fileExists ? ACTION_UPDATE : ACTION_CREATE);
+        gitPushCommitActionEntry.setFilePath(path);
+        gitPushCommitActionEntry.setContent(content);
+
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(message);
+        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        return getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
+                                     final String filePreviousPath, final String filePath) {
+        final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(message);
+        prepareFileForRenaming(filePath, filePreviousPath, gitPushCommitEntry, gitlabClient);
+
+        return gitlabClient.commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
+        final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+
+        final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+        gitPushCommitActionEntry.setAction(ACTION_DELETE);
+        gitPushCommitActionEntry.setFilePath(filePath);
+
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(commitMessage);
+        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        return gitlabClient.commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
+                                       final String message) {
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(message);
+        for (String file : filesToCreate) {
+            final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+            gitPushCommitActionEntry.setAction(ACTION_CREATE);
+            gitPushCommitActionEntry.setFilePath(file);
+            gitPushCommitActionEntry.setContent(Strings.EMPTY);
+            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        }
+        return getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry renameFolder(final Pipeline pipeline, final String message, final String folder,
+                                       final String newFolderName) {
+        final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+        final List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
+                GitUtils.GIT_MASTER_REPOSITORY, true);
+
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(message);
+
+        for (GitRepositoryEntry file : allFiles) {
+            if (file.getType().equalsIgnoreCase(GitUtils.FOLDER_MARKER)) {
+                continue;
+            }
+            prepareFileForRenaming(file.getPath().replaceFirst(folder, newFolderName), file.getPath(),
+                    gitPushCommitEntry, gitlabClient);
+        }
+        return gitlabClient.commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
+        final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+        final List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
+                GitUtils.GIT_MASTER_REPOSITORY, true);
+
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(message);
+
+        for (GitRepositoryEntry file : allFiles) {
+            if (file.getType().equalsIgnoreCase(GitUtils.FOLDER_MARKER)) {
+                continue;
+            }
+            final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+            gitPushCommitActionEntry.setAction(ACTION_DELETE);
+            gitPushCommitActionEntry.setFilePath(file.getPath());
+            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        }
+        return gitlabClient.commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry updateFiles(final Pipeline pipeline, final PipelineSourceItemsVO sourceItemVOList,
+                                      final String message) {
+        final GitlabClient client = getGitlabClientForPipeline(pipeline);
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        gitPushCommitEntry.setCommitMessage(message);
+        for (PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
+            final String sourcePath = sourceItemVO.getPath();
+
+            String action;
+            if (!StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
+                action = ACTION_MOVE;
+            } else {
+                if (fileExists(client, sourcePath)) {
+                    action = ACTION_UPDATE;
+                } else {
+                    action = ACTION_CREATE;
+                }
+            }
+            final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+            gitPushCommitActionEntry.setFilePath(sourcePath);
+            gitPushCommitActionEntry.setAction(action);
+            if (StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
+                gitPushCommitActionEntry.setContent(sourceItemVO.getContents());
+            } else {
+                gitPushCommitActionEntry.setPreviousPath(sourceItemVO.getPreviousPath());
+            }
+            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        }
+        return client.commit(gitPushCommitEntry);
+    }
+
+    @Override
+    public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
+                                      final String message) {
+        final GitlabClient client = getGitlabClientForPipeline(pipeline);
+        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        ListUtils.emptyIfNull(files).forEach(file -> {
+            final boolean fileExists = fileExists(client, file.getFileName());
+            final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+            gitPushCommitActionEntry.setAction(fileExists ? ACTION_UPDATE : ACTION_CREATE);
+            gitPushCommitActionEntry.setFilePath(file.getFileName());
+            gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(file.getBytes()));
+            gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
+            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        });
+        gitPushCommitEntry.setCommitMessage(message);
+        return client.commit(gitPushCommitEntry);
+    }
+
     private GitlabClient getGitlabClientForPipeline(final Pipeline pipeline) {
         return getGitlabClientForPipeline(pipeline, false);
     }
@@ -171,5 +332,33 @@ public class GitLabService implements GitClientService {
         return Optional.ofNullable(projectId)
                 .map(String::valueOf)
                 .orElse(null);
+    }
+
+    private GitPushCommitEntry prepareFileForRenaming(final String filePath,
+                                                      final String filePreviousPath,
+                                                      final GitPushCommitEntry gitPushCommitEntry,
+                                                      final GitlabClient gitlabClient) throws GitClientException {
+        final byte[] fileContents = gitlabClient.getFileContents(filePreviousPath, GitUtils.GIT_MASTER_REPOSITORY);
+
+        final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
+        gitPushCommitActionEntry.setAction(ACTION_MOVE);
+        gitPushCommitActionEntry.setFilePath(filePath);
+        gitPushCommitActionEntry.setPreviousPath(filePreviousPath);
+        gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(fileContents));
+        gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
+        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
+        return gitPushCommitEntry;
+    }
+
+    private boolean fileExists(final GitlabClient client, final String filePath) throws GitClientException {
+        if (StringUtils.isNullOrEmpty(filePath)) {
+            return true;
+        }
+        try {
+            return client.getFileContents(filePath, GitUtils.GIT_MASTER_REPOSITORY) != null;
+        } catch (UnexpectedResponseStatusException exception) {
+            log.debug(exception.getMessage(), exception);
+            return false;
+        }
     }
 }

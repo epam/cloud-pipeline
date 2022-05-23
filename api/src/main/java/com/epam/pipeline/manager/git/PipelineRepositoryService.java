@@ -16,13 +16,14 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.common.MessageConstants;
+import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
+import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
-import com.epam.pipeline.entity.git.GitCommitEntry;
-import com.epam.pipeline.entity.git.GitCredentials;
-import com.epam.pipeline.entity.git.GitProject;
-import com.epam.pipeline.entity.git.GitRepositoryEntry;
-import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
+import com.epam.pipeline.entity.git.*;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
@@ -30,6 +31,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
+import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
@@ -48,6 +50,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -70,18 +73,19 @@ public class PipelineRepositoryService {
             + "3. Launch you job using `RUN` button\n";
     private static final String DEFAULT_README = "docs/README.md";
     private static final String DEFAULT_BRANCH = "master";
-    private static final String DRAFT_PREFIX = "draft-";
-    private static final String GITKEEP_FILE = ".gitkeep";
     private static final String GITKEEP_CONTENT = "keep";
 
     private final PipelineRepositoryProviderService providerService;
+    private final MessageHelper messageHelper;
     private final String defaultTemplate;
     private final String templatesDirectoryPath;
 
     public PipelineRepositoryService(final PipelineRepositoryProviderService providerService,
+                                     final MessageHelper messageHelper,
                                      @Value("${templates.default.template}") final String defaultTemplate,
                                      @Value("${templates.directory}") final String templatesDirectoryPath) {
         this.providerService = providerService;
+        this.messageHelper = messageHelper;
         this.defaultTemplate = defaultTemplate;
         this.templatesDirectoryPath = templatesDirectoryPath;
     }
@@ -116,7 +120,7 @@ public class PipelineRepositoryService {
         final Revision commit = providerService.getLastCommit(repositoryType, pipeline);
         final List<Revision> revisions = new ArrayList<>(tags.size());
         if (isDraftCommit(tags, commit)) {
-            commit.setName(DRAFT_PREFIX + commit.getName());
+            commit.setName(GitUtils.DRAFT_PREFIX + commit.getName());
             commit.setDraft(true);
             revisions.add(commit);
         }
@@ -129,7 +133,7 @@ public class PipelineRepositoryService {
         final String token = pipeline.getRepositoryToken();
         final GitProject gitProject = new GitProject();
         gitProject.setRepoUrl(pipeline.getRepository());
-        return getFileContents(repositoryType, gitProject, path, getRevisionName(revision), token);
+        return getFileContents(repositoryType, gitProject, path, GitUtils.getRevisionName(revision), token);
     }
 
     public GitCredentials getPipelineCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
@@ -139,8 +143,9 @@ public class PipelineRepositoryService {
 
     public GitTagEntry loadRevision(final Pipeline pipeline, final String version) throws GitClientException {
         Assert.notNull(version, "Revision is required.");
-        if (version.startsWith(DRAFT_PREFIX)) {
-            final GitCommitEntry repositoryCommit = providerService.getCommit(pipeline, getRevisionName(version));
+        if (version.startsWith(GitUtils.DRAFT_PREFIX)) {
+            final GitCommitEntry repositoryCommit = providerService
+                    .getCommit(pipeline, GitUtils.getRevisionName(version));
             if (repositoryCommit == null) {
                 throw new IllegalArgumentException(String.format("Commit %s not found.", version));
             }
@@ -164,9 +169,153 @@ public class PipelineRepositoryService {
                                                           final String version, final boolean recursive,
                                                           final boolean showHiddenFiles) {
         return ListUtils.emptyIfNull(providerService
-                .getRepositoryContents(pipeline, path, getRevisionName(version), recursive)).stream()
+                .getRepositoryContents(pipeline, path, GitUtils.getRevisionName(version), recursive)).stream()
                 .filter(entry -> showHiddenFiles || !entry.getName().startsWith(Constants.DOT))
                 .collect(Collectors.toList());
+    }
+
+    public GitCommitEntry updateFile(final Pipeline pipeline,
+                                     final String filePath,
+                                     final String fileContent,
+                                     final String lastCommitId,
+                                     final String commitMessage,
+                                     final boolean checkCommit) {
+        if (checkCommit) { // TODO: do we need this branch?
+            Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                    messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, filePath));
+        }
+        final boolean fileExists = fileExists(pipeline, filePath);
+        final String message = GitUtils.buildModifyFileCommitMessage(commitMessage, filePath, fileExists);
+        return providerService.updateFile(pipeline, filePath, fileContent, message, fileExists);
+    }
+
+    public GitCommitEntry renameFile(final Pipeline pipeline,
+                                     final String filePath,
+                                     final String filePreviousPath,
+                                     final String lastCommitId,
+                                     final String commitMessage) {
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, filePath));
+
+        final String message = StringUtils.isNotBlank(commitMessage)
+                ? commitMessage
+                : String.format("Renaming %s to %s", filePreviousPath, filePath);
+
+        Assert.isTrue(!fileExists(pipeline, filePath),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
+        return providerService.renameFile(pipeline, message, filePreviousPath, filePath);
+    }
+
+    public GitCommitEntry deleteFile(final Pipeline pipeline,
+                                     final String filePath,
+                                     final String lastCommitId,
+                                     final String commitMessage) throws GitClientException {
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, filePath));
+        return providerService.deleteFile(pipeline, filePath, commitMessage);
+    }
+
+
+    public GitCommitEntry createFolder(final Pipeline pipeline,
+                                       final String folder,
+                                       final String lastCommitId,
+                                       final String commitMessage) throws GitClientException {
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
+        Assert.isTrue(!folderExists(pipeline, folder),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
+
+        final String message = StringUtils.isNotBlank(commitMessage)
+                ? commitMessage
+                : String.format("Creating folder %s", folder);
+
+        final List<String> filesToCreate = new ArrayList<>();
+        final List<String> foldersToCheck = new ArrayList<>();
+        Path folderToCreate = Paths.get(folder);
+        while (folderToCreate != null && StringUtils.isNotBlank(folderToCreate.toString())) {
+            if (!folderExists(pipeline, folderToCreate.toString())) {
+                filesToCreate.add(Paths.get(folderToCreate.toString(), GitUtils.GITKEEP_FILE).toString());
+                foldersToCheck.add(folderToCreate.toString());
+            }
+            folderToCreate = folderToCreate.getParent();
+        }
+
+        checkFolderHierarchyIfFileExists(pipeline, foldersToCheck);
+
+        return providerService.createFolder(pipeline, filesToCreate, message);
+    }
+
+    public GitCommitEntry renameFolder(final Pipeline pipeline,
+                                       final String folder,
+                                       final String newFolderName,
+                                       final String lastCommitId,
+                                       final String commitMessage) throws GitClientException {
+        final String message = StringUtils.isNotBlank(commitMessage)
+                ? commitMessage
+                : String.format("Renaming folder %s to %s", folder, newFolderName);
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
+        Assert.isTrue(folderExists(pipeline, folder),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_NOT_FOUND, folder));
+        Assert.isTrue(!folderExists(pipeline, newFolderName),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, newFolderName));
+        return providerService.renameFolder(pipeline, message, folder, newFolderName);
+    }
+
+    public GitCommitEntry removeFolder(final Pipeline pipeline,
+                                       final String folder,
+                                       final String lastCommitId,
+                                       final String commitMessage,
+                                       final String srcDirectory) throws GitClientException {
+        final String message = StringUtils.isNotBlank(commitMessage)
+                ? commitMessage
+                : String.format("Removing folder %s", folder);
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
+        Assert.isTrue(!com.amazonaws.util.StringUtils.isNullOrEmpty(folder),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED));
+        Assert.isTrue(!folder.equalsIgnoreCase(srcDirectory),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED, folder));
+
+        return providerService.deleteFolder(pipeline, message, folder);
+    }
+
+    public GitCommitEntry updateFiles(final Pipeline pipeline, final PipelineSourceItemsVO sourceItemVOList)
+            throws GitClientException {
+        if (CollectionUtils.isEmpty(sourceItemVOList.getItems())) {
+            return null;
+        }
+        final String lastCommitId = sourceItemVOList.getLastCommitId();
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_WAS_UPDATED));
+        final String message = StringUtils.isNotBlank(sourceItemVOList.getComment())
+                ? sourceItemVOList.getComment()
+                : String.format("Updating files %s", sourceItemVOList.getItems().stream()
+                .map(PipelineSourceItemVO::getPath)
+                .collect(Collectors.joining(", ")));
+        sourceItemVOList.getItems().forEach(sourceItemVO -> validateFilePath(sourceItemVO.getPath()));
+
+        return providerService.updateFiles(pipeline, sourceItemVOList, message);
+    }
+
+    public GitCommitEntry uploadFiles(final Pipeline pipeline,
+                                      final String folder,
+                                      final List<UploadFileMetadata> files,
+                                      final String lastCommitId,
+                                      final String commitMessage) throws GitClientException {
+        if (CollectionUtils.isEmpty(files)) {
+            return null;
+        }
+        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_WAS_UPDATED));
+        ListUtils.emptyIfNull(files).stream()
+                .peek(file -> file.setFileName(getFilePath(folder, file.getFileName())))
+                .forEach(file -> validateFilePath(file.getFileName()));
+        final String message = StringUtils.isNotBlank(commitMessage)
+                ? commitMessage
+                : String.format("Uploading files to folder %s", folder);
+
+        return providerService.uploadFiles(pipeline, files, message);
     }
 
     private byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
@@ -246,7 +395,7 @@ public class PipelineRepositoryService {
         providerService.handleHook(repositoryType, repository, token);
 
         if (initCommit) {
-            providerService.createFile(repositoryType, repository, GITKEEP_FILE, GITKEEP_CONTENT, token);
+            providerService.createFile(repositoryType, repository, GitUtils.GITKEEP_FILE, GITKEEP_CONTENT, token);
         }
 
         return repository;
@@ -279,7 +428,46 @@ public class PipelineRepositoryService {
         return repository;
     }
 
-    private String getRevisionName(final String version) {
-        return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
+    private boolean fileExists(final Pipeline pipeline, final String filePath) throws GitClientException {
+        if (StringUtils.isBlank(filePath)) {
+            return true;
+        }
+        try {
+            return getFileContents(pipeline, GitUtils.GIT_MASTER_REPOSITORY, filePath) != null;
+        } catch (UnexpectedResponseStatusException exception) {
+            log.debug(exception.getMessage(), exception);
+            return false;
+        }
+    }
+
+    private boolean folderExists(final Pipeline pipeline, final String folder) {
+        try {
+            return !getRepositoryContents(pipeline, folder, null, false).isEmpty();
+        } catch (GitClientException e) {
+            return false;
+        }
+    }
+
+    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders)
+            throws GitClientException {
+        for (String folder : folders) {
+            if (!folderExists(pipeline, folder)) {
+                Assert.isTrue(!fileExists(pipeline, folder),
+                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, folder));
+            }
+        }
+    }
+
+    private String getFilePath(final String folder, final String fileName) {
+        if (StringUtils.isBlank(folder) || folder.equals(Constants.PATH_DELIMITER)) {
+            return fileName;
+        }
+        return folder + Constants.PATH_DELIMITER + fileName;
+    }
+
+    private void validateFilePath(final String path) {
+        Arrays.stream(path.split(Constants.PATH_DELIMITER)).forEach(pathPart ->
+                Assert.isTrue(GitUtils.checkGitNaming(pathPart),
+                        messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, path)));
     }
 }
