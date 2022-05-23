@@ -16,13 +16,10 @@
 
 import Remote from '../basic/Remote';
 
-class UserProfiles extends Remote {
-  constructor (username, regionId) {
+export default class UserProfiles extends Remote {
+  constructor (username) {
     super();
     this.url = `/cloud/access/summary?
-    username=${username}&
-    regionId=${regionId}`;
+    username=${username}`;
   }
 }
-
-export default new UserProfiles();

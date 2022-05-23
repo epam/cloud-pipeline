@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
+import {computed, observable} from 'mobx';
 import classNames from 'classnames';
 import {Button, Modal, Select, message, Table, Checkbox, Spin} from 'antd';
 import Markdown from '../../../special/markdown';
@@ -27,6 +27,7 @@ import UserCredentialsRevoke from '../../../../models/user/UserCredentialsRevoke
 import UserStoragePermissionsUpdate from '../../../../models/user/UserStoragePermissionsUpdate';
 import UserStoragePermissionsCreate from '../../../../models/user/UserStoragePermissionsCreate';
 import UserStoragePermissionsRevoke from '../../../../models/user/UserStoragePermissionsRevoke';
+import UserProfiles from '../../../../models/user/UserProfiles';
 import styles from './storage-access.css';
 
 const actionsNames = {
@@ -35,6 +36,8 @@ const actionsNames = {
 };
 
 class StorageAccess extends React.Component {
+  @observable profilesRequest = new UserProfiles(this.props.user);
+
   state = {
     dialogVisible: false,
     regionId: '',
@@ -120,9 +123,8 @@ class StorageAccess extends React.Component {
 
   @computed
   get userProfiles () {
-    const {userProfiles} = this.props;
-    if (userProfiles && userProfiles.loaded) {
-      return (userProfiles.value.profiles || {});
+    if (this.profilesRequest.loaded) {
+      return (this.profilesRequest.value.profiles || {});
     }
     return {};
   }
@@ -184,7 +186,8 @@ class StorageAccess extends React.Component {
   }
 
   reload = async () => {
-    await this.props.userProfiles.fetch();
+    await this.profilesRequest.fetch();
+    this.updateUserProfile();
   }
 
   updateUserProfile = () => {
@@ -584,6 +587,5 @@ StorageAccess.propTypes = {
 export default inject(
   'preferences',
   'awsRegions',
-  'dataStorageAvailable',
-  'userProfiles'
+  'dataStorageAvailable'
 )(observer(StorageAccess));
