@@ -1,0 +1,51 @@
+.credentials-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  position: relative;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 2px;
+  margin-top: 15px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+}
+
+.card-content {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.share-credentials-container {
+  display: flex;
+  align-items: center;
+  padding: 8px 0px;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.footer button {
+  margin: 10px;
+}
+
+.permissions-form-container {
+  margin-top: 15px;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 0px;
+}

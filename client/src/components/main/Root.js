@@ -46,6 +46,7 @@ import RunCount from '../../models/pipelines/RunCount';
 import MyIssues from '../../models/issues/MyIssues';
 import Users from '../../models/user/Users';
 import UsersInfo from '../../models/user/UsersInfo';
+import userProfiles from '../../models/user/UserProfiles';
 import AppLocalization from '../../utils/localization';
 import AppRouter from './AppRouter';
 import AllowedInstanceTypes from '../../models/utils/AllowedInstanceTypes';
@@ -146,6 +147,7 @@ const Root = () =>
       myIssues,
       users,
       usersInfo,
+      userProfiles,
       allowedInstanceTypes,
       searchEngine,
       configurationSchedules,
