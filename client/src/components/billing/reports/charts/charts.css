@@ -27,6 +27,6 @@
 }
 
 .quota-summary .quota-summary-title:not(:last-child)::after {
-  content: ' - ';
+  content: ': ';
   white-space: pre;
 }
