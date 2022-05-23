@@ -334,7 +334,11 @@ function upgrade_installed_packages {
 }
 
 function remove_repository_configurations() {
-      rm -f /etc/apt/sources.list.d/cuda.list /etc/apt/sources.list.d/nvidia-ml.list
+      IFS=',' read -r -a REMOVE_FILES_LIST <<< "$CP_CAP_REMOVE_FILES"
+      for FILE_TO_REMOVE in "${REMOVE_FILES_LIST[@]}"
+      do
+          rm -f $FILE_TO_REMOVE
+      done
 }
 
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
@@ -369,9 +373,8 @@ function configure_package_manager {
       export CP_OS
       export CP_VER
 
-      CP_REMOVE_REP_CONFIGURATION=${CP_REMOVE_REP_CONFIGURATION:-"true"}
       # Remove apt repository configurations if needed
-      if [ "$CP_OS" == "ubuntu" ] && [ "$CP_REMOVE_REP_CONFIGURATION" == "true" ]; then
+      if [ "$CP_OS" == "ubuntu" ] && [ ! -z "$CP_CAP_REMOVE_FILES" ]; then
             remove_repository_configurations
       fi
 
