@@ -449,6 +449,10 @@ elif [ "$LINUX_DISTRIBUTION" = "redhat" ]; then
     $SGE_ROOT/$SGE_CELL/common/sgeexecd restart
 fi
 
+if [ "$CP_CAP_SGE_SCHEDULER_DEFAULT_QUEUE" ]; then
+    echo "-q $CP_CAP_SGE_SCHEDULER_DEFAULT_QUEUE" >> "$SGE_ROOT/$SGE_CELL/common/sge_request"
+fi
+
 # Setup any additional SGE consumable resources if available
 sge_setup_resources "$HOSTNAME" "$SGE_MASTER_SETUP_TASK" "$_MASTER_WORKER_CORES"
 
