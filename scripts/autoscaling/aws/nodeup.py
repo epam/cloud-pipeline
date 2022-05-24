@@ -42,6 +42,7 @@ LIMIT_EXCEEDED_EXIT_CODE = 6
 RUNNING = 16
 PENDING = 0
 
+EBS_TYPE_PARAM = "cluster.aws.ebs.type"
 NETWORKS_PARAM = "cluster.networks.config"
 NODE_WAIT_TIME_SEC = "cluster.nodeup.wait.sec"
 NODEUP_TASK = "InitializeNode"
@@ -288,7 +289,9 @@ def root_device(ec2, ins_img, kms_encyr_key_id):
 
         device_spec = {
             "DeviceName": block_device_name,
-            "Ebs": {"VolumeSize": block_device_obj["Ebs"]["VolumeSize"], "VolumeType": "gp2"}
+            "Ebs": {
+                "VolumeSize": block_device_obj["Ebs"]["VolumeSize"],
+                "VolumeType": get_preference(EBS_TYPE_PARAM)}
         }
         if kms_encyr_key_id:
             device_spec["Ebs"]["Encrypted"] = True
@@ -305,7 +308,7 @@ def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
         "DeviceName": name,
         "Ebs": {
             "VolumeSize": ins_hdd,
-            "VolumeType": "gp2",
+            "VolumeType": get_preference(EBS_TYPE_PARAM),
             "DeleteOnTermination": True,
             "Encrypted": True
         }
