@@ -279,7 +279,7 @@ public class BillingQuotasTest
                     .sleep(2, SECONDS)
                     .ok();
         }
-        }
+    }
 
     @Test(dependsOnMethods = "checkGlobalQuotaCreation")
     @TestCase(value = {"762_2"})
