@@ -324,8 +324,9 @@ public class EC2Helper {
     }
 
     private Volume createVolume(final AmazonEC2 client, final Long size, final String zone, final String kmsKeyArn) {
+        final String ebsType = preferenceManager.getPreference(SystemPreferences.CLUSTER_AWS_EBS_TYPE);
         final CreateVolumeRequest request = new CreateVolumeRequest()
-                .withVolumeType(VolumeType.Gp2)
+                .withVolumeType(ebsType)
                 .withSize(size.intValue())
                 .withAvailabilityZone(zone);
         if (StringUtils.isNotBlank(kmsKeyArn)) {
