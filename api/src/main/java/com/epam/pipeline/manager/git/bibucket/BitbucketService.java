@@ -38,6 +38,7 @@ import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
+import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -172,9 +173,10 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
-    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
+    public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String rawPath,
                                                           final String version, final boolean recursive) {
         final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
         final List<String> values = new ArrayList<>();
         String nextPage = collectValues(client.getFiles(path, version, null), values);
