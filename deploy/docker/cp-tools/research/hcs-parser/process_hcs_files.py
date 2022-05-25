@@ -52,10 +52,11 @@ HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
 UNKNOWN_ATTRIBUTE_VALUE = 'NA'
 HYPHEN = '-'
-TAGS_MAPPING_RULE_DELIMITER = ','
+COMMA = ','
 TAGS_MAPPING_KEYS_DELIMITER = '='
 PATH_DELIMITER = '/'
 
+HCS_KEYWORD_FILE_SUFFIX = '.kw.txt'
 EXTENDED_TAGS_OWNER_TAG_KEY = 'OWNER'
 EXTENDED_TAGS_CHANNEL_TYPE_TAG_KEY = 'CHANNELTYPE'
 EXTENDED_TAGS_MULTIPLANE_FLAG_TAG_KEY = 'PLANES'
@@ -281,7 +282,7 @@ class HcsFileTagProcessor:
             self.log_processing_info('No metadata found for file, skipping tags processing...')
             return 0
         metadata_dict = self.map_to_metadata_dict(ome_schema, metadata)
-        self.add_custom_metadata(metadata_dict)
+        self.add_metadata_from_keyword_file(metadata_dict)
         tags_to_push = self.build_tags_dictionary(metadata_dict, existing_attributes_dictionary)
         if not tags_to_push:
             self.log_processing_info('No matching tags found')
@@ -292,9 +293,9 @@ class HcsFileTagProcessor:
         url_encoded_cloud_file_path = HcsParsingUtils.extract_cloud_path(urllib.quote(self.hcs_img_path))
         return os.system('pipe storage set-object-tags "{}" {}'.format(url_encoded_cloud_file_path, tags_to_push_str))
 
-    def add_custom_metadata(self, metadata_dict):
+    def add_metadata_from_keyword_file(self, metadata_dict):
         experiment_id = os.path.basename(self.hcs_root_dir)
-        keyword_file_name = experiment_id[:experiment_id.rfind('-')] + '.kw.txt'
+        keyword_file_name = experiment_id[:experiment_id.rfind(HYPHEN)] + HCS_KEYWORD_FILE_SUFFIX
         keyword_file_path = os.path.join(self.hcs_root_dir, keyword_file_name)
         keyword_file_content = self.try_extract_keyword_file_content(keyword_file_path)
         if keyword_file_content is None:
@@ -340,7 +341,7 @@ class HcsFileTagProcessor:
 
     def build_tags_dictionary(self, metadata_dict, existing_attributes_dictionary):
         tags_dictionary = dict()
-        common_tags_mapping = self.map_tags('HCS_PARSING_TAG_MAPPING', existing_attributes_dictionary)
+        common_tags_mapping = self.map_tags(existing_attributes_dictionary)
         if common_tags_mapping:
             tags_dictionary.update(self.extract_matching_tags_from_metadata(metadata_dict, common_tags_mapping))
         magnification_value = self._get_magnification_attribute_value()
@@ -397,7 +398,7 @@ class HcsFileTagProcessor:
                 if value.startswith('[') and value.endswith(']'):
                     self.log_processing_info('Processing array value')
                     value = value[1:-1]
-                    values = list(set(value.split(',')))
+                    values = list(set(value.split(COMMA)))
                     if len(values) != 1:
                         self.log_processing_info('Empty or multiple metadata values, skipping [{}]'
                                                  .format(key))
@@ -410,9 +411,12 @@ class HcsFileTagProcessor:
                     tags_to_push[target_tag] = {value}
         return tags_to_push
 
-    def map_tags(self, tags_mapping_env_var_name, existing_attributes_dictionary):
-        tags_mapping_rules_str = os.getenv(tags_mapping_env_var_name, '')
-        tags_mapping_rules = tags_mapping_rules_str.split(TAGS_MAPPING_RULE_DELIMITER) if tags_mapping_rules_str else []
+    def map_tags(self, existing_attributes_dictionary):
+        tags_mapping_rules_str = os.getenv('HCS_PARSING_TAG_MAPPING', '')
+        tags_mapping_rules = tags_mapping_rules_str.split(COMMA) if tags_mapping_rules_str else []
+        skip_dictionary_check_tags = set(element.strip()
+                                         for element
+                                         in [os.getenv('HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS', '').split(COMMA)])
         tags_mapping = dict()
         for rule in tags_mapping_rules:
             rule_mapping = rule.split(TAGS_MAPPING_KEYS_DELIMITER, 1)
@@ -423,7 +427,7 @@ class HcsFileTagProcessor:
             else:
                 key = rule_mapping[0]
                 value = rule_mapping[1]
-                if value not in existing_attributes_dictionary:
+                if value not in existing_attributes_dictionary and value not in skip_dictionary_check_tags:
                     self.log_processing_info('No dictionary [{}] is registered, the rule "{}" will be skipped!'
                                              .format(value, rule_mapping))
                     continue
@@ -1124,9 +1128,9 @@ def remove_not_empty_string(string_list):
 
 
 def process_hcs_files():
-    paths_to_hcs_roots = remove_not_empty_string(os.getenv('HCS_TARGET_DIRECTORIES', '').split(','))
+    paths_to_hcs_roots = remove_not_empty_string(os.getenv('HCS_TARGET_DIRECTORIES', '').split(COMMA))
     if len(paths_to_hcs_roots) == 0:
-        lookup_paths = remove_not_empty_string(os.getenv('HCS_LOOKUP_DIRECTORIES', '').split(','))
+        lookup_paths = remove_not_empty_string(os.getenv('HCS_LOOKUP_DIRECTORIES', '').split(COMMA))
         if not lookup_paths:
             log_success('No paths for HCS processing specified')
             exit(0)
