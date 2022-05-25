@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
+import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -43,6 +44,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -55,17 +57,28 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class BitbucketService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
     private static final String INITIAL_COMMIT = "Initial commit";
     private static final String BLOB = "blob";
     private static final String TREE = "tree";
+    private static final String NOT_FOUND_CODE = "404";
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
+    private String srcDirectory;
+
+    public BitbucketService(final BitbucketMapper mapper,
+                            final MessageHelper messageHelper,
+                            final AuthManager authManager,
+                            final @Value("${git.src.directory}") String srcDirectory) {
+        this.mapper = mapper;
+        this.messageHelper = messageHelper;
+        this.authManager = authManager;
+        this.srcDirectory = srcDirectory;
+    }
 
     @Override
     public RepositoryType getType() {
@@ -179,23 +192,31 @@ public class BitbucketService implements GitClientService {
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
         final List<String> values = new ArrayList<>();
-        String nextPage = collectValues(client.getFiles(path, version, null), values);
-        while (StringUtils.isNotBlank(nextPage)) {
-            nextPage = collectValues(client.getFiles(path, version, nextPage), values);
-        }
+        try {
+            final BitbucketPagedResponse<String> files = client.getFiles(path, version, null);
+            String nextPage = collectValues(files, values);
+            while (StringUtils.isNotBlank(nextPage)) {
+                nextPage = collectValues(client.getFiles(path, version, nextPage), values);
+            }
 
-        final List<GitRepositoryEntry> blobs = values.stream()
-                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
-                .map(value -> buildGitRepositoryEntry(path, value, BLOB))
-                .collect(Collectors.toList());
-        final List<GitRepositoryEntry> trees = values.stream()
-                .map(this::trimFileName)
-                .filter(StringUtils::isNotBlank)
-                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
-                .distinct()
-                .map(folderPath -> buildGitRepositoryEntry(path, folderPath, TREE))
-                .collect(Collectors.toList());
-        return new ArrayList<>(CollectionUtils.union(blobs, trees));
+            final List<GitRepositoryEntry> blobs = values.stream()
+                    .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
+                    .map(value -> buildGitRepositoryEntry(path, value, BLOB))
+                    .collect(Collectors.toList());
+            final List<GitRepositoryEntry> trees = values.stream()
+                    .map(this::trimFileName)
+                    .filter(StringUtils::isNotBlank)
+                    .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
+                    .distinct()
+                    .map(folderPath -> buildGitRepositoryEntry(path, folderPath, TREE))
+                    .collect(Collectors.toList());
+            return new ArrayList<>(CollectionUtils.union(blobs, trees));
+        } catch (UnexpectedResponseStatusException e) {
+            if (e.getMessage().contains(NOT_FOUND_CODE) && path.equals(srcDirectory)) {
+                return getRepositoryContents(pipeline, ProviderUtils.DELIMITER, version, recursive);
+            }
+            throw e;
+        }
     }
 
     private BitbucketClient getClient(final String repositoryPath, final String token) {
