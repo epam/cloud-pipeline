@@ -446,7 +446,7 @@ public class PipelineRepositoryService {
 
     private boolean folderExists(final Pipeline pipeline, final String folder) {
         try {
-            return !getRepositoryContents(pipeline, folder, null, false).isEmpty();
+            return !getRepositoryContents(pipeline, folder, null, false, true).isEmpty();
         } catch (GitClientException e) {
             return false;
         }
