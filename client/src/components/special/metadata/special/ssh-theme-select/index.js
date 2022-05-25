@@ -24,39 +24,57 @@ const sshThemesList = {
 };
 
 function SshThemeSelect ({
-  value,
+  metadata,
   onChange,
   disabled,
   style,
   size = 'small'
 }) {
-  const handleChange = value => {
-    onChange && onChange(value);
+  const {value = undefined} = metadata || {};
+  const handleChange = newValue => {
+    onChange && onChange(newValue);
   };
+  const correctedValue = /^light$/i.test(value) ? 'light' : 'default';
   return (
-    <Select
-      onChange={handleChange}
-      value={value}
-      size={size}
-      disabled={disabled}
-      style={style}
+    <div
+      style={
+        Object.assign(
+          {
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            margin: '5px 0'
+          },
+          style || {}
+        )
+      }
     >
-      {Object.entries(sshThemesList).map(([theme, text]) => (
-        <Select.Option
-          key={theme}
-          value={theme}
-        >
-          {text}
-        </Select.Option>
-      ))}
-    </Select>
+      <b>SSH terminal theme:</b>
+      <Select
+        onChange={handleChange}
+        value={correctedValue}
+        size={size}
+        disabled={disabled}
+        style={{flex: 1, marginLeft: 5}}
+      >
+        {Object.entries(sshThemesList).map(([theme, text]) => (
+          <Select.Option
+            key={theme}
+            value={theme}
+          >
+            {text}
+          </Select.Option>
+        ))}
+      </Select>
+    </div>
   );
 }
 
 SshThemeSelect.metadataKey = 'ui.ssh.theme';
 
 SshThemeSelect.propTypes = {
-  value: PropTypes.string,
+  metadata: PropTypes.object,
   onChange: PropTypes.func,
   disabled: PropTypes.bool,
   style: PropTypes.object,
