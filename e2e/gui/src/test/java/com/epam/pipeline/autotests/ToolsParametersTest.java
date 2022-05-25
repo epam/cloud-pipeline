@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -144,9 +144,9 @@ public class ToolsParametersTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
-                .selectValue(RUN_CAPABILITIES, custCapability1)
+                .selectRunCapability(custCapability1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectValue(RUN_CAPABILITIES, custCapability2)
+                .selectRunCapability(custCapability2)
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
                 .checkTooltipText(custCapability2, CUSTOM_TEST_CAPABILITY_2)
                 .launch(this)
@@ -184,9 +184,9 @@ public class ToolsParametersTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
-                .selectValue(RUN_CAPABILITIES, custCapability1)
+                .selectRunCapability(custCapability1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectValue(RUN_CAPABILITIES, custCapability2)
+                .selectRunCapability(custCapability2)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
@@ -225,9 +225,9 @@ public class ToolsParametersTest
                                 .checkCustomCapability(SYSTEM_D, true)
                                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
                                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
-                                .selectValue(RUN_CAPABILITIES, custCapability1)
+                                .selectRunCapability(custCapability1)
                                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                                .selectValue(RUN_CAPABILITIES, custCapability3));
+                                .selectRunCapability(custCapability3));
         final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO()
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
                 .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3);
@@ -243,10 +243,10 @@ public class ToolsParametersTest
                 .checkCustomCapability(SYSTEM_D, true)
                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
-                .selectValue(RUN_CAPABILITIES, custCapability1);
+                .selectRunCapability(custCapability1);
         pipelineRunFormAO
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectValue(RUN_CAPABILITIES, custCapability3)
+                .selectRunCapability(custCapability3)
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
                 .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3);
     }
@@ -276,9 +276,9 @@ public class ToolsParametersTest
                 .checkCustomCapability(custCapability3, false)
                 .checkCustomCapability(custCapability2, true)
                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
-                .selectValue(RUN_CAPABILITIES, custCapability1)
+                .selectRunCapability(custCapability1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectValue(RUN_CAPABILITIES, custCapability3)
+                .selectRunCapability(custCapability3)
                 .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
                 .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3)
                 .sleep(1, SECONDS)
@@ -320,7 +320,7 @@ public class ToolsParametersTest
                                     .click(RUN_CAPABILITIES)
                                     .sleep(2, SECONDS)
                                     .checkCustomCapability(custCapability4, false)
-                                    .selectValue(RUN_CAPABILITIES, custCapability4));
+                                    .selectRunCapability(custCapability4));
             new PipelineRunFormAO().checkTooltipText(custCapability4, CUSTOM_TEST_CAPABILITY_4);
         });
     }

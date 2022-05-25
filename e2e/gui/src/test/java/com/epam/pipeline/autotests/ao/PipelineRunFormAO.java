@@ -37,6 +37,7 @@ import static com.codeborne.selenide.Selectors.*;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
@@ -72,7 +73,8 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
+                    .closest(".ant-row").find(className("ant-form-item-control "))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
@@ -156,9 +158,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setPriceType(final String priceType) {
         click(PRICE_TYPE);
-        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+        context().find(visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
                 .shouldBe(visible)
                 .click();
+        return this;
+    }
+
+    public PipelineRunFormAO selectRunCapability(final String optionQualifier) {
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
+        $(visible(byClassName("rc-dropdown"))).find(byTitle(optionQualifier))
+                .shouldBe(visible).click();
         return this;
     }
 
@@ -172,7 +181,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     private void checkPriceTypeInList(String priceType) {
-        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        context().find(visible(byClassName("ant-select-dropdown")))
                 .find(byText(priceType))
                 .shouldBe(visible);
     }
@@ -456,7 +465,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        final SelenideElement capabilityElement = $(visible(byClassName("ant-select-dropdown")))
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
@@ -471,10 +480,10 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCapabilityTooltip(final String capability, final String text) {
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        $(visible(byClassName("ant-select-dropdown")))
                 .find(withText(capability))
                 .shouldBe(visible).hover();
-        $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+        $(visible(byClassName("ant-tooltip")))
                 .find(byClassName("ant-tooltip-content"))
                 .shouldHave(Condition.text(text));
         return this;
@@ -599,7 +608,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
         public ConfigureClusterPopupAO setWorkersPriceType(final String priceType) {
             click(WORKERS_PRICE_TYPE);
-            context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+            context().find(visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
                     .shouldBe(visible)
                     .click();
             return this;

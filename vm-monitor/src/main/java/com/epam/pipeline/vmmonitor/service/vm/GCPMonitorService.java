@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -137,7 +138,8 @@ public class GCPMonitorService implements VMMonitorService<GCPRegion> {
                              .privateIp(getInternalIP(instance))
                              .instanceType(instance.getMachineType())
                              .tags(instance.getLabels())
-                             .created(Instant.parse(instance.getCreationTimestamp())
+                             .created(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(instance.getCreationTimestamp(),
+                                             Instant::from)
                                      .atZone(ZoneOffset.UTC)
                                      .toLocalDateTime())
                              .build();
