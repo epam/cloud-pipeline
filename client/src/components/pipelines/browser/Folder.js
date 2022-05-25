@@ -914,7 +914,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, token} = opts;
+    const {name, description, repository, repositoryType, token} = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -922,6 +922,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this._currentFolder.folder.id,
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
+      repositoryType,
       repositoryToken: token
     });
     hide();

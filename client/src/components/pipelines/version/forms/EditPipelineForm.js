@@ -18,10 +18,21 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
-import {Button, Modal, Form, Input, Row, Col, Spin, Tabs} from 'antd';
+import {
+  Button,
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  Spin,
+  Tabs,
+  Select
+} from 'antd';
 import PermissionsForm from '../../../roleModel/PermissionsForm';
 import roleModel from '../../../../utils/roleModel';
 import localization from '../../../../utils/localization';
+import {RepositoryTypes, RepositoryTypeNames} from '../../../special/git-repository-control';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
@@ -58,6 +69,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       mask: PropTypes.number,
       locked: PropTypes.bool,
       repository: PropTypes.string,
+      repositoryType: PropTypes.string,
       repositoryToken: PropTypes.string,
       pipelineType: PropTypes.string
     }),
@@ -127,6 +139,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         if (!this.state.editRepositorySettings) {
           values.repository = undefined;
           values.token = undefined;
+          values.repositoryType = undefined;
         } else {
           values.token = values.token || '';
         }
@@ -193,6 +206,32 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       if (this.state.editRepositorySettings) {
         formItems.push((
           <Form.Item
+            key="repositoryType"
+            className="edit-pipeline-form-repository-type-container"
+            {...this.formItemLayout} label="Repository Type">
+            {getFieldDecorator('repositoryType',
+              {
+                initialValue: this.props.pipeline && this.props.pipeline.repositoryType
+                  ? this.props.pipeline.repositoryType
+                  : RepositoryTypes.GitLab
+              })(
+              <Select
+                disabled={!!this.props.pipeline || this.props.pending}
+              >
+                {
+                  Object.values(RepositoryTypes || {})
+                    .map((type) => (
+                      <Select.Option key={type} value={type}>
+                        {RepositoryTypeNames[type] || type}
+                      </Select.Option>
+                    ))
+                }
+              </Select>
+            )}
+          </Form.Item>
+        ));
+        formItems.push((
+          <Form.Item
             key="repository"
             className="edit-pipeline-form-repository-container"
             {...this.formItemLayout} label="Repository">
@@ -202,7 +241,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
               })(
               <Input
                 onPressEnter={this.handleSubmit}
-                disabled={!!this.props.pipeline || this.props.pending}/>
+                disabled={!!this.props.pipeline || this.props.pending} />
             )}
           </Form.Item>
         ));
