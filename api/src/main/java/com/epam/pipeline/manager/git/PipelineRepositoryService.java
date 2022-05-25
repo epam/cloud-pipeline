@@ -23,7 +23,11 @@ import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
-import com.epam.pipeline.entity.git.*;
+import com.epam.pipeline.entity.git.GitCommitEntry;
+import com.epam.pipeline.entity.git.GitCredentials;
+import com.epam.pipeline.entity.git.GitProject;
+import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineType;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
@@ -180,7 +184,7 @@ public class PipelineRepositoryService {
                                      final String lastCommitId,
                                      final String commitMessage,
                                      final boolean checkCommit) {
-        if (checkCommit) { // TODO: do we need this branch?
+        if (checkCommit) {
             Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
                     messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, filePath));
         }

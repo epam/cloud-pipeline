@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.git.bibucket;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
@@ -52,6 +54,7 @@ import org.springframework.util.Assert;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -183,18 +186,25 @@ public class BitbucketService implements GitClientService {
             nextPage = collectValues(client.getFiles(path, version, nextPage), values);
         }
 
-        final List<GitRepositoryEntry> blobs = values.stream()
+        final List<GitRepositoryEntry> files = values.stream()
                 .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
                 .map(value -> buildGitRepositoryEntry(path, value, GitUtils.FILE_MARKER))
                 .collect(Collectors.toList());
-        final List<GitRepositoryEntry> trees = values.stream()
+
+        final List<String> folders = values.stream()
                 .map(this::trimFileName)
                 .filter(StringUtils::isNotBlank)
                 .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
                 .distinct()
+                .map(this::getFoldersTreeFromPath)
+                .flatMap(Collection::stream)
+                .distinct()
+                .collect(Collectors.toList());
+        final List<GitRepositoryEntry> results = folders.stream()
                 .map(folderPath -> buildGitRepositoryEntry(path, folderPath, GitUtils.FOLDER_MARKER))
                 .collect(Collectors.toList());
-        return new ArrayList<>(CollectionUtils.union(blobs, trees));
+        results.addAll(files);
+        return results;
     }
 
     @Override
@@ -239,8 +249,19 @@ public class BitbucketService implements GitClientService {
     @Override
     public GitCommitEntry updateFiles(final Pipeline pipeline, final PipelineSourceItemsVO sourceItemVOList,
                                       final String message) {
-        // TODO: implement
-        throw new UnsupportedOperationException("Folder deletion is not supported for Bitbucket repository");
+        if (ListUtils.emptyIfNull(sourceItemVOList.getItems()).stream()
+                .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
+            throw new UnsupportedOperationException("File renaming is not supported for Bitbucket repository");
+        }
+        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+
+        BitbucketCommit commit = null;
+        for (final PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
+            final String commitId = findPreviousCommitId(client, sourceItemVO.getPath(),
+                    pipeline.getCurrentVersion().getCommitId(), commit);
+            commit = client.upsertFile(sourceItemVO.getPath(), sourceItemVO.getContents(), message, commitId);
+        }
+        return mapper.bitbucketCommitToCommitEntry(commit);
     }
 
     @Override
@@ -313,5 +334,26 @@ public class BitbucketService implements GitClientService {
 
     private boolean fileExists(final BitbucketClient client, final String path) {
         return client.getFileContent(GitUtils.GIT_MASTER_REPOSITORY, path) != null;
+    }
+
+    private String findPreviousCommitId(final BitbucketClient client, final String path,
+                                        final String lastPipelineCommit, final BitbucketCommit previousCommit) {
+        if (!fileExists(client, path)) {
+            return null;
+        }
+        return Objects.isNull(previousCommit) ? lastPipelineCommit : previousCommit.getId();
+    }
+
+    private List<String> getFoldersTreeFromPath(final String path) {
+        final List<String> folders = new ArrayList<>();
+        String previousPath = null;
+        for (final Path pathPart : Paths.get(path)) {
+            final String currentFolder = pathPart.toString();
+            previousPath = StringUtils.isBlank(previousPath)
+                    ? currentFolder
+                    : previousPath + Constants.PATH_DELIMITER + currentFolder;
+            folders.add(previousPath);
+        }
+        return folders;
     }
 }
