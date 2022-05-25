@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCloneEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCloneHrefType;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketCommitParent;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketLinks;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketProject;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
@@ -34,14 +35,19 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public interface BitbucketMapper {
+    DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSX");
 
     @Mapping(target = "projectId", source = "project.id")
     @Mapping(target = "repoUrl", ignore = true)
@@ -70,13 +76,15 @@ public interface BitbucketMapper {
     Revision commitToRevision(BitbucketCommit bitbucketCommit);
 
     @Mapping(target = "title", ignore = true)
-    @Mapping(target = "authoredDate", ignore = true)
-    @Mapping(target = "committerName", ignore = true)
-    @Mapping(target = "committerEmail", ignore = true)
-    @Mapping(target = "parentIds", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "committedDate", ignore = true)
+    @Mapping(target = "parentIds", expression = "java(fillCommitParents(bitbucketCommit))")
+    @Mapping(target = "committedDate",
+            expression = "java(fillCommitDate(bitbucketCommit, BitbucketCommit::getCommitterTimestamp))")
+    @Mapping(target = "committerName", source = "committer.displayName")
+    @Mapping(target = "committerEmail", source = "committer.emailAddress")
     @Mapping(target = "shortId", source = "displayId")
+    @Mapping(target = "authoredDate",
+            expression = "java(fillCommitDate(bitbucketCommit, BitbucketCommit::getAuthorTimestamp))")
     @Mapping(target = "authorName", source = "author.displayName")
     @Mapping(target = "authorEmail", source = "author.emailAddress")
     GitCommitEntry bitbucketCommitToCommitEntry(BitbucketCommit bitbucketCommit);
@@ -116,5 +124,20 @@ public interface BitbucketMapper {
         return Objects.nonNull(commit) && Objects.nonNull(commit.getAuthorTimestamp())
                 ? new Date(commit.getAuthorTimestamp())
                 : null;
+    }
+
+    default String fillCommitDate(final BitbucketCommit commit, final Function<BitbucketCommit, Long> getDate) {
+        return Objects.nonNull(commit) && Objects.nonNull(getDate.apply(commit))
+                ? DATE_FORMAT.format(new Date(getDate.apply(commit)))
+                : null;
+    }
+
+    default List<String> fillCommitParents(final BitbucketCommit commit) {
+        if (Objects.isNull(commit)) {
+            return null;
+        }
+        return ListUtils.emptyIfNull(commit.getParents()).stream()
+                .map(BitbucketCommitParent::getId)
+                .collect(Collectors.toList());
     }
 }
