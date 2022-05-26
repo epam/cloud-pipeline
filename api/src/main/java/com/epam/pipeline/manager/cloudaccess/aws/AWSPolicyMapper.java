@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +71,11 @@ public class AWSPolicyMapper {
     public static final Set<String> AWS_S3_OBJECT_WRITE_ACTIONS = new HashSet<>(
             Arrays.asList("s3:PutObject", "s3:PutObjectAcl", "s3:DeleteObject"));
 
+    public static final Set<String> AWS_KMS_ACTIONS = new HashSet<>(
+            Arrays.asList("kms:Decrypt", "kms:Encrypt", "kms:DescribeKey", "kms:ReEncrypt*",
+                    "kms:GenerateDataKey*", "kms:ListKeys"));
+    public static final String ANY_RESOURCE = "*";
+
 
     public static CloudAccessPolicy toCloudUserAccessPolicy(final String policyName,
                                                             final String policyDocument) {
@@ -90,7 +96,6 @@ public class AWSPolicyMapper {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-
     }
 
     private static List<CloudAccessPolicyStatement> parsePolicyDocumentToCloudPolicyStatements(
@@ -179,6 +184,21 @@ public class AWSPolicyMapper {
         }).collect(Collectors.toList());
     }
 
+    public static String getKmsPolicyDocument() {
+        try {
+            return OBJECT_MAPPER.writeValueAsString(AWSAccessPolicyDocument.builder()
+                    .version(AWS_IAM_API_VERSION)
+                    .statements(Collections.singletonList(
+                            mapToAwsPolicyStatement(
+                                    ANY_RESOURCE,
+                                    AWS_KMS_ACTIONS
+                            )
+                    )).build());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static Map<String, List<AWSAccessPolicyStatement>> parseAndGroupPolicyDocumentByResource(
             final String policyDocument) throws IOException {
 
@@ -215,6 +235,14 @@ public class AWSPolicyMapper {
                 .effect(CloudAccessPolicyEffect.ALLOW.awsValue)
                 .actions(actions)
                 .resource(resourceMapper.apply(resource))
+                .build();
+    }
+
+    private static AWSAccessPolicyStatement mapToAwsPolicyStatement(final String resource, final Set<String> actions) {
+        return AWSAccessPolicyStatement.builder()
+                .effect(CloudAccessPolicyEffect.ALLOW.awsValue)
+                .actions(actions)
+                .resource(resource)
                 .build();
     }
 

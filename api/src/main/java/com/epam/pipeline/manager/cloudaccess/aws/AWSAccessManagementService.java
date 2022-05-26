@@ -57,6 +57,8 @@ import java.util.stream.Collectors;
 @Service
 public class AWSAccessManagementService implements CloudAccessManagementService<AwsRegion> {
 
+    public static final String KMS_POLICY_PREFIX = "_kms";
+
     @Override
     public CloudProvider getProvider() {
         return CloudProvider.AWS;
@@ -113,19 +115,30 @@ public class AWSAccessManagementService implements CloudAccessManagementService<
     public void grantCloudUserPermissions(final AwsRegion region, final String username,
                                           final String policyName,
                                           final CloudAccessPolicy userPolicy) {
-        final PutUserPolicyRequest putUserPolicyRequest = new PutUserPolicyRequest()
+        final PutUserPolicyRequest putUserS3PolicyRequest = new PutUserPolicyRequest()
                 .withUserName(username)
                 .withPolicyName(policyName)
                 .withPolicyDocument(AWSPolicyMapper.toPolicyDocument(userPolicy));
-        getIAMClient(region).putUserPolicy(putUserPolicyRequest);
+        getIAMClient(region).putUserPolicy(putUserS3PolicyRequest);
+
+        final PutUserPolicyRequest putUserKMSPolicyRequest = new PutUserPolicyRequest()
+                .withUserName(username)
+                .withPolicyName(policyName + KMS_POLICY_PREFIX)
+                .withPolicyDocument(AWSPolicyMapper.getKmsPolicyDocument());
+        getIAMClient(region).putUserPolicy(putUserKMSPolicyRequest);
     }
 
     @Override
     public void revokeCloudUserPermissions(final AwsRegion region, final String username, final String policyName) {
-        final DeleteUserPolicyRequest putUserPolicyRequest = new DeleteUserPolicyRequest()
+        final DeleteUserPolicyRequest deleteUserS3PolicyRequest = new DeleteUserPolicyRequest()
                 .withUserName(username)
                 .withPolicyName(policyName);
-        getIAMClient(region).deleteUserPolicy(putUserPolicyRequest);
+        getIAMClient(region).deleteUserPolicy(deleteUserS3PolicyRequest);
+
+        final DeleteUserPolicyRequest deleteUserKMSPolicyRequest = new DeleteUserPolicyRequest()
+                .withUserName(username)
+                .withPolicyName(policyName + KMS_POLICY_PREFIX);
+        getIAMClient(region).deleteUserPolicy(deleteUserKMSPolicyRequest);
     }
 
     @Override
