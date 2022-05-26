@@ -173,7 +173,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings selectRunCapability(final String optionQualifier) {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
-        $(PipelineSelectors.visible(byClassName("rc-dropdown"))).find(byTitle(optionQualifier))
+        $(PipelineSelectors.visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
                 .shouldBe(visible).click();
         return this;
     }
@@ -274,7 +274,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("rc-dropdown")))
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
@@ -289,7 +289,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings checkCapabilityTooltip(final String capability, final String text) {
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        $(PipelineSelectors.visible(byClassName("rc-dropdown")))
                 .find(withText(capability))
                 .shouldBe(visible).hover();
         $(PipelineSelectors.visible(byClassName("ant-tooltip")))
