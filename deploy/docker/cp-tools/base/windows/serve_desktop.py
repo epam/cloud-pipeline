@@ -50,7 +50,9 @@ def get_desktop_template():
         raise RuntimeError('Template file not found at {}'.format(Config.template_path))
     with open(Config.template_path, 'r') as template_file:
         template_data = template_file.read()
-    user_name = _create_user(_extract_user_from_request()) if Config.personal else Config.user_name
+    user_name = _extract_user_from_request()
+    user_name = user_name.split('@')[0]
+    user_name = _create_user(user_name) if Config.personal else Config.user_name
     if Config.template_path.endswith('.dcv'):
         template_data = template_data.format(CP_PROXY=Config.proxy,
                                              CP_PROXY_PORT=Config.proxy_port,

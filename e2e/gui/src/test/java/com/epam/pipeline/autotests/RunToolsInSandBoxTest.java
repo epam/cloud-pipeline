@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -210,7 +210,7 @@ public class RunToolsInSandBoxTest
     public void validationOfDinDLaunchAndFunctionality() {
         tools()
                 .perform(registry, group, tool, runTool())
-                .selectValue(RUN_CAPABILITIES, "DinD")
+                .selectRunCapability("DinD")
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
@@ -237,7 +237,7 @@ public class RunToolsInSandBoxTest
     public void validationOfSingularityLaunchAndFunctionality() {
         tools()
                 .perform(registry, group, tool, runTool())
-                .selectValue(RUN_CAPABILITIES, "Singularity")
+                .selectRunCapability("Singularity")
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)

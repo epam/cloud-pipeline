@@ -26,9 +26,10 @@ export function getWellMesh (well) {
   const maxX = Math.max(...images.map(o => o.x));
   const minY = Math.min(...images.map(o => o.y));
   const maxY = Math.max(...images.map(o => o.y));
+  const longestSeries = Math.max(maxX - minX + 1, maxY - minY + 1);
   return {
-    columns: maxX - minX + 1,
-    rows: maxY - minY + 1,
+    columns: longestSeries,
+    rows: longestSeries,
     cells: images.map(image => ({column: image.x - minX, row: maxY - image.y}))
   };
 }

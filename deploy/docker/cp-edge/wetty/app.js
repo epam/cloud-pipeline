@@ -94,8 +94,8 @@ function get_user_attributes_theme(userId, auth_key) {
             entityId: userId
         }]
     );
-    if (payload && payload.value && payload.value.length) {
-        const {data = {}} = payload.value[0];
+    if (payload && payload.length) {
+        const {data = {}} = payload[0];
         const {['ui.ssh.theme']: userDefinedTheme} = data;
         if (userDefinedTheme && userDefinedTheme.value) {
             return userDefinedTheme.value;
