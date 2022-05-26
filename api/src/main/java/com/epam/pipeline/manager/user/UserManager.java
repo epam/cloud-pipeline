@@ -46,6 +46,7 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.utils.UserUtils;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
@@ -218,7 +219,9 @@ public class UserManager {
 
     public Collection<PipelineUser> loadAllUsers(final boolean loadQuotas) {
         final  Collection<PipelineUser> pipelineUsers = userDao.loadAllUsers();
-        if (loadQuotas) {
+        final PipelineUser currentUser = getCurrentUser();
+        if (loadQuotas && (currentUser.isAdmin() ||
+                UserUtils.hasRole(currentUser, DefaultRoles.ROLE_BILLING_MANAGER))) {
             attachQuotaInfo(pipelineUsers);
         }
         return pipelineUsers;
