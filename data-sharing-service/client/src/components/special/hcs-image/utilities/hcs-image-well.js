@@ -67,7 +67,8 @@ class HCSImageWell {
       width,
       height,
       round_radius: roundRadius,
-      to_ome_wells_mapping: images = {}
+      to_ome_wells_mapping: images = {},
+      well_overview: wellImageId
     } = options;
     const {
       width: plateWidth = 10,
@@ -115,6 +116,11 @@ class HCSImageWell {
         x: parsed.x,
         y: parsed.y
       }));
+    /**
+     * Well overview image id
+     * @type {string}
+     */
+    this.wellImageId = wellImageId;
   }
 
   /**
