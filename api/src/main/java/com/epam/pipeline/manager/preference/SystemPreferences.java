@@ -588,6 +588,16 @@ public class SystemPreferences {
         new ObjectPreference<>("launch.system.parameters", null,
                                new TypeReference<List<DefaultSystemParameter>>() {},
                                LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DefaultSystemParameter>>() {}));
+
+    /**
+     * Controls maximum number of active runs for specific user/group
+     */
+    public static final IntPreference LAUNCH_MAX_RUNS_USER_LIMIT = new IntPreference(
+        "launch.max.runs.user", null, LAUNCH_GROUP, isGreaterThan(0));
+
+    public static final IntPreference LAUNCH_MAX_RUNS_GROUP_LIMIT = new IntPreference(
+        "launch.max.runs.group", null, LAUNCH_GROUP, isGreaterThan(0));
+
     /**
      * Sets task status update rate, on which application will query Kubernetes cluster for running task status,
      * milliseconds
