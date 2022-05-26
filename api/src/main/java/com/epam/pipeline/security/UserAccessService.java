@@ -87,6 +87,9 @@ public class UserAccessService {
         if (user.isBlocked()) {
             throwUserIsBlocked(user.getUserName());
         }
+        if (user.isAdmin()) {
+            return;
+        }
         quotaService.findActiveActionForUser(user, QuotaActionType.BLOCK)
                 .ifPresent(quota -> {
                     log.info("Logging of user is blocked due to quota applied {}", quota);
