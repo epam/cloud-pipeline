@@ -285,24 +285,28 @@ class WebdavFileSystem extends FileSystem {
         name: this.joinPath(...itemParts),
       }
     };
-    return new Promise((resolve, reject) => {
+    const getContents = (root) => new Promise((resolve, reject) => {
       if (!this.webdavClient) {
         reject(`${this.appName || 'Cloud Data'} client was not initialized`);
       }
-      this.webdavClient.getDirectoryContents(item || '')
+      this.webdavClient.getDirectoryContents(root || '')
         .then(contents => {
-          resolve(
-            contents
-              .map(item => ({
-                path: item.filename,
-                isDirectory: /^directory$/i.test(item.type)
-              }))
-              .filter(o => !o.isDirectory)
-              .map(o => mapper(o.path))
-          )
+          const mapped = contents
+            .map(o => ({
+              path: o.filename,
+              isDirectory: /^directory$/i.test(o.type)
+            }));
+          const files = mapped.filter(o => !o.isDirectory).map(o => mapper(o.path));
+          const directories = mapped.filter(o => o.isDirectory);
+          return Promise.all([
+            ...files.map(file => Promise.resolve([file])),
+            ...directories.map(directory => getContents(directory.path))
+          ]);
         })
-        .catch(() => resolve([item].map(mapper)));
+        .then(contents => resolve(contents.reduce((r, c) => ([...r, ...c]), [])))
+        .catch(() => resolve([]));
     });
+    return getContents(item);
   }
   getContentsStream(path) {
     return new Promise((resolve, reject) => {
