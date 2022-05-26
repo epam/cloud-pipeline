@@ -52,7 +52,6 @@ import static java.lang.String.join;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.tagName;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> implements AccessObject<SettingsPageAO>,
@@ -785,7 +784,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public final Map<Primitive, SelenideElement> elements = initialiseElements(
                             entry(SEARCH, element),
                             entry(SEARCH_INPUT, element.find(By.className("ant-select-search__field"))),
-                            entry(ADD_KEY, context().find(By.id("add-role-button"))),
+                            entry(ADD_GROUP, context().find(By.id("add-role-button"))),
                             entry(OK, context().find(By.id("close-edit-user-form"))),
                             entry(BLOCK, context().$(button("BLOCK"))),
                             entry(UNBLOCK, context().$(button("UNBLOCK"))),
@@ -794,7 +793,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                                     format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
                             entry(CONFIGURE, context().$(byXpath(".//span[.='Can run as this user:']/following-sibling::a"))),
                             entry(IMPERSONATE, context().$(button("IMPERSONATE"))),
-                            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span")))
+                            entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
+                            entry(ADD_ATTRIBUTE, context().find(By.id("add-key-button")))
                     );
 
                     public EditUserPopup(UsersTabAO parentAO) {
@@ -832,7 +832,17 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public EditUserPopup addRoleOrGroup(final String value) {
                         click(SEARCH);
                         $$(byClassName("ant-select-dropdown-menu-item")).findBy(exactText(value)).click();
-                        click(ADD_KEY);
+                        click(ADD_GROUP);
+                        return this;
+                    }
+
+                    public EditUserPopup addRoleOrGroupIfNeeded(final String value) {
+                        String role = value.startsWith("ROLE_")
+                                ? format("role-%s", value) : format("role-ROLE_%s", value);
+                        $(byClassName("user-management__table")).shouldBe(visible);
+                        if (!$(byClassName(role)).exists()) {
+                            addRoleOrGroup(value);
+                        }
                         return this;
                     }
 
@@ -929,6 +939,80 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                             click(DO_NOT_MOUNT_STORAGES);
                         }
                         return this;
+                    }
+
+                    public KeysAndValuesAdditionForm addKey() {
+                        sleep(1, SECONDS);
+                        click(ADD_ATTRIBUTE);
+                        return new KeysAndValuesAdditionForm(this);
+                    }
+
+                    public EditUserPopup addAttributeWithValue(final String key, final String value) {
+                        addKey()
+                                .sleep(1, SECONDS)
+                                .setKey(key)
+                                .sleep(1, SECONDS)
+                                .setValue(value)
+                                .add();
+                        return this;
+                    }
+
+                    public EditUserPopup addAttributeWithValueIfNeeded(final String key, final String value) {
+                        sleep(1, SECONDS);
+                        final SelenideElement keyField = $(byId(format("key-column-%s", key)));
+                        final SelenideElement valueField = keyField.parent().$(By.xpath("following-sibling::tr"));
+                        if (keyField.exists() && valueField.has(text(value))) {
+                            return this;
+                        }
+                        if (keyField.exists() && !valueField.has(text(value))) {
+                            selectValue(valueField, menuitem(value));
+                            return this;
+                        }
+                        addAttributeWithValue(key, value);
+                        return this;
+                    }
+
+                    public EditUserPopup deleteAttribute(final String key) {
+                        get(ADD_ATTRIBUTE).shouldBe(visible);
+                        final SelenideElement keyField = $(byId(format("delete-metadata-key-%s-button", key)));
+                        if (keyField.exists()) {
+                            keyField.click();
+                            $(byClassName("ant-confirm-title")).shouldHave(text(format("Do you want to delete key \"%s\"?", key)));
+                            $(button("OK")).shouldBe(visible).click();
+                        }
+                        return this;
+                    }
+
+                    public class KeysAndValuesAdditionForm extends PopupAO<KeysAndValuesAdditionForm, EditUserPopup> {
+
+                        private final Map<Primitive, SelenideElement> elements = initialiseElements(
+                                entry(ADD, $(byId("add-metadata-item-button"))),
+                                entry(KEY_FIELD, $$(byClassName("metadata__new-key-row")).get(0).find(byClassName("ant-input"))),
+                                entry(VALUE_FIELD, $$(byClassName("metadata__new-key-row")).get(1))
+                        );
+
+                        public KeysAndValuesAdditionForm(EditUserPopup parentAO) {
+                            super(parentAO);
+                        }
+
+                        @Override
+                        public Map<Primitive, SelenideElement> elements() {
+                            return elements;
+                        }
+
+                        public EditUserPopup add() {
+                            sleep(1, SECONDS);
+                            click(ADD);
+                            return parent();
+                        }
+
+                        public KeysAndValuesAdditionForm setKey(String key) {
+                            return setValue(KEY_FIELD, key).enter();
+                        }
+
+                        public KeysAndValuesAdditionForm setValue(String value) {
+                            return selectValue(VALUE_FIELD, menuitem(value));
+                        }
                     }
                 }
             }

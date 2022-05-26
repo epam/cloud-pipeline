@@ -36,26 +36,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
-import static com.epam.pipeline.autotests.ao.Primitive.ACTIONS;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_ACTION;
-import static com.epam.pipeline.autotests.ao.Primitive.ADD_QUOTA;
-import static com.epam.pipeline.autotests.ao.Primitive.BILLING_CENTER;
-import static com.epam.pipeline.autotests.ao.Primitive.CANCEL;
-import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
-import static com.epam.pipeline.autotests.ao.Primitive.COMPUTE_INSTANCES;
-import static com.epam.pipeline.autotests.ao.Primitive.DELETE_ICON;
-import static com.epam.pipeline.autotests.ao.Primitive.OK;
-import static com.epam.pipeline.autotests.ao.Primitive.PERIOD;
-import static com.epam.pipeline.autotests.ao.Primitive.QUOTA;
-import static com.epam.pipeline.autotests.ao.Primitive.QUOTAS;
-import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
-import static com.epam.pipeline.autotests.ao.Primitive.REMOVE;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
-import static com.epam.pipeline.autotests.ao.Primitive.STATUS;
-import static com.epam.pipeline.autotests.ao.Primitive.STORAGES;
-import static com.epam.pipeline.autotests.ao.Primitive.THRESHOLD;
-import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
-import static com.epam.pipeline.autotests.ao.Primitive.USER_NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -120,8 +101,15 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
             return new QuotaPopUp(this);
         }
 
-        public QuotasSection checkQuotaEntryNotExist() {
+        public boolean isQuotaExist(String entity, BillingQuotaPeriod period) {
+            return quotaEntry(entity, period.period).exists();
+        }
 
+        public QuotasSection removeQuotaWithPeriodIfExist(String entity, BillingQuotaPeriod period) {
+            sleep(1, SECONDS);
+            if(isQuotaExist(entity, period)) {
+                getQuotaEntry(entity, period.period).removeQuota();
+            }
             return this;
         }
 

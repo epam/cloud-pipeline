@@ -333,5 +333,6 @@ public enum Primitive {
     REMOVE,
     SYSTEM_DICTIONARIES,
     ADD_DICTIONARY,
-    ADD_VALUE
+    ADD_VALUE,
+    ADD_ATTRIBUTE
 }

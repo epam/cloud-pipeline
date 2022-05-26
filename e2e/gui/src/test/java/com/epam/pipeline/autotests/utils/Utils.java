@@ -336,23 +336,7 @@ public class Utils {
         return file;
     }
 
-    public static File createFileAndFillWithString(String name,
-                                                   String repeatingString,
-                                                   int totalNumberOfChars) {
-
-        byte[] content = repeatString("abc1", totalNumberOfChars / repeatingString.length()).getBytes();
-        Path path = Paths.get(C.DOWNLOAD_FOLDER).resolve(name);
-        try {
-            Files.write(path, content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        File file = path.toFile();
-        file.deleteOnExit();
-        return file;
-    }
-
-    private static String repeatString(String str, int times) {
+    public static String repeatString(String str, int times) {
         return new String(new char[times]).replace("\0", str);
     }
 

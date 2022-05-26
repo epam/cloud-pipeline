@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -347,28 +347,6 @@ public class RoleBasedAccessControlTest extends AbstractSeveralPipelineRunningTe
         checkUserName(user);
         stopImpersonation();
         checkUserName(admin);
-    }
-
-    private void validateWhileErrorPageMessage() {
-        if (impersonateMode()) {
-            navigationMenu()
-                    .settings()
-                    .switchToMyProfile()
-                    .validateUserName(admin.login);
-            return;
-        }
-        if ("true".equals(C.AUTH_TOKEN)) {
-            validateErrorPage(singletonList("User is blocked!"));
-            Selenide.clearBrowserCookies();
-            sleep(1, SECONDS);
-            return;
-        }
-        validateErrorPage(Arrays.asList(
-                "Please contact", "Support team", "to request the access",
-                format("login back to the %s", C.PLATFORM_NAME),
-                "if you already own an account")
-        );
-        loginBack();
     }
 
     private void loginWithToken(final String token) {

@@ -15,7 +15,6 @@
  */
 package com.epam.pipeline.autotests;
 
-import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO;
 import com.epam.pipeline.autotests.ao.SettingsPageAO.UserManagementAO.UsersTabAO;
 import com.epam.pipeline.autotests.ao.SystemDictionariesAO;
@@ -78,6 +77,7 @@ public class BillingQuotasTest
     private final String LAUNCH_ERROR_MESSAGE =
             "Launch of new compute instances is forbidden due to exceeded billing quota";
     private final int BILLING_QUOTAS_PERIOD = 120;
+    private final String TEST_ROLE = "ROLE_ADVANCED_USER";
     private final String NOTIFY = "Notify";
     private final String READ_ONLY_MODE = "Read-only mode";
     private final String DISABLE_NEW_JOBS = "Disable new jobs";
@@ -91,8 +91,9 @@ public class BillingQuotasTest
     private final String billingCenter1 = "group3";
     private final String billingCenter2 = "group2";
     private final String[] billing = {"70", "80", "100", "80", "90", "120"};
-    private final String[] quota = {"10000", "20000", billing[3], "1", billing[3], billing[4]};
-    private final String[] threshold = {"90", "80", "90", "80", "90", "70"};
+    private final String[] quota = {"10000", "20000", billing[3], billing[4], billing[5], billing[3],
+            billing[4], billing[1], billing[1], billing[2], billing[2], billing[0]};
+    private final String[] threshold = {"90", "80", "90", "80", "90", "70", "70", "110"};
     private String[] prefQuotasPeriodInitial;
     private boolean[] prefReportsEnabledAdminsInitial;
     private boolean[] prefReportsEnabledInitial;
@@ -122,6 +123,18 @@ public class BillingQuotasTest
                 .setPreference(BILLING_QUOTAS_PERIOD_SECONDS, Integer.toString(BILLING_QUOTAS_PERIOD), true)
                 .saveIfNeeded();
         createBillingCenter("billing-group", billingCenter1);
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchForUserEntry(user.login)
+                .edit()
+                .addAttributeWithValueIfNeeded("billing-group", billingCenter1)
+                .ok()
+                .searchForUserEntry(userWithoutCompletedRuns.login)
+                .edit()
+                .addRoleOrGroupIfNeeded(TEST_ROLE)
+                .ok();
     }
 
     @BeforeClass
@@ -297,26 +310,18 @@ public class BillingQuotasTest
                 .errorMessageShouldAppear(OVERALL, PER_MONTH)
                 .selectValue(PERIOD, PER_YEAR.period)
                 .ok()
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
                 .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
                 .checkQuotaStatus(GREEN);
-        UsersTabAO usersTabAO = navigationMenu()
-                .settings()
-                .switchToUserManagement()
-                .switchToUsers();
-        usersTabAO
-                .searchForUserEntry(user.login)
-                .isQuotasExceeded()
-                .checkQuotasExceededWarning(message1)
-                .checkQuotasExceededWarning(message2);
-        usersTabAO
-                .searchUserEntry(admin.login)
-                .isNotQuotasExceeded();
+        checkQuotasExceededWarningForUser(user, message1, message2);
         billingMenu()
                 .click(QUOTAS)
                 .getQuotasSection(OVERALL)
-                .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
+                .openQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
                 .removeQuota()
-                .openQuotaEntry("", quotaEntry(quota[1], PER_YEAR))
+                .getQuotaEntry("", quotaEntry(quota[1], PER_YEAR))
+                .checkQuotaStatus(YELLOW)
                 .removeQuota();
     }
 
@@ -347,12 +352,8 @@ public class BillingQuotasTest
     @Test
     @TestCase(value = {"762_4"})
     public void checkGroupsComputeInstancesQuota() {
-
-    }
-
-    @Test
-    @TestCase(value = {"762_5"})
-    public void checkBillingCenterAndUsersComputeInstancesQuota() {
+        String message1 = format("Billing center %s: compute quarterly expenses quota %s$. Actions: %s%% Disable new jobs", billingCenter1, quota[4], threshold[4]);
+        String message2 = format("User %s: compute annual expenses quota %s$. Actions: %s%% Notify", user.login, quota[5], threshold[4]);
         logout();
         loginAs(user);
         String nonAdminRunId = launchTool();
@@ -410,7 +411,7 @@ public class BillingQuotasTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .launchWithError(LAUNCH_ERROR_MESSAGE);
-
+        checkQuotasExceededWarningForUser(user, message1, message2);
         logout();
         loginAs(admin)
                 .runs()
@@ -435,8 +436,219 @@ public class BillingQuotasTest
                 .getQuotasSection(USERS)
                 .getQuotaEntry(user.login, quotaEntry(quota[5], PER_YEAR))
                 .removeQuota();
+    }
+
+    @Test
+    @TestCase(value = {"762_5"})
+    public void checkBillingCenterAndUsersComputeInstancesQuota() {
+        String message1 = format("Billing center %s: compute quarterly expenses quota %s$. Actions: %s%% Disable new jobs", billingCenter1, quota[4], threshold[4]);
+        String message2 = format("User %s: compute annual expenses quota %s$. Actions: %s%% Notify", user.login, quota[5], threshold[4]);
+        logout();
+        loginAs(user);
+        String nonAdminRunId = launchTool();
+        logout();
+        loginAs(admin);
+        String adminRunId = launchTool();
+
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(BILLING_CENTERS)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, BILLING_CENTER)
+                .ensure(PERIOD, text(PER_MONTH.period))
+                .ensureNotVisible(RECIPIENTS)
+                .ensureDisable(SAVE)
+                .addBillingCenter(billingCenter1)
+                .setValue(QUOTA, quota[4])
+                .selectValue(PERIOD, PER_QUARTER.period)
+                .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
+                .setAction(threshold[4], DISABLE_NEW_JOBS)
+                .ok()
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[4], PER_QUARTER))
+                .checkEntryActions(format("%s%%: %s", threshold[4], DISABLE_NEW_JOBS.toLowerCase()));
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(USERS)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, USER_NAME)
+                .ensure(PERIOD, text(PER_MONTH.period))
+                .ensureDisable(SAVE)
+                .addUser(user.login)
+                .setValue(QUOTA, quota[5])
+                .selectValue(PERIOD, PER_YEAR.period)
+                .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
+                .setAction(threshold[4], STOP_ALL_JOBS)
+                .ok()
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .getQuotaEntry(user.login, quotaEntry(quota[5], PER_YEAR))
+                .checkQuotaStatus(RED)
+                .checkEntryActions(format("%s%%: %s", threshold[4], STOP_ALL_JOBS.toLowerCase()))
+                .checkQuotaWarning();
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(BILLING_CENTERS)
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[4], PER_QUARTER))
+                .checkQuotaStatus(RED)
+                .checkQuotaWarning();
+
+        logout();
+        loginAs(user)
+                .runs()
+                .completedRuns()
+                .shouldContainRun("pipeline", nonAdminRunId);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .launchWithError(LAUNCH_ERROR_MESSAGE);
+        checkQuotasExceededWarningForUser(user, message1, message2);
+        logout();
+        loginAs(admin)
+                .runs()
+                .showLog(adminRunId)
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(adminRunId)
+                        .execute(format("pipe run -di %s -u %s",
+                                tool, user.login))
+                        .waitForLog("Error: Failed to fetch data from server. " +
+                                "Server responded with message: Launch of new compute instances " +
+                                "is forbidden due to exceeded billing quota.")
+                        .close());
+
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(BILLING_CENTERS)
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[4], PER_QUARTER))
+                .removeQuota();
+        billingMenu()
+                .click(COMPUTE_INSTANCES)
+                .getQuotasSection(USERS)
+                .getQuotaEntry(user.login, quotaEntry(quota[5], PER_YEAR))
+                .removeQuota();
+    }
+
+    @Test
+    @TestCase(value = {"762_6"})
+    public void checkOverallStoragesQuota() {
+        billingMenu()
+                .click(STORAGES)
+                .checkQuotasSections(OVERALL, BILLING_CENTERS, GROUPS, USERS)
+                .getQuotasSection(OVERALL)
+                .addQuota()
+                .ensure(TITLE, text("Create storages quota"))
+                .setValue(QUOTA, quota[7])
+                .selectValue(PERIOD, PER_YEAR.period)
+                .ensureActionsList(NOTIFY, READ_ONLY_MODE, BLOCK)
+                .setAction(threshold[7], NOTIFY)
+                .addRecipient(admin.login)
+                .ok()
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .getQuotaEntry("", quotaEntry(quota[7], PER_YEAR))
+                .checkQuotaStatus(YELLOW)
+                .checkEntryActions(format("%s%%: %s", threshold[7], NOTIFY.toLowerCase()))
+                .checkQuotaWarning()
+                .removeQuota();
+    }
+
+    @Test
+    @TestCase(value = {"762_7"})
+    public void checkBillingCenterStoragesQuota() {
+        String message = format("Billing center %s: storages quarterly expenses quota %s$. Actions: %s%% Block",
+                billingCenter1, quota[8], threshold[8]);
+        billingMenu()
+                .click(STORAGES)
+                .getQuotasSection(BILLING_CENTERS)
+                .removeQuotaWithPeriodIfExist(billingCenter1, PER_QUARTER)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, BILLING_CENTER)
+                .ensure(PERIOD, text(PER_MONTH.period))
+                .ensureNotVisible(RECIPIENTS)
+                .ensureDisable(SAVE)
+                .addBillingCenter(billingCenter1)
+                .setValue(QUOTA, quota[8])
+                .selectValue(PERIOD, PER_QUARTER.period)
+                .ensureActionsList(NOTIFY, READ_ONLY_MODE, BLOCK)
+                .setAction(threshold[8], BLOCK)
+                .ok()
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[8], PER_QUARTER))
+                .checkEntryActions(format("%s%%: %s", threshold[8], BLOCK.toLowerCase()))
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .checkQuotaStatus(RED)
+                .checkQuotaWarning();
+        checkQuotasExceededWarningForUser(user, message);
+        logout();
+        loginAs(user);
+        validateWhileErrorPageMessage();
+        loginAs(admin);
+        billingMenu()
+                .click(STORAGES)
+                .getQuotasSection(BILLING_CENTERS)
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[8], PER_QUARTER))
+                .removeQuota();
+        logout();
+        loginAs(user)
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(user.login);
+        logout();
+        loginAs(admin);
+    }
 
 
+
+    @Test
+    @TestCase(value = {"762_10"})
+    public void checkUsersStoragesQuota() {
+        String message = format("User %s: storages annual expenses quota %s$. Actions: %s%% Block",
+                userWithoutCompletedRuns.login, quota[11], threshold[11]);
+        billingMenu()
+                .click(STORAGES)
+                .getQuotasSection(USERS)
+                .removeQuotaWithPeriodIfExist(userWithoutCompletedRuns.login, PER_YEAR)
+                .removeQuotaWithPeriodIfExist(admin.login, PER_YEAR)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, USER_NAME)
+                .ensure(PERIOD, text(PER_MONTH.period))
+                .ensureDisable(SAVE)
+                .addUser(userWithoutCompletedRuns.login)
+                .setValue(QUOTA, quota[11])
+                .selectValue(PERIOD, PER_YEAR.period)
+                .ensureActionsList(NOTIFY, READ_ONLY_MODE, BLOCK)
+                .setAction(threshold[11], BLOCK)
+                .ok()
+                .addQuota()
+                .addUser(admin.login)
+                .setValue(QUOTA, quota[12])
+                .selectValue(PERIOD, PER_YEAR.period)
+                .setAction(threshold[12], BLOCK)
+                .ok()
+                .getQuotaEntry(billingCenter1, quotaEntry(quota[11], PER_YEAR))
+                .checkEntryActions(format("%s%%: %s", threshold[11], BLOCK.toLowerCase()))
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .checkQuotaStatus(RED)
+                .checkQuotaWarning();
+        checkQuotasExceededWarningForUser(userWithoutCompletedRuns, message);
+        logout();
+        loginAs(userWithoutCompletedRuns);
+        validateWhileErrorPageMessage();
+        loginAs(admin);
+        billingMenu()
+                .click(STORAGES)
+                .getQuotasSection(USERS)
+                .getQuotaEntry(userWithoutCompletedRuns.login, quotaEntry(quota[11], PER_YEAR))
+                .removeQuota()
+                .getQuotaEntry(admin.login, quotaEntry(quota[12], PER_YEAR))
+                .removeQuota();
+        logout();
+        loginAs(user)
+                .settings()
+                .switchToMyProfile()
+                .validateUserName(userWithoutCompletedRuns.login);
+        logout();
+        loginAs(admin);
     }
 
     private File updateDataBillingFile() {
@@ -479,7 +691,7 @@ public class BillingQuotasTest
     }
 
     public void createBillingCenter(final String dict, final String billingCenter) {
-        SystemDictionariesAO systemDictionariesAO = navigationMenu()
+        final SystemDictionariesAO systemDictionariesAO = navigationMenu()
                 .settings()
                 .switchToSystemDictionaries();
         billingGroupDictionaryExist = systemDictionariesAO
@@ -508,5 +720,19 @@ public class BillingQuotasTest
                 .openSystemDictionary(dict)
                 .deleteDictionaryValue(billingCenter)
                 .click(SAVE);
+    }
+
+    private void checkQuotasExceededWarningForUser(Account user_name, String ... messages) {
+        UsersTabAO usersTabAO = navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers();
+        usersTabAO
+                .searchForUserEntry(user_name.login)
+                .isQuotasExceeded()
+                .checkQuotasExceededWarning(messages);
+        usersTabAO
+                .searchUserEntry(admin.login)
+                .isNotQuotasExceeded();
     }
 }

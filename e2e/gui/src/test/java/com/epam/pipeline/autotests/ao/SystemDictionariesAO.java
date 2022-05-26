@@ -74,7 +74,6 @@ public class SystemDictionariesAO extends SettingsPageAO {
         click(ADD_DICTIONARY);
         setValue(NAME, dict);
         addDictionaryValue(value);
-        click(SAVE);
         return this;
     }
 
@@ -89,7 +88,8 @@ public class SystemDictionariesAO extends SettingsPageAO {
                 .first();
         setValue(newValue, value);
         click(SAVE);
-        get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
+        sleep(1, SECONDS);
+        get(SAVE).shouldBe(disabled);
         return this;
     }
 
