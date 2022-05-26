@@ -182,7 +182,7 @@ public class Utils {
                         .filter(element ->
                                 element.findElements(byClassName("run-table__run-row-pipeline")).stream()
                                         .map(WebElement::getText)
-                                        .anyMatch(name -> name.equals(pipelineName)))
+                                        .anyMatch(pipelineName -> pipelineName.equals(pipelineName)))
                         .collect(toList());
             }
 

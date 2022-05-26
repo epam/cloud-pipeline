@@ -281,7 +281,6 @@ public class DavMountStorageLimitTest extends AbstractSeveralPipelineRunningTest
                 .settings()
                 .switchToPreferences()
                 .getPreference(uiPipeFileBrowserRequest);
-        System.out.println("The initial ui.pipe.file.browser.request: " + uiPipeFileBrowserRequestInitial[0]);
         try {
             setUiPipeFileBrowserRequest(uiPipeFileBrowserJson);
             library()

@@ -1250,7 +1250,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             clickAndSendKeysWithSlashes(pref, value);
             deleteExtraBrackets(pref, 100);
             setEyeOption(eyeIsChecked);
-            System.out.println("The clearAndSetJsonToPreference value is " + value);
             return this;
         }
 
