@@ -111,7 +111,7 @@ class DataStorageOperations(object):
         command = 'mv' if clean else 'cp'
         permission_to_check = os.R_OK if command == 'cp' else os.W_OK
         manager = DataStorageWrapper.get_operation_manager(source_wrapper, destination_wrapper, command)
-        items = files_to_copy if file_list else source_wrapper.get_items()
+        items = files_to_copy if file_list else source_wrapper.get_items(quiet=quiet)
         items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination,
                                   on_unsafe_chars, on_unsafe_chars_replacement)
@@ -126,11 +126,14 @@ class DataStorageOperations(object):
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
                       include, exclude, force, quiet, skip_existing, verify_destination,
                       unsafe_chars, unsafe_chars_replacement):
+        logging.debug(u'Preprocessing paths...')
         filtered_items = []
         for item in items:
             full_path = item[1]
             relative_path = item[2]
             source_size = item[3]
+
+            logging.debug(u'Preprocessing path {}...'.format(full_path))
 
             item = cls._process_unsafe_chars(item, quiet, unsafe_chars, unsafe_chars_replacement)
 
