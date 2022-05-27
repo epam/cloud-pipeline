@@ -278,6 +278,7 @@ public class ToolsParametersTest
                 .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
                 .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectRunCapability(CUSTOM_CAPABILITY_1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectRunCapability(CUSTOM_CAPABILITY_3)
