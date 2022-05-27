@@ -244,6 +244,7 @@ public class ToolsParametersTest
                 .checkCustomCapability(SYSTEM_D, true)
                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectRunCapability(custCapability1);
         pipelineRunFormAO
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
@@ -321,6 +322,7 @@ public class ToolsParametersTest
                                     .click(RUN_CAPABILITIES)
                                     .sleep(2, SECONDS)
                                     .checkCustomCapability(custCapability4, false)
+                                    .click(byTitle(RUN_CAPABILITIES_TITLE))
                                     .selectRunCapability(custCapability4));
             new PipelineRunFormAO().checkTooltipText(custCapability4, CUSTOM_TEST_CAPABILITY_4);
         });
