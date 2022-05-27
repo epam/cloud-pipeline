@@ -225,6 +225,7 @@ public class ToolsParametersTest
                                 .checkCustomCapability(SYSTEM_D, true)
                                 .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
                                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
+                                .click(byTitle(RUN_CAPABILITIES_TITLE))
                                 .selectRunCapability(custCapability1)
                                 .click(byTitle(RUN_CAPABILITIES_TITLE))
                                 .selectRunCapability(custCapability3));
