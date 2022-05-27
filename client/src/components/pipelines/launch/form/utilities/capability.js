@@ -25,7 +25,8 @@ const Capability = ({capability, selected, style, nested = []}) => {
     name,
     disabled,
     os = [],
-    cloud = []
+    cloud = [],
+    description
   } = capability;
   if (disabled && (os.length > 0 || cloud.length > 0)) {
     return (
@@ -94,7 +95,7 @@ const Capability = ({capability, selected, style, nested = []}) => {
           }}
         >
           <div>
-            <span>{name}</span>
+            <span title={description || name}>{name}</span>
             <Icon
               type="question-circle-o"
               style={{marginLeft: 5}}
@@ -123,7 +124,7 @@ const Capability = ({capability, selected, style, nested = []}) => {
         ...(style || {})
       }}
     >
-      <span>
+      <span title={description || name}>
         {name}
       </span>
       <div>
