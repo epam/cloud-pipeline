@@ -21,6 +21,7 @@ import com.epam.pipeline.autotests.ao.SystemDictionariesAO;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
+import com.epam.pipeline.autotests.utils.BucketPermission;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
 import com.epam.pipeline.autotests.utils.Utils;
@@ -32,6 +33,7 @@ import java.io.File;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.refresh;
@@ -39,21 +41,10 @@ import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaPeriod;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaPeriod.*;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaType.*;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaStatus.*;
-import static com.epam.pipeline.autotests.ao.Primitive.ACTIONS;
-import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
-import static com.epam.pipeline.autotests.ao.Primitive.BILLING_CENTER;
-import static com.epam.pipeline.autotests.ao.Primitive.CLOSE;
-import static com.epam.pipeline.autotests.ao.Primitive.COMPUTE_INSTANCES;
-import static com.epam.pipeline.autotests.ao.Primitive.PERIOD;
-import static com.epam.pipeline.autotests.ao.Primitive.QUOTA;
-import static com.epam.pipeline.autotests.ao.Primitive.QUOTAS;
-import static com.epam.pipeline.autotests.ao.Primitive.RECIPIENTS;
-import static com.epam.pipeline.autotests.ao.Primitive.REMOVE;
-import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
-import static com.epam.pipeline.autotests.ao.Primitive.STORAGES;
-import static com.epam.pipeline.autotests.ao.Primitive.THRESHOLD;
-import static com.epam.pipeline.autotests.ao.Primitive.TITLE;
-import static com.epam.pipeline.autotests.ao.Primitive.USER_NAME;
+import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.utils.Privilege.EXECUTE;
+import static com.epam.pipeline.autotests.utils.Privilege.READ;
+import static com.epam.pipeline.autotests.utils.Privilege.WRITE;
 import static com.epam.pipeline.autotests.utils.Utils.DATE_PATTERN;
 import static com.epam.pipeline.autotests.utils.Utils.getFile;
 import static com.epam.pipeline.autotests.utils.Utils.randomSuffix;
@@ -69,6 +60,7 @@ public class BillingQuotasTest
     private final String tool = C.TESTING_TOOL_NAME;
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
+    private final String nfsPrefix = C.NFS_PREFIX;
     private final String ELASTIC_URL = C.ELASTIC_URL;
     private final String ROLE_BILLING_MANAGER = "ROLE_BILLING_MANAGER";
     private final String BILLING_REPORTS_ENABLED_ADMINS = "billing.reports.enabled.admins";
@@ -78,13 +70,15 @@ public class BillingQuotasTest
             "Launch of new compute instances is forbidden due to exceeded billing quota";
     private final int BILLING_QUOTAS_PERIOD = 120;
     private final String TEST_ROLE = "ROLE_ADVANCED_USER";
+    private final String USER_GROUP = C.ROLE_USER;
     private final String NOTIFY = "Notify";
     private final String READ_ONLY_MODE = "Read-only mode";
     private final String DISABLE_NEW_JOBS = "Disable new jobs";
     private final String STOP_ALL_JOBS = "Stop all jobs";
     private final String BLOCK = "Block";
     private final String dataStorage = format("billingTestData-%s", randomSuffix());
-    private final String testStorage = format("testBilling-%s", randomSuffix());
+    private final String testStorage1 = format("testBilling-%s", randomSuffix());
+    private final String testStorage2 = format("testBilling-%s", randomSuffix());
     private final String testFsStorage = format("testBilling-%s", randomSuffix());
     private final String importScript = "import_billing_data.py";
     private final String billingData = "billing-test.txt";
@@ -146,10 +140,11 @@ public class BillingQuotasTest
                                 .stopRunIfPresent(runId[i]);
                 });
         library()
-                .createStorage(testStorage)
-                .selectStorage(testStorage);
+                .createStorage(testStorage1)
+                .selectStorage(testStorage1);
         storageID[0] = Utils.entityIDfromURL();
         library()
+                .createStorage(testStorage2)
                 .createStorage(dataStorage)
                 .selectStorage(dataStorage);
         storageID[1] = Utils.entityIDfromURL();
@@ -161,6 +156,14 @@ public class BillingQuotasTest
                 .selectStorage(dataStorage)
                 .uploadFile(getFile(importScript))
                 .uploadFile(updateDataBillingFile());
+        Stream.of(testStorage1, testStorage2, testFsStorage).forEach(storage -> {
+            addAccountToStoragePermissions(user, storage);
+            givePermissions(user,
+                    BucketPermission.allow(READ, storage),
+                    BucketPermission.allow(WRITE, storage),
+                    BucketPermission.allow(EXECUTE, storage)
+            );
+        });
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(ADVANCED_PANEL)
@@ -215,7 +218,7 @@ public class BillingQuotasTest
 
     @AfterClass(alwaysRun=true)
     public void removeEntities() {
-        Utils.removeStorages(this, testStorage);   //, dataStorage
+        Utils.removeStorages(this, testStorage1, testStorage2, dataStorage);
         library()
                 .selectStorage(testFsStorage)
                 .clickEditStorageButton()
@@ -369,7 +372,7 @@ public class BillingQuotasTest
                 .ensure(PERIOD, text(PER_MONTH.period))
                 .ensureNotVisible(RECIPIENTS)
                 .ensureDisable(SAVE)
-                .addBillingCenter(billingCenter1)
+                .addQuotaObject(BILLING_CENTER, billingCenter1)
                 .setValue(QUOTA, quota[4])
                 .selectValue(PERIOD, PER_QUARTER.period)
                 .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
@@ -384,7 +387,7 @@ public class BillingQuotasTest
                 .ensureVisible(QUOTA, ACTIONS, THRESHOLD, USER_NAME)
                 .ensure(PERIOD, text(PER_MONTH.period))
                 .ensureDisable(SAVE)
-                .addUser(user.login)
+                .addQuotaObject(USER_NAME, user.login)
                 .setValue(QUOTA, quota[5])
                 .selectValue(PERIOD, PER_YEAR.period)
                 .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
@@ -458,7 +461,7 @@ public class BillingQuotasTest
                 .ensure(PERIOD, text(PER_MONTH.period))
                 .ensureNotVisible(RECIPIENTS)
                 .ensureDisable(SAVE)
-                .addBillingCenter(billingCenter1)
+                .addQuotaObject(BILLING_CENTER, billingCenter1)
                 .setValue(QUOTA, quota[4])
                 .selectValue(PERIOD, PER_QUARTER.period)
                 .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
@@ -473,7 +476,7 @@ public class BillingQuotasTest
                 .ensureVisible(QUOTA, ACTIONS, THRESHOLD, USER_NAME)
                 .ensure(PERIOD, text(PER_MONTH.period))
                 .ensureDisable(SAVE)
-                .addUser(user.login)
+                .addQuotaObject(USER_NAME, user.login)
                 .setValue(QUOTA, quota[5])
                 .selectValue(PERIOD, PER_YEAR.period)
                 .ensureActionsList(NOTIFY, DISABLE_NEW_JOBS, STOP_ALL_JOBS, BLOCK)
@@ -565,7 +568,7 @@ public class BillingQuotasTest
                 .ensure(PERIOD, text(PER_MONTH.period))
                 .ensureNotVisible(RECIPIENTS)
                 .ensureDisable(SAVE)
-                .addBillingCenter(billingCenter1)
+                .addQuotaObject(BILLING_CENTER, billingCenter1)
                 .setValue(QUOTA, quota[8])
                 .selectValue(PERIOD, PER_QUARTER.period)
                 .ensureActionsList(NOTIFY, READ_ONLY_MODE, BLOCK)
@@ -596,6 +599,57 @@ public class BillingQuotasTest
         loginAs(admin);
     }
 
+    @Test
+    @TestCase(value = {"762_8"})
+    public void checkGroupsStoragesBillingQuotaForUserGroup() {
+        String command1 = format("echo test file >> /cloud-data/%s/test_file1.txt", testStorage1);
+        String command2 = format("pipe storage cp cp://%s/file1.txt cp://%s/file1.txt", testStorage1, testStorage2);
+        String command3 = format("echo test file >> /cloud-data/%s/%s/test_file1.txt", nfsPrefix, testFsStorage);
+        billingMenu()
+                .click(STORAGES)
+                .getQuotasSection(GROUPS)
+                .removeQuotaWithPeriodIfExist(USER_GROUP, PER_QUARTER)
+                .addQuota()
+                .ensureVisible(QUOTA, ACTIONS, THRESHOLD, GROUP)
+                .ensureNotVisible(RECIPIENTS)
+                .ensureDisable(SAVE)
+                .addQuotaObject(GROUP, USER_GROUP)
+                .setValue(QUOTA, quota[9])
+                .selectValue(PERIOD, PER_QUARTER.period)
+                .ensureActionsList(NOTIFY, READ_ONLY_MODE, BLOCK)
+                .setAction(threshold[9], READ_ONLY_MODE)
+                .ok()
+                .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
+                .refresh()
+                .getQuotaEntry(USER_GROUP, quotaEntry(quota[9], PER_QUARTER))
+                .checkEntryActions(format("%s%%: %s", threshold[9], READ_ONLY_MODE.toLowerCase()))
+                .checkQuotaStatus(YELLOW)
+                .checkQuotaWarning();
+        library()
+                .selectStorage(testStorage1)
+                .createFileWithContent("file1.txt", "test content");
+        library()
+                .selectStorage(testFsStorage)
+                .createFileWithContent("file2.txt", "test content");
+        logout();
+        loginAs(user);
+        library()
+                .selectStorage(testStorage1)
+                .ensureNotVisible(CREATE, UPLOAD);
+        tools()
+                .perform(registry, group, tool, tool -> tool.run(this))
+                .log(getLastRunId(), log -> log.waitForSshLink()
+                        .inAnotherTab(logTab ->
+                                Stream.of(command1, command2, command3).forEach(command -> {
+                                    logTab.ssh(shell -> shell
+                                            .waitUntilTextAppears(getLastRunId())
+                                            .execute(command)
+                                            .waitUntilTextAppearsSeveralTimes(getLastRunId(), 2)
+                                            .assertOutputContains("Read-only file system")
+                                            .sleep(2, SECONDS));
+                                })
+                        ));
+    }
 
 
     @Test
@@ -612,14 +666,13 @@ public class BillingQuotasTest
                 .ensureVisible(QUOTA, ACTIONS, THRESHOLD, USER_NAME)
                 .ensure(PERIOD, text(PER_MONTH.period))
                 .ensureDisable(SAVE)
-                .addUser(userWithoutCompletedRuns.login)
+                .addQuotaObject(USER_NAME, userWithoutCompletedRuns.login)
                 .setValue(QUOTA, quota[11])
                 .selectValue(PERIOD, PER_YEAR.period)
-                .ensureActionsList(NOTIFY, READ_ONLY_MODE, BLOCK)
                 .setAction(threshold[11], BLOCK)
                 .ok()
                 .addQuota()
-                .addUser(admin.login)
+                .addQuotaObject(USER_NAME, admin.login)
                 .setValue(QUOTA, quota[12])
                 .selectValue(PERIOD, PER_YEAR.period)
                 .setAction(threshold[12], BLOCK)

@@ -177,19 +177,27 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                 return this;
             }
 
-            public QuotaPopUp addBillingCenter(final String billingCenter) {
-                click(BILLING_CENTER);
-                actions().sendKeys(billingCenter).perform();
-                enter();
-                click(byText("Billing center"));
-                return this;
-            }
+//            public QuotaPopUp addBillingCenter(final String billingCenter) {
+//                click(BILLING_CENTER);
+//                actions().sendKeys(billingCenter).perform();
+//                enter();
+//                click(byText("Billing center"));
+//                return this;
+//            }
+//
+//            public QuotaPopUp addUser(final String user) {
+//                click(USER_NAME);
+//                actions().sendKeys(user).perform();
+//                enter();
+//                click(byText("Quota:"));
+//                return this;
+//            }
 
-            public QuotaPopUp addUser(final String user) {
-                click(USER_NAME);
-                actions().sendKeys(user).perform();
+            public QuotaPopUp addQuotaObject(Primitive object, final String name) {
+                click(object);
+                actions().sendKeys(name).perform();
                 enter();
-                click(byText("User"));
+                click(byText("Quota:"));
                 return this;
             }
 
