@@ -226,7 +226,8 @@ public class PipelineApiService {
     @PreAuthorize(PIPELINE_ID_READ)
     public byte[] getTruncatedPipelineFileContent(final Long id, final String version, final String path,
                                                   final Integer byteLimit) throws GitClientException {
-        return gitManager.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path, byteLimit);
+        return pipelineRepositoryService.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path,
+                byteLimit);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)

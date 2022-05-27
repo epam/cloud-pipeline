@@ -116,12 +116,28 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
+    public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
+                                           final int byteLimit) {
+        return getGitlabClientForPipeline(pipeline).getTruncatedFileContents(path, revision, byteLimit);
+    }
+
+    @Override
     public List<Revision> getTags(final Pipeline pipeline) {
         return getGitlabClientForPipeline(pipeline).getRepositoryRevisions().stream()
                 .map(tag -> new Revision(tag.getName(), tag.getMessage(),
                         parseGitDate(tag.getCommit().getAuthoredDate()), tag.getCommit().getId(),
                         tag.getCommit().getAuthorName(), tag.getCommit().getAuthorEmail()))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Revision createTag(final Pipeline pipeline, final String tagName, final String commitId,
+                              final String message, final String releaseDescription) {
+        final GitTagEntry gitTagEntry = getGitlabClientForPipeline(pipeline)
+                .createRepositoryRevision(tagName, commitId, message, releaseDescription);
+        return new Revision(gitTagEntry.getName(), gitTagEntry.getMessage(),
+                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId(),
+                gitTagEntry.getCommit().getAuthorName(), gitTagEntry.getCommit().getAuthorEmail());
     }
 
     @Override

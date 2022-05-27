@@ -82,6 +82,11 @@ public class PipelineRepositoryProviderService {
         return getProvider(repositoryType).getFileContents(repository, path, revision, token);
     }
 
+    public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String version,
+                                           final int byteLimit) {
+        return getProvider(pipeline.getRepositoryType()).getTruncatedFileContents(pipeline, path, version, byteLimit);
+    }
+
     public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
                                     final String token) {
         return getProvider(repositoryType).getRepository(repositoryPath, token);
@@ -89,6 +94,12 @@ public class PipelineRepositoryProviderService {
 
     public List<Revision> getTags(final RepositoryType repositoryType, final Pipeline pipeline) {
         return getProvider(repositoryType).getTags(pipeline);
+    }
+
+    public Revision createTag(final Pipeline pipeline, final String tagName, final String commitId,
+                              final String message, final String releaseDescription) {
+        return getProvider(pipeline.getRepositoryType()).createTag(pipeline, tagName, commitId, message,
+                releaseDescription);
     }
 
     public Revision getLastCommit(final RepositoryType repositoryType, final Pipeline pipeline) {

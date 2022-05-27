@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTagCreateRequest;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.ApiBuilder;
 import com.epam.pipeline.manager.git.RestApiUtils;
@@ -80,6 +81,10 @@ public class BitbucketClient {
         }
     }
 
+    public Call<ResponseBody> getRawFileContent(final String commit, final String path) {
+        return bitbucketServerApi.getFileContents(projectName, repositoryName, path, commit);
+    }
+
     public BitbucketCommit upsertFile(final String path, final String content, final String message,
                                       final String commitId) {
         final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, content);
@@ -95,6 +100,10 @@ public class BitbucketClient {
 
     public BitbucketPagedResponse<BitbucketTag> getTags(final String nextPageToken) {
         return RestApiUtils.execute(bitbucketServerApi.getTags(projectName, repositoryName, LIMIT, nextPageToken));
+    }
+
+    public BitbucketTag createTag(final BitbucketTagCreateRequest request) {
+        return RestApiUtils.execute(bitbucketServerApi.createTag(projectName, repositoryName, request));
     }
 
     public BitbucketPagedResponse<BitbucketCommit> getCommits() {

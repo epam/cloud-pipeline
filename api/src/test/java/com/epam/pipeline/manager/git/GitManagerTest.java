@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
@@ -298,7 +299,8 @@ public class GitManagerTest extends AbstractManagerTest {
             get(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                 .willReturn(okJson(with(commits)))
         );
-        final List<Revision> revisions = gitManager.getPipelineRevisions(pipeline);
+        final List<Revision> revisions = pipelineRepositoryService
+                .getPipelineRevisions(RepositoryType.GITLAB, pipeline);
         assertFalse(revisions.isEmpty());
     }
 
@@ -575,7 +577,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .willReturn(created().withHeader(CONTENT_TYPE, "application/json").withBody(with(tag)))
         );
         final Pipeline pipeline = testingPipeline();
-        final Revision revision = gitManager.createPipelineRevision(
+        final Revision revision = pipelineRepositoryService.createPipelineRevision(
             pipeline, tagName, sha, "Message", "Release description"
         );
         assertThat(revision.getName(), is(tag.getName()));

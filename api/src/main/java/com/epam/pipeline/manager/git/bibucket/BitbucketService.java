@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTagCreateRequest;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -40,6 +41,7 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.git.GitClientService;
+import com.epam.pipeline.manager.git.RestApiUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
@@ -125,6 +127,13 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
+    public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
+                                           final int byteLimit) {
+        return RestApiUtils.getFileContent(getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+                .getRawFileContent(revision, path), byteLimit);
+    }
+
+    @Override
     public List<Revision> getTags(final Pipeline pipeline) {
         final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
 
@@ -138,6 +147,21 @@ public class BitbucketService implements GitClientService {
                 .map(tag -> fillCommitInfo(tag, client))
                 .map(mapper::tagToRevision)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Revision createTag(final Pipeline pipeline, final String tagName, final String commitId,
+                              final String message, final String releaseDescription) {
+        final BitbucketTagCreateRequest request = BitbucketTagCreateRequest.builder()
+                .name(tagName)
+                .startPoint(commitId)
+                .message(message)
+                .build();
+        final BitbucketTag tag = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+                .createTag(request);
+        return Optional.ofNullable(tag)
+                .map(mapper::tagToRevision)
+                .orElse(null);
     }
 
     @Override

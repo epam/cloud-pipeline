@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTagCreateRequest;
 import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -75,6 +76,11 @@ public interface BitbucketServerApi {
     Call<BitbucketPagedResponse<BitbucketTag>> getTags(@Path(PROJECT) String project,
                                                        @Path(REPOSITORY) String repository,
                                                        @Query(LIMIT) Integer limit, @Query(START) String start);
+
+    @POST("rest/api/1.0/projects/{project}/repos/{repository}/tags")
+    Call<BitbucketTag> createTag(@Path(PROJECT) String project,
+                                 @Path(REPOSITORY) String repository,
+                                 @Body BitbucketTagCreateRequest request);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits")
     Call<BitbucketPagedResponse<BitbucketCommit>> getCommits(@Path(PROJECT) String project,

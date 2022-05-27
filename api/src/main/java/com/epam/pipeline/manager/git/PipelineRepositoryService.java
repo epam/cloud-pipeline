@@ -132,12 +132,35 @@ public class PipelineRepositoryService {
         return revisions;
     }
 
+    public Revision createPipelineRevision(final Pipeline pipeline,
+                                           final String revisionName,
+                                           final String commit,
+                                           final String message,
+                                           final String releaseDescription) {
+        Assert.isTrue(GitUtils.checkGitNaming(revisionName),
+                messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_REVISION_NAME, revisionName));
+        if (revisionName == null) {
+            throw new GitClientException("Tag name is required");
+        }
+        if (commit == null) {
+            throw new GitClientException("Ref (commit SHA, another tag name, or branch name) is required");
+        }
+        return providerService.createTag(pipeline, revisionName, commit, message, releaseDescription);
+    }
+
     public byte[] getFileContents(final Pipeline pipeline, final String revision, final String path) {
         final RepositoryType repositoryType = pipeline.getRepositoryType();
         final String token = pipeline.getRepositoryToken();
         final GitProject gitProject = new GitProject();
         gitProject.setRepoUrl(pipeline.getRepository());
         return getFileContents(repositoryType, gitProject, path, GitUtils.getRevisionName(revision), token);
+    }
+
+    public byte[] getTruncatedPipelineFileContent(final Pipeline pipeline, final String revision,
+                                                  final String path, final int byteLimit) throws GitClientException {
+        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
+        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
+        return providerService.getTruncatedFileContents(pipeline, path, GitUtils.getRevisionName(revision), byteLimit);
     }
 
     public GitCredentials getPipelineCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,

@@ -45,7 +45,11 @@ public interface GitClientService {
 
     byte[] getFileContents(GitProject project, String path, String revision, String token);
 
+    byte[] getTruncatedFileContents(Pipeline pipeline, String path, String revision, int byteLimit);
+
     List<Revision> getTags(Pipeline pipeline);
+
+    Revision createTag(Pipeline pipeline, String tagName, String commitId, String message, String releaseDescription);
 
     Revision getLastRevision(Pipeline pipeline);
 

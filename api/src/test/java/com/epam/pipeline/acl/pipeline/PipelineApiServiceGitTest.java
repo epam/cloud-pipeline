@@ -457,7 +457,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetTruncatedPipelineFileContentForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager)
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
         assertThat(pipelineApiService.getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT))
@@ -469,7 +469,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldGetTruncatedPipelineFileContentWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.READ);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager)
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
         assertThat(pipelineApiService.getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT))
@@ -481,7 +481,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyGetTruncatedPipelineFileContentWhenPermissionIsNotGranted() throws GitClientException {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager)
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
         assertThrowsChecked(AccessDeniedException.class, () ->

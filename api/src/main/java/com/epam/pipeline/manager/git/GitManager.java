@@ -41,7 +41,6 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
-import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -67,9 +66,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -255,32 +251,6 @@ public class GitManager {
         return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
     }
 
-    private Date parseGitDate(String dateStr) {
-        LocalDateTime localDateTime =
-                LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
-    }
-
-    public List<Revision> getPipelineRevisions(Pipeline pipeline)
-            throws GitClientException {
-        return pipelineRepositoryService.getPipelineRevisions(pipeline.getRepositoryType(), pipeline);
-    }
-
-    public Revision createPipelineRevision(Pipeline pipeline,
-                                           String revisionName,
-                                           String commit,
-                                           String message,
-                                           String releaseDescription) throws GitClientException {
-        Assert.isTrue(GitUtils.checkGitNaming(revisionName),
-                messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_REVISION_NAME, revisionName));
-        GitlabClient client = this.getGitlabClientForPipeline(pipeline);
-        GitTagEntry gitTagEntry = client.createRepositoryRevision(revisionName, commit, message, releaseDescription);
-        return new Revision(gitTagEntry.getName(),
-                gitTagEntry.getMessage(),
-                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId(),
-                gitTagEntry.getCommit().getAuthorName(), gitTagEntry.getCommit().getAuthorEmail());
-    }
-
     public List<GitCommitEntry> getCommits(Pipeline pipeline, String versionName)
             throws GitClientException {
         return this.getGitlabClientForPipeline(pipeline)
@@ -368,12 +338,6 @@ public class GitManager {
             throws GitClientException {
         return this.getGitlabClientForPipeline(pipeline)
                 .getFileContents(path, getRevisionName(version));
-    }
-
-    public byte[] getTruncatedPipelineFileContent(final Pipeline pipeline, final String version,
-                                                  final String path, int byteLimit) throws GitClientException {
-        return this.getGitlabClientForPipeline(pipeline)
-            .getTruncatedFileContents(path, getRevisionName(version), byteLimit);
     }
 
     /**
