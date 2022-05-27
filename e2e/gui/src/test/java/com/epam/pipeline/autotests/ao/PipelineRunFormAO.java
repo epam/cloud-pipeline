@@ -34,6 +34,7 @@ import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -465,7 +466,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(byClassName("ant-select-dropdown")).shouldBe(visible, enabled)
+        final SelenideElement capabilityElement = $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
@@ -480,7 +481,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCapabilityTooltip(final String capability, final String text) {
-        $(visible(byClassName("ant-select-dropdown")))
+        $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability))
                 .shouldBe(visible).hover();
         $(visible(byClassName("ant-tooltip")))

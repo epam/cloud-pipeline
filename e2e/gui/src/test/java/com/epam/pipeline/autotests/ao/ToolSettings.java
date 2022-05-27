@@ -44,6 +44,7 @@ import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
@@ -157,14 +158,14 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings setInstanceType(final String instanceType) {
         click(INSTANCE_TYPE);
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
+        $(visible(byClassName("ant-select-dropdown-menu"))).find(withText(instanceType))
                 .shouldBe(visible).click();
         return this;
     }
 
     public ToolSettings setPriceType(final String priceType) {
         click(PRICE_TYPE);
-        $(PipelineSelectors.visible(byClassName("ant-select-dropdown-menu")))
+        $(visible(byClassName("ant-select-dropdown-menu")))
                 .find(withText(priceType))
                 .shouldBe(visible)
                 .click();
@@ -173,7 +174,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
 
     public ToolSettings selectRunCapability(final String optionQualifier) {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
-        $(PipelineSelectors.visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
+        $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
                 .shouldBe(visible).click();
         return this;
     }
@@ -274,7 +275,7 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(PipelineSelectors.visible(byClassName("rc-dropdown")))
+        final SelenideElement capabilityElement = $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
@@ -289,10 +290,10 @@ public class ToolSettings extends ToolTab<ToolSettings> {
     }
 
     public ToolSettings checkCapabilityTooltip(final String capability, final String text) {
-        $(PipelineSelectors.visible(byClassName("rc-dropdown")))
+        $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability))
                 .shouldBe(visible).hover();
-        $(PipelineSelectors.visible(byClassName("ant-tooltip")))
+        $(visible(byClassName("ant-tooltip")))
                         .find(byClassName("ant-tooltip-content"))
                 .shouldHave(Condition.text(text));
         return this;
