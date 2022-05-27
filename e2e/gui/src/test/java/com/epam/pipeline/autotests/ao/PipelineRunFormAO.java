@@ -465,7 +465,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(visible(byClassName("ant-select-dropdown")))
+        final SelenideElement capabilityElement = $(byClassName("ant-select-dropdown")).shouldBe(visible, enabled)
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
