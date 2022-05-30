@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.cloudaccess;
 import com.epam.pipeline.entity.cloudaccess.CloudUserAccessProfile;
 import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
+import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -31,37 +32,37 @@ public class CloudAccessApiService {
 
     private final CloudAccessManager cloudAccessManager;
 
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CloudUserAccessProfile getCloudUserProfile(final String username) {
         return cloudAccessManager.getCloudUserProfile(username);
     }
 
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CloudUserAccessKeys getKeys(final Long regionId, final String username) {
         return cloudAccessManager.getKeys(regionId, username);
     }
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CloudUserAccessKeys generateKeys(final Long regionId, final String username, final boolean force) {
         return cloudAccessManager.generateKeys(regionId, username, force);
     }
 
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public void revokeKeys(final Long regionId, final String username) {
         cloudAccessManager.revokeKeys(regionId, username);
     }
 
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CloudAccessPolicy updateCloudUserAccessPermissions(final Long regionId, final String username,
                                                               final CloudAccessPolicy accessPolicy) {
         return cloudAccessManager.updateCloudUserAccessPermissions(regionId, username, accessPolicy);
     }
 
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public void revokeCloudUserAccessPermissions(final Long regionId, final String username) {
         cloudAccessManager.revokeCloudUserAccessPermissions(regionId, username);
     }
 
-    @PreAuthorize(HAS_ROLE_ADMIN)
+    @PreAuthorize(AclExpressions.ADMIN_ONLY)
     public CloudAccessPolicy getCloudUserAccessPermissions(final Long regionId, final String username) {
         return cloudAccessManager.getCloudUserAccessPermissions(regionId, username);
     }

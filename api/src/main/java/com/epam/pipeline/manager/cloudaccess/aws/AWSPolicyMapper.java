@@ -52,7 +52,7 @@ import java.util.stream.StreamSupport;
  * For example to provide full READ access to specific bucket we actually need to grant to user policy not only with
  * actions: AWS_S3_OBJECT_READ_ACTIONS but also AWS_S3_BUCKET_READ_ACTIONS to be able to list bucket.
  * */
-public class AWSPolicyMapper {
+public final class AWSPolicyMapper {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -229,7 +229,7 @@ public class AWSPolicyMapper {
                             .resource(statement.get(AWS_RESOURCE).asText())
                             .build()
             ).collect(Collectors.groupingBy(
-                    statement -> parseStorageNameFromAWSResourcePolicy(statement.getResource())));
+                statement -> parseStorageNameFromAWSResourcePolicy(statement.getResource())));
     }
 
     private static AWSAccessPolicyStatement mapToAwsPolicyStatement(final String resource,
