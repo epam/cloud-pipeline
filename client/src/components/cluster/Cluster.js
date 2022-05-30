@@ -70,6 +70,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
       haveRunId: null,
+      noRunId: null,
       hasCloudPipelineRole: null,
       search: null,
       address: null
@@ -78,6 +79,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
       labels: {
         haveRunId: null,
         finalHaveRunId: null,
+        noRunId: null,
+        finalNoRunId: null,
         hasCloudPipelineRole: null,
         finalHasCloudPipelineRole: null,
         visible: false,
@@ -85,6 +88,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
           return (
             this.finalValue !== null ||
             this.finalHaveRunId ||
+            this.finalNoRunId ||
             this.finalHasCloudPipelineRole
           );
         },
@@ -134,8 +138,14 @@ export default class Cluster extends localization.LocalizedReactComponent {
   get filteredNodes () {
     const {filter} = this.props;
     const {appliedFilter} = this.state;
-    const {search, address, haveRunId, hasCloudPipelineRole} = appliedFilter;
-    if ((filter && Object.keys(filter).length > 0) || haveRunId || hasCloudPipelineRole || search) {
+    const {search, address, haveRunId, hasCloudPipelineRole, noRunId} = appliedFilter;
+    if (
+      (filter && Object.keys(filter).length > 0) ||
+      hasCloudPipelineRole ||
+      haveRunId ||
+      noRunId ||
+      search
+    ) {
       const hasRunIdProp = (node) => node.labels && node.labels.hasOwnProperty('runid');
       let matchesSearch;
       if (!isNaN(search)) {
@@ -144,6 +154,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         matchesSearch = (node, value) => containsCPLabel(node, value);
       }
       const matchesHaveRunId = node => hasRunIdProp(node) && !isNaN(Number(node.labels.runid));
+      const matchesNoRunId = node => (!hasRunIdProp(node) || isNaN(Number(node.labels.runid))) &&
+      !matchesCloudPipelineRoles(node);
       const matchesAddress = node => node.addresses &&
         node.addresses.map(a => a.address).find(a => a === address);
 
@@ -151,6 +163,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         (!search || matchesSearch(node, search)) &&
         (!address || matchesAddress(node)) &&
         (!haveRunId || matchesHaveRunId(node)) &&
+        (!noRunId || matchesNoRunId(node)) &&
         (!hasCloudPipelineRole || matchesCloudPipelineRoles(node));
 
       return this.nodes.filter(matches);
@@ -188,6 +201,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     filterToApply.search = filter.labels.finalValue;
     filterToApply.hasCloudPipelineRole = filter.labels.finalHasCloudPipelineRole;
     filterToApply.haveRunId = filter.labels.finalHaveRunId;
+    filterToApply.noRunId = filter.labels.finalNoRunId;
     filterToApply.address = filter.address.finalValue;
     this.setState({appliedFilter: filterToApply}, () => {
       this.refreshCluster();
@@ -317,6 +331,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
         type: 'labels'
       },
       {
+        title: 'No run id',
+        prop: 'noRunId',
+        type: 'labels'
+      },
+      {
         title: 'Platform core nodes ',
         prop: 'hasCloudPipelineRole',
         type: 'labels'
@@ -413,6 +432,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
       filter[filterParameterName].value = filter[filterParameterName].finalValue
         ? filter[filterParameterName].finalValue : null;
       if (filterParameterName === 'labels') {
+        filter[filterParameterName].noRunId = filter[filterParameterName].finalNoRunId
+          ? filter[filterParameterName].finalNoRunId : null;
         filter[filterParameterName].haveRunId = filter[filterParameterName].finalHaveRunId
           ? filter[filterParameterName].finalHaveRunId : null;
       }
@@ -426,6 +447,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     if (filterParameterName === 'labels') {
       filter[filterParameterName].finalHasCloudPipelineRole = filter[filterParameterName].hasCloudPipelineRole;
       filter[filterParameterName].finalHaveRunId = filter[filterParameterName].haveRunId;
+      filter[filterParameterName].finalNoRunId = filter[filterParameterName].noRunId;
     }
     this.onFilterDropdownVisibleChange(filterParameterName)(false);
   };
@@ -436,6 +458,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     if (value && filterParameterName === 'labels') {
       filter[filterParameterName].hasCloudPipelineRole = null;
       filter[filterParameterName].haveRunId = null;
+      filter[filterParameterName].noRunId = null;
     }
     this.setState({filter});
   };
@@ -448,16 +471,17 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const {prop, type} = param;
     const options = {
       hasCloudPipelineRole: 'hasCloudPipelineRole',
-      haveRunId: 'haveRunId'
+      haveRunId: 'haveRunId',
+      noRunId: 'noRunId'
     };
-    let otherProp;
-    otherProp = (prop === options.hasCloudPipelineRole)
-      ? options.haveRunId
-      : options.hasCloudPipelineRole;
-
     const filter = {...this.state.filter};
-    filter[type][prop] = value;
-    filter[type][otherProp] = value ? !value : value;
+    Object.keys(options).forEach(key => {
+      if (options[key] !== param.prop) {
+        filter[type][options[key]] = value ? !value : value;
+      } else {
+        filter[type][prop] = value;
+      }
+    });
     this.setState({filter});
   }
 
@@ -471,6 +495,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       if (isLabels) {
         filter[parameter].hasCloudPipelineRole = null;
         filter[parameter].haveRunId = null;
+        filter[parameter].noRunId = null;
       }
       this.setState({filter}, () => {
         this.onFilterChanged(parameter)();
