@@ -106,6 +106,16 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
+    public GitProject renameRepository(final String currentRepositoryPath, final String newName, final String token) {
+        final BitbucketRepository bitbucketRepository = BitbucketRepository.builder()
+                .name(newName)
+                .build();
+        final BitbucketRepository repository = getClient(currentRepositoryPath, token)
+                .updateRepository(bitbucketRepository);
+        return mapper.toGitRepository(repository);
+    }
+
+    @Override
     public void deleteRepository(final Pipeline pipeline) {
         getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).deleteRepository();
     }

@@ -496,14 +496,6 @@ public class GitManager {
                 preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
     }
 
-    public GitProject updateRepositoryName(final String projectIdOrName, final String newName) {
-        try {
-            return getDefaultGitlabClient().updateProjectName(projectIdOrName, newName);
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
-    }
-
     public GitProject copyRepository(final String projectName, final String newProjectName, final String uuid) {
         final String tmpGroupName = String.format("TMP_FORK_%s", uuid);
         final String defaultNamespace = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);

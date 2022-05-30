@@ -55,6 +55,10 @@ public interface BitbucketServerApi {
     Call<BitbucketRepository> createRepository(@Path(PROJECT) String project,
                                                @Body BitbucketRepository bitbucketRepository);
 
+    @PUT("rest/api/1.0/projects/{project}/repos/{repository}")
+    Call<BitbucketRepository> updateRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                               @Body BitbucketRepository bitbucketRepository);
+
     @DELETE("rest/api/1.0/projects/{project}/repos/{repository}")
     Call<BitbucketRepository> deleteRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
 

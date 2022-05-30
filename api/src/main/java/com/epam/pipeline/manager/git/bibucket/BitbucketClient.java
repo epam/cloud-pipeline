@@ -62,6 +62,11 @@ public class BitbucketClient {
         return RestApiUtils.execute(bitbucketServerApi.createRepository(projectName, bitbucketRepository));
     }
 
+    public BitbucketRepository updateRepository(final BitbucketRepository bitbucketRepository) {
+        return RestApiUtils.execute(bitbucketServerApi
+                .updateRepository(projectName, repositoryName, bitbucketRepository));
+    }
+
     public BitbucketRepository deleteRepository() {
         return RestApiUtils.execute(bitbucketServerApi.deleteRepository(projectName, repositoryName));
     }

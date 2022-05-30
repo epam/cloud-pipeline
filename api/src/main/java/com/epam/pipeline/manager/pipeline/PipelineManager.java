@@ -181,6 +181,7 @@ public class PipelineManager implements SecuredEntityManager {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVOName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVOName));
         Pipeline dbPipeline = load(pipelineVO.getId());
+        final String currentProjectPath = dbPipeline.getRepository();
         final String currentProjectName = GitUtils.convertPipeNameToProject(dbPipeline.getName());
         final String newProjectName = GitUtils.convertPipeNameToProject(pipelineVOName);
         final boolean projectNameUpdated = !newProjectName.equals(currentProjectName);
@@ -201,7 +202,7 @@ public class PipelineManager implements SecuredEntityManager {
         updatePipelineNameForRuns(pipelineVO, pipelineVOName);
 
         if (projectNameUpdated) {
-            gitManager.updateRepositoryName(currentProjectName, newProjectName);
+            pipelineRepositoryService.updateRepositoryName(dbPipeline, currentProjectPath, newProjectName);
         }
         return dbPipeline;
     }

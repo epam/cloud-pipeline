@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.manager.git.gitlab;
 
-import com.amazonaws.util.StringUtils;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.UploadFileMetadata;
@@ -26,6 +25,7 @@ import com.epam.pipeline.entity.git.GitProject;
 import com.epam.pipeline.entity.git.GitPushCommitActionEntry;
 import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
+import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
@@ -42,6 +42,7 @@ import joptsimple.internal.Strings;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -75,6 +76,17 @@ public class GitLabService implements GitClientService {
     public GitProject createRepository(final String description, final String repositoryPath, final String token)
             throws GitClientException {
         return getGitlabClientForRepository(repositoryPath, token, true).createRepo(description);
+    }
+
+    @Override
+    public GitProject renameRepository(final String currentRepositoryPath, final String newName, final String token) {
+        final String currentProjectName = GitRepositoryUrl.from(currentRepositoryPath).getProject()
+                .orElseThrow(() -> new IllegalArgumentException("Invalid repository URL format"));
+        try {
+            return getDefaultGitlabClient().updateProjectName(currentProjectName, newName);
+        } catch (GitClientException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
     }
 
     @Override
@@ -279,7 +291,7 @@ public class GitLabService implements GitClientService {
             final String sourcePath = sourceItemVO.getPath();
 
             String action;
-            if (!StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
+            if (StringUtils.isNotBlank(sourceItemVO.getPreviousPath())) {
                 action = ACTION_MOVE;
             } else {
                 if (fileExists(client, sourcePath)) {
@@ -291,7 +303,7 @@ public class GitLabService implements GitClientService {
             final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
             gitPushCommitActionEntry.setFilePath(sourcePath);
             gitPushCommitActionEntry.setAction(action);
-            if (StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
+            if (StringUtils.isBlank(sourceItemVO.getPreviousPath())) {
                 gitPushCommitActionEntry.setContent(sourceItemVO.getContents());
             } else {
                 gitPushCommitActionEntry.setPreviousPath(sourceItemVO.getPreviousPath());
@@ -319,6 +331,15 @@ public class GitLabService implements GitClientService {
         return client.commit(gitPushCommitEntry);
     }
 
+    private GitlabClient getDefaultGitlabClient() {
+        String gitHost = preferenceManager.getPreference(SystemPreferences.GIT_HOST);
+        String gitToken = preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
+        Long gitAdminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
+        String gitAdminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
+        return GitlabClient.initializeGitlabClientFromHostAndToken(gitHost, gitToken,
+                authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
+    }
+
     private GitlabClient getGitlabClientForPipeline(final Pipeline pipeline) {
         return getGitlabClientForPipeline(pipeline, false);
     }
@@ -331,7 +352,7 @@ public class GitLabService implements GitClientService {
                                                       final boolean rootClient) {
         final Long adminId = Long.valueOf(preferenceManager.getPreference(SystemPreferences.GIT_USER_ID));
         final String adminName = preferenceManager.getPreference(SystemPreferences.GIT_USER_NAME);
-        final boolean externalHost = !StringUtils.isNullOrEmpty(providedToken);
+        final boolean externalHost = StringUtils.isNotBlank(providedToken);
         final String token = externalHost ? providedToken
                 : preferenceManager.getPreference(SystemPreferences.GIT_TOKEN);
         return GitlabClient.initializeGitlabClientFromRepositoryAndToken(
@@ -367,7 +388,7 @@ public class GitLabService implements GitClientService {
     }
 
     private boolean fileExists(final GitlabClient client, final String filePath) throws GitClientException {
-        if (StringUtils.isNullOrEmpty(filePath)) {
+        if (StringUtils.isBlank(filePath)) {
             return true;
         }
         try {

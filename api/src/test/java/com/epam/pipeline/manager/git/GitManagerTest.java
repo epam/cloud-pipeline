@@ -130,6 +130,8 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String PROJECTS_ROOT = "/api/v3/projects/";
     private static final String PROJECT_ROOT_V4 = "/api/v4/projects/";
     private static final String GITKEEP = ".gitkeep";
+    private static final String HTTP_PATH_PATTEN = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
+    private static final String SSH_PATH_PATTERN = "git@cp-git.default.svc.cluster.local:%s/%s.git";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -614,7 +616,8 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withRequestBody(equalToJson(createUpdateRequestBody(newProjectName)))
                 .willReturn(okJson(with(expectedProject)))
         );
-        final GitProject updatedProject = gitManager.updateRepositoryName(projectName, newProjectName);
+        final GitProject updatedProject = pipelineRepositoryService.updateRepositoryName(
+                new Pipeline(), String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName);
         assertThat(updatedProject, is(expectedProject));
     }
 
@@ -666,7 +669,8 @@ public class GitManagerTest extends AbstractManagerTest {
             put(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
                 .willReturn(aResponse().withStatus(HttpURLConnection.HTTP_NOT_FOUND))
         );
-        gitManager.updateRepositoryName(projectName, newProjectName);
+        pipelineRepositoryService.updateRepositoryName(new Pipeline(),
+                String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName);
     }
 
     private String getUrlEncodedNamespacePath(final String projectName) {
@@ -681,13 +685,11 @@ public class GitManagerTest extends AbstractManagerTest {
     }
 
     private GitProject createProject(final String name) {
-        final String httpPathPattern = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
-        final String sshPathPattern = "git@cp-git.default.svc.cluster.local:%s/%s.git";
         final GitProject project = new GitProject();
         project.setName(name);
         project.setPath(name);
-        project.setRepoUrl(String.format(httpPathPattern, ROOT_USER_NAME, name));
-        project.setRepoSsh(String.format(sshPathPattern, ROOT_USER_NAME, name));
+        project.setRepoUrl(String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, name));
+        project.setRepoSsh(String.format(SSH_PATH_PATTERN, ROOT_USER_NAME, name));
         return project;
     }
 

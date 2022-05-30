@@ -35,6 +35,8 @@ public interface GitClientService {
 
     GitProject createRepository(String description, String repositoryPath, String token);
 
+    GitProject renameRepository(String currentRepositoryPath, String newName, String token);
+
     void deleteRepository(Pipeline pipeline);
 
     GitProject getRepository(String repository, String token);

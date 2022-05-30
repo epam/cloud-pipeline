@@ -64,6 +64,11 @@ public class PipelineRepositoryProviderService {
         return getProvider(repositoryType).createRepository(description, repositoryPath, token);
     }
 
+    public GitProject renameRepository(final RepositoryType repositoryType, final String currentRepositoryPath,
+                                       final String newName, final String token) {
+        return getProvider(repositoryType).renameRepository(currentRepositoryPath, newName, token);
+    }
+
     public void deleteRepository(final RepositoryType repositoryType, final Pipeline pipeline) {
         getProvider(repositoryType).deleteRepository(pipeline);
     }

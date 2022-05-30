@@ -107,6 +107,12 @@ public class PipelineRepositoryService {
                 pipelineVO.getRepository(), pipelineVO.getRepositoryToken(), true);
     }
 
+    public GitProject updateRepositoryName(final Pipeline pipeline, final String currentRepositoryPath,
+                                           final String newName) {
+        return providerService.renameRepository(pipeline.getRepositoryType(), currentRepositoryPath, newName,
+                pipeline.getRepositoryToken());
+    }
+
     public void deletePipelineRepository(final Pipeline pipeline) {
         providerService.deleteRepository(pipeline.getRepositoryType(), pipeline);
     }
