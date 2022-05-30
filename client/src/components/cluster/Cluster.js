@@ -46,7 +46,8 @@ import {
   getRoles,
   nodeRoles,
   testRole,
-  matchesCloudPipelineRoles
+  matchesCloudPipelineRoles,
+  containsCPLabel
 } from './node-roles';
 
 @connect({
@@ -70,7 +71,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     appliedFilter: {
       haveRunId: null,
       hasCloudPipelineRole: null,
-      runId: null,
+      search: null,
       address: null
     },
     filter: {
@@ -133,20 +134,25 @@ export default class Cluster extends localization.LocalizedReactComponent {
   get filteredNodes () {
     const {filter} = this.props;
     const {appliedFilter} = this.state;
-    const {runId, address, haveRunId, hasCloudPipelineRole} = appliedFilter;
-    if ((filter && Object.keys(filter).length > 0) || haveRunId || hasCloudPipelineRole) {
+    const {search, address, haveRunId, hasCloudPipelineRole} = appliedFilter;
+    if ((filter && Object.keys(filter).length > 0) || haveRunId || hasCloudPipelineRole || search) {
       const hasRunIdProp = (node) => node.labels && node.labels.hasOwnProperty('runid');
-      const matchesRunId = node => hasRunIdProp(node) && `${node.labels.runid}` === `${runId}`;
+      let matchesSearch;
+      if (!isNaN(search)) {
+        matchesSearch = (node, value) => hasRunIdProp(node) && `${node.labels.runid}` === `${value}`;
+      } else {
+        matchesSearch = (node, value) => containsCPLabel(node, value);
+      }
       const matchesHaveRunId = node => hasRunIdProp(node) && !isNaN(Number(node.labels.runid));
-
       const matchesAddress = node => node.addresses &&
         node.addresses.map(a => a.address).find(a => a === address);
+
       const matches = node =>
-        (!runId || matchesRunId(node)) &&
+        (!search || matchesSearch(node, search)) &&
         (!address || matchesAddress(node)) &&
         (!haveRunId || matchesHaveRunId(node)) &&
-        (!hasCloudPipelineRole || matchesCloudPipelineRoles(node))
-        ;
+        (!hasCloudPipelineRole || matchesCloudPipelineRoles(node));
+
       return this.nodes.filter(matches);
     }
     return this.nodes;
@@ -158,7 +164,9 @@ export default class Cluster extends localization.LocalizedReactComponent {
     }
     if (!this.props.nodesFilter.pending) {
       this.props.nodesFilter.send({
-        runId: this.state.appliedFilter.runId,
+        runId: !isNaN(this.state.appliedFilter.search)
+          ? this.state.appliedFilter.search
+          : null,
         address: this.state.appliedFilter.address
       });
     }
@@ -167,7 +175,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   isFilterChanged = () => {
     const {filter, appliedFilter} = this.state;
-    return filter.labels.finalValue !== appliedFilter.runId ||
+    return filter.labels.finalValue !== (appliedFilter.search) ||
       filter.address.finalValue !== appliedFilter.address ||
       filter.labels.finalHasCloudPipelineRole !== appliedFilter.hasCloudPipelineRole ||
       filter.labels.finalHaveRunId !== appliedFilter.haveRunId
@@ -177,7 +185,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   applyFilter = () => {
     const {appliedFilter, filter} = this.state;
     const filterToApply = appliedFilter;
-    filterToApply.runId = filter.labels.finalValue;
+    filterToApply.search = filter.labels.finalValue;
     filterToApply.hasCloudPipelineRole = filter.labels.finalHasCloudPipelineRole;
     filterToApply.haveRunId = filter.labels.finalHaveRunId;
     filterToApply.address = filter.address.finalValue;
@@ -332,7 +340,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
               <li className={styles.popoverListItem}>
                 <Checkbox
                   checked={this.state.filter[type][prop]}
-                  onChange={(e) => this.onJobsAssociationFilterChanged(e.target.checked, {prop, type})}
+                  onChange={(e) => this.onJobsAssociationFilterChanged(
+                    e.target.checked,
+                    {prop, type}
+                  )}
                 >
                   {title}
                 </Checkbox>
@@ -399,7 +410,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const filter = this.state.filter;
     filter[filterParameterName].visible = visible;
     if (!visible) {
-      filter[filterParameterName].validationError = undefined;
       filter[filterParameterName].value = filter[filterParameterName].finalValue
         ? filter[filterParameterName].finalValue : null;
       if (filterParameterName === 'labels') {
@@ -458,7 +468,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
       filter[parameter].value = null;
       filter[parameter].finalValue = null;
       filter[parameter].visible = false;
-      filter[parameter].validationError = false;
       if (isLabels) {
         filter[parameter].hasCloudPipelineRole = null;
         filter[parameter].haveRunId = null;
@@ -468,36 +477,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
       });
     };
 
-    const validateAndSubmit = () => {
-      const filter = this.state.filter;
-      let validationSuccedded = false;
-      if (isLabels) {
-        if (!isNaN(filter[parameter].value)) {
-          filter[parameter].validationError = undefined;
-          validationSuccedded = true;
-        } else {
-          filter[parameter].validationError = 'Please enter valid integer';
-        }
-      } else {
-        filter[parameter].validationError = undefined;
-        validationSuccedded = true;
-      }
-      this.setState({filter}, () => {
-        if (validationSuccedded) {
-          this.onFilterChanged(parameter)();
-        }
-      });
-    };
-
-    const isError = !!this.state.filter[parameter].validationError;
-
     const filterDropdown = (
       <div className={classNames(
         styles.filterPopoverContainer,
-        'cp-filter-popover-container',
-        {
-          'cp-error': isError
-        }
+        'cp-filter-popover-container'
       )}>
         <ul style={{display: 'flex', flexDirection: 'column'}}>
           <div className={classNames('cp-divider', 'bottom', 'cp-filter-popover-item')}>
@@ -506,21 +489,14 @@ export default class Cluster extends localization.LocalizedReactComponent {
                 placeholder={placeholder}
                 value={this.state.filter[parameter].value}
                 onChange={this.onInputChange(parameter)}
-                onPressEnter={validateAndSubmit}
+                onPressEnter={this.onFilterChanged(parameter)}
               />
             </li>
           </div>
           {isLabels && this.renderJobsAssociationFilter()}
         </ul>
-        {
-          isError && (
-            <Row className="cp-error">
-              {this.state.filter[parameter].validationError}
-            </Row>
-          )
-        }
         <Row type="flex" justify="space-between" className={styles.filterActionsButtonsContainer}>
-          <a onClick={validateAndSubmit}>OK</a>
+          <a onClick={this.onFilterChanged(parameter)}>OK</a>
           <a onClick={clear}>Clear</a>
         </Row>
       </div>
@@ -638,7 +614,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('labels', 'Run Id'),
+        ...this.getInputFilter('labels', 'Search by RunID or CP-label'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect

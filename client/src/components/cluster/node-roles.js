@@ -96,3 +96,13 @@ export function matchesCloudPipelineRoles (node) {
   }
   return false;
 }
+
+export function containsCPLabel (node, value) {
+  return matchesCloudPipelineRoles(node) &&
+  Object.keys(node.labels).some(key => {
+    const exec = /^CLOUD-PIPELINE\/(.+)$/i.exec(key);
+    if (exec && exec[1]) {
+      return exec[1].toLowerCase().search(value.trim().toLowerCase()) > -1;
+    }
+  });
+}
