@@ -21,6 +21,7 @@ import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTagCreateRequest;
 import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -54,6 +55,10 @@ public interface BitbucketServerApi {
     Call<BitbucketRepository> createRepository(@Path(PROJECT) String project,
                                                @Body BitbucketRepository bitbucketRepository);
 
+    @PUT("rest/api/1.0/projects/{project}/repos/{repository}")
+    Call<BitbucketRepository> updateRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                               @Body BitbucketRepository bitbucketRepository);
+
     @DELETE("rest/api/1.0/projects/{project}/repos/{repository}")
     Call<BitbucketRepository> deleteRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
 
@@ -67,14 +72,19 @@ public interface BitbucketServerApi {
 
     @Multipart
     @PUT("rest/api/1.0/projects/{project}/repos/{repository}/browse/{path}")
-    Call<ResponseBody> createFile(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
-                                  @Path(value = PATH, encoded = true) String path, @Part MultipartBody.Part content,
-                                  @Part MultipartBody.Part message);
+    Call<BitbucketCommit> createFile(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                     @Path(value = PATH, encoded = true) String path, @Part MultipartBody.Part content,
+                                     @Part MultipartBody.Part message, @Part MultipartBody.Part sourceCommitId);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/tags")
     Call<BitbucketPagedResponse<BitbucketTag>> getTags(@Path(PROJECT) String project,
                                                        @Path(REPOSITORY) String repository,
                                                        @Query(LIMIT) Integer limit, @Query(START) String start);
+
+    @POST("rest/api/1.0/projects/{project}/repos/{repository}/tags")
+    Call<BitbucketTag> createTag(@Path(PROJECT) String project,
+                                 @Path(REPOSITORY) String repository,
+                                 @Body BitbucketTagCreateRequest request);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits")
     Call<BitbucketPagedResponse<BitbucketCommit>> getCommits(@Path(PROJECT) String project,

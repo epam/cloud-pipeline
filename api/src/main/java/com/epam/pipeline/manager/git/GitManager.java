@@ -21,8 +21,6 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
-import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
-import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCommitsFilter;
 import com.epam.pipeline.entity.git.GitCredentials;
@@ -48,7 +46,6 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.CmdExecutor;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -72,11 +69,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -97,13 +89,9 @@ public class GitManager {
     private static final String GIT_CHECKOUT_CMD = "git checkout %s";
     private static final String PATH_DELIMITER = "/";
     private static final String CONFIG_FILE_NAME = "config.json";
-    private static final String GIT_FOLDER_TOKEN_FILE = ".gitkeep";
     public static final String GIT_MASTER_REPOSITORY = "master";
     public static final String DRAFT_PREFIX = "draft-";
-    private static final String ACTION_MOVE = "move";
     private static final String ACTION_UPDATE = "update";
-    private static final String ACTION_DELETE = "delete";
-    private static final String ACTION_CREATE = "create";
     private static final String BASE64_ENCODING = "base64";
     public static final String EXCLUDE_MARK = ":!";
 
@@ -270,32 +258,6 @@ public class GitManager {
         return version.startsWith(DRAFT_PREFIX) ? version.substring(DRAFT_PREFIX.length()) : version;
     }
 
-    private Date parseGitDate(String dateStr) {
-        LocalDateTime localDateTime =
-                LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
-        return Date.from(localDateTime.toInstant(ZoneOffset.UTC));
-    }
-
-    public List<Revision> getPipelineRevisions(Pipeline pipeline)
-            throws GitClientException {
-        return pipelineRepositoryService.getPipelineRevisions(pipeline.getRepositoryType(), pipeline);
-    }
-
-    public Revision createPipelineRevision(Pipeline pipeline,
-                                           String revisionName,
-                                           String commit,
-                                           String message,
-                                           String releaseDescription) throws GitClientException {
-        Assert.isTrue(GitUtils.checkGitNaming(revisionName),
-                messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_REVISION_NAME, revisionName));
-        GitlabClient client = this.getGitlabClientForPipeline(pipeline);
-        GitTagEntry gitTagEntry = client.createRepositoryRevision(revisionName, commit, message, releaseDescription);
-        return new Revision(gitTagEntry.getName(),
-                gitTagEntry.getMessage(),
-                parseGitDate(gitTagEntry.getCommit().getAuthoredDate()), gitTagEntry.getCommit().getId(),
-                gitTagEntry.getCommit().getAuthorName(), gitTagEntry.getCommit().getAuthorEmail());
-    }
-
     public List<GitCommitEntry> getCommits(Pipeline pipeline, String versionName)
             throws GitClientException {
         return this.getGitlabClientForPipeline(pipeline)
@@ -307,29 +269,6 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).getCommits(getRevisionName(versionName), since);
     }
 
-    private boolean folderExists(Pipeline pipeline, String folder) {
-        try {
-            return !getGitlabClientForPipeline(pipeline)
-                    .getRepositoryContents(folder, null, false).isEmpty();
-        } catch (GitClientException e) {
-            return false;
-        }
-    }
-
-    private boolean fileExists(Pipeline pipeline, String filePath) throws GitClientException {
-        if (StringUtils.isNullOrEmpty(filePath)) {
-            return true;
-        }
-        GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        boolean fileExists = false;
-        try {
-            fileExists = gitlabClient.getFileContents(filePath, GIT_MASTER_REPOSITORY) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            LOGGER.debug(exception.getMessage(), exception);
-        }
-        return fileExists;
-    }
-
     public GitCommitEntry createOrRenameFolder(Long id, PipelineSourceItemVO folderVO) throws GitClientException {
         String folderName = FilenameUtils.getName(folderVO.getPath());
         Assert.isTrue(GitUtils.checkGitNaming(folderName),
@@ -337,128 +276,24 @@ public class GitManager {
         Pipeline pipeline = pipelineManager.load(id, true);
         if (folderVO.getPreviousPath() == null) {
             // Previous path is missing: creating folder
-            return createFolder(pipeline,
-                    folderVO.getPath(),
-                    folderVO.getLastCommitId(),
-                    folderVO.getComment());
-        } else {
-            // else: renaming folder
-            return renameFolder(pipeline,
-                    folderVO.getPreviousPath(),
+            return pipelineRepositoryService.createFolder(pipeline,
                     folderVO.getPath(),
                     folderVO.getLastCommitId(),
                     folderVO.getComment());
         }
+        // else: renaming folder
+        return pipelineRepositoryService.renameFolder(pipeline,
+                folderVO.getPreviousPath(),
+                folderVO.getPath(),
+                folderVO.getLastCommitId(),
+                folderVO.getComment());
     }
 
-    private GitCommitEntry createFolder(final Pipeline pipeline,
-                                        final String folder,
-                                        final String lastCommitId,
-                                        String commitMessage) throws GitClientException {
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
-        Assert.isTrue(!folderExists(pipeline, folder),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, folder));
-
-        if (commitMessage == null) {
-            commitMessage = String.format("Creating folder %s", folder);
-        }
-        final List<String> filesToCreate = new ArrayList<>();
-        final List<String> foldersToCheck = new ArrayList<>();
-        Path folderToCreate = Paths.get(folder);
-        while (folderToCreate != null && !StringUtils.isNullOrEmpty(folderToCreate.toString())) {
-            if (!this.folderExists(pipeline, folderToCreate.toString())) {
-                filesToCreate.add(Paths.get(folderToCreate.toString(), GIT_FOLDER_TOKEN_FILE).toString());
-                foldersToCheck.add(folderToCreate.toString());
-            }
-            folderToCreate = folderToCreate.getParent();
-        }
-
-        checkFolderHierarchyIfFileExists(pipeline, foldersToCheck);
-
-        GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        gitPushCommitEntry.setCommitMessage(commitMessage);
-        for (String file : filesToCreate) {
-            GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setAction(ACTION_CREATE);
-            gitPushCommitActionEntry.setFilePath(file);
-            gitPushCommitActionEntry.setContent("");
-            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        }
-        return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
-    }
-
-    private void checkFolderHierarchyIfFileExists(final Pipeline pipeline, final List<String> folders)
-            throws GitClientException {
-        for (String folder : folders) {
-            if (!this.folderExists(pipeline, folder)) {
-                Assert.isTrue(!fileExists(pipeline, folder),
-                        messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, folder));
-            }
-        }
-    }
-
-    private GitCommitEntry renameFolder(Pipeline pipeline,
-                                       String folder,
-                                       String newFolderName,
-                                       String lastCommitId,
-                                       String commitMessage) throws GitClientException {
-        if (commitMessage == null) {
-            commitMessage = String.format("Renaming folder %s to %s", folder, newFolderName);
-        }
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
-        Assert.isTrue(folderExists(pipeline, folder),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_NOT_FOUND, folder));
-        Assert.isTrue(!folderExists(pipeline, newFolderName),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_ALREADY_EXISTS, newFolderName));
-        final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
-        final List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
-                GIT_MASTER_REPOSITORY, true);
-
-        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        gitPushCommitEntry.setCommitMessage(commitMessage);
-
-        for (GitRepositoryEntry file : allFiles) {
-            if (file.getType().equalsIgnoreCase("tree")) {
-                continue;
-            }
-            prepareFileForRenaming(file.getPath().replaceFirst(folder, newFolderName), file.getPath(),
-                    gitPushCommitEntry, gitlabClient);
-        }
-        return gitlabClient.commit(gitPushCommitEntry);
-    }
-
-    public GitCommitEntry removeFolder(Pipeline pipeline,
-                                       String folder,
-                                       String lastCommitId,
-                                       String commitMessage) throws GitClientException {
-        if (commitMessage == null) {
-            commitMessage = String.format("Removing folder %s", folder);
-        }
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, folder));
-        Assert.isTrue(!StringUtils.isNullOrEmpty(folder),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_ROOT_FOLDER_CANNOT_BE_REMOVED));
-        Assert.isTrue(!folder.equalsIgnoreCase(srcDirectory),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FOLDER_CANNOT_BE_REMOVED, folder));
-        GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
-                GIT_MASTER_REPOSITORY,
-                true);
-
-        GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        gitPushCommitEntry.setCommitMessage(commitMessage);
-        for (GitRepositoryEntry file : allFiles) {
-            if (file.getType().equalsIgnoreCase("tree")) {
-                continue;
-            }
-            GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setAction(ACTION_DELETE);
-            gitPushCommitActionEntry.setFilePath(file.getPath());
-            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        }
-        return gitlabClient.commit(gitPushCommitEntry);
+    public GitCommitEntry removeFolder(final Pipeline pipeline,
+                                       final String folder,
+                                       final String lastCommitId,
+                                       final String commitMessage) throws GitClientException {
+        return pipelineRepositoryService.removeFolder(pipeline, folder, lastCommitId, commitMessage, srcDirectory);
     }
 
     public GitCommitEntry modifyFile(Pipeline pipeline,
@@ -468,18 +303,18 @@ public class GitManager {
             Assert.isTrue(GitUtils.checkGitNaming(pathPart),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
         if (StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
-            return this.updateFile(pipeline,
+            return pipelineRepositoryService.updateFile(pipeline,
                     sourcePath,
                     sourceItemVO.getContents(),
                     sourceItemVO.getLastCommitId(),
-                    sourceItemVO.getComment());
-        } else {
-            return this.renameFile(pipeline,
-                    sourcePath,
-                    sourceItemVO.getPreviousPath(),
-                    sourceItemVO.getLastCommitId(),
-                    sourceItemVO.getComment());
+                    sourceItemVO.getComment(),
+                    false);
         }
+        return pipelineRepositoryService.renameFile(pipeline,
+                sourcePath,
+                sourceItemVO.getPreviousPath(),
+                sourceItemVO.getLastCommitId(),
+                sourceItemVO.getComment());
     }
 
     public GitCommitEntry revertFile(final Pipeline pipeline,
@@ -506,203 +341,10 @@ public class GitManager {
         return this.getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
 
-    protected GitCommitEntry updateFile(Pipeline pipeline,
-                                     String filePath,
-                                     String fileContent,
-                                     String lastCommitId,
-                                     String commitMessage) throws GitClientException {
-        return updateFile(pipeline, filePath, fileContent, lastCommitId, commitMessage, false);
-    }
-
-    protected GitCommitEntry updateFile(Pipeline pipeline,
-            String filePath,
-            String fileContent,
-            String lastCommitId,
-            String commitMessage,
-            boolean checkCommit) throws GitClientException {
-        if (checkCommit) {
-            Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                    messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED,
-                            filePath));
-        }
-        GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-        String message =
-                getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
-        gitPushCommitActionEntry.setFilePath(filePath);
-        gitPushCommitActionEntry.setContent(fileContent);
-
-        GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        gitPushCommitEntry.setCommitMessage(message);
-        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        return gitlabClient.commit(gitPushCommitEntry);
-    }
-
-    public GitCommitEntry updateFiles(Pipeline pipeline, PipelineSourceItemsVO sourceItemVOList)
-            throws GitClientException {
-        if (CollectionUtils.isEmpty(sourceItemVOList.getItems())) {
-            return null;
-        }
-        String lastCommitId = sourceItemVOList.getLastCommitId();
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_WAS_UPDATED));
-        GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
-        GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        if (StringUtils.isNullOrEmpty(sourceItemVOList.getComment())) {
-            gitPushCommitEntry.setCommitMessage(String.format("Updating files %s", StringUtils.join(", ",
-                    String.valueOf(sourceItemVOList.getItems().stream().map(PipelineSourceItemVO::getPath)))));
-        } else {
-            gitPushCommitEntry.setCommitMessage(sourceItemVOList.getComment());
-        }
-        for (PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
-            String sourcePath = sourceItemVO.getPath();
-            Arrays.stream(sourcePath.split(PATH_DELIMITER)).forEach(pathPart ->
-                    Assert.isTrue(GitUtils.checkGitNaming(pathPart),
-                            messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, sourcePath)));
-
-            String action;
-            if (!StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
-                action = ACTION_MOVE;
-            } else {
-                if (fileExists(pipeline, sourcePath)) {
-                    action = ACTION_UPDATE;
-                } else {
-                    action = ACTION_CREATE;
-                }
-            }
-            GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            gitPushCommitActionEntry.setFilePath(sourcePath);
-            gitPushCommitActionEntry.setAction(action);
-            if (StringUtils.isNullOrEmpty(sourceItemVO.getPreviousPath())) {
-                gitPushCommitActionEntry.setContent(sourceItemVO.getContents());
-            } else {
-                gitPushCommitActionEntry.setPreviousPath(sourceItemVO.getPreviousPath());
-            }
-            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        }
-        return gitlabClient.commit(gitPushCommitEntry);
-    }
-
-    private GitCommitEntry renameFile(Pipeline pipeline,
-                                     String filePath,
-                                     String filePreviousPath,
-                                     String lastCommitId,
-                                     String commitMessage) throws GitClientException {
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, filePath));
-        final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
-
-        if (StringUtils.isNullOrEmpty(commitMessage)) {
-            commitMessage = String.format("Renaming %s to %s", filePreviousPath, filePath);
-        }
-
-        Assert.isTrue(!fileExists(pipeline, filePath),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_ALREADY_EXISTS, filePath));
-
-        final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        gitPushCommitEntry.setCommitMessage(commitMessage);
-        prepareFileForRenaming(filePath, filePreviousPath, gitPushCommitEntry, gitlabClient);
-
-        return gitlabClient.commit(gitPushCommitEntry);
-    }
-
-    private GitPushCommitEntry prepareFileForRenaming(final String filePath,
-                                                      final String filePreviousPath,
-                                                      final GitPushCommitEntry gitPushCommitEntry,
-                                                      final GitlabClient gitlabClient) throws GitClientException {
-        final byte[] fileContents = gitlabClient.getFileContents(filePreviousPath, GIT_MASTER_REPOSITORY);
-
-        final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-        gitPushCommitActionEntry.setAction(ACTION_MOVE);
-        gitPushCommitActionEntry.setFilePath(filePath);
-        gitPushCommitActionEntry.setPreviousPath(filePreviousPath);
-        gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(fileContents));
-        gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
-        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        return gitPushCommitEntry;
-    }
-
-    public GitCommitEntry uploadFiles(Pipeline pipeline,
-                                     String folder,
-                                     List<UploadFileMetadata> files,
-                                     String lastCommitId,
-                                     String commitMessage) throws GitClientException {
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_WAS_UPDATED));
-        GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-        GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-
-        for (UploadFileMetadata file : files) {
-            final String filePath = getFilePath(folder, file);
-            Arrays.stream(filePath.split(PATH_DELIMITER)).forEach(pathPart ->
-                    Assert.isTrue(GitUtils.checkGitNaming(pathPart),
-                            messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_FILE_NAME, filePath)));
-
-            GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-            commitMessage =
-                    getCommitMessage(commitMessage, filePath, fileExists(pipeline, filePath), gitPushCommitActionEntry);
-            gitPushCommitActionEntry.setFilePath(filePath);
-            gitPushCommitActionEntry.setContent(Base64.getEncoder().encodeToString(file.getBytes()));
-            gitPushCommitActionEntry.setEncoding(BASE64_ENCODING);
-            gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        }
-
-        gitPushCommitEntry.setCommitMessage(commitMessage);
-        return gitlabClient.commit(gitPushCommitEntry);
-    }
-
-    private String getFilePath(final String folder, final UploadFileMetadata file) {
-        if (StringUtils.isNullOrEmpty(folder) || folder.equals(PATH_DELIMITER)) {
-            return file.getFileName();
-        }
-        return folder + PATH_DELIMITER + file.getFileName();
-    }
-
-    private String getCommitMessage(String commitMessage, String filePath, boolean fileExists,
-            GitPushCommitActionEntry gitPushCommitActionEntry) {
-        String message = commitMessage;
-        if (fileExists) {
-            gitPushCommitActionEntry.setAction(ACTION_UPDATE);
-            if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Updating file %s", filePath);
-            }
-        } else {
-            gitPushCommitActionEntry.setAction(ACTION_CREATE);
-            if (StringUtils.isNullOrEmpty(commitMessage)) {
-                message = String.format("Creating file %s", filePath);
-            }
-        }
-        return message;
-    }
-
-    public GitCommitEntry deleteFile(Pipeline pipeline,
-                                     String filePath,
-                                     String lastCommitId,
-                                     String commitMessage) throws GitClientException {
-        Assert.isTrue(lastCommitId.equals(pipeline.getCurrentVersion().getCommitId()),
-                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_FILE_WAS_UPDATED, filePath));
-        GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipeline);
-
-        GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
-        gitPushCommitActionEntry.setAction(ACTION_DELETE);
-        gitPushCommitActionEntry.setFilePath(filePath);
-
-        GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
-        gitPushCommitEntry.setCommitMessage(commitMessage);
-        gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
-        return gitlabClient.commit(gitPushCommitEntry);
-    }
-
     public byte[] getPipelineFileContents(Pipeline pipeline, String version, String path)
             throws GitClientException {
         return this.getGitlabClientForPipeline(pipeline)
                 .getFileContents(path, getRevisionName(version));
-    }
-
-    public byte[] getTruncatedPipelineFileContent(final Pipeline pipeline, final String version,
-                                                  final String path, int byteLimit) throws GitClientException {
-        return this.getGitlabClientForPipeline(pipeline)
-            .getTruncatedFileContents(path, getRevisionName(version), byteLimit);
     }
 
     /**
@@ -781,21 +423,6 @@ public class GitManager {
                 authManager.getAuthorizedUser(), gitAdminId, gitAdminName);
     }
 
-    public GitProject createRepository(String templateId,
-                                       String description,
-                                       String repository,
-                                       String token)
-            throws GitClientException {
-        TemplatesScanner templatesScanner = new TemplatesScanner(templatesDirectoryPath);
-        Template template = templatesScanner.listTemplates().get(templateId);
-        Assert.notNull(template, "There is no such a template: " + templateId);
-        return getGitlabClientForRepository(repository, token, true)
-                .createTemplateRepository(template,
-                        description,
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
-    }
-
     public GitProject createEmptyRepository(final String pipelineName,
                                             final String description) throws GitClientException {
         return getDefaultGitlabClient().createEmptyRepository(
@@ -805,18 +432,6 @@ public class GitManager {
                 false,
                 preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL)
         );
-    }
-
-    public GitProject createEmptyRepository(final String description, final String repository,
-                                            final String token) throws GitClientException {
-        return getGitlabClientForRepository(repository, token, true)
-                .createEmptyRepository(description,
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED),
-                        preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
-    }
-
-    public void deletePipelineRepository(Pipeline pipeline) throws GitClientException {
-        this.getGitlabClientForPipeline(pipeline, true).deleteRepository();
     }
 
     private void checkRevision(Pipeline pipeline, String version) {
@@ -886,30 +501,6 @@ public class GitManager {
         GitlabClient gitlabClient = this.getGitlabClientForPipeline(pipelineManager.load(id));
         return gitlabClient.createProjectHook(
                 preferenceManager.getPreference(SystemPreferences.GIT_REPOSITORY_HOOK_URL));
-    }
-
-    public GitProject getRepository(String repository, String token) {
-        try {
-            return getGitlabClientForRepository(repository, token, false).getProject();
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
-    }
-
-    public GitProject getRepository(String name) {
-        try {
-            return getDefaultGitlabClient().getProject(name);
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
-    }
-
-    public GitProject updateRepositoryName(final String projectIdOrName, final String newName) {
-        try {
-            return getDefaultGitlabClient().updateProjectName(projectIdOrName, newName);
-        } catch (GitClientException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
-        }
     }
 
     public GitProject copyRepository(final String projectName, final String newProjectName, final String uuid) {

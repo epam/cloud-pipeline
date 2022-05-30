@@ -16,22 +16,10 @@
 
 package com.epam.pipeline.entity.git.bitbucket;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
-@AllArgsConstructor
-@Builder
-public class BitbucketCommit {
+public class BitbucketCommitParent {
     private String id;
     private String displayId;
-    private Long authorTimestamp;
-    private Long committerTimestamp;
-    private String message;
-    private BitbucketAuthor author;
-    private BitbucketAuthor committer;
-    private List<BitbucketCommitParent> parents;
 }

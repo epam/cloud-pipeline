@@ -39,15 +39,12 @@ import com.epam.pipeline.utils.GitUtils;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Wither;
-import okhttp3.ResponseBody;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
-import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.util.UriUtils;
-import retrofit2.Call;
 import retrofit2.HttpException;
 import retrofit2.Response;
 
@@ -261,28 +258,6 @@ public class GitlabClient {
         return execute(gitLabApi.getProject(projectId));
     }
 
-    public GitProject createTemplateRepository(Template template, String description,
-                                               boolean indexingEnabled, String hookUrl) throws GitClientException {
-        Assert.notNull(this.projectName, "Project name cannot be empty");
-        try {
-            String repoName = this.projectName;
-            return createGitProject(template, description, repoName, indexingEnabled, hookUrl);
-        } catch (HttpClientErrorException e) {
-            throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
-        }
-    }
-
-    public GitProject createEmptyRepository(final String description, final boolean indexingEnabled,
-                                            final String hookUrl) throws GitClientException {
-        Assert.notNull(this.projectName, "Project name cannot be empty");
-        try {
-            String repoName = this.projectName;
-            return createEmptyRepository(repoName, description, indexingEnabled, true, hookUrl);
-        } catch (HttpClientErrorException e) {
-            throw new GitClientException("Failed to create GIT repository: " + e.getMessage(), e);
-        }
-    }
-
     public void deleteRepository() throws GitClientException {
         String projectId = makeProjectId(namespace, projectName);
         execute(gitLabApi.deleteProject(projectId));
@@ -310,13 +285,6 @@ public class GitlabClient {
 
     public GitTagEntry createRepositoryRevision(String name, String ref, String message, String releaseDescription)
             throws GitClientException {
-        if (name == null) {
-            throw new GitClientException("Tag name is required");
-        }
-        if (ref == null) {
-            throw new GitClientException("Ref (commit SHA, another tag name, or branch name) is required");
-        }
-
         String projectId = makeProjectId(namespace, projectName);
         return execute(gitLabApi.createRevision(projectId, name, ref, message, releaseDescription));
     }
@@ -387,26 +355,12 @@ public class GitlabClient {
      */
     public byte[] getTruncatedFileContents(final String projectId, final String path,
                                            final String revision, final int byteLimit) throws GitClientException {
-        Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
-        Assert.isTrue(StringUtils.isNotBlank(revision), "Revision can't be null");
         final String currentProjectId = StringUtils.isBlank(projectId)
                                         ? makeProjectId(namespace, projectName)
                                         : projectId;
-
         try {
-            final Call<ResponseBody> filesRawContent = gitLabApi.
-                getFilesRawContent(currentProjectId, encodePath(path), revision);
-            final ResponseBody body = filesRawContent.execute().body();
-            if (body != null) {
-                try(InputStream inputStream = body.byteStream()) {
-                    final int bufferSize = calculateBufferSize(byteLimit, body);
-                    final byte[] receivedContent = new byte[bufferSize];
-                    inputStream.read(receivedContent);
-                    return receivedContent;
-                }
-            } else {
-                return new byte[0];
-            }
+            return RestApiUtils.getFileContent(gitLabApi
+                    .getFilesRawContent(currentProjectId, encodePath(path), revision), byteLimit);
         } catch (IOException e) {
             throw new GitClientException("Error receiving raw file content!", e);
         }
@@ -606,13 +560,6 @@ public class GitlabClient {
             return path.replaceAll("\\\\", "/");
         }
         return path;
-    }
-
-    private int calculateBufferSize(final int byteLimit, final ResponseBody body) {
-        final long length = body.contentLength();
-        return (length >= 0 && length <= Integer.MAX_VALUE)
-               ? Math.min((int) length, byteLimit)
-               : byteLimit;
     }
 
     private String encodePath(final String path) throws UnsupportedEncodingException {

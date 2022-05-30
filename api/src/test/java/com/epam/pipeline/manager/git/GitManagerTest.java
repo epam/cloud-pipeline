@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.AbstractManagerTest;
@@ -129,6 +130,8 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String PROJECTS_ROOT = "/api/v3/projects/";
     private static final String PROJECT_ROOT_V4 = "/api/v4/projects/";
     private static final String GITKEEP = ".gitkeep";
+    private static final String HTTP_PATH_PATTEN = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
+    private static final String SSH_PATH_PATTERN = "git@cp-git.default.svc.cluster.local:%s/%s.git";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
@@ -149,6 +152,9 @@ public class GitManagerTest extends AbstractManagerTest {
     @Autowired
     @InjectMocks
     private GitManager gitManager;
+
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
 
     @Before
     public void describePreferenceManager() {
@@ -230,12 +236,13 @@ public class GitManagerTest extends AbstractManagerTest {
         mockFileContentRequest(DOCS + "/created_file.txt", GIT_MASTER_REPOSITORY, FILE_CONTENT);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
         final Pipeline pipeline = testingPipeline();
-        final GitCommitEntry resultingCommit = gitManager.updateFile(
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.updateFile(
             pipeline,
             DOCS + "/created_file.txt",
             FILE_CONTENT,
             "last commit id doesn't matter",
-            "Create file"
+            "Create file",
+            false
         );
         assertThat(resultingCommit, is(expectedCommit));
     }
@@ -247,7 +254,7 @@ public class GitManagerTest extends AbstractManagerTest {
         final Pipeline pipeline = testingPipeline();
         pipeline.setCurrentVersion(revision);
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
-        final GitCommitEntry resultingCommit = gitManager.deleteFile(
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.deleteFile(
             pipeline, DOCS + "/" + README_FILE, pipeline.getCurrentVersion().getCommitId(), "Delete file"
         );
         assertThat(resultingCommit, is(expectedCommit));
@@ -294,7 +301,8 @@ public class GitManagerTest extends AbstractManagerTest {
             get(urlPathEqualTo(api(REPOSITORY_COMMITS)))
                 .willReturn(okJson(with(commits)))
         );
-        final List<Revision> revisions = gitManager.getPipelineRevisions(pipeline);
+        final List<Revision> revisions = pipelineRepositoryService
+                .getPipelineRevisions(RepositoryType.GITLAB, pipeline);
         assertFalse(revisions.isEmpty());
     }
 
@@ -378,7 +386,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .willReturn(okJson(with(expectedCommit)))
         );
         mockFileContentRequest(DOCS + "/" + README_FILE, GIT_MASTER_REPOSITORY, FILE_CONTENT);
-        final GitCommitEntry resultingCommit = gitManager.uploadFiles(
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.uploadFiles(
             pipeline, DOCS, singletonList(file), pipeline.getCurrentVersion().getCommitId(), "Rename the file"
         );
         assertThat(resultingCommit, is(expectedCommit));
@@ -419,7 +427,7 @@ public class GitManagerTest extends AbstractManagerTest {
         sourceItemVOList.setLastCommitId(lastCommit);
         sourceItemVOList.setItems(singletonList(bla));
         final GitCommitEntry expectedCommit = mockGitCommitRequest();
-        final GitCommitEntry resultingCommit = gitManager.updateFiles(pipeline, sourceItemVOList);
+        final GitCommitEntry resultingCommit = pipelineRepositoryService.updateFiles(pipeline, sourceItemVOList);
         assertThat(resultingCommit, is(expectedCommit));
     }
 
@@ -571,7 +579,7 @@ public class GitManagerTest extends AbstractManagerTest {
                 .willReturn(created().withHeader(CONTENT_TYPE, "application/json").withBody(with(tag)))
         );
         final Pipeline pipeline = testingPipeline();
-        final Revision revision = gitManager.createPipelineRevision(
+        final Revision revision = pipelineRepositoryService.createPipelineRevision(
             pipeline, tagName, sha, "Message", "Release description"
         );
         assertThat(revision.getName(), is(tag.getName()));
@@ -608,7 +616,8 @@ public class GitManagerTest extends AbstractManagerTest {
                 .withRequestBody(equalToJson(createUpdateRequestBody(newProjectName)))
                 .willReturn(okJson(with(expectedProject)))
         );
-        final GitProject updatedProject = gitManager.updateRepositoryName(projectName, newProjectName);
+        final GitProject updatedProject = pipelineRepositoryService.updateRepositoryName(
+                new Pipeline(), String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName);
         assertThat(updatedProject, is(expectedProject));
     }
 
@@ -660,7 +669,8 @@ public class GitManagerTest extends AbstractManagerTest {
             put(urlPathEqualTo(PROJECTS_ROOT + getUrlEncodedNamespacePath(projectName)))
                 .willReturn(aResponse().withStatus(HttpURLConnection.HTTP_NOT_FOUND))
         );
-        gitManager.updateRepositoryName(projectName, newProjectName);
+        pipelineRepositoryService.updateRepositoryName(new Pipeline(),
+                String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, projectName), newProjectName);
     }
 
     private String getUrlEncodedNamespacePath(final String projectName) {
@@ -675,13 +685,11 @@ public class GitManagerTest extends AbstractManagerTest {
     }
 
     private GitProject createProject(final String name) {
-        final String httpPathPattern = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
-        final String sshPathPattern = "git@cp-git.default.svc.cluster.local:%s/%s.git";
         final GitProject project = new GitProject();
         project.setName(name);
         project.setPath(name);
-        project.setRepoUrl(String.format(httpPathPattern, ROOT_USER_NAME, name));
-        project.setRepoSsh(String.format(sshPathPattern, ROOT_USER_NAME, name));
+        project.setRepoUrl(String.format(HTTP_PATH_PATTEN, ROOT_USER_NAME, name));
+        project.setRepoSsh(String.format(SSH_PATH_PATTERN, ROOT_USER_NAME, name));
         return project;
     }
 

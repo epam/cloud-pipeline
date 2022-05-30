@@ -20,18 +20,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 @Builder
-public class BitbucketCommit {
-    private String id;
-    private String displayId;
-    private Long authorTimestamp;
-    private Long committerTimestamp;
+public class BitbucketTagCreateRequest {
+    private String name;
+    private String startPoint;
     private String message;
-    private BitbucketAuthor author;
-    private BitbucketAuthor committer;
-    private List<BitbucketCommitParent> parents;
 }
