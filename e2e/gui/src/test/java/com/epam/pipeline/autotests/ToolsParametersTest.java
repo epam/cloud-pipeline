@@ -235,8 +235,7 @@ public class ToolsParametersTest
         toolSettings
                 .runWithCustomSettings()
                 .expandTab(execEnvironmentTab)
-                .click(RUN_CAPABILITIES);
-        toolSettings
+                .click(RUN_CAPABILITIES)
                 .sleep(2, SECONDS)
                 .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
@@ -245,8 +244,7 @@ public class ToolsParametersTest
                 .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(CUSTOM_CAPABILITY_1);
-        pipelineRunFormAO
+                .selectRunCapability(CUSTOM_CAPABILITY_1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
                 .selectRunCapability(CUSTOM_CAPABILITY_3)
                 .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
