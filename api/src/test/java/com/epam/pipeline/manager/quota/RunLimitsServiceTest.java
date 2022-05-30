@@ -39,6 +39,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Collections;
+import java.util.Optional;
 
 public class RunLimitsServiceTest {
 
@@ -61,6 +62,9 @@ public class RunLimitsServiceTest {
         doReturn(false).when(authManager).isAdmin();
         doReturn(getUser()).when(authManager).getCurrentUser();
         doReturn(1).when(runManager).countPipelineRuns(Mockito.any());
+        doReturn(Optional.empty())
+            .when(preferenceManager)
+            .find(Mockito.anyString(), Mockito.any(ContextualPreferenceExternalResource.class));
     }
 
     @Test
@@ -107,7 +111,7 @@ public class RunLimitsServiceTest {
             new ContextualPreferenceExternalResource(resourceLevel, resourceId.toString());
         final ContextualPreference limitPreference =
             new ContextualPreference(pref.getKey(), value.toString(), preferenceResource);
-        doReturn(Collections.singletonList(limitPreference)).when(preferenceManager).loadAll();
+        doReturn(Optional.of(limitPreference)).when(preferenceManager).find(pref.getKey(), preferenceResource);
     }
 
     private void mockRoleLoading() {

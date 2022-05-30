@@ -68,9 +68,14 @@ public class ContextualPreferenceManager {
     public ContextualPreference load(final String name, final ContextualPreferenceExternalResource resource) {
         validateName(name);
         validateResource(resource);
-        return contextualPreferenceDao.load(name, resource)
+        return find(name, resource)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, name, resource)));
+    }
+
+    public Optional<ContextualPreference> find(final String name,
+                                                final ContextualPreferenceExternalResource resource) {
+        return contextualPreferenceDao.load(name, resource);
     }
 
     private void validateName(final String name) {
