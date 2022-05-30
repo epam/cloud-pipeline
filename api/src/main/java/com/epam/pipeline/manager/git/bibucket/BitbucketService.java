@@ -38,7 +38,6 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.git.RestApiUtils;
@@ -50,7 +49,6 @@ import joptsimple.internal.Strings;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
@@ -67,21 +65,17 @@ import java.util.stream.Collectors;
 public class BitbucketService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
-    private static final String NOT_FOUND_CODE = "404";
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
-    private final String srcDirectory;
 
     public BitbucketService(final BitbucketMapper mapper,
                             final MessageHelper messageHelper,
-                            final AuthManager authManager,
-                            final @Value("${git.src.directory}") String srcDirectory) {
+                            final AuthManager authManager) {
         this.mapper = mapper;
         this.messageHelper = messageHelper;
         this.authManager = authManager;
-        this.srcDirectory = srcDirectory;
     }
 
     @Override
@@ -228,37 +222,30 @@ public class BitbucketService implements GitClientService {
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
         final List<String> values = new ArrayList<>();
-        try {
-            String nextPage = collectValues(client.getFiles(path, version, null), values);
-            while (StringUtils.isNotBlank(nextPage)) {
-                nextPage = collectValues(client.getFiles(path, version, nextPage), values);
-            }
-
-            final List<GitRepositoryEntry> files = values.stream()
-                    .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
-                    .map(value -> buildGitRepositoryEntry(path, value, GitUtils.FILE_MARKER))
-                    .collect(Collectors.toList());
-
-            final List<String> folders = values.stream()
-                    .map(this::trimFileName)
-                    .filter(StringUtils::isNotBlank)
-                    .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
-                    .distinct()
-                    .map(this::getFoldersTreeFromPath)
-                    .flatMap(Collection::stream)
-                    .distinct()
-                    .collect(Collectors.toList());
-            final List<GitRepositoryEntry> results = folders.stream()
-                    .map(folderPath -> buildGitRepositoryEntry(path, folderPath, GitUtils.FOLDER_MARKER))
-                    .collect(Collectors.toList());
-            results.addAll(files);
-            return results;
-        } catch (UnexpectedResponseStatusException e) {
-            if (e.getMessage().contains(NOT_FOUND_CODE) && path.equals(srcDirectory)) {
-                return getRepositoryContents(pipeline, ProviderUtils.DELIMITER, version, recursive);
-            }
-            throw e;
+        String nextPage = collectValues(client.getFiles(path, version, null), values);
+        while (StringUtils.isNotBlank(nextPage)) {
+            nextPage = collectValues(client.getFiles(path, version, nextPage), values);
         }
+
+        final List<GitRepositoryEntry> files = values.stream()
+                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
+                .map(value -> buildGitRepositoryEntry(path, value, GitUtils.FILE_MARKER))
+                .collect(Collectors.toList());
+
+        final List<String> folders = values.stream()
+                .map(this::trimFileName)
+                .filter(StringUtils::isNotBlank)
+                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
+                .distinct()
+                .map(this::getFoldersTreeFromPath)
+                .flatMap(Collection::stream)
+                .distinct()
+                .collect(Collectors.toList());
+        final List<GitRepositoryEntry> results = folders.stream()
+                .map(folderPath -> buildGitRepositoryEntry(path, folderPath, GitUtils.FOLDER_MARKER))
+                .collect(Collectors.toList());
+        results.addAll(files);
+        return results;
     }
 
     @Override

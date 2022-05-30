@@ -41,6 +41,8 @@ import com.epam.pipeline.entity.git.gitreader.GitReaderObject;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryCommit;
 import com.epam.pipeline.entity.git.gitreader.GitReaderRepositoryLogEntry;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
+import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.entity.template.Template;
 import com.epam.pipeline.exception.CmdExecutionException;
 import com.epam.pipeline.exception.git.GitClientException;
@@ -50,6 +52,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.utils.GitUtils;
+import joptsimple.internal.Strings;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -219,15 +222,19 @@ public class GitManager {
             throws GitClientException {
         List<GitRepositoryEntry> entries;
         if (StringUtils.isNullOrEmpty(path)) {
-            entries = this.getPipelineSources(id, version, srcDirectory, recursive);
-            if (appendConfigurationFileIfNeeded) {
-                GitRepositoryEntry configurationEntry = this.getConfigurationFileEntry(id, version);
+            final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+            final String sources = RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType())
+                    ? Strings.EMPTY
+                    : srcDirectory;
+            entries = pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, recursive);
+            if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
+                GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version);
                 if (configurationEntry != null) {
                     entries.add(configurationEntry);
                 }
             }
         } else {
-            entries = this.getPipelineSources(id, version, path, recursive);
+            entries = getPipelineSources(id, version, path, recursive);
         }
         return entries;
     }

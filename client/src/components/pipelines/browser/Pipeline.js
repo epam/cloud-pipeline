@@ -780,12 +780,14 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                 this.renderConfigAction()
               }
               {
-                !this.props.listingMode
+                !this.props.listingMode && this.props.pipeline.value
                   ? (
                     <GitRepositoryControl
                       overlayClassName={styles.gitRepositoryPopover}
                       https={this.props.pipeline.value.repository}
-                      ssh={this.props.pipeline.value.repositorySsh} />
+                      ssh={this.props.pipeline.value.repositorySsh}
+                      repositoryType={this.props.pipeline.value.repositoryType}
+                    />
                   ) : undefined
               }
             </Col>

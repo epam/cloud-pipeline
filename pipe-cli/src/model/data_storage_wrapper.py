@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 import os
 from abc import abstractmethod, ABCMeta
 from ftplib import FTP, error_temp
@@ -183,7 +184,7 @@ class DataStorageWrapper(object):
     def fetch_items(self):
         self.items = self.get_items()
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return []
 
     def get_folders_list(self):
@@ -232,7 +233,7 @@ class CloudDataStorageWrapper(DataStorageWrapper):
     def exists(self):
         return self.exists_flag
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return self.get_list_manager().get_items(self.path)
 
     def is_empty(self, relative=None):
@@ -402,7 +403,8 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             return not os.path.exists(os.path.join(self.path, relative))
         return not os.listdir(self.path)
 
-    def get_items(self):
+    def get_items(self, quiet=False):
+        logging.debug(u'Collecting paths...')
 
         def leaf_path(source_path):
             head, tail = os.path.split(source_path)
@@ -419,11 +421,22 @@ class LocalFileSystemWrapper(DataStorageWrapper):
             visited_symlinks = set()
 
             def list_items(path, parent, symlinks, visited_symlinks, root=False):
+                logging.debug(u'Collecting paths under {}...'.format(path))
                 path = to_unicode(path)
                 parent = to_unicode(parent)
                 for item in os.listdir(to_string(path)):
-                    item = to_unicode(item)
-                    absolute_path = os.path.join(path, item)
+                    safe_item = to_unicode(item, replacing=True)
+                    safe_absolute_path = os.path.join(path, safe_item)
+                    logging.debug(u'Collecting path {}...'.format(safe_absolute_path))
+                    try:
+                        item = to_unicode(item)
+                        absolute_path = os.path.join(path, item)
+                    except UnicodeDecodeError:
+                        err_msg = u'Skipping path with unmanageable unsafe characters {}...'.format(safe_absolute_path)
+                        logging.warn(err_msg)
+                        if not quiet:
+                            click.echo(err_msg)
+                        continue
                     symlink_target = None
                     if os.path.islink(to_string(absolute_path)) and symlinks != AllowedSymlinkValues.FOLLOW:
                         if symlinks == AllowedSymlinkValues.SKIP:
@@ -438,6 +451,7 @@ class LocalFileSystemWrapper(DataStorageWrapper):
                     if not root and parent is not None:
                         relative_path = os.path.join(parent, item)
                     if os.path.isfile(to_string(absolute_path)):
+                        logging.debug(u'Collected path {}.'.format(absolute_path))
                         result.append((FILE, absolute_path, relative_path, os.path.getsize(to_string(absolute_path))))
                     elif os.path.isdir(to_string(absolute_path)):
                         list_items(absolute_path, relative_path, symlinks, visited_symlinks)
@@ -561,7 +575,7 @@ class FtpSourceWrapper(DataStorageWrapper):
         self.is_file_flag = len(self.ftp.nlst(self.relative_path)) == 1
         return self.is_file_flag
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return self._get_files([], self.relative_path)
 
     def _get_files(self, files, path):
@@ -606,7 +620,7 @@ class HttpSourceWrapper(DataStorageWrapper):
         self.is_file_flag = self._is_downloadable()
         return self.is_file_flag
 
-    def get_items(self):
+    def get_items(self, quiet=False):
         return self._get_files(self.path, [], [])
 
     def _head(self, path):
