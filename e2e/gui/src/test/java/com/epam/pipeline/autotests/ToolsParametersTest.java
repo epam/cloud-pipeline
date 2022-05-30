@@ -235,7 +235,7 @@ public class ToolsParametersTest
         toolSettings
                 .runWithCustomSettings()
                 .expandTab(execEnvironmentTab)
-                .click(RUN_CAPABILITIES)
+                .openRunCapabilityDropDown()
                 .sleep(2, SECONDS)
                 .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
@@ -271,7 +271,7 @@ public class ToolsParametersTest
                 ));
         final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO();
         pipelineRunFormAO
-                .click(RUN_CAPABILITIES)
+                .openRunCapabilityDropDown()
                 .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
                 .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
@@ -292,7 +292,7 @@ public class ToolsParametersTest
                     pipelineRunFormAO
                             .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
                             .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3)
-                            .click(RUN_CAPABILITIES)
+                            .openRunCapabilityDropDown()
                             .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
                             .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
                             .checkCustomCapability(CUSTOM_CAPABILITY_2, true)

@@ -75,7 +75,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                    .closest(".ant-row").find(className("ant-form-item-control "))),
+                    .closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
@@ -169,6 +169,16 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
         $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
                 .shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelineRunFormAO openRunCapabilityDropDown() {
+        SelenideElement tag = get(RUN_CAPABILITIES).$$(byClassName("cp-run-capabilities-input-tag")).first();
+        if(tag.exists()) {
+            tag.find(byXpath(".//div")).click();
+            return this;
+        }
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
         return this;
     }
 
