@@ -35,6 +35,7 @@ import com.epam.pipeline.manager.user.RoleManager;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
@@ -68,7 +69,17 @@ public class RunLimitsService {
         final String userName = user.getUserName();
         final List<ContextualPreference> allPreferences = contextualPreferenceManager.loadAll();
         checkUserLimits(user.getId(), userName, newInstancesCount, allPreferences);
-        checkUserGroupsLimits(userName, user.getGroups(), newInstancesCount, allPreferences);
+        checkUserGroupsLimits(userName, getGroups(user), newInstancesCount, allPreferences);
+    }
+
+    private Set<String> getGroups(final PipelineUser user) {
+        final Set<String> groups = CollectionUtils.emptyIfNull(user.getRoles()).stream()
+            .filter(role -> !role.isPredefined())
+            .map(Role::getName)
+            .map(this::getNameWithoutRolePrefix)
+            .collect(Collectors.toSet());
+        groups.addAll(user.getGroups());
+        return groups;
     }
 
     private void checkUserLimits(final Long userId, final String userName, final Integer newInstancesCount,
@@ -79,7 +90,7 @@ public class RunLimitsService {
             .map(ContextualPreference::getValue)
             .filter(NumberUtils::isNumber)
             .map(Integer::parseInt)
-            .filter(limit -> getActiveRunsForUser(userName) + newInstancesCount > limit)
+            .filter(limit -> exceedsUserLimit(userName, newInstancesCount, limit))
             .findFirst()
             .ifPresent(limit -> {
                 log.info("Launch of new jobs is restricted as [{}] user will exceed runs limit [{}]", userName, limit);
@@ -88,8 +99,7 @@ public class RunLimitsService {
             });
     }
 
-    private void checkUserGroupsLimits(final String userName, final List<String> groups,
-                                       final Integer newInstancesCount,
+    private void checkUserGroupsLimits(final String userName, final Set<String> groups, final Integer newInstancesCount,
                                        final List<ContextualPreference> allPreferences) {
         final Map<String, ExtendedRole> groupIdsMapping = getAllMatchingGroupsMapping(groups);
         allPreferences.stream()
@@ -99,7 +109,7 @@ public class RunLimitsService {
             .filter(limitDetails -> exceedsGroupLimit(limitDetails, newInstancesCount))
             .findFirst()
             .ifPresent(limitDetails -> {
-                log.info("Launch of new jobs is restricted as [{}] user will exceed [{}] group runs limit [{}]",
+                log.info("Launch of new jobs is restricted as [{}] user will exceed group runs limit [{}, {}]",
                          userName, limitDetails.getGroupName(), limitDetails.getRunsLimit());
                 throw new LaunchQuotaExceededException(messageHelper.getMessage(
                     MessageConstants.ERROR_RUN_LAUNCH_GROUP_LIMIT_EXCEEDED, userName,
@@ -107,7 +117,7 @@ public class RunLimitsService {
             });
     }
 
-    private Map<String, ExtendedRole> getAllMatchingGroupsMapping(final List<String> groups) {
+    private Map<String, ExtendedRole> getAllMatchingGroupsMapping(final Set<String> groups) {
         return roleManager.loadAllRoles(true).stream()
             .filter(role -> !role.isPredefined())
             .filter(ExtendedRole.class::isInstance)
@@ -130,8 +140,8 @@ public class RunLimitsService {
         return getActiveRunsForUsers(limitDetails.getGroupUsers()) + newInstancesCount > limitDetails.getRunsLimit();
     }
 
-    private Integer getActiveRunsForUser(final String userName) {
-        return getActiveRunsForUsers(Collections.singletonList(userName));
+    private boolean exceedsUserLimit(final String userName, final Integer newInstancesCount, final Integer limit) {
+        return getActiveRunsForUsers(Collections.singletonList(userName)) + newInstancesCount > limit;
     }
 
     private Integer getActiveRunsForUsers(final List<String> userNames) {
