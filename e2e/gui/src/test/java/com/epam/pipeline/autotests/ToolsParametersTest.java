@@ -60,10 +60,10 @@ public class ToolsParametersTest
     private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
             "centos*";
-    private static final String CUSTOM_TEST_CAPABILITY_1 = "Custom test capability 1";
-    private static final String CUSTOM_TEST_CAPABILITY_2 = "Custom test capability 2";
-    private static final String CUSTOM_TEST_CAPABILITY_3 = "Custom test capability 3";
-    private static final String CUSTOM_TEST_CAPABILITY_4 = "Custom test capability 4";
+    private static final String CUSTOM_CAPABILITY_DESC_1 = "Custom test capability 1";
+    private static final String CUSTOM_CAPABILITY_DESC_2 = "Custom test capability 2";
+    private static final String CUSTOM_CAPABILITY_DESC_3 = "Custom test capability 3";
+    private static final String CUSTOM_CAPABILITY_DESC_4 = "Custom test capability 4";
     private static final String DEFAULT_CONFIGURATION = "default";
     private static final String RUN_CAPABILITIES_TITLE = "Run capabilities";
     private final String tool = C.TESTING_TOOL_NAME;
@@ -73,10 +73,10 @@ public class ToolsParametersTest
     private final String anotherGroup = C.ANOTHER_GROUP;
     private final String invalidEndpoint = "8700";
     private final String launchCapabilities = "launch.capabilities";
-    private final String custCapability1 = "testCapability1";
-    private final String custCapability2 = "testCapability2";
-    private final String custCapability3 = "testCapability3";
-    private final String custCapability4 = "testCapability4";
+    private final String CUSTOM_CAPABILITY_1 = "testCapability1";
+    private final String CUSTOM_CAPABILITY_2 = "testCapability2";
+    private final String CUSTOM_CAPABILITY_3 = "testCapability3";
+    private final String CUSTOM_CAPABILITY_4 = "testCapability4";
     private final String capabilityParam = "CP_CAP_CUSTOM_%s";
     private final String logMessage = "Running '%s' commands:";
     private final String pipeline2323 = "tool-parameters-2323-" + Utils.randomSuffix();
@@ -144,21 +144,21 @@ public class ToolsParametersTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
-                .selectRunCapability(custCapability1)
+                .selectRunCapability(CUSTOM_CAPABILITY_1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(custCapability2)
-                .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
-                .checkTooltipText(custCapability2, CUSTOM_TEST_CAPABILITY_2)
+                .selectRunCapability(CUSTOM_CAPABILITY_2)
+                .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
+                .checkTooltipText(CUSTOM_CAPABILITY_2, CUSTOM_CAPABILITY_DESC_2)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(format(capabilityParam, custCapability1), "true"), exist)
-                .ensure(configurationParameter(format(capabilityParam, custCapability2), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, CUSTOM_CAPABILITY_1), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, CUSTOM_CAPABILITY_2), "true"), exist)
                 .waitForSshLink()
                 .click(taskWithName("Console"))
                 .waitForLog("start.sh")
-                .ensure(log(), matchText(format(logMessage, custCapability1)))
-                .ensure(log(), matchText(format(logMessage, custCapability2)))
+                .ensure(log(), matchText(format(logMessage, CUSTOM_CAPABILITY_1)))
+                .ensure(log(), matchText(format(logMessage, CUSTOM_CAPABILITY_2)))
                 .ensure(log(), matchText( "Command: 'echo testLine1'"))
                 .ensure(log(), matchText( "Command: 'echo testLine2'"))
                 .ssh(shell -> shell
@@ -184,18 +184,18 @@ public class ToolsParametersTest
         tools()
                 .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                 .expandTab(EXEC_ENVIRONMENT)
-                .selectRunCapability(custCapability1)
+                .selectRunCapability(CUSTOM_CAPABILITY_1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(custCapability2)
+                .selectRunCapability(CUSTOM_CAPABILITY_2)
                 .launch(this)
                 .showLog(getLastRunId())
                 .expandTab(PARAMETERS)
-                .ensure(configurationParameter(format(capabilityParam, custCapability1), "true"), exist)
-                .ensure(configurationParameter(format(capabilityParam, custCapability2), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, CUSTOM_CAPABILITY_1), "true"), exist)
+                .ensure(configurationParameter(format(capabilityParam, CUSTOM_CAPABILITY_2), "true"), exist)
                 .ensure(configurationParameter("MY_PARAM1", "MY_VALUE1"), exist)
                 .ensure(configurationParameter("MY_PARAM2", "MY_VALUE2"), exist)
                 .ensure(configurationParameter("MY_BOOLEAN_PARAM", "false"), exist)
-                .ensure(configurationParameter("MY_NUMBER_PARAM", "2"), exist);
+                .ensure(configurationParameter("MY_NUMBER_PARAM", "21"), exist);
     }
 
     @Test
@@ -218,37 +218,37 @@ public class ToolsParametersTest
                         tool.settings()
                                 .click(RUN_CAPABILITIES)
                                 .sleep(2, SECONDS)
-                                .checkCustomCapability(custCapability1, false)
-                                .checkCustomCapability(custCapability3, false)
-                                .checkCustomCapability(custCapability4, false)
-                                .checkCustomCapability(custCapability2, true)
+                                .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
+                                .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
+                                .checkCustomCapability(CUSTOM_CAPABILITY_4, false)
+                                .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
                                 .checkCustomCapability(SYSTEM_D, true)
-                                .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
+                                .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
                                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
-                                .selectRunCapability(custCapability1)
                                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                                .selectRunCapability(custCapability3));
+                                .selectRunCapability(CUSTOM_CAPABILITY_1)
+                                .click(byTitle(RUN_CAPABILITIES_TITLE))
+                                .selectRunCapability(CUSTOM_CAPABILITY_3));
         final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO()
-                .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
-                .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3);
+                .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
+                .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3);
         toolSettings
                 .runWithCustomSettings()
                 .expandTab(execEnvironmentTab)
-                .click(RUN_CAPABILITIES);
-        toolSettings
+                .openRunCapabilityDropDown()
                 .sleep(2, SECONDS)
-                .checkCustomCapability(custCapability1, false)
-                .checkCustomCapability(custCapability3, false)
-                .checkCustomCapability(custCapability2, true)
+                .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
+                .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
+                .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
                 .checkCustomCapability(SYSTEM_D, true)
-                .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
+                .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
                 .checkCapabilityTooltip(SYSTEM_D, TOOLTIP_2)
-                .selectRunCapability(custCapability1);
-        pipelineRunFormAO
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(custCapability3)
-                .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
-                .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3);
+                .selectRunCapability(CUSTOM_CAPABILITY_1)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
+                .selectRunCapability(CUSTOM_CAPABILITY_3)
+                .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
+                .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3);
     }
 
     @Test(dependsOnMethods = {"customCapabilitiesForToolDockerImageOS"})
@@ -271,16 +271,17 @@ public class ToolsParametersTest
                 ));
         final PipelineRunFormAO pipelineRunFormAO = new PipelineRunFormAO();
         pipelineRunFormAO
-                .click(RUN_CAPABILITIES)
-                .checkCustomCapability(custCapability1, false)
-                .checkCustomCapability(custCapability3, false)
-                .checkCustomCapability(custCapability2, true)
-                .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
-                .selectRunCapability(custCapability1)
+                .openRunCapabilityDropDown()
+                .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
+                .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
+                .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
+                .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
                 .click(byTitle(RUN_CAPABILITIES_TITLE))
-                .selectRunCapability(custCapability3)
-                .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
-                .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3)
+                .selectRunCapability(CUSTOM_CAPABILITY_1)
+                .click(byTitle(RUN_CAPABILITIES_TITLE))
+                .selectRunCapability(CUSTOM_CAPABILITY_3)
+                .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
+                .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3)
                 .sleep(1, SECONDS)
                 .click(SAVE)
                 .waitUntilSaveEnding(DEFAULT_CONFIGURATION);
@@ -289,13 +290,13 @@ public class ToolsParametersTest
                     configuration
                                     .selectPipeline(pipeline2323);
                     pipelineRunFormAO
-                            .checkTooltipText(custCapability1, CUSTOM_TEST_CAPABILITY_1)
-                            .checkTooltipText(custCapability3, CUSTOM_TEST_CAPABILITY_3)
-                            .click(RUN_CAPABILITIES)
-                            .checkCustomCapability(custCapability1, false)
-                            .checkCustomCapability(custCapability3, false)
-                            .checkCustomCapability(custCapability2, true)
-                            .checkCapabilityTooltip(custCapability2, TOOLTIP_1)
+                            .checkTooltipText(CUSTOM_CAPABILITY_1, CUSTOM_CAPABILITY_DESC_1)
+                            .checkTooltipText(CUSTOM_CAPABILITY_3, CUSTOM_CAPABILITY_DESC_3)
+                            .openRunCapabilityDropDown()
+                            .checkCustomCapability(CUSTOM_CAPABILITY_1, false)
+                            .checkCustomCapability(CUSTOM_CAPABILITY_3, false)
+                            .checkCustomCapability(CUSTOM_CAPABILITY_2, true)
+                            .checkCapabilityTooltip(CUSTOM_CAPABILITY_2, TOOLTIP_1)
                             .click(SAVE)
                             .waitUntilSaveEnding(DEFAULT_CONFIGURATION);
                 });
@@ -319,9 +320,10 @@ public class ToolsParametersTest
                             tool.settings()
                                     .click(RUN_CAPABILITIES)
                                     .sleep(2, SECONDS)
-                                    .checkCustomCapability(custCapability4, false)
-                                    .selectRunCapability(custCapability4));
-            new PipelineRunFormAO().checkTooltipText(custCapability4, CUSTOM_TEST_CAPABILITY_4);
+                                    .checkCustomCapability(CUSTOM_CAPABILITY_4, false)
+                                    .click(byTitle(RUN_CAPABILITIES_TITLE))
+                                    .selectRunCapability(CUSTOM_CAPABILITY_4));
+            new PipelineRunFormAO().checkTooltipText(CUSTOM_CAPABILITY_4, CUSTOM_CAPABILITY_DESC_4);
         });
     }
 }
