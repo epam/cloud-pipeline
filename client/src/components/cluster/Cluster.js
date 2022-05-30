@@ -45,7 +45,8 @@ import parseQueryParameters from '../../utils/queryParameters';
 import {
   getRoles,
   nodeRoles,
-  testRole
+  testRole,
+  matchesCloudPipelineRoles
 } from './node-roles';
 
 @connect({
@@ -68,22 +69,22 @@ export default class Cluster extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
       haveRunId: null,
-      noRunId: null,
+      hasCloudPipelineRole: null,
       runId: null,
       address: null
     },
     filter: {
-      runId: {
-        noRunId: null,
+      labels: {
         haveRunId: null,
-        finalNoRunId: null,
         finalHaveRunId: null,
+        hasCloudPipelineRole: null,
+        finalHasCloudPipelineRole: null,
         visible: false,
         filtered () {
           return (
             this.finalValue !== null ||
-            this.finalNoRunId ||
-            this.finalHaveRunId
+            this.finalHaveRunId ||
+            this.finalHasCloudPipelineRole
           );
         },
         value: null,
@@ -132,11 +133,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
   get filteredNodes () {
     const {filter} = this.props;
     const {appliedFilter} = this.state;
-    const {runId, address, haveRunId, noRunId} = appliedFilter;
-    if ((filter && Object.keys(filter).length > 0) || haveRunId || noRunId) {
+    const {runId, address, haveRunId, hasCloudPipelineRole} = appliedFilter;
+    if ((filter && Object.keys(filter).length > 0) || haveRunId || hasCloudPipelineRole) {
       const hasRunIdProp = (node) => node.labels && node.labels.hasOwnProperty('runid');
       const matchesRunId = node => hasRunIdProp(node) && `${node.labels.runid}` === `${runId}`;
-      const matchesNoRunId = node => !hasRunIdProp(node) || isNaN(Number(node.labels.runid));
       const matchesHaveRunId = node => hasRunIdProp(node) && !isNaN(Number(node.labels.runid));
 
       const matchesAddress = node => node.addresses &&
@@ -145,7 +145,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         (!runId || matchesRunId(node)) &&
         (!address || matchesAddress(node)) &&
         (!haveRunId || matchesHaveRunId(node)) &&
-        (!noRunId || matchesNoRunId(node))
+        (!hasCloudPipelineRole || matchesCloudPipelineRoles(node))
         ;
       return this.nodes.filter(matches);
     }
@@ -166,20 +166,22 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   isFilterChanged = () => {
-    return this.state.filter.runId.finalValue !== this.state.appliedFilter.runId ||
-      this.state.filter.address.finalValue !== this.state.appliedFilter.address ||
-      this.state.filter.runId.finalNoRunId !== this.state.appliedFilter.noRunId ||
-      this.state.filter.runId.finalHaveRunId !== this.state.appliedFilter.haveRunId
+    const {filter, appliedFilter} = this.state;
+    return filter.labels.finalValue !== appliedFilter.runId ||
+      filter.address.finalValue !== appliedFilter.address ||
+      filter.labels.finalHasCloudPipelineRole !== appliedFilter.hasCloudPipelineRole ||
+      filter.labels.finalHaveRunId !== appliedFilter.haveRunId
     ;
   };
 
   applyFilter = () => {
-    const filter = this.state.appliedFilter;
-    filter.runId = this.state.filter.runId.finalValue;
-    filter.noRunId = this.state.filter.runId.finalNoRunId;
-    filter.haveRunId = this.state.filter.runId.finalHaveRunId;
-    filter.address = this.state.filter.address.finalValue;
-    this.setState({appliedFilter: filter}, () => {
+    const {appliedFilter, filter} = this.state;
+    const filterToApply = appliedFilter;
+    filterToApply.runId = filter.labels.finalValue;
+    filterToApply.hasCloudPipelineRole = filter.labels.finalHasCloudPipelineRole;
+    filterToApply.haveRunId = filter.labels.finalHaveRunId;
+    filterToApply.address = filter.address.finalValue;
+    this.setState({appliedFilter: filterToApply}, () => {
       this.refreshCluster();
     });
   };
@@ -301,8 +303,16 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   renderJobsAssociationFilter = () => {
     const options = [
-      {title: 'Has run id', prop: 'haveRunId'},
-      {title: 'No run id', prop: 'noRunId'}
+      {
+        title: 'Has run id',
+        prop: 'haveRunId',
+        type: 'labels'
+      },
+      {
+        title: 'Platform core nodes ',
+        prop: 'hasCloudPipelineRole',
+        type: 'labels'
+      }
     ];
     return (
       <div
@@ -314,15 +324,15 @@ export default class Cluster extends localization.LocalizedReactComponent {
         }
       >
         {
-          options.map(({title, prop}) => (
+          options.map(({title, prop, type}) => (
             <div
               key={prop}
               className="cp-filter-popover-item"
             >
               <li className={styles.popoverListItem}>
                 <Checkbox
-                  checked={this.state.filter.runId[prop]}
-                  onChange={(e) => this.onJobsAssociationFilterChanged(e.target.checked, prop)}
+                  checked={this.state.filter[type][prop]}
+                  onChange={(e) => this.onJobsAssociationFilterChanged(e.target.checked, {prop, type})}
                 >
                   {title}
                 </Checkbox>
@@ -392,9 +402,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       filter[filterParameterName].validationError = undefined;
       filter[filterParameterName].value = filter[filterParameterName].finalValue
         ? filter[filterParameterName].finalValue : null;
-      if (filterParameterName === 'runId') {
-        filter[filterParameterName].noRunId = filter[filterParameterName].finalNoRunId
-          ? filter[filterParameterName].finalNoRunId : null;
+      if (filterParameterName === 'labels') {
         filter[filterParameterName].haveRunId = filter[filterParameterName].finalHaveRunId
           ? filter[filterParameterName].finalHaveRunId : null;
       }
@@ -403,10 +411,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   onFilterChanged = (filterParameterName) => () => {
-    const filter = this.state.filter;
+    const {filter} = this.state;
     filter[filterParameterName].finalValue = filter[filterParameterName].value;
-    if (filterParameterName === 'runId') {
-      filter[filterParameterName].finalNoRunId = filter[filterParameterName].noRunId;
+    if (filterParameterName === 'labels') {
+      filter[filterParameterName].finalHasCloudPipelineRole = filter[filterParameterName].hasCloudPipelineRole;
       filter[filterParameterName].finalHaveRunId = filter[filterParameterName].haveRunId;
     }
     this.onFilterDropdownVisibleChange(filterParameterName)(false);
@@ -415,8 +423,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
   onFilterValueChange = (filterParameterName) => (value) => {
     const filter = this.state.filter;
     filter[filterParameterName].value = value && value.length > 0 ? value : null;
-    if (value && filterParameterName === 'runId') {
-      filter[filterParameterName].noRunId = null;
+    if (value && filterParameterName === 'labels') {
+      filter[filterParameterName].hasCloudPipelineRole = null;
       filter[filterParameterName].haveRunId = null;
     }
     this.setState({filter});
@@ -427,31 +435,32 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   onJobsAssociationFilterChanged = (value, param) => {
-    const params = {
-      noRunId: 'noRunId',
+    const {prop, type} = param;
+    const options = {
+      hasCloudPipelineRole: 'hasCloudPipelineRole',
       haveRunId: 'haveRunId'
     };
-    let oppositeParam;
-    oppositeParam = (param === params.noRunId)
-      ? params.haveRunId
-      : params.noRunId;
+    let otherProp;
+    otherProp = (prop === options.hasCloudPipelineRole)
+      ? options.haveRunId
+      : options.hasCloudPipelineRole;
 
     const filter = {...this.state.filter};
-    filter.runId[param] = value;
-    filter.runId[oppositeParam] = value ? !value : value;
+    filter[type][prop] = value;
+    filter[type][otherProp] = value ? !value : value;
     this.setState({filter});
   }
 
   getInputFilter = (parameter, placeholder) => {
-    const isRunId = parameter === 'runId';
+    const isLabels = parameter === 'labels';
     const clear = () => {
       const filter = this.state.filter;
       filter[parameter].value = null;
       filter[parameter].finalValue = null;
       filter[parameter].visible = false;
       filter[parameter].validationError = false;
-      if (isRunId) {
-        filter[parameter].noRunId = null;
+      if (isLabels) {
+        filter[parameter].hasCloudPipelineRole = null;
         filter[parameter].haveRunId = null;
       }
       this.setState({filter}, () => {
@@ -462,7 +471,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const validateAndSubmit = () => {
       const filter = this.state.filter;
       let validationSuccedded = false;
-      if (isRunId) {
+      if (isLabels) {
         if (!isNaN(filter[parameter].value)) {
           filter[parameter].validationError = undefined;
           validationSuccedded = true;
@@ -501,7 +510,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
               />
             </li>
           </div>
-          {isRunId && this.renderJobsAssociationFilter()}
+          {isLabels && this.renderJobsAssociationFilter()}
         </ul>
         {
           isError && (
@@ -629,7 +638,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('runId', 'Run Id'),
+        ...this.getInputFilter('labels', 'Run Id'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect

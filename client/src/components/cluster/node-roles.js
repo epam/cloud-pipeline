@@ -86,3 +86,13 @@ export function getRoles (labels) {
   }
   return roles;
 }
+
+export function matchesCloudPipelineRoles (node) {
+  if (node && node.labels) {
+    return Object.keys(node.labels).some(key => {
+      const info = parseLabel(key, node.labels[key]);
+      return testRole(info.role, nodeRoles.cloudPipelineRole);
+    });
+  }
+  return false;
+}
