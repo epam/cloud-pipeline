@@ -76,6 +76,9 @@ public class AWSPolicyMapper {
                     "kms:GenerateDataKey*", "kms:ListKeys"));
     public static final String ANY_RESOURCE = "*";
 
+    private AWSPolicyMapper() {
+    }
+
 
     public static CloudAccessPolicy toCloudUserAccessPolicy(final String policyName,
                                                             final String policyDocument) {
@@ -94,7 +97,7 @@ public class AWSPolicyMapper {
                     .version(AWS_IAM_API_VERSION)
                     .statements(statements).build());
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -105,7 +108,8 @@ public class AWSPolicyMapper {
                     parseAndGroupPolicyDocumentByResource(policyDocument);
 
             // Go through statements grouped by storage (f.e. statements for read and write access for same bucket)
-            // check if there are statements for READ access (list bucket + read objects) and WRITE access (write objects)
+            // check if there are statements for READ access (list bucket + read objects)
+            // and WRITE access (write objects)
             return statementsByResource.entrySet()
                     .stream()
                     .map(statementsEntry -> {
@@ -195,7 +199,7 @@ public class AWSPolicyMapper {
                             )
                     )).build());
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 
@@ -208,24 +212,24 @@ public class AWSPolicyMapper {
                         "Policy document can't be parsed: " + policyDocument));
 
         return StreamSupport
-                .stream(
-                        Spliterators.spliteratorUnknownSize(statementsNode.elements(), Spliterator.ORDERED),
-                        false
-                ).map(statement ->
-                        AWSAccessPolicyStatement.builder()
-                                .effect(statement.get(AWS_EFFECT).asText())
-                                .actions(
-                                        StreamSupport.stream(
-                                                Spliterators.spliteratorUnknownSize(
-                                                        statement.get(AWS_ACTION).elements(),
-                                                        Spliterator.ORDERED
-                                                ), false
-                                        ).map(JsonNode::asText).collect(Collectors.toSet())
-                                )
-                                .resource(statement.get(AWS_RESOURCE).asText())
-                                .build()
-                ).collect(Collectors.groupingBy(
-                        statement -> parseStorageNameFromAWSResourcePolicy(statement.getResource())));
+            .stream(
+                    Spliterators.spliteratorUnknownSize(statementsNode.elements(), Spliterator.ORDERED),
+                    false
+            ).map(statement ->
+                    AWSAccessPolicyStatement.builder()
+                            .effect(statement.get(AWS_EFFECT).asText())
+                            .actions(
+                                    StreamSupport.stream(
+                                            Spliterators.spliteratorUnknownSize(
+                                                    statement.get(AWS_ACTION).elements(),
+                                                    Spliterator.ORDERED
+                                            ), false
+                                    ).map(JsonNode::asText).collect(Collectors.toSet())
+                            )
+                            .resource(statement.get(AWS_RESOURCE).asText())
+                            .build()
+            ).collect(Collectors.groupingBy(
+                    statement -> parseStorageNameFromAWSResourcePolicy(statement.getResource())));
     }
 
     private static AWSAccessPolicyStatement mapToAwsPolicyStatement(final String resource,

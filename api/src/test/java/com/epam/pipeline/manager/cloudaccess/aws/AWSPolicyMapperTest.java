@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class AWSPolicyMapperTest {
 
     @Test

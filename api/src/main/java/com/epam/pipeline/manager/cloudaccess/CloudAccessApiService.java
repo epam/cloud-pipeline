@@ -27,39 +27,41 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CloudAccessApiService {
 
+    private static final String HAS_ROLE_ADMIN = "hasRole('ADMIN')";
+
     private final CloudAccessManager cloudAccessManager;
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public CloudUserAccessProfile getCloudUserProfile(final String username) {
         return cloudAccessManager.getCloudUserProfile(username);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public CloudUserAccessKeys getKeys(final Long regionId, final String username) {
         return cloudAccessManager.getKeys(regionId, username);
     }
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public CloudUserAccessKeys generateKeys(final Long regionId, final String username, final boolean force) {
         return cloudAccessManager.generateKeys(regionId, username, force);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public void revokeKeys(final Long regionId, final String username) {
         cloudAccessManager.revokeKeys(regionId, username);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public CloudAccessPolicy updateCloudUserAccessPermissions(final Long regionId, final String username,
                                                               final CloudAccessPolicy accessPolicy) {
         return cloudAccessManager.updateCloudUserAccessPermissions(regionId, username, accessPolicy);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public void revokeCloudUserAccessPermissions(final Long regionId, final String username) {
         cloudAccessManager.revokeCloudUserAccessPermissions(regionId, username);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize(HAS_ROLE_ADMIN)
     public CloudAccessPolicy getCloudUserAccessPermissions(final Long regionId, final String username) {
         return cloudAccessManager.getCloudUserAccessPermissions(regionId, username);
     }

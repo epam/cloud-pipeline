@@ -23,7 +23,6 @@ import com.epam.pipeline.entity.cloudaccess.CloudUserAccessProfile;
 import com.epam.pipeline.entity.cloudaccess.CloudUserAccessRegionProfile;
 import com.epam.pipeline.entity.cloudaccess.key.CloudUserAccessKeys;
 import com.epam.pipeline.entity.cloudaccess.policy.CloudAccessPolicy;
-import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.metadata.PipeConfValueType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
