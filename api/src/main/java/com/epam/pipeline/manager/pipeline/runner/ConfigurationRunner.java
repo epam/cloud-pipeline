@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +65,9 @@ public class ConfigurationRunner {
     @Autowired
     private ConfigurationProviderManager configurationProvider;
 
+    @Autowired
+    private RunLimitsService runLimitsService;
+
     /**
      * Schedules execution of a {@link RunConfiguration} and creates a number
      * of associated {@link PipelineRun} instances. Default values of {@link RunConfiguration}
@@ -99,23 +103,30 @@ public class ConfigurationRunner {
         configuration.getEntries().forEach(entry -> configurationProvider.assertExecutionEnvironment(entry));
 
         List<Long> entitiesIds = getIdsToProcess(runConfiguration);
-        return configuration.getEntries().stream()
-                .collect(Collectors.groupingBy(AbstractRunConfigurationEntry::getExecutionEnvironment))
-                .entrySet()
-                .stream()
-                .map(env -> {
-                    AnalysisConfiguration<AbstractRunConfigurationEntry> conf = AnalysisConfiguration
-                            .builder()
-                            .configurationId(configuration.getId())
-                            .entries(env.getValue())
-                            .entitiesIds(entitiesIds)
-                            .expansionExpression(expansionExpression)
-                            .refreshToken(refreshToken)
-                            .build();
-                    return configurationProvider.runAnalysis(conf);
-                })
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+        final List<AnalysisConfiguration<AbstractRunConfigurationEntry>> configurations = configuration.getEntries()
+            .stream()
+            .collect(Collectors.groupingBy(AbstractRunConfigurationEntry::getExecutionEnvironment))
+            .entrySet()
+            .stream()
+            .map(env -> AnalysisConfiguration
+                .builder()
+                .configurationId(configuration.getId())
+                .entries(env.getValue())
+                .entitiesIds(entitiesIds)
+                .expansionExpression(expansionExpression)
+                .refreshToken(refreshToken)
+                .build())
+            .collect(Collectors.toList());
+        final int configurationsNodes = configurations.stream()
+            .map(AnalysisConfiguration::getEntries)
+            .flatMap(Collection::stream)
+            .mapToInt(AbstractRunConfigurationEntry::getWorkerCount)
+            .reduce(0, (sum, count) -> sum + count + 1);
+        runLimitsService.checkRunLaunchLimits(configurationsNodes);
+        return configurations.stream()
+            .map(configurationProvider::runAnalysis)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
     }
 
     private List<Long> getIdsToProcess(RunConfigurationWithEntitiesVO runConfiguration) {
