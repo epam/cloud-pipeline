@@ -49,12 +49,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class RunLimitsService {
 
+    private static final String USER_LIMIT_KEY = "<user-limit>";
     private static final List<TaskStatus> ACTIVE_RUN_STATUSES = new ArrayList<>(Arrays.asList(TaskStatus.RESUMING,
                                                                                               TaskStatus.RUNNING));
     private final PipelineRunManager runManager;
@@ -73,6 +75,17 @@ public class RunLimitsService {
         checkUserGroupsLimits(userName, getGroups(user), newInstancesCount);
     }
 
+    public Map<String, Integer> getCurrentUserLaunchLimits() {
+        if (authManager.isAdmin()) {
+            return Collections.emptyMap();
+        }
+        final PipelineUser user = authManager.getCurrentUser();
+        final Map<String, Integer> result = findUserGroupsLimits(getGroups(user))
+            .collect(Collectors.toMap(GroupLimit::getGroupName, GroupLimit::getRunsLimit));
+        findUserLimit(user.getId()).ifPresent(limitValue -> result.put(USER_LIMIT_KEY, limitValue));
+        return result;
+    }
+
     private Set<String> getGroups(final PipelineUser user) {
         final Set<String> groups = CollectionUtils.emptyIfNull(user.getRoles()).stream()
             .filter(role -> !role.isPredefined())
@@ -84,10 +97,7 @@ public class RunLimitsService {
     }
 
     private void checkUserLimits(final Long userId, final String userName, final Integer newInstancesCount) {
-        findLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, ContextualPreferenceLevel.USER, userId)
-            .map(ContextualPreference::getValue)
-            .filter(NumberUtils::isNumber)
-            .map(Integer::parseInt)
+        findUserLimit(userId)
             .filter(limit -> exceedsUserLimit(userName, newInstancesCount, limit))
             .ifPresent(limit -> {
                 log.info("Launch of new jobs is restricted as [{}] user will exceed runs limit [{}]", userName, limit);
@@ -96,12 +106,16 @@ public class RunLimitsService {
             });
     }
 
+    private Optional<Integer> findUserLimit(final Long userId) {
+        return findLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, ContextualPreferenceLevel.USER, userId)
+            .map(ContextualPreference::getValue)
+            .filter(NumberUtils::isNumber)
+            .map(Integer::parseInt);
+    }
+
     private void checkUserGroupsLimits(final String userName, final Set<String> groups,
                                        final Integer newInstancesCount) {
-        final Map<String, ExtendedRole> groupIdsMapping = getAllMatchingGroupsMapping(groups);
-        contextualPreferenceManager.load(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT.getKey()).stream()
-            .filter(pref -> isTargetGroupPreference(pref, groupIdsMapping))
-            .map(pref -> mapToLimitDetails(pref, groupIdsMapping))
+        findUserGroupsLimits(groups)
             .filter(limitDetails -> exceedsGroupLimit(limitDetails, newInstancesCount))
             .findFirst()
             .ifPresent(limitDetails -> {
@@ -111,6 +125,13 @@ public class RunLimitsService {
                     MessageConstants.ERROR_RUN_LAUNCH_GROUP_LIMIT_EXCEEDED, userName,
                     limitDetails.getGroupName(), limitDetails.getRunsLimit()));
             });
+    }
+
+    private Stream<GroupLimit> findUserGroupsLimits(final Set<String> groups) {
+        final Map<String, ExtendedRole> groupIdsMapping = getAllMatchingGroupsMapping(groups);
+        return contextualPreferenceManager.load(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT.getKey()).stream()
+            .filter(pref -> isTargetGroupPreference(pref, groupIdsMapping))
+            .map(pref -> mapToLimitDetails(pref, groupIdsMapping));
     }
 
     private Map<String, ExtendedRole> getAllMatchingGroupsMapping(final Set<String> groups) {
