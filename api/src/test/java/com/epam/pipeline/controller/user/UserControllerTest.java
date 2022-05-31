@@ -38,6 +38,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.OBJECT_TYPE;
@@ -75,6 +76,7 @@ public class UserControllerTest extends AbstractControllerTest {
     private static final String GROUP_NAME_BLOCK_URL = GROUP_NAME_URL + "/block";
     private static final String GROUPS_BLOCK_URL = SERVLET_PATH + "/groups/block";
     private static final String ROUTE_URL = SERVLET_PATH + "/route";
+    private static final String LAUNCH_LIMITS_URL = SERVLET_PATH + "/user/launchLimits";
 
     private static final String EXPIRATION = "expiration";
     private static final String NAME = "name";
@@ -114,6 +116,7 @@ public class UserControllerTest extends AbstractControllerTest {
     private final List<UserInfo> userInfoList = Collections.singletonList(userInfo);
     private final List<CustomControl> customControlList = Collections.singletonList(customControl);
     private final List<GroupStatus> groupStatusList = Collections.singletonList(groupStatus);
+    private final Map<String, Integer> launchLimits = Collections.singletonMap(GROUP_NAME, 1);
 
     @Autowired
     private UserApiService mockUserApiService;
@@ -506,6 +509,15 @@ public class UserControllerTest extends AbstractControllerTest {
 
         verify(mockUserApiService).loadAllGroupsBlockingStatuses();
         assertResponse(mvcResult, groupStatusList, UserCreatorUtils.GROUP_STATUS_LIST_INSTANCE_TYPE);
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldLoadUserLaunchLimits() {
+        doReturn(launchLimits).when(mockUserApiService).getCurrentUserLaunchLimits();
+        final MvcResult mvcResult = performRequest(get(LAUNCH_LIMITS_URL));
+        verify(mockUserApiService).getCurrentUserLaunchLimits();
+        assertResponse(mvcResult, launchLimits, UserCreatorUtils.LAUNCH_LIMITS_RESPONSE_TYPE);
     }
 
     @Test

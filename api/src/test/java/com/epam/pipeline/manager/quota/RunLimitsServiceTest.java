@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.user.RoleManager;
+import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -96,6 +97,28 @@ public class RunLimitsServiceTest {
                                   1, ContextualPreferenceLevel.ROLE, GROUP_ID);
         assertThrows(LaunchQuotaExceededException.class, () -> runLimitsService.checkRunLaunchLimits(1));
         verify(roleManager).loadAllRoles(Mockito.anyBoolean());
+    }
+
+    @Test
+    public void shouldReturnEmptyLimitsForAdmin() {
+        doReturn(true).when(authManager).isAdmin();
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits()).hasSize(0);
+    }
+
+    @Test
+    public void shouldReturnConfiguredLimitsForUser() {
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits()).hasSize(0);
+        mockLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, 1, ContextualPreferenceLevel.USER, USER_ID);
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits())
+            .hasSize(1)
+            .containsEntry("<user-limit>", 1);
+        mockRoleLoading();
+        mockLimitPreferencesByKey(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT, 2,
+                                  ContextualPreferenceLevel.ROLE, GROUP_ID);
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits())
+            .hasSize(2)
+            .containsEntry("<user-limit>", 1)
+            .containsEntry(GROUP_NAME, 2);
     }
 
     private PipelineUser getUser() {
