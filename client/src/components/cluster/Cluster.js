@@ -22,7 +22,7 @@ import {
   Button,
   Checkbox,
   Col,
-  Input,
+  AutoComplete,
   message,
   Modal,
   Row,
@@ -46,6 +46,7 @@ import {
   getRoles,
   nodeRoles,
   testRole,
+  parseLabel,
   matchesCloudPipelineRoles,
   containsCPLabel
 } from './node-roles';
@@ -93,7 +94,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
           );
         },
         value: null,
-        finalValue: null
+        finalValue: null,
+        searchResult: []
       },
       address: {
         visible: false,
@@ -169,6 +171,46 @@ export default class Cluster extends localization.LocalizedReactComponent {
       return this.nodes.filter(matches);
     }
     return this.nodes;
+  }
+
+  handleSearch = (value) => {
+    const searchResult = new Set();
+    let matches;
+    if (value) {
+      if (isNaN(value)) {
+        matches = (node) => node.labels && containsCPLabel(node, value);
+        this.nodes
+          .filter(matches)
+          .forEach(node => {
+            Object.keys(node.labels).map(key => {
+              const info = parseLabel(key, node.labels[key]);
+              if (
+                testRole(info.role, nodeRoles.cloudPipelineRole) &&
+                info.value.toLowerCase().search(value.toLowerCase()) > -1
+              ) {
+                searchResult.add(info.value.toUpperCase());
+              }
+            });
+          });
+      } else {
+        matches = (node) => (
+          node.labels &&
+          node.labels.hasOwnProperty('runid') &&
+          node.labels.runid
+        );
+        this.nodes
+          .filter(matches)
+          .map(node => node.labels.runid)
+          .forEach(runId => {
+            if (runId.search(value) > -1) {
+              searchResult.add(runId);
+            }
+          });
+      }
+    }
+    const {filter} = this.state;
+    filter.labels.searchResult = [...searchResult];
+    this.setState({filter});
   }
 
   refreshCluster = () => {
@@ -463,8 +505,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
     this.setState({filter});
   };
 
-  onInputChange = (filterParameterName) => (e) => {
-    this.onFilterValueChange(filterParameterName)(e.target.value);
+  onInputChange = (filterParameterName) => (label) => {
+    this.onFilterValueChange(filterParameterName)(label);
   };
 
   onJobsAssociationFilterChanged = (value, param) => {
@@ -485,8 +527,14 @@ export default class Cluster extends localization.LocalizedReactComponent {
     this.setState({filter});
   }
 
+  onSearchOptionSelected = (value, parameter) => {
+    this.onFilterValueChange(parameter)(value);
+    this.onFilterChanged(parameter)();
+  }
+
   getInputFilter = (parameter, placeholder) => {
     const isLabels = parameter === 'labels';
+    const {labels} = this.state.filter;
     const clear = () => {
       const filter = this.state.filter;
       filter[parameter].value = null;
@@ -501,7 +549,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
         this.onFilterChanged(parameter)();
       });
     };
-
+    const Option = AutoComplete.Option;
+    const children = labels.searchResult.map((item) => <Option key={item}>{item}</Option>);
     const filterDropdown = (
       <div className={classNames(
         styles.filterPopoverContainer,
@@ -510,12 +559,16 @@ export default class Cluster extends localization.LocalizedReactComponent {
         <ul style={{display: 'flex', flexDirection: 'column'}}>
           <div className={classNames('cp-divider', 'bottom', 'cp-filter-popover-item')}>
             <li className={styles.popoverListItem}>
-              <Input
-                placeholder={placeholder}
+              <AutoComplete
                 value={this.state.filter[parameter].value}
+                style={{width: 200}}
+                onSearch={this.handleSearch}
                 onChange={this.onInputChange(parameter)}
-                onPressEnter={this.onFilterChanged(parameter)}
-              />
+                onSelect={(value) => this.onSearchOptionSelected(value, parameter)}
+                placeholder={placeholder}
+              >
+                {children}
+              </AutoComplete>
             </li>
           </div>
           {isLabels && this.renderJobsAssociationFilter()}
@@ -639,7 +692,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('labels', 'Search by RunID or CP-label'),
+        ...this.getInputFilter('labels', 'Search by Run ID or label'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect
