@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +68,18 @@ public class ContextualPreferenceManager {
     public ContextualPreference load(final String name, final ContextualPreferenceExternalResource resource) {
         validateName(name);
         validateResource(resource);
-        return contextualPreferenceDao.load(name, resource)
+        return find(name, resource)
                 .orElseThrow(() -> new IllegalArgumentException(messageHelper.getMessage(
                         MessageConstants.ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND, name, resource)));
+    }
+
+    public List<ContextualPreference> load(final String name) {
+        return contextualPreferenceDao.load(name);
+    }
+
+    public Optional<ContextualPreference> find(final String name,
+                                               final ContextualPreferenceExternalResource resource) {
+        return contextualPreferenceDao.load(name, resource);
     }
 
     private void validateName(final String name) {

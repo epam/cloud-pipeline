@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,7 @@ import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
@@ -206,6 +207,9 @@ public class PipelineRunManager {
     @Autowired
     private NodePoolManager nodePoolManager;
 
+    @Autowired
+    private RunLimitsService runLimitsService;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -225,7 +229,7 @@ public class PipelineRunManager {
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
-
+        checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
         runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
@@ -258,6 +262,7 @@ public class PipelineRunManager {
         PipelineRun parentRun = loadPipelineRun(runVO.getUseRunId());
         Assert.state(parentRun.getStatus() == TaskStatus.RUNNING,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_RUNNING, runVO.getUseRunId()));
+        checkRunLaunchLimits(runVO);
         PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
         Tool tool = getToolForRun(configuration);
         configuration.setSecretName(tool.getSecretName());
@@ -299,7 +304,7 @@ public class PipelineRunManager {
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
-
+        checkRunLaunchLimits(runVO);
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
         runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
@@ -1496,5 +1501,12 @@ public class PipelineRunManager {
         return runsSids.stream()
                 .peek(runSid -> runSid.setIsPrincipal(principal))
                 .collect(Collectors.toList());
+    }
+
+    private void checkRunLaunchLimits(final PipelineStart runVO) {
+        final int totalStaticNodesCount = Optional.of(runVO)
+                                              .map(PipelineStart::getNodeCount)
+                                              .orElse(0) + 1;
+        runLimitsService.checkRunLaunchLimits(totalStaticNodesCount);
     }
 }
