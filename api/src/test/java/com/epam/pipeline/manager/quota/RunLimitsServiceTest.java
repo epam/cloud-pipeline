@@ -92,7 +92,8 @@ public class RunLimitsServiceTest {
     @Test
     public void shouldFailIfGroupLimitExceeds() {
         mockRoleLoading();
-        mockLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT, 1, ContextualPreferenceLevel.ROLE, GROUP_ID);
+        mockLimitPreferencesByKey(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT,
+                                  1, ContextualPreferenceLevel.ROLE, GROUP_ID);
         assertThrows(LaunchQuotaExceededException.class, () -> runLimitsService.checkRunLaunchLimits(1));
         verify(roleManager).loadAllRoles(Mockito.anyBoolean());
     }
@@ -112,6 +113,15 @@ public class RunLimitsServiceTest {
         final ContextualPreference limitPreference =
             new ContextualPreference(pref.getKey(), value.toString(), preferenceResource);
         doReturn(Optional.of(limitPreference)).when(preferenceManager).find(pref.getKey(), preferenceResource);
+    }
+
+    private void mockLimitPreferencesByKey(final AbstractSystemPreference.IntPreference pref, final Integer value,
+                                           final ContextualPreferenceLevel resourceLevel, final Long resourceId) {
+        final ContextualPreferenceExternalResource preferenceResource =
+            new ContextualPreferenceExternalResource(resourceLevel, resourceId.toString());
+        final ContextualPreference limitPreference =
+            new ContextualPreference(pref.getKey(), value.toString(), preferenceResource);
+        doReturn(Collections.singletonList(limitPreference)).when(preferenceManager).load(pref.getKey());
     }
 
     private void mockRoleLoading() {

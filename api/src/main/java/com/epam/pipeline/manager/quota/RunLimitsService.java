@@ -44,8 +44,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -96,14 +98,10 @@ public class RunLimitsService {
 
     private void checkUserGroupsLimits(final String userName, final Set<String> groups,
                                        final Integer newInstancesCount) {
-        roleManager.loadAllRoles(true).stream()
-            .filter(role -> !role.isPredefined())
-            .filter(ExtendedRole.class::isInstance)
-            .map(ExtendedRole.class::cast)
-            .filter(role -> groups.contains(getNameWithoutRolePrefix(role.getName())))
-            .map(this::tryMapToGroupLimit)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
+        final Map<String, ExtendedRole> groupIdsMapping = getAllMatchingGroupsMapping(groups);
+        contextualPreferenceManager.load(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT.getKey()).stream()
+            .filter(pref -> isTargetGroupPreference(pref, groupIdsMapping))
+            .map(pref -> mapToLimitDetails(pref, groupIdsMapping))
             .filter(limitDetails -> exceedsGroupLimit(limitDetails, newInstancesCount))
             .findFirst()
             .ifPresent(limitDetails -> {
@@ -115,17 +113,23 @@ public class RunLimitsService {
             });
     }
 
-    private Optional<GroupLimit> tryMapToGroupLimit(final ExtendedRole role) {
-        return findLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT, ContextualPreferenceLevel.ROLE,
-                                   role.getId())
-            .map(pref -> {
-                final String groupName = getNameWithoutRolePrefix(role.getName());
-                final int runsLimit = Integer.parseInt(pref.getValue());
-                final List<String> groupUsers = role.getUsers().stream()
-                    .map(PipelineUser::getUserName)
-                    .collect(Collectors.toList());
-                return new GroupLimit(groupName, runsLimit, groupUsers);
-            });
+    private Map<String, ExtendedRole> getAllMatchingGroupsMapping(final Set<String> groups) {
+        return roleManager.loadAllRoles(true).stream()
+            .filter(role -> !role.isPredefined())
+            .filter(ExtendedRole.class::isInstance)
+            .map(ExtendedRole.class::cast)
+            .filter(role -> groups.contains(getNameWithoutRolePrefix(role.getName())))
+            .collect(Collectors.toMap(role -> role.getId().toString(), Function.identity()));
+    }
+
+    private GroupLimit mapToLimitDetails(final ContextualPreference pref,
+                                         final Map<String, ExtendedRole> groupIdsMapping) {
+        final ExtendedRole groupDetails = groupIdsMapping.get(pref.getResource().getResourceId());
+        final String groupName = getNameWithoutRolePrefix(groupDetails.getName());
+        final List<String> groupUsers = groupDetails.getUsers().stream()
+            .map(PipelineUser::getUserName)
+            .collect(Collectors.toList());
+        return new GroupLimit(groupName, Integer.parseInt(pref.getValue()), groupUsers);
     }
 
     private Optional<ContextualPreference> findLimitPreference(final AbstractSystemPreference.IntPreference pref,
@@ -149,6 +153,13 @@ public class RunLimitsService {
         runFilterVO.setOwners(userNames);
         runFilterVO.setStatuses(ACTIVE_RUN_STATUSES);
         return runManager.countPipelineRuns(runFilterVO);
+    }
+
+    private boolean isTargetGroupPreference(final ContextualPreference preference,
+                                            final Map<String, ExtendedRole> groupIdsMapping) {
+        final ContextualPreferenceExternalResource resource = preference.getResource();
+        return resource.getLevel().equals(ContextualPreferenceLevel.ROLE)
+               && groupIdsMapping.containsKey(resource.getResourceId());
     }
 
     private String getNameWithoutRolePrefix(final String fullName) {
