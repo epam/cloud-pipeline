@@ -20,6 +20,7 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -121,6 +122,7 @@ public class SystemPreferences {
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
+    private static final String CLOUD = "Cloud";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -1022,6 +1024,13 @@ public class SystemPreferences {
             isGreaterThan(0));
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
+
+    // Cloud
+    public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =
+            new ObjectPreference<>(
+                    "cloud.access.management.config", Collections.emptyList(),
+                    new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
+                    isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 
