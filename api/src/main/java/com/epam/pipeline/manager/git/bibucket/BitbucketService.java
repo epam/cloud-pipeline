@@ -65,6 +65,7 @@ import java.util.stream.Collectors;
 public class BitbucketService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
+    private static final String BRANCH_REF_PATTERN = "refs/heads/%s";
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
@@ -170,8 +171,11 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public Revision getLastRevision(final Pipeline pipeline) {
+        final String ref = StringUtils.isNotBlank(pipeline.getBranch())
+                ? String.format(BRANCH_REF_PATTERN, pipeline.getBranch())
+                : null;
         final BitbucketPagedResponse<BitbucketCommit> commits = getClient(pipeline.getRepository(),
-                pipeline.getRepositoryToken()).getCommits();
+                pipeline.getRepositoryToken()).getLastCommit(ref);
         return Optional.ofNullable(commits)
                 .flatMap(value -> ListUtils.emptyIfNull(value.getValues()).stream()
                         .findFirst()

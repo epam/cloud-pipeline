@@ -152,7 +152,8 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         REPOSITORY_TYPE,
         PIPELINE_TYPE,
         PIPELINE_LOCKED,
-        PARENT_FOLDER_ID;
+        PARENT_FOLDER_ID,
+        BRANCH;
 
         static MapSqlParameterSource getParameters(Pipeline pipeline) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -175,6 +176,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
                             .orElse(PipelineType.PIPELINE.getId())
             );
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
+            params.addValue(BRANCH.name(), pipeline.getBranch());
             return params;
         }
 
@@ -224,6 +226,7 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
             pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
+            pipeline.setBranch(rs.getString(BRANCH.name()));
             return pipeline;
         }
 

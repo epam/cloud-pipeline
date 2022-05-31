@@ -37,6 +37,7 @@ public class PipelineVO {
     private String templateId;
     private RepositoryType repositoryType;
     private PipelineType pipelineType;
+    private String branch;
 
     public Pipeline toPipeline() {
         Pipeline pipeline = new Pipeline();
@@ -50,6 +51,7 @@ public class PipelineVO {
         pipeline.setPipelineType(getPipelineType());
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
+        pipeline.setBranch(getBranch());
         return pipeline;
     }
 }

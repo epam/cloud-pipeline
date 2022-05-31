@@ -29,4 +29,5 @@ public class CheckRepositoryVO {
     private String token;
     private boolean repositoryExists;
     private RepositoryType type;
+    private String branch;
 }

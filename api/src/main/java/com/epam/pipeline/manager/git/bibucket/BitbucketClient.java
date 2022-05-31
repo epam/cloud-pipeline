@@ -111,8 +111,8 @@ public class BitbucketClient {
         return RestApiUtils.execute(bitbucketServerApi.createTag(projectName, repositoryName, request));
     }
 
-    public BitbucketPagedResponse<BitbucketCommit> getCommits() {
-        return RestApiUtils.execute(bitbucketServerApi.getCommits(projectName, repositoryName));
+    public BitbucketPagedResponse<BitbucketCommit> getLastCommit(final String ref) {
+        return RestApiUtils.execute(bitbucketServerApi.getCommits(projectName, repositoryName, ref, 0, 0));
     }
 
     public BitbucketCommit getCommit(final String commitId) {

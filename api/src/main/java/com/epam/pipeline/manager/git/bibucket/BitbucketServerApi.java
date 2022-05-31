@@ -47,6 +47,7 @@ public interface BitbucketServerApi {
     String TAG_NAME = "tagName";
     String LIMIT = "limit";
     String START = "start";
+    String UNTIL = "until";
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}")
     Call<BitbucketRepository> getRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
@@ -88,7 +89,9 @@ public interface BitbucketServerApi {
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits")
     Call<BitbucketPagedResponse<BitbucketCommit>> getCommits(@Path(PROJECT) String project,
-                                                             @Path(REPOSITORY) String repository);
+                                                             @Path(REPOSITORY) String repository,
+                                                             @Query(value = UNTIL, encoded = true) String ref,
+                                                             @Query(LIMIT) Integer limit, @Query(START) Integer start);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits/{commitId}")
     Call<BitbucketCommit> getCommit(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
