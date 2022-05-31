@@ -17,6 +17,8 @@ import os
 import json
 import requests
 import urllib3
+import re
+from subprocess import check_output
 from time import sleep
 
 NUMBER_OF_RETRIES = 10
@@ -25,6 +27,10 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 MAINTENANCE_PREFERENCE_NAME = 'system.blocking.maintenance.mode'
 DEFAULT_FLAG_FILE_PATH = '/etc/maintenance/active'
+NGINX_CONF_FILE_PATH = '/etc/nginx/nginx.conf'
+NGINX_DEFAULT_PORT = 8181
+NGINX_MAINTENANCE_PORT = 8383
+NGINX_REVERSE_PROXY_RE = r'(upstream reverse_proxy\s+{\s+server 127\.0\.0\.1:)([\d]+)(;)'
 
 urllib3.disable_warnings()
 api_url = os.environ.get('API')
@@ -106,12 +112,35 @@ def remove_flag_file(flag_file=DEFAULT_FLAG_FILE_PATH):
     return True
 
 
+def correct_nginx_conf(maintenance=False):
+    try:
+        if os.path.exists(NGINX_CONF_FILE_PATH):
+            nginx_conf = ''
+            with open(NGINX_CONF_FILE_PATH, "r") as f:
+                nginx_conf = f.read()
+            port = NGINX_MAINTENANCE_PORT if maintenance else NGINX_DEFAULT_PORT
+            skip_test = re.search(NGINX_REVERSE_PROXY_RE, nginx_conf, re.IGNORECASE)
+            skip = skip_test.group(2) == str(port) if skip_test is not None else False
+            if skip:
+                return
+            def replacer(match_obj):
+                return match_obj.group(1) + str(port) + match_obj.group(3)
+            nginx_conf = re.sub(NGINX_REVERSE_PROXY_RE, replacer, nginx_conf, count=0)
+            do_log('Updating {}: setting reverse_proxy port to {}'.format(NGINX_CONF_FILE_PATH, str(port)))
+            with open(NGINX_CONF_FILE_PATH, "w") as f:
+                f.write(nginx_conf)
+            check_output('nginx -s reload', shell=True)
+    except IOError as e:
+        do_log(e.message)
+        pass
+
 def check_maintenance_mode(flag_file=DEFAULT_FLAG_FILE_PATH):
     mode = find_preference('preferences/{}'.format(MAINTENANCE_PREFERENCE_NAME), MAINTENANCE_PREFERENCE_NAME) == 'true'
     if mode:
         create_flag_file(flag_file)
     else:
         remove_flag_file(flag_file)
+    correct_nginx_conf(mode)
     return mode
 
 
