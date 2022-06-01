@@ -859,12 +859,18 @@ class ConfigureClusterDialog extends React.Component {
             </div>
           </Row>
           {this.selectedClusterType === CLUSTER_TYPE.singleNode && (
-            <AllowedInstancesCountWarning
-              payload={{
-                nodeCount: this.state.nodesCount,
-                maxNodeCount: this.state.maxNodesCount
-              }}
-            />
+            <Row
+              type="flex"
+              justify="center"
+            >
+              <AllowedInstancesCountWarning
+                payload={{
+                  nodeCount: this.state.nodesCount,
+                  maxNodeCount: this.state.maxNodesCount
+                }}
+                style={{width: '70%', marginTop: '5px'}}
+              />
+            </Row>
           )}
           {
             this.state.launchCluster && !this.state.autoScaledCluster &&
