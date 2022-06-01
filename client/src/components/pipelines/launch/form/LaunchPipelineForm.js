@@ -5298,24 +5298,25 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     !this.state.isDts && (
                       <Row
                         type="flex"
-                        style={{
-                          paddingRight: 30,
-                          marginBottom: 10,
-                          marginLeft: 150,
-                          flexWrap: 'wrap'
-                        }}
-                        justify="end"
+                        className={styles.formItemContainer}
+                        style={{flexWrap: 'wrap', marginRight: '5px'}}
                       >
-                        <AllowedInstancesCountWarning
-                          payload={{
-                            nodeCount: this.state.nodesCount,
-                            maxNodeCount: this.state.maxNodesCount
-                          }}
-                          style={{width: '100%'}}
-                        />
+                        <Col
+                          offset={6}
+                          span={17}
+                        >
+                          <AllowedInstancesCountWarning
+                            payload={{
+                              nodeCount: this.state.nodesCount,
+                              maxNodeCount: this.state.maxNodesCount
+                            }}
+                            style={{width: '100%'}}
+                          />
+                        </Col>
                         <a
                           onClick={this.openConfigureClusterDialog}
                           className="cp-text underline"
+                          style={{marginLeft: 'auto', marginRight: '30px'}}
                         >
                           <Icon type="setting" />
                           {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
