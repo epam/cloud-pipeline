@@ -108,6 +108,12 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get allowedInstancesMaxCount () {
+    //TODO: add proper max active runs limits preference load, when it will be ready
+    return 12;
+  }
+
+  @computed
   get storageMountsPerGBRatio () {
     const value = this.getPreferenceValue('storage.mounts.per.gb.ratio');
     if (!value || Number.isNaN(value)) {

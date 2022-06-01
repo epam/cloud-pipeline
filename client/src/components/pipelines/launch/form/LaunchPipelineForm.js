@@ -122,6 +122,8 @@ import {
   CP_CAP_AUTOSCALE_PRICE_TYPE
 } from './utilities/parameters';
 import OOMCheck from './utilities/oom-check';
+import AllowedInstancesCountWarning from
+  './utilities/allowed-instances-count-warning';
 import HostedAppConfiguration from '../dialogs/HostedAppConfiguration';
 import JobNotifications from '../dialogs/job-notifications';
 import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
@@ -5294,7 +5296,23 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     {!this.isWindowsPlatform &&
                     !this.state.fireCloudMethodName &&
                     !this.state.isDts && (
-                      <Row type="flex" justify="end" style={{paddingRight: 30, marginBottom: 10}}>
+                      <Row
+                        type="flex"
+                        style={{
+                          paddingRight: 30,
+                          marginBottom: 10,
+                          marginLeft: 150,
+                          flexWrap: 'wrap'
+                        }}
+                        justify="end"
+                      >
+                        <AllowedInstancesCountWarning
+                          payload={{
+                            nodeCount: this.state.nodesCount,
+                            maxNodeCount: this.state.maxNodesCount
+                          }}
+                          style={{width: '100%'}}
+                        />
                         <a
                           onClick={this.openConfigureClusterDialog}
                           className="cp-text underline"
