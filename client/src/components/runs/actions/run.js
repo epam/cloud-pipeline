@@ -35,6 +35,8 @@ import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEsti
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import AllowedInstancesCountWarning from
+  '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -400,7 +402,8 @@ function runFn (
               name: launchName,
               alias: payload.runNameAlias,
               version: launchVersion,
-              title
+              title,
+              payload
             }}
             ref={ref}
             platform={platform}
@@ -1094,6 +1097,13 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
+    runInfo: PropTypes.shape({
+      name: PropTypes.string,
+      alias: PropTypes.string,
+      version: PropTypes.string,
+      title: PropTypes.oneOf([PropTypes.string, PropTypes.func]),
+      payload: PropTypes.object
+    }),
     skipCheck: PropTypes.bool
   };
 
@@ -1256,6 +1266,9 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
+        <AllowedInstancesCountWarning
+          payload={this.props.runInfo.payload}
+        />
       </div>
     );
   }
