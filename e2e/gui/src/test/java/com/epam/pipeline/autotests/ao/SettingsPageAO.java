@@ -1404,6 +1404,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private final By clusterAllowedInstanceTypesDocker = getByField(
                     "cluster.allowed.instance.types.docker");
 
+            public static final String CLUSTER_AWS_EBS_TYPE = "cluster.aws.ebs.type";
+
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
             }
@@ -1437,6 +1439,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public ClusterTabAO checkClusterAllowedInstanceTypesDocker(final String value) {
                 ensure(clusterAllowedInstanceTypesDocker, value(value));
+                return this;
+            }
+
+            public ClusterTabAO checkClusterAwsEbsType(final String value) {
+                ensure(getByField(CLUSTER_AWS_EBS_TYPE), value(value));
+                ensure(getPreferenceState(CLUSTER_AWS_EBS_TYPE), cssClass("anticon-eye"));
                 return this;
             }
 
