@@ -116,7 +116,7 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
     };
     const storage = {
       key: 'storage',
-      title: 'Storage',
+      title: 'Storage rules',
       link: `/${id}/${version}/storage`
     };
     switch (this.repositoryType) {
