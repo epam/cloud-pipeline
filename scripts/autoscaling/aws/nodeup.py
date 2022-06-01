@@ -288,12 +288,14 @@ def root_device(ec2, ins_img, kms_encyr_key_id):
         if "Ebs" not in block_device_obj:
             raise RuntimeError("No Ebs definition found for device {} in image {}".format(block_device_name, ins_img))
 
+        ebs_type_param = get_preference(EBS_TYPE_PARAM)
         device_spec = {
             "DeviceName": block_device_name,
             "Ebs": {
                 "VolumeSize": block_device_obj["Ebs"]["VolumeSize"],
-                "VolumeType": get_preference(EBS_TYPE_PARAM)}
+                "VolumeType": ebs_type_param}
         }
+        pipe_log('- The requested EBS volume type for {} device is {}'.format(block_device_name, ebs_type_param))
         if kms_encyr_key_id:
             device_spec["Ebs"]["Encrypted"] = True
             device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
@@ -305,15 +307,17 @@ def root_device(ec2, ins_img, kms_encyr_key_id):
         return ROOT_DEVICE_DEFAULT
 
 def block_device(ins_hdd, kms_encyr_key_id, name="/dev/sdb"):
+    ebs_type_param = get_preference(EBS_TYPE_PARAM)
     block_device_spec = {
         "DeviceName": name,
         "Ebs": {
             "VolumeSize": ins_hdd,
-            "VolumeType": get_preference(EBS_TYPE_PARAM),
+            "VolumeType": ebs_type_param,
             "DeleteOnTermination": True,
             "Encrypted": True
         }
     }
+    pipe_log('- The requested EBS volume type for {} device is {}'.format(name, ebs_type_param))
     if kms_encyr_key_id:
         block_device_spec["Ebs"]["KmsKeyId"] = kms_encyr_key_id
     return block_device_spec
