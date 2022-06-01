@@ -92,17 +92,20 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
             return new QuotaPopUp(this);
         }
 
-        public QuotaEntry getQuotaEntry(String entity, String quota) {
-            return new QuotaEntry(this, quotaEntry(entity, quota));
+        public QuotaEntry getQuotaEntry(String entity, String period) {
+            return new QuotaEntry(this, quotaEntry(entity, period));
         }
 
-        public QuotaPopUp openQuotaEntry(String entity, String quota) {
-            quotaEntry(entity, quota).click();
+        public QuotaPopUp openQuotaEntry(String entity, String period) {
+            quotaEntry(entity, period).click();
             return new QuotaPopUp(this);
         }
 
         public boolean isQuotaExist(String entity, BillingQuotaPeriod period) {
-            return quotaEntry(entity, period.period).exists();
+            return entry.$$(By.className("uota-description__container"))
+                    .filter(text(entity))
+                    .filter(text(period.period))
+                    .first().exists();
         }
 
         public QuotasSection removeQuotaWithPeriodIfExist(String entity, BillingQuotaPeriod period) {
@@ -147,7 +150,7 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                             .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
                     entry(USER_NAME, context().find(byText("User"))
                             .find(By.xpath("following-sibling::div//div[@role='combobox']"))),
-                    entry(ADD_ACTION, context().$(button(" Add action"))),
+                    entry(ADD_ACTION, context().$(byClassName("uotas__add")).$(byXpath(".//button"))),
                     entry(SAVE, context().find(button("SAVE"))),
                     entry(CANCEL, context().find(button("CANCEL"))),
                     entry(REMOVE, context().find(button("REMOVE"))),
@@ -177,22 +180,6 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                 return this;
             }
 
-//            public QuotaPopUp addBillingCenter(final String billingCenter) {
-//                click(BILLING_CENTER);
-//                actions().sendKeys(billingCenter).perform();
-//                enter();
-//                click(byText("Billing center"));
-//                return this;
-//            }
-//
-//            public QuotaPopUp addUser(final String user) {
-//                click(USER_NAME);
-//                actions().sendKeys(user).perform();
-//                enter();
-//                click(byText("Quota:"));
-//                return this;
-//            }
-
             public QuotaPopUp addQuotaObject(Primitive object, final String name) {
                 click(object);
                 actions().sendKeys(name).perform();
@@ -208,6 +195,22 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                         click(byText("Actions:"));
                 });
                 return this;
+            }
+
+            public QuotaPopUp setAdditionalAction(final int actionNumber,
+                                                  final String billingThreshold, final String ... actions) {
+                SelenideElement action = context().$$(byClassName("uotas__threshold-container"))
+                                .get(actionNumber);
+                entry(ACTIONS, action.find(withText("%"))
+                        .find(By.xpath("following-sibling::div//div[@role='combobox']")));
+                setValue(action.find(byAttribute("placeholder","Threshold")), billingThreshold);
+                Arrays.stream(actions).forEach(act -> {
+                    selectValue(ACTIONS, act);
+                    click(byText("Actions:"));
+                });
+                return this;
+
+
             }
 
             public QuotaPopUp ensureComboboxFieldDisabled(Primitive ... elements) {

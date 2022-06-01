@@ -36,10 +36,6 @@ public class FreeMarkerTemplate {
             cfg.setDefaultEncoding("UTF-8");
             final Template template = cfg.getTemplate(templateName);
 
-            // just for test now
-            Writer consoleWriter = new OutputStreamWriter(System.out);
-            template.process(templateData, consoleWriter);
-
             final File outputFile = Paths.get(C.DOWNLOAD_FOLDER).resolve(outputFileName).toFile();
             final Writer fileWriter = new FileWriter(outputFile);
             try {
