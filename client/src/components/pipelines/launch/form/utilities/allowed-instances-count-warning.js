@@ -25,12 +25,12 @@ const WARNING_TYPES = {
   possibleExceedLimits: 'possibleExceedLimits'
 };
 
-@inject('counter', 'preferences')
+@inject('preferences', 'counter')
 @observer
 export default class AllowedInstancesCountWarning extends React.Component {
   componentDidMount () {
     const {counter} = this.props;
-    counter.fetchIfNeededOrWait();
+    counter.fetch();
   }
 
   @computed
@@ -44,12 +44,16 @@ export default class AllowedInstancesCountWarning extends React.Component {
 
   get instancesLimit () {
     const {preferences} = this.props;
-    return preferences.allowedInstancesMaxCount;
+    if (preferences.loaded) {
+      return preferences.allowedInstancesMaxCount;
+    }
+    return undefined;
   }
 
   get isSingleNode () {
     const {payload = {}} = this.props;
-    return +payload.nodeCount === 1 || (!payload.nodeCount && !payload.maxNodeCount);
+    return (!payload.maxNodeCount && +payload.nodeCount === 1) ||
+      (!payload.nodeCount && !payload.maxNodeCount);
   }
 
   get instancesToLaunch () {
@@ -88,7 +92,7 @@ export default class AllowedInstancesCountWarning extends React.Component {
 
   render () {
     const {style} = this.props;
-    if (!this.warningType) {
+    if (!this.warningType || !this.instancesLimit) {
       return null;
     }
     return (
@@ -107,7 +111,5 @@ export default class AllowedInstancesCountWarning extends React.Component {
 
 AllowedInstancesCountWarning.PropTypes = {
   payload: PropTypes.object,
-  instancesToLaunch: PropTypes.oneOf([PropTypes.number, PropTypes.string]),
-  maxInstancesToLaunch: PropTypes.oneOf([PropTypes.number, PropTypes.string]),
   style: PropTypes.object
 };
