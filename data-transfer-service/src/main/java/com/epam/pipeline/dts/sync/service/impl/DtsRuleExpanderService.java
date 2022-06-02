@@ -176,9 +176,9 @@ public class DtsRuleExpanderService {
         final int searchDepth = getMaxSearchDepth(transferMatchers);
         final List<String> triggerMatchers = normalizeGlobMatchers(directory, transferMatchers);
         final Path rootPath = Paths.get(directory);
-        try {
-            return Files.find(rootPath, searchDepth, (path, basicFileAttributes) ->
-                    !rootPath.equals(path) && isPathMatchingGlob(path, triggerMatchers))
+        try (Stream<Path> pathStream = Files.find(rootPath, searchDepth, (path, basicFileAttributes) ->
+                !rootPath.equals(path) && isPathMatchingGlob(path, triggerMatchers))) {
+            return pathStream
                 .findAny()
                 .isPresent();
         } catch (IOException e) {
