@@ -486,5 +486,12 @@
         "description": "Whether fail or keep a job running if a config file based localization fails",
         "defaultValue": "true",
         "passToWorkers": false
+    },
+    {
+        "name": "CP_CAP_TARGET_AVAILABILITY_ZONE",
+        "type": "string",
+        "description": "Specifies the target availability zone for a run",
+        "defaultValue": "",
+        "passToWorkers": true
     }
 ]

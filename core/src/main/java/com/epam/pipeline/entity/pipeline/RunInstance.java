@@ -60,6 +60,7 @@ public class RunInstance {
      */
     private Set<String> prePulledDockerImages;
     private Long poolId;
+    private String availabilityZone;
 
     @JsonIgnore
     public boolean isEmpty() {

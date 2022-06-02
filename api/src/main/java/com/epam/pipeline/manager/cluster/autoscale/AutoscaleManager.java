@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,7 @@ import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.cleaner.RunCleaner;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.parallel.ParallelExecutorService;
+import com.epam.pipeline.manager.pipeline.PipelineConfigurationManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
@@ -477,6 +478,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                                       InstanceRequest requiredInstance) {
             long longId = Long.parseLong(runId);
             addNodeUpTask(longId);
+            setAvailabilityZoneIfSpecified(requiredInstance, longId);
             tasks.add(CompletableFuture.runAsync(() -> {
                 Instant start = Instant.now();
                 //save required instance
@@ -507,6 +509,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 removeNodeUpTask(longId, false);
                 return null;
             }));
+        }
+
+        private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final Long targetRunId) {
+            pipelineRunManager.loadPipelineRun(targetRunId).getTags().entrySet().stream()
+                .filter(e -> e.getKey().equals(PipelineConfigurationManager.TARGET_AVAILABILITY_ZONE))
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
         }
 
         private void addNodeUpTask(long longId) {

@@ -57,6 +57,7 @@ public class ClusterCommandService {
                 .kubeCertHash(kubeCertHash)
                 .kubeNodeToken(kubeNodeToken)
                 .cloud(cloud)
+                .availabilityZone(instance.getAvailabilityZone())
                 .region(region.getRegionCode());
     }
 
