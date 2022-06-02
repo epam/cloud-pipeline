@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitTokenRequest;
+import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
@@ -252,6 +253,12 @@ public class GitlabClient {
         return getProject(projectName);
     }
 
+    public List<GitlabBranch> getBranches() {
+        String project = GitUtils.convertPipeNameToProject(projectName);
+        String projectId = makeProjectId(namespace, project);
+        return execute(gitLabApi.getBranches(projectId));
+    }
+
     public GitProject getProject(String name) throws GitClientException {
         String project = GitUtils.convertPipeNameToProject(name);
         String projectId = makeProjectId(namespace, project);
@@ -426,10 +433,10 @@ public class GitlabClient {
         return createRepo(projectName, description);
     }
 
-    public void createFile(GitProject project, String path, String content) {
+    public void createFile(final GitProject project, final String path, final String content, final String branch) {
         try {
             final Response<GitFile> response = gitLabApi.createFiles(
-                    project.getId().toString(), path, buildCreateFileRequest(content)).execute();
+                    project.getId().toString(), path, buildCreateFileRequest(content, branch)).execute();
             if (!response.isSuccessful()) {
                 throw new HttpException(response);
             }
@@ -438,11 +445,14 @@ public class GitlabClient {
         }
     }
 
-    private UpdateGitFileRequest buildCreateFileRequest(final String content)
-            throws GitClientException {
+    public void createFile(GitProject project, String path, String content) {
+        createFile(project, path, content, null);
+    }
 
+    private UpdateGitFileRequest buildCreateFileRequest(final String content, final String branch)
+            throws GitClientException {
         final UpdateGitFileRequest.UpdateGitFileRequestBuilder requestBuilder = UpdateGitFileRequest.builder()
-                .branch(DEFAULT_BRANCH)
+                .branch(StringUtils.isBlank(branch) ? DEFAULT_BRANCH : branch)
                 .message(INITIAL_COMMIT)
                 .content(content);
 

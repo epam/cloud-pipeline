@@ -88,7 +88,6 @@ public class GitManager {
     private static final String GIT_CHECKOUT_CMD = "git checkout %s";
     private static final String PATH_DELIMITER = "/";
     private static final String CONFIG_FILE_NAME = "config.json";
-    public static final String GIT_MASTER_REPOSITORY = "master";
     public static final String DRAFT_PREFIX = "draft-";
     private static final String ACTION_UPDATE = "update";
     private static final String BASE64_ENCODING = "base64";

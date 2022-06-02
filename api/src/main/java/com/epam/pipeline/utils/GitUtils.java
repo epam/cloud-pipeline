@@ -29,6 +29,7 @@ public final class GitUtils {
     public static final String GITKEEP_FILE = ".gitkeep";
     public static final String FOLDER_MARKER = "tree";
     public static final String FILE_MARKER = "blob";
+    public static final String BRANCH_REF_PATTERN = "refs/heads/%s";
 
     //regex for alphanumeric characters, underscore, dots and dash, allowing dash only in the middle
     private static final Pattern NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_.]+([-.][a-zA-Z0-9_]+)*$");
@@ -73,5 +74,9 @@ public final class GitUtils {
         return fileExists
                 ? String.format("Updating file %s", filePath)
                 : String.format("Creating file %s", filePath);
+    }
+
+    public static String getBranchRefOrDefault(final String branch) {
+        return String.format(BRANCH_REF_PATTERN, StringUtils.isNotBlank(branch) ? branch : GIT_MASTER_REPOSITORY);
     }
 }

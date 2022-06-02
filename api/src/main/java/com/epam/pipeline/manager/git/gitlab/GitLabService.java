@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.git.GitPushCommitEntry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
+import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
@@ -104,6 +105,14 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
+    public List<String> getBranches(final String repositoryPath, final String token) {
+        return ListUtils.emptyIfNull(getGitlabClientForRepository(repositoryPath, token, false)
+                .getBranches()).stream()
+                .map(GitlabBranch::getName)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void handleHooks(final GitProject project, final String token) {
         final boolean indexingEnabled = preferenceManager
                 .getPreference(SystemPreferences.GIT_REPOSITORY_INDEXING_ENABLED);
@@ -115,9 +124,10 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
-    public void createFile(final GitProject project, final String path, final String content, final String token) {
+    public void createFile(final GitProject project, final String path, final String content, final String token,
+                           final String branch) {
         getGitlabClientForRepository(project.getRepoUrl(), token, true)
-                .createFile(project, path, content);
+                .createFile(project, path, content, branch);
     }
 
     @Override
@@ -153,8 +163,8 @@ public class GitLabService implements GitClientService {
     }
 
     @Override
-    public Revision getLastRevision(final Pipeline pipeline) {
-        final List<GitCommitEntry> commits = getGitlabClientForPipeline(pipeline).getCommits();
+    public Revision getLastRevision(final Pipeline pipeline, final String ref) {
+        final List<GitCommitEntry> commits = getGitlabClientForPipeline(pipeline).getCommits(ref);
         return ListUtils.emptyIfNull(commits).stream()
                 .findFirst()
                 .map(commit -> new Revision(commit.getShortId(), commit.getMessage(),
@@ -196,6 +206,7 @@ public class GitLabService implements GitClientService {
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(message);
+        gitPushCommitEntry.setBranch(pipeline.getBranch());
         gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
         return getGitlabClientForPipeline(pipeline).commit(gitPushCommitEntry);
     }
@@ -204,9 +215,11 @@ public class GitLabService implements GitClientService {
     public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
                                      final String filePreviousPath, final String filePath) {
         final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+        final String branch = pipeline.getBranch();
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(message);
-        prepareFileForRenaming(filePath, filePreviousPath, gitPushCommitEntry, gitlabClient);
+        gitPushCommitEntry.setBranch(branch);
+        prepareFileForRenaming(filePath, filePreviousPath, gitPushCommitEntry, gitlabClient, branch);
 
         return gitlabClient.commit(gitPushCommitEntry);
     }
@@ -221,6 +234,7 @@ public class GitLabService implements GitClientService {
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(commitMessage);
+        gitPushCommitEntry.setBranch(pipeline.getBranch());
         gitPushCommitEntry.getActions().add(gitPushCommitActionEntry);
         return gitlabClient.commit(gitPushCommitEntry);
     }
@@ -230,6 +244,7 @@ public class GitLabService implements GitClientService {
                                        final String message) {
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(message);
+        gitPushCommitEntry.setBranch(pipeline.getBranch());
         for (String file : filesToCreate) {
             final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
             gitPushCommitActionEntry.setAction(ACTION_CREATE);
@@ -244,18 +259,20 @@ public class GitLabService implements GitClientService {
     public GitCommitEntry renameFolder(final Pipeline pipeline, final String message, final String folder,
                                        final String newFolderName) {
         final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+        final String branch = pipeline.getBranch();
         final List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
-                GitUtils.GIT_MASTER_REPOSITORY, true);
+                GitUtils.getBranchRefOrDefault(branch), true);
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(message);
+        gitPushCommitEntry.setBranch(branch);
 
         for (GitRepositoryEntry file : allFiles) {
             if (file.getType().equalsIgnoreCase(GitUtils.FOLDER_MARKER)) {
                 continue;
             }
             prepareFileForRenaming(file.getPath().replaceFirst(folder, newFolderName), file.getPath(),
-                    gitPushCommitEntry, gitlabClient);
+                    gitPushCommitEntry, gitlabClient, branch);
         }
         return gitlabClient.commit(gitPushCommitEntry);
     }
@@ -263,11 +280,13 @@ public class GitLabService implements GitClientService {
     @Override
     public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
         final GitlabClient gitlabClient = getGitlabClientForPipeline(pipeline);
+        final String branch = pipeline.getBranch();
         final List<GitRepositoryEntry> allFiles = gitlabClient.getRepositoryContents(folder,
-                GitUtils.GIT_MASTER_REPOSITORY, true);
+                GitUtils.getBranchRefOrDefault(branch), true);
 
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
         gitPushCommitEntry.setCommitMessage(message);
+        gitPushCommitEntry.setBranch(branch);
 
         for (GitRepositoryEntry file : allFiles) {
             if (file.getType().equalsIgnoreCase(GitUtils.FOLDER_MARKER)) {
@@ -286,7 +305,9 @@ public class GitLabService implements GitClientService {
                                       final String message) {
         final GitlabClient client = getGitlabClientForPipeline(pipeline);
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        final String branch = pipeline.getBranch();
         gitPushCommitEntry.setCommitMessage(message);
+        gitPushCommitEntry.setBranch(branch);
         for (PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
             final String sourcePath = sourceItemVO.getPath();
 
@@ -294,7 +315,7 @@ public class GitLabService implements GitClientService {
             if (StringUtils.isNotBlank(sourceItemVO.getPreviousPath())) {
                 action = ACTION_MOVE;
             } else {
-                if (fileExists(client, sourcePath)) {
+                if (fileExists(client, sourcePath, branch)) {
                     action = ACTION_UPDATE;
                 } else {
                     action = ACTION_CREATE;
@@ -318,8 +339,10 @@ public class GitLabService implements GitClientService {
                                       final String message) {
         final GitlabClient client = getGitlabClientForPipeline(pipeline);
         final GitPushCommitEntry gitPushCommitEntry = new GitPushCommitEntry();
+        final String branch = pipeline.getBranch();
+        gitPushCommitEntry.setBranch(branch);
         ListUtils.emptyIfNull(files).forEach(file -> {
-            final boolean fileExists = fileExists(client, file.getFileName());
+            final boolean fileExists = fileExists(client, file.getFileName(), branch);
             final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
             gitPushCommitActionEntry.setAction(fileExists ? ACTION_UPDATE : ACTION_CREATE);
             gitPushCommitActionEntry.setFilePath(file.getFileName());
@@ -374,8 +397,10 @@ public class GitLabService implements GitClientService {
     private GitPushCommitEntry prepareFileForRenaming(final String filePath,
                                                       final String filePreviousPath,
                                                       final GitPushCommitEntry gitPushCommitEntry,
-                                                      final GitlabClient gitlabClient) throws GitClientException {
-        final byte[] fileContents = gitlabClient.getFileContents(filePreviousPath, GitUtils.GIT_MASTER_REPOSITORY);
+                                                      final GitlabClient gitlabClient,
+                                                      final String branch) throws GitClientException {
+        final byte[] fileContents = gitlabClient.getFileContents(filePreviousPath,
+                GitUtils.getBranchRefOrDefault(branch));
 
         final GitPushCommitActionEntry gitPushCommitActionEntry = new GitPushCommitActionEntry();
         gitPushCommitActionEntry.setAction(ACTION_MOVE);
@@ -387,12 +412,13 @@ public class GitLabService implements GitClientService {
         return gitPushCommitEntry;
     }
 
-    private boolean fileExists(final GitlabClient client, final String filePath) throws GitClientException {
+    private boolean fileExists(final GitlabClient client, final String filePath, final String branch)
+            throws GitClientException {
         if (StringUtils.isBlank(filePath)) {
             return true;
         }
         try {
-            return client.getFileContents(filePath, GitUtils.GIT_MASTER_REPOSITORY) != null;
+            return client.getFileContents(filePath, GitUtils.getBranchRefOrDefault(branch)) != null;
         } catch (UnexpectedResponseStatusException exception) {
             log.debug(exception.getMessage(), exception);
             return false;

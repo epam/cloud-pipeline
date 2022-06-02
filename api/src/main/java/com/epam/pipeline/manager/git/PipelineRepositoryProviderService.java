@@ -78,8 +78,8 @@ public class PipelineRepositoryProviderService {
     }
 
     public void createFile(final RepositoryType repositoryType, final GitProject project,
-                           final String path, final String content, final String token) {
-        getProvider(repositoryType).createFile(project, path, content, token);
+                           final String path, final String content, final String token, final String branch) {
+        getProvider(repositoryType).createFile(project, path, content, token, branch);
     }
 
     public byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
@@ -97,6 +97,11 @@ public class PipelineRepositoryProviderService {
         return getProvider(repositoryType).getRepository(repositoryPath, token);
     }
 
+    public List<String> getBranches(final RepositoryType repositoryType, final String repositoryPath,
+                                    final String token) {
+        return getProvider(repositoryType).getBranches(repositoryPath, token);
+    }
+
     public List<Revision> getTags(final RepositoryType repositoryType, final Pipeline pipeline) {
         return getProvider(repositoryType).getTags(pipeline);
     }
@@ -107,8 +112,8 @@ public class PipelineRepositoryProviderService {
                 releaseDescription);
     }
 
-    public Revision getLastCommit(final RepositoryType repositoryType, final Pipeline pipeline) {
-        return getProvider(repositoryType).getLastRevision(pipeline);
+    public Revision getLastCommit(final Pipeline pipeline, final String ref) {
+        return getProvider(pipeline.getRepositoryType()).getLastRevision(pipeline, ref);
     }
 
     public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,

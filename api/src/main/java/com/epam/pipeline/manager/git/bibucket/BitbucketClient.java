@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.git.bibucket;
 
 import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketBranch;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
@@ -40,6 +41,7 @@ public class BitbucketClient {
     private static final String CONTENT = "content";
     private static final String MESSAGE = "message";
     private static final String SOURCE_COMMIT_ID = "sourceCommitId";
+    private static final String BRANCH = "branch";
     private static final Integer LIMIT = 100;
 
     private final BitbucketServerApi bitbucketServerApi;
@@ -91,16 +93,16 @@ public class BitbucketClient {
     }
 
     public BitbucketCommit upsertFile(final String path, final String content, final String message,
-                                      final String commitId) {
+                                      final String commitId, final String branch) {
         final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, content);
-        return upsertFile(path, contentBody, message, commitId);
+        return upsertFile(path, contentBody, message, commitId, branch);
     }
 
     public BitbucketCommit upsertFile(final String path, final String contentType, final byte[] content,
-                                      final String message, final String commitId) {
+                                      final String message, final String commitId, final String branch) {
         final MultipartBody.Part contentBody = MultipartBody.Part.createFormData(CONTENT, path,
                 RequestBody.create(MediaType.parse(contentType), content));
-        return upsertFile(path, contentBody, message, commitId);
+        return upsertFile(path, contentBody, message, commitId, branch);
     }
 
     public BitbucketPagedResponse<BitbucketTag> getTags(final String nextPageToken) {
@@ -128,17 +130,24 @@ public class BitbucketClient {
                 .getFiles(projectName, repositoryName, path, version, LIMIT, start));
     }
 
+    public BitbucketPagedResponse<BitbucketBranch> getBranches(final String start) {
+        return RestApiUtils.execute(bitbucketServerApi.getBranches(projectName, repositoryName, LIMIT, start));
+    }
+
     private BitbucketServerApi buildClient(final String baseUrl, final String credentials, final String dataFormat) {
         return new ApiBuilder<>(BitbucketServerApi.class, baseUrl, AUTHORIZATION, credentials, dataFormat).build();
     }
 
     private BitbucketCommit upsertFile(final String path, final MultipartBody.Part contentBody, final String message,
-                                       final String commitId) {
+                                       final String commitId, final String branch) {
         final MultipartBody.Part messageBody = MultipartBody.Part.createFormData(MESSAGE, message);
         final MultipartBody.Part commitBody = StringUtils.isNotBlank(commitId)
                 ? MultipartBody.Part.createFormData(SOURCE_COMMIT_ID, commitId)
                 : null;
+        final MultipartBody.Part branchBody = StringUtils.isNotBlank(branch)
+                ? MultipartBody.Part.createFormData(BRANCH, branch)
+                : null;
         return RestApiUtils.execute(bitbucketServerApi
-                .createFile(projectName, repositoryName, path, contentBody, messageBody, commitBody));
+                .createFile(projectName, repositoryName, path, contentBody, messageBody, commitBody, branchBody));
     }
 }
