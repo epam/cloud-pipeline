@@ -38,6 +38,7 @@ import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.menuitem;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.testng.Assert.assertTrue;
@@ -201,11 +202,11 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                                                   final String billingThreshold, final String ... actions) {
                 SelenideElement action = context().$$(byClassName("uotas__threshold-container"))
                                 .get(actionNumber);
-                entry(ACTIONS, action.find(withText("%"))
-                        .find(By.xpath("following-sibling::div//div[@role='combobox']")));
+                SelenideElement combobox = action
+                        .find(By.xpath(".//div[@role='combobox']"));
                 setValue(action.find(byAttribute("placeholder","Threshold")), billingThreshold);
                 Arrays.stream(actions).forEach(act -> {
-                    selectValue(ACTIONS, act);
+                    selectValue(combobox, menuitem(act));
                     click(byText("Actions:"));
                 });
                 return this;

@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static com.codeborne.selenide.Condition.disabled;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selenide.refresh;
 import static com.epam.pipeline.autotests.ao.BillingTabAO.BillingQuotaPeriod;
@@ -191,7 +192,8 @@ public class BillingQuotasTest
                         .execute(format("python %s --operation add --data-file %s --elastic-url %s", importScript,
                                 billingData, ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[2], dataStorage.toLowerCase()))
-                        .close());
+                        .close())
+                .stop(format("pipeline-%s", runId[2]));
     }
 
     @BeforeMethod
@@ -219,8 +221,17 @@ public class BillingQuotasTest
                 .setPreference(BILLING_QUOTAS_PERIOD_SECONDS,
                         prefQuotasPeriodInitial[0], Boolean.parseBoolean(prefQuotasPeriodInitial[1]))
                 .saveIfNeeded();
-        runsMenu()
-                .showLog(runId[2])
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .doNotMountStoragesSelect(false)
+                .selectDataStoragesToLimitMounts()
+                .clearSelection()
+                .searchStorage(dataStorage)
+                .selectStorage(dataStorage)
+                .ok()
+                .launch(this)
+                .showLog(runId[2] = getLastRunId())
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runId[2])
@@ -228,7 +239,8 @@ public class BillingQuotasTest
                         .execute(format("python %s --operation remove --data-file %s --elastic-url %s", importScript,
                                 billingData, ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[2], dataStorage.toLowerCase()))
-                        .close());
+                        .close())
+                .stop(format("pipeline-%s", runId[2]));
     }
 
     @AfterClass(alwaysRun = true)
@@ -340,7 +352,7 @@ public class BillingQuotasTest
                 .setValue(QUOTA, quota[1])
                 .setAction(threshold[1], NOTIFY, READ_ONLY_MODE)
                 .click(ADD_ACTION)
-                .setAdditionalAction(2, threshold[2], NOTIFY, READ_ONLY_MODE)
+                .setAdditionalAction(1, threshold[2], READ_ONLY_MODE)
                 .addRecipient(admin.login)
                 .click(SAVE)
                 .errorMessageShouldAppear(OVERALL, PER_MONTH)
@@ -349,7 +361,7 @@ public class BillingQuotasTest
                 .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
                 .refresh()
                 .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
-                .checkQuotaStatus(GREEN);
+                .checkQuotaStatus(YELLOW);
         checkQuotasExceededWarningForUser(user, message1);
         billingMenu()
                 .click(QUOTAS)
@@ -452,8 +464,8 @@ public class BillingQuotasTest
     @Test
     @TestCase(value = {"762_5"})
     public void checkBillingCenterAndUserComputeInstancesBillingQuota() {
-        String message1 = format("Billing center %s: compute quarterly expenses quota %s$. Actions: %s%% Stop all jobs", billingCenter1, quota[4], threshold[4]);
-        String message2 = format("User %s: compute annual expenses quota %s$. Actions: %s%% Disable new jobs", user.login, quota[5], threshold[4]);
+        String message1 = format("Billing center %s: compute quarterly expenses quota %s$. Actions: %s%% Stop all jobs", billingCenter1, quota[5], threshold[6]);
+        String message2 = format("User %s: compute annual expenses quota %s$. Actions: %s%% Disable new jobs", user.login, quota[6], threshold[7]);
         String runId2;
         logout();
         loginAs(user);
@@ -584,7 +596,7 @@ public class BillingQuotasTest
         String command1 = format("echo test file >> /cloud-data/%s/test_file1.txt", testStorage1.toLowerCase());
         String command2 = format("pipe storage cp cp://%s/file1.txt cp://%s/file1.txt",
                 testStorage1.toLowerCase(), testStorage2.toLowerCase());
-        String command3 = format("echo test file >> /cloud-data/%s/%s/test_file1.txt", nfsPrefix, testFsStorage.toLowerCase());
+        String command3 = format("echo test file >> /cloud-data/%s/%s/test_file1.txt", nfsPrefix, testFsStorage);
         billingMenu()
                 .click(STORAGES)
                 .getQuotasSection(BILLING_CENTERS)
@@ -625,13 +637,18 @@ public class BillingQuotasTest
                 .waitForSshLink()
                 .ssh(shell -> {
                     shell.waitUntilTextAppears(getLastRunId());
-                    Stream.of(command1, command2, command3)
-                            .forEach(command ->
+                    Stream.of(command1, command3)
+                           .forEach(command ->
                                     shell
                                             .execute(command)
                                             .assertPageAfterCommandContainsStrings(command, "Read-only file system")
                                             .sleep(2, SECONDS));
-                    shell.close();
+                    shell
+                            .execute(command2)
+                            .assertPageAfterCommandContainsStrings(command2, "Error: Failed to fetch data from server. " +
+                                    "Server responded with message: Access is denied")
+                            .sleep(2, SECONDS)
+                            .close();
                 });
     }
 
@@ -677,7 +694,7 @@ public class BillingQuotasTest
                 .getQuotaEntry(admin.login, quotaEntry(quota[10], PER_YEAR))
                 .removeQuota();
         logout();
-        loginAs(user)
+        loginAs(userWithoutCompletedRuns)
                 .settings()
                 .switchToMyProfile()
                 .validateUserName(userWithoutCompletedRuns.login);
@@ -750,7 +767,9 @@ public class BillingQuotasTest
         systemDictionariesAO
                 .openSystemDictionary(dict)
                 .deleteDictionaryValue(billingCenter)
-                .click(SAVE);
+                .click(SAVE)
+                .sleep(1, SECONDS)
+                .get(SAVE).shouldBe(disabled);
     }
 
     private void checkQuotasExceededWarningForUser(Account user_name, String... messages) {

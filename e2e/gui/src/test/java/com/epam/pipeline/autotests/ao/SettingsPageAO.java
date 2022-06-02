@@ -978,7 +978,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         if (keyField.exists()) {
                             keyField.click();
                             $(byClassName("ant-confirm-title")).shouldHave(text(format("Do you want to delete key \"%s\"?", key)));
-                            $(button("OK")).shouldBe(visible).click();
+                            $(byClassName("ant-confirm-btns")).$(button("OK")).shouldBe(visible).click();
                         }
                         return this;
                     }
