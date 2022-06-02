@@ -396,13 +396,15 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
-  editPipeline = async ({name, description, token}) => {
+  editPipeline = async ({name, description, token, branch, configurationPath}) => {
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, -1);
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
       description: description,
-      parentFolderId: this.props.pipeline.value.parentFolderId
+      parentFolderId: this.props.pipeline.value.parentFolderId,
+      branch,
+      configurationPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
