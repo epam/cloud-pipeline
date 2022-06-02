@@ -16,46 +16,40 @@
 
 package com.epam.pipeline.dts.sync.model;
 
-import lombok.Value;
-import org.apache.commons.collections4.CollectionUtils;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.thymeleaf.util.StringUtils;
 
 import java.util.List;
-import java.util.Objects;
 
 
-@Value
+@Data
+@EqualsAndHashCode(exclude = {"transferTriggers", "parentRule"})
+@AllArgsConstructor
 public class AutonomousSyncRule {
 
-    String source;
-    String destination;
-    String cron;
-    Boolean deleteSource;
-    List<TransferTrigger> transferTriggers;
+    private String source;
+    private String destination;
+    private String cron;
+    private Boolean deleteSource;
+    private List<TransferTrigger> transferTriggers;
+    private AutonomousSyncRule parentRule;
+
+    public AutonomousSyncRule(final String source,
+                              final String destination,
+                              final String cron,
+                              final Boolean deleteSource,
+                              final List<TransferTrigger> transferTriggers) {
+        this.source = source;
+        this.destination = destination;
+        this.cron = cron;
+        this.deleteSource = deleteSource;
+        this.transferTriggers = transferTriggers;
+    }
 
     public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
         return StringUtils.equals(source, anotherRule.getSource())
                && StringUtils.equals(destination, anotherRule.getDestination());
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        final AutonomousSyncRule that = (AutonomousSyncRule) o;
-        return Objects.equals(source, that.source) &&
-                Objects.equals(destination, that.destination) &&
-                Objects.equals(cron, that.cron) &&
-                Objects.equals(deleteSource, that.deleteSource) &&
-                CollectionUtils.isEqualCollection(transferTriggers, that.transferTriggers);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(source, destination, cron, deleteSource, transferTriggers);
     }
 }
