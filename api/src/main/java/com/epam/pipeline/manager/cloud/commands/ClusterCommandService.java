@@ -56,6 +56,7 @@ public class ClusterCommandService {
                 .kubeIP(kubeMasterIP)
                 .kubeToken(kubeToken)
                 .cloud(cloud)
+                .availabilityZone(instance.getAvailabilityZone())
                 .region(region.getRegionCode());
     }
 
