@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
@@ -39,6 +40,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
@@ -58,6 +60,9 @@ public class UserApiService {
 
     @Autowired
     private OnlineUsersService onlineUsersService;
+
+    @Autowired
+    private RunLimitsService runLimitsService;
 
     /**
      * Registers a new user
@@ -254,5 +259,9 @@ public class UserApiService {
     @PreAuthorize(ADMIN_ONLY)
     public boolean deleteExpiredOnlineUsers(final LocalDate date) {
         return onlineUsersService.deleteExpired(date);
+    }
+
+    public Map<String, Integer> getCurrentUserLaunchLimits() {
+        return runLimitsService.getCurrentUserLaunchLimits();
     }
 }

@@ -2048,6 +2048,16 @@ def import_users(file_path, create_user, create_group, create_metadata):
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
 
 
+@users.command(name='instances')
+@click.option('-v', '--verbose', required=False, is_flag=True, default=False, help='Show all active limits in a table')
+@common_options
+def list_instance_limits(verbose):
+    """
+    Shows information on user's instance limits
+    """
+    UserOperationsManager().get_instance_limits(verbose)
+
+
 @cli.group()
 def dts():
     """
