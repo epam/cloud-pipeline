@@ -60,7 +60,6 @@ public class PipelineConfigurationManager {
     public static final String ERASE_RUN_ENDPOINTS = "CP_DISABLE_RUN_ENDPOINTS";
     public static final String ERASE_WORKER_ENDPOINTS = "CP_DISABLE_WORKER_ENDPOINTS";
     public static final String GE_AUTOSCALING = "CP_CAP_AUTOSCALE";
-    public static final String TARGET_AVAILABILITY_ZONE = "CP_CAP_TARGET_AVAILABILITY_ZONE";
     public static final String WORKER_CLUSTER_ROLE = "worker";
     public static final String WORKER_CMD_TEMPLATE = "sleep infinity";
 
@@ -277,16 +276,6 @@ public class PipelineConfigurationManager {
                         && e.getValue().getValue().equalsIgnoreCase("true"));
     }
 
-    private static Optional<String> findStringParameter(final PipelineConfiguration entry,
-                                                        final String parameterName) {
-        return entry.getParameters().entrySet()
-            .stream()
-            .filter(e -> e.getKey().equals(parameterName)
-                         && !StringUtils.isEmpty(e.getValue().getValue()))
-            .map(e -> e.getValue().getValue())
-            .findAny();
-    }
-
     private void setEndpointsErasure(PipelineConfiguration configuration) {
         if (MapUtils.isEmpty(configuration.getParameters())) {
             return;
@@ -327,7 +316,6 @@ public class PipelineConfigurationManager {
             }
             configuration.setGitCredentials(gitManager.getGitCredentials(run.getPipelineId()));
         }
-        configuration.setTargetAvailabilityZone(run.getTags().get(TARGET_AVAILABILITY_ZONE));
         configuration.buildEnvVariables();
         return configuration;
     }

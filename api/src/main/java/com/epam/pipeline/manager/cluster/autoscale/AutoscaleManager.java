@@ -97,6 +97,8 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     @Component
     static class AutoscaleManagerCore {
 
+        private static final String TARGET_AZ_PARAMETER_NAME = "CP_CAP_TARGET_AVAILABILITY_ZONE";
+
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
         private final AutoscalerService autoscalerService;
@@ -513,7 +515,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
 
         private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final Long targetRunId) {
             pipelineRunManager.loadPipelineRun(targetRunId)
-                .getParameterValue(PipelineConfigurationManager.TARGET_AVAILABILITY_ZONE)
+                .getParameterValue(TARGET_AZ_PARAMETER_NAME)
                 .filter(StringUtils::isNotBlank)
                 .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
         }

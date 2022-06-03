@@ -64,7 +64,6 @@ public class PipelineConfiguration {
     private static final String RUN_AS = "run_as";
     private static final String SHARED_WITH_USERS = "share_with_users";
     private static final String SHARED_WITH_ROLES = "share_with_roles";
-    private static final String TARGET_AVAILABILITY_ZONE = "target_zone";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -138,9 +137,6 @@ public class PipelineConfiguration {
 
     @JsonProperty(value = RUN_AS)
     private String runAs;
-
-    @JsonProperty(value = TARGET_AVAILABILITY_ZONE)
-    private String targetAvailabilityZone;
 
     @JsonProperty(value = SHARED_WITH_USERS)
     private List<RunSid> sharedWithUsers;
