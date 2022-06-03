@@ -73,7 +73,6 @@ import java.util.HashMap;
 import java.util.List;
 
 import static com.epam.pipeline.manager.git.GitManager.DRAFT_PREFIX;
-import static com.epam.pipeline.manager.git.GitManager.GIT_MASTER_REPOSITORY;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.created;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
@@ -132,6 +131,7 @@ public class GitManagerTest extends AbstractManagerTest {
     private static final String GITKEEP = ".gitkeep";
     private static final String HTTP_PATH_PATTEN = "https://cp-git.default.svc.cluster.local:00000/%s/%s.git";
     private static final String SSH_PATH_PATTERN = "git@cp-git.default.svc.cluster.local:%s/%s.git";
+    private static final String GIT_MASTER_REPOSITORY = "refs/heads/master";
 
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());

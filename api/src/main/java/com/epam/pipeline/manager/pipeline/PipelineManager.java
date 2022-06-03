@@ -125,6 +125,7 @@ public class PipelineManager implements SecuredEntityManager {
             checkRepositoryVO.setRepository(pipelineVO.getRepository());
             checkRepositoryVO.setToken(pipelineVO.getRepositoryToken());
             checkRepositoryVO.setType(pipelineVO.getRepositoryType());
+            checkRepositoryVO.setBranch(pipelineVO.getBranch());
             checkRepositoryVO = check(checkRepositoryVO);
             if (!checkRepositoryVO.isRepositoryExists()) {
                 GitProject project = pipelineRepositoryService.createGitRepositoryWithRepoUrl(pipelineVO);
@@ -132,6 +133,7 @@ public class PipelineManager implements SecuredEntityManager {
             } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {
                 final GitProject project = pipelineRepositoryService.getRepository(pipelineVO.getRepositoryType(),
                         pipelineVO.getRepository(), pipelineVO.getRepositoryToken());
+                checkBranchExists(pipelineVO);
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             }
         }
@@ -164,6 +166,7 @@ public class PipelineManager implements SecuredEntityManager {
             checkPipeline.setRepository(checkRepositoryVO.getRepository());
             checkPipeline.setRepositoryToken(checkRepositoryVO.getToken());
             checkPipeline.setRepositoryType(checkRepositoryVO.getType());
+            checkPipeline.setBranch(checkRepositoryVO.getBranch());
             setCurrentVersion(checkPipeline);
             if (StringUtils.isEmpty(checkPipeline.getRepositoryError())) {
                 checkRepositoryVO.setRepositoryExists(true);
@@ -197,6 +200,7 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setDescription(pipelineVO.getDescription());
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
+        dbPipeline.setBranch(pipelineVO.getBranch());
         pipelineDao.updatePipeline(dbPipeline);
 
         updatePipelineNameForRuns(pipelineVO, pipelineVOName);
@@ -450,5 +454,17 @@ public class PipelineManager implements SecuredEntityManager {
     private PipelineRun resetPipelineIdForRun(final PipelineRun run) {
         run.setPipelineId(null);
         return run;
+    }
+
+    private void checkBranchExists(final PipelineVO pipelineVO) {
+        final String branchName = pipelineVO.getBranch();
+        if (StringUtils.isBlank(branchName)) {
+            return;
+        }
+        final List<String> branches = pipelineRepositoryService
+                .getBranches(pipelineVO.getRepositoryType(), pipelineVO.getRepository(),
+                        pipelineVO.getRepositoryToken());
+        Assert.isTrue(ListUtils.emptyIfNull(branches).stream().anyMatch(branchName::equals),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_BRANCH_NOT_FOUND, branchName));
     }
 }

@@ -40,6 +40,7 @@ public class Pipeline extends AbstractSecuredEntity {
     private RepositoryType repositoryType;
     private String repositoryError;
     private boolean hasMetadata;
+    private String branch;
 
     public Pipeline(Long id) {
         super(id);

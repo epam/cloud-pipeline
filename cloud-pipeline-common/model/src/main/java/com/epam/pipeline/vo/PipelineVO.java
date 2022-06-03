@@ -32,6 +32,7 @@ public class PipelineVO {
     private Long parentFolderId;
     private String templateId;
     private RepositoryType repositoryType;
+    private String branch;
 
     public Pipeline toPipeline() {
         Pipeline pipeline = new Pipeline();
@@ -43,6 +44,7 @@ public class PipelineVO {
         pipeline.setRepositoryToken(getRepositoryToken());
         pipeline.setTemplateId(getTemplateId());
         pipeline.setRepositoryType(getRepositoryType());
+        pipeline.setBranch(getBranch());
         return pipeline;
     }
 }

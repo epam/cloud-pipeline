@@ -41,9 +41,11 @@ public interface GitClientService {
 
     GitProject getRepository(String repository, String token);
 
+    List<String> getBranches(String repository, String token);
+
     void handleHooks(GitProject project, String token);
 
-    void createFile(GitProject project, String path, String content, String token);
+    void createFile(GitProject project, String path, String content, String token, String branch);
 
     byte[] getFileContents(GitProject project, String path, String revision, String token);
 
@@ -53,7 +55,7 @@ public interface GitClientService {
 
     Revision createTag(Pipeline pipeline, String tagName, String commitId, String message, String releaseDescription);
 
-    Revision getLastRevision(Pipeline pipeline);
+    Revision getLastRevision(Pipeline pipeline, String ref);
 
     GitCredentials getCloneCredentials(Pipeline pipeline, boolean useEnvVars, boolean issueToken, Long duration);
 

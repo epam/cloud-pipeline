@@ -14,25 +14,12 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.git.bitbucket;
+package com.epam.pipeline.entity.git;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class BitbucketRepository {
-    private Long id;
+public class GitlabBranch {
     private String name;
-    private String description;
-    private BitbucketLinks links;
-    private BitbucketProject project;
-    @JsonProperty("public")
-    private boolean isPublic;
-    private String defaultBranch;
+    private GitCommitEntry commit;
 }
