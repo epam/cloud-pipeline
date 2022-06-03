@@ -58,6 +58,7 @@ public class RunInstance {
      * Docker images that shall be pre-pulled to the instance
      */
     private Set<String> prePulledDockerImages;
+    private String availabilityZone;
 
     @JsonIgnore
     public boolean isEmpty() {
