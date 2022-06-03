@@ -372,8 +372,8 @@ public class BillingQuotasTest
                 .removeQuota()
                 .getQuotaEntry("", quotaEntry(quota[1], PER_QUARTER))
                 .checkQuotaStatus(GREEN)
-                .checkEntryActions(format("%s%%: %s %s%%: %s, %s", threshold[0], NOTIFY.toLowerCase()),
-                        threshold[1], READ_ONLY_MODE.toLowerCase(), NOTIFY.toLowerCase())
+                .checkEntryActions(format("%s%%: %s %s%%: %s, %s", threshold[0], NOTIFY.toLowerCase(),
+                        threshold[1], READ_ONLY_MODE.toLowerCase(), NOTIFY.toLowerCase()))
                 .removeQuota();
     }
 
@@ -598,7 +598,7 @@ public class BillingQuotasTest
         String command1 = format("echo test file >> /cloud-data/%s/test_file1.txt", testStorage1.toLowerCase());
         String command2 = format("pipe storage cp cp://%s/file1.txt cp://%s/file1.txt",
                 testStorage1.toLowerCase(), testStorage2.toLowerCase());
-        String command3 = format("echo test file >> /cloud-data/%s/%s/test_file1.txt", nfsPrefix, testFsStorage);
+        String command3 = format("echo test file >> /cloud-data/%s/%s/test_file1.txt", nfsPrefix.replace(":/", ""), testFsStorage);
         billingMenu()
                 .click(STORAGES)
                 .getQuotasSection(BILLING_CENTERS)
@@ -765,15 +765,15 @@ public class BillingQuotasTest
         if (!billingGroupDictionaryExist) {
             systemDictionariesAO
                     .openSystemDictionary(dict)
-                    .deleteDictionary(dict)
-                    .sleep(1, SECONDS)
-                    .get(SAVE).shouldBe(disabled);
+                    .deleteDictionary(dict);
             return;
         }
         systemDictionariesAO
                 .openSystemDictionary(dict)
                 .deleteDictionaryValue(billingCenter)
-                .click(SAVE);
+                .click(SAVE)
+                .sleep(2, SECONDS)
+                .get(SAVE).shouldBe(disabled);
     }
 
     private void checkQuotasExceededWarningForUser(Account user_name, String... messages) {
