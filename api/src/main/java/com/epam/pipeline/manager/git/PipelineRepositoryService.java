@@ -358,6 +358,18 @@ public class PipelineRepositoryService {
         return providerService.uploadFiles(pipeline, files, message);
     }
 
+    public boolean fileExists(final Pipeline pipeline, final String filePath) {
+        if (StringUtils.isBlank(filePath)) {
+            return true;
+        }
+        try {
+            return providerService.fileExists(pipeline, filePath);
+        } catch (UnexpectedResponseStatusException exception) {
+            log.debug(exception.getMessage(), exception);
+            return false;
+        }
+    }
+
     private byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
                                    final String path, final String revision, final String token) {
         Assert.isTrue(StringUtils.isNotBlank(path), "File path can't be null");
@@ -470,18 +482,6 @@ public class PipelineRepositoryService {
             log.debug(exception.getMessage(), exception);
         }
         return repository;
-    }
-
-    private boolean fileExists(final Pipeline pipeline, final String filePath) throws GitClientException {
-        if (StringUtils.isBlank(filePath)) {
-            return true;
-        }
-        try {
-            return getFileContents(pipeline, GitUtils.getBranchRefOrDefault(pipeline.getBranch()), filePath) != null;
-        } catch (UnexpectedResponseStatusException exception) {
-            log.debug(exception.getMessage(), exception);
-            return false;
-        }
     }
 
     private boolean folderExists(final Pipeline pipeline, final String folder) {

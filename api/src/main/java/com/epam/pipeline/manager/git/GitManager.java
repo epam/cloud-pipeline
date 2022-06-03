@@ -68,6 +68,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -226,7 +227,8 @@ public class GitManager {
                     : srcDirectory;
             entries = pipelineRepositoryService.getRepositoryContents(pipeline, sources, version, recursive);
             if (!RepositoryType.BITBUCKET.equals(pipeline.getRepositoryType()) && appendConfigurationFileIfNeeded) {
-                GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version);
+                final GitRepositoryEntry configurationEntry = getConfigurationFileEntry(id, version,
+                        pipeline.getConfigurationPath());
                 if (configurationEntry != null) {
                     entries.add(configurationEntry);
                 }
@@ -237,19 +239,19 @@ public class GitManager {
         return entries;
     }
 
-    private GitRepositoryEntry getConfigurationFileEntry(Long id, String version) throws GitClientException {
+    private GitRepositoryEntry getConfigurationFileEntry(final Long id, final String version, final String configPath)
+            throws GitClientException {
         final Pipeline pipeline = loadPipelineAndCheckRevision(id, version);
+        final String config = getConfigFilePath(configPath);
 
-        GitRepositoryEntry configurationFileEntry = null;
-        List<GitRepositoryEntry> rootEntries = pipelineRepositoryService
-                .getRepositoryContents(pipeline, "", version, false);
-        for (GitRepositoryEntry rootEntry : rootEntries) {
-            if (rootEntry.getName().equalsIgnoreCase(CONFIG_FILE_NAME)) {
-                configurationFileEntry = rootEntry;
-                break;
-            }
+        if (pipelineRepositoryService.fileExists(pipeline, config)) {
+            return GitRepositoryEntry.builder()
+                    .name(Paths.get(config).getFileName().toString())
+                    .path(config)
+                    .type(GitUtils.FILE_MARKER)
+                    .build();
         }
-        return configurationFileEntry;
+        return null;
     }
 
     public String getRevisionName(String version) {
@@ -374,8 +376,8 @@ public class GitManager {
     public String getConfigFileContent(Pipeline pipeline, String version)
             throws GitClientException {
         checkRevision(pipeline, version);
-        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, getRevisionName(version),
-                CONFIG_FILE_NAME);
+        final String configPath = getConfigFilePath(pipeline.getConfigurationPath());
+        byte[] configBytes = pipelineRepositoryService.getFileContents(pipeline, getRevisionName(version), configPath);
         String config = new String(configBytes, Charset.defaultCharset());
         Assert.notNull(config, "Config.json is empty.");
         return config;
@@ -444,7 +446,8 @@ public class GitManager {
     private File checkoutConfigToDirectory(Pipeline pipeline, String version, String repoPath)
             throws GitClientException {
         checkoutRepo(pipeline, version, repoPath);
-        return new File(repoPath, CONFIG_FILE_NAME);
+        final String configPath = getConfigFilePath(pipeline.getConfigurationPath());
+        return new File(repoPath, configPath);
     }
 
     private void checkoutRepo(Pipeline pipeline, String version, String repoPath)
@@ -750,5 +753,9 @@ public class GitManager {
         } catch (InterruptedException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    private String getConfigFilePath(final String configPath) {
+        return StringUtils.isNullOrEmpty(configPath) ? CONFIG_FILE_NAME : configPath;
     }
 }

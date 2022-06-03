@@ -172,4 +172,8 @@ public class PipelineRepositoryProviderService {
                                       final String message) {
         return getProvider(pipeline.getRepositoryType()).uploadFiles(pipeline, files, message);
     }
+
+    public boolean fileExists(final Pipeline pipeline, final String filePath) {
+        return getProvider(pipeline.getRepositoryType()).fileExists(pipeline, filePath);
+    }
 }

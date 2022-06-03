@@ -124,7 +124,7 @@ public class PipelineVersionManager {
             throws GitClientException {
         List<ConfigurationEntry> configurations = loadConfigurationsFromScript(id, version);
         if (CollectionUtils.isEmpty(configurations)) {
-            throw new ConfigurationReadingException(CONFIG_FILE_NAME);
+            throw new ConfigurationReadingException();
         }
         if (StringUtils.hasText(configName)) {
             return configurations.stream()
