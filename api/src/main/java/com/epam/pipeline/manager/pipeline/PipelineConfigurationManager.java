@@ -127,7 +127,6 @@ public class PipelineConfigurationManager {
         configuration.setNodeCount(Optional.ofNullable(runVO.getNodeCount()).orElse(0));
         configuration.setCloudRegionId(runVO.getCloudRegionId());
         setEndpointsErasure(configuration);
-        setTargetAvailabilityZone(configuration);
         return configuration;
     }
 
@@ -295,11 +294,6 @@ public class PipelineConfigurationManager {
         configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
     }
 
-    private void setTargetAvailabilityZone(final PipelineConfiguration configuration) {
-        findStringParameter(configuration, TARGET_AVAILABILITY_ZONE)
-            .ifPresent(configuration::setTargetAvailabilityZone);
-    }
-
     public PipelineConfiguration getConfigurationFromRun(PipelineRun run) {
         PipelineConfiguration configuration = new PipelineConfiguration();
 
@@ -320,7 +314,6 @@ public class PipelineConfigurationManager {
         }
 
         setEndpointsErasure(configuration);
-        setTargetAvailabilityZone(configuration);
         if (run.getPipelineId() != null) {
             try {
                 ConfigurationEntry entry = pipelineVersionManager

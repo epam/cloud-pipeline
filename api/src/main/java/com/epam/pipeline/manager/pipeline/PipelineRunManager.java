@@ -290,7 +290,6 @@ public class PipelineRunManager {
         run.setLastChangeCommitTime(DateUtils.now());
         run.setRunSids(runVO.getRunSids());
         run.setOwner(parentRun.getOwner());
-        addTargetZoneToTagsIfPresent(configuration, run);
         String launchedCommand = pipelineLauncher.launch(run, configuration,
                 endpoints, runVO.getUseRunId().toString(), false, parentRun.getPodId(), null);
         run.setActualCmd(launchedCommand);
@@ -389,7 +388,6 @@ public class PipelineRunManager {
         String useNodeLabel = parentNodeId != null ? parentNodeId.toString() : run.getId().toString();
         run.setConfigName(configurationName);
         run.setRunSids(runSids);
-        addTargetZoneToTagsIfPresent(configuration, run);
         String launchedCommand = pipelineLauncher.launch(run, configuration, endpoints, useNodeLabel, clusterId);
         //update instance info according to evaluated command
         run.setActualCmd(launchedCommand);
@@ -401,13 +399,6 @@ public class PipelineRunManager {
             pipelineRunDao.updateRunTags(run);
         }
         return run;
-    }
-
-    private void addTargetZoneToTagsIfPresent(final PipelineConfiguration configuration, final PipelineRun run) {
-        Optional.ofNullable(configuration.getTargetAvailabilityZone())
-            .filter(StringUtils::hasText)
-            .ifPresent(targetZone -> run.getTags().put(PipelineConfigurationManager.TARGET_AVAILABILITY_ZONE,
-                                                       targetZone));
     }
 
     private AbstractCloudRegion resolveCloudRegion(final PipelineRun parentRun,
@@ -1002,7 +993,6 @@ public class PipelineRunManager {
         final List<String> endpoints = configuration.isEraseRunEndpoints() ?
                 Collections.emptyList() : tool.getEndpoints();
         configuration.setSecretName(tool.getSecretName());
-        addTargetZoneToTagsIfPresent(configuration, run);
         final String launchedCommand = pipelineLauncher.launch(restartedRun, configuration, endpoints,
                 restartedRun.getId().toString(), null);
         restartedRun.setActualCmd(launchedCommand);

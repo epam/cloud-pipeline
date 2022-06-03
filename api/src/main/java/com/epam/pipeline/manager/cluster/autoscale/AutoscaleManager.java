@@ -512,10 +512,9 @@ public class AutoscaleManager extends AbstractSchedulingManager {
         }
 
         private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final Long targetRunId) {
-            pipelineRunManager.loadPipelineRun(targetRunId).getTags().entrySet().stream()
-                .filter(e -> e.getKey().equals(PipelineConfigurationManager.TARGET_AVAILABILITY_ZONE))
-                .map(Map.Entry::getValue)
-                .findFirst()
+            pipelineRunManager.loadPipelineRun(targetRunId)
+                .getParameterValue(PipelineConfigurationManager.TARGET_AVAILABILITY_ZONE)
+                .filter(StringUtils::isNotBlank)
                 .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
         }
 
