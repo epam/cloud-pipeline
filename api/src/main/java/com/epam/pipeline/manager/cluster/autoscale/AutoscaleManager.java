@@ -480,7 +480,6 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                                       InstanceRequest requiredInstance) {
             long longId = Long.parseLong(runId);
             addNodeUpTask(longId);
-            setAvailabilityZoneIfSpecified(requiredInstance, longId);
             tasks.add(CompletableFuture.runAsync(() -> {
                 Instant start = Instant.now();
                 //save required instance
@@ -511,13 +510,6 @@ public class AutoscaleManager extends AbstractSchedulingManager {
                 removeNodeUpTask(longId, false);
                 return null;
             }));
-        }
-
-        private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final Long targetRunId) {
-            pipelineRunManager.loadPipelineRun(targetRunId)
-                .getParameterValue(TARGET_AZ_PARAMETER_NAME)
-                .filter(StringUtils::isNotBlank)
-                .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
         }
 
         private void addNodeUpTask(long longId) {
@@ -564,7 +556,14 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             final InstanceRequest instanceRequest = new InstanceRequest();
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
+            setAvailabilityZoneIfSpecified(instanceRequest, run);
             return instanceRequest;
+        }
+
+        private void setAvailabilityZoneIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
+            run.getParameterValue(TARGET_AZ_PARAMETER_NAME)
+                .filter(StringUtils::isNotBlank)
+                .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
         }
 
         private int getPoolNodeUpTasksCount() {
