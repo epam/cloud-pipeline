@@ -141,8 +141,10 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
             supportButtonAO.checkSupportButtonContent(icons.get(1), iconCondition2);
 
             logoutIfNeeded();
-            loginAs(user);
-            sleep(10, SECONDS);
+            loginAs(user)
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(user.login);
             final Condition iconCondition3 = Condition.cssClass(format("anticon-%s", icons.get(2).getIcon()));
             supportButtonAO
                     .checkSupportButtonIcon(iconCondition3);
