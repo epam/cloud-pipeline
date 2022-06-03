@@ -702,6 +702,7 @@ public final class MessageConstants {
     // Launch limits
     public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
     public static final String ERROR_RUN_LAUNCH_GROUP_LIMIT_EXCEEDED = "error.run.launch.group.limit.exceeded";
+    public static final String ERROR_RUN_LAUNCH_PLATFORM_LIMIT_EXCEEDED = "error.run.launch.platform.limit.exceeded";
 
     private MessageConstants() {
         // no-op
