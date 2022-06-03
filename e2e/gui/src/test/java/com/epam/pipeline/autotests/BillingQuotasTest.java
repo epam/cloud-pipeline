@@ -192,8 +192,9 @@ public class BillingQuotasTest
                         .execute(format("python %s --operation add --data-file %s --elastic-url %s", importScript,
                                 billingData, ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[2], dataStorage.toLowerCase()))
-                        .close())
-                .stop(format("pipeline-%s", runId[2]));
+                        .close());
+        runsMenu()
+                .stopRun(runId[2]);
     }
 
     @BeforeMethod
@@ -239,8 +240,9 @@ public class BillingQuotasTest
                         .execute(format("python %s --operation remove --data-file %s --elastic-url %s", importScript,
                                 billingData, ELASTIC_URL))
                         .waitForLog(format("root@pipeline-%s:~/cloud-data/%s#", runId[2], dataStorage.toLowerCase()))
-                        .close())
-                .stop(format("pipeline-%s", runId[2]));
+                        .close());
+        runsMenu()
+                .stopRun(runId[2]);
     }
 
     @AfterClass(alwaysRun = true)
@@ -641,10 +643,12 @@ public class BillingQuotasTest
                            .forEach(command ->
                                     shell
                                             .execute(command)
+                                            .assertNextStringIsVisible(command, "root@pipeline")
                                             .assertPageAfterCommandContainsStrings(command, "Read-only file system")
                                             .sleep(2, SECONDS));
                     shell
                             .execute(command2)
+                            .assertNextStringIsVisible(command2, "root@pipeline")
                             .assertPageAfterCommandContainsStrings(command2, "Error: Failed to fetch data from server. " +
                                     "Server responded with message: Access is denied")
                             .sleep(2, SECONDS)
@@ -761,15 +765,15 @@ public class BillingQuotasTest
         if (!billingGroupDictionaryExist) {
             systemDictionariesAO
                     .openSystemDictionary(dict)
-                    .deleteDictionary(dict);
+                    .deleteDictionary(dict)
+                    .sleep(1, SECONDS)
+                    .get(SAVE).shouldBe(disabled);
             return;
         }
         systemDictionariesAO
                 .openSystemDictionary(dict)
                 .deleteDictionaryValue(billingCenter)
-                .click(SAVE)
-                .sleep(1, SECONDS)
-                .get(SAVE).shouldBe(disabled);
+                .click(SAVE);
     }
 
     private void checkQuotasExceededWarningForUser(Account user_name, String... messages) {
