@@ -162,7 +162,7 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
 
     @Test
     @TestCase(value = {"TC-PARAMETERS-3"})
-    public void checkConfigureClusterAwsEBSvolumeTypeForSockerImages() {
+    public void checkConfigureClusterAwsEBSvolumeType() {
         navigationMenu()
                 .settings()
                 .switchToPreferences()
