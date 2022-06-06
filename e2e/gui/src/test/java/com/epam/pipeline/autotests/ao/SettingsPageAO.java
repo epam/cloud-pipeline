@@ -1443,7 +1443,6 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             }
 
             public ClusterTabAO checkClusterAwsEbsType(final String value) {
-                searchPreference(CLUSTER_AWS_EBS_TYPE);
                 ensure(getByField(CLUSTER_AWS_EBS_TYPE), value(value));
                 ensure(getPreferenceState(CLUSTER_AWS_EBS_TYPE), cssClass("anticon-eye"));
                 return this;
