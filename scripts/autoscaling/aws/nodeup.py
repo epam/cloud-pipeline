@@ -401,7 +401,7 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     if allowed_networks and len(allowed_networks) > 0:
         if availability_zone:
             pipe_log('- Desired availability zone {} was specified, trying to use it'.format(availability_zone))
-            for az_name, az_subnet_id in allowed_networks:
+            for az_name, az_subnet_id in allowed_networks.iteritems():
                 if az_name == availability_zone:
                     az_name = availability_zone
                     subnet_id = az_subnet_id
