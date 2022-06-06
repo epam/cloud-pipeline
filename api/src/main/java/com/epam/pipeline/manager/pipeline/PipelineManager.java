@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
@@ -137,6 +138,7 @@ public class PipelineManager implements SecuredEntityManager {
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             }
         }
+        pipelineVO.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         Pipeline pipeline = pipelineVO.toPipeline();
         setFolderIfPresent(pipeline);
         pipeline.setOwner(securityManager.getAuthorizedUser());
@@ -201,6 +203,7 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
         dbPipeline.setBranch(pipelineVO.getBranch());
+        dbPipeline.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         pipelineDao.updatePipeline(dbPipeline);
 
         updatePipelineNameForRuns(pipelineVO, pipelineVOName);

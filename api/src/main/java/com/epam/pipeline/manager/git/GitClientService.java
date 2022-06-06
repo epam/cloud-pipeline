@@ -80,4 +80,6 @@ public interface GitClientService {
     GitCommitEntry updateFiles(Pipeline pipeline, PipelineSourceItemsVO sourceItemVOList, String message);
 
     GitCommitEntry uploadFiles(Pipeline pipeline, List<UploadFileMetadata> files, String message);
+
+    boolean fileExists(Pipeline pipeline, String filePath);
 }

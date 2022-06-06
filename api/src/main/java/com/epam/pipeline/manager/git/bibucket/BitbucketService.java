@@ -127,7 +127,7 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public void deleteRepository(final Pipeline pipeline) {
-        getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).deleteRepository();
+        getClient(pipeline).deleteRepository();
     }
 
     @Override
@@ -151,13 +151,12 @@ public class BitbucketService implements GitClientService {
     @Override
     public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
                                            final int byteLimit) {
-        return RestApiUtils.getFileContent(getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
-                .getRawFileContent(revision, path), byteLimit);
+        return RestApiUtils.getFileContent(getClient(pipeline).getRawFileContent(revision, path), byteLimit);
     }
 
     @Override
     public List<Revision> getTags(final Pipeline pipeline) {
-        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline);
 
         final List<BitbucketTag> values = new ArrayList<>();
         String nextPage = collectValues(client.getTags(null), values);
@@ -179,8 +178,7 @@ public class BitbucketService implements GitClientService {
                 .startPoint(commitId)
                 .message(message)
                 .build();
-        final BitbucketTag tag = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
-                .createTag(request);
+        final BitbucketTag tag = getClient(pipeline).createTag(request);
         return Optional.ofNullable(tag)
                 .map(mapper::tagToRevision)
                 .orElse(null);
@@ -188,8 +186,7 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public Revision getLastRevision(final Pipeline pipeline, final String ref) {
-        final BitbucketPagedResponse<BitbucketCommit> commits = getClient(pipeline.getRepository(),
-                pipeline.getRepositoryToken()).getLastCommit(ref);
+        final BitbucketPagedResponse<BitbucketCommit> commits = getClient(pipeline).getLastCommit(ref);
         return Optional.ofNullable(commits)
                 .flatMap(value -> ListUtils.emptyIfNull(value.getValues()).stream()
                         .findFirst()
@@ -218,8 +215,7 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public GitCommitEntry getCommit(final Pipeline pipeline, final String commitId) {
-        final BitbucketCommit commit = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
-                .getCommit(commitId);
+        final BitbucketCommit commit = getClient(pipeline).getCommit(commitId);
         return Optional.ofNullable(commit)
                 .map(mapper::bitbucketCommitToCommitEntry)
                 .orElse(null);
@@ -227,7 +223,7 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public GitTagEntry getTag(final Pipeline pipeline, final String tagName) {
-        final BitbucketTag tag = getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).getTag(tagName);
+        final BitbucketTag tag = getClient(pipeline).getTag(tagName);
         return Optional.ofNullable(tag)
                 .map(mapper::bitbucketTagToTagEntry)
                 .orElse(null);
@@ -236,7 +232,7 @@ public class BitbucketService implements GitClientService {
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String rawPath,
                                                           final String version, final boolean recursive) {
-        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
         final List<String> values = new ArrayList<>();
@@ -290,7 +286,7 @@ public class BitbucketService implements GitClientService {
     public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
                                        final String message) {
         final String folderPath = filesToCreate.get(0);
-        final BitbucketCommit commit = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+        final BitbucketCommit commit = getClient(pipeline)
                 .upsertFile(folderPath, Strings.EMPTY, message, null, pipeline.getBranch());
         return mapper.bitbucketCommitToCommitEntry(commit);
     }
@@ -313,7 +309,7 @@ public class BitbucketService implements GitClientService {
                 .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
             throw new UnsupportedOperationException("File renaming is not supported for Bitbucket repository");
         }
-        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline);
 
         BitbucketCommit commit = null;
         for (final PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
@@ -330,13 +326,22 @@ public class BitbucketService implements GitClientService {
                                       final String message) {
         Assert.isTrue(files.size() == 1, "Multiple files upload is not supported for Bitbucket repository");
         final UploadFileMetadata file = files.get(0);
-        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline);
         final String commitId = fileExists(client, file.getFileName(), pipeline.getBranch())
                 ? pipeline.getCurrentVersion().getCommitId()
                 : null;
         final BitbucketCommit commit = client.upsertFile(file.getFileName(), file.getFileType(), file.getBytes(),
                 message, commitId, pipeline.getBranch());
         return mapper.bitbucketCommitToCommitEntry(commit);
+    }
+
+    @Override
+    public boolean fileExists(final Pipeline pipeline, final String filePath) {
+        return fileExists(getClient(pipeline), filePath, pipeline.getBranch());
+    }
+
+    private BitbucketClient getClient(final Pipeline pipeline) {
+        return getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
     }
 
     private BitbucketClient getClient(final String repositoryPath, final String token) {
