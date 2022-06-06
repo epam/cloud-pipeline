@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -32,6 +33,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
@@ -169,8 +171,10 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
                 .switchToCluster()
                 .checkClusterAwsEbsType(C.DEFAULT_CLUSTER_AWS_EBS_TYPE);
         final Set<String> logMess = tools()
-                .perform(registry, group, tool, tool ->
-                        tool.run(this))
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .doNotMountStoragesSelect(true)
+                .launch(this)
                 .showLog(getRunId())
                 .waitForSshLink()
                 .waitForTask(INITIALIZE_NODE)
