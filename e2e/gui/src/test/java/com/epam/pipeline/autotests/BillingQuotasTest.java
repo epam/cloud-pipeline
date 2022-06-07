@@ -640,7 +640,7 @@ public class BillingQuotasTest
                                     shell
                                             .execute(command)
                                             .sleep(2, SECONDS)
-                                            .assertNextStringIsVisible(command, "root@pipeline")
+                                            .assertNextStringIsVisible(command.substring(1, 80), "root@pipeline")
                                             .assertPageAfterCommandContainsStrings(command, "Read-only file system")
                                             .sleep(2, SECONDS));
                     shell
@@ -768,9 +768,9 @@ public class BillingQuotasTest
         systemDictionariesAO
                 .openSystemDictionary(dict)
                 .deleteDictionaryValue(billingCenter)
-                .sleep(1, SECONDS)
-                .click(SAVE)
                 .sleep(2, SECONDS)
+                .click(SAVE)
+                .sleep(3, SECONDS)
                 .get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
     }
 
