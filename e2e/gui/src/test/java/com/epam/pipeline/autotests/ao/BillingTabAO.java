@@ -271,7 +271,7 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
                 this.elements = initialiseElements(
                         entry(DELETE_ICON, entry.$(byClassName("anticon-close")).parent()),
                         entry(ACTIONS, entry.$(byClassName("uota-description__actions-container"))
-                                .$(By.xpath(".//span"))),
+                                ),
                         entry(STATUS, entry.find("circle"))
                 );
             }
@@ -292,7 +292,8 @@ public class BillingTabAO implements AccessObject<BillingTabAO> {
             }
 
             public QuotaEntry checkQuotaWarning() {
-                return ensure(ACTIONS, cssClass("cp-warning"));
+                assertTrue(get(ACTIONS).$$(By.xpath(".//span")).first().has(cssClass("cp-warning")));
+                return this;
             }
 
             @Override

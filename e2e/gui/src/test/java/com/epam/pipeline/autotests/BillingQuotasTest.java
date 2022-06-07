@@ -243,6 +243,13 @@ public class BillingQuotasTest
                         .close());
         runsMenu()
                 .stopRun(runId[2]);
+        Utils.removeStorages(this, testStorage1, testStorage2, dataStorage);
+        library()
+                .selectStorage(testFsStorage)
+                .clickEditStorageButton()
+                .editForNfsMount()
+                .clickDeleteStorageButton()
+                .clickDelete();
     }
 
     @AfterClass(alwaysRun = true)
@@ -260,17 +267,6 @@ public class BillingQuotasTest
                 .deleteAttribute("billing-group")
                 .ok();
         deleteBillingCenter("billing-group", billingCenter1);
-    }
-
-    @AfterClass(alwaysRun = true)
-    public void removeEntities() {
-        Utils.removeStorages(this, testStorage1, testStorage2, dataStorage);
-        library()
-                .selectStorage(testFsStorage)
-                .clickEditStorageButton()
-                .editForNfsMount()
-                .clickDeleteStorageButton()
-                .clickDelete();
     }
 
     @Test
@@ -327,7 +323,7 @@ public class BillingQuotasTest
                     .ensureVisible(CLOSE, REMOVE)
                     .close()
                     .getQuotaEntry("", quotaEntry(quota[0], PER_MONTH))
-                    .checkEntryActions(format("%s%%: %s", threshold[0], NOTIFY.toLowerCase()));
+                    .checkEntryActions(actionDescription(threshold[0], NOTIFY));
         } finally {
             refresh();
             logout();
@@ -372,8 +368,8 @@ public class BillingQuotasTest
                 .removeQuota()
                 .getQuotaEntry("", quotaEntry(quota[1], PER_QUARTER))
                 .checkQuotaStatus(GREEN)
-                .checkEntryActions(format("%s%%: %s %s%%: %s, %s", threshold[0], NOTIFY.toLowerCase(),
-                        threshold[1], READ_ONLY_MODE.toLowerCase(), NOTIFY.toLowerCase()))
+                .checkEntryActions(actionDescription(threshold[1], format("%s, %s", NOTIFY, READ_ONLY_MODE)),
+                        actionDescription(threshold[2], READ_ONLY_MODE))
                 .removeQuota();
     }
 
@@ -396,7 +392,7 @@ public class BillingQuotasTest
                 .refresh()
                 .getQuotaEntry("", quotaEntry(quota[2], PER_YEAR))
                 .checkQuotaStatus(YELLOW)
-                .checkEntryActions(format("%s%%: %s", threshold[3], NOTIFY.toLowerCase()))
+                .checkEntryActions(actionDescription(threshold[3], NOTIFY))
                 .checkQuotaWarning()
                 .removeQuota();
     }
@@ -432,7 +428,7 @@ public class BillingQuotasTest
                     .refresh()
                     .getQuotaEntry(user.login, quotaEntry(quota[4], PER_YEAR))
                     .checkQuotaStatus(RED)
-                    .checkEntryActions(format("%s%%: %s", threshold[5], BLOCK.toLowerCase()))
+                    .checkEntryActions(actionDescription(threshold[5], BLOCK))
                     .checkQuotaWarning();
             checkQuotasExceededWarningForUser(user, message);
             logout();
@@ -498,7 +494,7 @@ public class BillingQuotasTest
                     .setAction(threshold[6], STOP_ALL_JOBS)
                     .ok()
                     .getQuotaEntry(billingCenter1, quotaEntry(quota[5], PER_QUARTER))
-                    .checkEntryActions(format("%s%%: %s", threshold[6], STOP_ALL_JOBS.toLowerCase()));
+                    .checkEntryActions(actionDescription(threshold[6], STOP_ALL_JOBS));
             billingMenu()
                     .click(COMPUTE_INSTANCES)
                     .getQuotasSection(USERS)
@@ -513,7 +509,7 @@ public class BillingQuotasTest
                     .refresh()
                     .getQuotaEntry(user.login, quotaEntry(quota[6], PER_YEAR))
                     .checkQuotaStatus(RED)
-                    .checkEntryActions(format("%s%%: %s", threshold[7], DISABLE_NEW_JOBS.toLowerCase()))
+                    .checkEntryActions(actionDescription(threshold[7], DISABLE_NEW_JOBS))
                     .checkQuotaWarning();
             billingMenu()
                     .click(COMPUTE_INSTANCES)
@@ -587,7 +583,7 @@ public class BillingQuotasTest
                 .refresh()
                 .getQuotaEntry("", quotaEntry(quota[7], PER_YEAR))
                 .checkQuotaStatus(YELLOW)
-                .checkEntryActions(format("%s%%: %s", threshold[8], NOTIFY.toLowerCase()))
+                .checkEntryActions(actionDescription(threshold[8], NOTIFY))
                 .checkQuotaWarning()
                 .removeQuota();
     }
@@ -616,7 +612,7 @@ public class BillingQuotasTest
                 .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
                 .refresh()
                 .getQuotaEntry(billingCenter1, quotaEntry(quota[9], PER_QUARTER))
-                .checkEntryActions(format("%s%%: %s", threshold[10], READ_ONLY_MODE.toLowerCase()))
+                .checkEntryActions(actionDescription(threshold[10], READ_ONLY_MODE))
                 .checkQuotaStatus(YELLOW)
                 .checkQuotaWarning();
         library()
@@ -643,6 +639,7 @@ public class BillingQuotasTest
                            .forEach(command ->
                                     shell
                                             .execute(command)
+                                            .sleep(2, SECONDS)
                                             .assertNextStringIsVisible(command, "root@pipeline")
                                             .assertPageAfterCommandContainsStrings(command, "Read-only file system")
                                             .sleep(2, SECONDS));
@@ -680,7 +677,7 @@ public class BillingQuotasTest
                 .setAction(threshold[11], BLOCK)
                 .ok()
                 .getQuotaEntry(userWithoutCompletedRuns.login, quotaEntry(quota[9], PER_YEAR))
-                .checkEntryActions(format("%s%%: %s", threshold[10], BLOCK.toLowerCase()))
+                .checkEntryActions(actionDescription(threshold[10], BLOCK))
                 .sleep(BILLING_QUOTAS_PERIOD, SECONDS)
                 .refresh()
                 .checkQuotaStatus(RED)
@@ -771,9 +768,10 @@ public class BillingQuotasTest
         systemDictionariesAO
                 .openSystemDictionary(dict)
                 .deleteDictionaryValue(billingCenter)
+                .sleep(1, SECONDS)
                 .click(SAVE)
                 .sleep(2, SECONDS)
-                .get(SAVE).shouldBe(disabled);
+                .get(SAVE).waitUntil(disabled, C.DEFAULT_TIMEOUT);
     }
 
     private void checkQuotasExceededWarningForUser(Account user_name, String... messages) {
@@ -788,5 +786,9 @@ public class BillingQuotasTest
         usersTabAO
                 .searchUserEntry(admin.login)
                 .isNotQuotasExceeded();
+    }
+    
+    private String actionDescription(String thresholdVal, String action) {
+        return format("%s%%: %s", thresholdVal, action.toLowerCase());
     }
 }
