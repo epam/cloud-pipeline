@@ -640,7 +640,8 @@ public class BillingQuotasTest
                                     shell
                                             .execute(command)
                                             .sleep(2, SECONDS)
-                                            .assertNextStringIsVisible(command.substring(1, 80), "root@pipeline")
+                                            .assertNextStringIsVisible(command.length() > 80 ?
+                                                    command.substring(0, 80) : command, "root@pipeline")
                                             .assertPageAfterCommandContainsStrings(command, "Read-only file system")
                                             .sleep(2, SECONDS));
                     shell
