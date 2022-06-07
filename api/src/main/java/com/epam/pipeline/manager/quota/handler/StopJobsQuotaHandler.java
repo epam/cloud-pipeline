@@ -35,7 +35,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -68,11 +71,29 @@ public class StopJobsQuotaHandler implements QuotaHandler {
         log.info("Stopping all jobs affected by quota {}.", appliedQuota.getQuota());
         final List<PipelineRun> runsToStop = findAffectedRuns(appliedQuota);
         log.info("{} run(s) will be stopped.", runsToStop.size());
+        final Map<String, PipelineUser> users = new HashMap<>();
         runsToStop.forEach(run -> {
+            if (isAdminRun(run, users)) {
+                return;
+            }
             log.info("Stopping run {}.", run.getId());
             //TODO: add logs to run
             pipelineRunManager.updatePipelineStatusIfNotFinal(run.getId(), TaskStatus.STOPPED);
         });
+    }
+
+    private boolean isAdminRun(final PipelineRun run, final Map<String, PipelineUser> users) {
+        final String owner = run.getOwner();
+        final PipelineUser user = users.get(owner);
+        if (Objects.nonNull(user)) {
+            return user.isAdmin();
+        }
+        final PipelineUser runUser = userManager.loadUserByName(owner);
+        if (Objects.nonNull(runUser)) {
+            users.put(owner, runUser);
+            return runUser.isAdmin();
+        }
+        return false;
     }
 
     private List<PipelineRun> findAffectedRuns(final AppliedQuota appliedQuota) {
