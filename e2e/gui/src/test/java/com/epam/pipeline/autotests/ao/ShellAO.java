@@ -126,8 +126,8 @@ public class ShellAO implements AccessObject<ShellAO> {
     }
 
     public String lastCommandResult(String command) {
-        return context().text().substring(context().text().indexOf(command))
-                .replace("\n", "").replace(command, "");
+        String res = context().text().replace("\n", "");
+        return res.substring(res.indexOf(command));
     }
 
     public ShellAO assertPageContainsString(String str) {

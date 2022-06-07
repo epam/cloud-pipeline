@@ -646,6 +646,7 @@ public class BillingQuotasTest
                                             .sleep(2, SECONDS));
                     shell
                             .execute(command2)
+                            .sleep(2, SECONDS)
                             .assertNextStringIsVisible(command2, "root@pipeline")
                             .assertPageAfterCommandContainsStrings(command2, "Error: Failed to fetch data from server. " +
                                     "Server responded with message: Access is denied")
