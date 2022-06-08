@@ -378,22 +378,22 @@ def run_id_filter(run_id):
 
 def run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type,
                  is_spot, num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, kube_client, pre_pull_images,
-                 instance_additional_spec, availability_zone):
+                 instance_additional_spec, availability_zone, network_interface):
     swap_size = get_swap_size(aws_region, ins_type, is_spot)
     user_data_script = get_user_data_script(api_url, api_token, api_user, aws_region, ins_type, ins_img, ins_platform, kube_ip,
                                             kubeadm_token, kubeadm_cert_hash, kube_node_token, swap_size, pre_pull_images)
     if is_spot:
         ins_id, ins_ip = find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key, ins_hdd, kms_encyr_key_id,
-                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone)
+                                            user_data_script, num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, network_interface)
     else:
         ins_id, ins_ip = run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd, kms_encyr_key_id, run_id, pool_id, user_data_script,
-                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone)
+                                                num_rep, time_rep, swap_size, kube_client, instance_additional_spec, availability_zone, network_interface)
     return ins_id, ins_ip
 
 
 def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                            kms_encyr_key_id, run_id, pool_id, user_data_script, num_rep, time_rep,
-                           swap_size, kube_client, instance_additional_spec, availability_zone):
+                           swap_size, kube_client, instance_additional_spec, availability_zone, network_interface):
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = instance_additional_spec if instance_additional_spec else {}
@@ -406,6 +406,43 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                     az_name = availability_zone
                     subnet_id = az_subnet_id
                     break
+
+        if network_interface:
+            pipe_log('- Specific network interface was provided {}, trying to use it'.format(network_interface))
+            described_enis = ec2.describe_network_interfaces(
+                NetworkInterfaceIds=[
+                    network_interface
+                ],
+                MaxResults=1
+            )
+
+            if described_enis is None or described_enis["NetworkInterfaces"] is None or len(described_enis["NetworkInterfaces"]) == 0:
+                raise RuntimeError('- Cannot describe network interface {}, operation failed.'.format(network_interface))
+
+            described_eni = described_enis["NetworkInterfaces"][0]
+            eni_az_name = described_eni["AvailabilityZone"]
+            eni_subnet_id = described_eni["SubnetId"]
+            eni_status = described_eni["Status"]
+
+            if subnet_id is not None and subnet_id != eni_subnet_id:
+                raise RuntimeError('- Specified network interface {} is located in subnet {}, but explicitly configured subnet is {}, operation failed.'.format(network_interface, eni_subnet_id, subnet_id))
+            else:
+                subnet_id = eni_subnet_id
+                az_name = eni_az_name
+                pipe_log('- Subnet {} in az {} will be used'.format(subnet_id, az_name))
+
+            if eni_status is None or eni_status != "available":
+                raise RuntimeError('- Status of provided network interface {} is {}, but should be "available", operation failed.'.format(network_interface, eni_status))
+
+            additional_args.update({
+                "NetworkInterfaces": [
+                    {
+                        "DeviceIndex": 0,
+                        "NetworkInterfaceId": network_interface
+                    }
+                ]
+            })
+
         if subnet_id is None:
             az_num = randint(0, len(allowed_networks)-1)
             az_name = allowed_networks.items()[az_num][0]
@@ -950,7 +987,7 @@ def exit_if_spot_unavailable(run_id, last_status):
 
 def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins_type, ins_key,
                        ins_hdd, kms_encyr_key_id, user_data_script, num_rep, time_rep,
-                       swap_size, kube_client, instance_additional_spec, availability_zone):
+                       swap_size, kube_client, instance_additional_spec, availability_zone, network_interface):
     pipe_log('Creating spot request')
 
     pipe_log('- Checking spot prices for current region...')
@@ -1242,6 +1279,7 @@ def main():
     parser.add_argument("--kms_encyr_key_id", type=str, required=False)
     parser.add_argument("--region_id", type=str, default=None)
     parser.add_argument("--availability_zone", type=str, required=False)
+    parser.add_argument("--network_interface", type=str, required=False)
     parser.add_argument("--label", type=str, default=[], required=False, action='append')
     parser.add_argument("--image", type=str, default=[], required=False, action='append')
 
@@ -1268,6 +1306,7 @@ def main():
     kms_encyr_key_id = args.kms_encyr_key_id
     region_id = args.region_id
     availability_zone = args.availability_zone
+    network_interface = args.network_interface
     pre_pull_images = args.image
     additional_labels = map_labels_to_dict(args.label)
     pool_id = additional_labels.get(POOL_ID_KEY)
@@ -1353,7 +1392,7 @@ def main():
             api_user = os.environ["API_USER"]
             ins_id, ins_ip = run_instance(api_url, api_token, api_user, bid_price, ec2, aws_region, ins_hdd, kms_encyr_key_id, ins_img, ins_platform, ins_key, ins_type, is_spot,
                                           num_rep, run_id, pool_id, time_rep, kube_ip, kubeadm_token, kubeadm_cert_hash, kube_node_token, api, pre_pull_images, instance_additional_spec,
-                                          availability_zone)
+                                          availability_zone, network_interface)
 
         check_instance(ec2, ins_id, run_id, num_rep, time_rep, api)
 
