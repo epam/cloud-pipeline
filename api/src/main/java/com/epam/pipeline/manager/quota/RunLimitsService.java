@@ -117,7 +117,7 @@ public class RunLimitsService {
 
         final Optional<Integer> platformGlobalLimit = getPlatformGlobalLimit();
         if (requiresSingleLimitOnly(platformGlobalLimit, loadAll)) {
-            return returnLimitAsMap(platformGlobalLimit, USER_GLOBAL_LIMIT_KEY);
+            return returnLimitAsMap(platformGlobalLimit, PLATFORM_LIMIT_KEY);
         }
 
         addLimitIfPresent(groupsLimits, userContextualLimit, USER_LIMIT_KEY);
