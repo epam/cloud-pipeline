@@ -397,8 +397,20 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
     pipe_log('Creating on demand instance')
     allowed_networks = get_networks_config(ec2, aws_region, ins_type)
     additional_args = instance_additional_spec if instance_additional_spec else {}
+
     subnet_id = None
-    if allowed_networks and len(allowed_networks) > 0:
+    az_name = None
+    if network_interface:
+        network_interface, subnet_id, az_name = fetch_network_interface_info(ec2, network_interface, availability_zone, allowed_networks)
+        additional_args.update({
+            "NetworkInterfaces": [
+                {
+                    "DeviceIndex": 0,
+                    "NetworkInterfaceId": network_interface
+                }
+            ]
+        })
+    elif allowed_networks and len(allowed_networks) > 0:
         if availability_zone:
             pipe_log('- Desired availability zone {} was specified, trying to use it'.format(availability_zone))
             for az_name, az_subnet_id in allowed_networks.iteritems():
@@ -406,43 +418,6 @@ def run_on_demand_instance(ec2, aws_region, ins_img, ins_key, ins_type, ins_hdd,
                     az_name = availability_zone
                     subnet_id = az_subnet_id
                     break
-
-        if network_interface:
-            pipe_log('- Specific network interface was provided {}, trying to use it'.format(network_interface))
-            described_enis = ec2.describe_network_interfaces(
-                NetworkInterfaceIds=[
-                    network_interface
-                ],
-                MaxResults=1
-            )
-
-            if described_enis is None or described_enis["NetworkInterfaces"] is None or len(described_enis["NetworkInterfaces"]) == 0:
-                raise RuntimeError('- Cannot describe network interface {}, operation failed.'.format(network_interface))
-
-            described_eni = described_enis["NetworkInterfaces"][0]
-            eni_az_name = described_eni["AvailabilityZone"]
-            eni_subnet_id = described_eni["SubnetId"]
-            eni_status = described_eni["Status"]
-
-            if subnet_id is not None and subnet_id != eni_subnet_id:
-                raise RuntimeError('- Specified network interface {} is located in subnet {}, but explicitly configured subnet is {}, operation failed.'.format(network_interface, eni_subnet_id, subnet_id))
-            else:
-                subnet_id = eni_subnet_id
-                az_name = eni_az_name
-                pipe_log('- Subnet {} in az {} will be used'.format(subnet_id, az_name))
-
-            if eni_status is None or eni_status != "available":
-                raise RuntimeError('- Status of provided network interface {} is {}, but should be "available", operation failed.'.format(network_interface, eni_status))
-
-            additional_args.update({
-                "NetworkInterfaces": [
-                    {
-                        "DeviceIndex": 0,
-                        "NetworkInterfaceId": network_interface
-                    }
-                ]
-            })
-
         if subnet_id is None:
             az_num = randint(0, len(allowed_networks)-1)
             az_name = allowed_networks.items()[az_num][0]
@@ -530,6 +505,40 @@ def get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_si
     if swap_size is not None and swap_size > 0:
         block_devices.append(block_device(swap_size, kms_encyr_key_id, name="/dev/sdc"))
     return block_devices
+
+
+def fetch_network_interface_info(ec2, network_interface, availability_zone, allowed_networks):
+    pipe_log('- Specific network interface was provided {}, trying to use it'.format(network_interface))
+    described_enis = ec2.describe_network_interfaces(
+        NetworkInterfaceIds=[
+            network_interface
+        ]
+    )
+
+    if described_enis is None or described_enis["NetworkInterfaces"] is None or len(described_enis["NetworkInterfaces"]) == 0:
+        raise RuntimeError('- Cannot describe network interface {}, operation failed.'.format(network_interface))
+
+    described_eni = described_enis["NetworkInterfaces"][0]
+    eni_az_name = described_eni["AvailabilityZone"]
+    eni_subnet_id = described_eni["SubnetId"]
+    eni_status = described_eni["Status"]
+
+    if availability_zone is not None and availability_zone != eni_az_name:
+        raise RuntimeError('- Specified network interface {} is located in az {}, but explicitly configured az is {}, operation failed.'.format(network_interface, eni_az_name, availability_zone))
+
+    if allowed_networks and len(allowed_networks) > 0 and eni_az_name not in [az_name for az_name, _ in allowed_networks.iteritems()]:
+        raise RuntimeError('- Specified network interface {} is located in az {}, but this az is not in allowed list, operation failed.'.format(network_interface, eni_az_name))
+
+    subnet_id = eni_subnet_id
+    az_name = eni_az_name
+    pipe_log('- Subnet {} in az {} will be used'.format(subnet_id, az_name))
+
+    if eni_status is None or eni_status != "available":
+        raise RuntimeError('- Status of provided network interface {} is {}, but should be "available", operation failed.'.format(network_interface, eni_status))
+
+    pipe_log('- Network Interface {} was specified and all criteria are met, subnet {} in AZ {} will be used'.format(network_interface, subnet_id, az_name))
+    return network_interface,subnet_id, az_name
+
 
 def get_certs_string():
     global api_token
@@ -1016,7 +1025,17 @@ def find_spot_instance(ec2, aws_region, bid_price, run_id, pool_id, ins_img, ins
             'UserData': base64.b64encode(user_data_script.encode('utf-8')).decode('utf-8'),
             'BlockDeviceMappings': get_block_devices(ec2, ins_img, ins_type, ins_hdd, kms_encyr_key_id, swap_size),
         }
-    if allowed_networks and cheapest_zone in allowed_networks:
+    if network_interface:
+        network_interface, subnet_id, az_name = fetch_network_interface_info(ec2, network_interface, availability_zone, allowed_networks)
+        specifications.update({
+            "NetworkInterfaces": [
+                {
+                    "DeviceIndex": 0,
+                    "NetworkInterfaceId": network_interface
+                }
+            ],
+        })
+    elif allowed_networks and cheapest_zone in allowed_networks:
         subnet_id = allowed_networks[cheapest_zone]
         pipe_log('- Networks list found, subnet {} in AZ {} will be used'.format(subnet_id, cheapest_zone))
         specifications['SubnetId'] = subnet_id
