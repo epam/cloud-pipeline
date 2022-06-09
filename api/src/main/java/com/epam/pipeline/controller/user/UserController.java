@@ -479,7 +479,8 @@ public class UserController extends AbstractRestController {
             notes = "Loads a map of launch limits, configured via contextual preferences.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
-    public Result<Map<String, Integer>> getCurrentUserLaunchLimits() {
-        return Result.success(userApiService.getCurrentUserLaunchLimits());
+    public Result<Map<String, Integer>> getCurrentUserLaunchLimits(
+        @RequestParam(required = false, defaultValue = "false") final boolean loadAll) {
+        return Result.success(userApiService.getCurrentUserLaunchLimits(loadAll));
     }
 }

@@ -70,6 +70,10 @@ public class RunLimitsServiceTest {
         doReturn(Optional.empty())
             .when(contextualPreferenceManager)
             .find(Mockito.anyString(), Mockito.any(ContextualPreferenceExternalResource.class));
+        doReturn(Optional.empty())
+            .when(contextualPreferenceManager)
+            .find(Mockito.anyString(), Mockito.any(ContextualPreferenceExternalResource.class));
+        doReturn(Optional.empty()).when(preferenceManager).findPreference(Mockito.any());
     }
 
     @Test
@@ -77,13 +81,11 @@ public class RunLimitsServiceTest {
         doReturn(true).when(authManager).isAdmin();
         runLimitsService.checkRunLaunchLimits(1);
         verify(authManager, Mockito.never()).getCurrentUser();
-        verify(contextualPreferenceManager, Mockito.never()).loadAll();
         verify(roleManager, Mockito.never()).loadAllRoles(Mockito.anyBoolean());
     }
 
     @Test
     public void shouldProcessSuccessfullyIfNoLimitsSpecified() {
-        doReturn(Collections.emptyList()).when(contextualPreferenceManager).loadAll();
         runLimitsService.checkRunLaunchLimits(1);
     }
 
@@ -106,24 +108,27 @@ public class RunLimitsServiceTest {
     @Test
     public void shouldReturnEmptyLimitsForAdmin() {
         doReturn(true).when(authManager).isAdmin();
-        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits()).hasSize(0);
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true)).hasSize(0);
     }
 
     @Test
     public void shouldReturnConfiguredLimitsForUser() {
         doReturn(Optional.empty()).when(preferenceManager).findPreference(SystemPreferences.CLUSTER_MAX_SIZE);
-        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits()).hasSize(0);
-        mockLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, 1, ContextualPreferenceLevel.USER, USER_ID);
-        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits())
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true)).hasSize(0);
+        mockLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, 5, ContextualPreferenceLevel.USER, USER_ID);
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true))
             .hasSize(1)
-            .containsEntry("<user-limit>", 1);
+            .containsEntry("<user-contextual-limit>", 5);
         mockRoleLoading();
         mockLimitPreferencesByKey(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT, 2,
                                   ContextualPreferenceLevel.ROLE, GROUP_ID);
-        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits())
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(true))
             .hasSize(2)
-            .containsEntry("<user-limit>", 1)
+            .containsEntry("<user-contextual-limit>", 5)
             .containsEntry(GROUP_NAME, 2);
+        Assertions.assertThat(runLimitsService.getCurrentUserLaunchLimits(false))
+            .hasSize(1)
+            .containsEntry("<user-contextual-limit>", 5);
     }
 
     private PipelineUser getUser() {

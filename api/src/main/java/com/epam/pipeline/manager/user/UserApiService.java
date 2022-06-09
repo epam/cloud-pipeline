@@ -257,7 +257,7 @@ public class UserApiService {
         return onlineUsersService.deleteExpired(date);
     }
 
-    public Map<String, Integer> getCurrentUserLaunchLimits() {
-        return runLimitsService.getCurrentUserLaunchLimits();
+    public Map<String, Integer> getCurrentUserLaunchLimits(final boolean loadAll) {
+        return runLimitsService.getCurrentUserLaunchLimits(loadAll);
     }
 }

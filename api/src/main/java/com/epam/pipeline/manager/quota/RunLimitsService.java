@@ -38,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
@@ -57,7 +58,8 @@ import java.util.stream.Stream;
 @Slf4j
 public class RunLimitsService {
 
-    private static final String USER_LIMIT_KEY = "<user-limit>";
+    private static final String USER_LIMIT_KEY = "<user-contextual-limit>";
+    private static final String USER_GLOBAL_LIMIT_KEY = "<user-global-limit>";
     private static final String PLATFORM_LIMIT_KEY = "<platform-limit>";
     private static final List<TaskStatus> ACTIVE_RUN_STATUSES = new ArrayList<>(Arrays.asList(TaskStatus.RESUMING,
                                                                                               TaskStatus.RUNNING));
@@ -73,23 +75,75 @@ public class RunLimitsService {
             return;
         }
         final PipelineUser user = authManager.getCurrentUser();
-        final String userName = user.getUserName();
-        checkUserLimits(user.getId(), userName, newInstancesCount);
-        checkUserGroupsLimits(userName, getGroups(user), newInstancesCount);
-        checkPlatformLimit(userName);
+        final Map<String, Integer> currentLimits = getCurrentUserLaunchLimits(user, false);
+        currentLimits.entrySet().stream()
+            .findFirst()
+            .filter(e -> exceedsUserLimit("", newInstancesCount, e.getValue()))
+            .ifPresent(e -> {
+                final String userName = user.getUserName();
+                final String limitName = e.getKey();
+                final Integer limitValue = e.getValue();
+                log.info("Launch of new jobs is restricted as [{}] user will exceed [{}] runs limit [{}]",
+                         userName, limitName, limitValue);
+                throw new LaunchQuotaExceededException(messageHelper.getMessage(
+                    MessageConstants.ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED, userName, limitName, limitValue));
+            });
     }
 
-    public Map<String, Integer> getCurrentUserLaunchLimits() {
+    public Map<String, Integer> getCurrentUserLaunchLimits(final boolean loadAll) {
         if (authManager.isAdmin()) {
             return Collections.emptyMap();
         }
-        final PipelineUser user = authManager.getCurrentUser();
-        final Map<String, Integer> result = findUserGroupsLimits(getGroups(user))
+        return getCurrentUserLaunchLimits(authManager.getCurrentUser(), loadAll);
+    }
+
+    private Map<String, Integer> getCurrentUserLaunchLimits(final PipelineUser user, final boolean loadAll ) {
+
+        final Optional<Integer> userContextualLimit = findUserLimit(user.getId());
+        if (requiresSingleLimitOnly(userContextualLimit, loadAll)) {
+            return returnLimitAsMap(userContextualLimit, USER_LIMIT_KEY);
+        }
+
+        final Map<String, Integer> groupsLimits = findUserGroupsLimits(getGroups(user))
             .collect(Collectors.toMap(GroupLimit::getGroupName, GroupLimit::getRunsLimit));
-        findUserLimit(user.getId()).ifPresent(limitValue -> result.put(USER_LIMIT_KEY, limitValue));
-        getClusterGlobalLimit()
-            .ifPresent(limitValue -> result.put(PLATFORM_LIMIT_KEY, limitValue));
-        return result;
+        if (MapUtils.isNotEmpty(groupsLimits) && !loadAll) {
+            return findMostStrictGroupLimit(groupsLimits);
+        }
+
+        final Optional<Integer> userGlobalLimit = getUserGlobalLimit();
+        if (requiresSingleLimitOnly(userGlobalLimit, loadAll)) {
+            return returnLimitAsMap(userGlobalLimit, USER_GLOBAL_LIMIT_KEY);
+        }
+
+        final Optional<Integer> platformGlobalLimit = getPlatformGlobalLimit();
+        if (requiresSingleLimitOnly(platformGlobalLimit, loadAll)) {
+            return returnLimitAsMap(platformGlobalLimit, PLATFORM_LIMIT_KEY);
+        }
+
+        addLimitIfPresent(groupsLimits, userContextualLimit, USER_LIMIT_KEY);
+        addLimitIfPresent(groupsLimits, userGlobalLimit, USER_GLOBAL_LIMIT_KEY);
+        addLimitIfPresent(groupsLimits, platformGlobalLimit, PLATFORM_LIMIT_KEY);
+        return groupsLimits;
+    }
+    
+    private boolean requiresSingleLimitOnly(final Optional<Integer> limit, final boolean loadAll) {
+        return limit.isPresent() && !loadAll;
+    }
+
+    private Map<String, Integer> findMostStrictGroupLimit(final Map<String, Integer> groupsLimits) {
+        return groupsLimits.entrySet().stream()
+            .min(Map.Entry.comparingByValue())
+            .map(e -> Collections.singletonMap(e.getKey(), e.getValue()))
+            .get();
+    }
+
+    private Map<String, Integer> returnLimitAsMap(final Optional<Integer> limit, final String limitKey) {
+        return limit.map(limitValue -> Collections.singletonMap(limitKey, limitValue)).get();
+    }
+
+    private void addLimitIfPresent(final Map<String, Integer> allLimits, final Optional<Integer> limit,
+                                   final String limitKey) {
+        limit.ifPresent(limitValue -> allLimits.put(limitKey, limitValue));
     }
 
     private Set<String> getGroups(final PipelineUser user) {
@@ -102,16 +156,6 @@ public class RunLimitsService {
         return groups;
     }
 
-    private void checkUserLimits(final Long userId, final String userName, final Integer newInstancesCount) {
-        findUserLimit(userId)
-            .filter(limit -> exceedsUserLimit(userName, newInstancesCount, limit))
-            .ifPresent(limit -> {
-                log.info("Launch of new jobs is restricted as [{}] user will exceed runs limit [{}]", userName, limit);
-                throw new LaunchQuotaExceededException(messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED, userName, limit));
-            });
-    }
-
     private Optional<Integer> findUserLimit(final Long userId) {
         return findLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, ContextualPreferenceLevel.USER, userId)
             .map(ContextualPreference::getValue)
@@ -119,32 +163,11 @@ public class RunLimitsService {
             .map(Integer::parseInt);
     }
 
-    private void checkUserGroupsLimits(final String userName, final Set<String> groups,
-                                       final Integer newInstancesCount) {
-        findUserGroupsLimits(groups)
-            .filter(limitDetails -> exceedsGroupLimit(limitDetails, newInstancesCount))
-            .findFirst()
-            .ifPresent(limitDetails -> {
-                log.info("Launch of new jobs is restricted as [{}] user will exceed group runs limit [{}, {}]",
-                         userName, limitDetails.getGroupName(), limitDetails.getRunsLimit());
-                throw new LaunchQuotaExceededException(messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_LAUNCH_GROUP_LIMIT_EXCEEDED, userName,
-                    limitDetails.getGroupName(), limitDetails.getRunsLimit()));
-            });
+    private Optional<Integer> getUserGlobalLimit() {
+        return preferenceManager.findPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT);
     }
 
-    private void checkPlatformLimit(final String userName) {
-        getClusterGlobalLimit()
-            .filter(limit -> getActiveRunsForUsers(Collections.emptyList()) > limit)
-            .ifPresent(clusterLimit -> {
-                log.info("Launch of new jobs is restricted as [{}] user will exceed cluster max runs limit [{}]",
-                         userName, clusterLimit);
-                throw new LaunchQuotaExceededException(messageHelper.getMessage(
-                    MessageConstants.ERROR_RUN_LAUNCH_PLATFORM_LIMIT_EXCEEDED, userName, clusterLimit));
-            });
-    }
-
-    private Optional<Integer> getClusterGlobalLimit() {
+    private Optional<Integer> getPlatformGlobalLimit() {
         return preferenceManager.findPreference(SystemPreferences.CLUSTER_MAX_SIZE);
     }
 
@@ -180,10 +203,6 @@ public class RunLimitsService {
         final ContextualPreferenceExternalResource preferenceResource =
             new ContextualPreferenceExternalResource(resourceLevel, resourceId.toString());
         return contextualPreferenceManager.find(pref.getKey(), preferenceResource);
-    }
-
-    private boolean exceedsGroupLimit(final GroupLimit limitDetails, final Integer newInstancesCount) {
-        return getActiveRunsForUsers(limitDetails.getGroupUsers()) + newInstancesCount > limitDetails.getRunsLimit();
     }
 
     private boolean exceedsUserLimit(final String userName, final Integer newInstancesCount, final Integer limit) {
