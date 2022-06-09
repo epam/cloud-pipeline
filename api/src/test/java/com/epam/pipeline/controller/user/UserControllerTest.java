@@ -514,9 +514,9 @@ public class UserControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldLoadUserLaunchLimits() {
-        doReturn(launchLimits).when(mockUserApiService).getCurrentUserLaunchLimits();
+        doReturn(launchLimits).when(mockUserApiService).getCurrentUserLaunchLimits(false);
         final MvcResult mvcResult = performRequest(get(LAUNCH_LIMITS_URL));
-        verify(mockUserApiService).getCurrentUserLaunchLimits();
+        verify(mockUserApiService).getCurrentUserLaunchLimits(false);
         assertResponse(mvcResult, launchLimits, UserCreatorUtils.LAUNCH_LIMITS_RESPONSE_TYPE);
     }
 

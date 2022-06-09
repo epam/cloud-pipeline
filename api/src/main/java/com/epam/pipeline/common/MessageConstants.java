@@ -740,8 +740,6 @@ public final class MessageConstants {
 
     // Launch limits
     public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
-    public static final String ERROR_RUN_LAUNCH_GROUP_LIMIT_EXCEEDED = "error.run.launch.group.limit.exceeded";
-    public static final String ERROR_RUN_LAUNCH_PLATFORM_LIMIT_EXCEEDED = "error.run.launch.platform.limit.exceeded";
 
     // Ngs preprocessing
     public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =

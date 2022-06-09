@@ -432,7 +432,7 @@ public class UserApiServiceTest extends AbstractAclTest {
         final Map<String, Integer> usersLimits = new HashMap<>();
         usersLimits.put("group1", 1);
         usersLimits.put("group2", 2);
-        doReturn(usersLimits).when(mockRunLimitsService).getCurrentUserLaunchLimits();
-        assertThat(userApiService.getCurrentUserLaunchLimits()).isEqualTo(usersLimits);
+        doReturn(usersLimits).when(mockRunLimitsService).getCurrentUserLaunchLimits(true);
+        assertThat(userApiService.getCurrentUserLaunchLimits(true)).isEqualTo(usersLimits);
     }
 }

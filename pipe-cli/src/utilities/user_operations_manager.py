@@ -39,12 +39,14 @@ class UserOperationsManager:
             click.echo("[%s] %s" % (event.get('status', ''), event.get('message', '')))
 
     def get_instance_limits(self, verbose=False):
-        active_limits = User.load_launch_limits()
+        active_limits = User.load_launch_limits(verbose)
         if len(active_limits) == 0:
             click.echo('No restrictions on runs launching configured')
             return
         if not verbose:
-            source, limit = min(active_limits.items(), key=lambda x: x[1])
+            limit_entry = active_limits.items()[0]
+            source = limit_entry[0]
+            limit = limit_entry[1]
             click.echo('The following restriction applied on runs launching: [{}: {}]'.format(source, limit))
         else:
             self.print_limits_table(active_limits)
