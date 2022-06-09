@@ -57,6 +57,10 @@ spec:
               readOnly: true
             - mountPath: /etc/nginx/external-apps
               name: edge-external-apps
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       volumes:
         - name: edge-logs
           hostPath:
