@@ -1269,7 +1269,6 @@ export class RunSpotConfirmationWithPrice extends React.Component {
             } />
         }
         <Provider
-          preferences={this.props.preferences}
           counter={this.props.counter}
         >
           <AllowedInstancesCountWarning

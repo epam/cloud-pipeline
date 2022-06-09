@@ -17,21 +17,25 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer, inject} from 'mobx-react';
-import {computed} from 'mobx';
-import {Alert} from 'antd';
+import {computed, observable} from 'mobx';
+import {Alert, message} from 'antd';
+import roleModel from '../../../../../utils/roleModel';
+import LaunchLimits, {LIMIT_TYPES} from '../../../../../models/user/LaunchLimits';
 
 const WARNING_TYPES = {
   exceedLimits: 'exceedLimits',
   possibleExceedLimits: 'possibleExceedLimits'
 };
 
-@inject('preferences', 'counter')
+@roleModel.authenticationInfo
+@inject('counter')
 @observer
 export default class AllowedInstancesCountWarning extends React.Component {
+  @observable userLimits;
+
   componentDidMount () {
-    const {counter} = this.props;
-    counter.fetch();
-  }
+    this.fetchData();
+  };
 
   @computed
   get runningInstancesCount () {
@@ -42,12 +46,13 @@ export default class AllowedInstancesCountWarning extends React.Component {
     return undefined;
   }
 
-  get instancesLimit () {
-    const {preferences} = this.props;
-    if (preferences.loaded) {
-      return preferences.allowedInstancesMaxCount;
+  @computed
+  get isAdmin () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo.loaded) {
+      return authenticatedUserInfo.value.admin;
     }
-    return undefined;
+    return false;
   }
 
   get isSingleNode () {
@@ -82,29 +87,50 @@ export default class AllowedInstancesCountWarning extends React.Component {
   }
 
   get warningType () {
-    if (this.runningInstancesCount + this.instancesToLaunch.min > this.instancesLimit) {
+    if (!this.userLimits || this.runningInstancesCount === undefined) {
+      return undefined;
+    }
+    const {min, max} = this.instancesToLaunch;
+    if (this.runningInstancesCount + min > this.userLimits) {
       return WARNING_TYPES.exceedLimits;
     }
-    return this.runningInstancesCount + this.instancesToLaunch.max > this.instancesLimit
+    return this.runningInstancesCount + max > this.userLimits
       ? WARNING_TYPES.possibleExceedLimits
       : undefined;
   }
 
+  fetchData = async () => {
+    const {counter} = this.props;
+    const limitsRequest = new LaunchLimits();
+    counter.fetch();
+    await limitsRequest.fetchIfNeededOrWait();
+    if (limitsRequest.error) {
+      message.error('Error loading maximum running instances limits', 5);
+    } else {
+      this.userLimits = limitsRequest.loaded && limitsRequest.value
+        ? limitsRequest.value[LIMIT_TYPES.userLimit]
+        : undefined;
+    }
+  };
+
   render () {
     const {style} = this.props;
-    if (!this.warningType || !this.instancesLimit) {
+    if (this.isAdmin || !this.warningType || !this.userLimits) {
       return null;
     }
     return (
-      <Alert
-        message={this.warningType === WARNING_TYPES.exceedLimits
-          ? 'Active runs limits exceeded'
-          : 'Possible exceeding of active runs limits'
-        }
-        type="warning"
-        showIcon
-        style={style}
-      />
+      <div>
+        <Alert
+          message={this.warningType === WARNING_TYPES.exceedLimits
+            ? 'Active runs limits exceeded'
+            : 'Possible exceeding of active runs limits'
+          }
+          type="warning"
+          showIcon
+          style={style}
+        />
+        {`${this.userLimits}`}
+      </div>
     );
   }
 }

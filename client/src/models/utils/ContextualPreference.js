@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import RemotePost from '../basic/RemotePost';
 
 export const names = {
+  allowedInstanceMaxCount: 'launch.max.runs.user',
   allowedInstanceTypes: 'cluster.allowed.instance.types',
   allowedToolInstanceTypes: 'cluster.allowed.instance.types.docker',
   allowedPriceTypes: 'cluster.allowed.price.types',
