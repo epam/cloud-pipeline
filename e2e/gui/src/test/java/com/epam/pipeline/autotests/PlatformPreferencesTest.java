@@ -39,7 +39,6 @@ import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -186,8 +185,8 @@ public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest i
 
     private void checkClusterAwsEBSvolumeTypeInLog(Set<String> logMess) {
         assertTrue(logMess.stream()
-                .filter(Pattern.compile(format("The requested EBS volume type for \\D+ device is %s",
-                        C.DEFAULT_CLUSTER_AWS_EBS_TYPE)).asPredicate())
-                .collect(toList()).size() >= 1, "The requested EBS volume type is absent in the log" );
+                .anyMatch(Pattern.compile(format("The requested EBS volume type for \\D+ device is %s",
+                        C.DEFAULT_CLUSTER_AWS_EBS_TYPE)).asPredicate()),
+                "The requested EBS volume type is absent in the log" );
     }
 }
