@@ -60,6 +60,7 @@ public class RunInstance {
     private Set<String> prePulledDockerImages;
     private Long poolId;
     private String availabilityZone;
+    private String networkInterfaceId;
 
     public RunInstance(final String nodeType,
                        final Integer nodeDisk,

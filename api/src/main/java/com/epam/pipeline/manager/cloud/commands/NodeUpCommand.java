@@ -48,6 +48,7 @@ public class NodeUpCommand extends AbstractClusterCommand {
     private final Map<String, String> additionalLabels;
     private final Set<String> prePulledImages;
     private final String availabilityZone;
+    private final String networkInterface;
 
     @Override
     protected List<String> buildCommandArguments() {
@@ -95,6 +96,10 @@ public class NodeUpCommand extends AbstractClusterCommand {
         if (StringUtils.isNotBlank(availabilityZone)) {
             commands.add("--availability_zone");
             commands.add(availabilityZone);
+        }
+        if (StringUtils.isNotBlank(networkInterface)) {
+            commands.add("--network_interface");
+            commands.add(networkInterface);
         }
         return commands;
     }
