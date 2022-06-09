@@ -17,6 +17,7 @@ package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
+import com.epam.pipeline.autotests.ao.Template;
 import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
@@ -68,6 +69,7 @@ public class ToolsParametersTest
     private static final String CUSTOM_CAPABILITIES_2_JSON = "/customCapabilities2.json";
     private static final String CUSTOM_CAPABILITIES_3_JSON = "/customCapabilities3.json";
     private static final String DESCRIPTION_MARKDOWN = "/markdown_mapping.csv";
+    private static final String TOOL_FULL_DESCRIPTION = "/markdown_test_file.txt";
     private static final String SYSTEM_D = "SystemD";
     private static final String TOOLTIP_2 = "This capability is not allowed\nSupported OS versions:\ncentos*";
     private static final String TOOLTIP_1 = "This capability is not allowed\nSupported OS versions:\ndebian 10\n" +
@@ -78,6 +80,7 @@ public class ToolsParametersTest
     private static final String CUSTOM_TEST_CAPABILITY_4 = "Custom test capability 4";
     private static final String DEFAULT_CONFIGURATION = "default";
     private static final String RUN_CAPABILITIES_TITLE = "Run capabilities";
+    private final String pipeline = "pipeMarkdown-" + Utils.randomSuffix();
     private final String tool = C.TESTING_TOOL_NAME;
     private final String centosTool = format("%s/%s", C.ANOTHER_GROUP, "centos");
     private final String registry = C.DEFAULT_REGISTRY;
@@ -93,6 +96,7 @@ public class ToolsParametersTest
     private final String logMessage = "Running '%s' commands:";
     private final String pipeline2323 = "tool-parameters-2323-" + Utils.randomSuffix();
     private final String configuration2323 = "configuration-2323-" + Utils.randomSuffix();
+    private final String fullDescription = readResourceFully(TOOL_FULL_DESCRIPTION);
     private String[] prefInitialValue;
     private String initialToolDescription;
     private String initialPipelineDescription;
@@ -107,8 +111,10 @@ public class ToolsParametersTest
                 .switchToPreferences()
                 .getPreference(launchCapabilities);
         tools()
-                .performWithin(registry, group, tool, tool ->
-                        initialToolDescription = tool.getFullDescriptionMarkdown());
+                .performWithin(registry, group, tool, tool -> {
+                        initialToolDescription = tool.getFullDescriptionMarkdown();
+                        tool.addFullDescription(fullDescription);
+                });
     }
 
     @BeforeMethod
@@ -130,6 +136,8 @@ public class ToolsParametersTest
         tools()
                 .performWithin(registry, group, tool, tool ->
                         tool.addFullDescription(initialToolDescription));
+        library()
+                .removePipelineIfExists(pipeline);
     }
 
     @Test(priority = 1)
@@ -361,6 +369,14 @@ public class ToolsParametersTest
                             .getDescriptionHtml();
                 });
         checkMarkdown(markdownMapping, toolDescription, descriptionHtml);
+        String[] pipeReadMeHtml = library()
+                .createPipeline(Template.SHELL, pipeline)
+                .clickOnPipeline(pipeline)
+                .firstVersion()
+                .documentsTab()
+                .updateReadMeFile(fullDescription)
+                .getDescriptionHtml();
+        checkMarkdown(markdownMapping, toolDescription, pipeReadMeHtml);
     }
 
     private Map<String, String> mappingPattern() {
@@ -371,16 +387,18 @@ public class ToolsParametersTest
 
     private void checkMarkdown(final Map<String, String> descPattern,
                                final String[] input, final String[] output) {
+        String description = String.join("", output);
         if (input.length <= 1 || descPattern.isEmpty()) {
             return;
         }
-        IntStream.range(0, input.length).forEach(i -> {
+        IntStream.range(0, input.length-1).forEach(i -> {
             for (String key : descPattern.keySet()) {
                 if (input[i].matches(key)) {
                     Matcher matcher = Pattern.compile(key).matcher(input[i]);
                     assertTrue(matcher.find());
-                    assertTrue(output[i].contains(format(descPattern.get(key), matcher.group(1))),
-                            format("The %s markdown is parsed incorrect as %s", input[i], output[i]));
+                    assertTrue(description.contains(format(descPattern.get(key), matcher.group(1))),
+                            format("The %s markdown is parsed incorrect as %s", input[i], description));
+                    System.out.println(format(descPattern.get(key), matcher.group(1)));
                     return;
                 }
             }

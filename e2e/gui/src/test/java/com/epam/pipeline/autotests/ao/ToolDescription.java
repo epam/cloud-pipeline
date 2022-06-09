@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.openqa.selenium.By;
 
 import static com.codeborne.selenide.Condition.appears;
+import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
@@ -69,7 +70,7 @@ public class ToolDescription extends ToolTab<ToolDescription> {
     }
 
     public String getFullDescriptionMarkdown() {
-        context().find(editButtonFor(FULL_DESCRIPTION)).shouldBe(visible).click();
+        context().find(editButtonFor(FULL_DESCRIPTION)).shouldBe(visible, enabled).click();
         String description = context().find(byId("description-input")).shouldBe(visible).getText();
         context().find(byId("description-edit-cancel-button")).shouldBe(visible).click();
         return description;

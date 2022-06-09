@@ -120,6 +120,19 @@ public class DocumentTabAO extends AbstractPipelineTabAO<DocumentTabAO> {
         return this;
     }
 
+    public DocumentTabAO updateReadMeFile(String description) {
+        click(EDIT);
+        $(byXpath("//textarea")).shouldBe(visible).setValue(description);
+        saveAndCommitWithMessage("test: Change ReadMe file");
+        sleep(3, SECONDS);
+        return this;
+    }
+
+    public String[] getDescriptionHtml() {
+        return $(byClassName("markdown"))
+                .shouldBe(visible).innerHtml().split("\n");
+    }
+
     public DocumentTabAO saveAndCommitWithMessage(String message) {
         return openCommitDialog().typeInField(message).ok();
     }
