@@ -97,6 +97,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
     static class AutoscaleManagerCore {
 
         private static final String TARGET_AZ_PARAMETER_NAME = "CP_CAP_TARGET_AVAILABILITY_ZONE";
+        private static final String TARGET_NETWORK_INTERFACE_PARAMETER_NAME = "CP_CAP_TARGET_NETWORK_INTERFACE";
 
         private final PipelineRunManager pipelineRunManager;
         private final ParallelExecutorService executorService;
@@ -556,6 +557,7 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             instanceRequest.setInstance(instance);
             instanceRequest.setRequestedImage(run.getActualDockerImage());
             setAvailabilityZoneIfSpecified(instanceRequest, run);
+            setNetworkInterfaceIfSpecified(instanceRequest, run);
             return instanceRequest;
         }
 
@@ -563,6 +565,12 @@ public class AutoscaleManager extends AbstractSchedulingManager {
             run.getParameterValue(TARGET_AZ_PARAMETER_NAME)
                 .filter(StringUtils::isNotBlank)
                 .ifPresent(availabilityZone -> requiredInstance.getInstance().setAvailabilityZone(availabilityZone));
+        }
+
+        private void setNetworkInterfaceIfSpecified(final InstanceRequest requiredInstance, final PipelineRun run) {
+            run.getParameterValue(TARGET_NETWORK_INTERFACE_PARAMETER_NAME)
+                    .filter(StringUtils::isNotBlank)
+                    .ifPresent(ni -> requiredInstance.getInstance().setNetworkInterfaceId(ni));
         }
 
         private int getPoolNodeUpTasksCount() {

@@ -493,5 +493,12 @@
         "description": "Specifies the target availability zone for a run",
         "defaultValue": "",
         "passToWorkers": true
+    },
+    {
+        "name": "CP_CAP_TARGET_NETWORK_INTERFACE",
+        "type": "string",
+        "description": "Specifies the target ENI to be attached to the node for run",
+        "defaultValue": "",
+        "passToWorkers": false
     }
 ]
