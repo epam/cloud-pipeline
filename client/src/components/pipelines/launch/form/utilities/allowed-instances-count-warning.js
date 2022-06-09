@@ -129,7 +129,6 @@ export default class AllowedInstancesCountWarning extends React.Component {
           showIcon
           style={style}
         />
-        {`${this.userLimits}`}
       </div>
     );
   }
