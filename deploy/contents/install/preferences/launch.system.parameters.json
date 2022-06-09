@@ -495,7 +495,7 @@
         "passToWorkers": true
     },
     {
-        "name": "CP_CAP_TARGET_ENI",
+        "name": "CP_CAP_TARGET_NETWORK_INTERFACE",
         "type": "string",
         "description": "Specifies the target ENI to be attached to the node for run",
         "defaultValue": "",
