@@ -690,6 +690,16 @@ fi
 configureHyperThreading
 
 ######################################################
+# Setup DNS options
+######################################################
+# Check for ndots options
+if [ "$CP_DNS_NDOTS" ]; then
+    \cp /etc/resolv.conf /tmp/resolv.conf
+    sed -i "s/ndots:[[:digit:]]/ndots:$CP_DNS_NDOTS/g" /tmp/resolv.conf
+    \cp /tmp/resolv.conf /etc/resolv.conf
+fi
+
+######################################################
 # Install runtime dependencies
 ######################################################
 
