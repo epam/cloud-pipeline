@@ -113,6 +113,7 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
 
     public SelectLimitMountsPopupAO<PARENT_TYPE> selectStorage(final String storage) {
         while (!elements().get(TABLE).find(byText(storage)).isDisplayed()
+                && $(byTitle(NEXT_PAGE)).exists()
                 && $(byTitle(NEXT_PAGE)).has(not(cssClass("ant-pagination-disabled")))) {
             click(byTitle(NEXT_PAGE));
         }
