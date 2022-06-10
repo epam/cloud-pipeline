@@ -124,7 +124,7 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
         List<SelenideElement> storagesList = new ArrayList <SelenideElement>();
         while (true) {
             storagesList.addAll($(byClassName("ant-modal-body")).find(byClassName("ant-table-tbody")).findAll("tr"));
-            if ($(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
+            if (!$(byTitle(NEXT_PAGE)).exists() || $(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
                 break;
             }
             click(byTitle(NEXT_PAGE));
@@ -141,7 +141,7 @@ public class SelectLimitMountsPopupAO<PARENT_TYPE>
                     .map(e -> e.find(byXpath("./td[3]")))
                     .filter(e -> !e.text().equals("NFS"))
                     .count();
-            if ($(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
+            if (!$(byTitle(NEXT_PAGE)).exists() || $(byTitle(NEXT_PAGE)).has(cssClass("ant-pagination-disabled"))) {
                 break;
             }
             click(byTitle(NEXT_PAGE));
