@@ -561,7 +561,8 @@ public class DetachedConfigurationsTest
             .createConfiguration(configuration1611)
             .configurationWithin(configuration1611, configuration ->
                 configuration.selectPipeline(pipeline1, pipelineProfile1611)
-                    .click(SAVE)
+                        .ensure(byText("Estimated price per hour:"), visible)
+                        .click(SAVE)
                     .sleep(2, SECONDS)
             )
             .refresh()
