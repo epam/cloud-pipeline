@@ -65,10 +65,10 @@ class OverlayOutlines extends AnalysisModule {
         parameterName: 'Select image on which to display outlines',
         title: 'Image',
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('displayOnBlank') !== true
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('displayOnBlank') !== true
       }),
       new StringParameter({
         name: 'name',
@@ -97,7 +97,7 @@ class OverlayOutlines extends AnalysisModule {
         type: AnalysisTypes.file,
         value: name,
         name,
-        module: this
+        cpModule: this
       }];
     }
     return [];

@@ -74,7 +74,7 @@ class NamesAndTypes extends AnalysisModule {
           type: AnalysisTypes.file,
           value: 'input',
           name: 'input',
-          module: this,
+          cpModule: this,
           file: new HCSSourceFile(this, this.sourceFile)
         }
       ];

@@ -99,7 +99,7 @@ class IdentifySecondaryObjects extends AnalysisModule {
       outlineModeParameter({name: 'outlineMode', local: true, advanced: true}),
       ...thresholdConfiguration(
         false,
-        (module) => module.getParameterValue('method') !== methods.distanceN
+        (cpModule) => cpModule.getParameterValue('method') !== methods.distanceN
       ),
       new FloatParameter({
         name: 'regularizationFactor',
@@ -107,10 +107,10 @@ class IdentifySecondaryObjects extends AnalysisModule {
         parameterName: 'Regularization factor',
         value: 0.05,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) => {
-          return module.getParameterValue('method') === methods.propagation;
+        visibilityHandler: (cpModule) => {
+          return cpModule.getParameterValue('method') === methods.propagation;
         }
       }),
       new IntegerParameter({
@@ -118,10 +118,10 @@ class IdentifySecondaryObjects extends AnalysisModule {
         title: 'Number of pixels by which to expand the primary objects',
         parameterName: 'Number of pixels by which to expand the primary objects',
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) => {
-          return module.getParameterValue('method') === methods.distanceN;
+        visibilityHandler: (cpModule) => {
+          return cpModule.getParameterValue('method') === methods.distanceN;
         }
       }),
       new BooleanParameter({
@@ -140,21 +140,21 @@ class IdentifySecondaryObjects extends AnalysisModule {
         title: 'Discard the associated primary objects?',
         value: false,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('discardObjectsTouchingBorder') === true
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('discardObjectsTouchingBorder') === true
       }),
       new StringParameter({
         name: 'newName',
         title: 'Name the new primary objects',
         parameterName: 'Name the new primary objects',
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('discardObjectsTouchingBorder') === true &&
-          module.getParameterValue('discardPrimaryObjects') === true
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('discardObjectsTouchingBorder') === true &&
+          cpModule.getParameterValue('discardPrimaryObjects') === true
       })
     );
     this.overlayOutlinesModule = new OverlayOutlines(this.analysis, true);
@@ -179,7 +179,7 @@ class IdentifySecondaryObjects extends AnalysisModule {
         type: AnalysisTypes.object,
         value: name,
         name,
-        module: this
+        cpModule: this
       });
     }
     if (discardObjectsTouchingBorder && discardPrimaryObjects && newName) {
@@ -187,7 +187,7 @@ class IdentifySecondaryObjects extends AnalysisModule {
         type: AnalysisTypes.object,
         value: newName,
         name: newName,
-        module: this
+        cpModule: this
       });
     }
     return outputs;

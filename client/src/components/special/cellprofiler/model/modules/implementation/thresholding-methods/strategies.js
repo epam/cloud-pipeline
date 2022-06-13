@@ -43,8 +43,8 @@ const thresholdStrategiesParameters = [
     name: 'thresholdingMethod',
     parameterName: 'Thresholding method',
     title: 'Thresholding method',
-    values: (module) => {
-      if (module.getParameterValue('thresholdStrategy') === thresholdStrategies.adaptive) {
+    values: (cpModule) => {
+      if (cpModule.getParameterValue('thresholdStrategy') === thresholdStrategies.adaptive) {
         return [
           thresholdMethods.minimumCrossEntropy,
           thresholdMethods.otsu,
@@ -75,16 +75,16 @@ const thresholdGeneralParameters = [
     parameterName: 'Threshold correction factor',
     title: 'Threshold correction factor',
     /**
-     * @param {AnalysisModule} module
+     * @param {AnalysisModule} cpModule
      */
-    visibilityHandler: (module) => {
+    visibilityHandler: (cpModule) => {
       return [
         thresholdMethods.minimumCrossEntropy,
         thresholdMethods.otsu,
         thresholdMethods.robustBackground,
         thresholdMethods.measurement,
         thresholdMethods.sauvola
-      ].includes(module.getParameterValue('thresholdingMethod'));
+      ].includes(cpModule.getParameterValue('thresholdingMethod'));
     }
   }],
   [FloatRangeParameter, {
@@ -93,16 +93,16 @@ const thresholdGeneralParameters = [
     title: 'Lower and upper bounds on threshold',
     range: {min: 0, max: 1},
     /**
-     * @param {AnalysisModule} module
+     * @param {AnalysisModule} cpModule
      */
-    visibilityHandler: (module) => {
+    visibilityHandler: (cpModule) => {
       return [
         thresholdMethods.minimumCrossEntropy,
         thresholdMethods.otsu,
         thresholdMethods.robustBackground,
         thresholdMethods.measurement,
         thresholdMethods.sauvola
-      ].includes(module.getParameterValue('thresholdingMethod'));
+      ].includes(cpModule.getParameterValue('thresholdingMethod'));
     }
   }],
   [IntegerParameter, {
@@ -110,10 +110,10 @@ const thresholdGeneralParameters = [
     parameterName: 'Size of adaptive window',
     title: 'Size of adaptive window',
     /**
-     * @param {AnalysisModule} module
+     * @param {AnalysisModule} cpModule
      */
-    visibilityHandler: (module) => {
-      return module.getParameterValue('thresholdStrategy') === thresholdStrategies.adaptive;
+    visibilityHandler: (cpModule) => {
+      return cpModule.getParameterValue('thresholdStrategy') === thresholdStrategies.adaptive;
     }
   }],
   [BooleanParameter, {
@@ -122,13 +122,13 @@ const thresholdGeneralParameters = [
     title: 'Log transform before thresholding',
     value: false,
     /**
-     * @param {AnalysisModule} module
+     * @param {AnalysisModule} cpModule
      */
-    visibilityHandler: (module) => {
+    visibilityHandler: (cpModule) => {
       return [
         thresholdMethods.minimumCrossEntropy,
         thresholdMethods.otsu
-      ].includes(module.getParameterValue('thresholdingMethod'));
+      ].includes(cpModule.getParameterValue('thresholdingMethod'));
     }
   }]
 ];

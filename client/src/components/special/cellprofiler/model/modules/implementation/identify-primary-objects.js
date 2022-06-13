@@ -134,10 +134,10 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         ],
         value: clumpedObjectsMethods.intensity,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none
       }),
       new BooleanParameter({
         advanced: true,
@@ -146,11 +146,11 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Automatically calculate size of smoothing filter for declumping?',
         value: true,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
-          module.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
+          cpModule.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
       }),
       new FloatParameter({
         advanced: true,
@@ -159,10 +159,10 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Size of smoothing filter',
         value: 10,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('declumpingAutoSize') === false
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('declumpingAutoSize') === false
       }),
       new BooleanParameter({
         advanced: true,
@@ -171,11 +171,11 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Automatically calculate minimum allowed distance between local maxima?',
         value: true,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
-          module.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
+          cpModule.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
       }),
       new FloatParameter({
         advanced: true,
@@ -184,10 +184,10 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Suppress local maxima that are closer than this minimum allowed distance',
         value: 7,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('declumpingAutoMinDistance') === false
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('declumpingAutoMinDistance') === false
       }),
       new BooleanParameter({
         advanced: true,
@@ -196,11 +196,11 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Speed up by using lower-resolution image to find local maxima?',
         value: true,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
-          module.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
+          cpModule.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
       }),
       new BooleanParameter({
         advanced: true,
@@ -209,11 +209,11 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Display accepted local maxima?',
         value: false,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
-          module.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('clumpedObjectsMethod') !== clumpedObjectsMethods.none &&
+          cpModule.getParameterValue('clumpedObjectsDrawMethod') !== clumpedObjectsMethods.none
       }),
       new ColorParameter({
         advanced: true,
@@ -222,10 +222,10 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Select maxima color',
         value: colorList[0] || '#0000FF',
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('displayLocalMaxima') === true
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('displayLocalMaxima') === true
       }),
       new FloatParameter({
         advanced: true,
@@ -234,10 +234,10 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Select maxima size',
         value: 1,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('displayLocalMaxima') === true
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('displayLocalMaxima') === true
       }),
       new ListParameter({
         advanced: true,
@@ -269,10 +269,10 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         parameterName: 'Maximum number of objects',
         value: 500,
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) =>
-          module.getParameterValue('excessiveMethod') === excessiveHandlers.erase
+        visibilityHandler: (cpModule) =>
+          cpModule.getParameterValue('excessiveMethod') === excessiveHandlers.erase
       })
     );
     this.overlayOutlinesModule = new OverlayOutlines(this.analysis, true);
@@ -299,7 +299,7 @@ class IdentifyPrimaryObjects extends AnalysisModule {
         type: AnalysisTypes.object,
         value: name,
         name,
-        module: this
+        cpModule: this
       }];
     }
     return [];

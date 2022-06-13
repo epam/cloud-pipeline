@@ -33,14 +33,14 @@ class ChannelsParameter extends ModuleParameter {
   @computed
   get values () {
     if (
-      !this.module ||
-      !this.module.analysis ||
-      !this.module.analysis.hcsImageViewer ||
-      !this.module.analysis.hcsImageViewer.viewerState
+      !this.cpModule ||
+      !this.cpModule.analysis ||
+      !this.cpModule.analysis.hcsImageViewer ||
+      !this.cpModule.analysis.hcsImageViewer.viewerState
     ) {
       return [];
     }
-    const {channels = []} = this.module.analysis.hcsImageViewer.viewerState;
+    const {channels = []} = this.cpModule.analysis.hcsImageViewer.viewerState;
     return channels.map((channel, idx) => ({
       key: channel,
       value: idx + 1,

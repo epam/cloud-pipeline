@@ -25,12 +25,12 @@ import styles from './cell-profiler.css';
 class CellProfilerModule extends React.Component {
   renderHeader () {
     const {
-      module,
+      cpModule,
       onExpandedChange,
       movable,
       removable
     } = this.props;
-    if (!module) {
+    if (!cpModule) {
       return null;
     }
     const prevent = (e) => {
@@ -40,22 +40,22 @@ class CellProfilerModule extends React.Component {
     };
     const moveUp = (e) => {
       prevent(e);
-      module.moveUp();
+      cpModule.moveUp();
     };
     const moveDown = (e) => {
       prevent(e);
-      module.moveDown();
+      cpModule.moveDown();
     };
     const remove = (e) => {
       prevent(e);
-      module.remove();
+      cpModule.remove();
     };
     return (
       <div
         className={
           classNames(
-            styles.cellProfilerModuleHeader,
-            'cell-profiler-module-header'
+            styles.cellProfilerCpModuleHeader,
+            'cell-profiler-cpModule-header'
           )
         }
         onClick={onExpandedChange}
@@ -65,19 +65,19 @@ class CellProfilerModule extends React.Component {
           className={styles.expandIndicator}
         />
         <b className={styles.title}>
-          {module.displayName}
+          {cpModule.displayName}
           {
-            module.hasExecutionResults && (
+            cpModule.hasExecutionResults && (
               <Icon type="file" />
             )
           }
         </b>
         {
-          !module.hidden && movable && (
+          !cpModule.hidden && movable && (
             <Button
               className={styles.action}
               size="small"
-              disabled={module.isFirst}
+              disabled={cpModule.isFirst}
               onClick={moveUp}
             >
               <Icon
@@ -87,11 +87,11 @@ class CellProfilerModule extends React.Component {
           )
         }
         {
-          !module.hidden && movable && (
+          !cpModule.hidden && movable && (
             <Button
               className={styles.action}
               size="small"
-              disabled={module.isLast}
+              disabled={cpModule.isLast}
               onClick={moveDown}
             >
               <Icon
@@ -101,7 +101,7 @@ class CellProfilerModule extends React.Component {
           )
         }
         {
-          !module.hidden && removable && (
+          !cpModule.hidden && removable && (
             <Button
               className={styles.action}
               size="small"
@@ -120,19 +120,19 @@ class CellProfilerModule extends React.Component {
 
   render () {
     const {
-      module,
+      cpModule,
       expanded
     } = this.props;
-    if (!module) {
+    if (!cpModule) {
       return null;
     }
-    const params = module.getAllVisibleParameters();
+    const params = cpModule.getAllVisibleParameters();
     return (
       <div
         className={
           classNames(
-            styles.cellProfilerModule,
-            'cell-profiler-module',
+            styles.cellProfilerCpModule,
+            'cell-profiler-cpModule',
             {
               expanded,
               [styles.expanded]: expanded
@@ -146,7 +146,7 @@ class CellProfilerModule extends React.Component {
         {
           expanded && (
             <div
-              className={styles.cellProfilerModuleContent}
+              className={styles.cellProfilerCpModuleContent}
             >
               {
                 params.map((parameter) => (
@@ -165,7 +165,7 @@ class CellProfilerModule extends React.Component {
 }
 
 CellProfilerModule.propTypes = {
-  module: PropTypes.object,
+  cpModule: PropTypes.object,
   expanded: PropTypes.bool,
   onExpandedChange: PropTypes.func,
   removable: PropTypes.bool,

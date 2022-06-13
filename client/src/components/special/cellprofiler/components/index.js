@@ -35,9 +35,9 @@ class CellProfiler extends React.Component {
     const {analysis} = this.props;
     const handleVisibility = (visible) => this.setState({addModuleSelectorVisible: visible});
     const onSelect = ({key}) => {
-      const module = allModules.find((module) => module.identifier === key);
+      const cpModule = allModules.find((cpModule) => cpModule.identifier === key);
       if (analysis) {
-        analysis.add(module)
+        analysis.add(cpModule)
           .then((newModule) => {
             this.toggleExpanded(newModule);
           });
@@ -52,10 +52,10 @@ class CellProfiler extends React.Component {
         >
           {
             allModules
-              .filter((module) => !module.predefined)
-              .map((module) => (
-                <MenuItem key={module.identifier}>
-                  {module.moduleTitle}
+              .filter((cpModule) => !cpModule.predefined)
+              .map((cpModule) => (
+                <MenuItem key={cpModule.identifier}>
+                  {cpModule.moduleTitle}
                 </MenuItem>
               ))
           }
@@ -73,26 +73,26 @@ class CellProfiler extends React.Component {
           disabled={!analysis.ready || analysis.pending || analysis.analysing}
         >
           <Icon type="plus" />
-          <span>Add module</span>
+          <span>Add cpModule</span>
         </Button>
       </Dropdown>
     );
   };
 
-  getModuleExpanded = (module) => {
+  getModuleExpanded = (cpModule) => {
     const {expanded = []} = this.state;
-    return expanded.includes(module.id);
+    return expanded.includes(cpModule.id);
   }
 
-  toggleExpanded = (module) => {
+  toggleExpanded = (cpModule) => {
     const {expandSingle} = this.props;
     const {expanded = []} = this.state;
-    if (expanded.includes(module.id)) {
-      this.setState({expanded: expanded.filter(o => o !== module.id)});
+    if (expanded.includes(cpModule.id)) {
+      this.setState({expanded: expanded.filter(o => o !== cpModule.id)});
     } else if (expandSingle) {
-      this.setState({expanded: [module.id]});
+      this.setState({expanded: [cpModule.id]});
     } else {
-      this.setState({expanded: [...expanded, module.id]});
+      this.setState({expanded: [...expanded, cpModule.id]});
     }
   };
 
@@ -151,19 +151,19 @@ class CellProfiler extends React.Component {
           className={styles.cellProfilerModules}
         >
           <CellProfilerModule
-            module={analysis.namesAndTypes}
+            cpModule={analysis.namesAndTypes}
             expanded={this.getModuleExpanded(analysis.namesAndTypes)}
             onExpandedChange={() => this.toggleExpanded(analysis.namesAndTypes)}
             movable={false}
             removable={false}
           />
           {
-            (analysis.modules || []).filter(module => !module.hidden).map((module) => (
+            (analysis.modules || []).filter(cpModule => !cpModule.hidden).map((cpModule) => (
               <CellProfilerModule
-                key={module.displayName}
-                module={module}
-                expanded={this.getModuleExpanded(module)}
-                onExpandedChange={() => this.toggleExpanded(module)}
+                key={cpModule.displayName}
+                cpModule={cpModule}
+                expanded={this.getModuleExpanded(cpModule)}
+                onExpandedChange={() => this.toggleExpanded(cpModule)}
               />
             ))
           }

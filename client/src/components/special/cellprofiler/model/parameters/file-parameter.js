@@ -32,20 +32,20 @@ class FileParameter extends ModuleParameter {
 
   @computed
   get values () {
-    if (!this.module || !this.module.analysis) {
+    if (!this.cpModule || !this.cpModule.analysis) {
       return [];
     }
-    const idx = this.module.analysis.modules.indexOf(this.module);
+    const idx = this.cpModule.analysis.modules.indexOf(this.cpModule);
     return [
-      this.module.analysis.namesAndTypes,
-      ...this.module.analysis.modules.slice(0, idx)
+      this.cpModule.analysis.namesAndTypes,
+      ...this.cpModule.analysis.modules.slice(0, idx)
     ]
-      .filter((module) => !module.hidden)
-      .reduce((outputs, module) => ([...outputs, ...module.outputs]), [])
+      .filter((cpModule) => !cpModule.hidden)
+      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
       .filter((output) => output.type === AnalysisTypes.file)
       .map((output) => ({
         value: output.value,
-        id: `${output.module.displayName}.${output.name}`,
+        id: `${output.cpModule.displayName}.${output.name}`,
         key: output.name,
         title: output.name
       }));

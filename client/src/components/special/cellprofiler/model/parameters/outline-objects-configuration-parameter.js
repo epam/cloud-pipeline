@@ -53,18 +53,18 @@ class OutlineConfigRenderer extends React.Component {
     }
     return parameterValue.value;
   }
-  get module () {
+  get cpModule () {
     if (!this.parameter) {
       return undefined;
     }
-    return this.parameter.module;
+    return this.parameter.cpModule;
   }
   @computed
   get displayMode () {
-    if (!this.module) {
+    if (!this.cpModule) {
       return displayModes.color;
     }
-    return this.module.getParameterValue('displayMode') || displayModes.color;
+    return this.cpModule.getParameterValue('displayMode') || displayModes.color;
   }
   @computed
   get objectsToOutline () {
@@ -75,7 +75,7 @@ class OutlineConfigRenderer extends React.Component {
   }
   @computed
   get objects () {
-    return getObjectsForModule(this.module);
+    return getObjectsForModule(this.cpModule);
   }
   setValue = (newValue) => {
     const {parameterValue} = this.props;
@@ -200,9 +200,9 @@ class OutlineObjectsConfigurationParameter extends ModuleParameter {
       title: 'Objects to display',
       type: AnalysisTypes.custom,
       valueParser: value => value,
-      valueFormatter: (value, module) => {
-        const grayScale = module &&
-          module.getParameterValue('displayMode') === displayModes.grayscale;
+      valueFormatter: (value, cpModule) => {
+        const grayScale = cpModule &&
+          cpModule.getParameterValue('displayMode') === displayModes.grayscale;
         return (value || []).map(({name, color}) => grayScale ? name : `${name}|${color}`);
       },
       renderer: (moduleParameterValue, className, style) => (

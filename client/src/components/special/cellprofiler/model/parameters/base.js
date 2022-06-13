@@ -70,7 +70,7 @@ class ModuleParameter {
   /**
    * @type {AnalysisModule}
    */
-  module;
+  cpModule;
   required;
   advanced;
   visibilityHandler;
@@ -121,7 +121,7 @@ class ModuleParameter {
   @computed
   get values () {
     if (typeof this._values === 'function') {
-      return (this._values(this.module) || []).map(mapListItem);
+      return (this._values(this.cpModule) || []).map(mapListItem);
     }
     if (this._values !== undefined && this._values.length) {
       return this._values.map(mapListItem);
@@ -130,17 +130,17 @@ class ModuleParameter {
   }
   @computed
   get visible () {
-    if (this.name === 'advanced' && this.module) {
-      return this.module.parametersConfigurations.some(config => config.advanced);
+    if (this.name === 'advanced' && this.cpModule) {
+      return this.cpModule.parametersConfigurations.some(config => config.advanced);
     }
     if (this.advanced) {
-      const advancedValue = this.module ? this.module.getParameterValue('advanced') : undefined;
+      const advancedValue = this.cpModule ? this.cpModule.getParameterValue('advanced') : undefined;
       if (advancedValue === false) {
         return false;
       }
     }
     if (typeof this.visibilityHandler === 'function') {
-      return this.visibilityHandler(this.module);
+      return this.visibilityHandler(this.cpModule);
     }
     return true;
   }
@@ -188,7 +188,7 @@ class ModuleParameterValue {
       return {};
     }
     const {type, isRange, valueFormatter} = this.parameter;
-    const formattedValue = valueFormatter(this.value, this.parameter.module);
+    const formattedValue = valueFormatter(this.value, this.parameter.cpModule);
     if (isRange) {
       return {
         [this.parameter.parameterName]: (formattedValue || []).map(idx =>
@@ -206,22 +206,22 @@ class ModuleParameterValue {
     if (!this.parameter) {
       return;
     }
-    this.value = this.parameter.valueParser(value, this.parameter.module);
-    this.parameter.module.changed = true;
+    this.value = this.parameter.valueParser(value, this.parameter.cpModule);
+    this.parameter.cpModule.changed = true;
   }
 
   @action
   reportChanged = () => {
     if (
       !this.parameter ||
-      !this.parameter.module ||
-      this.parameter.module.predefined
+      !this.parameter.cpModule ||
+      this.parameter.cpModule.predefined
     ) {
       return;
     }
-    this.parameter.module.changed = true;
-    this.parameter.module.analysis.changed = true;
-    this.parameter.module.analysis.analysisRequested = true;
+    this.parameter.cpModule.changed = true;
+    this.parameter.cpModule.analysis.changed = true;
+    this.parameter.cpModule.analysis.analysisRequested = true;
   };
 }
 

@@ -59,7 +59,7 @@ class AnalysisModuleOutput {
   @observable type = AnalysisTypes.void;
   @observable value;
   @observable name;
-  @observable module;
+  @observable cpModule;
 }
 
 /**
@@ -68,7 +68,7 @@ class AnalysisModuleOutput {
  * @returns {AnalysisModule[]}
  */
 function collapseModules (modules = []) {
-  return modules.filter(module => !module.hidden);
+  return modules.filter(cpModule => !cpModule.hidden);
 }
 
 /**
@@ -78,7 +78,7 @@ function collapseModules (modules = []) {
  */
 function expandModules (modules = []) {
   return modules.reduce(
-    (result, module) => ([...result, module, ...module.hiddenModules]),
+    (result, cpModule) => ([...result, cpModule, ...cpModule.hiddenModules]),
     []
   );
 }
@@ -129,7 +129,7 @@ class AnalysisModule {
     this.title = this.constructor.moduleTitle;
     this.initialize();
     this.parametersConfigurations.forEach((configuration) => {
-      configuration.module = this;
+      configuration.cpModule = this;
     });
     this.parameters = this.parametersConfigurations
       .map((configuration) => configuration.createModuleParameterValue());
@@ -201,12 +201,12 @@ class AnalysisModule {
   @computed
   get isFirst () {
     const order = this.order;
-    return this.modules.slice(0, order).filter(module => !module.hidden).length === 0;
+    return this.modules.slice(0, order).filter(cpModule => !cpModule.hidden).length === 0;
   }
   @computed
   get isLast () {
     const order = this.order;
-    return this.modules.slice(order + 1).filter(module => !module.hidden).length === 0;
+    return this.modules.slice(order + 1).filter(cpModule => !cpModule.hidden).length === 0;
   }
   @action
   moveUp () {
@@ -276,10 +276,10 @@ class AnalysisModule {
     this.executionResults = [];
   }
 
-  setExecutionResults = async (module) => {
+  setExecutionResults = async (cpModule) => {
     this.clearExecutionResults();
-    if (module) {
-      const {outputs = []} = module;
+    if (cpModule) {
+      const {outputs = []} = cpModule;
       this.executionResults = await Promise.all(outputs.slice().map(getOutputFileAccessInfo));
     }
   };

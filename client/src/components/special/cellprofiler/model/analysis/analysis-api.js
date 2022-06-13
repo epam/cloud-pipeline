@@ -83,7 +83,7 @@ class AnalysisApi {
         credentials: 'include',
         mode: 'cors',
         headers: {
-          ...(contentType ? {'Content-type': contentType} : {})
+          ...(contentType ? {'Content-Type': contentType} : {})
         }
       }
     );
@@ -139,11 +139,11 @@ class AnalysisApi {
     body: files
   });
 
-  createModule = (pipelineId, module) => this.apiCall({
+  createModule = (pipelineId, cpModule) => this.apiCall({
     uri: 'hcs/modules',
     query: {pipelineId},
     httpMethod: 'POST',
-    body: module
+    body: cpModule
   });
 
   removeModule = (pipelineId, moduleId) => this.apiCall({
@@ -166,11 +166,11 @@ class AnalysisApi {
     const pipeline = await this.getPipeline(pipelineId);
     const {modules = []} = pipeline;
     const modulesStatuses = await Promise.all(
-      modules.map((module, idx) => this.getModuleStatus(pipelineId, idx + 1))
+      modules.map((cpModule, idx) => this.getModuleStatus(pipelineId, idx + 1))
     );
     return {
       pipeline,
-      statuses: modulesStatuses.map((status, idx) => ({module: modules[idx], status}))
+      statuses: modulesStatuses.map((status, idx) => ({cpModule: modules[idx], status}))
     };
   }
 }

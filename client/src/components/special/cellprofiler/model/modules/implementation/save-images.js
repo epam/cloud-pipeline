@@ -53,7 +53,7 @@ class SaveImages extends AnalysisModule {
         type: AnalysisTypes.object,
         value: `${name}_saved`,
         name: `${name}_saved`,
-        module: this
+        cpModule: this
       }];
     }
     return [];

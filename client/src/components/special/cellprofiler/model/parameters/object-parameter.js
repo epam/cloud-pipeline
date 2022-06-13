@@ -18,11 +18,11 @@ import {computed} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
-function getObjectsForModule (module) {
-  const idx = module.analysis.modules.indexOf(module);
-  return module.analysis.modules.slice(0, idx)
-    .filter((module) => !module.hidden)
-    .reduce((outputs, module) => ([...outputs, ...module.outputs]), [])
+function getObjectsForModule (cpModule) {
+  const idx = cpModule.analysis.modules.indexOf(cpModule);
+  return cpModule.analysis.modules.slice(0, idx)
+    .filter((cpModule) => !cpModule.hidden)
+    .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
     .filter((output) => output.type === AnalysisTypes.object)
     .map((output) => output.value);
 }
@@ -41,7 +41,7 @@ class ObjectParameter extends ModuleParameter {
 
   @computed
   get values () {
-    return getObjectsForModule(this.module).map((object) => ({
+    return getObjectsForModule(this.cpModule).map((object) => ({
       value: object,
       id: object,
       key: object,

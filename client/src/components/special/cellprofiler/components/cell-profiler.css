@@ -44,11 +44,11 @@
   overflow: auto;
 }
 
-.cell-profiler-modules .cell-profiler-module:last-child {
+.cell-profiler-modules .cell-profiler-cp-module:last-child {
   border-bottom: none;
 }
 
-.cell-profiler-module-header {
+.cell-profiler-cp-module-header {
   width: 100%;
   padding: 5px;
   cursor: pointer;
@@ -56,23 +56,23 @@
   align-items: center;
 }
 
-.cell-profiler-module-header .title {
+.cell-profiler-cp-module-header .title {
   margin-right: auto;
 }
 
-.cell-profiler-module-header .action {
+.cell-profiler-cp-module-header .action {
   line-height: 1;
 }
 
-.cell-profiler-module-header .action:not(:last-child) {
+.cell-profiler-cp-module-header .action:not(:last-child) {
   margin-right: 5px;
 }
 
-.cell-profiler-module-content {
+.cell-profiler-cp-module-content {
   padding: 5px;
 }
 
-.cell-profiler-module.expanded:not(:last-child) {
+.cell-profiler-cp-module.expanded:not(:last-child) {
   margin-bottom: 10px;
 }
 

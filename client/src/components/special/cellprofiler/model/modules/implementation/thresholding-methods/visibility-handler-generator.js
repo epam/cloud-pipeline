@@ -20,7 +20,7 @@
  * @returns {(function(AnalysisModule))}
  */
 export default function visibilityHandlerGenerator (type, advancedHandler) {
-  return (module) =>
-    module.getParameterValue('thresholdingMethod') === type &&
-    (typeof advancedHandler !== 'function' || advancedHandler(module));
+  return (cpModule) =>
+    cpModule.getParameterValue('thresholdingMethod') === type &&
+    (typeof advancedHandler !== 'function' || advancedHandler(cpModule));
 };

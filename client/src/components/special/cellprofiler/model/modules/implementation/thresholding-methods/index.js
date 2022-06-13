@@ -26,7 +26,7 @@ import measurement from './measurement';
 import manual from './manual';
 
 function joinVisibilityCriteria (...criteria) {
-  return (module) => !(criteria.find(cr => typeof cr === 'function' ? !cr(module) : false));
+  return (cpModule) => !(criteria.find(cr => typeof cr === 'function' ? !cr(cpModule) : false));
 }
 
 /**
@@ -51,7 +51,7 @@ function build (configuration, ...predefinedCriteria) {
 const otsuParameters = build(otsu);
 const manualParameters = build(
   manual,
-  (module) => module.getParameterValue('thresholdStrategy') === thresholdStrategies.global
+  (cpModule) => cpModule.getParameterValue('thresholdStrategy') === thresholdStrategies.global
 );
 const robustBackgroundParameters = build(robustBackground);
 const measurementParameters = build(measurement);

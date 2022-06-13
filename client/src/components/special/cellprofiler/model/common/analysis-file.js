@@ -20,9 +20,9 @@ class AnalysisFile {
   /**
    * @type {AnalysisModule}
    */
-  module;
-  constructor (module, path, name = (path || 'file').split(/[/\\]/).pop()) {
-    this.module = module;
+  cpModule;
+  constructor (cpModule, path, name = (path || 'file').split(/[/\\]/).pop()) {
+    this.cpModule = cpModule;
     this.path = path;
     this.name = name;
   }
@@ -88,10 +88,10 @@ class HCSSourceFile extends AnalysisFile {
   }
   /**
    *
-   * @param {AnalysisModule} module
+   * @param {AnalysisModule} cpModule
    * @param {HCSSourceFileOptions} options
    */
-  constructor (module, options) {
+  constructor (cpModule, options) {
     const {
       sourceDirectory,
       well,
@@ -99,7 +99,7 @@ class HCSSourceFile extends AnalysisFile {
       z = 0,
       time = 0
     } = options;
-    super(module, sourceDirectory, image);
+    super(cpModule, sourceDirectory, image);
     this.sourceDirectory = sourceDirectory;
     this.x = well ? well.x : undefined;
     this.y = well ? well.y : undefined;

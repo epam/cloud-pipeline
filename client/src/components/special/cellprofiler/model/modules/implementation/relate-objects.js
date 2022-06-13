@@ -74,10 +74,10 @@ class RelateObjects extends AnalysisModule {
         title: 'Name the objects',
         parameterName: 'Name the output object',
         /**
-         * @param {AnalysisModule} module
+         * @param {AnalysisModule} cpModule
          */
-        visibilityHandler: (module) => {
-          return module.getParameterValue('saveAsNew') === true;
+        visibilityHandler: (cpModule) => {
+          return cpModule.getParameterValue('saveAsNew') === true;
         }
       })
     );
@@ -91,7 +91,7 @@ class RelateObjects extends AnalysisModule {
         type: AnalysisTypes.object,
         value: name,
         name,
-        module: this
+        cpModule: this
       }];
     }
     return [];

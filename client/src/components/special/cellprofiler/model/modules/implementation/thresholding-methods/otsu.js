@@ -47,7 +47,7 @@ export default [
       'Assign pixels in the middle intensity class to the foreground or the background?',
     visibilityHandler: visibilityHandlerGenerator(
       thresholdMethods.otsu,
-      (module) => module.getParameterValue('otsuMethodType') === otsuMethodTypes.threeClass
+      (cpModule) => cpModule.getParameterValue('otsuMethodType') === otsuMethodTypes.threeClass
     ),
     values: [
       assignPixelsTo.background,

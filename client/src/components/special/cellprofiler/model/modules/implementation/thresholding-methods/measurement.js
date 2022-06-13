@@ -39,10 +39,10 @@ export default [
       name: 'measurementMethod',
       title: 'Measurement to threshold with',
       parameterName: 'Select the measurement to threshold with',
-      values: (module) => {
+      values: (cpModule) => {
         let inputName = 'Input';
-        if (module && module.analysis && module.analysis.namesAndTypes) {
-          const outputs = module.analysis.namesAndTypes.outputs || [];
+        if (cpModule && cpModule.analysis && cpModule.analysis.namesAndTypes) {
+          const outputs = cpModule.analysis.namesAndTypes.outputs || [];
           if (outputs.length) {
             inputName = outputs[0].value;
           }
