@@ -42,7 +42,6 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -61,8 +60,7 @@ public class RunLimitsService {
     private static final String USER_LIMIT_KEY = "<user-contextual-limit>";
     private static final String USER_GLOBAL_LIMIT_KEY = "<user-global-limit>";
     private static final String PLATFORM_LIMIT_KEY = "<platform-limit>";
-    private static final List<TaskStatus> ACTIVE_RUN_STATUSES = new ArrayList<>(Arrays.asList(TaskStatus.RESUMING,
-                                                                                              TaskStatus.RUNNING));
+    private static final List<TaskStatus> ACTIVE_RUN_STATUSES = Arrays.asList(TaskStatus.RESUMING, TaskStatus.RUNNING);
     private final PipelineRunManager runManager;
     private final RoleManager roleManager;
     private final ContextualPreferenceManager contextualPreferenceManager;
@@ -78,7 +76,7 @@ public class RunLimitsService {
         final Map<String, Integer> currentLimits = getCurrentUserLaunchLimits(user, false);
         currentLimits.entrySet().stream()
             .findFirst()
-            .filter(e -> exceedsUserLimit("", newInstancesCount, e.getValue()))
+            .filter(e -> exceedsUserLimit(user.getUserName(), newInstancesCount, e.getValue()))
             .ifPresent(e -> {
                 final String userName = user.getUserName();
                 final String limitName = e.getKey();
