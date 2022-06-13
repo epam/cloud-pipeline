@@ -44,7 +44,10 @@ function useHCSImageState() {
     dispatch({ type: actions.setImage, ...options });
   }, [dispatch]);
   const setMesh = useCallback((mesh) => {
-    dispatch({ type: actions.setImage, mesh });
+    dispatch({ type: actions.setMesh, mesh });
+  }, [dispatch]);
+  const setOverlayImages = useCallback((overlayImages = []) => {
+    dispatch({ type: actions.setOverlayImages, overlayImages });
   }, [dispatch]);
   const setImageViewportLoaded = useCallback((options) => {
     dispatch({ type: actions.setImageViewportLoaded, ...options });
@@ -83,6 +86,7 @@ function useHCSImageState() {
     setGlobalPosition,
     setLockChannels,
     setMesh,
+    setOverlayImages,
   }), [
     setData,
     setImage,
@@ -95,6 +99,7 @@ function useHCSImageState() {
     setGlobalPosition,
     setLockChannels,
     setMesh,
+    setOverlayImages,
   ]);
   return {
     callbacks,

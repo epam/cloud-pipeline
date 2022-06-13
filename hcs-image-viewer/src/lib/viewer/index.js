@@ -229,6 +229,17 @@ class Viewer {
     });
   }
 
+  setOverlayImages(overlayImages = []) {
+    return new Promise((resolve, reject) => {
+      this.waitForInitialization()
+        .then(() => {
+          this.getCallback('setOverlayImages')(overlayImages);
+          resolve();
+        })
+        .catch(reject);
+    });
+  }
+
   setChannelProperties(channel, properties) {
     return new Promise((resolve, reject) => {
       this.waitForInitialization()

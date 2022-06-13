@@ -24,6 +24,7 @@ import {createObjectStorageWrapper} from '../../../../utils/object-storage';
  * @property {number|string} storageId
  * @property {ObjectStorage} objectStorage
  * @property {string} directory
+ * @property {string} sourceDirectory
  * @property {number} width
  * @property {number} height
  * @property {Object} timeSeriesDetails
@@ -38,6 +39,7 @@ class HCSInfo {
       storageId,
       objectStorage,
       directory,
+      sourceDirectory,
       width,
       height,
       timeSeriesDetails = {}
@@ -64,6 +66,11 @@ class HCSInfo {
      */
     this.directory = directory;
     /**
+     * Source directory
+     * @type {string}
+     */
+    this.sourceDirectory = sourceDirectory;
+    /**
      * Plate width
      * @type {number}
      */
@@ -83,6 +90,7 @@ class HCSInfo {
         storageId,
         objectStorage,
         sequence,
+        sourceDirectory,
         directory: (directory || '')
           .split(objectStorage ? objectStorage.delimiter : '/')
           .concat(sequence)
@@ -131,6 +139,7 @@ class HCSInfo {
           previewDir: previewDirectory
         } = hcsPathInfo;
         const {
+          sourceDir: sourceDirectory,
           plate_height: height,
           plate_width: width,
           time_series_details: timeSeriesDetails = {}
@@ -139,6 +148,7 @@ class HCSInfo {
           new HCSInfo({
             storageId,
             directory: previewDirectory,
+            sourceDirectory,
             width,
             height,
             objectStorage,

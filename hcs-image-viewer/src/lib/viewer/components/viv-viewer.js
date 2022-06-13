@@ -24,7 +24,7 @@ import {
   DETAIL_VIEW_ID,
   getDefaultInitialViewState,
 } from '@hms-dbmi/viv';
-import DetailViewWithMesh from './collage-mesh/view';
+import DetailViewWithMesh from './view';
 
 function VivViewer(props) {
   const {
@@ -54,6 +54,7 @@ function VivViewer(props) {
     deckProps,
     mesh,
     onCellClick,
+    overlayImages,
   } = props;
   const detailViewState = viewStatesProp?.find((v) => v.id === DETAIL_VIEW_ID);
   const baseViewState = useMemo(
@@ -85,6 +86,7 @@ function VivViewer(props) {
     onCellHover: onCellHovered,
     hoveredCell,
     onCellClick,
+    overlayImages,
   });
   const layerConfig = {
     loader,

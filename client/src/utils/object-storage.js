@@ -72,6 +72,7 @@ class ObjectStorage {
       id,
       type,
       path,
+      pathMask,
       region,
       delimiter = '/'
     } = options;
@@ -79,6 +80,7 @@ class ObjectStorage {
     this.type = type;
     this.region = region;
     this.path = path;
+    this.pathMask = pathMask;
     this.delimiter = delimiter;
     this.s3Storage = undefined;
   }
@@ -135,12 +137,9 @@ function findStorageByIdentifierFn (storageId) {
 }
 
 function findStorageByPathFn (storagePath) {
-  const pathMask = storagePath && storagePath.endsWith('/')
-    ? storagePath.slice(0, -1)
-    : (storagePath || '');
-  const pathMaskRegExp = new RegExp(`^${pathMask}$`, 'i');
   return function predicate (storage) {
-    return pathMaskRegExp.test(storage.pathMask);
+    const storageMask = new RegExp(`^${storage.pathMask}(/|$)`, 'i');
+    return storageMask.test(storagePath);
   };
 }
 

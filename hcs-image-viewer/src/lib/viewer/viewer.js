@@ -79,6 +79,7 @@ function HCSImageViewer(
   } = useHCSImageState();
   const {
     mesh,
+    overlayImages,
   } = state;
   const containerRef = useRef();
   const { sizeRef } = useElementSize(containerRef);
@@ -167,6 +168,7 @@ function HCSImageViewer(
         readyForRendering && (
           <VivViewer
             mesh={mesh}
+            overlayImages={overlayImages}
             contrastLimits={contrastLimits}
             colors={colors}
             channelsVisible={channelsVisibility}

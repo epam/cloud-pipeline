@@ -362,6 +362,19 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get hcsAnalysisConfiguration () {
+    const value = this.getPreferenceValue('ui.hcs.analysis.configuration');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('ui.hcs.analysis.configuration:', e);
+      }
+    }
+    return {};
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }

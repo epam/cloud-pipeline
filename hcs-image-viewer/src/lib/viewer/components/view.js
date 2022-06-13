@@ -15,14 +15,16 @@
  */
 
 import { DetailView } from '@hms-dbmi/viv';
-import CollageMeshLayer from './layer';
-import { getLayerId } from '../get-layer-id';
+import CollageMeshLayer from './collage-mesh/layer';
+import ImageOverlayLayer from './image/layer';
+import { getLayerId } from './get-layer-id';
 
 class DetailViewWithMesh extends DetailView {
   constructor(props) {
     super(props);
     const {
       mesh,
+      overlayImages = [],
       onCellHover,
       hoveredCell,
       onCellClick,
@@ -31,6 +33,7 @@ class DetailViewWithMesh extends DetailView {
     this.hoveredCell = hoveredCell;
     this.onCellClick = onCellClick;
     this.mesh = mesh;
+    this.overlayImages = overlayImages;
   }
 
   getLayers({ viewStates, props }) {
@@ -38,6 +41,34 @@ class DetailViewWithMesh extends DetailView {
     const { loader } = props;
     const { id, height, width } = this;
     const layerViewState = viewStates[id];
+    if (this.overlayImages) {
+      this.overlayImages.forEach((image) => {
+        let url;
+        let ignoreColor;
+        let ignoreColorAccuracy;
+        if (typeof image === 'string') {
+          url = image;
+          ignoreColor = true;
+          ignoreColorAccuracy = 0.1;
+        } else if (typeof image === 'object' && image.url) {
+          url = image.url;
+          ignoreColor = !!image.ignoreColor;
+          ignoreColorAccuracy = image.ignoreColorAccuracy || 0.1;
+        }
+        if (url) {
+          detailViewLayers.push(
+            new ImageOverlayLayer({
+              loader,
+              url,
+              ignoreColor,
+              ignoreColorAccuracy,
+              id: `image-${getLayerId(id)}`,
+              viewState: { ...layerViewState, height, width },
+            }),
+          );
+        }
+      });
+    }
     if (this.mesh) {
       detailViewLayers.push(
         new CollageMeshLayer(

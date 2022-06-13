@@ -24,6 +24,7 @@ export function setSourceInitializing(state) {
     sourceError: undefined,
     sourcePending: true,
     imagePending: false,
+    overlayImages: [],
   };
 }
 
@@ -44,6 +45,7 @@ export function setSourceError(state, action) {
     sourceError: error,
     sourcePending: false,
     sourceCallback: undefined,
+    overlayImages: [],
   };
 }
 
@@ -67,6 +69,7 @@ export function setSource(state, action) {
     sourceError: undefined,
     sourcePending: false,
     sourceCallback: undefined,
+    overlayImages: [],
   };
 }
 
@@ -79,6 +82,7 @@ export function setImage(state, action) {
     imageTimePosition = 0,
     imageZPosition = 0,
     mesh,
+    overlayImages = [],
   } = action;
   const { metadata = [] } = state;
   let metadataItem;
@@ -102,6 +106,7 @@ export function setImage(state, action) {
       imageTimePosition,
       imageZPosition,
       mesh,
+      overlayImages,
     };
   }
   return state;
@@ -110,6 +115,11 @@ export function setImage(state, action) {
 export function setMesh(state, action) {
   const { mesh } = action;
   return { ...state, mesh };
+}
+
+export function setOverlayImages(state, action) {
+  const { overlayImages = [] } = action;
+  return { ...state, overlayImages };
 }
 
 export function setImageViewportLoaded(state) {

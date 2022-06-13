@@ -3108,4 +3108,16 @@ export default `
   background-color: @color-green;
 }
 
+@THEME .cell-profiler-module {
+  color: @application-color;
+  background-color: @card-background-color;
+  border-bottom: 1px @card-border-color solid;
+}
+@THEME .cell-profiler-module.expanded .cell-profiler-module-header {
+  border-bottom: 1px @card-border-color solid;
+}
+@THEME .cell-profiler-module-header:hover {
+  background-color: darken(@card-background-color, 5%);
+}
+
 `;

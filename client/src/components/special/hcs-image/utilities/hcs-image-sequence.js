@@ -29,6 +29,7 @@ import HCSImageWell from './hcs-image-well';
  * @property {string|number} storageId
  * @property {string} sequence
  * @property {string} directory
+ * @property {string} sourceDirectory
  * @property {ObjectStorage} objectStorage
  * @property {string[]} timeSeries
  */
@@ -44,6 +45,7 @@ class HCSImageSequence {
       storageId,
       sequence,
       directory,
+      sourceDirectory,
       objectStorage,
       timeSeries = []
     } = options;
@@ -54,6 +56,7 @@ class HCSImageSequence {
     this.sequence = sequence;
     this.id = sequence;
     this.directory = directory;
+    this.sourceDirectory = sourceDirectory;
     /**
      * @type {ObjectStorage} object storage wrapper
      */
