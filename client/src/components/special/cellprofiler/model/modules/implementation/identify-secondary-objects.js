@@ -40,6 +40,9 @@ const methods = {
 };
 
 class IdentifySecondaryObjects extends AnalysisModule {
+  static get identifier () {
+    return 'IdentifySecondaryObjects';
+  }
   @observable overlayOutlinesModule;
   @observable saveImagesModule;
   @computed

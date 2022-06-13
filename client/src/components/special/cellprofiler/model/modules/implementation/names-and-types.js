@@ -24,6 +24,9 @@ import {
 
 class NamesAndTypes extends AnalysisModule {
   static predefined = true;
+  static get identifier () {
+    return 'NamesAndTypes';
+  }
   @computed
   get channel () {
     return this.getParameterValue('channel');

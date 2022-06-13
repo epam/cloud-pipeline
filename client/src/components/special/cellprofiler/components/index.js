@@ -44,6 +44,7 @@ class CellProfiler extends React.Component {
       }
       handleVisibility(false);
     };
+    console.log(allModules);
     const menu = (
       <div>
         <Menu
@@ -73,7 +74,7 @@ class CellProfiler extends React.Component {
           disabled={!analysis.ready || analysis.pending || analysis.analysing}
         >
           <Icon type="plus" />
-          <span>Add cpModule</span>
+          <span>Add module</span>
         </Button>
       </Dropdown>
     );

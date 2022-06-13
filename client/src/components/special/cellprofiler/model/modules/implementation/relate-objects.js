@@ -32,6 +32,9 @@ const childParentDistances = {
 };
 
 class RelateObjects extends AnalysisModule {
+  static get identifier () {
+    return 'RelateObjects';
+  }
   initialize () {
     super.initialize();
     this.registerParameters(

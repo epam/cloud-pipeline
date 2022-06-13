@@ -47,6 +47,9 @@ const outlineModeParameter = (options = {}) => new ListParameter({
 });
 
 class OverlayOutlines extends AnalysisModule {
+  static get identifier () {
+    return 'OverlayOutlines';
+  }
   @computed
   get objectsName () {
     return this.getParameterValue('name');

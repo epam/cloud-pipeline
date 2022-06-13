@@ -23,6 +23,9 @@ import {
 import {AnalysisTypes} from '../../common/analysis-types';
 
 class SaveImages extends AnalysisModule {
+  static get identifier () {
+    return 'SaveImages';
+  }
   initialize () {
     super.initialize();
     this.registerParameters(

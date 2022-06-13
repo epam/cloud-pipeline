@@ -51,6 +51,9 @@ const excessiveHandlers = {
 };
 
 class IdentifyPrimaryObjects extends AnalysisModule {
+  static get identifier () {
+    return 'IdentifyPrimaryObjects';
+  }
   @observable overlayOutlinesModule;
   @observable saveImagesModule;
   @computed

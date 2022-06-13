@@ -55,7 +55,7 @@ class CellProfilerModule extends React.Component {
         className={
           classNames(
             styles.cellProfilerCpModuleHeader,
-            'cell-profiler-cpModule-header'
+            'cell-profiler-module-header'
           )
         }
         onClick={onExpandedChange}
@@ -132,7 +132,7 @@ class CellProfilerModule extends React.Component {
         className={
           classNames(
             styles.cellProfilerCpModule,
-            'cell-profiler-cpModule',
+            'cell-profiler-module',
             {
               expanded,
               [styles.expanded]: expanded
