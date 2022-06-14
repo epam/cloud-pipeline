@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -121,6 +122,7 @@ public class ConfigurationRunner {
             .map(AnalysisConfiguration::getEntries)
             .flatMap(Collection::stream)
             .mapToInt(AbstractRunConfigurationEntry::getWorkerCount)
+            .filter(Objects::nonNull)
             .reduce(0, (sum, count) -> sum + count + 1);
         runLimitsService.checkRunLaunchLimits(configurationsNodes);
         return configurations.stream()
