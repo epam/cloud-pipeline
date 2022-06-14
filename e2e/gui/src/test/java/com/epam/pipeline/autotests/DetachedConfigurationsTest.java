@@ -609,8 +609,8 @@ public class DetachedConfigurationsTest
                                 .validateParameter(pathParameterName, pathParameterValue2)
                                 .ensure(PARAMETER_NAME, disabled);
                         configuration
-                                .ensure(estimatedPrice, visible)
-                                .click(SAVE);
+                                .click(SAVE)
+                                .ensureDisable(SAVE);
                     }
             );
     }
