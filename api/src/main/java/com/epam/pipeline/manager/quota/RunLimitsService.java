@@ -59,7 +59,6 @@ public class RunLimitsService {
 
     private static final String USER_LIMIT_KEY = "<user-contextual-limit>";
     private static final String USER_GLOBAL_LIMIT_KEY = "<user-global-limit>";
-    private static final String PLATFORM_LIMIT_KEY = "<platform-limit>";
     private static final List<TaskStatus> ACTIVE_RUN_STATUSES = Arrays.asList(TaskStatus.RESUMING, TaskStatus.RUNNING);
     private final PipelineRunManager runManager;
     private final RoleManager roleManager;
@@ -113,14 +112,8 @@ public class RunLimitsService {
             return returnLimitAsMap(userGlobalLimit, USER_GLOBAL_LIMIT_KEY);
         }
 
-        final Optional<Integer> platformGlobalLimit = getPlatformGlobalLimit();
-        if (requiresSingleLimitOnly(platformGlobalLimit, loadAll)) {
-            return returnLimitAsMap(platformGlobalLimit, PLATFORM_LIMIT_KEY);
-        }
-
         addLimitIfPresent(groupsLimits, userContextualLimit, USER_LIMIT_KEY);
         addLimitIfPresent(groupsLimits, userGlobalLimit, USER_GLOBAL_LIMIT_KEY);
-        addLimitIfPresent(groupsLimits, platformGlobalLimit, PLATFORM_LIMIT_KEY);
         return groupsLimits;
     }
     
@@ -163,10 +156,6 @@ public class RunLimitsService {
 
     private Optional<Integer> getUserGlobalLimit() {
         return preferenceManager.findPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT);
-    }
-
-    private Optional<Integer> getPlatformGlobalLimit() {
-        return preferenceManager.findPreference(SystemPreferences.CLUSTER_MAX_SIZE);
     }
 
     private Stream<GroupLimit> findUserGroupsLimits(final Set<String> groups) {
