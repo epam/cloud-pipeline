@@ -18,11 +18,15 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.metadata.PipeConfValueType;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -35,6 +39,9 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.metadata.MetadataEntityManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -43,6 +50,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +117,12 @@ public class PipelineRunManagerUnitTest {
 
     @Mock
     private FolderApiService folderApiService;
+
+    @Mock
+    private MetadataEntityManager metadataEntityManager;
+
+    @Mock
+    private PreferenceManager preferenceManager;
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
@@ -286,6 +300,43 @@ public class PipelineRunManagerUnitTest {
     @Test
     public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
         assertEnvVarsReplacement("test/$%1$s/${%1$s}/$%1$s/", "test/%1$s/%1$s/%1$s/");
+    }
+
+    @Test
+    public void shouldUpdateMetadataRunStatus() {
+        final String parameterKey = "CP_REPORT_RUN_STATUS";
+        final String parameterValue = "Analysis status";
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setPipelineRunParameters(singletonList(new PipelineRunParameter(parameterKey, parameterValue)));
+
+        final Map<String, PipeConfValue> currentData = new HashMap<>();
+        currentData.put(TEST_STRING, new PipeConfValue(PipeConfValueType.STRING.toString(), TEST_STRING));
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(currentData);
+
+        final String expectedDataValue = "{\"runId\":1,\"status\":\"STOPPED\"}";
+        final Map<String, PipeConfValue> expectedData = new HashMap<>(currentData);
+        expectedData.put(parameterValue, new PipeConfValue(PipeConfValueType.JSON.toString(), expectedDataValue));
+        final MetadataEntity expectedMetadata = new MetadataEntity();
+        expectedMetadata.setData(expectedData);
+
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+        doReturn(parameterKey).when(preferenceManager)
+                .getPreference(SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_NAME);
+        doReturn(parameterValue).when(preferenceManager)
+                .getPreference(SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_VALUE);
+
+        new JsonMapper().init();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(singletonList(expectedMetadata));
+        verify(runCRUDService).updateRunStatus(any());
     }
 
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {

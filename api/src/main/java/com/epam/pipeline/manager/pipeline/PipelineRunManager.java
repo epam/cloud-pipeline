@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
@@ -37,6 +38,10 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.metadata.PipeConfValueType;
+import com.epam.pipeline.entity.metadata.RunStatusMetadata;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -69,6 +74,7 @@ import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
@@ -217,6 +223,9 @@ public class PipelineRunManager {
 
     @Autowired
     private RunLimitsService runLimitsService;
+
+    @Autowired
+    private MetadataEntityManager metadataEntityManager;
 
     /**
      * Launches cmd command execution, uses Tool as ACL identity
@@ -579,6 +588,7 @@ public class PipelineRunManager {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun updatePipelineStatus(final PipelineRun run) {
+        updateMetadataEntities(run);
         return runCRUDService.updateRunStatus(run);
     }
 
@@ -1531,5 +1541,37 @@ public class PipelineRunManager {
                                               .map(PipelineStart::getNodeCount)
                                               .orElse(0) + 1;
         runLimitsService.checkRunLaunchLimits(totalStaticNodesCount);
+    }
+
+    private void updateMetadataEntities(final PipelineRun run) {
+        final List<Long> entitiesIds = run.getEntitiesIds();
+        if (CollectionUtils.isEmpty(entitiesIds)) {
+            return;
+        }
+        final String metadataKeyName = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_NAME);
+        final String metadataKeyValue = preferenceManager.getPreference(
+                SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_VALUE);
+        final Optional<PipelineRunParameter> runStatusParameter = ListUtils
+                .emptyIfNull(run.getPipelineRunParameters()).stream()
+                .filter(runParameter -> metadataKeyName.equals(runParameter.getName())
+                        && metadataKeyValue.equals(runParameter.getValue()))
+                .findFirst();
+        if (!runStatusParameter.isPresent()) {
+            return;
+        }
+        final String dataKey = runStatusParameter.get().getValue();
+        final Set<MetadataEntity> metadataEntities = metadataEntityManager
+                .loadEntitiesByIds(new HashSet<>(entitiesIds));
+        final String message = run.getStateReasonMessage();
+        final RunStatusMetadata runStatusMetadata = RunStatusMetadata.builder()
+                .runId(run.getId())
+                .status(run.getStatus().name())
+                .message(message)
+                .build();
+        metadataEntities.forEach(metadataEntity -> metadataEntity.getData()
+                .put(dataKey, new PipeConfValue(PipeConfValueType.JSON.toString(),
+                        JsonMapper.convertDataToJsonStringForQuery(runStatusMetadata))));
+        metadataEntityManager.updateMetadataEntities(new ArrayList<>(metadataEntities));
     }
 }

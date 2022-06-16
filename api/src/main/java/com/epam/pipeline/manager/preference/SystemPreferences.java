@@ -617,6 +617,10 @@ public class SystemPreferences {
      */
     public static final IntPreference RELEASE_UNUSED_NODES_RATE = new IntPreference(
         "launch.pods.release.rate", 3000, LAUNCH_GROUP, isLessThan(LAUNCH_TASK_STATUS_UPDATE_RATE.getDefaultValue()));
+    public static final StringPreference LAUNCH_RUN_STATUS_METADATA_KEY_NAME = new StringPreference(
+            "launch.run.status.metadata.key.name", "CP_REPORT_RUN_STATUS", LAUNCH_GROUP, pass);
+    public static final StringPreference LAUNCH_RUN_STATUS_METADATA_KEY_VALUE = new StringPreference(
+            "launch.run.status.metadata.key.value", "Analysis status", LAUNCH_GROUP, pass);
 
     // UI_GROUP
     public static final StringPreference UI_PROJECT_INDICATOR = new StringPreference("ui.project.indicator",
