@@ -1,5 +1,3 @@
-from enum import Enum
-
 import cellprofiler_core.preferences
 
 cellprofiler_core.preferences.set_headless()
@@ -10,7 +8,6 @@ import cellprofiler_core.utilities.java
 import pathlib
 import uuid
 import os
-
 
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
@@ -25,9 +22,22 @@ from cellprofiler_core.modules.groups import Groups
 from cellprofiler_core.modules.images import Images
 from cellprofiler_core.modules.metadata import Metadata
 from cellprofiler_core.modules.namesandtypes import NamesAndTypes
-from cellprofiler_core.setting import Color, SettingsGroup
+from cellprofiler.modules.closing import Closing
+from cellprofiler.modules.convertobjectstoimage import ConvertObjectsToImage
+from cellprofiler.modules.erodeobjects import ErodeObjects
+from cellprofiler.modules.imagemath import ImageMath
+from cellprofiler.modules.maskimage import MaskImage
+from cellprofiler.modules.medianfilter import MedianFilter
+from cellprofiler.modules.removeholes import RemoveHoles
+from cellprofiler.modules.rescaleintensity import RescaleIntensity
+from cellprofiler.modules.resize import Resize
+from cellprofiler.modules.resizeobjects import ResizeObjects
+from cellprofiler.modules.threshold import Threshold
+from cellprofiler.modules.watershed import Watershed
+from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement
 from cellprofiler_core.setting.subscriber import LabelSubscriber
 from cellprofiler_core.workspace import Workspace
+from enum import Enum
 from typing import List
 
 
@@ -139,12 +149,15 @@ class HcsPipeline(object):
         self._pipeline.add_module(module)
         self.set_pipeline_state(PipelineState.CONFIGURING)
 
-    def move_module(self, module_num: int, direction: str):
-        pass
-
     def configure_module(self, module_config, module=None, module_name=None):
         if module is not None:
             module_name = module.module_name
+        processor = self._find_processor_by_name(module, module_name)
+        module = processor.configure_module(module_config)
+        return module
+
+    def _find_processor_by_name(self, module, module_name):
+        module_name = module_name.strip()
         if module_name == 'Images':
             processor = ImagesModuleProcessor(module)
         elif module_name == 'Metadata':
@@ -165,10 +178,33 @@ class HcsPipeline(object):
             processor = OverlayOutlinesModuleProcessor(module)
         elif module_name == 'SaveImages':
             processor = SaveImagesModuleProcessor(self._pipeline_output_dir, module)
+        elif module_name == 'RescaleIntensity':
+            processor = RescaleIntensityModuleProcessor(module)
+        elif module_name == 'Resize':
+            processor = ResizeModuleProcessor(module)
+        elif module_name == 'MedianFilter':
+            processor = MedianFilterModuleProcessor(module)
+        elif module_name == 'Threshold':
+            processor = ThresholdModuleProcessor(module)
+        elif module_name == 'RemoveHoles':
+            processor = RemoveHolesModuleProcessor(module)
+        elif module_name == 'Watershed':
+            processor = WatershedModuleProcessor(module)
+        elif module_name == 'ResizeObjects':
+            processor = ResizeObjectsModuleProcessor(module)
+        elif module_name == 'ErodeObjects':
+            processor = ErodeObjectsModuleProcessor(module)
+        elif module_name == 'ConvertObjectsToImage':
+            processor = ConvertObjectsToImageModuleProcessor(module)
+        elif module_name == 'ImageMath':
+            processor = ImageMathModuleProcessor(module)
+        elif module_name == 'Closing':
+            processor = ClosingModuleProcessor(module)
+        elif module_name == 'MaskImage':
+            processor = MaskImageModuleProcessor(module)
         else:
             raise RuntimeError('Unsupported module type {}'.format(module_name))
-        module = processor.configure_module(module_config)
-        return module
+        return processor
 
     def remove_module(self, module_num: int):
         module_num = self._adjust_module_number(module_num)
@@ -215,9 +251,11 @@ class HcsPipeline(object):
 
     def _map_module_to_summary(self, module: Module):
         summary = dict()
-        summary['name'] = module.module_name
+        module_name = module.module_name
+        summary['name'] = module_name
         summary['id'] = str(module.id)
-        summary['settings'] = {setting.text: setting.value for setting in module.settings()}
+        processor = self._find_processor_by_name(module, module_name)
+        summary['settings'] = processor.get_settings_as_dict()
         summary['outputs'] = self.get_module_outputs(module)
         return summary
 
@@ -248,6 +286,15 @@ class ModuleProcessor(object):
     def generated_params(self):
         return {}
 
+    def get_settings_as_dict(self):
+        settings = dict()
+        for setting in self.module.settings():
+            settings[setting.text] = self.map_setting_to_text_value(setting)
+        return settings
+
+    def map_setting_to_text_value(self, setting):
+        return setting.value
+
     def configure_module(self, module_config: dict) -> Module:
         default_settings = self.module.settings()
         module_config.update(self.generated_params())
@@ -262,8 +309,23 @@ class ModuleProcessor(object):
         return setting
 
 
-class ImagesModuleProcessor(ModuleProcessor):
+class StructuringElementImagesModuleProcessor(ModuleProcessor):
 
+    def map_setting_to_text_value(self, setting):
+        return setting.value_text if isinstance(setting, StructuringElement) else setting.value
+
+    def configure_module(self, module_config: dict) -> Module:
+        for setting in self.module.settings():
+            if isinstance(setting, StructuringElement):
+                setting_name = setting.text
+                if setting_name in module_config:
+                    structuring_setting_value = module_config.pop(setting_name)
+                    setting.set_value(structuring_setting_value)
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+
+class ImagesModuleProcessor(ModuleProcessor):
     def new_module(self):
         return Images()
 
@@ -301,6 +363,66 @@ class IdentifySecondaryObjectsModuleProcessor(ModuleProcessor):
 class RelateObjectsModuleProcessor(ModuleProcessor):
     def new_module(self):
         return RelateObjects()
+
+
+class RescaleIntensityModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return RescaleIntensity()
+
+
+class ResizeModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return Resize()
+
+
+class MedianFilterModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MedianFilter()
+
+
+class ThresholdModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return Threshold()
+
+
+class RemoveHolesModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return RemoveHoles()
+
+
+class WatershedModuleProcessor(StructuringElementImagesModuleProcessor):
+    def new_module(self):
+        return Watershed()
+
+
+class ResizeObjectsModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ResizeObjects()
+
+
+class ConvertObjectsToImageModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ConvertObjectsToImage()
+
+
+class ErodeObjectsModuleProcessor(StructuringElementImagesModuleProcessor):
+    def new_module(self):
+        return ErodeObjects()
+
+
+class ImageMathModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ImageMath()
+
+
+class ClosingModuleProcessor(StructuringElementImagesModuleProcessor):
+    def new_module(self):
+        return Closing()
+
+
+class MaskImageModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MaskImage()
 
 
 class OverlayOutlinesModuleProcessor(ModuleProcessor):
