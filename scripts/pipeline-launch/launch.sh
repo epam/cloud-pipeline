@@ -1674,6 +1674,9 @@ echo Executing task
 echo "-"
 ######################################################
 
+# If any of those exist - it may prevent users to connect via SSH
+rm -f /{var/run,etc,run}/nologin
+
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
 if [ "$CP_CAP_DELAY_SETUP" != "true" ]; then
       cp_cap_init
