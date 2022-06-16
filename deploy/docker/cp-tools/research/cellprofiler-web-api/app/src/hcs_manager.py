@@ -29,7 +29,8 @@ class HCSManager:
             field_id = int(self._get_required_field(coordinates, 'fieldId'))
             time_point = int(self._get_required_field(coordinates, 'timepoint'))
             channel = int(coordinates.get('channel', 1))
-            coordinates_list.append(ImageCoords(x, y, time_point, z, field_id, channel))
+            channel_name = coordinates.get('channelName', 'DAPI')
+            coordinates_list.append(ImageCoords(x, y, time_point, z, field_id, channel, channel_name))
         pipeline.set_input(coordinates_list)
 
     def create_module(self, pipeline_id, module_data):

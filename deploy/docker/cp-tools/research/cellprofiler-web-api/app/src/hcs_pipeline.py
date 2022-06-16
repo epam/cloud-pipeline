@@ -22,6 +22,9 @@ from cellprofiler_core.modules.groups import Groups
 from cellprofiler_core.modules.images import Images
 from cellprofiler_core.modules.metadata import Metadata
 from cellprofiler_core.modules.namesandtypes import NamesAndTypes
+from cellprofiler_core.setting.choice import Choice
+from cellprofiler_core.setting.filter import Filter
+from cellprofiler_core.setting.text import FileImageName, LabelName, Float
 from cellprofiler.modules.closing import Closing
 from cellprofiler.modules.convertobjectstoimage import ConvertObjectsToImage
 from cellprofiler.modules.erodeobjects import ErodeObjects
@@ -55,14 +58,14 @@ class PipelineState(Enum):
 
 class ImageCoords(object):
 
-    def __init__(self,  well_x, well_y, timepoint, z_plane, field, channel=1):
+    def __init__(self,  well_x, well_y, timepoint, z_plane, field, channel=1, channel_name='DAPI'):
         self.well_x = well_x
         self.well_y = well_y
         self.timepoint = timepoint
         self.z_plane = z_plane
         self.field = field
         self.channel = channel
-
+        self.channel_name = channel_name
 
 class HcsPipeline(object):
 
@@ -75,6 +78,7 @@ class HcsPipeline(object):
         self._add_default_modules()
         self._pipeline_state = PipelineState.CONFIGURING
         self._pipeline_state_message = ''
+        self._input_sets = set()
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
@@ -106,6 +110,7 @@ class HcsPipeline(object):
         data['modules'] = [self._map_module_to_summary(module) for module in computational_modules]
         data['state'] = self._pipeline_state.name
         data['message'] = self._pipeline_state_message
+        data['inputs'] = list(self._input_sets)
         return data
 
     def get_module_status(self):
@@ -219,7 +224,23 @@ class HcsPipeline(object):
         self.set_pipeline_state(PipelineState.CONFIGURING)
 
     def set_input(self, image_coords_list: List[ImageCoords]):
+        self.set_pipeline_state(PipelineState.CONFIGURING)
         self.set_pipeline_files([self._map_to_file_name(image) for image in image_coords_list])
+        self._input_sets.clear()
+        self._pipeline.modules()[2].assignments.clear()
+        channels_map = {image.channel_name: image.channel for image in image_coords_list}
+        for channel_name, channel_number in channels_map.items():
+            group = SettingsGroup()
+            channel_predicate = 'and (file does contain "ch{:02d}")'.format(channel_number)
+            group.rule_filter = Filter('Select the rule criteria', [channel_predicate], value=channel_predicate)
+            group.image_name = FileImageName('Name to assign these images',  value=channel_name)
+            group.load_as_choice = Choice('Select the image type', ['Grayscale image'], value='Grayscale image')
+            group.rescale = Choice('Set intensity range from', ['Image metadata'], value='Image metadata')
+            group.manual_rescale = Float('Maximum intensity')
+            group.manual_rescale.value = 255.0
+            group.object_name = LabelName('Name to assign these objects', channel_name)
+            self._pipeline.modules()[2].assignments.append(group)
+            self._input_sets.add(channel_name)
 
     def _map_to_file_name(self, coords: ImageCoords):
         well_full_name = "r{:02d}c{:02d}".format(coords.well_x, coords.well_y)
