@@ -94,7 +94,6 @@ class HcsImage extends React.PureComponent {
     ) {
       this.hcsAnalysis.activate(this.state.showAnalysis);
     }
-    this.loadImageForAnalysis();
   }
 
   componentWillUnmount () {
@@ -405,22 +404,37 @@ class HcsImage extends React.PureComponent {
       this.hcsAnalysis.changeFile(undefined);
       return;
     }
-    if (this.hcsInfo && this.hcsAnalysis && this.hcsViewerState) {
-      const z = this.hcsViewerState
-        ? this.hcsViewerState.imageZPosition
-        : 0;
+    if (this.hcsInfo && this.hcsAnalysis && this.hcsImageViewer) {
+      const viewerState = this.hcsImageViewer.viewerState;
+      const {
+        channels = [],
+        globalSelection = {},
+        metadata
+      } = viewerState || {};
+      let image;
+      if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
+        const e = /field ([\d]+)/i.exec(metadata.Name);
+        if (e && e.length) {
+          image = Number(e[1]);
+        }
+      }
+      const {
+        z = 0,
+        t = 0
+      } = globalSelection;
       const {sequences = []} = this.hcsInfo;
       const sequence = sequences.find(s => s.id === sequenceId);
-      if (sequence && sequence.omeTiff) {
+      if (sequence && sequence.sourceDirectory && image) {
         let analysisPath = sequence.sourceDirectory;
         const {wells = []} = sequence;
         const well = wells.find(w => w.id === wellId);
         this.hcsAnalysis.changeFile({
           sourceDirectory: analysisPath,
-          image: this.hcsViewerState.fieldID,
+          image,
           well,
           z: z + 1,
-          time: this.hcsViewerState.imageZPosition + 1
+          time: t + 1,
+          channels
         });
       }
     }
@@ -447,6 +461,10 @@ class HcsImage extends React.PureComponent {
         this.hcsImageViewer.Events.onCellClick,
         this.onMeshCellClick.bind(this)
       );
+      this.hcsImageViewer.addEventListener(
+        this.hcsImageViewer.Events.viewerStateChanged,
+        this.loadImageForAnalysis.bind(this)
+      );
       this.hcsViewerState.attachToViewer(this.hcsImageViewer);
       this.hcsSourceState.attachToViewer(this.hcsImageViewer);
       this.loadImage();
@@ -456,6 +474,7 @@ class HcsImage extends React.PureComponent {
       this.hcsImageViewer = undefined;
     }
     this.hcsAnalysis.hcsImageViewer = this.hcsImageViewer;
+    console.log(this.hcsImageViewer);
   };
 
   renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {

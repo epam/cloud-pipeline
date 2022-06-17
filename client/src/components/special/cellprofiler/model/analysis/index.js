@@ -23,6 +23,8 @@ import {
   waitForJobToBeInitialized
 } from './job-utilities';
 import AnalysisApi from './analysis-api';
+import {AnalysisModule} from '../modules/base';
+import analysisPipeline from './analysis-pipeline';
 
 class Analysis {
   /**
@@ -42,6 +44,8 @@ class Analysis {
   @observable userInfo;
   @observable changed = false;
   @observable _active = false;
+  @observable analysisResults = [];
+  @observable showAnalysisResults = true;
   hcsImageViewer;
   _analysisRequested = false;
 
@@ -54,21 +58,21 @@ class Analysis {
     if (this._analysisRequested !== requested) {
       this._analysisRequested = requested;
     }
-    this.scheduleAnalyzeCheck();
+    if (requested) {
+      this.scheduleAnalyzeCheck();
+    }
   }
 
   @computed
-  get analysisResults () {
-    return this.modules.reduce((results, cpModule) => {
-      if (cpModule.executionResults && cpModule.executionResults.length) {
-        return [...results, ...cpModule.executionResults];
-      }
-      return [];
-    }, []);
+  get hasAnalysisResult () {
+    return this.analysisResults.length > 0;
   }
 
   @computed
   get analysisResult () {
+    if (!this.showAnalysisResults) {
+      return undefined;
+    }
     return this.analysisResults.slice().pop();
   }
 
@@ -88,6 +92,7 @@ class Analysis {
   };
 
   checkNeedAnalyze = () => {
+    return;
     if (this.analysisRequested && !this.analysing && !!this.pipelineId) {
       (this.run)();
     }
@@ -206,10 +211,7 @@ class Analysis {
       this.status = 'Attaching image to CellProfiler pipeline...';
       this.pending = true;
       this.error = undefined;
-      let channel;
-      if (this.namesAndTypes && this.namesAndTypes.channel) {
-        channel = this.namesAndTypes.channel;
-      }
+      const names = this.namesAndTypes.outputs.map(output => output.name);
       const {
         well = {x: 0, y: 0},
         image,
@@ -220,15 +222,16 @@ class Analysis {
         x: column = 0,
         y: row = 0
       } = well;
-      const hcsImage = {
+      const files = names.map((name, index) => ({
         x: row,
         y: column,
         z,
         timepoint: time,
         fieldId: image,
-        channel
-      };
-      await this.analysisAPI.attachFiles(this.pipelineId, hcsImage);
+        channel: index + 1,
+        channelName: name
+      }));
+      await this.analysisAPI.attachFiles(this.pipelineId, ...files);
       this.status = `Image attached to pipeline: #${this.pipelineId}`;
     } catch (error) {
       this.error = error.message;
@@ -238,239 +241,6 @@ class Analysis {
     }
     if (this.modules.length > 0) {
       this.analysisRequested = true;
-    }
-  };
-
-  /**
-   * @param {AnalysisModule} cpModule
-   * @returns {Promise<void>}
-   */
-  @action
-  removeModule = async (cpModule) => {
-    if (
-      !this.active ||
-      !this.pipelineId ||
-      !this.analysisAPI ||
-      !cpModule ||
-      !cpModule.syncInfo
-    ) {
-      return;
-    }
-    try {
-      this.status = `Removing cpModule ${cpModule.displayName} #${cpModule.syncInfo.moduleId}...`;
-      await this.analysisAPI.removeModule(this.pipelineId, cpModule.syncInfo.moduleIndex);
-      this.status = `Module ${cpModule.displayName} #${cpModule.syncInfo.moduleId} removed`;
-    } catch (error) {
-      this.error = error.message;
-      console.warn(error);
-    } finally {
-      this.pending = false;
-    }
-  };
-
-  /**
-   * @param {AnalysisModule} cpModule
-   * @param {{clear: boolean?, skipModuleIdCheck: boolean?}} [options]
-   * @returns {Promise<void>}
-   */
-  @action
-  updateModule = async (cpModule, options = {}) => {
-    const {
-      clear = false,
-      skipModuleIdCheck = false
-    } = options;
-    if (!this.active || !this.pipelineId || !this.analysisAPI || !cpModule) {
-      return undefined;
-    }
-    let moduleInfo;
-    try {
-      const exists = !!cpModule.syncInfo;
-      const label = exists ? 'Updating' : 'Creating';
-      const labelDone = exists ? 'updated' : 'created';
-      this.status = `${label} cpModule ${cpModule.displayName}...`;
-      this.pending = true;
-      this.error = undefined;
-      if (exists) {
-        await this.wrapAction(
-          () => this.analysisAPI.removeModule(this.pipelineId, cpModule.syncInfo.moduleIndex),
-          true
-        );
-      }
-      const newModuleId = cpModule.order + 1;
-      await this.analysisAPI.createModule(
-        this.pipelineId,
-        {
-          moduleName: cpModule.name,
-          moduleId: newModuleId,
-          parameters: clear ? {} : cpModule.getPayload()
-        }
-      );
-      if (!skipModuleIdCheck) {
-        moduleInfo = await this.analysisAPI.getPipelineModuleAtIndex(
-          this.pipelineId,
-          cpModule.order
-        );
-        if (!moduleInfo || cpModule.name !== moduleInfo.name) {
-          throw new Error(`Error updating cpModule ${cpModule.name}`);
-        }
-        cpModule.syncInfo = {
-          moduleId: moduleInfo.id,
-          moduleIndex: newModuleId
-        };
-        this.status = `Module ${cpModule.displayName} ${labelDone}: #${cpModule.syncInfo.moduleId}`;
-      } else {
-        this.status = `Module ${cpModule.displayName} ${labelDone}`;
-      }
-    } catch (error) {
-      this.error = error.message;
-      console.warn(error);
-    } finally {
-      this.pending = false;
-    }
-    return moduleInfo;
-  };
-
-  @action
-  updateModules = async () => {
-    if (!this.active || !this.pipelineId || !this.analysisAPI) {
-      return;
-    }
-    try {
-      this.pending = true;
-      this.error = undefined;
-      this.status = 'Updating modules...';
-      this.changed = false;
-      let pipeline = await this.analysisAPI.getPipeline(this.pipelineId);
-      if (!pipeline) {
-        throw new Error('Error fetching pipeline info');
-      }
-      const structure = (pipeline.modules || []);
-      let changed = false;
-      let changedIndex = this.modules.length;
-      for (let idx = 0; idx < this.modules.length; idx++) {
-        const cpModule = this.modules[idx];
-        if (
-          !cpModule.syncInfo ||
-          !cpModule.syncInfo.moduleId ||
-          !structure[idx] ||
-          structure[idx].id !== cpModule.syncInfo.moduleId ||
-          cpModule.changed
-        ) {
-          changed = true;
-          changedIndex = idx;
-          break;
-        }
-      }
-      this.modules.slice(changedIndex).forEach((cpModule) => {
-        cpModule.syncInfo = undefined;
-      });
-      const modulesToRemoveCount = structure.length - changedIndex;
-      const removeModules = async (idx = 0) => {
-        if (idx >= modulesToRemoveCount) {
-          return;
-        }
-        await this.analysisAPI.removeModule(this.pipelineId, changedIndex + 1);
-        return removeModules(idx + 1);
-      };
-      await removeModules();
-      if (!changed) {
-        return;
-      }
-      /**
-       * @type {AnalysisModule[]}
-       */
-      const updateActions = this.modules.slice(changedIndex);
-      const doNext = async (index = 0) => {
-        if (index >= updateActions.length) {
-          return;
-        }
-        await this.wrapAction(() => this.updateModule(
-          updateActions[index],
-          {skipModuleIdCheck: true}
-        ), true);
-        updateActions[index].changed = false;
-        return doNext(index + 1);
-      };
-      await doNext();
-      pipeline = await this.analysisAPI.getPipeline(this.pipelineId);
-      const {modules = []} = pipeline || {};
-      modules.forEach((cpModule, idx) => {
-        if (this.modules[idx]) {
-          this.modules[idx].syncInfo = {
-            moduleIndex: idx,
-            moduleId: cpModule.id
-          };
-        }
-      });
-      this.status = 'Modules updated';
-    } catch (error) {
-      this.error = error.message;
-      console.warn(error);
-    } finally {
-      this.pending = false;
-    }
-  };
-
-  @action
-  fetchStatus = async () => {
-    try {
-      this.pending = true;
-      this.error = undefined;
-      this.status = 'Fetching analysis status...';
-      const pipelineStatus = await this.analysisAPI.getPipelineStatus(this.pipelineId);
-      const {
-        status = 'unknown'
-      } = pipelineStatus || {};
-      this.status = `Analysis status: ${status}`;
-    } catch (error) {
-      this.error = error.message;
-      console.warn(error);
-    } finally {
-      this.pending = false;
-    }
-  }
-
-  @action
-  fetchStatusUntilDone = async () => {
-    this.pending = true;
-    const FETCH_STATUS_INTERVAL_MS = 100;
-    const info = await this.analysisAPI.getPipeline(this.pipelineId);
-    if (!info) {
-      throw new Error('Error fetching analysis status');
-    }
-    const {state = 'unknown'} = info;
-    this.status = `Analysis status: ${state.toLowerCase()}`;
-    this.pending = false;
-    if (/^config/i.test(state)) {
-      throw new Error(`Updating CellProfiler pipeline... Try to re-launch analysis`);
-    }
-    if (/^running$/i.test(state)) {
-      return new Promise((resolve, reject) => {
-        setTimeout(
-          () => this.fetchStatusUntilDone().then(resolve).catch(reject),
-          FETCH_STATUS_INTERVAL_MS
-        );
-      });
-    }
-    return info;
-  }
-
-  runPipeline = async (attempt = 0) => {
-    if (!this.pipelineId) {
-      return;
-    }
-    const MAX_ATTEMPTS = 5;
-    const ATTEMPT_INTERVAL_MS = 100;
-    if (attempt > MAX_ATTEMPTS) {
-      throw new Error(`Error launching analysis pipeline: max attempts exceeded`);
-    }
-    await this.analysisAPI.runPipeline(this.pipelineId);
-    const pipeline = await this.analysisAPI.getPipeline(this.pipelineId);
-    const {state} = pipeline;
-    if (/^config/i.test(state)) {
-      const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-      await wait(ATTEMPT_INTERVAL_MS);
-      return this.runPipeline(attempt + 1);
     }
   };
 
@@ -485,35 +255,15 @@ class Analysis {
       this.pending = true;
       this.error = undefined;
       this.status = 'Running analysis...';
-      await this.wrapAction(this.updateModules, true);
-      await this.runPipeline();
-      const pipeline = await this.wrapAction(
-        this.fetchStatusUntilDone,
-        true
+      this.analysisResults = await analysisPipeline(
+        this.analysisAPI,
+        this.pipelineId,
+        this.modules
       );
-      if (!pipeline) {
-        throw new Error(`Error fetching analysis status`);
-      }
-      const {
-        state,
-        message,
-        modules = []
-      } = pipeline;
-      await Promise.all(
-        modules.map((cpModule, idx) => {
-          if (this.modules[idx]) {
-            return this.modules[idx].setExecutionResults(cpModule);
-          }
-          return Promise.resolve();
-        })
-      );
-      this.status = `Analysis: ${(state || 'unknown').toLowerCase()}`;
-      if (!/^finished$/i.test(state) && message) {
-        throw new Error(message);
-      }
+      this.showAnalysisResults = true;
+      this.status = 'Analysis done';
     } catch (error) {
       this.error = error.message;
-      this.modules.forEach(cpModule => cpModule.clearExecutionResults());
       console.warn(error);
     } finally {
       this.pending = false;
@@ -548,10 +298,10 @@ class Analysis {
   changeFile (hcsSourceFile) {
     const onChange = (fileChanged) => {
       this.pipelineId = undefined;
+      this.analysisResults = [];
       (async () => {
         await this.buildPipeline();
         if (fileChanged) {
-          this.modules.forEach(cpModule => cpModule.clearExecutionResults());
           await this.attachFileToPipeline();
         }
       })();
@@ -560,9 +310,6 @@ class Analysis {
     if (!this.namesAndTypes) {
       this.namesAndTypes = new NamesAndTypes(this, hcsSourceFile);
       changed = true;
-      observe(this.namesAndTypes, 'channel', () => {
-        onChange(true);
-      });
     } else {
       changed = this.namesAndTypes.changeFile(hcsSourceFile);
     }
@@ -572,26 +319,16 @@ class Analysis {
   }
 
   /**
-   * @param {function} AnalysisModuleClass
+   * @param {object} analysisModuleConfiguration
    * @returns {AnalysisModule}
    */
   @action
-  add = async (AnalysisModuleClass) => {
-    const newModule = new AnalysisModuleClass(this);
+  add = async (analysisModuleConfiguration) => {
+    const newModule = new AnalysisModule(this, analysisModuleConfiguration);
     this.modules.push(newModule);
-    this.modules.push(...newModule.hiddenModules);
-    const updateModuleFn = (cpModule) => new Promise((resolve, reject) => {
-      this.updateModule(cpModule, {clear: true})
-        .then(info => {
-          cpModule.applySettings(info.settings);
-          resolve();
-        })
-        .catch(reject);
-    });
     try {
       this.pending = true;
       this.error = undefined;
-      await Promise.all([newModule, ...newModule.hiddenModules].map(updateModuleFn));
       newModule.update();
     } catch (error) {
       this.error = error.message;

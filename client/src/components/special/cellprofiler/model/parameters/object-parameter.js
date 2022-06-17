@@ -19,12 +19,15 @@ import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
 function getObjectsForModule (cpModule) {
-  const idx = cpModule.analysis.modules.indexOf(cpModule);
-  return cpModule.analysis.modules.slice(0, idx)
-    .filter((cpModule) => !cpModule.hidden)
-    .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
-    .filter((output) => output.type === AnalysisTypes.object)
-    .map((output) => output.value);
+  if (cpModule && cpModule.analysis) {
+    const idx = cpModule.analysis.modules.indexOf(cpModule);
+    return cpModule.analysis.modules.slice(0, idx)
+      .filter((cpModule) => !cpModule.hidden)
+      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
+      .filter((output) => output.type === AnalysisTypes.object)
+      .map((output) => output.name);
+  }
+  return [];
 }
 
 class ObjectParameter extends ModuleParameter {

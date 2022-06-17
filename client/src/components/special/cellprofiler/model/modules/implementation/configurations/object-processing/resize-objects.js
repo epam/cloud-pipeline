@@ -13,8 +13,19 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable max-len */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+export default {
+  name: 'ResizeObjects',
+  group: 'Object Processing',
+  output: 'output|object',
+  parameters: [
+    'Select the input object|object|ALIAS input',
+    'Name the output object|string|ResizedObjects|ALIAS output',
+    'Method|[Dimensions,Factor,Match image]|Factor|ALIAS method',
+    'Factor|float|0.25|IF method==Factor|ALIAS factor',
+    'Width|integer|100|IF method==Dimensions',
+    'Height|integer|100|IF method==Dimensions',
+    'Select the image with the desired dimensions|file|IF method=="Match image"'
+  ]
+};

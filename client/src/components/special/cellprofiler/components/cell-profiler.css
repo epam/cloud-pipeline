@@ -34,6 +34,10 @@
   font-size: smaller;
 }
 
+.cell-profiler-footer + .cell-profiler-footer {
+  margin-top: 5px;
+}
+
 .cell-profiler-header .title {
   margin-right: auto;
   font-weight: bold;
@@ -104,4 +108,5 @@
 .cell-profiler-parameter-value {
   margin-left: 5px;
   flex: 1;
+  min-width: 100px;
 }

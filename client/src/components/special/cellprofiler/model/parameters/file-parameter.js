@@ -18,6 +18,22 @@ import {computed} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
+function getFilesForModule (cpModule) {
+  if (cpModule && cpModule.analysis) {
+    const idx = cpModule.analysis.modules.indexOf(cpModule);
+    return [
+      cpModule.analysis.namesAndTypes,
+      ...cpModule.analysis.modules.slice(0, idx)
+    ]
+      .filter(Boolean)
+      .filter((cpModule) => !cpModule.hidden)
+      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
+      .filter((output) => output.type === AnalysisTypes.file)
+      .map((output) => output.name);
+  }
+  return [];
+}
+
 class FileParameter extends ModuleParameter {
   /**
    * @param {ModuleParameterOptions} options
@@ -32,23 +48,12 @@ class FileParameter extends ModuleParameter {
 
   @computed
   get values () {
-    if (!this.cpModule || !this.cpModule.analysis) {
-      return [];
-    }
-    const idx = this.cpModule.analysis.modules.indexOf(this.cpModule);
-    return [
-      this.cpModule.analysis.namesAndTypes,
-      ...this.cpModule.analysis.modules.slice(0, idx)
-    ]
-      .filter((cpModule) => !cpModule.hidden)
-      .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
-      .filter((output) => output.type === AnalysisTypes.file)
-      .map((output) => ({
-        value: output.value,
-        id: `${output.cpModule.displayName}.${output.name}`,
-        key: output.name,
-        title: output.name
-      }));
+    return getFilesForModule(this.cpModule).map((output) => ({
+      value: output,
+      id: output,
+      key: output,
+      title: output
+    }));
   }
 
   get defaultValue () {
@@ -57,4 +62,4 @@ class FileParameter extends ModuleParameter {
   }
 }
 
-export {FileParameter};
+export {FileParameter, getFilesForModule};

@@ -13,8 +13,18 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable max-len */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+const saveImages = {
+  name: 'SaveImages',
+  group: 'File Processing',
+  parameters: [
+    'Select the image to save|file|ALIAS imageToSave',
+    'Select image name for file prefix|file|ALIAS prefix|COMPUTED|HIDDEN',
+    'Saved file format|[png,tiff]|png|COMPUTED|HIDDEN|ALIAS format'
+  ]
+};
+
+export default [
+  saveImages
+];

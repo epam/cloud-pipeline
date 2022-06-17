@@ -14,7 +14,24 @@
  *  limitations under the License.
  */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+import advanced from './advanced';
+import fileProcessing from './file-processing';
+import objectsProcessing from './object-processing';
+import findNuclei from './find-nuclei';
+import imageProcessing from './image-processing';
+import worms from './worms';
+
+const cellProfilerModules = [
+  ...fileProcessing,
+  ...objectsProcessing,
+  ...advanced,
+  ...imageProcessing,
+  ...worms
+];
+
+export {cellProfilerModules};
+
+export default [
+  findNuclei,
+  ...cellProfilerModules
+];

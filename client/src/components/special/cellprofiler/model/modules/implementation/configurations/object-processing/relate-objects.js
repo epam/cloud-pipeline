@@ -13,8 +13,18 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable max-len */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+export default {
+  name: 'RelateObjects',
+  group: 'Object Processing',
+  output: 'name|object|IF saveAsNew==true AND name!==""',
+  parameters: [
+    'Parent objects|object',
+    'Child objects|object',
+    'Calculate per-parent means for all child measurements?|flag|true',
+    'Calculate child-parent distances?|[None,Centroid,Minimum,Both]|None',
+    'Do you want to save the children with parents as a new object set?|flag|false|ALIAS saveAsNew',
+    'Name the output object|IF saveAsNew==true|ALIAS name'
+  ]
+};

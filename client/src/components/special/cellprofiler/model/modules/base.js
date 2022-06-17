@@ -18,39 +18,13 @@ import {action, computed, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
 import {BooleanParameter} from '../parameters';
-import {getOutputFileAccessInfo} from '../analysis/output-utilities';
+import parseModuleConfiguration from './implementation/parse-module-configuration';
+import parameterInitializer from '../parameters/parameter-initializer';
 
 const IGNORED_PARAMETERS = [
   'Select objects to display',
   'Select outline color'
 ];
-
-function splitStringByUppercaseLetters (string) {
-  if (!string) {
-    return '';
-  }
-  const parts = [];
-  let tmp = string.slice();
-  const findNextPart = () => {
-    if (tmp.length === 0) {
-      return undefined;
-    }
-    const res = /^(.+?)([A-Z]|$)/.exec(tmp);
-    if (res && res.length > 0) {
-      tmp = tmp.slice(res[1].length);
-      return res[1];
-    }
-    return undefined;
-  };
-  let part;
-  do {
-    part = findNextPart();
-    if (part) {
-      parts.push(part);
-    }
-  } while (part);
-  return parts.join(' ');
-}
 
 class AnalysisModuleOutput {
   /**
@@ -84,15 +58,10 @@ function expandModules (modules = []) {
 }
 
 class AnalysisModule {
-  static get identifier () {
-    return this.name;
-  }
-  static get moduleTitle () {
-    return splitStringByUppercaseLetters(this.identifier);
-  }
   id;
   name;
   title;
+  @observable outputsConfiguration;
   @observable syncInfo;
   @observable changed = false;
   @observable hidden = false;
@@ -107,41 +76,74 @@ class AnalysisModule {
    * @type {ModuleParameter[]}
    */
   @observable parametersConfigurations = [];
-  /**
-   * @type {AnalysisModuleOutput[]}
-   */
-  @observable moduleOutputs = [];
-  @observable executionResults = [];
   @observable hiddenModules = [];
   /**
    * @type {Analysis}
    */
   @observable analysis;
+  pipeline;
+  composed = false;
+
+  /**
+   * @typedef {Object} AnalysisInitializationOptions
+   * @property {boolean} [hidden=false]
+   * @property {string} [name]
+   * @property {string} [title]
+   * @property {string[]} [parameters]
+   * @property {string[]} [outputs]
+   * @property {string} [output]
+   * @property {*[]|function} [pipeline]
+   * @property {boolean} [composed=false]
+   */
   /**
    * @param {Analysis} analysis
-   * @param {boolean} [hidden=false]
+   * @param {AnalysisInitializationOptions} [options]
    */
-  constructor (analysis, hidden = false) {
+  constructor (analysis, options = {}) {
+    const {
+      hidden = false,
+      name,
+      title,
+      parameters = [],
+      outputs = [],
+      composed = false,
+      pipeline = []
+    } = parseModuleConfiguration(options);
     this.id = `module_#${generateId()}`;
     this.hidden = hidden;
     this.analysis = analysis;
-    this.name = this.constructor.identifier;
-    this.title = this.constructor.moduleTitle;
+    this.name = name;
+    this.title = title || name;
     this.initialize();
+    this.registerParameters(...parameters.map(parameterInitializer));
+    this.outputsConfiguration = outputs;
     this.parametersConfigurations.forEach((configuration) => {
       configuration.cpModule = this;
     });
     this.parameters = this.parametersConfigurations
       .map((configuration) => configuration.createModuleParameterValue());
     this.changed = true;
+    this.composed = composed;
+    this.pipeline = pipeline;
   }
   @computed
   get outputs () {
-    return this.moduleOutputs;
-  }
-  @computed
-  get hasExecutionResults () {
-    return this.executionResults.length > 0;
+    return this.outputsConfiguration.map((outputConfiguration) => {
+      const {
+        name,
+        type,
+        criteria
+      } = outputConfiguration;
+      const value = this.getParameterValue(name);
+      if (value && criteria(this)) {
+        return {
+          name: value,
+          type,
+          cpModule: this
+        };
+      }
+      return undefined;
+    }).filter(Boolean);
   }
   get displayName () {
     if (this.predefined || !this.analysis) {
@@ -165,17 +167,23 @@ class AnalysisModule {
     this.parametersConfigurations.push(...parameter);
   }
   getParameterConfiguration (name) {
-    return this.parametersConfigurations.find(config => config.name === name);
+    return this.parametersConfigurations.find(config => config.name === name) ||
+      this.parametersConfigurations.find(config => config.parameterName === name);
   }
   getParameterValue (name) {
-    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name);
+    if (/^uuid$/i.test(name)) {
+      return this.id;
+    }
+    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name) ||
+      this.parameters.find(parameter => parameter.parameter.parameterName === name);
     if (parameterValue) {
       return parameterValue.value;
     }
     return undefined;
   }
   setParameterValue (name, value) {
-    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name);
+    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name) ||
+      this.parameters.find(parameter => parameter.parameter.parameterName === name);
     if (parameterValue) {
       parameterValue.value = value;
     }
@@ -270,18 +278,6 @@ class AnalysisModule {
           this.extraParameters[parameterName] = value;
         }
       });
-  };
-
-  clearExecutionResults = () => {
-    this.executionResults = [];
-  }
-
-  setExecutionResults = async (cpModule) => {
-    this.clearExecutionResults();
-    if (cpModule) {
-      const {outputs = []} = cpModule;
-      this.executionResults = await Promise.all(outputs.slice().map(getOutputFileAccessInfo));
-    }
   };
 }
 

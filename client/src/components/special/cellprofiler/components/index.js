@@ -16,8 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import {Button, Checkbox, Icon} from 'antd';
+import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
 import CellProfilerModule from './module';
@@ -35,7 +35,7 @@ class CellProfiler extends React.Component {
     const {analysis} = this.props;
     const handleVisibility = (visible) => this.setState({addModuleSelectorVisible: visible});
     const onSelect = ({key}) => {
-      const cpModule = allModules.find((cpModule) => cpModule.identifier === key);
+      const cpModule = allModules.find((cpModule) => cpModule.name === key);
       if (analysis) {
         analysis.add(cpModule)
           .then((newModule) => {
@@ -44,7 +44,8 @@ class CellProfiler extends React.Component {
       }
       handleVisibility(false);
     };
-    console.log(allModules);
+    const groups = [...(new Set(allModules.map(module => module.group)))].filter(Boolean);
+    const mainModules = allModules.filter(module => !module.group);
     const menu = (
       <div>
         <Menu
@@ -52,13 +53,31 @@ class CellProfiler extends React.Component {
           onClick={onSelect}
         >
           {
-            allModules
-              .filter((cpModule) => !cpModule.predefined)
+            mainModules
               .map((cpModule) => (
-                <MenuItem key={cpModule.identifier}>
-                  {cpModule.moduleTitle}
+                <MenuItem key={cpModule.name}>
+                  {cpModule.title || cpModule.name}
                 </MenuItem>
               ))
+          }
+          {
+            groups.map((group) => (
+              <SubMenu
+                key={group}
+                title={group}
+                selectedKeys={[]}
+              >
+                {
+                  allModules
+                    .filter(module => module.group === group)
+                    .map((cpModule) => (
+                      <MenuItem key={cpModule.name}>
+                        {cpModule.title || cpModule.name}
+                      </MenuItem>
+                    ))
+                }
+              </SubMenu>
+            ))
           }
         </Menu>
       </div>
@@ -107,6 +126,16 @@ class CellProfiler extends React.Component {
     analysis.run();
   };
 
+  toggleShowResults = (e) => {
+    const {
+      analysis
+    } = this.props;
+    if (!analysis) {
+      return null;
+    }
+    analysis.showAnalysisResults = e.target.checked;
+  }
+
   render () {
     const {
       analysis,
@@ -129,11 +158,6 @@ class CellProfiler extends React.Component {
         <div className={styles.cellProfilerHeader}>
           <span className={styles.title}>
             Analysis
-            {
-              analysis.pending && (
-                <Icon type="loading" />
-              )
-            }
           </span>
           <Button
             type="primary"
@@ -145,19 +169,17 @@ class CellProfiler extends React.Component {
             onClick={this.runAnalysis}
           >
             <Icon type="caret-right" />
+            {
+              analysis.pending && (
+                <Icon type="loading" />
+              )
+            }
           </Button>
           {this.renderAddModuleSelector()}
         </div>
         <div
           className={styles.cellProfilerModules}
         >
-          <CellProfilerModule
-            cpModule={analysis.namesAndTypes}
-            expanded={this.getModuleExpanded(analysis.namesAndTypes)}
-            onExpandedChange={() => this.toggleExpanded(analysis.namesAndTypes)}
-            movable={false}
-            removable={false}
-          />
           {
             (analysis.modules || []).filter(cpModule => !cpModule.hidden).map((cpModule) => (
               <CellProfilerModule
@@ -169,6 +191,24 @@ class CellProfiler extends React.Component {
             ))
           }
         </div>
+        {
+          (analysis.hasAnalysisResult) && (
+            <div
+              className={
+                classNames(
+                  styles.cellProfilerFooter
+                )
+              }
+            >
+              <Checkbox
+                checked={analysis.showAnalysisResults}
+                onChange={this.toggleShowResults}
+              >
+                Show results
+              </Checkbox>
+            </div>
+          )
+        }
         {
           (analysis.status || analysis.error) && (
             <div

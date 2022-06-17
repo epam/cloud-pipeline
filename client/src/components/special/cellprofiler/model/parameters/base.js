@@ -17,6 +17,7 @@
 import {action, computed, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
+import {getComputedValue} from '../modules/implementation/parse-module-configuration';
 
 function mapListItem (listItem) {
   if (typeof listItem !== 'object') {
@@ -52,9 +53,12 @@ function mapListItem (listItem) {
  * @property {boolean} [required]
  * @property {*} [value]
  * @property {boolean} [advanced]
+ * @property {boolean} [hidden]
+ * @property {string} [computed]
  * @property {function} [visibilityHandler]
  * @property {*[]|function} [values]
  * @property {function(ModuleParameterValue, string, object)} [renderer]
+ * @property {{min: number?, max: number?}} [range]
  */
 
 class ModuleParameter {
@@ -78,6 +82,9 @@ class ModuleParameter {
   valueParser;
   _defaultValue;
   _values;
+  range;
+  hidden;
+  computed;
 
   /**
    * @param {ModuleParameterOptions} [options]
@@ -99,7 +106,10 @@ class ModuleParameter {
       renderer,
       valueParser = (o => o),
       valueFormatter = (o => o),
-      local = false
+      local = false,
+      range,
+      hidden = false,
+      computed
     } = options;
     this.name = name;
     this.parameterName = parameterName;
@@ -116,20 +126,30 @@ class ModuleParameter {
     this.valueFormatter = valueFormatter;
     this.valueParser = valueParser;
     this.local = local;
+    this.range = range;
+    this.hidden = hidden;
+    this.computed = computed;
   }
 
   @computed
   get values () {
     if (typeof this._values === 'function') {
-      return (this._values(this.cpModule) || []).map(mapListItem);
+      return (this._values(this.cpModule) || [])
+        .map(mapListItem)
+        .filter(Boolean);
     }
     if (this._values !== undefined && this._values.length) {
-      return this._values.map(mapListItem);
+      return this._values
+        .map(mapListItem)
+        .filter(Boolean);
     }
     return [];
   }
   @computed
   get visible () {
+    if (this.hidden) {
+      return false;
+    }
     if (this.name === 'advanced' && this.cpModule) {
       return this.cpModule.parametersConfigurations.some(config => config.advanced);
     }
@@ -173,7 +193,7 @@ class ModuleParameterValue {
    * @type {ModuleParameter}
    */
   @observable parameter;
-  @observable value;
+  @observable _value;
 
   /**
    * @param {ModuleParameter} parameter
@@ -181,6 +201,18 @@ class ModuleParameterValue {
   constructor (parameter) {
     this.parameter = parameter;
     this.value = parameter.defaultValue;
+  }
+
+  @computed
+  get value () {
+    if (this.parameter && this.parameter.computed) {
+      return getComputedValue(this.parameter.computed, this.parameter.cpModule);
+    }
+    return this._value;
+  }
+
+  set value (aValue) {
+    this._value = aValue;
   }
 
   getPayload () {
@@ -197,6 +229,11 @@ class ModuleParameterValue {
       };
     }
     switch (type) {
+      case AnalysisTypes.string:
+        return {
+          [this.parameter.parameterName]:
+            `${formattedValue === undefined ? '' : formattedValue}`
+        };
       default:
         return {[this.parameter.parameterName]: formattedValue};
     }
@@ -220,8 +257,10 @@ class ModuleParameterValue {
       return;
     }
     this.parameter.cpModule.changed = true;
-    this.parameter.cpModule.analysis.changed = true;
-    this.parameter.cpModule.analysis.analysisRequested = true;
+    if (this.parameter.cpModule.analysis) {
+      this.parameter.cpModule.analysis.changed = true;
+      this.parameter.cpModule.analysis.analysisRequested = true;
+    }
   };
 }
 

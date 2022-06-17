@@ -13,8 +13,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable max-len */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+export default {
+  name: 'ConvertObjectsToImage',
+  group: 'Object Processing',
+  output: 'name|file',
+  parameters: [
+    'Select the input objects|object',
+    'Name the output image|ALIAS name',
+    'Select the color format|[Color,"Binary (black & white)",Grayscale,uint16]|Color',
+    'Select the colormap|[Default]|Default|COMPUTED|HIDDEN'
+  ]
+};

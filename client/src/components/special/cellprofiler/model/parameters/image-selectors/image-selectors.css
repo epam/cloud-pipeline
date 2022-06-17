@@ -14,7 +14,11 @@
  *  limitations under the License.
  */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+.image-row {
+  display: flex;
+  align-items: center;
+}
+
+.image-row:not(:last-child) {
+  margin-bottom: 5px;
+}

@@ -14,7 +14,16 @@
  *  limitations under the License.
  */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+import ConvertObjectsToImage from './convert-objects-to-image';
+import IdentifyPrimaryObjects from './identify-primary-objects';
+import IdentifySecondaryObjects from './identify-secondary-objects';
+import RelateObjects from './relate-objects';
+import ResizeObjects from './resize-objects';
+
+export default [
+  ConvertObjectsToImage,
+  IdentifyPrimaryObjects,
+  IdentifySecondaryObjects,
+  RelateObjects,
+  ResizeObjects
+];

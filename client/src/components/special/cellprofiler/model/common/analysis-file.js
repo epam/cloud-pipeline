@@ -35,6 +35,7 @@ class AnalysisFile {
  * @property {string} image
  * @property {number} z
  * @property {number} time
+ * @property {string[]} [channels]
  */
 
 /**

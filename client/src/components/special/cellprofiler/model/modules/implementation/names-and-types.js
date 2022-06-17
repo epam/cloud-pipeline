@@ -24,9 +24,6 @@ import {
 
 class NamesAndTypes extends AnalysisModule {
   static predefined = true;
-  static get identifier () {
-    return 'NamesAndTypes';
-  }
   @computed
   get channel () {
     return this.getParameterValue('channel');
@@ -47,19 +44,25 @@ class NamesAndTypes extends AnalysisModule {
     this.changeFile(source);
   }
 
-  initialize () {
-    super.initialize();
-    this.registerParameters(
-      new ChannelsParameter({
-        name: 'channel',
-        title: 'Channel'
-      })
-    );
-  }
-
   @computed
   get available () {
     return HCSSourceFile.check(this.sourceFile);
+  }
+
+  @computed
+  get outputs () {
+    if (this.sourceFile && HCSSourceFile.check(this.sourceFile)) {
+      let channels = this.sourceFile.channels;
+      if (!channels || !channels.length) {
+        channels = ['input'];
+      }
+      return channels.map(name => ({
+        type: AnalysisTypes.file,
+        name,
+        cpModule: this
+      }));
+    }
+    return [];
   }
 
   /**
@@ -71,19 +74,6 @@ class NamesAndTypes extends AnalysisModule {
       return false;
     }
     this.sourceFile = sourceFileOptions;
-    if (HCSSourceFile.check(this.sourceFile)) {
-      this.moduleOutputs = [
-        {
-          type: AnalysisTypes.file,
-          value: 'input',
-          name: 'input',
-          cpModule: this,
-          file: new HCSSourceFile(this, this.sourceFile)
-        }
-      ];
-    } else {
-      this.moduleOutputs = [];
-    }
     return true;
   }
 }

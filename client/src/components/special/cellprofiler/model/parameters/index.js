@@ -18,6 +18,5 @@ export {ModuleParameter, ModuleParameterValue} from './base';
 export {ChannelsParameter} from './channels-parameter';
 export {FileParameter} from './file-parameter';
 export {ObjectParameter} from './object-parameter';
-export {OutlineObjectsConfigurationParameter} from './outline-objects-configuration-parameter';
 export * from './range-parameter';
 export * from './simple-parameters';

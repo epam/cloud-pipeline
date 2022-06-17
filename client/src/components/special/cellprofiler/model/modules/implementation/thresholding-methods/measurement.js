@@ -44,7 +44,7 @@ export default [
         if (cpModule && cpModule.analysis && cpModule.analysis.namesAndTypes) {
           const outputs = cpModule.analysis.namesAndTypes.outputs || [];
           if (outputs.length) {
-            inputName = outputs[0].value;
+            inputName = outputs[0].name;
           }
         }
         return [

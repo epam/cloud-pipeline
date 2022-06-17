@@ -66,11 +66,6 @@ class CellProfilerModule extends React.Component {
         />
         <b className={styles.title}>
           {cpModule.displayName}
-          {
-            cpModule.hasExecutionResults && (
-              <Icon type="file" />
-            )
-          }
         </b>
         {
           !cpModule.hidden && movable && (

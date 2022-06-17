@@ -21,7 +21,8 @@ import {observer} from 'mobx-react';
 import {
   Checkbox,
   Input,
-  Select
+  Select,
+  Slider
 } from 'antd';
 import {AnalysisTypes} from '../model/common/analysis-types';
 import styles from './cell-profiler.css';
@@ -52,6 +53,34 @@ class CellProfilerParameter extends React.Component {
       <Input
         className={styles.cellProfilerParameterValue}
         value={parameterValue.value}
+        onChange={onChange}
+      />
+    );
+  }
+  renderSliderControl () {
+    const {
+      parameterValue
+    } = this.props;
+    if (
+      !parameterValue ||
+      !parameterValue.parameter ||
+      !parameterValue.parameter.range
+    ) {
+      return null;
+    }
+    const {min, max} = parameterValue.parameter.range;
+    const onChange = (value) => {
+      parameterValue.value = value;
+      this.reportChanged();
+    };
+    const step = 10 ** (Math.log10((max - min) / 100));
+    return (
+      <Slider
+        className={styles.cellProfilerParameterValue}
+        value={parameterValue.value}
+        min={min}
+        max={max}
+        step={step}
         onChange={onChange}
       />
     );
@@ -137,7 +166,9 @@ class CellProfilerParameter extends React.Component {
     if (!parameterValue || !parameterValue.parameter) {
       return null;
     }
-    const [from, to] = parameterValue.value || [];
+    const [from, to] = parameterValue.value && parameterValue.value.length
+      ? parameterValue.value
+      : [];
     const onChangeFrom = (e) => {
       parameterValue.value = [e.target.value, to];
       this.reportChanged();
@@ -187,6 +218,19 @@ class CellProfilerParameter extends React.Component {
         return this.renderBooleanControl();
       case AnalysisTypes.string:
         return this.renderStringControl();
+      case AnalysisTypes.integer:
+      case AnalysisTypes.float: {
+        if (
+          parameterValue.parameter.range &&
+          parameterValue.parameter.range.min !== undefined &&
+          parameterValue.parameter.range.max !== undefined &&
+          Number.isFinite(Number(parameterValue.parameter.range.min)) &&
+          Number.isFinite(Number(parameterValue.parameter.range.max))
+        ) {
+          return this.renderSliderControl();
+        }
+        return this.renderStringControl();
+      }
       case AnalysisTypes.color:
         return this.renderColorControl();
       case AnalysisTypes.custom:

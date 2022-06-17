@@ -29,9 +29,9 @@ export default [
     visibilityHandler: visibilityHandlerGenerator(thresholdMethods.robustBackground)
   }],
   [FloatParameter, {
-    name: 'lowerOutlierFraction',
-    title: 'Lower outlier fraction',
-    parameterName: 'Lower outlier fraction',
+    name: 'upprtOutlierFraction',
+    title: 'Upper outlier fraction',
+    parameterName: 'Upper outlier fraction',
     visibilityHandler: visibilityHandlerGenerator(thresholdMethods.robustBackground)
   }],
   [ListParameter, {

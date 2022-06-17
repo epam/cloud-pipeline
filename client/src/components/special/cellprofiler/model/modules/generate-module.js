@@ -14,7 +14,9 @@
  *  limitations under the License.
  */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+export default function generateModule (analysis, configuration = {}) {
+  const {
+    name,
+    parameters
+  } = configuration;
+}
