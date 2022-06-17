@@ -16,26 +16,33 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Icon} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import {Button, Checkbox, Icon, message} from 'antd';
+import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
-import CellProfilerModule from './module';
-import {allModules} from '../model/modules';
-import styles from './cell-profiler.css';
 import classNames from 'classnames';
+import {CellProfilerModule, CellProfilerModuleHeader} from './module';
+import {allModules} from '../model/modules';
+import AnalysisPipelineInfo from './info';
+import OpenPipelineModal from './open-pipeline-modal';
+import {ObjectsOutlineRenderer} from './objects-outline';
+import Collapse from './collapse';
+import styles from './cell-profiler.css';
 
 class CellProfiler extends React.Component {
   state = {
     addModuleSelectorVisible: false,
+    managementActionsVisible: false,
+    openPipelineModalVisible: false,
     expanded: []
   };
 
   renderAddModuleSelector = () => {
     const {analysis} = this.props;
     const handleVisibility = (visible) => this.setState({addModuleSelectorVisible: visible});
+    const filtered = allModules.filter(module => !module.hidden);
     const onSelect = ({key}) => {
-      const cpModule = allModules.find((cpModule) => cpModule.identifier === key);
+      const cpModule = filtered.find((cpModule) => cpModule.name === key);
       if (analysis) {
         analysis.add(cpModule)
           .then((newModule) => {
@@ -44,7 +51,8 @@ class CellProfiler extends React.Component {
       }
       handleVisibility(false);
     };
-    console.log(allModules);
+    const groups = [...(new Set(filtered.map(module => module.group)))].filter(Boolean);
+    const mainModules = filtered.filter(module => !module.group);
     const menu = (
       <div>
         <Menu
@@ -52,13 +60,31 @@ class CellProfiler extends React.Component {
           onClick={onSelect}
         >
           {
-            allModules
-              .filter((cpModule) => !cpModule.predefined)
+            mainModules
               .map((cpModule) => (
-                <MenuItem key={cpModule.identifier}>
-                  {cpModule.moduleTitle}
+                <MenuItem key={cpModule.name}>
+                  {cpModule.title || cpModule.name}
                 </MenuItem>
               ))
+          }
+          {
+            groups.map((group) => (
+              <SubMenu
+                key={group}
+                title={group}
+                selectedKeys={[]}
+              >
+                {
+                  filtered
+                    .filter(module => module.group === group)
+                    .map((cpModule) => (
+                      <MenuItem key={cpModule.name}>
+                        {cpModule.title || cpModule.name}
+                      </MenuItem>
+                    ))
+                }
+              </SubMenu>
+            ))
           }
         </Menu>
       </div>
@@ -80,20 +106,115 @@ class CellProfiler extends React.Component {
     );
   };
 
-  getModuleExpanded = (cpModule) => {
+  renderTitle = () => {
+    const {analysis} = this.props;
+    if (!analysis) {
+      return null;
+    }
+    const {
+      openPipelineModalVisible
+    } = this.state;
+    const openModal = () => {
+      this.setState({openPipelineModalVisible: true});
+    };
+    const closeModal = () => {
+      this.setState({openPipelineModalVisible: false});
+    };
+    const onPipelineSelected = (pipelineFile) => {
+      closeModal();
+      if (analysis) {
+        (analysis.loadPipeline)(pipelineFile);
+      }
+    };
+    const handleVisibility = (visible) => this.setState({managementActionsVisible: visible});
+    const onSelect = ({key}) => {
+      switch (key) {
+        case 'New':
+          analysis.newPipeline();
+          break;
+        case 'Save':
+          (async () => {
+            const hide = message.loading('Saving pipeline...', 0);
+            try {
+              await analysis.savePipeline();
+            } catch (error) {
+              message.error(error.message, 5);
+            } finally {
+              hide();
+            }
+          })();
+          break;
+        case 'SaveAsNew':
+          (async () => {
+            const hide = message.loading('Saving pipeline...', 0);
+            try {
+              await analysis.savePipeline(true);
+            } catch (error) {
+              message.error(error.message, 5);
+            } finally {
+              hide();
+            }
+          })();
+          break;
+        case 'Open': openModal(); break;
+      }
+      handleVisibility(false);
+    };
+    const menu = (
+      <div>
+        <Menu
+          selectedKeys={[]}
+          onClick={onSelect}
+        >
+          <MenuItem key="New">
+            <Icon type="file" /> New
+          </MenuItem>
+          <MenuItem key="Open">
+            <Icon type="folder-open" /> Open
+          </MenuItem>
+          <MenuItem key="Save">
+            <Icon type="download" /> Save
+          </MenuItem>
+          <MenuItem key="SaveAsNew">
+            <Icon type="download" /> Save as new
+          </MenuItem>
+        </Menu>
+      </div>
+    );
+    return (
+      <Dropdown
+        overlay={menu}
+        trigger={['click']}
+        onVisibleChange={handleVisibility}
+      >
+        <a
+          className="cp-text"
+        >
+          Analysis <Icon type="down" />
+          <OpenPipelineModal
+            visible={openPipelineModalVisible}
+            onSelect={onPipelineSelected}
+            onClose={closeModal}
+          />
+        </a>
+      </Dropdown>
+    );
+  };
+
+  getExpanded = (key) => {
     const {expanded = []} = this.state;
-    return expanded.includes(cpModule.id);
+    return expanded.includes(key);
   }
 
-  toggleExpanded = (cpModule) => {
+  toggleExpanded = (key) => {
     const {expandSingle} = this.props;
     const {expanded = []} = this.state;
-    if (expanded.includes(cpModule.id)) {
-      this.setState({expanded: expanded.filter(o => o !== cpModule.id)});
+    if (expanded.includes(key)) {
+      this.setState({expanded: expanded.filter(o => o !== key)});
     } else if (expandSingle) {
-      this.setState({expanded: [cpModule.id]});
+      this.setState({expanded: [key]});
     } else {
-      this.setState({expanded: [...expanded, cpModule.id]});
+      this.setState({expanded: [...expanded, key]});
     }
   };
 
@@ -107,11 +228,25 @@ class CellProfiler extends React.Component {
     analysis.run();
   };
 
+  toggleShowResults = () => {
+    const {
+      analysis,
+      onToggleResults
+    } = this.props;
+    if (!analysis) {
+      return null;
+    }
+    if (typeof onToggleResults === 'function') {
+      onToggleResults();
+    }
+  }
+
   render () {
     const {
       analysis,
       className,
-      style
+      style,
+      resultsVisible
     } = this.props;
     if (!analysis) {
       return null;
@@ -121,19 +256,15 @@ class CellProfiler extends React.Component {
         className={
           classNames(
             className,
-            styles.cellProfiler
+            styles.cellProfiler,
+            'cp-panel'
           )
         }
         style={style}
       >
         <div className={styles.cellProfilerHeader}>
           <span className={styles.title}>
-            Analysis
-            {
-              analysis.pending && (
-                <Icon type="loading" />
-              )
-            }
+            {this.renderTitle()}
           </span>
           <Button
             type="primary"
@@ -145,30 +276,89 @@ class CellProfiler extends React.Component {
             onClick={this.runAnalysis}
           >
             <Icon type="caret-right" />
+            {
+              analysis.pending && (
+                <Icon type="loading" />
+              )
+            }
           </Button>
           {this.renderAddModuleSelector()}
         </div>
         <div
           className={styles.cellProfilerModules}
         >
-          <CellProfilerModule
-            cpModule={analysis.namesAndTypes}
-            expanded={this.getModuleExpanded(analysis.namesAndTypes)}
-            onExpandedChange={() => this.toggleExpanded(analysis.namesAndTypes)}
-            movable={false}
-            removable={false}
-          />
+          <Collapse
+            header={(
+              <b className={styles.title}>
+                <Icon type="info-circle-o" /> Info
+              </b>
+            )}
+          >
+            <AnalysisPipelineInfo
+              pipeline={analysis.pipeline}
+            />
+          </Collapse>
           {
-            (analysis.modules || []).filter(cpModule => !cpModule.hidden).map((cpModule) => (
-              <CellProfilerModule
-                key={cpModule.displayName}
-                cpModule={cpModule}
-                expanded={this.getModuleExpanded(cpModule)}
-                onExpandedChange={() => this.toggleExpanded(cpModule)}
+            (analysis.pipeline.modules || [])
+              .filter(cpModule => !cpModule.hidden)
+              .map((cpModule) => (
+                <Collapse
+                  key={cpModule.displayName}
+                  expanded={this.getExpanded(cpModule.id)}
+                  onExpandedChange={() => this.toggleExpanded(cpModule.id)}
+                  header={(
+                    <CellProfilerModuleHeader
+                      cpModule={cpModule}
+                    />
+                  )}
+                >
+                  <CellProfilerModule cpModule={cpModule} />
+                </Collapse>
+              ))
+          }
+          <Collapse
+            header={(
+              <CellProfilerModuleHeader
+                cpModule={analysis.pipeline.defineResults}
+                removable={false}
+                movable={false}
               />
-            ))
+            )}
+          >
+            <CellProfilerModule
+              cpModule={analysis.pipeline.defineResults}
+            />
+          </Collapse>
+          {
+            analysis.pipeline &&
+            analysis.pipeline.objectsOutlines &&
+            analysis.pipeline.objectsOutlines.configurations.length > 0 && (
+              <Collapse header="Display objects">
+                <ObjectsOutlineRenderer
+                  hcsAnalysis={analysis}
+                />
+              </Collapse>
+            )
           }
         </div>
+        {
+          (analysis.analysisOutput) && (
+            <div
+              className={
+                classNames(
+                  styles.cellProfilerFooter
+                )
+              }
+            >
+              <Checkbox
+                checked={resultsVisible}
+                onChange={this.toggleShowResults}
+              >
+                Show results
+              </Checkbox>
+            </div>
+          )
+        }
         {
           (analysis.status || analysis.error) && (
             <div
@@ -195,7 +385,9 @@ CellProfiler.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   analysis: PropTypes.object,
-  expandSingle: PropTypes.bool
+  expandSingle: PropTypes.bool,
+  onToggleResults: PropTypes.func,
+  resultsVisible: PropTypes.bool
 };
 
 export default observer(CellProfiler);

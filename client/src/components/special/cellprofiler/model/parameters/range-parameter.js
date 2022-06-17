@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {computed, observable} from 'mobx';
+import {observable} from 'mobx';
 import {ModuleParameter} from './base';
 import {AnalysisTypes} from '../common/analysis-types';
 
@@ -39,16 +39,6 @@ class RangeParameter extends ModuleParameter {
     } = range;
     this.min = min;
     this.max = max;
-  }
-
-  @computed
-  get values () {
-    return [this.min, this.max];
-  }
-
-  get defaultValue () {
-    const finite = (o) => Number.isFinite(o) ? o : undefined;
-    return [finite(this.min), finite(this.max)];
   }
 }
 

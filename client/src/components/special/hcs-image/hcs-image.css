@@ -28,7 +28,7 @@
   text-align: initial;
   height: 100%;
   overflow: auto;
-  padding: 10px;
+  padding: 0;
 }
 
 .hcs-image-container {
@@ -68,6 +68,30 @@
   min-height: 200px;
   overflow: hidden;
   position: relative;
+}
+
+.hcs-image-analysis-results {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+}
+
+.hcs-image-analysis-results-background {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  opacity: 0.85;
+  border-right: none !important;
+  border-left: none !important;
+}
+
+.hcs-image-analysis-results-content {
+  position: relative;
+  padding: 5px;
+  overflow: auto;
 }
 
 .hcs-image-controls {

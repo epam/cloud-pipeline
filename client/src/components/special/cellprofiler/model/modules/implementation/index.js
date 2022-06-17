@@ -14,28 +14,10 @@
  *  limitations under the License.
  */
 
-import {IdentifyPrimaryObjects} from './identify-primary-objects';
-import {IdentifySecondaryObjects} from './identify-secondary-objects';
-import {RelateObjects} from './relate-objects';
-import {OverlayOutlines} from './overlay-outlines';
 import {NamesAndTypes} from './names-and-types';
-import {SaveImages} from './save-images';
-
-const allModules = [
-  IdentifyPrimaryObjects,
-  IdentifySecondaryObjects,
-  RelateObjects,
-  OverlayOutlines,
-  SaveImages,
-  NamesAndTypes
-];
+import allModules from './configurations';
 
 export {
   allModules,
-  IdentifyPrimaryObjects,
-  IdentifySecondaryObjects,
-  OverlayOutlines,
-  RelateObjects,
-  SaveImages,
   NamesAndTypes
 };

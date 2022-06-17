@@ -14,20 +14,36 @@
  *  limitations under the License.
  */
 
-import {
-  FloatParameter
-} from '../../../parameters';
-import thresholdMethods from './methods';
-import visibilityHandlerGenerator from './visibility-handler-generator';
+.add-configuration-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  line-height: 24px;
+}
 
-export default [
-  [
-    FloatParameter,
-    {
-      name: 'manualThreshold',
-      title: 'Manual threshold',
-      parameterName: 'Manual threshold',
-      visibilityHandler: visibilityHandlerGenerator(thresholdMethods.manual)
-    }
-  ]
-];
+.add-configuration-actions-row .action:not(:last-child) {
+  margin-right: 5px;
+}
+
+.output-row {
+  padding: 5px 0;
+  margin-bottom: 10px;
+}
+
+.output-row .row {
+  display: flex;
+  align-items: center;
+  line-height: 24px;
+  margin-bottom: 5px;
+  flex-wrap: wrap;
+}
+
+.output-row .row .title {
+  margin-right: 5px;
+  min-width: 50px;
+}
+
+.output-row .row .value {
+  flex: 1;
+  min-width: 100px;
+}

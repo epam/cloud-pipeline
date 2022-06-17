@@ -18,6 +18,7 @@ import S3Storage from '../models/s3-upload/s3-storage';
 import DataStorageItemContent from '../models/dataStorage/DataStorageItemContent';
 import GenerateDownloadUrl from '../models/dataStorage/GenerateDownloadUrl';
 import storagesRequest from '../models/dataStorage/DataStorageAvailable';
+import DataStorageRequest from '../models/dataStorage/DataStoragePage';
 
 const parser = new DOMParser();
 
@@ -68,7 +69,7 @@ async function readS3Response (response, asJSON = false, requestedFile = undefin
 }
 
 class ObjectStorage {
-  constructor (options = {}) {
+  constructor (options = {}, permissions = {}) {
     const {
       id,
       type,
@@ -84,6 +85,7 @@ class ObjectStorage {
     this.pathMask = pathMask;
     this.delimiter = delimiter;
     this.s3Storage = undefined;
+    this.permissions = permissions;
   }
 
   async initialize (permissions = {}) {
@@ -100,6 +102,9 @@ class ObjectStorage {
   }
 
   async generateFileUrl (file) {
+    if (!this.s3Storage) {
+      await this.initialize(this.permissions);
+    }
     if (this.s3Storage) {
       await this.s3Storage.refreshCredentialsIfNeeded();
       return this.s3Storage.getSignedUrl(file);
@@ -128,6 +133,51 @@ class ObjectStorage {
       throw new Error(request.error);
     }
     return atob((request.value || {}).content);
+  }
+
+  async getFolderContents (folder) {
+    if (!this.id) {
+      throw new Error(`Storage ID not specified`);
+    }
+    const id = this.id;
+    function fetchPage (marker) {
+      return new Promise((resolve) => {
+        const request = new DataStorageRequest(
+          id,
+          decodeURIComponent(folder),
+          false,
+          50
+        );
+        request
+          .fetchPage(marker)
+          .then(() => {
+            if (request.loaded) {
+              const pathRegExp = new RegExp(`^${folder}\\/`, 'i');
+              const nextPageMarker = (request.value || {}).nextPageMarker;
+              const items = ((request.value || {}).results || [])
+                .filter(item => pathRegExp.test(item.path));
+              return Promise.resolve({items, nextPageMarker});
+            } else {
+              return Promise.resolve({items: []});
+            }
+          })
+          .then(({items, nextPageMarker}) => {
+            if (!nextPageMarker) {
+              return Promise.resolve([items]);
+            } else {
+              return Promise.all([
+                Promise.resolve(items),
+                fetchPage(nextPageMarker)
+              ]);
+            }
+          })
+          .then(itemsArray => resolve(itemsArray.reduce((r, c) => ([...r, ...c]), [])))
+          .catch(() => {
+            resolve([]);
+          });
+      });
+    }
+    return fetchPage();
   }
 }
 
@@ -203,7 +253,7 @@ export async function createObjectStorageWrapper (
     obj = {...storage};
   }
   if (obj) {
-    const objectStorage = new ObjectStorage(obj);
+    const objectStorage = new ObjectStorage(obj, permissions);
     if (generateCredentials) {
       await objectStorage.initialize(permissions);
     }

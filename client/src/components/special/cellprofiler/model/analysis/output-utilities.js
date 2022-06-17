@@ -17,20 +17,51 @@
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
 
-export async function getOutputFileAccessInfo (path) {
+const expirationTimeoutMS = 1000 * 60; // 1 minute
+
+/**
+ * @param output
+ * @returns {Promise<AnalysisOutputResult>}
+ */
+export async function getOutputFileAccessInfo (output) {
+  const {
+    file: path
+  } = output;
   const objectStorage = await createObjectStorageWrapper(
     storages,
     path,
-    {write: false, read: true}
+    {write: false, read: true},
+    {generateCredentials: false}
   );
   if (objectStorage) {
-    if (objectStorage.pathMask) {
-      const e = (new RegExp(`^${objectStorage.pathMask}/(.+)$`, 'i')).exec(path);
-      if (e && e.length) {
-        return objectStorage.generateFileUrl(e[1]);
+    let url;
+    let handle;
+    const setExpirationTimeout = () => {
+      clearTimeout(handle);
+      handle = setTimeout(() => {
+        url = undefined;
+      }, expirationTimeoutMS);
+    };
+    const fetchUrl = async () => {
+      if (url) {
+        return url;
       }
-    }
-    return objectStorage.generateFileUrl(path);
+      if (objectStorage.pathMask) {
+        const e = (new RegExp(`^${objectStorage.pathMask}/(.+)$`, 'i')).exec(path);
+        if (e && e.length) {
+          url = objectStorage.generateFileUrl(e[1]);
+          setExpirationTimeout();
+          return url;
+        }
+      }
+      url = objectStorage.generateFileUrl(path);
+      setExpirationTimeout();
+      return url;
+    };
+    return {
+      ...output,
+      fetchUrl
+    };
   }
   return undefined;
 }

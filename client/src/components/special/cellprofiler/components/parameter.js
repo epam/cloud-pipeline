@@ -21,11 +21,13 @@ import {observer} from 'mobx-react';
 import {
   Checkbox,
   Input,
-  Select
+  Select,
+  Slider
 } from 'antd';
 import {AnalysisTypes} from '../model/common/analysis-types';
 import styles from './cell-profiler.css';
 import ColorPicker from '../../color-picker';
+import { isObservableArray } from "mobx";
 
 class CellProfilerParameter extends React.Component {
   reportChanged = () => {
@@ -48,10 +50,42 @@ class CellProfilerParameter extends React.Component {
       parameterValue.value = e.target.value;
       this.reportChanged();
     };
+    const correctedValue = parameterValue.value &&
+      (isObservableArray(parameterValue.value) || Array.isArray(parameterValue.valaue))
+      ? parameterValue.value.join(', ')
+      : parameterValue.value;
     return (
       <Input
         className={styles.cellProfilerParameterValue}
+        value={correctedValue}
+        onChange={onChange}
+      />
+    );
+  }
+  renderSliderControl () {
+    const {
+      parameterValue
+    } = this.props;
+    if (
+      !parameterValue ||
+      !parameterValue.parameter ||
+      !parameterValue.parameter.range
+    ) {
+      return null;
+    }
+    const {min, max} = parameterValue.parameter.range;
+    const onChange = (value) => {
+      parameterValue.value = value;
+      this.reportChanged();
+    };
+    const step = 10 ** (Math.log10((max - min) / 100));
+    return (
+      <Slider
+        className={styles.cellProfilerParameterValue}
         value={parameterValue.value}
+        min={min}
+        max={max}
+        step={step}
         onChange={onChange}
       />
     );
@@ -85,16 +119,36 @@ class CellProfilerParameter extends React.Component {
       return null;
     }
     const values = parameterValue.parameter.values;
-    const onChange = (valueId) => {
-      const newValue = values.find(value => value.id === valueId);
-      parameterValue.value = newValue ? newValue.value : undefined;
+    const multiple = !!(parameterValue.parameter.multiple);
+    const onChange = (changedValue) => {
+      if (multiple) {
+        parameterValue.value = values
+          .map(o => o.id)
+          .filter(value => (changedValue || []).includes(value))
+      } else {
+        const valueId = changedValue;
+        const newValue = values.find(value => value.id === valueId);
+        parameterValue.value = newValue ? newValue.value : undefined;
+      }
       this.reportChanged();
     };
-    const selected = values.find(value => value.value === parameterValue.value);
+    let selected;
+    if (multiple) {
+      selected = values.filter(value =>
+        parameterValue.value &&
+        typeof parameterValue.value.includes === 'function' &&
+        (parameterValue.value || []).includes(value.value)
+      ).map(o => o.id);
+    } else {
+      const selectedValue = values.find(value => value.value === parameterValue.value);
+      selected = selectedValue ? selectedValue.id : undefined;
+    }
     return (
       <Select
+        allowClear
+        mode={multiple ? 'multiple' : 'default'}
         className={styles.cellProfilerParameterValue}
-        value={selected ? selected.id : undefined}
+        value={selected}
         onChange={onChange}
       >
         {
@@ -137,7 +191,9 @@ class CellProfilerParameter extends React.Component {
     if (!parameterValue || !parameterValue.parameter) {
       return null;
     }
-    const [from, to] = parameterValue.value || [];
+    const [from, to] = parameterValue.value && parameterValue.value.length
+      ? parameterValue.value
+      : [];
     const onChangeFrom = (e) => {
       parameterValue.value = [e.target.value, to];
       this.reportChanged();
@@ -187,6 +243,19 @@ class CellProfilerParameter extends React.Component {
         return this.renderBooleanControl();
       case AnalysisTypes.string:
         return this.renderStringControl();
+      case AnalysisTypes.integer:
+      case AnalysisTypes.float: {
+        if (
+          parameterValue.parameter.range &&
+          parameterValue.parameter.range.min !== undefined &&
+          parameterValue.parameter.range.max !== undefined &&
+          Number.isFinite(Number(parameterValue.parameter.range.min)) &&
+          Number.isFinite(Number(parameterValue.parameter.range.max))
+        ) {
+          return this.renderSliderControl();
+        }
+        return this.renderStringControl();
+      }
       case AnalysisTypes.color:
         return this.renderColorControl();
       case AnalysisTypes.custom:
@@ -208,6 +277,7 @@ class CellProfilerParameter extends React.Component {
     if (!parameterValue || !parameterValue.parameter) {
       return null;
     }
+    const {showTitle} = parameterValue.parameter;
     return (
       <div
         className={
@@ -219,7 +289,14 @@ class CellProfilerParameter extends React.Component {
         style={style}
       >
         <div
-          className={styles.cellProfilerParameterTitle}
+          className={
+            classNames(
+              styles.cellProfilerParameterTitle,
+              {
+                [styles.hidden]: !showTitle
+              }
+            )
+          }
         >
           {parameterValue.parameter.title}
         </div>

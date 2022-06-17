@@ -25,7 +25,9 @@ function HcsImageAnalysis (props) {
     hcsAnalysis,
     className,
     style,
-    expandSingle
+    expandSingle,
+    onToggleResults,
+    resultsVisible
   } = props;
   if (!hcsAnalysis || !hcsAnalysis.available) {
     return (
@@ -47,6 +49,8 @@ function HcsImageAnalysis (props) {
       className={className}
       style={style}
       expandSingle={expandSingle}
+      onToggleResults={onToggleResults}
+      resultsVisible={resultsVisible}
     />
   );
 }
@@ -54,7 +58,9 @@ function HcsImageAnalysis (props) {
 HcsImageAnalysis.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  expandSingle: PropTypes.bool
+  expandSingle: PropTypes.bool,
+  onToggleResults: PropTypes.func,
+  resultsVisible: PropTypes.bool
 };
 
 export default inject('hcsAnalysis')(observer(HcsImageAnalysis));

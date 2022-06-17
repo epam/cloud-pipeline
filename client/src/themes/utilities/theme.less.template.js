@@ -3157,5 +3157,12 @@ export default `
 @THEME .cell-profiler-module-header:hover {
   background-color: darken(@card-background-color, 5%);
 }
+@THEME .cell-profiler-results-table {
+  background-color: @card-background-color;
+}
+@THEME .cell-profiler-results-table td,
+@THEME .cell-profiler-results-table th {
+  border: 1px solid @table-border-color;
+}
 
 `;

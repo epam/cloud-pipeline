@@ -14,13 +14,27 @@
  *  limitations under the License.
  */
 
-/**
- * @param {string} type
- * @param {function(AnalysisModule)} [advancedHandler]
- * @returns {(function(AnalysisModule))}
- */
-export default function visibilityHandlerGenerator (type, advancedHandler) {
-  return (cpModule) =>
-    cpModule.getParameterValue('thresholdingMethod') === type &&
-    (typeof advancedHandler !== 'function' || advancedHandler(cpModule));
+const findCytoplasm = {
+  name: 'FindCytoplasm',
+  composed: true,
+  output: 'output|object',
+  parameters: [
+    'Nuclei objects|object|ALIAS nuclei',
+    'Cells objects|object|ALIAS cells',
+    'Objects name|string|Cytoplasm|ALIAS output'
+  ],
+  subModules: [
+    {
+      alias: 'identify',
+      module: 'IdentifyTertiaryObjects',
+      values: {
+        small: '{parent.nuclei}|COMPUTED',
+        large: '{parent.cells}|COMPUTED',
+        shrink: true,
+        output: '{parent.output}|COMPUTED'
+      }
+    }
+  ]
 };
+
+export default findCytoplasm;

@@ -37,9 +37,11 @@ import {
   downloadCurrentTiff
 } from './utilities/download-current-tiff';
 import HcsImageAnalysis from './hcs-image-analysis';
+import AnalysisOutput from '../cellprofiler/components/analysis-output';
 import {Analysis} from '../cellprofiler/model/analysis';
 import roleModel from '../../../utils/roleModel';
 import styles from './hcs-image.css';
+import ObjectsOutline from "../cellprofiler/components/objects-outline";
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -62,6 +64,7 @@ class HcsImage extends React.PureComponent {
     showDetails: false,
     showConfiguration: false,
     showAnalysis: false,
+    showAnalysisResults: false,
     showEntireWell: false
   };
 
@@ -73,7 +76,8 @@ class HcsImage extends React.PureComponent {
   @observable hcsAnalysis = new Analysis();
 
   componentDidMount () {
-    this.hcsAnalysis.userInfo = this.props.authenticatedUserInfo;
+    this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
+    this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
     if (this.state.showAnalysis) {
       this.hcsAnalysis.activate();
     }
@@ -94,11 +98,11 @@ class HcsImage extends React.PureComponent {
     ) {
       this.hcsAnalysis.activate(this.state.showAnalysis);
     }
-    this.loadImageForAnalysis();
   }
 
   componentWillUnmount () {
     this.container = undefined;
+    this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
   }
 
@@ -395,6 +399,13 @@ class HcsImage extends React.PureComponent {
     }
   };
 
+  onAnalysisDone = () => {
+    const resultsAvailable = !!this.hcsAnalysis && !!this.hcsAnalysis.analysisOutput;
+    this.setState({
+      showAnalysisResults: resultsAvailable
+    });
+  };
+
   loadImageForAnalysis = () => {
     const {
       sequenceId,
@@ -405,22 +416,37 @@ class HcsImage extends React.PureComponent {
       this.hcsAnalysis.changeFile(undefined);
       return;
     }
-    if (this.hcsInfo && this.hcsAnalysis && this.hcsViewerState) {
-      const z = this.hcsViewerState
-        ? this.hcsViewerState.imageZPosition
-        : 0;
+    if (this.hcsInfo && this.hcsAnalysis && this.hcsImageViewer) {
+      const viewerState = this.hcsImageViewer.viewerState;
+      const {
+        channels = [],
+        globalSelection = {},
+        metadata
+      } = viewerState || {};
+      let image;
+      if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
+        const e = /field ([\d]+)/i.exec(metadata.Name);
+        if (e && e.length) {
+          image = Number(e[1]);
+        }
+      }
+      const {
+        z = 0,
+        t = 0
+      } = globalSelection;
       const {sequences = []} = this.hcsInfo;
       const sequence = sequences.find(s => s.id === sequenceId);
-      if (sequence && sequence.omeTiff) {
+      if (sequence && sequence.sourceDirectory && image) {
         let analysisPath = sequence.sourceDirectory;
         const {wells = []} = sequence;
         const well = wells.find(w => w.id === wellId);
         this.hcsAnalysis.changeFile({
           sourceDirectory: analysisPath,
-          image: this.hcsViewerState.fieldID,
+          image,
           well,
           z: z + 1,
-          time: this.hcsViewerState.imageZPosition + 1
+          time: t + 1,
+          channels
         });
       }
     }
@@ -447,6 +473,10 @@ class HcsImage extends React.PureComponent {
         this.hcsImageViewer.Events.onCellClick,
         this.onMeshCellClick.bind(this)
       );
+      this.hcsImageViewer.addEventListener(
+        this.hcsImageViewer.Events.viewerStateChanged,
+        this.loadImageForAnalysis.bind(this)
+      );
       this.hcsViewerState.attachToViewer(this.hcsImageViewer);
       this.hcsSourceState.attachToViewer(this.hcsImageViewer);
       this.loadImage();
@@ -456,6 +486,7 @@ class HcsImage extends React.PureComponent {
       this.hcsImageViewer = undefined;
     }
     this.hcsAnalysis.hcsImageViewer = this.hcsImageViewer;
+    console.log(this.hcsImageViewer);
   };
 
   renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {
@@ -506,6 +537,13 @@ class HcsImage extends React.PureComponent {
     const {showAnalysis} = this.state;
     this.setState({
       showAnalysis: !showAnalysis
+    });
+  };
+
+  toggleAnalysisResults = (visible) => {
+    const {showAnalysisResults} = this.state;
+    this.setState({
+      showAnalysisResults: visible === undefined ? !showAnalysisResults : visible
     });
   };
 
@@ -617,6 +655,7 @@ class HcsImage extends React.PureComponent {
         onClose={this.hideConfiguration}
       >
         <HcsImageControls />
+        <ObjectsOutline />
         <div className={styles.additionalConfigurationControls}>
           {this.wellViewAvailable && (
             <div className={styles.action}>
@@ -652,6 +691,43 @@ class HcsImage extends React.PureComponent {
     );
   };
 
+  renderHcsAnalysisResults = () => {
+    const {
+      showAnalysis,
+      showAnalysisResults
+    } = this.state;
+    if (
+      showAnalysis &&
+      showAnalysisResults &&
+      this.hcsAnalysis &&
+      this.hcsAnalysis.available &&
+      this.hcsAnalysis.analysisOutput
+    ) {
+      return (
+        <div
+          className={styles.hcsImageAnalysisResults}
+        >
+          <div
+            className={
+              classNames(
+                styles.hcsImageAnalysisResultsBackground,
+                'cp-panel'
+              )
+            }
+          >
+            {'\u00A0'}
+          </div>
+          <AnalysisOutput
+            className={styles.hcsImageAnalysisResultsContent}
+            analysis={this.hcsAnalysis}
+            onClose={() => this.toggleAnalysisResults(false)}
+          />
+        </div>
+      );
+    }
+    return null;
+  };
+
   render () {
     const {
       className,
@@ -673,7 +749,8 @@ class HcsImage extends React.PureComponent {
       wellHeight,
       showDetails,
       showEntireWell,
-      showAnalysis
+      showAnalysis,
+      showAnalysisResults
     } = this.state;
     const pending = hcsImagePending ||
       sequencePending ||
@@ -702,6 +779,8 @@ class HcsImage extends React.PureComponent {
             showAnalysis && (
               <HcsImageAnalysis
                 className={styles.analysis}
+                onToggleResults={this.toggleAnalysisResults}
+                resultsVisible={showAnalysisResults}
               />
             )
           }
@@ -760,6 +839,7 @@ class HcsImage extends React.PureComponent {
             >
               {'\u00A0'}
             </div>
+            {this.renderHcsAnalysisResults()}
           </div>
           {
             sequenceInfo && !sequenceInfo.error && (

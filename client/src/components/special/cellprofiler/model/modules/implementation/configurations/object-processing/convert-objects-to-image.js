@@ -13,14 +13,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable max-len */
 
-const thresholdMethods = {
-  minimumCrossEntropy: 'Minimum Cross-Entropy',
-  otsu: 'Otsu',
-  robustBackground: 'Robust Background',
-  measurement: 'Measurement',
-  manual: 'Manual',
-  sauvola: 'Sauvola'
+export default {
+  name: 'ConvertObjectsToImage',
+  group: 'Object Processing',
+  output: 'output|file',
+  parameters: [
+    'Select the input objects|object|ALIAS input',
+    'Name the output image|ALIAS output',
+    'Select the color format|[Color,"Binary (black & white)",Grayscale,uint16]|Color|ALIAS format',
+    'Select the colormap|[Default]|Default|COMPUTED|HIDDEN'
+  ]
 };
-
-export default thresholdMethods;
