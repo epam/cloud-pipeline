@@ -45,7 +45,6 @@ from typing import List
 
 
 MANDATORY_MODULES_COUNT = 4
-INPUT_DATASET_NAME = 'input'
 RAW_IMAGE_DATA_ROOT = os.getenv('HCS_RAW_IMAGE_DATA_ROOT')
 
 
@@ -261,7 +260,7 @@ class HcsPipeline(object):
     def _add_default_modules(self):
         self.add_module('Images', 1, {})
         self.add_module('Metadata', 2, {})
-        self.add_module('NamesAndTypes', 3, {'Name to assign these images': INPUT_DATASET_NAME})
+        self.add_module('NamesAndTypes', 3, {'Assign a name to': 'Images matching rules'})
         self.add_module('Groups', 4, {})
 
     def _init_results_dir(self, service_root_dir, measurement_id):
