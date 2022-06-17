@@ -1574,7 +1574,12 @@ public class PipelineRunManager {
                 .build();
         final List<MetadataEntity> metadataEntities = metadataEntityManager
                 .loadEntitiesByIds(new HashSet<>(entitiesIds)).stream()
-                .peek(metadataEntity -> addRunStatusMetadata(metadataEntity.getData(), dataKey, runStatusMetadata))
+                .peek(metadataEntity -> {
+                    if (Objects.isNull(metadataEntity.getData())) {
+                        metadataEntity.setData(new HashMap<>());
+                    }
+                    addRunStatusMetadata(metadataEntity.getData(), dataKey, runStatusMetadata);
+                })
                 .collect(Collectors.toList());
         metadataEntityManager.updateMetadataEntities(metadataEntities);
     }
@@ -1596,7 +1601,7 @@ public class PipelineRunManager {
         }
         final List<RunStatusMetadata> runStatuses = JsonMapper.parseData(currentMetadata.getValue(),
                 new TypeReference<List<RunStatusMetadata>>() {});
-        final Map<Long, RunStatusMetadata> statusesByRunId = runStatuses.stream()
+        final Map<Long, RunStatusMetadata> statusesByRunId = ListUtils.emptyIfNull(runStatuses).stream()
                 .collect(Collectors.toMap(RunStatusMetadata::getRunId, Function.identity()));
         statusesByRunId.put(runStatusMetadata.getRunId(), runStatusMetadata);
         return new ArrayList<>(statusesByRunId.values());
