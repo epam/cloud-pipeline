@@ -40,10 +40,9 @@ import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
-import com.epam.pipeline.manager.preference.PreferenceManager;
-import com.epam.pipeline.manager.preference.SystemPreferences;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -60,6 +59,8 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
@@ -120,9 +121,6 @@ public class PipelineRunManagerUnitTest {
 
     @Mock
     private MetadataEntityManager metadataEntityManager;
-
-    @Mock
-    private PreferenceManager preferenceManager;
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
@@ -310,6 +308,7 @@ public class PipelineRunManagerUnitTest {
         pipelineRun.setId(ID);
         pipelineRun.setEntitiesIds(singletonList(ID));
         pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setStartDate(TEST_DATE);
         pipelineRun.setPipelineRunParameters(singletonList(new PipelineRunParameter(parameterKey, parameterValue)));
 
         final Map<String, PipeConfValue> currentData = new HashMap<>();
@@ -317,26 +316,28 @@ public class PipelineRunManagerUnitTest {
         final MetadataEntity currentMetadata = new MetadataEntity();
         currentMetadata.setData(currentData);
 
-        final String expectedDataValue = "{\"runId\":1,\"status\":\"STOPPED\"}";
-        final Map<String, PipeConfValue> expectedData = new HashMap<>(currentData);
-        expectedData.put(parameterValue, new PipeConfValue(PipeConfValueType.JSON.toString(), expectedDataValue));
-        final MetadataEntity expectedMetadata = new MetadataEntity();
-        expectedMetadata.setData(expectedData);
-
         doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
                 .loadEntitiesByIds(Collections.singleton(ID));
-        doReturn(parameterKey).when(preferenceManager)
-                .getPreference(SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_NAME);
-        doReturn(parameterValue).when(preferenceManager)
-                .getPreference(SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_VALUE);
 
         new JsonMapper().init();
 
         pipelineRunManager.updatePipelineStatus(pipelineRun);
 
+        final String expectedDataValue = String.format(
+                "[{\"runId\":1,\"status\":\"STOPPED\",\"startDate\":\"%s\"}]", TEST_DATE_STRING);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
         verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
-        verify(metadataEntityManager).updateMetadataEntities(singletonList(expectedMetadata));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
         verify(runCRUDService).updateRunStatus(any());
+        final List<MetadataEntity> updatedMetadataEntities = captor.getValue();
+        assertThat(updatedMetadataEntities.size()).isEqualTo(1);
+        final MetadataEntity updatedMetadataEntity = updatedMetadataEntities.get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(TEST_STRING)
+                .containsKey(parameterValue);
+        assertThat(updatedMetadataEntity.getData().get(TEST_STRING).getValue()).isEqualTo(TEST_STRING);
+        assertThat(updatedMetadataEntity.getData().get(parameterValue).getValue()).isEqualTo(expectedDataValue);
     }
 
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {

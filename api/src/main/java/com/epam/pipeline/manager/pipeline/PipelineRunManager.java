@@ -86,6 +86,7 @@ import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -142,6 +143,7 @@ public class PipelineRunManager {
     private static final int BILLING_PRICE_SCALE = 5;
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String LIMIT_MOUNTS_NONE = "none";
+    private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -586,9 +588,14 @@ public class PipelineRunManager {
         return updatePipelineStatus(runId, status, pipelineRun);
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun updatePipelineStatus(final PipelineRun run) {
-        updateMetadataEntities(run);
+        try {
+            updateMetadataEntities(run);
+        } catch (Exception e) {
+            LOGGER.error("An error occurred during metadata run status processing", e);
+        }
         return runCRUDService.updateRunStatus(run);
     }
 
@@ -1548,30 +1555,50 @@ public class PipelineRunManager {
         if (CollectionUtils.isEmpty(entitiesIds)) {
             return;
         }
-        final String metadataKeyName = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_NAME);
-        final String metadataKeyValue = preferenceManager.getPreference(
-                SystemPreferences.LAUNCH_RUN_STATUS_METADATA_KEY_VALUE);
         final Optional<PipelineRunParameter> runStatusParameter = ListUtils
                 .emptyIfNull(run.getPipelineRunParameters()).stream()
-                .filter(runParameter -> metadataKeyName.equals(runParameter.getName())
-                        && metadataKeyValue.equals(runParameter.getValue()))
+                .filter(runParameter -> CP_REPORT_RUN_STATUS.equals(runParameter.getName()))
                 .findFirst();
         if (!runStatusParameter.isPresent()) {
             return;
         }
         final String dataKey = runStatusParameter.get().getValue();
-        final Set<MetadataEntity> metadataEntities = metadataEntityManager
-                .loadEntitiesByIds(new HashSet<>(entitiesIds));
-        final String message = run.getStateReasonMessage();
+        Assert.isTrue(StringUtils.hasText(dataKey), String.format(
+                "Parameter '%s' was specified for pipeline run '%d' but empty", CP_REPORT_RUN_STATUS, run.getId()));
         final RunStatusMetadata runStatusMetadata = RunStatusMetadata.builder()
                 .runId(run.getId())
                 .status(run.getStatus().name())
-                .message(message)
+                .message(run.getStateReasonMessage())
+                .startDate(run.getStartDate())
+                .endDate(run.getEndDate())
                 .build();
-        metadataEntities.forEach(metadataEntity -> metadataEntity.getData()
-                .put(dataKey, new PipeConfValue(PipeConfValueType.JSON.toString(),
-                        JsonMapper.convertDataToJsonStringForQuery(runStatusMetadata))));
-        metadataEntityManager.updateMetadataEntities(new ArrayList<>(metadataEntities));
+        final List<MetadataEntity> metadataEntities = metadataEntityManager
+                .loadEntitiesByIds(new HashSet<>(entitiesIds)).stream()
+                .peek(metadataEntity -> addRunStatusMetadata(metadataEntity.getData(), dataKey, runStatusMetadata))
+                .collect(Collectors.toList());
+        metadataEntityManager.updateMetadataEntities(metadataEntities);
+    }
+
+    private void addRunStatusMetadata(final Map<String, PipeConfValue> currentData, final String dataKey,
+                                      final RunStatusMetadata runStatusMetadata) {
+        final List<RunStatusMetadata> runStatuses = currentData.containsKey(dataKey)
+                ? prepareExistingRunStatusMetadata(currentData.get(dataKey), runStatusMetadata)
+                : Collections.singletonList(runStatusMetadata);
+        final PipeConfValue value = new PipeConfValue(PipeConfValueType.JSON.toString(),
+                JsonMapper.convertDataToJsonStringForQuery(runStatuses));
+        currentData.put(dataKey, value);
+    }
+
+    private List<RunStatusMetadata> prepareExistingRunStatusMetadata(final PipeConfValue currentMetadata,
+                                                                     final RunStatusMetadata runStatusMetadata) {
+        if (Objects.isNull(currentMetadata)) {
+            return Collections.emptyList();
+        }
+        final List<RunStatusMetadata> runStatuses = JsonMapper.parseData(currentMetadata.getValue(),
+                new TypeReference<List<RunStatusMetadata>>() {});
+        final Map<Long, RunStatusMetadata> statusesByRunId = runStatuses.stream()
+                .collect(Collectors.toMap(RunStatusMetadata::getRunId, Function.identity()));
+        statusesByRunId.put(runStatusMetadata.getRunId(), runStatusMetadata);
+        return new ArrayList<>(statusesByRunId.values());
     }
 }

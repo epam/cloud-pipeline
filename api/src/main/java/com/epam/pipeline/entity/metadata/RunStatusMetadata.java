@@ -20,6 +20,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.Date;
+
 @Data
 @AllArgsConstructor
 @Builder
@@ -27,4 +29,6 @@ public class RunStatusMetadata {
     private Long runId;
     private String status;
     private String message;
+    private Date startDate;
+    private Date endDate;
 }
