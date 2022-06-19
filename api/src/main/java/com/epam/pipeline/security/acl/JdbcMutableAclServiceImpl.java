@@ -56,6 +56,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     private static final String SID_IDENTITY_QUERY = "SELECT currval('acl_sid_id_seq');";
     private static final String DELETE_SID_BY_ID_QUERY = "delete from acl_sid where id=?";
     private static final String DELETE_ENTRIES_BY_SID_QUERY = "delete from acl_entry where sid=?";
+    private static final String DELETE_IDENTITY_BY_SID_QUERY = "delete from acl_object_identity where owner_sid=?";
     private static final String LOAD_ENTRIES_BY_SIDS_COUNT_QUERY =
         "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
     private static final String LOAD_ENTRIES_SUMMARY_BY_SID_QUERY =
@@ -129,6 +130,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSidById(Long sidId) {
+        jdbcTemplate.update(DELETE_IDENTITY_BY_SID_QUERY, sidId);
         jdbcTemplate.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
         jdbcTemplate.update(DELETE_SID_BY_ID_QUERY, sidId);
     }
