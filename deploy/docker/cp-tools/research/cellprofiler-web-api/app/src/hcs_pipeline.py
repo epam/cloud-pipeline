@@ -37,8 +37,8 @@ from cellprofiler.modules.resize import Resize
 from cellprofiler.modules.resizeobjects import ResizeObjects
 from cellprofiler.modules.threshold import Threshold
 from cellprofiler.modules.watershed import Watershed
-from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement
-from cellprofiler_core.setting.subscriber import LabelSubscriber
+from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement
+from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.workspace import Workspace
 from enum import Enum
 from typing import List
@@ -430,11 +430,6 @@ class ErodeObjectsModuleProcessor(StructuringElementImagesModuleProcessor):
         return ErodeObjects()
 
 
-class ImageMathModuleProcessor(ModuleProcessor):
-    def new_module(self):
-        return ImageMath()
-
-
 class ClosingModuleProcessor(StructuringElementImagesModuleProcessor):
     def new_module(self):
         return Closing()
@@ -479,3 +474,65 @@ class SaveImagesModuleProcessor(ModuleProcessor):
                 'Save with lossless compression?': 'No',
                 'Append a suffix to the image file name?': 'Yes',
                 'Output file location': 'Elsewhere...|{}'.format(self.save_root)}
+
+
+class ImageMathModuleProcessor(ModuleProcessor):
+
+    _ELEMENTS_KEY = 'images'
+    _ELEMENT_TYPE_KEY = 'type'
+    _ELEMENT_VALUE_KEY = 'value'
+    _ELEMENT_FACTOR_KEY = 'factor'
+
+    def new_module(self):
+        return ImageMath()
+
+    def configure_module(self, module_config: dict) -> Module:
+        if self._ELEMENTS_KEY in module_config:
+            self.module.images.clear()
+            rules = module_config.pop(self._ELEMENTS_KEY)
+            for rule in rules:
+                type = rule[self._ELEMENT_TYPE_KEY]
+                value = rule[self._ELEMENT_VALUE_KEY]
+                component = SettingsGroup()
+                component.divider = Divider()
+                component.factor = Float('Multiply the image by')
+                component.factor.value = float(rule[self._ELEMENT_FACTOR_KEY])
+                if type == 'Image':
+                    component.image_name = ImageSubscriber('Select the image', value=value)
+                    component.image_or_measurement = Choice('Image or measurement?', ['Image', 'Measurement'],
+                                                            value='Image')
+                    component.measurement = Measurement('Measurement', '')
+                elif type == 'Measurement':
+                    component.image_name = ImageSubscriber('Select the image', value=None)
+                    component.image_or_measurement = Choice('Image or measurement?', ['Image', 'Measurement'],
+                                                            value='Measurement')
+                    component.measurement = Measurement('Measurement', None, value=value)
+                else:
+                    raise RuntimeError('Unknown type [{}]: should be Image or Measurement')
+                self.module.images.append(component)
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        general_setting = module_settings[:9]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        objects_settings = module_settings[9:]
+        elements = list()
+        for i in range(0, len(objects_settings), 4):
+            element_description = dict()
+            element_type = objects_settings[i].value
+            element_description[self._ELEMENT_TYPE_KEY] = element_type
+            if element_type == 'Image':
+                element_value = objects_settings[i + 1].value
+            elif element_type == 'Measurement':
+                element_value = objects_settings[i + 3].value
+            else:
+                element_value = 'Unknown type'
+            element_description[self._ELEMENT_VALUE_KEY] = element_value
+            element_description[self._ELEMENT_FACTOR_KEY] = objects_settings[i + 2].value
+            elements.append(element_description)
+        module_settings_dictionary[self._ELEMENTS_KEY] = elements
+        return module_settings_dictionary
