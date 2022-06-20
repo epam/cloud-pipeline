@@ -25,6 +25,7 @@ import MetadataEntityFilter from '../../../models/folderMetadata/MetadataEntityF
 import MetadataEntityKeys from '../../../models/folderMetadata/MetadataEntityKeys';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataEntityLoadExternal from '../../../models/folderMetadata/MetadataEntityLoadExternal';
+import {getOutputFileAccessInfo} from '../../special/metadataPanel/utils';
 import {
   Button,
   Checkbox,
@@ -466,7 +467,6 @@ export default class Metadata extends React.Component {
             };
           }
           currentMetadata = (value.elements || []).map(v => {
-            v.data = v.data || {};
             v.data.rowKey = {
               value: v.id,
               type: 'string'
@@ -481,6 +481,15 @@ export default class Metadata extends React.Component {
             };
             return v.data;
           });
+          currentMetadata = (await Promise.all(currentMetadata.map(async item => {
+            return Promise.all(Object.entries(item).map(async ([key, data]) => {
+              if (data.type === 'Path') {
+                const info = await getOutputFileAccessInfo(data.value);
+                return [key, {...data, sharable: !!info, storageInfo: info}];
+              }
+              return [key, data];
+            }));
+          }))).map(arr => Object.fromEntries(arr));;
         }
       }
     } else {

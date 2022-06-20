@@ -24,6 +24,7 @@ import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEnti
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
+import SharedItemInfo from '../../pipelines/browser/forms/data-storage-item-sharing/SharedItemInfo';
 import PropTypes from 'prop-types';
 
 @inject((args, params) => ({
@@ -50,7 +51,7 @@ export default class MetadataPanel extends React.Component {
 
   static defaultProps = {
     readOnlyKeys: ['ID'],
-    columnNamesFn: (o => o)
+    columnNamesFn: o => o
   };
 
   state = {
@@ -58,7 +59,9 @@ export default class MetadataPanel extends React.Component {
     editableValue: null,
     editableText: null,
     addKey: null,
-    undoItems: []
+    undoItems: [],
+    itemsToShare: [],
+    shareDialogVisible: false
   };
 
   discardChanges = () => {
@@ -515,9 +518,18 @@ export default class MetadataPanel extends React.Component {
                     ? 6
                     : 5
                 }
-                style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
+                style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', position: 'relative'}}
                 onClick={this.onMetadataEditStarted('key', key, value)}>
                 {this.props.columnNamesFn(key)}
+                {metadataItem[key].sharable && (
+                  <Button
+                    id={`share-metadata-paths-${key}-button`}
+                    size="small"
+                    onClick={(e) => this.sharePaths(e, metadataItem[key])}
+                    style={{position: 'absolute', right: 5, left: 'calc(100% - 50px)', top: 3}}
+                  >
+                    <Icon type="share-alt" />
+                  </Button>)}
               </td>
               {
                 this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
@@ -585,6 +597,27 @@ export default class MetadataPanel extends React.Component {
     return valueElement;
   }
 
+  sharePaths = (event, item) => {
+    event.stopPropagation();
+    const e = (new RegExp(`^${item.storageInfo.pathMask}/(.+)$`, 'i')).exec(item.path);
+    let path;
+    if (e && e.length) {
+      path = e[1];
+    } else {
+      path = item.value;
+    }
+    const isFile = /\.(.+)$/.test(path);
+    const itemToShare = {
+      path,
+      type: isFile ? 'file' : 'folder',
+      storageId: item.storageInfo.id
+    };
+    this.setState({
+      itemsToShare: [itemToShare],
+      shareDialogVisible: true
+    });
+  }
+
   renderEmptyPlaceholder = () => {
     if (!this.props.currentItem) {
       return (
@@ -610,9 +643,21 @@ export default class MetadataPanel extends React.Component {
     );
   };
 
+  closeShareItemDialog = () => {
+    return this.setState({
+      itemsToShare: [],
+      shareDialogVisible: false
+    });
+  };
+
   render () {
     return (
       <div style={{flex: 1, display: 'flex', flexDirection: 'column'}}>
+        <SharedItemInfo
+          visible={this.state.shareDialogVisible}
+          shareItems={this.state.itemsToShare}
+          close={this.closeShareItemDialog}
+        />
         <table key="header" style={{width: '100%'}}>
           {this.renderTableHeader()}
           <tbody>
