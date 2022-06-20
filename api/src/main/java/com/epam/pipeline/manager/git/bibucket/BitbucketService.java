@@ -18,6 +18,10 @@ package com.epam.pipeline.manager.git.bibucket;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
+import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
@@ -25,32 +29,34 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitRepositoryUrl;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketBranch;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTagCreateRequest;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
-import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.git.GitClientService;
+import com.epam.pipeline.manager.git.RestApiUtils;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
+import com.epam.pipeline.utils.GitUtils;
 import joptsimple.internal.Strings;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,24 +66,17 @@ import java.util.stream.Collectors;
 public class BitbucketService implements GitClientService {
     private static final String REPOSITORY_NAME = "repository name";
     private static final String PROJECT_NAME = "project name";
-    private static final String INITIAL_COMMIT = "Initial commit";
-    private static final String BLOB = "blob";
-    private static final String TREE = "tree";
-    private static final String NOT_FOUND_CODE = "404";
 
     private final BitbucketMapper mapper;
     private final MessageHelper messageHelper;
     private final AuthManager authManager;
-    private String srcDirectory;
 
     public BitbucketService(final BitbucketMapper mapper,
                             final MessageHelper messageHelper,
-                            final AuthManager authManager,
-                            final @Value("${git.src.directory}") String srcDirectory) {
+                            final AuthManager authManager) {
         this.mapper = mapper;
         this.messageHelper = messageHelper;
         this.authManager = authManager;
-        this.srcDirectory = srcDirectory;
     }
 
     @Override
@@ -92,6 +91,21 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
+    public List<String> getBranches(final String repositoryPath, final String token) {
+        final BitbucketClient client = getClient(repositoryPath, token);
+
+        final List<BitbucketBranch> values = new ArrayList<>();
+        String nextPage = collectValues(client.getBranches(null), values);
+        while (StringUtils.isNotBlank(nextPage)) {
+            nextPage = collectValues(client.getBranches(nextPage), values);
+        }
+
+        return values.stream()
+                .map(BitbucketBranch::getDisplayId)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public GitProject createRepository(final String description, final String path, final String token) {
         final BitbucketRepository bitbucketRepository = BitbucketRepository.builder()
                 .isPublic(false)
@@ -102,8 +116,18 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
+    public GitProject renameRepository(final String currentRepositoryPath, final String newName, final String token) {
+        final BitbucketRepository bitbucketRepository = BitbucketRepository.builder()
+                .name(newName)
+                .build();
+        final BitbucketRepository repository = getClient(currentRepositoryPath, token)
+                .updateRepository(bitbucketRepository);
+        return mapper.toGitRepository(repository);
+    }
+
+    @Override
     public void deleteRepository(final Pipeline pipeline) {
-        getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).deleteRepository();
+        getClient(pipeline).deleteRepository();
     }
 
     @Override
@@ -112,8 +136,10 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
-    public void createFile(final GitProject repository, final String path, final String content, final String token) {
-        getClient(repository.getRepoUrl(), token).createFile(path, content, INITIAL_COMMIT);
+    public void createFile(final GitProject repository, final String path, final String content, final String token,
+                           final String branch) {
+        getClient(repository.getRepoUrl(), token)
+                .upsertFile(path, content, GitUtils.INITIAL_COMMIT, null, branch);
     }
 
     @Override
@@ -123,8 +149,14 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
+    public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String revision,
+                                           final int byteLimit) {
+        return RestApiUtils.getFileContent(getClient(pipeline).getRawFileContent(revision, path), byteLimit);
+    }
+
+    @Override
     public List<Revision> getTags(final Pipeline pipeline) {
-        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline);
 
         final List<BitbucketTag> values = new ArrayList<>();
         String nextPage = collectValues(client.getTags(null), values);
@@ -139,9 +171,22 @@ public class BitbucketService implements GitClientService {
     }
 
     @Override
-    public Revision getLastRevision(final Pipeline pipeline) {
-        final BitbucketPagedResponse<BitbucketCommit> commits = getClient(pipeline.getRepository(),
-                pipeline.getRepositoryToken()).getCommits();
+    public Revision createTag(final Pipeline pipeline, final String tagName, final String commitId,
+                              final String message, final String releaseDescription) {
+        final BitbucketTagCreateRequest request = BitbucketTagCreateRequest.builder()
+                .name(tagName)
+                .startPoint(commitId)
+                .message(message)
+                .build();
+        final BitbucketTag tag = getClient(pipeline).createTag(request);
+        return Optional.ofNullable(tag)
+                .map(mapper::tagToRevision)
+                .orElse(null);
+    }
+
+    @Override
+    public Revision getLastRevision(final Pipeline pipeline, final String ref) {
+        final BitbucketPagedResponse<BitbucketCommit> commits = getClient(pipeline).getLastCommit(ref);
         return Optional.ofNullable(commits)
                 .flatMap(value -> ListUtils.emptyIfNull(value.getValues()).stream()
                         .findFirst()
@@ -170,8 +215,7 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public GitCommitEntry getCommit(final Pipeline pipeline, final String commitId) {
-        final BitbucketCommit commit = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
-                .getCommit(commitId);
+        final BitbucketCommit commit = getClient(pipeline).getCommit(commitId);
         return Optional.ofNullable(commit)
                 .map(mapper::bitbucketCommitToCommitEntry)
                 .orElse(null);
@@ -179,7 +223,7 @@ public class BitbucketService implements GitClientService {
 
     @Override
     public GitTagEntry getTag(final Pipeline pipeline, final String tagName) {
-        final BitbucketTag tag = getClient(pipeline.getRepository(), pipeline.getRepositoryToken()).getTag(tagName);
+        final BitbucketTag tag = getClient(pipeline).getTag(tagName);
         return Optional.ofNullable(tag)
                 .map(mapper::bitbucketTagToTagEntry)
                 .orElse(null);
@@ -188,35 +232,116 @@ public class BitbucketService implements GitClientService {
     @Override
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String rawPath,
                                                           final String version, final boolean recursive) {
-        final BitbucketClient client = getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
+        final BitbucketClient client = getClient(pipeline);
         final String path = ProviderUtils.DELIMITER.equals(rawPath) ? Strings.EMPTY : rawPath;
 
         final List<String> values = new ArrayList<>();
-        try {
-            final BitbucketPagedResponse<String> files = client.getFiles(path, version, null);
-            String nextPage = collectValues(files, values);
-            while (StringUtils.isNotBlank(nextPage)) {
-                nextPage = collectValues(client.getFiles(path, version, nextPage), values);
-            }
-
-            final List<GitRepositoryEntry> blobs = values.stream()
-                    .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
-                    .map(value -> buildGitRepositoryEntry(path, value, BLOB))
-                    .collect(Collectors.toList());
-            final List<GitRepositoryEntry> trees = values.stream()
-                    .map(this::trimFileName)
-                    .filter(StringUtils::isNotBlank)
-                    .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
-                    .distinct()
-                    .map(folderPath -> buildGitRepositoryEntry(path, folderPath, TREE))
-                    .collect(Collectors.toList());
-            return new ArrayList<>(CollectionUtils.union(blobs, trees));
-        } catch (UnexpectedResponseStatusException e) {
-            if (e.getMessage().contains(NOT_FOUND_CODE) && path.equals(srcDirectory)) {
-                return getRepositoryContents(pipeline, ProviderUtils.DELIMITER, version, recursive);
-            }
-            throw e;
+        String nextPage = collectValues(client.getFiles(path, version, null), values);
+        while (StringUtils.isNotBlank(nextPage)) {
+            nextPage = collectValues(client.getFiles(path, version, nextPage), values);
         }
+
+        final List<GitRepositoryEntry> files = values.stream()
+                .filter(value -> recursive || !value.contains(ProviderUtils.DELIMITER))
+                .map(value -> buildGitRepositoryEntry(path, value, GitUtils.FILE_MARKER))
+                .collect(Collectors.toList());
+
+        final List<String> folders = values.stream()
+                .map(this::trimFileName)
+                .filter(StringUtils::isNotBlank)
+                .filter(folderPath -> recursive || !folderPath.contains(ProviderUtils.DELIMITER))
+                .distinct()
+                .map(this::getFoldersTreeFromPath)
+                .flatMap(Collection::stream)
+                .distinct()
+                .collect(Collectors.toList());
+        final List<GitRepositoryEntry> results = folders.stream()
+                .map(folderPath -> buildGitRepositoryEntry(path, folderPath, GitUtils.FOLDER_MARKER))
+                .collect(Collectors.toList());
+        results.addAll(files);
+        return results;
+    }
+
+    @Override
+    public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
+                                     final String message, final boolean fileExists) {
+        final String commitId = fileExists ? pipeline.getCurrentVersion().getCommitId() : null;
+        final BitbucketCommit commit = getClient(pipeline.getRepository(), pipeline.getRepositoryToken())
+                .upsertFile(path, content, message, commitId, pipeline.getBranch());
+        return mapper.bitbucketCommitToCommitEntry(commit);
+    }
+
+    @Override
+    public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
+                                     final String filePreviousPath, final String filePath) {
+        throw new UnsupportedOperationException("File renaming is not supported for Bitbucket repository");
+    }
+
+    @Override
+    public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
+        throw new UnsupportedOperationException("File deletion is not supported for Bitbucket repository");
+    }
+
+    @Override
+    public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
+                                       final String message) {
+        final String folderPath = filesToCreate.get(0);
+        final BitbucketCommit commit = getClient(pipeline)
+                .upsertFile(folderPath, Strings.EMPTY, message, null, pipeline.getBranch());
+        return mapper.bitbucketCommitToCommitEntry(commit);
+    }
+
+    @Override
+    public GitCommitEntry renameFolder(final Pipeline pipeline, final String message,
+                                       final String folder, final String newFolderName) {
+        throw new UnsupportedOperationException("Folder renaming is not supported for Bitbucket repository");
+    }
+
+    @Override
+    public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
+        throw new UnsupportedOperationException("Folder deletion is not supported for Bitbucket repository");
+    }
+
+    @Override
+    public GitCommitEntry updateFiles(final Pipeline pipeline, final PipelineSourceItemsVO sourceItemVOList,
+                                      final String message) {
+        if (ListUtils.emptyIfNull(sourceItemVOList.getItems()).stream()
+                .anyMatch(sourceItemVO -> StringUtils.isNotBlank(sourceItemVO.getPreviousPath()))) {
+            throw new UnsupportedOperationException("File renaming is not supported for Bitbucket repository");
+        }
+        final BitbucketClient client = getClient(pipeline);
+
+        BitbucketCommit commit = null;
+        for (final PipelineSourceItemVO sourceItemVO : sourceItemVOList.getItems()) {
+            final String commitId = findPreviousCommitId(client, sourceItemVO.getPath(), pipeline.getBranch(),
+                    pipeline.getCurrentVersion().getCommitId(), commit);
+            commit = client.upsertFile(sourceItemVO.getPath(), sourceItemVO.getContents(), message,
+                    commitId, pipeline.getBranch());
+        }
+        return mapper.bitbucketCommitToCommitEntry(commit);
+    }
+
+    @Override
+    public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
+                                      final String message) {
+        Assert.isTrue(files.size() == 1, "Multiple files upload is not supported for Bitbucket repository");
+        final UploadFileMetadata file = files.get(0);
+        final BitbucketClient client = getClient(pipeline);
+        final String commitId = fileExists(client, file.getFileName(), pipeline.getBranch())
+                ? pipeline.getCurrentVersion().getCommitId()
+                : null;
+        final BitbucketCommit commit = client.upsertFile(file.getFileName(), file.getFileType(), file.getBytes(),
+                message, commitId, pipeline.getBranch());
+        return mapper.bitbucketCommitToCommitEntry(commit);
+    }
+
+    @Override
+    public boolean fileExists(final Pipeline pipeline, final String filePath) {
+        return fileExists(getClient(pipeline), filePath, pipeline.getBranch());
+    }
+
+    private BitbucketClient getClient(final Pipeline pipeline) {
+        return getClient(pipeline.getRepository(), pipeline.getRepositoryToken());
     }
 
     private BitbucketClient getClient(final String repositoryPath, final String token) {
@@ -271,5 +396,30 @@ public class BitbucketService implements GitClientService {
         return Optional.ofNullable(Paths.get(filePath).getParent())
                 .map(Path::toString)
                 .orElse(null);
+    }
+
+    private boolean fileExists(final BitbucketClient client, final String path, final String branch) {
+        return client.getFileContent(GitUtils.getBranchRefOrDefault(branch), path) != null;
+    }
+
+    private String findPreviousCommitId(final BitbucketClient client, final String path, final String branch,
+                                        final String lastPipelineCommit, final BitbucketCommit previousCommit) {
+        if (!fileExists(client, path, branch)) {
+            return null;
+        }
+        return Objects.isNull(previousCommit) ? lastPipelineCommit : previousCommit.getId();
+    }
+
+    private List<String> getFoldersTreeFromPath(final String path) {
+        final List<String> folders = new ArrayList<>();
+        String previousPath = null;
+        for (final Path pathPart : Paths.get(path)) {
+            final String currentFolder = pathPart.toString();
+            previousPath = StringUtils.isBlank(previousPath)
+                    ? currentFolder
+                    : previousPath + Constants.PATH_DELIMITER + currentFolder;
+            folders.add(previousPath);
+        }
+        return folders;
     }
 }

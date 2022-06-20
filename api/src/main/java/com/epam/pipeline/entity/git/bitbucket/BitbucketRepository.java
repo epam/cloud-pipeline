@@ -34,4 +34,5 @@ public class BitbucketRepository {
     private BitbucketProject project;
     @JsonProperty("public")
     private boolean isPublic;
+    private String defaultBranch;
 }

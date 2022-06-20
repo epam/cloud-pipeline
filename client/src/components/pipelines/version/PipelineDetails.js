@@ -16,7 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
+import {computed} from 'mobx';
 import classNames from 'classnames';
 import {Alert, Menu as TabMenu, message, Row, Button, Icon, Col} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
@@ -64,19 +64,86 @@ import HiddenObjects from '../../../utils/hidden-objects';
 export default class PipelineDetails extends localization.LocalizedReactComponent {
   state = {isModalVisible: false, updating: false, deleting: false};
 
-  @observable _graphIsSupported = null;
+  @computed
+  get repositoryType () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return repositoryType;
+    }
+    return undefined;
+  }
+
+  @computed
+  get displayGraph () {
+    const {language} = this.props;
+    if (language && language.loaded) {
+      return graphIsSupportedForLanguage(language.value);
+    }
+    return false;
+  }
+
+  @computed
+  get tabs () {
+    const {
+      pipelineId: id,
+      version
+    } = this.props;
+    const documents = {
+      key: 'documents',
+      title: 'Documents',
+      link: `/${id}/${version}/documents`
+    };
+    const code = {
+      key: 'code',
+      title: 'Code',
+      link: `/${id}/${version}/code`
+    };
+    const configuration = {
+      key: 'configuration',
+      title: 'Configuration',
+      link: `/${id}/${version}/configuration`
+    };
+    const graph = this.displayGraph ? {
+      key: 'graph',
+      title: 'Graph',
+      link: `/${id}/${version}/graph`
+    } : false;
+    const history = {
+      key: 'history',
+      title: 'History',
+      link: `/${id}/${version}/history`
+    };
+    const storage = {
+      key: 'storage',
+      title: 'Storage rules',
+      link: `/${id}/${version}/storage`
+    };
+    switch (this.repositoryType) {
+      case 'BITBUCKET':
+        return [
+          code,
+          configuration,
+          history,
+          storage
+        ].filter(Boolean);
+      default:
+        return [
+          documents,
+          code,
+          configuration,
+          graph,
+          history,
+          storage
+        ].filter(Boolean);
+    }
+  }
 
   componentDidMount () {
     this.redirectToVersionedStorage();
   }
 
   componentDidUpdate () {
-    if (!this.props.language.pending) {
-      const graphIsSupported = graphIsSupportedForLanguage(this.props.language.value);
-      if (graphIsSupported !== this._graphIsSupported) {
-        this._graphIsSupported = graphIsSupported;
-      }
-    }
     this.redirectToVersionedStorage();
   }
 
@@ -259,23 +326,15 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
       return <Alert type="error" message={this.props.pipeline.error} />;
     }
 
-    const {id, description, pipelineType} = this.props.pipeline.value;
+    const {description, pipelineType} = this.props.pipeline.value;
     if (/^versioned_storage$/i.test(pipelineType)) {
       return (
         <LoadingView />
       );
     }
-    const {version} = this.props.params;
 
     const {router: {location}} = this.props;
-    const activeTab = this.props.router.location.pathname.split('/').slice(3)[0];
-
-    let displayGraph = false;
-    if (!this.props.language.pending) {
-      displayGraph = graphIsSupportedForLanguage(this.props.language.value);
-    } else if (this._graphIsSupported !== null) {
-      displayGraph = this._graphIsSupported;
-    }
+    const [,, activeTab] = location.pathname.split('/').filter(o => o.length);
 
     return (
       <div
@@ -312,7 +371,9 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             <GitRepositoryControl
               overlayClassName={browserStyles.gitRepositoryPopover}
               https={this.props.pipeline.value.repository}
-              ssh={this.props.pipeline.value.repositorySsh} />
+              ssh={this.props.pipeline.value.repositorySsh}
+              repositoryType={this.props.pipeline.value.repositoryType}
+            />
           </Col>
         </Row>
         <Row>
@@ -334,51 +395,17 @@ export default class PipelineDetails extends localization.LocalizedReactComponen
             selectedKeys={[activeTab]}
             className={styles.tabsMenu}
           >
-            <TabMenu.Item key="documents">
-              <AdaptedLink
-                to={`/${id}/${version}/documents`}
-                location={location}>
-                Documents
-              </AdaptedLink>
-            </TabMenu.Item>
-            <TabMenu.Item key="code">
-              <AdaptedLink
-                to={`/${id}/${version}/code`}
-                location={location}>
-                Code
-              </AdaptedLink>
-            </TabMenu.Item>
-            <TabMenu.Item key="configuration">
-              <AdaptedLink
-                to={`/${id}/${version}/configuration`}
-                location={location}>
-                Configuration
-              </AdaptedLink>
-            </TabMenu.Item>
             {
-              displayGraph &&
-              <TabMenu.Item key="graph">
-                <AdaptedLink
-                  to={`/${id}/${version}/graph`}
-                  location={location}>
-                  Graph
-                </AdaptedLink>
-              </TabMenu.Item>
+              this.tabs.map((tab) => (
+                <TabMenu.Item key={tab.key}>
+                  <AdaptedLink
+                    to={tab.link}
+                    location={location}>
+                    {tab.title}
+                  </AdaptedLink>
+                </TabMenu.Item>
+              ))
             }
-            <TabMenu.Item key="history">
-              <AdaptedLink
-                to={`/${id}/${version}/history`}
-                location={location}>
-                History
-              </AdaptedLink>
-            </TabMenu.Item>
-            <TabMenu.Item key="storage">
-              <AdaptedLink
-                to={`/${id}/${version}/storage`}
-                location={location}>
-                Storage rules
-              </AdaptedLink>
-            </TabMenu.Item>
           </TabMenu>
         </Row>
         <div

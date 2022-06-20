@@ -30,6 +30,7 @@ import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.git.GitTagEntry;
 import com.epam.pipeline.entity.git.GitToken;
 import com.epam.pipeline.entity.git.GitTokenRequest;
+import com.epam.pipeline.entity.git.GitlabBranch;
 import com.epam.pipeline.entity.git.GitlabUser;
 import com.epam.pipeline.entity.git.GitlabVersion;
 import com.epam.pipeline.entity.git.UpdateGitFileRequest;
@@ -73,6 +74,14 @@ public interface GitLabApi {
      */
     @GET("api/v3/projects/{project}")
     Call<GitProject> getProject(@Path(PROJECT) String idOrName);
+
+    /**
+     * Get a list of repository branches from a project, sorted by name alphabetically.
+     *
+     * @param idOrName The ID or URL-encoded path of the project
+     */
+    @GET("api/v3/projects/{project}/repository/branches")
+    Call<List<GitlabBranch>> getBranches(@Path(PROJECT) String idOrName);
 
     /**
      * create project.

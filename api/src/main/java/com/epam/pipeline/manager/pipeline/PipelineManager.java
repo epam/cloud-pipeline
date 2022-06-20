@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.EntityVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
@@ -125,6 +126,7 @@ public class PipelineManager implements SecuredEntityManager {
             checkRepositoryVO.setRepository(pipelineVO.getRepository());
             checkRepositoryVO.setToken(pipelineVO.getRepositoryToken());
             checkRepositoryVO.setType(pipelineVO.getRepositoryType());
+            checkRepositoryVO.setBranch(pipelineVO.getBranch());
             checkRepositoryVO = check(checkRepositoryVO);
             if (!checkRepositoryVO.isRepositoryExists()) {
                 GitProject project = pipelineRepositoryService.createGitRepositoryWithRepoUrl(pipelineVO);
@@ -132,9 +134,11 @@ public class PipelineManager implements SecuredEntityManager {
             } else if (StringUtils.isEmpty(pipelineVO.getRepositorySsh())) {
                 final GitProject project = pipelineRepositoryService.getRepository(pipelineVO.getRepositoryType(),
                         pipelineVO.getRepository(), pipelineVO.getRepositoryToken());
+                checkBranchExists(pipelineVO);
                 pipelineVO.setRepositorySsh(project.getRepoSsh());
             }
         }
+        pipelineVO.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         Pipeline pipeline = pipelineVO.toPipeline();
         setFolderIfPresent(pipeline);
         pipeline.setOwner(securityManager.getAuthorizedUser());
@@ -164,6 +168,7 @@ public class PipelineManager implements SecuredEntityManager {
             checkPipeline.setRepository(checkRepositoryVO.getRepository());
             checkPipeline.setRepositoryToken(checkRepositoryVO.getToken());
             checkPipeline.setRepositoryType(checkRepositoryVO.getType());
+            checkPipeline.setBranch(checkRepositoryVO.getBranch());
             setCurrentVersion(checkPipeline);
             if (StringUtils.isEmpty(checkPipeline.getRepositoryError())) {
                 checkRepositoryVO.setRepositoryExists(true);
@@ -181,6 +186,7 @@ public class PipelineManager implements SecuredEntityManager {
         Assert.isTrue(GitUtils.checkGitNaming(pipelineVOName),
                 messageHelper.getMessage(MessageConstants.ERROR_INVALID_PIPELINE_NAME, pipelineVOName));
         Pipeline dbPipeline = load(pipelineVO.getId());
+        final String currentProjectPath = dbPipeline.getRepository();
         final String currentProjectName = GitUtils.convertPipeNameToProject(dbPipeline.getName());
         final String newProjectName = GitUtils.convertPipeNameToProject(pipelineVOName);
         final boolean projectNameUpdated = !newProjectName.equals(currentProjectName);
@@ -196,12 +202,14 @@ public class PipelineManager implements SecuredEntityManager {
         dbPipeline.setDescription(pipelineVO.getDescription());
         dbPipeline.setParentFolderId(pipelineVO.getParentFolderId());
         setFolderIfPresent(dbPipeline);
+        dbPipeline.setBranch(pipelineVO.getBranch());
+        dbPipeline.setConfigurationPath(StringUtils.strip(pipelineVO.getConfigurationPath(), Constants.PATH_DELIMITER));
         pipelineDao.updatePipeline(dbPipeline);
 
         updatePipelineNameForRuns(pipelineVO, pipelineVOName);
 
         if (projectNameUpdated) {
-            gitManager.updateRepositoryName(currentProjectName, newProjectName);
+            pipelineRepositoryService.updateRepositoryName(dbPipeline, currentProjectPath, newProjectName);
         }
         return dbPipeline;
     }
@@ -449,5 +457,17 @@ public class PipelineManager implements SecuredEntityManager {
     private PipelineRun resetPipelineIdForRun(final PipelineRun run) {
         run.setPipelineId(null);
         return run;
+    }
+
+    private void checkBranchExists(final PipelineVO pipelineVO) {
+        final String branchName = pipelineVO.getBranch();
+        if (StringUtils.isBlank(branchName)) {
+            return;
+        }
+        final List<String> branches = pipelineRepositoryService
+                .getBranches(pipelineVO.getRepositoryType(), pipelineVO.getRepository(),
+                        pipelineVO.getRepositoryToken());
+        Assert.isTrue(ListUtils.emptyIfNull(branches).stream().anyMatch(branchName::equals),
+                messageHelper.getMessage(MessageConstants.ERROR_REPOSITORY_BRANCH_NOT_FOUND, branchName));
     }
 }

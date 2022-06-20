@@ -48,7 +48,7 @@ class HCSPreview extends React.Component {
         path={file}
         storageId={storageId}
         style={{
-          height: 'calc(100vh - 150px)'
+          height: 'calc(100vh - 75px)'
         }}
         detailsTitle={detailsTitle}
         detailsButtonTitle={detailsButtonTitle}

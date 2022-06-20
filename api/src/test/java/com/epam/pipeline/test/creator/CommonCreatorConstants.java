@@ -21,7 +21,10 @@ import com.epam.pipeline.entity.ontology.OntologyEntity;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.time.LocalDateTime;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +70,10 @@ public final class CommonCreatorConstants {
     public static final Set<Long> TEST_LONG_SET = Collections.singleton(ID);
     public static final Iterable<OntologyEntity> EMPTY_ITERABLE = Collections::emptyIterator;
     public static final LocalDateTime TEST_LOCAL_DATE_TIME = LocalDateTime.now();
+    public static final int TEST_YEAR = 2022;
+    public static final int TEST_DAY = 16;
+    public static final Date TEST_DATE = new GregorianCalendar(TEST_YEAR, Calendar.JULY, TEST_DAY).getTime();
+    public static final String TEST_DATE_STRING = "2022-07-16 00:00:00.000";
 
     private CommonCreatorConstants() {
 

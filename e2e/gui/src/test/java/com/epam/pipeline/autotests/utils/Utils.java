@@ -122,17 +122,17 @@ public class Utils {
         sleep(500, MILLISECONDS);
         final Actions action = actions().moveToElement(field).click();
         for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
+            action.sendKeys("\b").sendKeys(Keys.DELETE).perform();
         }
-        action.perform();
     }
 
     public static void selectAllAndClearTextField(final SelenideElement field) {
         sleep(500, MILLISECONDS);
         String selectAll = Keys.chord(Keys.CONTROL, "a");
-        final Actions action = actions().moveToElement(field).click().sendKeys(selectAll)
-                .sendKeys(Keys.DELETE);
-        action.perform();
+        actions().moveToElement(field).click()
+                .sendKeys(selectAll)
+                .sendKeys(Keys.DELETE)
+                .perform();
     }
 
     public static void sendKeysWithSlashes(final String text) {

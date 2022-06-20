@@ -42,9 +42,9 @@
 }
 
 .preview.maximum-space {
-  max-width: 80vw;
+  max-width: 95vw;
   max-height: 100vh;
-  width: 80vw;
+  width: 95vw;
 }
 
 .preview .preview-button {

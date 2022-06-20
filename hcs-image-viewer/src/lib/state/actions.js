@@ -24,6 +24,7 @@ export default {
   setImage: 'set-image',
   setImageViewportLoaded: 'set-image-viewport-loaded',
   setMesh: 'set-mesh',
+  setOverlayImages: 'set-overlay-images',
 
   setError: 'set-error',
 };

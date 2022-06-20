@@ -16,6 +16,8 @@
 
 package com.epam.pipeline.manager.git;
 
+import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
+import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.entity.git.GitCommitEntry;
 import com.epam.pipeline.entity.git.GitCredentials;
 import com.epam.pipeline.entity.git.GitProject;
@@ -62,6 +64,11 @@ public class PipelineRepositoryProviderService {
         return getProvider(repositoryType).createRepository(description, repositoryPath, token);
     }
 
+    public GitProject renameRepository(final RepositoryType repositoryType, final String currentRepositoryPath,
+                                       final String newName, final String token) {
+        return getProvider(repositoryType).renameRepository(currentRepositoryPath, newName, token);
+    }
+
     public void deleteRepository(final RepositoryType repositoryType, final Pipeline pipeline) {
         getProvider(repositoryType).deleteRepository(pipeline);
     }
@@ -71,8 +78,8 @@ public class PipelineRepositoryProviderService {
     }
 
     public void createFile(final RepositoryType repositoryType, final GitProject project,
-                           final String path, final String content, final String token) {
-        getProvider(repositoryType).createFile(project, path, content, token);
+                           final String path, final String content, final String token, final String branch) {
+        getProvider(repositoryType).createFile(project, path, content, token, branch);
     }
 
     public byte[] getFileContents(final RepositoryType repositoryType, final GitProject repository,
@@ -80,17 +87,33 @@ public class PipelineRepositoryProviderService {
         return getProvider(repositoryType).getFileContents(repository, path, revision, token);
     }
 
+    public byte[] getTruncatedFileContents(final Pipeline pipeline, final String path, final String version,
+                                           final int byteLimit) {
+        return getProvider(pipeline.getRepositoryType()).getTruncatedFileContents(pipeline, path, version, byteLimit);
+    }
+
     public GitProject getRepository(final RepositoryType repositoryType, final String repositoryPath,
                                     final String token) {
         return getProvider(repositoryType).getRepository(repositoryPath, token);
+    }
+
+    public List<String> getBranches(final RepositoryType repositoryType, final String repositoryPath,
+                                    final String token) {
+        return getProvider(repositoryType).getBranches(repositoryPath, token);
     }
 
     public List<Revision> getTags(final RepositoryType repositoryType, final Pipeline pipeline) {
         return getProvider(repositoryType).getTags(pipeline);
     }
 
-    public Revision getLastCommit(final RepositoryType repositoryType, final Pipeline pipeline) {
-        return getProvider(repositoryType).getLastRevision(pipeline);
+    public Revision createTag(final Pipeline pipeline, final String tagName, final String commitId,
+                              final String message, final String releaseDescription) {
+        return getProvider(pipeline.getRepositoryType()).createTag(pipeline, tagName, commitId, message,
+                releaseDescription);
+    }
+
+    public Revision getLastCommit(final Pipeline pipeline, final String ref) {
+        return getProvider(pipeline.getRepositoryType()).getLastRevision(pipeline, ref);
     }
 
     public GitCredentials getCloneCredentials(final Pipeline pipeline, final boolean useEnvVars,
@@ -110,5 +133,47 @@ public class PipelineRepositoryProviderService {
     public List<GitRepositoryEntry> getRepositoryContents(final Pipeline pipeline, final String path,
                                                           final String version,  final boolean recursive) {
         return getProvider(pipeline.getRepositoryType()).getRepositoryContents(pipeline, path, version, recursive);
+    }
+
+    public GitCommitEntry updateFile(final Pipeline pipeline, final String path, final String content,
+                                     final String message, final boolean fileExists) {
+        return getProvider(pipeline.getRepositoryType()).updateFile(pipeline, path, content, message, fileExists);
+    }
+
+    public GitCommitEntry renameFile(final Pipeline pipeline, final String message,
+                                     final String filePreviousPath, final String filePath) {
+        return getProvider(pipeline.getRepositoryType()).renameFile(pipeline, message, filePreviousPath, filePath);
+    }
+
+    public GitCommitEntry deleteFile(final Pipeline pipeline, final String filePath, final String commitMessage) {
+        return getProvider(pipeline.getRepositoryType()).deleteFile(pipeline, filePath, commitMessage);
+    }
+
+    public GitCommitEntry createFolder(final Pipeline pipeline, final List<String> filesToCreate,
+                                       final String message) {
+        return getProvider(pipeline.getRepositoryType()).createFolder(pipeline, filesToCreate, message);
+    }
+
+    public GitCommitEntry renameFolder(final Pipeline pipeline, final String message,
+                                       final String folder, final String newFolderName) {
+        return getProvider(pipeline.getRepositoryType()).renameFolder(pipeline, message, folder, newFolderName);
+    }
+
+    public GitCommitEntry deleteFolder(final Pipeline pipeline, final String message, final String folder) {
+        return getProvider(pipeline.getRepositoryType()).deleteFolder(pipeline, message, folder);
+    }
+
+    public GitCommitEntry updateFiles(final Pipeline pipeline, final PipelineSourceItemsVO sourceItemVOList,
+                                      final String message) {
+        return getProvider(pipeline.getRepositoryType()).updateFiles(pipeline, sourceItemVOList, message);
+    }
+
+    public GitCommitEntry uploadFiles(final Pipeline pipeline, final List<UploadFileMetadata> files,
+                                      final String message) {
+        return getProvider(pipeline.getRepositoryType()).uploadFiles(pipeline, files, message);
+    }
+
+    public boolean fileExists(final Pipeline pipeline, final String filePath) {
+        return getProvider(pipeline.getRepositoryType()).fileExists(pipeline, filePath);
     }
 }

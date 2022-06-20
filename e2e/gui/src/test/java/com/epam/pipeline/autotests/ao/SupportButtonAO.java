@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,19 @@ import com.epam.pipeline.autotests.utils.SupportButton;
 import java.util.NoSuchElementException;
 
 import static com.codeborne.selenide.Condition.appear;
+import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byId;
+import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.$$;
 import static java.lang.String.format;
 
 public class SupportButtonAO implements AccessObject<SupportButtonAO>  {
 
     public NavigationMenuAO checkSupportButtonIcon(final Condition iconCondition) {
+        $(byId("navigation-button-support")).shouldBe(exist);
         $$(byId("navigation-button-support")).stream()
                 .filter(i -> i.$(":nth-child(1)").has(iconCondition))
                 .findAny()

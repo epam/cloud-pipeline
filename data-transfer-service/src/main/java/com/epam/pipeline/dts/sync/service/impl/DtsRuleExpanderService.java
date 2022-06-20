@@ -112,7 +112,7 @@ public class DtsRuleExpanderService {
             .flatMap(Collection::stream)
             .map(absolutePath -> buildNestedDirRelativePath(syncSource, absolutePath))
             .map(relativePath -> buildRelativeSyncRule(syncSource, syncDestination, relativePath,
-                                                       syncRule.getDeleteSource()))
+                                                       syncRule.getDeleteSource(), syncRule))
             .map(rule -> new AbstractMap.SimpleEntry<>(rule, cronDetails));
     }
 
@@ -123,13 +123,15 @@ public class DtsRuleExpanderService {
     }
 
     private AutonomousSyncRule buildRelativeSyncRule(final String syncSourceRoot, final String syncDestinationRoot,
-                                                     final String relativePath, final Boolean deleteSource) {
+                                                     final String relativePath, final Boolean deleteSource,
+                                                     final AutonomousSyncRule syncRule) {
         final String syncSource = Paths.get(syncSourceRoot, relativePath).toString();
         final String syncDestination = Optional.of(relativePath)
             .filter(StringUtils::isNotBlank)
             .map(suffix -> String.join(SYNC_DEST_DELIMITER, syncDestinationRoot, suffix))
             .orElse(syncDestinationRoot);
-        return new AutonomousSyncRule(syncSource, syncDestination, null, deleteSource, null);
+        return new AutonomousSyncRule(syncSource, syncDestination, null, deleteSource,
+                null, syncRule);
     }
 
     private List<String> searchForGivenTrigger(final String dirPath, final TransferTrigger transferTrigger) {
@@ -174,9 +176,9 @@ public class DtsRuleExpanderService {
         final int searchDepth = getMaxSearchDepth(transferMatchers);
         final List<String> triggerMatchers = normalizeGlobMatchers(directory, transferMatchers);
         final Path rootPath = Paths.get(directory);
-        try {
-            return Files.find(rootPath, searchDepth, (path, basicFileAttributes) ->
-                    !rootPath.equals(path) && isPathMatchingGlob(path, triggerMatchers))
+        try (Stream<Path> pathStream = Files.find(rootPath, searchDepth, (path, basicFileAttributes) ->
+                !rootPath.equals(path) && isPathMatchingGlob(path, triggerMatchers))) {
+            return pathStream
                 .findAny()
                 .isPresent();
         } catch (IOException e) {

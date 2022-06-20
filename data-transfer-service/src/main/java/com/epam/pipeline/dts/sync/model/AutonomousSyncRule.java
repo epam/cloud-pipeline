@@ -16,20 +16,37 @@
 
 package com.epam.pipeline.dts.sync.model;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.thymeleaf.util.StringUtils;
 
 import java.util.List;
 
 
-@Value
+@Data
+@EqualsAndHashCode(exclude = {"transferTriggers", "parentRule"})
+@AllArgsConstructor
 public class AutonomousSyncRule {
 
-    String source;
-    String destination;
-    String cron;
-    Boolean deleteSource;
-    List<TransferTrigger> transferTriggers;
+    private String source;
+    private String destination;
+    private String cron;
+    private Boolean deleteSource;
+    private List<TransferTrigger> transferTriggers;
+    private AutonomousSyncRule parentRule;
+
+    public AutonomousSyncRule(final String source,
+                              final String destination,
+                              final String cron,
+                              final Boolean deleteSource,
+                              final List<TransferTrigger> transferTriggers) {
+        this.source = source;
+        this.destination = destination;
+        this.cron = cron;
+        this.deleteSource = deleteSource;
+        this.transferTriggers = transferTriggers;
+    }
 
     public boolean isSameSyncPaths(final AutonomousSyncRule anotherRule) {
         return StringUtils.equals(source, anotherRule.getSource())

@@ -475,12 +475,12 @@ public class GrantPermissionManager {
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !permissionsHelper.isAllowed(READ, storage)
-                && !forbiddenByStorageStatus(storage, READ)) {
+            if (action.isRead() && (!permissionsHelper.isAllowed(READ, storage)
+                || forbiddenByStorageStatus(storage, READ))) {
                 return false;
             }
-            if (action.isWrite() && !permissionsHelper.isAllowed(WRITE, storage)
-                && !forbiddenByStorageStatus(storage, WRITE)) {
+            if (action.isWrite() && (!permissionsHelper.isAllowed(WRITE, storage)
+                || forbiddenByStorageStatus(storage, WRITE))) {
                 return false;
             }
         }

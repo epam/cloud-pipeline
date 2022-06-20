@@ -18,11 +18,13 @@ package com.epam.pipeline.manager.git;
 
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.exception.git.UnexpectedResponseStatusException;
+import okhttp3.ResponseBody;
 import org.springframework.http.HttpStatus;
 import retrofit2.Call;
 import retrofit2.Response;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public final class RestApiUtils {
 
@@ -43,4 +45,28 @@ public final class RestApiUtils {
         }
     }
 
+    public static byte[] getFileContent(final Call<ResponseBody> filesRawContent, final int byteLimit) {
+        try {
+            final ResponseBody body = filesRawContent.execute().body();
+            if (body != null) {
+                try(InputStream inputStream = body.byteStream()) {
+                    final int bufferSize = calculateBufferSize(byteLimit, body);
+                    final byte[] receivedContent = new byte[bufferSize];
+                    inputStream.read(receivedContent);
+                    return receivedContent;
+                }
+            } else {
+                return new byte[0];
+            }
+        } catch (IOException e) {
+            throw new GitClientException("Error receiving raw file content!", e);
+        }
+    }
+
+    private static int calculateBufferSize(final int byteLimit, final ResponseBody body) {
+        final long length = body.contentLength();
+        return (length >= 0 && length <= Integer.MAX_VALUE)
+                ? Math.min((int) length, byteLimit)
+                : byteLimit;
+    }
 }

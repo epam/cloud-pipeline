@@ -1,0 +1,107 @@
+/*
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.cell-profiler {
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.cell-profiler-header,
+.cell-profiler-footer {
+  line-height: 32px;
+  padding: 0 5px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.cell-profiler-footer {
+  line-height: 16px;
+  font-size: smaller;
+}
+
+.cell-profiler-header .title {
+  margin-right: auto;
+  font-weight: bold;
+}
+
+.cell-profiler-modules {
+  flex: 1;
+  overflow: auto;
+}
+
+.cell-profiler-modules .cell-profiler-cp-module:last-child {
+  border-bottom: none;
+}
+
+.cell-profiler-cp-module-header {
+  width: 100%;
+  padding: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.cell-profiler-cp-module-header .title {
+  margin-right: auto;
+}
+
+.cell-profiler-cp-module-header .action {
+  line-height: 1;
+}
+
+.cell-profiler-cp-module-header .action:not(:last-child) {
+  margin-right: 5px;
+}
+
+.cell-profiler-cp-module-content {
+  padding: 5px;
+}
+
+.cell-profiler-cp-module.expanded:not(:last-child) {
+  margin-bottom: 10px;
+}
+
+.expand-indicator {
+  margin-right: 5px;
+  transition: transform 250ms ease;
+}
+
+.expanded .expand-indicator {
+  transform: rotate(90deg);
+}
+
+.cell-profiler-parameter {
+  margin: 5px 0;
+  line-height: 24px;
+  display: flex;
+  align-items: flex-start;
+}
+
+.cell-profiler-parameter-title,
+.cell-profiler-parameter-value {
+  line-height: 24px;
+}
+
+.cell-profiler-parameter-title::after {
+  content: ':';
+}
+
+.cell-profiler-parameter-value {
+  margin-left: 5px;
+  flex: 1;
+}

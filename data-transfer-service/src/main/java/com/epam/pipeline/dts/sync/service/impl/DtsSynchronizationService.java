@@ -173,7 +173,10 @@ public class DtsSynchronizationService {
             .filter(entry -> Objects.nonNull(entry.getValue()))
             .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         newSubmittedTasks.keySet().stream()
-            .map(activeSyncRules::get)
+            .map(task -> {
+                final AutonomousSyncRule keyRule = Optional.ofNullable(task.getParentRule()).orElse(task);
+                return activeSyncRules.get(keyRule);
+            })
             .map(AutonomousSyncCronDetails::getLastExecution)
             .forEach(execution -> execution.setTime(now.getTime()));
         activeTransferTasks.putAll(newSubmittedTasks);

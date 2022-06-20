@@ -24,6 +24,7 @@ import com.epam.pipeline.entity.user.CustomControl;
 import com.epam.pipeline.entity.user.GroupStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.test.acl.AbstractAclTest;
@@ -36,7 +37,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_ARRAY;
@@ -71,6 +74,9 @@ public class UserApiServiceTest extends AbstractAclTest {
 
     @Autowired
     private UsersFileImportManager mockUsersFileImportManager;
+
+    @Autowired
+    private RunLimitsService mockRunLimitsService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
@@ -418,5 +424,15 @@ public class UserApiServiceTest extends AbstractAclTest {
 
         assertThrows(AccessDeniedException.class, () -> userApiService
                 .importUsersFromCsv(true, true, TEST_STRING_LIST, null));
+    }
+
+    @Test
+    @WithMockUser
+    public void shouldReturnRunLaunchLimits() {
+        final Map<String, Integer> usersLimits = new HashMap<>();
+        usersLimits.put("group1", 1);
+        usersLimits.put("group2", 2);
+        doReturn(usersLimits).when(mockRunLimitsService).getCurrentUserLaunchLimits(true);
+        assertThat(userApiService.getCurrentUserLaunchLimits(true)).isEqualTo(usersLimits);
     }
 }

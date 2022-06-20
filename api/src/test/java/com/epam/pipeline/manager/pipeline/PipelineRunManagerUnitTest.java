@@ -18,11 +18,15 @@ package com.epam.pipeline.manager.pipeline;
 
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.controller.vo.TagsVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.metadata.PipeConfValueType;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
 import com.epam.pipeline.entity.pipeline.Folder;
@@ -35,14 +39,17 @@ import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
+import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +59,8 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_3;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_DATE_STRING;
 import static com.epam.pipeline.test.creator.CommonCreatorConstants.TEST_STRING;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE1;
 import static com.epam.pipeline.test.creator.docker.DockerCreatorUtils.IMAGE2;
@@ -109,6 +118,9 @@ public class PipelineRunManagerUnitTest {
 
     @Mock
     private FolderApiService folderApiService;
+
+    @Mock
+    private MetadataEntityManager metadataEntityManager;
 
     @InjectMocks
     private PipelineRunManager pipelineRunManager;
@@ -286,6 +298,46 @@ public class PipelineRunManagerUnitTest {
     @Test
     public void shouldReplaceEnvVarsWithTestEnvWithSeveralVariables() {
         assertEnvVarsReplacement("test/$%1$s/${%1$s}/$%1$s/", "test/%1$s/%1$s/%1$s/");
+    }
+
+    @Test
+    public void shouldUpdateMetadataRunStatus() {
+        final String parameterKey = "CP_REPORT_RUN_STATUS";
+        final String parameterValue = "Analysis status";
+        final PipelineRun pipelineRun = new PipelineRun();
+        pipelineRun.setId(ID);
+        pipelineRun.setEntitiesIds(singletonList(ID));
+        pipelineRun.setStatus(TaskStatus.STOPPED);
+        pipelineRun.setStartDate(TEST_DATE);
+        pipelineRun.setPipelineRunParameters(singletonList(new PipelineRunParameter(parameterKey, parameterValue)));
+
+        final Map<String, PipeConfValue> currentData = new HashMap<>();
+        currentData.put(TEST_STRING, new PipeConfValue(PipeConfValueType.STRING.toString(), TEST_STRING));
+        final MetadataEntity currentMetadata = new MetadataEntity();
+        currentMetadata.setData(currentData);
+
+        doReturn(Collections.singleton(currentMetadata)).when(metadataEntityManager)
+                .loadEntitiesByIds(Collections.singleton(ID));
+
+        new JsonMapper().init();
+
+        pipelineRunManager.updatePipelineStatus(pipelineRun);
+
+        final String expectedDataValue = String.format(
+                "[{\"runId\":1,\"status\":\"STOPPED\",\"startDate\":\"%s\"}]", TEST_DATE_STRING);
+        final ArgumentCaptor<List<MetadataEntity>> captor = ArgumentCaptor.forClass((Class) List.class);
+        verify(metadataEntityManager).loadEntitiesByIds(Collections.singleton(ID));
+        verify(metadataEntityManager).updateMetadataEntities(captor.capture());
+        verify(runCRUDService).updateRunStatus(any());
+        final List<MetadataEntity> updatedMetadataEntities = captor.getValue();
+        assertThat(updatedMetadataEntities.size()).isEqualTo(1);
+        final MetadataEntity updatedMetadataEntity = updatedMetadataEntities.get(0);
+        assertThat(updatedMetadataEntity.getData())
+                .hasSize(2)
+                .containsKey(TEST_STRING)
+                .containsKey(parameterValue);
+        assertThat(updatedMetadataEntity.getData().get(TEST_STRING).getValue()).isEqualTo(TEST_STRING);
+        assertThat(updatedMetadataEntity.getData().get(parameterValue).getValue()).isEqualTo(expectedDataValue);
     }
 
     private void assertEnvVarsReplacement(final String paramValuePattern, final String expectedValuePattern) {

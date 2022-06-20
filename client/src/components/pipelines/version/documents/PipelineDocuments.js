@@ -210,6 +210,7 @@ export default class PipelineDocuments extends Component {
         render: (text, file) => this.actionsRenderer(text, file, graphReady)
       }
     ];
+    console.log(sources);
 
     for (let source of (sources || [])) {
       if (!source) {
@@ -374,7 +375,10 @@ export default class PipelineDocuments extends Component {
     if (this.props.docs.pending) {
       return <LoadingView />;
     }
-    const tableData = this.createDocumentsTable(this.props.docs.value, this._graphReady);
+    const tableData = this.createDocumentsTable(
+      this.props.docs.loaded ? this.props.docs.value : [],
+      this._graphReady
+    );
 
     const renderMarkdownControls = () => {
       if (!this.canModifySources) {
@@ -542,7 +546,28 @@ export default class PipelineDocuments extends Component {
     }
   }
 
+  redirectBitBucketPipelineToCode () {
+    if (this.props.pipeline.loaded) {
+      const {
+        repositoryType
+      } = this.props.pipeline.value;
+      if (/^bitbucket$/i.test(repositoryType)) {
+        const {
+          router,
+          pipelineId,
+          version
+        } = this.props;
+        router.push(`/${pipelineId}/${version}/code`);
+        return true;
+      }
+    }
+    return false;
+  }
+
   componentDidUpdate (prevProps, prevState) {
+    if (this.redirectBitBucketPipelineToCode()) {
+      return;
+    }
     if (
       this.state.managingMdFile && (
         prevProps.pipelineId !== this.props.pipelineId ||
@@ -566,7 +591,7 @@ export default class PipelineDocuments extends Component {
     if (this._mdFileRequest && !this._mdFileRequest.pending && !this._mdOriginalContent) {
       this._mdOriginalContent = atob(this._mdFileRequest.response);
     }
-    if (!this.props.docs.pending && this.props.docs.value && !this.state.managingMdFile) {
+    if (this.props.docs.loaded && this.props.docs.value && !this.state.managingMdFile) {
       const [readme] = this.props.docs.value.filter(source => source.name === 'README.md');
       if (readme) {
         this.setManagingMdFile(readme);

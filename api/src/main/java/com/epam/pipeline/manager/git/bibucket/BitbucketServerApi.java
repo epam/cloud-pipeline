@@ -17,10 +17,12 @@
 package com.epam.pipeline.manager.git.bibucket;
 
 import com.epam.pipeline.entity.git.bitbucket.BitbucketAuthor;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketBranch;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketCommit;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketPagedResponse;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketRepository;
 import com.epam.pipeline.entity.git.bitbucket.BitbucketTag;
+import com.epam.pipeline.entity.git.bitbucket.BitbucketTagCreateRequest;
 import okhttp3.MultipartBody;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
@@ -46,12 +48,17 @@ public interface BitbucketServerApi {
     String TAG_NAME = "tagName";
     String LIMIT = "limit";
     String START = "start";
+    String UNTIL = "until";
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}")
     Call<BitbucketRepository> getRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository);
 
     @POST("rest/api/1.0/projects/{project}/repos")
     Call<BitbucketRepository> createRepository(@Path(PROJECT) String project,
+                                               @Body BitbucketRepository bitbucketRepository);
+
+    @PUT("rest/api/1.0/projects/{project}/repos/{repository}")
+    Call<BitbucketRepository> updateRepository(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
                                                @Body BitbucketRepository bitbucketRepository);
 
     @DELETE("rest/api/1.0/projects/{project}/repos/{repository}")
@@ -67,18 +74,26 @@ public interface BitbucketServerApi {
 
     @Multipart
     @PUT("rest/api/1.0/projects/{project}/repos/{repository}/browse/{path}")
-    Call<ResponseBody> createFile(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
-                                  @Path(value = PATH, encoded = true) String path, @Part MultipartBody.Part content,
-                                  @Part MultipartBody.Part message);
+    Call<BitbucketCommit> createFile(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
+                                     @Path(value = PATH, encoded = true) String path, @Part MultipartBody.Part content,
+                                     @Part MultipartBody.Part message, @Part MultipartBody.Part sourceCommitId,
+                                     @Part MultipartBody.Part branch);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/tags")
     Call<BitbucketPagedResponse<BitbucketTag>> getTags(@Path(PROJECT) String project,
                                                        @Path(REPOSITORY) String repository,
                                                        @Query(LIMIT) Integer limit, @Query(START) String start);
 
+    @POST("rest/api/1.0/projects/{project}/repos/{repository}/tags")
+    Call<BitbucketTag> createTag(@Path(PROJECT) String project,
+                                 @Path(REPOSITORY) String repository,
+                                 @Body BitbucketTagCreateRequest request);
+
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits")
     Call<BitbucketPagedResponse<BitbucketCommit>> getCommits(@Path(PROJECT) String project,
-                                                             @Path(REPOSITORY) String repository);
+                                                             @Path(REPOSITORY) String repository,
+                                                             @Query(value = UNTIL, encoded = true) String ref,
+                                                             @Query(LIMIT) Integer limit, @Query(START) Integer start);
 
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/commits/{commitId}")
     Call<BitbucketCommit> getCommit(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
@@ -91,6 +106,11 @@ public interface BitbucketServerApi {
     @GET("rest/api/1.0/projects/{project}/repos/{repository}/files/{path}")
     Call<BitbucketPagedResponse<String>> getFiles(@Path(PROJECT) String project, @Path(REPOSITORY) String repository,
                                                   @Path(value = PATH, encoded = true) String path,
-                                                  @Query(AT) String reference, @Query(LIMIT) Integer limit,
-                                                  @Query(START) String start);
+                                                  @Query(value = AT, encoded = true) String reference,
+                                                  @Query(LIMIT) Integer limit, @Query(START) String start);
+
+    @GET("rest/api/1.0/projects/{project}/repos/{repository}/branches")
+    Call<BitbucketPagedResponse<BitbucketBranch>> getBranches(@Path(PROJECT) String project,
+                                                              @Path(REPOSITORY) String repository,
+                                                              @Query(LIMIT) Integer limit, @Query(START) String start);
 }

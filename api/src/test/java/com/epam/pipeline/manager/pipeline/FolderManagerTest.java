@@ -38,6 +38,7 @@ import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.pipeline.RepositoryType;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.entity.security.acl.AclClass;
@@ -170,7 +171,8 @@ public class FolderManagerTest extends AbstractSpringTest {
         subFolder = new Folder();
         subFolder.setName(TEST_NAME_1);
         MockitoAnnotations.initMocks(this);
-        when(gitManagerMock.getPipelineRevisions(any(Pipeline.class))).thenReturn(Collections.emptyList());
+        when(pipelineRepositoryServiceMock.getPipelineRevisions(any(RepositoryType.class), any(Pipeline.class)))
+                .thenReturn(Collections.emptyList());
         pipelineManager.setGitManager(gitManagerMock);
     }
 

@@ -372,8 +372,8 @@ export default `
 @THEME .ant-input:hover:not(.ant-input-disabled),
 @THEME .ant-input-affix-wrapper:hover .ant-input:not(.ant-input-disabled),
 @THEME .ant-input-number:hover:not(.ant-input-number-disabled),
-@THEME .cp-limit-mounts-input:hover,
-@THEME .cp-run-capabilities-input:hover {
+@THEME .cp-run-capabilities-input:hover,
+@THEME .cp-limit-mounts-input:not(.disabled):hover {
   border-color: @input-border-hover-color;
   box-shadow: 0 0 0 2px @input-shadow-color;
 }
@@ -3106,6 +3106,18 @@ export default `
 @THEME .d2h-code-line.d2h-ins.d2h-change ins {
   color: @card-background-color;
   background-color: @color-green;
+}
+
+@THEME .cell-profiler-module {
+  color: @application-color;
+  background-color: @card-background-color;
+  border-bottom: 1px @card-border-color solid;
+}
+@THEME .cell-profiler-module.expanded .cell-profiler-module-header {
+  border-bottom: 1px @card-border-color solid;
+}
+@THEME .cell-profiler-module-header:hover {
+  background-color: darken(@card-background-color, 5%);
 }
 
 `;

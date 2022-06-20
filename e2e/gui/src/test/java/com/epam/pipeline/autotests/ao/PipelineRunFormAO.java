@@ -34,6 +34,7 @@ import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
@@ -74,7 +75,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
             entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                    .closest(".ant-row").find(className("ant-form-item-control "))),
+                    .closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
@@ -166,8 +167,18 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO selectRunCapability(final String optionQualifier) {
         get(RUN_CAPABILITIES).shouldBe(visible).click();
-        $(visible(byClassName("rc-dropdown"))).find(byTitle(optionQualifier))
+        $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
                 .shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelineRunFormAO openRunCapabilityDropDown() {
+        SelenideElement tag = get(RUN_CAPABILITIES).$$(byClassName("cp-run-capabilities-input-tag")).first();
+        if(tag.exists()) {
+            tag.find(byXpath(".//div")).click();
+            return this;
+        }
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
         return this;
     }
 
@@ -187,7 +198,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkTooltipText(String capability, String tooltip) {
-        $(byXpath(format("(//span[text()='%s'])", capability))).closest(".ant-select-selection__choice")
+        $(byXpath(format("(//span[text()='%s'])", capability)))
                 .shouldHave(attribute("title", tooltip));
         return this;
     }
@@ -471,7 +482,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
-        final SelenideElement capabilityElement = $(visible(byClassName("ant-select-dropdown")))
+        final SelenideElement capabilityElement = $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability));
         capabilityElement
                 .shouldBe(visible, enabled);
@@ -486,7 +497,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     public PipelineRunFormAO checkCapabilityTooltip(final String capability, final String text) {
-        $(visible(byClassName("ant-select-dropdown")))
+        $(visible(byClassName("rc-dropdown")))
                 .find(withText(capability))
                 .shouldBe(visible).hover();
         $(visible(byClassName("ant-tooltip")))

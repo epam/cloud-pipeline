@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -101,3 +101,8 @@ class User(API):
     def whoami(cls):
         api = cls.instance()
         return api.retryable_call('GET', '/whoami') or {}
+
+    @classmethod
+    def load_launch_limits(cls, load_all=False):
+        api = cls.instance()
+        return api.retryable_call('GET', '/user/launchLimits?loadAll={}'.format(load_all)) or {}

@@ -127,6 +127,7 @@ class ViewerState {
   @observable channelsLocked = false;
   @observable imageZPosition = 0;
   @observable availableZPositions = [];
+  @observable fieldID;
 
   constructor (viewer) {
     this.attachToViewer(viewer);
@@ -210,6 +211,16 @@ class ViewerState {
       } = metadata.Pixels;
       zPhysicalSize = PhysicalSizeZ;
       zPhysicalSizeUnit = PhysicalSizeZUnit;
+    }
+    if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
+      const e = /field ([\d]+)/i.exec(metadata.Name);
+      if (e && e.length) {
+        this.fieldID = Number(e[1]);
+      } else {
+        this.fieldID = undefined;
+      }
+    } else {
+      this.fieldID = undefined;
     }
     this.availableZPositions = buildZPositionsArray(zSize, zPhysicalSize, zPhysicalSizeUnit);
     /**

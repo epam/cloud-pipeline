@@ -29,4 +29,8 @@ public class ConfigurationReadingException extends RuntimeException {
     public ConfigurationReadingException(Throwable cause) {
         super("Failed to parse configuration.", cause);
     }
+
+    public ConfigurationReadingException() {
+        super("Failed to parse configuration.");
+    }
 }

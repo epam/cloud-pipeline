@@ -31,6 +31,7 @@ import com.epam.pipeline.exception.ConfigDecodingException;
 import com.epam.pipeline.exception.ConfigurationReadingException;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.python.GraphReader;
@@ -75,6 +76,9 @@ public class PipelineVersionManager {
     @Autowired
     private PipelineConfigurationPostProcessor postProcessor;
 
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
+
     private JsonMapper mapper = new JsonMapper();
 
     @Value("${luigi.graph.script}")
@@ -86,9 +90,9 @@ public class PipelineVersionManager {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    public List<Revision> loadAllVersionFromGit(Long id) throws GitClientException {
-        Pipeline pipeline = pipelineManager.load(id);
-        return gitManager.getPipelineRevisions(pipeline);
+    public List<Revision> loadAllVersionFromGit(final Long id) throws GitClientException {
+        final Pipeline pipeline = pipelineManager.load(id);
+        return pipelineRepositoryService.getPipelineRevisions(pipeline.getRepositoryType(), pipeline);
     }
 
     public TaskGraphVO getWorkflowGraph(Long id, String version) {
@@ -120,7 +124,7 @@ public class PipelineVersionManager {
             throws GitClientException {
         List<ConfigurationEntry> configurations = loadConfigurationsFromScript(id, version);
         if (CollectionUtils.isEmpty(configurations)) {
-            throw new ConfigurationReadingException(CONFIG_FILE_NAME);
+            throw new ConfigurationReadingException();
         }
         if (StringUtils.hasText(configName)) {
             return configurations.stream()
@@ -229,7 +233,7 @@ public class PipelineVersionManager {
     public Revision registerPipelineVersion(final RegisterPipelineVersionVO registerPipelineVersionVO)
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(registerPipelineVersionVO.getPipelineId());
-        return gitManager.createPipelineRevision(pipeline, registerPipelineVersionVO.getVersionName(),
+        return pipelineRepositoryService.createPipelineRevision(pipeline, registerPipelineVersionVO.getVersionName(),
                 registerPipelineVersionVO.getCommit(), registerPipelineVersionVO.getMessage(),
                 registerPipelineVersionVO.getReleaseDescription());
     }

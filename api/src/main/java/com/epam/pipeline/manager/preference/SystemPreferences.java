@@ -20,6 +20,7 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.Constants;
+import com.epam.pipeline.entity.cloudaccess.CloudAccessManagementConfig;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
@@ -121,6 +122,7 @@ public class SystemPreferences {
     private static final String BILLING_QUOTAS_GROUP= "Billing Quotas";
     private static final String NGS_PREPROCESSING_GROUP = "NGS Preprocessing";
     private static final String MONITORING_GROUP = "Monitoring";
+    private static final String CLOUD = "Cloud";
 
     private static final String STORAGE_FSBROWSER_BLACK_LIST_DEFAULT =
             "/bin,/var,/home,/root,/sbin,/sys,/usr,/boot,/dev,/lib,/proc,/etc";
@@ -268,8 +270,6 @@ public class SystemPreferences {
 
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
-    public static final StringPreference BITBUCKET_API_HOST =
-            new StringPreference("git.bitbucket.api.host", "https://api.bitbucket.org/", GIT_GROUP, pass);
     public static final StringPreference GIT_READER_HOST =
             new StringPreference("git.reader.service.host", null, GIT_GROUP, pass);
     public static final StringPreference GIT_EXTERNAL_URL =
@@ -588,6 +588,19 @@ public class SystemPreferences {
         new ObjectPreference<>("launch.system.parameters", null,
                                new TypeReference<List<DefaultSystemParameter>>() {},
                                LAUNCH_GROUP, isNullOrValidJson(new TypeReference<List<DefaultSystemParameter>>() {}));
+
+    /**
+     * Controls maximum number of active runs for specific user/group
+     */
+    public static final IntPreference LAUNCH_MAX_RUNS_USER_LIMIT = new IntPreference(
+        "launch.max.runs.user", null, LAUNCH_GROUP, isGreaterThan(0));
+
+    public static final IntPreference LAUNCH_MAX_RUNS_GROUP_LIMIT = new IntPreference(
+        "launch.max.runs.group", null, LAUNCH_GROUP, isGreaterThan(0));
+
+    public static final IntPreference LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT = new IntPreference(
+        "launch.max.runs.user.global", null, LAUNCH_GROUP, isGreaterThan(0));
+
     /**
      * Sets task status update rate, on which application will query Kubernetes cluster for running task status,
      * milliseconds
@@ -1024,6 +1037,13 @@ public class SystemPreferences {
             isGreaterThan(0));
     public static final IntPreference MONITORING_POOL_USAGE_STORE_DAYS = new IntPreference(
             "monitoring.node.pool.usage.store.days", 365, MONITORING_GROUP, pass);
+
+    // Cloud
+    public static final ObjectPreference<List<CloudAccessManagementConfig>> CLOUD_ACCESS_MANAGEMENT_CONFIG =
+            new ObjectPreference<>(
+                    "cloud.access.management.config", Collections.emptyList(),
+                    new TypeReference<List<CloudAccessManagementConfig>>() {}, CLOUD,
+                    isNullOrValidJson(new TypeReference<List<CloudAccessManagementConfig>>() {}));
 
     private static final Pattern GIT_VERSION_PATTERN = Pattern.compile("(\\d)\\.(\\d)");
 

@@ -1356,10 +1356,11 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
         public String[] getPreference(String preference) {
             searchPreference(preference);
-            String[] prefValue = new String[2];
-            List<String> list = context().$(byClassName("CodeMirror-code"))
-                    .findAll(byClassName("CodeMirror-line")).texts();
-            prefValue[0] = (list.size() <= 1 ) ? join("", list) : join("\n", list);
+            $(byClassName("CodeMirror-code")).shouldBe(visible);
+            sleep(1, SECONDS);
+            final List<String> list = $$(byClassName("CodeMirror-line")).texts();
+            final String[] prefValue = new String[2];
+            prefValue[0] = (list.size() <= 1 ) ? String.join("", list) : String.join("\n", list);
             prefValue[1] = String.valueOf(!context().find(byClassName("preference-group__preference-row"))
                     .$(byClassName("anticon")).has(cssClass("anticon-eye-o")));
             return prefValue;
@@ -1475,12 +1476,13 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
 
         public String[] getAmisFromClusterNetworksConfigPreference(String region) {
-            String[] ami = new String[2];
+            final String[] ami = new String[2];
             searchPreference("cluster.networks.config");
-            String[] strings = context().$(byClassName("CodeMirror-code"))
-                    .findAll(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
+            $(byClassName("CodeMirror-code")).shouldBe(visible);
+            sleep(1, SECONDS);
+            final String[] strings = $$(byClassName("CodeMirror-line")).texts().toArray(new String[0]);
             try {
-                JsonNode instance = new ObjectMapper().readTree(join("", strings)).get("regions");
+                JsonNode instance = new ObjectMapper().readTree(String.join("", strings)).get("regions");
                 for (JsonNode node1 : instance) {
                     if (node1.get("name").asText().equals(region)) {
                         for (JsonNode node : node1.get("amis")) {
@@ -1494,7 +1496,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 }
             } catch (IOException e) {
                 throw new RuntimeException(format("Could not deserialize JSON content %s, cause: %s",
-                        join("", strings), e.getMessage()), e);
+                        String.join("", strings), e.getMessage()), e);
             }
             return ami;
         }
@@ -1524,6 +1526,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             private final By clusterAllowedInstanceTypes = getByField("cluster.allowed.instance.types");
             private final By clusterAllowedInstanceTypesDocker = getByField(
                     "cluster.allowed.instance.types.docker");
+
+            public static final String CLUSTER_AWS_EBS_TYPE = "cluster.aws.ebs.type";
 
             ClusterTabAO(final PipelinesLibraryAO parentAO) {
                 super(parentAO);
@@ -1558,6 +1562,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
             public ClusterTabAO checkClusterAllowedInstanceTypesDocker(final String value) {
                 ensure(clusterAllowedInstanceTypesDocker, value(value));
+                return this;
+            }
+
+            public ClusterTabAO checkClusterAwsEbsType(final String value) {
+                ensure(getByField(CLUSTER_AWS_EBS_TYPE), value(value));
+                ensure(getPreferenceState(CLUSTER_AWS_EBS_TYPE), cssClass("anticon-eye"));
                 return this;
             }
 

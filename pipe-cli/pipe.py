@@ -107,9 +107,13 @@ def enable_debug_logging(ctx, param, value):
     stream = logging.StreamHandler()
     stream.setLevel(log_level)
     # Print current configuration
-    click.echo('=====================Configuration=========================')
+    click.echo('=====================Configuration==========================')
     _current_config = Config.instance(raise_config_not_found_exception=False)
     click.echo(_current_config.__dict__ if _current_config and _current_config.initialized else 'Not configured')
+    # Print local settings
+    click.echo('=====================Settings===============================')
+    click.echo('Python.version={}'.format(sys.version))
+    click.echo('Default.encoding={}'.format(_current_config.get_encoding()))
     # Print current environment
     click.echo('=====================Environment============================')
     for k, v in sorted(os.environ.items()):
@@ -2042,6 +2046,16 @@ def import_users(file_path, create_user, create_group, create_metadata):
     Registers a new users, roles and metadata specified in input file
     """
     UserOperationsManager().import_users(file_path, create_user, create_group, create_metadata)
+
+
+@users.command(name='instances')
+@click.option('-v', '--verbose', required=False, is_flag=True, default=False, help='Show all active limits in a table')
+@common_options
+def list_instance_limits(verbose):
+    """
+    Shows information on user's instance limits
+    """
+    UserOperationsManager().get_instance_limits(verbose)
 
 
 @cli.group()

@@ -17,8 +17,10 @@
 package com.epam.pipeline.dts.sync.model;
 
 import lombok.Value;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 @Value
 public class TransferTrigger {
@@ -29,5 +31,23 @@ public class TransferTrigger {
     public TransferTrigger addAllMatchers(final TransferTrigger anotherTrigger) {
         globMatchers.addAll(anotherTrigger.getGlobMatchers());
         return this;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final TransferTrigger that = (TransferTrigger) o;
+        return Objects.equals(maxSearchDepth, that.maxSearchDepth) &&
+                CollectionUtils.isEqualCollection(globMatchers, that.globMatchers);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(maxSearchDepth, globMatchers);
     }
 }

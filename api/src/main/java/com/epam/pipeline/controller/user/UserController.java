@@ -61,6 +61,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @Api(value = "Users")
@@ -469,5 +470,17 @@ public class UserController extends AbstractRestController {
     public Result<Boolean> deleteOnlineUsers(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam
                                                  final LocalDate date) {
         return Result.success(userApiService.deleteExpiredOnlineUsers(date));
+    }
+
+    @GetMapping("/user/launchLimits")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads launch limits for a user.",
+            notes = "Loads a map of launch limits, configured via contextual preferences.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Map<String, Integer>> getCurrentUserLaunchLimits(
+        @RequestParam(required = false, defaultValue = "false") final boolean loadAll) {
+        return Result.success(userApiService.getCurrentUserLaunchLimits(loadAll));
     }
 }

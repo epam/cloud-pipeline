@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.autotests;
 import com.codeborne.selenide.Condition;
 import com.epam.pipeline.autotests.ao.SettingsPageAO;
 import com.epam.pipeline.autotests.ao.SupportButtonAO;
+import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
@@ -28,17 +29,28 @@ import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Pattern;
 
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.Primitive.ADVANCED_PANEL;
 import static com.epam.pipeline.autotests.ao.SettingsPageAO.PreferencesAO.UserInterfaceAO.SUPPORT_TEMPLATE;
 import static com.epam.pipeline.autotests.utils.Utils.readResourceFully;
 import static com.epam.pipeline.autotests.utils.Utils.sleep;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.stream.Collectors.toSet;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
-public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements Navigation, Authorization {
+public class PlatformPreferencesTest extends AbstractSinglePipelineRunningTest implements Navigation, Authorization {
 
     private static final String SUPPORT_ICONS_JSON = "/supportIcons.json";
+    private static final String INITIALIZE_NODE = "InitializeNode";
+    private final String tool = C.TESTING_TOOL_NAME;
+    private final String registry = C.DEFAULT_REGISTRY;
+    private final String group = C.DEFAULT_GROUP;
+
 
     @Test
     @TestCase(value = {"897"})
@@ -130,8 +142,10 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
             supportButtonAO.checkSupportButtonContent(icons.get(1), iconCondition2);
 
             logoutIfNeeded();
-            loginAs(user);
-            sleep(10, SECONDS);
+            loginAs(user)
+                    .settings()
+                    .switchToMyProfile()
+                    .validateUserName(user.login);
             final Condition iconCondition3 = Condition.cssClass(format("anticon-%s", icons.get(2).getIcon()));
             supportButtonAO
                     .checkSupportButtonIcon(iconCondition3);
@@ -145,5 +159,34 @@ public class PlatformPreferencesTest extends AbstractBfxPipelineTest implements 
                     .setPreference(SUPPORT_TEMPLATE, supportTemplateValue, true)
                     .saveIfNeeded();
         }
+    }
+
+    @Test
+    @TestCase(value = {"TC-PARAMETERS-3"})
+    public void checkConfigureClusterAwsEBSvolumeType() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .switchToCluster()
+                .checkClusterAwsEbsType(C.DEFAULT_CLUSTER_AWS_EBS_TYPE);
+        final Set<String> logMess = tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(ADVANCED_PANEL)
+                .doNotMountStoragesSelect(true)
+                .launch(this)
+                .showLog(getRunId())
+                .waitForSshLink()
+                .waitForTask(INITIALIZE_NODE)
+                .click(taskWithName(INITIALIZE_NODE))
+                .logMessages()
+                .collect(toSet());
+        checkClusterAwsEBSvolumeTypeInLog(logMess);
+    }
+
+    private void checkClusterAwsEBSvolumeTypeInLog(Set<String> logMess) {
+        assertTrue(logMess.stream()
+                .anyMatch(Pattern.compile(format("The requested EBS volume type for \\D+ device is %s",
+                        C.DEFAULT_CLUSTER_AWS_EBS_TYPE)).asPredicate()),
+                "The requested EBS volume type is absent in the log" );
     }
 }

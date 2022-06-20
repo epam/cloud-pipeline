@@ -49,6 +49,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
@@ -254,4 +255,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected NgsPreprocessingApiService preprocessingApiService;
+
+    @MockBean
+    protected CloudAccessApiService cloudAccessApiService;
 }

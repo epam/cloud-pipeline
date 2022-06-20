@@ -125,6 +125,7 @@ public class C {
         BACKUP_STORAGE_PATH = conf.getProperty("e2e.ui.backup.storage.path");
         BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
         ELASTIC_URL = conf.getProperty("e2e.ui.elastic.url");
+        DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -185,6 +186,7 @@ public class C {
     public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER;
     public static final String CLUSTER_ALLOWED_MASKS;
     public static final String DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
+    public static final String DEFAULT_CLUSTER_AWS_EBS_TYPE;
 
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;

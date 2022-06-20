@@ -174,6 +174,20 @@ export function buildColor (channels) {
   return `rgba(${rgb}, ${alphaChannelValue(a)})`;
 }
 
+export function buildHexColor (channels, ignoreAlpha = false) {
+  if (!channels) {
+    return undefined;
+  }
+  const {
+    r, g, b, a = 1.0
+  } = channels;
+  const hex = (o) => Number(o).toString(16);
+  if (ignoreAlpha) {
+    return `#${hex(r)}${hex(g)}${hex(b)}`;
+  }
+  return `#${hex(r)}${hex(g)}${hex(b)}${hex(Math.round(255 * a))}`;
+}
+
 export function parseAmount (amount) {
   let value = Number(amount);
   if (/^[\d]+%$/.test(amount)) {

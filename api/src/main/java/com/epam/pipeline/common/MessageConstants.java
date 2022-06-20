@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -304,6 +304,7 @@ public final class MessageConstants {
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
     public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
     public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
+    public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =
@@ -736,6 +737,9 @@ public final class MessageConstants {
     public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
     public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
     public static final String ERROR_BILLING_QUOTA_EXCEEDED_LAUNCH = "error.billing.quota.exceeded.launch";
+
+    // Launch limits
+    public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
 
     // Ngs preprocessing
     public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =
