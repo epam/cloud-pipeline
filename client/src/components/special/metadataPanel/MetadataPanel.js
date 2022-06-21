@@ -19,7 +19,10 @@ import {inject, observer} from 'mobx-react';
 // todo: move MetadataStyles file
 import classNames from 'classnames';
 import MetadataStyles from '../metadata/Metadata.css';
+import {Link} from 'react-router';
 import {Button, Icon, Input, message, Modal, Row} from 'antd';
+import StatusIcon from '../../special/run-status-icon';
+import displayDuration from '../../../utils/displayDuration';
 import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEntityDeleteKey';
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
@@ -576,13 +579,15 @@ export default class MetadataPanel extends React.Component {
             </tr>
           ));
         } else {
+          const isRunStatus = key === 'RunStatus' && metadataItem[key].type === 'json';
           valueElement.push((
             <tr
               key={`${key}_value`}
               className={
                 classNames(
                   'cp-metadata-item-row',
-                  'value'
+                  'value',
+                  {'runs': isRunStatus}
                 )
               }
             >
@@ -590,7 +595,10 @@ export default class MetadataPanel extends React.Component {
                 id={`value-column-${key}`}
                 colSpan={6}
                 onClick={this.onMetadataEditStarted('value', key, metadataItem[key].value)}>
-                {value}
+                {isRunStatus
+                  ? value.map(this.renderSingleRun)
+                  : value
+                }
               </td>
             </tr>
           ));
@@ -599,6 +607,34 @@ export default class MetadataPanel extends React.Component {
     }
     return valueElement;
   }
+
+  renderSingleRun (run, index) {
+    const {
+      runId,
+      status,
+      startDate,
+      endDate
+    } = run;
+    const duration = displayDuration(startDate, endDate);
+    if (!runId) {
+      return;
+    }
+    return (
+      <div key={`${runId}_${index}`}>
+        <Link
+          key={index}
+          to={`/run/${runId}`}
+          className={classNames(
+            MetadataStyles.run,
+            'cp-run-nested-run-link'
+          )}>
+          <StatusIcon status={status} small displayTooltip={false} />
+          <b className={MetadataStyles.runId}> {runId},</b>
+          {duration && <span className={MetadataStyles.details}> {duration}</span>}
+        </Link>
+      </div>
+    );
+  };
 
   renderEmptyPlaceholder = () => {
     if (!this.props.currentItem) {

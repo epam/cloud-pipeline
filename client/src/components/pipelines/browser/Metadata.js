@@ -17,6 +17,7 @@
 import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
+import {Link} from 'react-router';
 import classNames from 'classnames';
 import connect from '../../../utils/connect';
 import folders from '../../../models/folders/Folders';
@@ -33,7 +34,8 @@ import {
   message,
   Modal,
   Pagination,
-  Row
+  Row,
+  Tooltip
 } from 'antd';
 import Menu, {MenuItem, Divider} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
@@ -68,8 +70,10 @@ import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import {MetadataSampleSheetValue} from '../../special/sample-sheet';
+import StatusIcon from '../../special/run-status-icon';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
+import displayDuration from '../../../utils/displayDuration';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
@@ -139,6 +143,8 @@ function makeCurrentOrderSort (array) {
   const indexOf = makeIndexOf(array);
   return (a, b) => indexOf(a) - indexOf(b);
 }
+
+const MAX_NESTED_RUNS_TO_DISPLAY = 5;
 
 @connect({
   folders,
@@ -479,6 +485,12 @@ export default class Metadata extends React.Component {
               value: v.createdDate,
               type: 'date'
             };
+            if (v.data.RunStatus) {
+              v.data.RunStatus = {
+                value: JSON.parse(v.data.RunStatus.value),
+                type: 'json'
+              };
+            }
             return v.data;
           });
         }
@@ -1800,7 +1812,7 @@ export default class Metadata extends React.Component {
             key={METADATA_PANEL_KEY}
             readOnly={!(roleModel.writeAllowed(this.props.folder.value) &&
               this.props.folderId !== undefined)}
-            readOnlyKeys={['ID', 'createdDate']}
+            readOnlyKeys={['ID', 'createdDate', 'RunStatus']}
             columnNamesFn={getColumnTitle}
             classId={currentItem ? currentItem.classEntity.id : null}
             className={currentItem ? currentItem.classEntity.name : null}
@@ -2023,6 +2035,60 @@ export default class Metadata extends React.Component {
       ngsProjectMachineRuns.isSampleSheetValue(key);
   };
 
+  renderNestedRuns (nestedRuns) {
+    const total = nestedRuns.length;
+
+    const renderSingleRun = function (run, index) {
+      const {
+        runId,
+        status,
+        startDate,
+        endDate
+      } = run;
+      const duration = displayDuration(startDate, endDate);
+      if (!runId || (index >= MAX_NESTED_RUNS_TO_DISPLAY && !this)) {
+        return;
+      }
+      return (
+        <Link
+          key={index}
+          className={
+            classNames(
+              styles.nestedRun,
+              'cp-run-nested-run-link'
+            )
+          }
+          to={`/run/${runId}`}
+        >
+          <StatusIcon status={status} small displayTooltip={false} />
+          <b className={styles.runId}> {runId},</b>
+          {duration && <span className={styles.details}> {duration}</span>}
+        </Link>
+      );
+    };
+
+    const renderTooltip = (nestedRuns) => {
+      return (
+        <div className={styles.nestedRunsTooltip}>
+          {nestedRuns.map(renderSingleRun, true)}
+        </div>
+      );
+    };
+
+    return (
+      <div className={styles.nestedRuns}>
+        {nestedRuns.map(renderSingleRun, false)}
+        {total > MAX_NESTED_RUNS_TO_DISPLAY &&
+        <Tooltip title={renderTooltip(nestedRuns)} placement="left">
+          <Link
+            className={styles.allNestedRuns}>
+            ... +{total - MAX_NESTED_RUNS_TO_DISPLAY} more
+          </Link>
+        </Tooltip>}
+      </div>
+    );
+  };
+
   get tableColumns () {
     const onHeaderClicked = (e, key) => {
       if (e) {
@@ -2222,6 +2288,9 @@ export default class Metadata extends React.Component {
                     {displayDate(data.value)}
                   </span>
                 );
+              }
+              if (data.type === 'json') {
+                return this.renderNestedRuns(data.value);
               }
               return (
                 <span title={data.value}>

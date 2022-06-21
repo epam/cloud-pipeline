@@ -52,3 +52,24 @@
   overflow: auto;
   cursor: default;
 }
+
+.runs {
+  display: flex;
+  flex-direction: column;
+}
+
+.run:hover .run-id {
+  text-decoration: underline;
+}
+
+.run > span.details {
+  margin-right: 0;
+}
+
+.run > span.details::after {
+  content: ', ';
+}
+
+.run > span.details:last-child::after {
+  content: none;
+}
