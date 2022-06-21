@@ -1942,7 +1942,10 @@ export default `
   background-color: @card-header-background;
   border: 1px solid @card-border-color;
 }
-@THEME .cp-run-nested-run-link {
+@THEME .cp-run-nested-run-link,
+@THEME .cp-run-nested-run-link:active,
+@THEME .cp-run-nested-run-link:focus,
+@THEME .cp-run-nested-run-link:visited {
   color: @application-color-accent;
 }
 @THEME .cp-wdl-task[data-type=VisualStep] rect,

@@ -19,16 +19,14 @@ import {inject, observer} from 'mobx-react';
 // todo: move MetadataStyles file
 import classNames from 'classnames';
 import MetadataStyles from '../metadata/Metadata.css';
-import {Link} from 'react-router';
 import {Button, Icon, Input, message, Modal, Row} from 'antd';
-import StatusIcon from '../../special/run-status-icon';
-import displayDuration from '../../../utils/displayDuration';
 import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEntityDeleteKey';
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import PathAttributeShareButton from '../metadata/special/path-attribute-share-button';
 import PropTypes from 'prop-types';
+import RunsAttribute, {isRunsValue} from '../metadata/special/runs-attribute';
 
 @inject((args, params) => ({
   currentItem: params.currentItem,
@@ -458,10 +456,12 @@ export default class MetadataPanel extends React.Component {
   renderMetadataItem = (metadataItem) => {
     let valueElement = [];
     for (let key in metadataItem) {
-      const isReadOnlyItem = this.props.readOnly ||
+      let isReadOnlyItem = this.props.readOnly ||
         (this.props.readOnlyKeys || []).indexOf(key) >= 0;
       if (key !== 'rowKey' && metadataItem[key]) {
         let value = metadataItem[key].value;
+        const runsValue = isRunsValue(value);
+        isReadOnlyItem = isReadOnlyItem || runsValue;
         if (metadataItem[key].type.startsWith('Array')) {
           try {
             value = JSON.parse(value).map(v => <div key={`${key}_value_${v}`}>{v}</div>);
@@ -555,7 +555,25 @@ export default class MetadataPanel extends React.Component {
             </tr>
           ));
         }
-        if (
+        if (runsValue) {
+          valueElement.push((
+            <tr
+              key={`${key}_value`}
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'value'
+                )
+              }
+            >
+              <td colSpan={6}>
+                <RunsAttribute
+                  value={value}
+                />
+              </td>
+            </tr>
+          ));
+        } else if (
           this.state.editableValue === key &&
           (this.props.readOnlyKeys || []).indexOf(key) === -1
         ) {
@@ -579,15 +597,13 @@ export default class MetadataPanel extends React.Component {
             </tr>
           ));
         } else {
-          const isRunStatus = key === 'RunStatus' && metadataItem[key].type === 'json';
           valueElement.push((
             <tr
               key={`${key}_value`}
               className={
                 classNames(
                   'cp-metadata-item-row',
-                  'value',
-                  {'runs': isRunStatus}
+                  'value'
                 )
               }
             >
@@ -595,10 +611,7 @@ export default class MetadataPanel extends React.Component {
                 id={`value-column-${key}`}
                 colSpan={6}
                 onClick={this.onMetadataEditStarted('value', key, metadataItem[key].value)}>
-                {isRunStatus
-                  ? value.map(this.renderSingleRun)
-                  : value
-                }
+                {value}
               </td>
             </tr>
           ));
@@ -607,34 +620,6 @@ export default class MetadataPanel extends React.Component {
     }
     return valueElement;
   }
-
-  renderSingleRun (run, index) {
-    const {
-      runId,
-      status,
-      startDate,
-      endDate
-    } = run;
-    const duration = displayDuration(startDate, endDate);
-    if (!runId) {
-      return;
-    }
-    return (
-      <div key={`${runId}_${index}`}>
-        <Link
-          key={index}
-          to={`/run/${runId}`}
-          className={classNames(
-            MetadataStyles.run,
-            'cp-run-nested-run-link'
-          )}>
-          <StatusIcon status={status} small displayTooltip={false} />
-          <b className={MetadataStyles.runId}> {runId},</b>
-          {duration && <span className={MetadataStyles.details}> {duration}</span>}
-        </Link>
-      </div>
-    );
-  };
 
   renderEmptyPlaceholder = () => {
     if (!this.props.currentItem) {

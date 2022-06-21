@@ -485,41 +485,6 @@ tr.table-row-selected {
   padding: 5px;
 }
 
-.nested-runs {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  vertical-align: top;
-}
-
-.nested-runs-tooltip {
-  display: flex;
-  flex-direction: column;
-}
-
-.all-nested-runs {
-  margin-left: 5px;
-  display: inline-block;
-  padding: 0 2px;
-}
-
-.nested-run:hover .run-id {
-  text-decoration: underline;
-}
-
-.nested-run > span.details {
-  margin-right: 0;
-}
-
-.nested-run > span.details::after {
-  content: ', ';
-}
-
-.nested-run > span.details:last-child::after {
-  content: none;
-}
-
 @media screen and (max-width: 1280px) {
   .tree-item-name {
     min-width: 100px;
