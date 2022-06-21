@@ -80,6 +80,7 @@ import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../uti
 import * as metadataFilterUtilities from './metadata-controls/metadata-filters';
 import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUpdateSampleSheet';
 import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
+import RunsAttribute, {isRunsValue} from '../../special/metadata/special/runs-attribute';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -2221,6 +2222,13 @@ export default class Metadata extends React.Component {
                   <span title={data.value}>
                     {displayDate(data.value)}
                   </span>
+                );
+              }
+              if (isRunsValue(data.value)) {
+                return (
+                  <RunsAttribute
+                    value={data.value}
+                  />
                 );
               }
               return (

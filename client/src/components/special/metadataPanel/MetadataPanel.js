@@ -26,6 +26,7 @@ import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEnti
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import PathAttributeShareButton from '../metadata/special/path-attribute-share-button';
 import PropTypes from 'prop-types';
+import RunsAttribute, {isRunsValue} from '../metadata/special/runs-attribute';
 
 @inject((args, params) => ({
   currentItem: params.currentItem,
@@ -455,10 +456,12 @@ export default class MetadataPanel extends React.Component {
   renderMetadataItem = (metadataItem) => {
     let valueElement = [];
     for (let key in metadataItem) {
-      const isReadOnlyItem = this.props.readOnly ||
+      let isReadOnlyItem = this.props.readOnly ||
         (this.props.readOnlyKeys || []).indexOf(key) >= 0;
       if (key !== 'rowKey' && metadataItem[key]) {
         let value = metadataItem[key].value;
+        const runsValue = isRunsValue(value);
+        isReadOnlyItem = isReadOnlyItem || runsValue;
         if (metadataItem[key].type.startsWith('Array')) {
           try {
             value = JSON.parse(value).map(v => <div key={`${key}_value_${v}`}>{v}</div>);
@@ -552,7 +555,25 @@ export default class MetadataPanel extends React.Component {
             </tr>
           ));
         }
-        if (
+        if (runsValue) {
+          valueElement.push((
+            <tr
+              key={`${key}_value`}
+              className={
+                classNames(
+                  'cp-metadata-item-row',
+                  'value'
+                )
+              }
+            >
+              <td colSpan={6}>
+                <RunsAttribute
+                  value={value}
+                />
+              </td>
+            </tr>
+          ));
+        } else if (
           this.state.editableValue === key &&
           (this.props.readOnlyKeys || []).indexOf(key) === -1
         ) {
