@@ -17,6 +17,7 @@
 package com.epam.pipeline.controller.folder;
 
 import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.controller.AbstractRestController;
 import com.epam.pipeline.controller.Result;
@@ -105,6 +106,19 @@ public class FolderController  extends AbstractRestController {
             })
     public Result<Folder> loadProjects() {
         return Result.success(folderApiService.loadProjects());
+    }
+
+    @RequestMapping(value = "/folder/filterByMetadata", method = RequestMethod.POST)
+    @ResponseBody
+    @ApiOperation(
+            value = "Filter all folders with provided indicators (metadata key and value).",
+            notes = "Filter all folders with provided indicators (metadata key and value).",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<Folder> filterFolders(@RequestBody final Map<String, String> metadata) {
+        return Result.success(folderApiService.filterFolders(metadata));
     }
 
     @RequestMapping(value = "/folder/loadTree", method = RequestMethod.GET)

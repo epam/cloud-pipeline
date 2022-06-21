@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.controller.vo.preprocessing;
+package com.epam.pipeline.vo.preprocessing;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;

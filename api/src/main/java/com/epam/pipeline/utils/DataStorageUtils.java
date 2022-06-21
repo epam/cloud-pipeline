@@ -27,34 +27,7 @@ import lombok.NoArgsConstructor;
 public final class DataStorageUtils {
 
     public static DataStorageLink constructDataStorageLink(final AbstractDataStorage dataStorage,
-                                                           final String path,
-                                                           final String mask) {
-        final DataStorageLink dataStorageLink = new DataStorageLink();
-        dataStorageLink.setAbsolutePath(path.trim());
-        dataStorageLink.setDataStorageId(dataStorage.getId());
-        String relativePath = path.trim().substring(mask.length());
-        if (relativePath.startsWith(ProviderUtils.DELIMITER)) {
-            relativePath = relativePath.substring(1);
-        }
-        final String[] parts = relativePath.split(ProviderUtils.DELIMITER);
-        final String lastPart = parts[parts.length - 1];
-        if (lastPart.contains(".")) {
-            String newPath = "";
-            for (int i = 0; i < parts.length - 1; i++) {
-                newPath = newPath.concat(parts[i] + ProviderUtils.DELIMITER);
-            }
-            if (newPath.endsWith(ProviderUtils.DELIMITER)) {
-                newPath = newPath.substring(0, newPath.length() - 1);
-            }
-            dataStorageLink.setPath(newPath);
-        } else {
-            dataStorageLink.setPath(relativePath);
-        }
-        return dataStorageLink;
-    }
-
-    public static DataStorageLink constructDataStorageFileLink(final AbstractDataStorage dataStorage,
-                                                               final String path) {
+                                                           final String path) {
         final String relativePath;
         if (path.startsWith(dataStorage.getPathMask())) {
             relativePath = path.substring(dataStorage.getPathMask().length())

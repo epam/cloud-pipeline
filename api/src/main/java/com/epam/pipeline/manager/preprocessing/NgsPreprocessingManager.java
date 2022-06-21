@@ -36,7 +36,6 @@ import com.epam.pipeline.controller.vo.preprocessing.SampleSheetRegistrationVO;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
-import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.metadata.parser.EntityTypeField;
@@ -49,6 +48,7 @@ import com.epam.pipeline.utils.DataStorageUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -91,7 +91,8 @@ public class NgsPreprocessingManager {
     private final MessageHelper messageHelper;
 
     @Transactional(propagation = Propagation.REQUIRED)
-    public void registerSampleSheet(final SampleSheetRegistrationVO registrationVO) {
+    public MetadataEntity registerSampleSheet(final SampleSheetRegistrationVO registrationVO,
+                                              final boolean overwrite) {
         final Long folderId = registrationVO.getFolderId();
         Assert.notNull(folderId,
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED));
@@ -106,34 +107,46 @@ public class NgsPreprocessingManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_MACHINE_RUN_NOT_PROVIDED));
         final MetadataEntity machineRunMetadataEntity = fetchMachineRunMetadataEntity(dataFolderPath, machineRunId);
 
-        final byte[] content = registrationVO.getContent();
+        final PipeConfValue linkedSampleSheet = MapUtils.emptyIfNull(machineRunMetadataEntity.getData())
+                .get(preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_LINK_COLUMN));
+
+        Assert.state(overwrite || linkedSampleSheet == null,
+                "Sample Sheet already registered for the project, to overwrite please specify overwrite=true");
+
+        final DataStorageLink sampleSheetFileLink = DataStorageUtils.constructDataStorageLink(
+                storage,
+                StringUtils.isNotBlank(registrationVO.getPath())
+                        ? registrationVO.getPath()
+                        : Paths.get(dataFolderPath.getPath(), machineRunMetadataEntity.getExternalId(),
+                        preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME)
+                ).toString()
+        );
+
+        final byte[] content = getSampleSheetContent(storage, registrationVO);
         Assert.state(ArrayUtils.isNotEmpty(content),
                 messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_SAMPLESHEET_CONTENT_NOT_PROVIDED));
         final SampleSheet sampleSheet = SampleSheetParser.parseSampleSheet(content);
 
         final String sampleMetadataClassName = preferenceManager.getPreference(
                 SystemPreferences.PREPROCESSING_SAMPLE_CLASS);
-        final MetadataClass sampleMetadataClass = metadataEntityManager.getOrCreate(sampleMetadataClassName);
+        final MetadataClass sampleMetadataClass = metadataEntityManager
+                .getOrCreateMetadataClass(sampleMetadataClassName);
 
         final List<MetadataEntityVO> samples = mapSampleSheetToMetadataEntities(
                 folderId, machineRunMetadataEntity, sampleSheet, sampleMetadataClass);
 
-        unregisterSampleSheet(folderId, machineRunId, true);
+        unregisterSampleSheet(folderId, machineRunId, false);
         samples.forEach(metadataEntityManager::updateMetadataEntity);
 
-        final String sampleSheetFileInternalPath = Paths.get(
-                dataFolderPath.getPath(),
-                machineRunMetadataEntity.getExternalId(),
-                preferenceManager.getPreference(SystemPreferences.PREPROCESSING_SAMPLESHEET_FILE_NAME)
-        ).toString();
-
-        final DataStorageLink sampleSheetFileLink = DataStorageUtils.constructDataStorageFileLink(
-                storage, sampleSheetFileInternalPath);
-
-        storageManager.createDataStorageFile(dataFolderPath.getDataStorageId(), sampleSheetFileInternalPath, content);
+        // We will try to write a file only if sample sheet was passed as a content, not a path
+        if (ArrayUtils.isNotEmpty(registrationVO.getContent())) {
+            deleteStorageFileIfExists(storage, sampleSheetFileLink.getPath());
+            storageManager.createDataStorageFile(storage.getId(), sampleSheetFileLink.getPath(), content);
+        }
 
         linkSamplesToMachineRun(folderId, machineRunMetadataEntity, sampleMetadataClass,
                 samples, sampleSheetFileLink.getAbsolutePath());
+        return machineRunMetadataEntity;
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -173,7 +186,7 @@ public class NgsPreprocessingManager {
         final DataStorageLink linkedSampleSheetLink = Optional.ofNullable(
                 machineRunData.get(machineRunLinkedSampleSheetColumn)
         ).map(PipeConfValue::getValue)
-                .map(fullPath -> DataStorageUtils.constructDataStorageFileLink(storage, fullPath))
+                .map(fullPath -> DataStorageUtils.constructDataStorageLink(storage, fullPath))
                 .orElse(null);
 
         machineRunData.put(machineRunToSampleColumn, null);
@@ -191,7 +204,24 @@ public class NgsPreprocessingManager {
         metadataEntityManager.updateMetadataEntity(metadataEntityVO);
 
         if (deleteFile && linkedSampleSheetLink != null) {
-            deleteStorageFileIfExists(dataFolderPath.getDataStorageId(), linkedSampleSheetLink.getPath());
+            deleteStorageFileIfExists(storage, linkedSampleSheetLink.getPath());
+        }
+    }
+
+    private byte[] getSampleSheetContent(final AbstractDataStorage storage,
+                                         final SampleSheetRegistrationVO registrationVO) {
+        Assert.state(!(ArrayUtils.isNotEmpty(registrationVO.getContent())
+                        && StringUtils.isNotBlank(registrationVO.getPath())),
+                "Only one of 'content' or 'path' should be provided to register sample sheet!");
+        if (ArrayUtils.isNotEmpty(registrationVO.getContent())) {
+            return registrationVO.getContent();
+        } else if (StringUtils.isNotBlank(registrationVO.getPath())) {
+            final DataStorageLink sampleSheetStorageLink = DataStorageUtils.constructDataStorageLink(
+                    storage, registrationVO.getPath());
+            return storageManager.getDataStorageItemContent(storage.getId(), sampleSheetStorageLink.getPath(),
+                    null).getContent();
+        } else {
+            throw new IllegalStateException("No 'content' or 'path' for sample sheet is provided!");
         }
     }
 
@@ -249,16 +279,15 @@ public class NgsPreprocessingManager {
         return machineRunMetadataEntity;
     }
 
-    private void deleteStorageFileIfExists(final Long storageId, final String internalPath) {
-        final AbstractDataStorage dataStorage = storageManager.load(storageId);
-        if (checkPathExistence(dataStorage.getId(), internalPath)) {
+    private void deleteStorageFileIfExists(final AbstractDataStorage storage, final String internalPath) {
+        if (checkPathExistence(storage.getId(), internalPath)) {
             final UpdateDataStorageItemVO sampleSheetItem = new UpdateDataStorageItemVO();
             sampleSheetItem.setPath(internalPath);
             sampleSheetItem.setType(DataStorageItemType.File);
             storageManager.deleteDataStorageItems(
-                    storageId,
+                    storage.getId(),
                     Collections.singletonList(sampleSheetItem),
-                    dataStorage.isVersioningEnabled()
+                    storage.isVersioningEnabled()
             );
         }
     }
@@ -277,7 +306,7 @@ public class NgsPreprocessingManager {
         final AbstractDataStorage dataStorage = storageManager.loadByPathOrId(pathWithOutStorageMask);
 
         final DataStorageLink dataStorageLink = DataStorageUtils.constructDataStorageLink(
-                dataStorage, dataPath.getValue(), dataStorage.getPathMask() + ProviderUtils.DELIMITER);
+                dataStorage, dataPath.getValue());
         if (!checkPathExistence(dataStorageLink.getDataStorageId(), dataStorageLink.getPath())) {
             throw new IllegalStateException(
                     messageHelper.getMessage(MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_DATA_PATH,
@@ -294,7 +323,6 @@ public class NgsPreprocessingManager {
                                 MessageConstants.ERROR_NGS_PREPROCESSING_FOLDER_HAS_NO_METADATA,
                                 folder.getId())));
 
-        checkFolderAttribute(preferenceManager.getPreference(SystemPreferences.UI_PROJECT_INDICATOR), folderMetadata);
         checkFolderAttribute(
                 preferenceManager.getPreference(SystemPreferences.UI_NGS_PROJECT_INDICATOR), folderMetadata);
 
@@ -334,17 +362,16 @@ public class NgsPreprocessingManager {
             entityVO.setClassName(sampleMetadataClass.getName());
             entityVO.setClassId(sampleMetadataClass.getId());
             entityVO.setParentId(folderId);
-            if (laneIndex < 0) {
-                entityVO.setExternalId(
-                        String.join(NAME_DELIMITER, machineRun.getExternalId(), fields.get(sampleIdIndex),
-                                SAMPLE_PREFIX, Integer.toString(i))
-                );
-            } else {
-                entityVO.setExternalId(
-                        String.join(NAME_DELIMITER, machineRun.getExternalId(), fields.get(sampleIdIndex),
-                                SAMPLE_PREFIX, Integer.toString(i), LANE_PREFIX, fields.get(laneIndex))
-                );
-            }
+
+            final String sampleLineId = laneIndex < 0
+                    ? SAMPLE_PREFIX + NAME_DELIMITER + i
+                    : String.join(
+                            NAME_DELIMITER, SAMPLE_PREFIX, Integer.toString(i), LANE_PREFIX, fields.get(laneIndex));
+
+            entityVO.setExternalId(
+                    String.join(NAME_DELIMITER, machineRun.getExternalId(), fields.get(sampleIdIndex), sampleLineId)
+            );
+
             final Map<String, PipeConfValue> data = new HashMap<>();
             for (int j = 0; j < dataHeader.size(); j++) {
                 data.put(dataHeader.get(j),

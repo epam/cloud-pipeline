@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.preprocessing;
+package com.epam.pipeline.utils;
 
 import com.epam.pipeline.entity.samplesheet.SampleSheet;
 import lombok.AccessLevel;

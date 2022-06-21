@@ -55,6 +55,7 @@ import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -174,11 +175,20 @@ public class FolderManager {
     }
 
     public Folder loadAllProjects() {
-        Folder root = new Folder();
-        Set<Pair<String, String>> indicator = SystemPreferenceUtils.parseProjectIndicator(
+        final Set<Pair<String, String>> indicator = SystemPreferenceUtils.parseProjectIndicator(
                 preferenceManager.getPreference(SystemPreferences.UI_PROJECT_INDICATOR));
+        return filterFoldersByMetadata(indicator);
+    }
+
+    public Folder filterFoldersByMetadata(final Map<String, String> metadata) {
+        return filterFoldersByMetadata(metadata.entrySet().stream()
+                .map(e -> ImmutablePair.of(e.getKey(), e.getValue())).collect(Collectors.toSet()));
+    }
+
+    public Folder filterFoldersByMetadata(final Set<? extends Pair<String, String>> indicator) {
         Map<String, PipeConfValue> projectAttributes = indicator.stream()
                 .collect(Collectors.toMap(Pair::getLeft, pair -> new PipeConfValue(null, pair.getRight())));
+        Folder root = new Folder();
         if (MapUtils.isEmpty(projectAttributes)) {
             return root;
         }
@@ -457,7 +467,7 @@ public class FolderManager {
         }
     }
 
-    private boolean containsProjectIndicator(Set<Pair<String, String>> projectIndicator,
+    private boolean containsProjectIndicator(Set<? extends Pair<String, String>> projectIndicator,
                                              Map<String, PipeConfValue> attributes) {
         return attributes != null &&
                 projectIndicator.stream().anyMatch(indicator ->

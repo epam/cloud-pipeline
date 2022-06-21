@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.utils;
+package com.epam.pipeline.utils;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -38,17 +37,18 @@ import java.util.stream.Collectors;
 public final class SystemPreferenceUtils {
 
     private static final String PROJECT_INDICATOR_DELIMITER = "=";
+    private static final String TAGS_DELIMITER = ",";
 
-    public static Set<Pair<String, String>> parseProjectIndicator(final String preference) {
-        final List<String> projectIndicator = Arrays.asList(preference.split(","));
+    public static Map<String, String> parseProjectIndicator(final String preference) {
+        final List<String> projectIndicator = Arrays.asList(preference.split(TAGS_DELIMITER));
         if (CollectionUtils.isEmpty(projectIndicator)) {
-            return Collections.emptySet();
+            return Collections.emptyMap();
         }
         return projectIndicator
                 .stream()
                 .filter(indicator -> indicator.contains(PROJECT_INDICATOR_DELIMITER))
                 .map(indicator -> {
-                    final String[] splittedProjectIndicator = indicator.split(PROJECT_INDICATOR_DELIMITER);
+                    String[] splittedProjectIndicator = indicator.split(PROJECT_INDICATOR_DELIMITER);
                     Assert.state(splittedProjectIndicator.length == 2,
                             "Invalid project indicator pair: " + indicator);
                     final String key = splittedProjectIndicator[0];
@@ -57,6 +57,6 @@ public final class SystemPreferenceUtils {
                         throw new IllegalArgumentException("Invalid project indicator pair.");
                     }
                     return new ImmutablePair<>(key, value);
-                }).collect(Collectors.toSet());
+                }).collect(Collectors.toMap(ImmutablePair::getLeft, ImmutablePair::getRight));
     }
 }
