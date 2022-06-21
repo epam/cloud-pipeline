@@ -65,4 +65,8 @@ function getDefaultColumns (folderId, userInfo, attributeName = 'MetadataColumns
   });
 }
 
+export function getDefaultColumnsSorting (folderId, userInfo) {
+  return getDefaultColumns(folderId, userInfo, 'MetadataColumnsSorting');
+}
+
 export default getDefaultColumns;
