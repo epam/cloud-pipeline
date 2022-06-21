@@ -290,7 +290,7 @@ public class SystemPreferences {
     public static final StringPreference GIT_FSBROWSER_WD =
             new StringPreference("git.fsbrowser.workdir", "/git-workdir", GIT_GROUP, pass);
     public static final StringPreference BITBUCKET_USER_NAME =
-            new StringPreference("bitbucket.user.name", null, GIT_GROUP, null);
+            new StringPreference("bitbucket.user.name", null, GIT_GROUP, pass);
 
 
     // DOCKER_SECURITY_GROUP
