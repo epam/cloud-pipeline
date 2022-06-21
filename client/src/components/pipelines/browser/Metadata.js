@@ -2643,14 +2643,50 @@ export default class Metadata extends React.Component {
     }
     this.setState(newState, () => {
       this.clearSelection();
-      return Promise.all([
+      const promises = [
         folderChanged
           ? this.fetchDefaultColumnsIfRequested()
           : this.loadColumns({reset: true}),
         folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
-        this.loadData(),
+        folderChanged ? Promise.resolve() : this.loadData(),
         this.loadCurrentProject()
-      ]);
+      ];
+      return Promise.all(promises).then(() => {
+        if (folderChanged) {
+          this.fetchDefaultSorting().then(() => {
+            this.loadData();
+          });
+        }
+      });
+    });
+  };
+
+  fetchDefaultSorting = () => {
+    const {authenticatedUserInfo, folderId} = this.props;
+    const {columns} = this.state;
+    return getDefaultColumns(
+      folderId,
+      authenticatedUserInfo.value,
+      'MetadataColumnsSorting'
+    ).then(sorting => {
+      if (sorting) {
+        const defaultOrderBy = sorting.map(rule => {
+          const [field, order = 'ASC'] = rule.trim().split(':');
+          if (!columns.find(col => mapColumnName(col) === field)) {
+            return undefined;
+          }
+          return {
+            field,
+            desc: order.toUpperCase() === 'DESC'
+          };
+        }).filter(Boolean);
+        this.setState(prevState => ({
+          filterModel: {
+            ...prevState.filterModel,
+            orderBy: defaultOrderBy
+          }
+        }));
+      }
     });
   };
 
