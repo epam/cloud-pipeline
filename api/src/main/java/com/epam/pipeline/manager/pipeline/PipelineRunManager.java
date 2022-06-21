@@ -409,6 +409,7 @@ public class PipelineRunManager {
             run.setTags(configuration.getTags());
             pipelineRunDao.updateRunTags(run);
         }
+        run.parseParameters();
         updateMetadataEntities(run);
         return run;
     }
