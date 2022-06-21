@@ -1828,6 +1828,7 @@ export default class Metadata extends React.Component {
                 this.props.onReloadTree(true);
               }
             }}
+            pathAttributes={this.currentClassEntityPathFields.map(o => o.name)}
           />
         }
       </ContentMetadataPanel>

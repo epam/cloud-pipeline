@@ -17,6 +17,7 @@
 import S3Storage from '../models/s3-upload/s3-storage';
 import DataStorageItemContent from '../models/dataStorage/DataStorageItemContent';
 import GenerateDownloadUrl from '../models/dataStorage/GenerateDownloadUrl';
+import storages from '../models/dataStorage/DataStorageAvailable';
 
 const parser = new DOMParser();
 
@@ -197,4 +198,28 @@ export async function createObjectStorageWrapper (storages, storage, permissions
   return undefined;
 }
 
-export {ObjectStorage};
+async function getStorageFileAccessInfo (path) {
+  const objectStorage = await createObjectStorageWrapper(
+    storages,
+    path,
+    {write: false, read: true}
+  );
+  if (objectStorage) {
+    if (objectStorage.pathMask) {
+      const e = (new RegExp(`^${objectStorage.pathMask}/(.+)$`, 'i')).exec(path);
+      if (e && e.length) {
+        return {
+          objectStorage,
+          path: e[1]
+        };
+      }
+    }
+    return {
+      objectStorage,
+      path
+    };
+  }
+  return undefined;
+}
+
+export {ObjectStorage, getStorageFileAccessInfo};

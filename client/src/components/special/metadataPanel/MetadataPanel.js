@@ -24,6 +24,7 @@ import MetadataEntityDeleteKey from '../../../models/folderMetadata/MetadataEnti
 import MetadataEntityDelete from '../../../models/folderMetadata/MetadataEntityDelete';
 import MetadataEntityUpdateKey from '../../../models/folderMetadata/MetadataEntityUpdateKey';
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
+import PathAttributeShareButton from '../metadata/special/path-attribute-share-button';
 import PropTypes from 'prop-types';
 
 @inject((args, params) => ({
@@ -45,12 +46,13 @@ export default class MetadataPanel extends React.Component {
     externalId: PropTypes.string,
     parentId: PropTypes.number,
     currentItem: PropTypes.object,
-    onUpdateMetadata: PropTypes.func
+    onUpdateMetadata: PropTypes.func,
+    pathAttributes: PropTypes.arrayOf(PropTypes.string)
   };
 
   static defaultProps = {
     readOnlyKeys: ['ID'],
-    columnNamesFn: (o => o)
+    columnNamesFn: o => o
   };
 
   state = {
@@ -453,8 +455,8 @@ export default class MetadataPanel extends React.Component {
   renderMetadataItem = (metadataItem) => {
     let valueElement = [];
     for (let key in metadataItem) {
-      const isReadOnlyItem = this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0;
-      const isReadOnlyItemOrArray = isReadOnlyItem || metadataItem[key].type.startsWith('Array');
+      const isReadOnlyItem = this.props.readOnly ||
+        (this.props.readOnlyKeys || []).indexOf(key) >= 0;
       if (key !== 'rowKey' && metadataItem[key]) {
         let value = metadataItem[key].value;
         if (metadataItem[key].type.startsWith('Array')) {
@@ -518,6 +520,19 @@ export default class MetadataPanel extends React.Component {
                 style={{textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap'}}
                 onClick={this.onMetadataEditStarted('key', key, value)}>
                 {this.props.columnNamesFn(key)}
+                {
+                  PathAttributeShareButton.shareButtonAvailable({
+                    key,
+                    value: metadataItem[key].value,
+                    pathKeys: this.props.pathAttributes
+                  }) && (
+                    <PathAttributeShareButton
+                      path={metadataItem[key].value}
+                      id={`share-metadata-paths-${key}-button`}
+                      style={{marginLeft: 5}}
+                    />
+                  )
+                }
               </td>
               {
                 this.props.readOnly || (this.props.readOnlyKeys || []).indexOf(key) >= 0
