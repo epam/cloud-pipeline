@@ -221,6 +221,7 @@ class PipelineAPI:
     LOAD_CURRENT_USER = 'whoami'
     LOAD_ROLES = 'role/loadAll?loadUsers={}'
     LOAD_ROLE = 'role/{}'
+    RUN_CONFIGURATION = '/runConfiguration'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -969,3 +970,12 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
                                                                                              str(e.message)))
+
+    def run_configuration(self, data):
+        try:
+            result = self.execute_request(str(self.api_url) + self.RUN_CONFIGURATION, method='post',
+                                          data=json.dumps(data))
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to launch configuration %s. "
+                               "Error message: {}".format(str(data['id']), str(e.message)))
