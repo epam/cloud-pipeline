@@ -29,19 +29,19 @@
 </td>
 <td>
 <div class="infoBox" id="failures">
-<div class="counter">1</div>
+<div class="counter">0</div>
 <p>failures</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="ignored">
-<div class="counter">15</div>
+<div class="counter">0</div>
 <p>ignored</p>
 </div>
 </td>
 <td>
 <div class="infoBox" id="duration">
-<div class="counter">1m35.81s</div>
+<div class="counter">12m25.54s</div>
 <p>duration</p>
 </div>
 </td>
@@ -50,8 +50,8 @@
 </div>
 </td>
 <td>
-<div class="infoBox failures" id="successRate">
-<div class="percent">0%</div>
+<div class="infoBox success" id="successRate">
+<div class="percent">100%</div>
 <p>successful</p>
 </div>
 </td>
@@ -61,68 +61,13 @@
 <div id="tabs">
 <ul class="tabLinks">
 <li>
-<a href="#tab0">Failed tests</a>
+<a href="#tab0">Tests</a>
 </li>
 <li>
-<a href="#tab1">Tests</a>
+<a href="#tab1">Standard output</a>
 </li>
 </ul>
 <div id="tab0" class="tab">
-<h2>Failed tests</h2>
-<div class="test">
-<a name="luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343"></a>
-<h3 class="failures">luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343</h3>
-<span class="code">
-<pre>Element not found {.pipeline-details__tabs-menu/li.findBy(text 'STORAGE RULES')}
-Expected: visible
-Screenshot: file:/headless/e2e/gui/build/reports/tests/1653977434461.113.png
-Page source: file:/headless/e2e/gui/build/reports/tests/1653977434461.113.html
-Timeout: 80 s.
-Caused by: Element not found {.pipeline-details__tabs-menu/li.findBy(text 'STORAGE RULES')}
-Expected: text 'STORAGE RULES'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.WebElementSource.createElementNotFoundError(WebElementSource.java:31)
-	at com.codeborne.selenide.impl.CollectionElementByCondition.createElementNotFoundError(CollectionElementByCondition.java:53)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:59)
-	at com.codeborne.selenide.commands.Should.should(Should.java:35)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:29)
-	at com.codeborne.selenide.commands.Should.execute(Should.java:12)
-	at com.codeborne.selenide.commands.Commands.execute(Commands.java:144)
-	at com.codeborne.selenide.impl.SelenideElementProxy.dispatchAndRetry(SelenideElementProxy.java:87)
-	at com.codeborne.selenide.impl.SelenideElementProxy.invoke(SelenideElementProxy.java:63)
-	at com.sun.proxy.$Proxy15.should(Unknown Source)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensure(AccessObject.java:228)
-	at com.epam.pipeline.autotests.ao.AccessObject.lambda$ensureVisible$3(AccessObject.java:233)
-	at java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:948)
-	at java.util.stream.ReferencePipeline$Head.forEach(ReferencePipeline.java:647)
-	at com.epam.pipeline.autotests.ao.AccessObject.ensureVisible(AccessObject.java:233)
-	at com.epam.pipeline.autotests.PipelineDetailsTest.luigiPipelineTabsShouldBeValid(PipelineDetailsTest.java:94)
-	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62)
-	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-	at java.lang.reflect.Method.invoke(Method.java:498)
-	at org.testng.internal.MethodInvocationHelper.invokeMethod(MethodInvocationHelper.java:108)
-	at org.testng.internal.Invoker.invokeMethod(Invoker.java:661)
-	at org.testng.internal.Invoker.invokeTestMethod(Invoker.java:869)
-	at org.testng.internal.Invoker.invokeTestMethods(Invoker.java:1193)
-	at org.testng.internal.TestMethodWorker.invokeTestMethods(TestMethodWorker.java:126)
-	at org.testng.internal.TestMethodWorker.run(TestMethodWorker.java:109)
-	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)
-	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)
-	at java.lang.Thread.run(Thread.java:748)
-Caused by: Element not found {.pipeline-details__tabs-menu/li.findBy(text 'STORAGE RULES')}
-Expected: text 'STORAGE RULES'
-Screenshot: null
-Timeout: 0 ms.
-	at com.codeborne.selenide.impl.CollectionElementByCondition.getWebElement(CollectionElementByCondition.java:39)
-	at com.codeborne.selenide.impl.WebElementSource.checkCondition(WebElementSource.java:44)
-	... 26 more
-</pre>
-</span>
-</div>
-</div>
-<div id="tab1" class="tab">
 <h2>Tests</h2>
 <table>
 <thead>
@@ -133,86 +78,98 @@ Timeout: 0 ms.
 </tr>
 </thead>
 <tr>
-<td class="skipped">documentShouldBeRenamed</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">documentShouldBeRenamed - EPMCMBIBPC-346</td>
+<td>3.648s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">documentTabShouldBeValid</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">documentTabShouldBeValid - EPMCMBIBPC-345</td>
+<td>3.003s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">luigiGraphTabShouldBeValid</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">luigiGraphTabShouldBeValid - EPMCMBIBPC-344</td>
+<td>3.865s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="failures">luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343</td>
-<td>1m35.81s</td>
-<td class="failures">failed</td>
+<td class="success">luigiPipelineTabsShouldBeValid - EPMCMBIBPC-343</td>
+<td>14.621s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldCreateFileInSubfolder</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldCreateFileInSubfolder - EPMCMBIBPC-340</td>
+<td>5.479s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldCreateFolderInPipeline</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldCreateFolderInPipeline - EPMCMBIBPC-339</td>
+<td>5.078s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldCreateStorageRule</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldCreateStorageRule - EPMCMBIBPC-354</td>
+<td>4.049s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldDeleteDocumentFile</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldDeleteDocumentFile - EPMCMBIBPC-348</td>
+<td>2.777s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldDeleteStorageRule</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldDeleteStorageRule - EPMCMBIBPC-355</td>
+<td>1.297s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldDownloadCorrectDocumentFile</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldDownloadCorrectDocumentFile - EPMCMBIBPC-347</td>
+<td>6.215s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldHaveEmptyHistory</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldHaveEmptyHistory - EPMCMBIBPC-350</td>
+<td>3.008s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldHaveHistoryEntry</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldHaveHistoryEntry - EPMCMBIBPC-350</td>
+<td>9m34.94s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldNotCreateACopyOfRule</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldNotCreateACopyOfRule - EPMCMBIBPC-356</td>
+<td>2.322s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">shouldUploadFile</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">shouldUploadFile - EPMCMBIBPC-349</td>
+<td>4.810s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">storageRulesTabShouldBeValid</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">storageRulesTabShouldBeValid - EPMCMBIBPC-353</td>
+<td>3.730s</td>
+<td class="success">passed</td>
 </tr>
 <tr>
-<td class="skipped">validateViewDraftVersionsPipelineHistory</td>
-<td>-</td>
-<td class="skipped">ignored</td>
+<td class="success">validateViewDraftVersionsPipelineHistory - EPMCMBIBPC-1629</td>
+<td>1m46.70s</td>
+<td class="success">passed</td>
 </tr>
 </table>
+</div>
+<div id="tab1" class="tab">
+<h2>Standard output</h2>
+<span class="code">
+<pre>Returns latest run with runId 26318 from [26318]
+Returns latest run with runId 26318 from [26318]
+Returns latest run with runId 26318 from [26318]
+Returns latest run with runId 26319 from [26318, 26319]
+Returns latest run with runId 26320 from [26318, 26319, 26320]
+Returns latest run with runId 26321 from [26318, 26319, 26320, 26321]
+</pre>
+</span>
 </div>
 </div>
 <div id="footer">
@@ -222,7 +179,7 @@ Timeout: 0 ms.
 <input id="line-wrapping-toggle" type="checkbox" autocomplete="off"/>
 </label>
 </div>Generated by 
-<a href="http://www.gradle.org">Gradle 3.4.1</a> at May 31, 2022 2:23:40 PM</p>
+<a href="http://www.gradle.org">Gradle 3.4.1</a> at Jun 21, 2022 12:19:21 PM</p>
 </div>
 </div>
 </body>
