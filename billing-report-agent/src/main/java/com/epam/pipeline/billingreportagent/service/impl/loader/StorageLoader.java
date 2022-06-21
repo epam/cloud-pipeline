@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
+import org.apache.commons.collections4.ListUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -70,7 +71,8 @@ public class StorageLoader implements EntityLoader<AbstractDataStorage> {
     }
 
     private Set<Long> loadStorageIdsToIgnoreByTag() {
-        return apiClient.searchEntriesByMetadata(AclClass.DATA_STORAGE, storageExcludeKey, storageExcludeValue)
+        return ListUtils.emptyIfNull(
+                apiClient.searchEntriesByMetadata(AclClass.DATA_STORAGE, storageExcludeKey, storageExcludeValue))
             .stream()
             .map(EntityVO::getEntityId)
             .collect(Collectors.toSet());
