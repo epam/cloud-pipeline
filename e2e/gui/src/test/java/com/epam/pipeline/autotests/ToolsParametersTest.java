@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,6 @@ public class ToolsParametersTest
     private final String fullDescription = readResourceFully(TOOL_FULL_DESCRIPTION);
     private String[] prefInitialValue;
     private String initialToolDescription;
-    private String initialPipelineDescription;
     private String[] descriptionHtml;
     private String[] toolDescription;
 
@@ -391,15 +390,14 @@ public class ToolsParametersTest
         if (input.length <= 1 || descPattern.isEmpty()) {
             return;
         }
-        IntStream.range(0, input.length-1).forEach(i -> {
+        IntStream.range(0, input.length).forEach(i -> {
             for (String key : descPattern.keySet()) {
                 if (input[i].matches(key)) {
                     Matcher matcher = Pattern.compile(key).matcher(input[i]);
                     assertTrue(matcher.find());
                     assertTrue(description.contains(format(descPattern.get(key), matcher.group(1))),
                             format("The %s markdown is parsed incorrect as %s", input[i], description));
-                    System.out.println(format(descPattern.get(key), matcher.group(1)));
-                    return;
+                return;
                 }
             }
         });

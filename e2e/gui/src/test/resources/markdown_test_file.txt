@@ -9,12 +9,13 @@ Basic `Python` + `R` development *environment* with Jupyter **Notebook** Web GUI
 * Python 2/3 kernels
 * R kernel
 
-***This image*** can be run on its own or can be used as a base image for custom ~~environments~~.
+***This image*** can be run on its own or
+can be used as a base image for custom ~~environments~~.
 
 ## Running Jupyter notebook
 
 >To run this tool perform the following steps:
-1. Click _Run_ button in the top-right corner and <sub>agree</sub> on a tool launch
+1. Click _Run_ button in the top-right corner agree on a tool launch
 2. Wait for the container to be initialized (`InitializeEnvironment` task shall be marked as finished)
 3. Click `Endpoint` link to navigate to the Jupyter Notebook Web GUI
 

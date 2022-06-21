@@ -9,3 +9,4 @@
 .*\*{3}([^\s\*].+[^\s\*])\*{3}.*,<strong><em>%s</em></strong>
 .*~~([^\s\*].+[^\s\*])~~.*,<del>%s</del>
 >(.+),<blockquote><p>%s</p></blockquote>
+.*\[.+\]\((.+)\).*,<a href="%s">
