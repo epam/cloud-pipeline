@@ -104,7 +104,6 @@ class PathAttributeShareButton extends React.PureComponent {
 
   closeShareItemDialog = () => {
     return this.setState({
-      itemsToShare: [],
       shareDialogVisible: false
     });
   };
