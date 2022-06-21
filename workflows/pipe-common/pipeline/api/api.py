@@ -199,6 +199,8 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_METADATA = "/metadata/load"
+    SAVE_METADATA_ENTITY = "metadataEntity/save"
+    FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
     LOAD_CONFIGURATION = '/configuration/%d'
@@ -235,7 +237,7 @@ class PipelineAPI:
         self.timeout = timeout
         self.connection_timeout = connection_timeout
 
-    def check_response(self, response):
+    def check_response(self, response, not_found_msg=None):
         if response.status_code != 200:
             sys.stderr.write("API responded with status {}\n".format(str(response.status_code)))
             return False
@@ -244,11 +246,13 @@ class PipelineAPI:
             return True
         if 'message' in data:
             sys.stderr.write("API returned error message: {}\n".format(data['message']))
-            return False
+            if not_found_msg and not_found_msg in data['message']:
+                return True
+            return True
         sys.stderr.write("API responded with not expected message: {}\n".format(str(response)))
         return False
 
-    def execute_request(self, url, method='get', data=None):
+    def execute_request(self, url, method='get', data=None, not_found_msg=None):
         count = 0
         while count < self.attempts:
             count += 1
@@ -265,7 +269,7 @@ class PipelineAPI:
                                             timeout=self.connection_timeout)
                 else:
                     raise RuntimeError('Unsupported request method: {}'.format(method))
-                if self.check_response(response):
+                if self.check_response(response, not_found_msg=not_found_msg):
                     result = response.json()
                     return result['payload'] if 'payload' in result else None
             except Exception as e:
@@ -656,6 +660,25 @@ class PipelineAPI:
             return {} if result is None else result
         except BaseException as e:
             raise RuntimeError("Failed to load entities data. "
+                               "Error message: {}".format(str(e.message)))
+
+    def save_metadata_entity(self, entity):
+        try:
+            result = self.execute_request(str(self.api_url) + self.SAVE_METADATA_ENTITY, method='post',
+                                          data=json.dumps(entity))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to save metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
+    def find_metadata_entity(self, folder_id, external_id, class_name):
+        try:
+            result = self.execute_request(str(self.api_url) +
+                                          self.FIND_METADATA_ENTITY % (external_id, folder_id, class_name),
+                                          method='get', not_found_msg='not found')
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to find metadata entities. "
                                "Error message: {}".format(str(e.message)))
 
     def load_dts_registry(self):

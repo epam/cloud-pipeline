@@ -409,6 +409,7 @@ public class PipelineRunManager {
             run.setTags(configuration.getTags());
             pipelineRunDao.updateRunTags(run);
         }
+        updateMetadataEntities(run);
         return run;
     }
 
@@ -1563,8 +1564,10 @@ public class PipelineRunManager {
             return;
         }
         final String dataKey = runStatusParameter.get().getValue();
-        Assert.isTrue(StringUtils.hasText(dataKey), String.format(
-                "Parameter '%s' was specified for pipeline run '%d' but empty", CP_REPORT_RUN_STATUS, run.getId()));
+        if (!StringUtils.hasText(dataKey)) {
+            LOGGER.error("Parameter {} was specified for pipeline run {} but empty", CP_REPORT_RUN_STATUS, run.getId());
+            return;
+        }
         final RunStatusMetadata runStatusMetadata = RunStatusMetadata.builder()
                 .runId(run.getId())
                 .status(run.getStatus().name())
