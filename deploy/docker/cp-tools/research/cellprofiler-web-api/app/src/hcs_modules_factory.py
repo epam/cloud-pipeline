@@ -3,6 +3,7 @@ import os
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
+from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
 from cellprofiler.modules.overlayobjects import OverlayObjects
 from cellprofiler.modules.overlayoutlines import OverlayOutlines
 from cellprofiler.modules.relateobjects import RelateObjects
@@ -47,6 +48,8 @@ class HcsModulesFactory(object):
             processor = IdentifyPrimaryObjectsModuleProcessor(module)
         elif module_name == 'IdentifySecondaryObjects':
             processor = IdentifySecondaryObjectsModuleProcessor(module)
+        elif module_name == 'IdentifyTertiaryObjects':
+            processor = IdentifyTertiaryObjectsModuleProcessor(module)
         elif module_name == 'OverlayObjects':
             processor = OverlayObjectsModuleProcessor(module)
         elif module_name == 'RelateObjects':
@@ -171,6 +174,11 @@ class OverlayObjectsModuleProcessor(ModuleProcessor):
 class IdentifySecondaryObjectsModuleProcessor(ModuleProcessor):
     def new_module(self):
         return IdentifySecondaryObjects()
+
+
+class IdentifyTertiaryObjectsModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return IdentifyTertiaryObjects()
 
 
 class RelateObjectsModuleProcessor(ModuleProcessor):
