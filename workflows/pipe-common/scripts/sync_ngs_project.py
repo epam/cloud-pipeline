@@ -120,7 +120,7 @@ class MachineRun(object):
                     os.path.join(self.settings.cloud_path, machine_run, sample_sheet) if sample_sheet else None},
                 'ExperimentType': {'type': 'string', 'value': experiment_type},
                 'ExperimentName': {'type': 'string', 'value': experiment_name},
-                'PairedEnd': {'type': 'string', 'value': 'true'},
+                'PairedEnd': {'type': 'string', 'value': 'false'},
                 'ConfigFile': {'type': 'Path', 'value': config},
                 'SequenceDate': {'type': 'Date', 'value': self.parse_seq_date(machine_run)}
             }
@@ -209,6 +209,8 @@ class MachineRun(object):
     def build_results(self, machine_run, results, experiment_name):
         if not results:
             return {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run, experiment_name)}
+        if len(results) == 1:
+            return {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run, results[0])}
         value = json.dumps([os.path.join(self.settings.cloud_path, machine_run, res) for res in results])
         return {'type': 'Array[Path]', 'value': value}
 
