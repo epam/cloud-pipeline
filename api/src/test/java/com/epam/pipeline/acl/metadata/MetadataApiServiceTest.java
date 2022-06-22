@@ -349,17 +349,6 @@ public class MetadataApiServiceTest extends AbstractAclTest {
     }
 
     @Test
-    @WithMockUser
-    public void shouldDenyListMetadataItemsWhenPermissionIsNotGranted() {
-        initAclEntity(entity);
-        doReturn(metadataEntries).when(mockMetadataManager).listMetadataItems(entityVOList);
-        mockLoadEntity(entity, ID);
-        mockSecurityContext();
-
-        assertThrows(AccessDeniedException.class, () -> metadataApiService.listMetadataItems(entityVOList));
-    }
-
-    @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteMetadataItemKeyForAdmin() {
         doReturn(metadataEntry).when(mockMetadataManager).deleteMetadataItemKey(entityVO, TEST_STRING);
