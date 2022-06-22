@@ -103,7 +103,7 @@ for _path in ${_files_to_localize[@]}; do
         declare -x "${_match_env_var_name}${CP_LOCALIZE_FROM_FILES_ENV_VARS_SUFFIX}"="input"
         if [ "$CP_LOCALIZE_FROM_FILES_RECURSIVE" == "true" ]; then
             _files_to_recursive_localize="${_files_to_recursive_localize} ${_match_env_var_name}"
-            pipe_log_info "Adding file ${_match_env_var_name} for recursive localization"
+            pipe_log_info "Adding file ${_match_env_var_name} for recursive localization" "$LOCALIZE_FROM_FILES_TASK_NAME"
         fi
         i=$((i+1))
         _has_something_to_localize=true
@@ -179,7 +179,7 @@ if [ "$CP_LOCALIZE_FROM_FILES_RECURSIVE" == "true" ]; then
         pipe_log_info "--> Starting recursive file localization" "$LOCALIZE_FROM_FILES_TASK_NAME"
         unset CP_LOCALIZE_FROM_FILES_RECURSIVE
         export CP_LOCALIZE_FROM_FILES="${_files_to_recursive_localize}"
-        localize_inputs_from_files "$LOCALIZE_GENERAL_TASK_NAME" "$LOCALIZE_FROM_FILES_TASK_NAME="
+        localize_inputs_from_files "$LOCALIZE_GENERAL_TASK_NAME" "$LOCALIZE_FROM_FILES_TASK_NAME"
     fi
 fi
 
