@@ -27,6 +27,7 @@ import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySav
 import PathAttributeShareButton from '../metadata/special/path-attribute-share-button';
 import PropTypes from 'prop-types';
 import RunsAttribute, {isRunsValue} from '../metadata/special/runs-attribute';
+import AttributeValue from '../metadata/special/attribute-value';
 
 @inject((args, params) => ({
   currentItem: params.currentItem,
@@ -464,7 +465,13 @@ export default class MetadataPanel extends React.Component {
         isReadOnlyItem = isReadOnlyItem || runsValue;
         if (metadataItem[key].type.startsWith('Array')) {
           try {
-            value = JSON.parse(value).map(v => <div key={`${key}_value_${v}`}>{v}</div>);
+            value = JSON.parse(value).map(v => (
+              <div
+                key={`${key}_value_${v}`}
+              >
+                <AttributeValue value={v} />
+              </div>
+            ));
           } catch (___) {}
         }
         const inputOptions = (field, key, value) => {
@@ -611,7 +618,7 @@ export default class MetadataPanel extends React.Component {
                 id={`value-column-${key}`}
                 colSpan={6}
                 onClick={this.onMetadataEditStarted('value', key, metadataItem[key].value)}>
-                {value}
+                <AttributeValue value={value} />
               </td>
             </tr>
           ));

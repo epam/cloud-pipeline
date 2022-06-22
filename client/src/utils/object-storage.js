@@ -163,9 +163,18 @@ async function getStorages (storages) {
  * @param {*[]|Remote} storages - available storages
  * @param {string|number|Object} storage - storage id, storage path or storage object
  * @param {{read: boolean, write: boolean}} [permissions]
+ * @param {{isURL: boolean?}} [options]
  * @return {Promise<ObjectStorage|undefined>}
  */
-export async function createObjectStorageWrapper (storages, storage, permissions) {
+export async function createObjectStorageWrapper (
+  storages,
+  storage,
+  permissions,
+  options
+) {
+  const {
+    isURL = false
+  } = options || {};
   let obj;
   let storagesArray = [];
   try {
@@ -173,7 +182,7 @@ export async function createObjectStorageWrapper (storages, storage, permissions
   } catch (e) {
     console.warn(e.message);
   }
-  if (!Number.isNaN(Number(storage))) {
+  if (!isURL && !Number.isNaN(Number(storage))) {
     const storageId = Number(storage);
     if (storagesArray && typeof storagesArray.find === 'function') {
       obj = storagesArray.find(findStorageByIdentifierFn(storageId));
@@ -202,7 +211,8 @@ async function getStorageFileAccessInfo (path) {
   const objectStorage = await createObjectStorageWrapper(
     storages,
     path,
-    {write: false, read: true}
+    {write: false, read: true},
+    {isURL: true}
   );
   if (objectStorage) {
     if (objectStorage.pathMask) {

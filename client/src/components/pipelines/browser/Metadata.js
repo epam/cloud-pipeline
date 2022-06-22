@@ -2384,8 +2384,7 @@ export default class Metadata extends React.Component {
       if (
         this.state.currentProjectId &&
         roleModel.writeAllowed(this.props.folder.value) &&
-        !this.props.readOnly &&
-        roleModel.isManager.entities(this)
+        !this.props.readOnly
       ) {
         return (
           <Button
