@@ -41,10 +41,10 @@ function sortByStartDate (runA, runB) {
   const a = moment.utc(aStartDate);
   const b = moment.utc(bStartDate);
   if (a.isBefore(b)) {
-    return -1;
+    return 1;
   }
   if (b.isBefore(a)) {
-    return 1;
+    return -1;
   }
   return 0;
 }
