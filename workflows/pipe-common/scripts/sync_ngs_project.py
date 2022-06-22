@@ -136,7 +136,7 @@ class MachineRun(object):
             Logger.info('Created metadata for machine run %s with sample sheet %s.' % (machine_run, sample_sheet),
                         task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Metadata created', 'Success'))
-            if trigger_run:
+            if not results and trigger_run and self.settings.configuration_id and sample_sheet is not None:
                 self.run_analysis(metadata_entity)
 
     def get_configuration(self, machine_run, run_folder):
@@ -177,7 +177,7 @@ class MachineRun(object):
     def run_analysis(self, metadata_entity):
         Logger.info('Launching analysis for machine run %s.' % self.machine_run, task_name=self.machine_run)
         for field in REQUIRED_FIELDS:
-            if field not in metadata_entity['data']:
+            if field not in metadata_entity['data'] or metadata_entity['data'][field] is None:
                 msg = 'Required metadata field %s in missing for machine run %s. Analysis won\'t be launched,' % \
                       (field, self.machine_run)
                 raise RuntimeError(msg)
@@ -280,8 +280,8 @@ def main():
     r_script = get_required_env_var('NGS_SYNC_R_SCRIPT')
     db_path_prefix = os.getenv('NGS_SYNC_DB_PATH_PREFIX', '')
     notify_users = os.getenv('NGS_SYNC_NOTIFY_USERS', '')
-    configuration_id = os.getenv('NGS_SYNC_CONFIG_ID')
-    configuration_entry_name = os.getenv('NGS_SYNC_CONFIG_ENTRY_NAME')
+    configuration_id = os.getenv('NGS_SYNC_CONFIG_ID', None)
+    configuration_entry_name = os.getenv('NGS_SYNC_CONFIG_ENTRY_NAME', 'default')
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs')
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name)
