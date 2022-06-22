@@ -25,19 +25,25 @@ const ROLE_CLASS = 'ROLE';
 const UI_PAGES_ATTRIBUTE = 'ui-pages';
 const DASHBOARD_CONFIGURATION_ATTRIBUTE = 'ui-dashboard';
 const HOME_PAGE_ATTRIBUTE = 'ui-home-page';
+const LIBRARY_EXPANDED_ATTRIBUTE = 'ui-library-expanded';
 const SEARCH_PAGE_SECTIONS = 'ui-search-document-types';
+
+const LIBRARY_EXPANDED_STORAGE_KEY = 'library_expanded';
 
 function parseAttributes (data, ignore = {}) {
   const {
     dashboard: ignoreDashboardSettings = false,
     pages: ignorePagesSettings = false,
     homePage: ignoreHomePageSettings = false,
-    searchDocumentTypes: ignoreSearchDocumentTypes = false
+    searchDocumentTypes: ignoreSearchDocumentTypes = false,
+    libraryExpanded: libraryExpandedSetting
   } = ignore;
+  const ignoreLibraryExpandedSetting = libraryExpandedSetting !== undefined;
   let pages;
   let dashboard;
   let homePage;
   let searchDocumentTypes;
+  let libraryExpanded;
   if (!ignorePagesSettings && data.hasOwnProperty(UI_PAGES_ATTRIBUTE)) {
     pages = (data[UI_PAGES_ATTRIBUTE].value || '').split(',').map(o => o.trim());
   }
@@ -52,13 +58,16 @@ function parseAttributes (data, ignore = {}) {
   if (!ignoreHomePageSettings && data.hasOwnProperty(HOME_PAGE_ATTRIBUTE)) {
     homePage = (data[HOME_PAGE_ATTRIBUTE].value || '');
   }
+  if (!ignoreLibraryExpandedSetting && data.hasOwnProperty(LIBRARY_EXPANDED_ATTRIBUTE)) {
+    libraryExpanded = `${data[LIBRARY_EXPANDED_ATTRIBUTE].value || ''}`.toLowerCase() === 'true';
+  }
   if (!ignoreSearchDocumentTypes && data.hasOwnProperty(SEARCH_PAGE_SECTIONS)) {
     searchDocumentTypes = (data[SEARCH_PAGE_SECTIONS].value || '').split(',').map(o => o.trim());
   }
   if (pages && pages.length === 0) {
     pages = undefined;
   }
-  return {pages, dashboard, homePage, searchDocumentTypes};
+  return {pages, dashboard, homePage, searchDocumentTypes, libraryExpanded};
 }
 
 function fetchUserAttributes (userId) {
@@ -82,7 +91,8 @@ function joinAttributes (values, options) {
     pages = [],
     dashboard,
     homePage,
-    searchDocumentTypes
+    searchDocumentTypes,
+    libraryExpanded
   } = options || {};
   (values || [])
     .forEach((data) => {
@@ -90,7 +100,8 @@ function joinAttributes (values, options) {
         pages: parsedPages,
         dashboard: parsedDashboard,
         homePage: parsedHomePage,
-        searchDocumentTypes: parsedSearchDocumentTypes
+        searchDocumentTypes: parsedSearchDocumentTypes,
+        libraryExpanded: parsedLibraryExpanded
       } = parseAttributes(
         data,
         options
@@ -114,6 +125,9 @@ function joinAttributes (values, options) {
       if (parsedSearchDocumentTypes && !searchDocumentTypes) {
         searchDocumentTypes = parsedSearchDocumentTypes;
       }
+      if (parsedLibraryExpanded !== undefined) {
+        libraryExpanded = parsedLibraryExpanded;
+      }
     });
   if (pages && pages.length === 0) {
     pages = undefined;
@@ -122,7 +136,8 @@ function joinAttributes (values, options) {
     pages,
     dashboard,
     homePage,
-    searchDocumentTypes
+    searchDocumentTypes,
+    libraryExpanded
   };
 }
 
@@ -212,6 +227,7 @@ class UINavigation {
   @observable homePage;
   @observable searchDocumentTypes;
   @observable supportTemplate;
+  @observable _libraryExpanded;
   @observable _loaded;
 
   constructor (authenticatedUserInfo, preferences) {
@@ -242,12 +258,28 @@ class UINavigation {
     if (available) {
       return available.path;
     }
-    const any = this.navigationItems.find(item => item.key === Pages.dashboard) ||
-      this.navigationItems[0];
-    if (any) {
-      return any.path;
+    return homePageKey;
+  }
+
+  @computed
+  get libraryExpanded () {
+    if (this._libraryExpanded === undefined) {
+      try {
+        const storageValue = JSON.parse(localStorage.getItem(LIBRARY_EXPANDED_STORAGE_KEY));
+        if (typeof storageValue === 'boolean') {
+          return storageValue;
+        }
+      } catch (_) {}
+      return true;
     }
-    return '/dashboard';
+    return this._libraryExpanded;
+  }
+
+  set libraryExpanded (value) {
+    this._libraryExpanded = value;
+    if (value !== undefined) {
+      localStorage.setItem(LIBRARY_EXPANDED_STORAGE_KEY, JSON.stringify(value));
+    }
   }
 
   parseSupportTemplate () {
@@ -298,7 +330,7 @@ class UINavigation {
           }
           return Promise.resolve();
         })
-        .then(({pages, dashboard, homePage, searchDocumentTypes} = {}) => {
+        .then(({pages, dashboard, homePage, searchDocumentTypes, libraryExpanded} = {}) => {
           const {
             admin = false
           } = this.user.loaded ? (this.user.value || {}) : {};
@@ -306,6 +338,7 @@ class UINavigation {
           this.dashboard = dashboard;
           this.homePage = homePage;
           this.searchDocumentTypes = searchDocumentTypes;
+          this.libraryExpanded = libraryExpanded;
           this.parseSupportTemplate();
           this._loaded = true;
         })
