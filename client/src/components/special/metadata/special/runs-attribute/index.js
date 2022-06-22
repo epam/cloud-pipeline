@@ -21,8 +21,33 @@ import {Tooltip} from 'antd';
 import classNames from 'classnames';
 import StatusIcon from '../../../run-status-icon';
 import styles from './runs-attribute.css';
+import moment from 'moment-timezone';
 
 const MAX_NESTED_RUNS_TO_DISPLAY = 5;
+
+function sortByStartDate (runA, runB) {
+  const {
+    startDate: aStartDate
+  } = runA;
+  const {
+    startDate: bStartDate
+  } = runB;
+  if (!bStartDate) {
+    return -1;
+  }
+  if (!aStartDate) {
+    return 1;
+  }
+  const a = moment.utc(aStartDate);
+  const b = moment.utc(bStartDate);
+  if (a.isBefore(b)) {
+    return -1;
+  }
+  if (b.isBefore(a)) {
+    return 1;
+  }
+  return 0;
+}
 
 function RunsAttribute (
   {
@@ -30,7 +55,7 @@ function RunsAttribute (
     value
   }
 ) {
-  const runs = parseAttributeRunsValue(value);
+  const runs = parseAttributeRunsValue(value).sort(sortByStartDate);
   if (runs.length === 0) {
     return null;
   }
