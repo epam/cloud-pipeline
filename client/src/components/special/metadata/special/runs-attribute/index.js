@@ -23,7 +23,7 @@ import StatusIcon from '../../../run-status-icon';
 import styles from './runs-attribute.css';
 import moment from 'moment-timezone';
 
-const MAX_NESTED_RUNS_TO_DISPLAY = 5;
+const MAX_NESTED_RUNS_TO_DISPLAY = 1;
 
 function sortByStartDate (runA, runB) {
   const {
@@ -84,8 +84,12 @@ function RunsAttribute (
         }
         to={`/run/${runId}`}
       >
-        <StatusIcon status={status} small displayTooltip={false} />
-        <b className={styles.runId}> {runId}</b>
+        <StatusIcon
+          status={status}
+          small
+          displayTooltip={false}
+        />
+        <b className={styles.runId}>{runId}</b>
         {duration && <span className={styles.details}> {duration}</span>}
       </Link>
     );
@@ -106,7 +110,7 @@ function RunsAttribute (
       <Tooltip title={renderTooltip(runs)} placement="left">
         <Link
           className={styles.allNestedRuns}>
-          ... +{total - MAX_NESTED_RUNS_TO_DISPLAY} more
+          +{total - MAX_NESTED_RUNS_TO_DISPLAY} more
         </Link>
       </Tooltip>}
     </div>

@@ -42,6 +42,10 @@
   margin-right: 5px;
 }
 
+.nested-run .run-id {
+  margin-left: 5px;
+}
+
 .nested-run:hover .run-id {
   text-decoration: underline;
 }
