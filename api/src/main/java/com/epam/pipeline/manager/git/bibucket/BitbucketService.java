@@ -43,7 +43,6 @@ import com.epam.pipeline.manager.git.GitClientService;
 import com.epam.pipeline.manager.git.RestApiUtils;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.utils.AuthorizationUtils;
 import com.epam.pipeline.utils.GitUtils;
