@@ -25,24 +25,29 @@ import xml.etree.ElementTree as ET
 
 from collections import OrderedDict
 from functools import cmp_to_key
-from pipeline.api import PipelineAPI, TaskStatus
-from pipeline.log import Logger
 from pipeline.common import get_path_with_trailing_delimiter, get_path_without_trailing_delimiter
 from PIL import Image
-
-from .utils import HcsParsingUtils, log_info, HCS_PROCESSING_TASK_NAME
+from .utils import HcsParsingUtils, HcsFileLogger, log_run_info, get_int_run_param, get_bool_run_param
 from .tags import HcsFileTagProcessor
 
-TAGS_PROCESSING_ONLY = os.getenv('HCS_PARSING_TAGS_ONLY', 'false') == 'true'
+RAW_TO_OME_TIFF_FLAGS = os.getenv('HCS_PARSING_RAW2OMETIFF_EXTRA_FLAGS')
+BFORMATS_TO_RAW_FLAGS = os.getenv('HCS_PARSING_BIOFORMATS2RAW_EXTRA_FLAGS')
+HCS_PARSING_OME_TIFF_FILE_NAME = os.getenv('HCS_PARSING_OME_TIFF_FILE_NAME', 'data.ome.tiff')
 PLANE_COORDINATES_DELIMITER = os.getenv('HCS_PARSING_PLANE_COORDINATES_DELIMITER', '_')
-DEFAULT_CHANNEL_WIDTH = os.getenv('HCS_PARSING_DEFAULT_CHANNEL_WIDTH', 1080)
-DEFAULT_CHANNEL_HEIGHT = os.getenv('HCS_PARSING_DEFAULT_CHANNEL_HEIGHT', 1080)
-
-HCS_OME_COMPATIBLE_INDEX_FILE_NAME = 'Index.xml'
-OVERVIEW_DIR_NAME = 'overview'
 HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
+
+HCS_PREVIEW_OUTPUT_USE_ABSOLUTE_PATHS = get_bool_run_param('HCS_PARSING_PREVIEW_FIELDS_USE_ABSOLUTE_PATHS', 'true')
+TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
+DEFAULT_CHANNEL_WIDTH = get_int_run_param('HCS_PARSING_DEFAULT_CHANNEL_WIDTH', 1080)
+DEFAULT_CHANNEL_HEIGHT = get_int_run_param('HCS_PARSING_DEFAULT_CHANNEL_HEIGHT', 1080)
+
+WELL_DETAILS_MAPPING = json.loads(os.getenv('HCS_PARSING_PLATE_DETAILS_DICT', '{}'))
+OME_TIFF_SEQUENCE_CREATION_SCRIPT = os.path.join(os.getenv('HCS_PARSER_HOME', '/opt/local/hcs-tools'),
+                                                 'scripts/convert_to_ome_tiff.sh')
+HCS_OME_COMPATIBLE_INDEX_FILE_NAME = 'Index.xml'
+OVERVIEW_DIR_NAME = 'overview'
 PATH_DELIMITER = '/'
 
 
@@ -78,9 +83,6 @@ class WellGrid:
 
 class HcsFileParser:
 
-    _OME_TIFF_TIMEPOINT_CREATION_SCRIPT = os.path.join(os.getenv('HCS_PARSER_HOME', '/opt/local/hcs-tools'),
-                                                       'scripts/convert_to_ome_tiff.sh')
-
     def __init__(self, hcs_root_dir):
         self.hcs_root_dir = get_path_without_trailing_delimiter(hcs_root_dir)
         self.hcs_img_path = HcsParsingUtils.build_preview_file_path(hcs_root_dir)
@@ -89,8 +91,8 @@ class HcsFileParser:
         self.stat_file_path = HcsParsingUtils.get_stat_file_name(self.hcs_img_path)
         self.tmp_stat_file_path = HcsParsingUtils.get_stat_active_file_name(self.hcs_img_path)
         self.tmp_local_dir = HcsParsingUtils.generate_local_service_directory(self.hcs_img_path)
-        self.well_size_dict = json.loads(os.getenv('HCS_PARSING_PLATE_DETAILS_DICT', '{}'))
         self.parsing_start_time = None
+        self._processing_logger = HcsFileLogger(self.hcs_root_dir)
 
     @staticmethod
     def generate_bioformats_ome_xml(input_file, output_file):
@@ -128,14 +130,6 @@ class HcsFileParser:
     @staticmethod
     def build_cartesian_coords_key(x_coord, y_coord):
         return PLANE_COORDINATES_DELIMITER.join([str(x_coord), str(y_coord)])
-
-    @staticmethod
-    def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
-        if not hcs_schema_prefix:
-            hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
-        plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
-        plate = plates_list.find(hcs_schema_prefix + 'Plate')
-        return plate
 
     @staticmethod
     def extract_plate_from_ome_xml(ome_xml_info_root):
@@ -205,11 +199,8 @@ class HcsFileParser:
         return OrderedDict(sorted(dictionary.items(),
                                   key=cmp_to_key(lambda c1, c2: HcsFileParser.compare_planar_2d_coords_key(c1, c2))))
 
-    def log_processing_info(self, message, status=TaskStatus.RUNNING):
-        Logger.log_task_event(HCS_PROCESSING_TASK_NAME, '[{}] {}'.format(self.hcs_root_dir, message), status=status)
-
     def generate_ome_xml_info_file(self):
-        self.log_processing_info('Generating XML description')
+        self._processing_logger.log_info('Generating XML description')
         HcsParsingUtils.create_service_dir_if_not_exist(self.hcs_img_path)
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
         if HCS_INDEX_FILE_NAME != HCS_OME_COMPATIBLE_INDEX_FILE_NAME:
@@ -220,8 +211,8 @@ class HcsFileParser:
 
     def build_parsing_details(self):
         return {
-            "bioformats2raw_extra_flags": os.getenv('BIOFORMATS2RAW_EXTRA_FLAGS'),
-            "raw2ometiff_extra_flags": os.getenv('RAW2OMETIFF_EXTRA_FLAGS'),
+            "bioformats2raw_extra_flags": BFORMATS_TO_RAW_FLAGS,
+            "raw2ometiff_extra_flags": RAW_TO_OME_TIFF_FLAGS,
             "start_time": self.parsing_start_time.strftime('%Y-%m-%d %H:%M:%S.%f')
         }
 
@@ -239,23 +230,23 @@ class HcsFileParser:
 
     def clear_tmp_stat_file(self):
         if os.path.exists(self.tmp_stat_file_path):
-            self.log_processing_info('Cleaning up temporary processing file: [{}]'.format(self.tmp_stat_file_path))
+            self._processing_logger.log_info('Cleaning up temporary processing file: [{}]'.format(self.tmp_stat_file_path))
             os.remove(self.tmp_stat_file_path)
 
     def clear_tmp_local_dir(self):
         if os.path.exists(self.tmp_local_dir):
-            self.log_processing_info('Cleaning up temporary dir: [{}]'.format(self.tmp_local_dir))
+            self._processing_logger.log_info('Cleaning up temporary dir: [{}]'.format(self.tmp_local_dir))
             shutil.rmtree(self.tmp_local_dir)
 
     def _write_hcs_file(self, time_series_details, plate_width, plate_height, comment=None):
-        if os.getenv('HCS_PARSING_PREVIEW_FIELDS_USE_ABSOLUTE_PATHS') == 'true':
+        if HCS_PREVIEW_OUTPUT_USE_ABSOLUTE_PATHS:
             source_dir = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
             preview_dir = HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)
         else:
             hcs_file_root_dir = os.path.dirname(self.hcs_img_path)
             source_dir = os.path.relpath(self.hcs_root_dir, hcs_file_root_dir)
             preview_dir = os.path.relpath(self.hcs_img_service_dir, hcs_file_root_dir)
-        ome_data_file_name = os.getenv('HCS_PARSING_OME_TIFF_FILE_NAME', 'data.ome.tiff')
+        ome_data_file_name = HCS_PARSING_OME_TIFF_FILE_NAME
         ome_offsets_file_name = ome_data_file_name[:ome_data_file_name.find('.')] + '.offsets.json'
         details = {
             'sourceDir': source_dir,
@@ -267,8 +258,8 @@ class HcsFileParser:
             'ome_data_file_name': ome_data_file_name,
             'ome_offsets_file_name': ome_offsets_file_name
         }
-        self.log_processing_info('Saving preview info [source={}; preview={}] to [{}]'
-                                 .format(self.hcs_root_dir, self.hcs_img_service_dir, self.hcs_img_path))
+        self._processing_logger.log_info('Saving preview info [source={}; preview={}] to [{}]'
+                                         .format(self.hcs_root_dir, self.hcs_img_service_dir, self.hcs_img_path))
         self.write_dict_to_file(self.hcs_img_path, details)
 
     @staticmethod
@@ -285,7 +276,7 @@ class HcsFileParser:
     def _localize_related_files(self):
         hcs_root_cloud_path = HcsParsingUtils.extract_cloud_path(self.hcs_root_dir)
         local_tmp_dir_trailing = get_path_with_trailing_delimiter(self.tmp_local_dir)
-        self.log_processing_info('Localizing data files...')
+        self._processing_logger.log_info('Localizing data files...')
         localization_result = os.system('pipe storage cp -f -r "{}" "{}"'.format(hcs_root_cloud_path,
                                                                                  local_tmp_dir_trailing))
         return localization_result == 0
@@ -301,11 +292,11 @@ class HcsFileParser:
             1 - some errors occurred during the processing
             2 - processing is skipped
         """
-        self.log_processing_info('Start processing')
+        self._processing_logger.log_info('Start processing')
         self.parsing_start_time = datetime.datetime.now()
         if os.path.exists(self.tmp_stat_file_path) \
                 and not HcsParsingUtils.active_processing_exceed_timeout(self.tmp_stat_file_path):
-            self.log_processing_info('This file is processed by another parser, skipping...')
+            self._processing_logger.log_info('This file is processed by another parser, skipping...')
             return 2
         self.create_tmp_stat_file()
         hcs_index_file_path = self.hcs_root_dir + MEASUREMENT_INDEX_FILE_PATH
@@ -315,27 +306,27 @@ class HcsFileParser:
         plate_width, plate_height = self._get_plate_configuration(xml_info_tree)
         if not TAGS_PROCESSING_ONLY:
             if not self._localize_related_files():
-                self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
+                self._processing_logger.log_info('Some errors occurred during copying files from the bucket, exiting...')
                 return 1
             else:
-                self.log_processing_info('Localization is finished.')
+                self._processing_logger.log_info('Localization is finished.')
             local_preview_dir = os.path.join(self.tmp_local_dir, 'preview')
             hcs_local_index_file_path = get_path_without_trailing_delimiter(self.tmp_local_dir) \
                                         + MEASUREMENT_INDEX_FILE_PATH
             for sequence_id, timepoints in time_series_details.items():
-                self.log_processing_info('Processing sequence with id={}'.format(sequence_id))
+                self._processing_logger.log_info('Processing sequence with id={}'.format(sequence_id))
                 sequence_index_file_path = self.extract_sequence_data(sequence_id, hcs_local_index_file_path)
                 conversion_result = os.system('bash "{}" "{}" "{}" {}'.format(
-                    self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_index_file_path, local_preview_dir, sequence_id))
+                    OME_TIFF_SEQUENCE_CREATION_SCRIPT, sequence_index_file_path, local_preview_dir, sequence_id))
                 if conversion_result != 0:
-                    self.log_processing_info('File processing was not successful...')
+                    self._processing_logger.log_info('File processing was not successful...')
                     return 1
                 sequence_overview_index_file_path = self.build_sequence_overview_index(sequence_index_file_path)
                 conversion_result = os.system('bash "{}" "{}" "{}" {} "{}"'.format(
-                    self._OME_TIFF_TIMEPOINT_CREATION_SCRIPT, sequence_overview_index_file_path, local_preview_dir,
+                    OME_TIFF_SEQUENCE_CREATION_SCRIPT, sequence_overview_index_file_path, local_preview_dir,
                     sequence_id, 'overview_data.ome.tiff'))
                 if conversion_result != 0:
-                    self.log_processing_info('File processing was not successful: well preview generation failure')
+                    self._processing_logger.log_info('File processing was not successful: well preview generation failure')
                     return 1
                 self.write_dict_to_file(os.path.join(local_preview_dir, sequence_id, 'wells_map.json'),
                                         self.build_wells_map(sequence_id))
@@ -343,7 +334,7 @@ class HcsFileParser:
                                               .format(local_preview_dir,
                                                       HcsParsingUtils.extract_cloud_path(self.hcs_img_service_dir)))
             if cloud_transfer_result != 0:
-                self.log_processing_info('Results transfer was not successful...')
+                self._processing_logger.log_info('Results transfer was not successful...')
                 return 1
             self._write_hcs_file(time_series_details, plate_width, plate_height)
         tags_processing_result = self.try_process_tags(xml_info_tree)
@@ -394,7 +385,7 @@ class HcsFileParser:
                     well.remove(image)
             if not exists_in_sequence:
                 wells_list.remove(well)
-        plate = self.extract_plate_from_hcs_xml(hcs_xml_info_root)
+        plate = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root)
         for well in plate.findall(hcs_schema_prefix + 'Well'):
             if well.get('id') not in sequence_wells:
                 plate.remove(well)
@@ -495,9 +486,9 @@ class HcsFileParser:
 
     def extract_well_configuration(self, hcs_xml_info_root):
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
-        plate = self.extract_plate_from_hcs_xml(hcs_xml_info_root)
+        plate = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root)
         plate_type = plate.find(hcs_schema_prefix + 'PlateTypeName').text
-        well_configuration = self.well_size_dict[plate_type]
+        well_configuration = WELL_DETAILS_MAPPING[plate_type]
         well_size = well_configuration['size']
         is_well_round = True if 'is_round' not in well_configuration else well_configuration['is_round'] == 'false'
         return is_well_round, well_size
@@ -506,10 +497,10 @@ class HcsFileParser:
         tags_processing_result = 0
         try:
             if HcsFileTagProcessor(self.hcs_root_dir, self.hcs_img_path, xml_info_tree).process_tags() != 0:
-                self.log_processing_info('Some errors occurred during file tagging')
+                self._processing_logger.log_info('Some errors occurred during file tagging')
                 tags_processing_result = 1
         except Exception as e:
-            log_info('An error occurred during tags processing: {}'.format(str(e)))
+            log_run_info('An error occurred during tags processing: {}'.format(str(e)))
             print(traceback.format_exc())
             tags_processing_result = 1
         return tags_processing_result
@@ -525,12 +516,12 @@ class HcsFileParser:
         hcs_xml_info_root.remove(original_images_list)
         wells_grid_mapping = self.get_wells_grid_mapping(hcs_schema_prefix, original_images_list)
         channel_dimensions = self.get_channel_dimensions(hcs_xml_info_root, wells_grid_mapping)
-        self.log_processing_info('Scaling overview TIFF files...')
+        self._processing_logger.log_info('Scaling overview TIFF files...')
         well_layers, well_grid_missing_values = self.build_well_layers(original_images_list, sequence_data_root_path,
                                                                        channel_dimensions, sequence_preview_dir_path,
                                                                        wells_grid_mapping)
         wells_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Wells')
-        self.log_processing_info('Merging overview TIFF files...')
+        self._processing_logger.log_info('Merging overview TIFF files...')
         for well in wells_list.findall(hcs_schema_prefix + 'Well'):
             self.merge_well_layers(original_images_list, sequence_preview_dir_path, well, well_layers,
                                    well_grid_missing_values)

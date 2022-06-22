@@ -17,8 +17,10 @@ import os
 import urllib
 
 from pipeline.api import PipelineAPI, TaskStatus
-from .utils import HcsParsingUtils, log_info
+from .utils import HcsParsingUtils, log_run_info, get_list_run_param
 
+HCS_PARSING_TAGS_MAPPING_LIST = get_list_run_param('HCS_PARSING_TAG_MAPPING')
+HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS = get_list_run_param('HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS')
 MAGNIFICATION_CAT_ATTR_NAME = os.getenv('HCS_PARSING_MAGNIFICATION_CAT_ATTR_NAME', 'Magnification')
 
 HCS_KEYWORD_FILE_SUFFIX = '.kw.txt'
@@ -64,7 +66,7 @@ class HcsFileTagProcessor:
         return metadata_dict
 
     def log_processing_info(self, message, status=TaskStatus.RUNNING):
-        log_info('[{}] {}'.format(self.hcs_root_dir, message), status=status)
+        log_run_info('[{}] {}'.format(self.hcs_root_dir, message), status=status)
 
     def process_tags(self):
         existing_attributes_dictionary = self.load_existing_attributes()
@@ -204,13 +206,9 @@ class HcsFileTagProcessor:
         return tags_to_push
 
     def map_tags(self, existing_attributes_dictionary):
-        tags_mapping_rules_str = os.getenv('HCS_PARSING_TAG_MAPPING', '')
-        tags_mapping_rules = tags_mapping_rules_str.split(COMMA) if tags_mapping_rules_str else []
-        skip_dictionary_check_tags = set(element.strip()
-                                         for element
-                                         in [os.getenv('HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS', '').split(COMMA)])
+        skip_dictionary_check_tags = set(element.strip() for element in HCS_PARSING_SKIP_DICTIONARY_CHECK_TAGS)
         tags_mapping = dict()
-        for rule in tags_mapping_rules:
+        for rule in HCS_PARSING_TAGS_MAPPING_LIST:
             rule_mapping = rule.split(TAGS_MAPPING_KEYS_DELIMITER, 1)
             if len(rule_mapping) != 2:
                 self.log_processing_info('Error [{}]: mapping rule declaration should contain a delimiter!'.format(

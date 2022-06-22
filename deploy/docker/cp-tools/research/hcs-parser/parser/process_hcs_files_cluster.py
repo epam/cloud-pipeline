@@ -22,7 +22,7 @@ import traceback
 import subprocess
 
 from .src.fs import get_processing_roots
-from .src.utils import HcsFileLogger, log_info, log_success
+from .src.utils import HcsFileLogger, log_run_info, log_run_success
 from .src.utils import get_int_run_param, get_bool_run_param
 
 
@@ -30,7 +30,8 @@ CLUSTER_MAX_SIZE = get_int_run_param('CP_CAP_AUTOSCALE_WORKERS', 1)
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
 FORCE_PROCESSING = get_bool_run_param('HCS_FORCE_PROCESSING')
 
-RUN_ID = os.getenv('RUN_ID')
+COMMON_JAVA_OPTS = os.getenv('JAVA_OPTS')
+MASTER_RUN_ID = os.getenv('RUN_ID')
 
 HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
 HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
@@ -102,7 +103,7 @@ class HcsFileSgeParser:
             return -1
 
     def _build_env_vars_to_propagate(self, heap_limit_gb):
-        jvm_parameters = os.getenv('JAVA_OPTS') + ' -Xmx{}G'.format(heap_limit_gb)
+        jvm_parameters = COMMON_JAVA_OPTS + ' -Xmx{}G'.format(heap_limit_gb)
         env_vars_string = '''
         export HCS_TARGET_DIRECTORIES="{}"
         export JAVA_OPTS="{}"
@@ -134,7 +135,7 @@ class HcsFileSgeParser:
         if destination_file_name is None:
             destination_file_name = os.path.basename(source_file_path)
         cp_command = 'pipe storage cp -f "{}" "$HCS_PARSING_LOGS_OUTPUT/{}"' \
-            .format(source_file_path, os.path.join(RUN_ID, destination_file_name))
+            .format(source_file_path, os.path.join(MASTER_RUN_ID, destination_file_name))
         return HcsFileSgeParser._execute_and_get_stdout(cp_command)
 
     def _create_hcs_processing_script(self, heap_limit_gb):
@@ -142,7 +143,7 @@ class HcsFileSgeParser:
         {}
         bash "$HCS_TOOLS_HOME/scripts/start.sh"
         pipe storage cp -f $ANALYSIS_DIR/hcs-parser-$RUN_ID.log $HCS_PARSING_LOGS_OUTPUT/{}/hcs-parser-worker-$RUN_ID.log
-        """.format(self._build_env_vars_to_propagate(heap_limit_gb), RUN_ID)
+        """.format(self._build_env_vars_to_propagate(heap_limit_gb), MASTER_RUN_ID)
         hcs_processing_job_script_path = tempfile.mkstemp(dir='/tmp', suffix='.sh', prefix='hcs-job-')[1]
         HcsFileSgeParser._write_to_file(hcs_processing_job_script_path, processing_script_text)
         return hcs_processing_job_script_path
@@ -218,12 +219,12 @@ def process_hcs_files_cluster():
     should_force_processing = TAGS_PROCESSING_ONLY or FORCE_PROCESSING
     paths_to_hcs_roots = get_processing_roots(should_force_processing, MEASUREMENT_INDEX_FILE_PATH)
     if not paths_to_hcs_roots or len(paths_to_hcs_roots) == 0:
-        log_success('Found no files requires processing in the lookup directories.')
+        log_run_success('Found no files requires processing in the lookup directories.')
         exit(0)
-    log_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
+    log_run_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
     pool = multiprocessing.Pool(CLUSTER_MAX_SIZE)
     pool.map(try_process_hcs_in_cluster, paths_to_hcs_roots)
-    log_success('Finished HCS files processing')
+    log_run_success('Finished HCS files processing')
     exit(0)
 
 

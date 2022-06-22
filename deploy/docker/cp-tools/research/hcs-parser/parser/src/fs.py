@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from .utils import HcsParsingUtils, log_info, get_list_run_param
+from .utils import HcsParsingUtils, log_run_info, get_list_run_param
 
 
 def get_processing_roots(should_force_processing, measurement_index_file):
@@ -22,8 +22,8 @@ def get_processing_roots(should_force_processing, measurement_index_file):
         lookup_paths = get_list_run_param('HCS_LOOKUP_DIRECTORIES')
         if not lookup_paths:
             return []
-        log_info('Following paths are specified for processing: {}'.format(lookup_paths))
-        log_info('Lookup for unprocessed files')
+        log_run_info('Following paths are specified for processing: {}'.format(lookup_paths))
+        log_run_info('Lookup for unprocessed files')
         paths_to_hcs_roots = HcsProcessingDirsGenerator(
             lookup_paths, measurement_index_file, should_force_processing).generate_paths()
     return paths_to_hcs_roots
@@ -47,7 +47,7 @@ class HcsProcessingDirsGenerator:
 
     def generate_paths(self):
         hcs_roots = self.find_all_hcs_roots()
-        log_info('Found {} HCS files'.format(len(hcs_roots)))
+        log_run_info('Found {} HCS files'.format(len(hcs_roots)))
         return filter(lambda p: self.is_processing_required(p), hcs_roots)
 
     def find_all_hcs_roots(self):

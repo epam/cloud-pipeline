@@ -20,22 +20,18 @@ import xml.etree.ElementTree as ET
 
 from pipeline.api import PipelineAPI, TaskStatus
 from pipeline.log import Logger
-from .processors import HcsFileParser
-
-HCS_PROCESSING_TASK_NAME = 'HCS processing'
-HCS_ACTIVE_PROCESSING_TIMEOUT_MIN = int(os.getenv('HCS_PARSING_ACTIVE_PROCESSING_TIMEOUT_MIN', 360))
-HCS_CLOUD_FILES_SCHEMA = os.getenv('HCS_PARSING_CLOUD_FILES_SCHEMA', 's3')
-HCS_PROCESSING_OUTPUT_FOLDER = os.getenv('HCS_PARSING_OUTPUT_FOLDER')
-HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
-HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
-
-
-def get_bool_run_param(env_var_name):
-    return os.getenv(env_var_name, 'false') == 'true'
 
 
 def get_int_run_param(env_var_name, default_value):
     return int(os.getenv(env_var_name, default_value))
+
+
+HCS_PROCESSING_TASK_NAME = 'HCS processing'
+HCS_ACTIVE_PROCESSING_TIMEOUT_MIN = get_int_run_param('HCS_PARSING_ACTIVE_PROCESSING_TIMEOUT_MIN', 360)
+HCS_CLOUD_FILES_SCHEMA = os.getenv('HCS_PARSING_CLOUD_FILES_SCHEMA', 's3')
+HCS_PROCESSING_OUTPUT_FOLDER = os.getenv('HCS_PARSING_OUTPUT_FOLDER')
+HCS_INDEX_FILE_NAME = os.getenv('HCS_PARSING_INDEX_FILE_NAME', 'Index.xml')
+HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 
 
 def get_list_run_param(env_var_name, delimiter=','):
@@ -43,11 +39,15 @@ def get_list_run_param(env_var_name, delimiter=','):
     return filter(lambda string: string is not None and len(string.strip()) > 0, param_elements)
 
 
-def log_success(message):
-    log_info(message, status=TaskStatus.SUCCESS)
+def get_bool_run_param(env_var_name, default='false'):
+    return os.getenv(env_var_name, default) == 'true'
 
 
-def log_info(message, status=TaskStatus.RUNNING):
+def log_run_success(message):
+    log_run_info(message, status=TaskStatus.SUCCESS)
+
+
+def log_run_info(message, status=TaskStatus.RUNNING):
     Logger.log_task_event(HCS_PROCESSING_TASK_NAME, message, status)
 
 
@@ -57,7 +57,7 @@ class HcsFileLogger:
         self.file_path = file_path
 
     def log_info(self, message, status=TaskStatus.RUNNING):
-        log_info('[{}] {}'.format(self.file_path, message), status)
+        log_run_info('[{}] {}'.format(self.file_path, message), status)
 
 
 class HcsParsingUtils:
@@ -80,13 +80,21 @@ class HcsParsingUtils:
         return int(os.stat(file_path).st_mtime)
 
     @staticmethod
+    def extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix=None):
+        if not hcs_schema_prefix:
+            hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
+        plates_list = hcs_xml_info_root.find(hcs_schema_prefix + 'Plates')
+        plate = plates_list.find(hcs_schema_prefix + 'Plate')
+        return plate
+
+    @staticmethod
     def build_preview_file_path(hcs_root_folder_path):
         index_file_abs_path = os.path.join(HcsParsingUtils.get_file_without_extension(hcs_root_folder_path),
                                            HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
         hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
         hcs_schema_prefix = HcsParsingUtils.extract_xml_schema(hcs_xml_info_root)
         file_name = HcsParsingUtils.get_file_without_extension(hcs_root_folder_path)
-        name_xml_element = HcsFileParser.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix) \
+        name_xml_element = HcsParsingUtils.extract_plate_from_hcs_xml(hcs_xml_info_root, hcs_schema_prefix) \
             .find(hcs_schema_prefix + 'Name')
         if name_xml_element is not None:
             file_pretty_name = name_xml_element.text

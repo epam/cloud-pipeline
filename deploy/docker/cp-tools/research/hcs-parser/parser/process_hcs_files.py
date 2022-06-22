@@ -16,13 +16,13 @@ import os
 import multiprocessing
 import traceback
 
-from .src.utils import log_info, log_success
-from .src.utils import get_int_run_param
+from .src.utils import log_run_info, log_run_success
+from .src.utils import get_int_run_param, get_bool_run_param
 from .src.fs import get_processing_roots
 from .src.processors import HcsFileParser
 
-TAGS_PROCESSING_ONLY = os.getenv('HCS_PARSING_TAGS_ONLY', 'false') == 'true'
-FORCE_PROCESSING = os.getenv('HCS_PARSING_FORCE_PROCESSING', 'false') == 'true'
+TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
+FORCE_PROCESSING = get_bool_run_param('HCS_PARSING_FORCE_PROCESSING')
 
 HCS_OME_COMPATIBLE_INDEX_FILE_NAME = 'Index.xml'
 OVERVIEW_DIR_NAME = 'overview'
@@ -39,7 +39,7 @@ def try_process_hcs(hcs_root_dir):
         processing_result = parser.process_file()
         return processing_result
     except Exception as e:
-        log_info('An error occurred during [{}] parsing: {}'.format(hcs_root_dir, str(e)))
+        log_run_info('An error occurred during [{}] parsing: {}'.format(hcs_root_dir, str(e)))
         print(traceback.format_exc())
     finally:
         if parser:
@@ -52,25 +52,25 @@ def process_hcs_files():
     should_force_processing = TAGS_PROCESSING_ONLY or FORCE_PROCESSING
     paths_to_hcs_roots = get_processing_roots(should_force_processing, MEASUREMENT_INDEX_FILE_PATH)
     if not paths_to_hcs_roots or len(paths_to_hcs_roots) == 0:
-        log_success('Found no files requires processing in the lookup directories.')
+        log_run_success('Found no files requires processing in the lookup directories.')
         exit(0)
-    log_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
+    log_run_info('Found {} files for processing.'.format(len(paths_to_hcs_roots)))
 
     processing_threads = get_int_run_param('HCS_PARSER_PROCESSING_THREADS', 1)
     if processing_threads < 1:
-        log_info('Invalid number of threads [{}] is specified for processing, use single one instead'
-                 .format(processing_threads))
+        log_run_info('Invalid number of threads [{}] is specified for processing, use single one instead'
+                     .format(processing_threads))
         processing_threads = 1
-    log_info('{} thread(s) enabled for HCS processing'.format(processing_threads))
+    log_run_info('{} thread(s) enabled for HCS processing'.format(processing_threads))
     if TAGS_PROCESSING_ONLY:
-        log_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
+        log_run_info('Only tags will be processed, since TAGS_PROCESSING_ONLY is set to `true`')
     if processing_threads == 1:
         for file_path in paths_to_hcs_roots:
             try_process_hcs(file_path)
     else:
         pool = multiprocessing.Pool(processing_threads)
         pool.map(try_process_hcs, paths_to_hcs_roots)
-    log_success('Finished HCS files processing')
+    log_run_success('Finished HCS files processing')
     exit(0)
 
 
