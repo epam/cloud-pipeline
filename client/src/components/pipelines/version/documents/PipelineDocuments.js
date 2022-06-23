@@ -210,7 +210,6 @@ export default class PipelineDocuments extends Component {
         render: (text, file) => this.actionsRenderer(text, file, graphReady)
       }
     ];
-    console.log(sources);
 
     for (let source of (sources || [])) {
       if (!source) {

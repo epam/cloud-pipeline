@@ -80,7 +80,7 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import DropDownWrapper from '../../special/dropdown-wrapper';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import { formatTreeItems, generateTreeData, ItemTypes } from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import UploadButton from '../../special/UploadButton';
@@ -112,7 +112,7 @@ function splitFolderPaths (foldersStructure) {
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
 @HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -1314,7 +1314,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-          dataSource={this._currentFolder.data}
+          dataSource={formatTreeItems(this._currentFolder.data, {preferences: this.props.preferences})}
           columns={this.columns}
           rowKey={(item) => item.key}
           title={null}
@@ -1977,11 +1977,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       let data = generateTreeData(
         this.props.folder.value,
-        true,
-        {id: this.props.folderId},
-        [],
-        this.props.supportedTypes,
-        this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        {
+          ignoreChildren: true,
+          parent: {id: this.props.folderId},
+          types: this.props.supportedTypes,
+          filter: this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        }
       );
       if (this.props.isRoot) {
         this._currentFolder = {

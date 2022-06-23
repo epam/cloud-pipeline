@@ -375,6 +375,12 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get inlineMetadataEntities () {
+    const value = this.getPreferenceValue('ui.library.metadata.inline');
+    return `${value}`.toLowerCase() === 'true';
+  }
+
   get dataSharingBaseApi () {
     return this.getPreferenceValue('data.sharing.base.api');
   }

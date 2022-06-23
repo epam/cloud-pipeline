@@ -37,7 +37,7 @@ import {
   Tooltip
 } from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
 import styles from './Browser.css';
 import UserName from '../../special/UserName';
@@ -52,6 +52,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
 })
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
+@inject('preferences')
 @inject(({pipelines, dataStorages}, params) => {
   let {browserLocation, onReloadTree} = params;
   browserLocation = browserLocation || 'pipelines';
@@ -97,11 +98,11 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       return generateTreeData(
         payload,
-        true,
-        undefined,
-        undefined,
-        [ItemTypes.pipeline, ItemTypes.storage],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          ignoreChildren: true,
+          types: [ItemTypes.pipeline, ItemTypes.storage],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
     }
     return [];
@@ -110,7 +111,8 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="inbox" className="cp-versioned-storage" />;
+      case ItemTypes.versionedStorage:
+        return <Icon type="inbox" className="cp-versioned-storage" />;
       case ItemTypes.storage:
         const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
         return (
@@ -342,7 +344,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     return (
       <Table
         className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-        dataSource={items}
+        dataSource={formatTreeItems(items, {preferences: this.props.preferences})}
         columns={columns}
         rowKey={(item) => item.key}
         title={null}

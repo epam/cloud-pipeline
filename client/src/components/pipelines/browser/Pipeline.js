@@ -706,11 +706,11 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     if (this.props.versions.loaded) {
       this._versions = generateTreeData(
         {versions: this.props.versions.value},
-        true,
-        {id: this.props.pipelineId},
-        undefined,
-        undefined,
-        this.props.hiddenObjectsTreeFilter()
+        {
+          ignoreChildren: true,
+          parent: {id: this.props.pipelineId},
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       versionsContent = (
         <Table

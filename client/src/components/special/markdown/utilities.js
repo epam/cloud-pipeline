@@ -117,11 +117,10 @@ export function getCloudPipelineLinks (options = {}) {
   if (pipelinesLibrary && pipelinesLibrary.loaded) {
     const items = generateTreeData(
       pipelinesLibrary.value,
-      false,
-      null,
-      [],
-      [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
-      hiddenObjectsTreeFilter()
+      {
+        types: [ItemTypes.folder, ItemTypes.pipeline, ItemTypes.configuration, ItemTypes.storage],
+        filter: hiddenObjectsTreeFilter()
+      }
     );
     const makeFlat = (children) => {
       const result = [];
