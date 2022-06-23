@@ -16,10 +16,10 @@ from typing import Iterator
 
 from abc import ABC, abstractmethod
 
-# todo: Use pipe commons to pack contents
 from autoscaler.model import Instance
 
 
+# todo: Use the same function from pipe commons
 def pack_script_contents(script_contents, embedded_scripts=None):
     return _pack_script_contents(script_contents,
                                  embedded_scripts=embedded_scripts,
@@ -62,10 +62,6 @@ def _tarfile(name, string):
     tar_info.mtime = time.time()
     tar_info.size = len(encoded)
     return tar_info, io.BytesIO(encoded)
-
-
-class ForbiddenInstanceTerminationError(RuntimeError):
-    pass
 
 
 class InstanceProvider(ABC):

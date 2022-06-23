@@ -17,9 +17,9 @@ from typing import Iterator, Optional
 import logging
 import pykube
 
+from autoscaler.cluster.provider import NodeProvider, PodProvider, DeploymentProvider
 from autoscaler.config import AutoscalingConfiguration
 from autoscaler.model import Node, Condition, Pod, Deployment, Persistence
-from autoscaler.cluster.provider import NodeProvider, PodProvider, DeploymentProvider
 
 
 class KubeProvider(NodeProvider, PodProvider, DeploymentProvider):

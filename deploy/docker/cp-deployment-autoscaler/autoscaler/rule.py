@@ -19,7 +19,6 @@ from autoscaler.cluster.provider import NodeProvider
 from autoscaler.config import OnLostInstancesStrategy, AutoscalingConfiguration, OnLostNodesStrategy
 from autoscaler.exception import AbortScalingError
 from autoscaler.instance.provider import InstanceProvider
-from autoscaler.scaler import NodeScaler
 
 
 class AutoscalingRule(ABC):

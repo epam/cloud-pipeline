@@ -21,7 +21,8 @@ import logging
 import os
 from botocore.config import Config
 
-from autoscaler.instance.provider import InstanceProvider, pack_script_contents, ForbiddenInstanceTerminationError
+from autoscaler.exception import ForbiddenInstanceTerminationError
+from autoscaler.instance.provider import InstanceProvider, pack_script_contents
 from autoscaler.config import AutoscalingConfiguration
 from autoscaler.model import Persistence, Instance
 

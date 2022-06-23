@@ -13,11 +13,15 @@
 # limitations under the License.
 
 
+class NodeScaleUpTimeoutError(RuntimeError):
+    pass
+
+
 class ForbiddenNodeScaleDownError(RuntimeError):
     pass
 
 
-class NodeScaleUpTimeoutError(RuntimeError):
+class ForbiddenInstanceTerminationError(RuntimeError):
     pass
 
 

@@ -23,23 +23,9 @@ from abc import ABC, abstractmethod
 from autoscaler.cluster.provider import NodeProvider
 from autoscaler.model import Condition
 
-# real req -> req
-# 1, 1 -> 3
-# 1, 2 -> 3
-# 1, 3 -> 3
-# 2, 1 -> 3
-# 3, 1 -> 3
-# 2, 2 -> 4
-# 2, 3 -> 4
-# 2, 4 -> 4
-# 2, 5 -> 5
-# 3, 2 -> 4
-# 4, 2 -> 4
-# 5, 2 -> 4
 
 def _at_least(size, required_size, extra_size):
     return max(size, required_size + extra_size) if size >= required_size else required_size
-    # return max(required_size, size) if required_size != size else size + extra_size
 
 
 class AutoscalingTrigger(ABC):
