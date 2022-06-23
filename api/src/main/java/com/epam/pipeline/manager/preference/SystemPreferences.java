@@ -892,6 +892,8 @@ public class SystemPreferences {
             "ui.quick.search.disabled", false, UI_GROUP, pass, true);
     public static final BooleanPreference UI_STANDALONE_NODES_ALLOW_TERMINATE = new BooleanPreference(
             "ui.standalone.nodes.allow.terminate", false, UI_GROUP, pass, true);
+    public static final BooleanPreference UI_LIBRARY_INLINE_METADATA = new BooleanPreference(
+            "ui.library.metadata.inline", false, UI_GROUP, pass);
 
 
     // BASE_URLS_GROUP
