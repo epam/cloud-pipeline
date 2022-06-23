@@ -282,6 +282,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-monitoring-srv \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_MONITORING_SRV_DIST_NAME"
 
+# Deployment autoscaler
+CP_DEPLOYMENT_AUTOSCALER_DIST_NAME=${CP_DEPLOYMENT_AUTOSCALER_DIST_NAME:-"$CP_DIST_REPO_NAME:deployment-autoscaler-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/cp-deployment-autoscaler \
+                -t "$CP_DEPLOYMENT_AUTOSCALER_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_DEPLOYMENT_AUTOSCALER_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################
