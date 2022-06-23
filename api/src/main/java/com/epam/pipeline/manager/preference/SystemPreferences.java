@@ -657,6 +657,8 @@ public class SystemPreferences {
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
     public static final DoublePreference UI_WSI_NOTIFICATION_FACTOR = new DoublePreference(
             "ui.wsi.magnification.factor", 1.0, UI_GROUP, isGreaterThan(0));
+    public static final BooleanPreference UI_LIBRARY_INLINE_METADATA = new BooleanPreference(
+            "ui.library.metadata.inline", false, UI_GROUP, pass);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
