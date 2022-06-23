@@ -23,3 +23,13 @@
 .button:not(:last-child) {
   margin-right: 5px;
 }
+
+.hint {
+  visibility: hidden;
+  font-style: italic;
+  font-size: smaller;
+}
+
+.buttons:hover .hint {
+  visibility: visible;
+}

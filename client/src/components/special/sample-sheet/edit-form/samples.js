@@ -20,6 +20,8 @@ import HotTable from 'react-handsontable';
 import classNames from 'classnames';
 import styles from './sample-sheet-edit-form.css';
 
+const ROW_HEIGHT = 23;
+
 function samplesAreEqual (a = [], b = []) {
   if (a.length !== b.length) {
     return false;
@@ -102,6 +104,7 @@ class SamplesEditor extends React.PureComponent {
         </div>
         <HotTable
           root="hot"
+          height={Math.max(2, data.length + 1) * ROW_HEIGHT}
           ref={this.initializeEditor}
           data={data.map(o => o.slice())}
           readOnly={readOnly}

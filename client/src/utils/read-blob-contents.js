@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,15 @@
  *  limitations under the License.
  */
 
-export default function readBlobContents (blob) {
+export default function readBlobContents (file) {
   return new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onload = function () {
-      resolve(this.result);
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      resolve(evt.target.result);
     };
-    fr.onerror = function () {
-      reject(new Error('Error reading file contents'));
+    reader.onerror = function (evt) {
+      reject(new Error('Error reading file content'));
     };
-    fr.readAsText(blob);
+    reader.readAsText(file, 'UTF-8');
   });
 }

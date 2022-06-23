@@ -2246,7 +2246,9 @@ export default class Metadata extends React.Component {
     const {
       filterModel = {},
       selectedItems = [],
-      selectedItemsAreShowing
+      selectedItemsAreShowing,
+      totalCount,
+      loading
     } = this.state;
     const selectedItemsString =
       `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
@@ -2399,6 +2401,7 @@ export default class Metadata extends React.Component {
       }
       return null;
     };
+    const totalRecordsInfo = `${totalCount || 'No'} record${totalCount !== 1 ? 's' : ''} found`;
     return (
       <Row
         className={classNames(
@@ -2416,6 +2419,16 @@ export default class Metadata extends React.Component {
             alignItems: 'center'
           }}
         >
+          {
+            <span
+              style={{marginRight: 5}}
+            >
+              {totalRecordsInfo}
+              {
+                loading && (<Icon type="loading" />)
+              }
+            </span>
+          }
           {renderSelectionControl()}
           {renderClearFiltersButton()}
           {renderSelectionInfo()}
