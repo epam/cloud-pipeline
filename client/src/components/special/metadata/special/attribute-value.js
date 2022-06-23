@@ -24,6 +24,15 @@ class AttributeValue extends React.PureComponent {
     dataStorageInfo: undefined
   };
 
+  get displayValue () {
+    const {value, showFileNameOnly} = this.props;
+    const {dataStorageInfo} = this.state;
+    if (dataStorageInfo && showFileNameOnly && typeof value === 'string') {
+      return value.split(/[\\/]/).filter(o => o.length).pop();
+    }
+    return value;
+  }
+
   componentDidMount () {
     this.updateLinkInfo();
   }
@@ -63,7 +72,6 @@ class AttributeValue extends React.PureComponent {
 
   render () {
     const {
-      value,
       className,
       style
     } = this.props;
@@ -83,7 +91,7 @@ class AttributeValue extends React.PureComponent {
           className={className}
           style={style}
         >
-          {value}
+          {this.displayValue}
         </Link>
       );
     }
@@ -92,7 +100,7 @@ class AttributeValue extends React.PureComponent {
         className={className}
         style={style}
       >
-        {value}
+        {this.displayValue}
       </span>
     );
   }
@@ -101,7 +109,8 @@ class AttributeValue extends React.PureComponent {
 AttributeValue.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
-  value: PropTypes.any
+  value: PropTypes.any,
+  showFileNameOnly: PropTypes.bool
 };
 
 export default AttributeValue;

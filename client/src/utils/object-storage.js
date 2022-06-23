@@ -17,7 +17,7 @@
 import S3Storage from '../models/s3-upload/s3-storage';
 import DataStorageItemContent from '../models/dataStorage/DataStorageItemContent';
 import GenerateDownloadUrl from '../models/dataStorage/GenerateDownloadUrl';
-import storages from '../models/dataStorage/DataStorageAvailable';
+import storagesRequest from '../models/dataStorage/DataStorageAvailable';
 
 const parser = new DOMParser();
 
@@ -163,7 +163,7 @@ async function getStorages (storages) {
  * @param {*[]|Remote} storages - available storages
  * @param {string|number|Object} storage - storage id, storage path or storage object
  * @param {{read: boolean, write: boolean}} [permissions]
- * @param {{isURL: boolean?}} [options]
+ * @param {{isURL: boolean?, generateCredentials: boolean?}} [options]
  * @return {Promise<ObjectStorage|undefined>}
  */
 export async function createObjectStorageWrapper (
@@ -173,7 +173,8 @@ export async function createObjectStorageWrapper (
   options
 ) {
   const {
-    isURL = false
+    isURL = false,
+    generateCredentials = true
   } = options || {};
   let obj;
   let storagesArray = [];
@@ -182,26 +183,30 @@ export async function createObjectStorageWrapper (
   } catch (e) {
     console.warn(e.message);
   }
+  const filteredStoragesArray = storagesArray && typeof storagesArray.filter === 'function'
+    ? storagesArray.filter(storage => !storage.shared)
+    : undefined;
   if (!isURL && !Number.isNaN(Number(storage))) {
     const storageId = Number(storage);
-    if (storagesArray && typeof storagesArray.find === 'function') {
-      obj = storagesArray.find(findStorageByIdentifierFn(storageId));
+    if (filteredStoragesArray) {
+      obj = filteredStoragesArray.find(findStorageByIdentifierFn(storageId));
     }
     if (!obj) {
       obj = {id: storageId};
     }
   } else if (
     typeof storage === 'string' &&
-    storagesArray &&
-    typeof storagesArray.find === 'function'
+    filteredStoragesArray
   ) {
-    obj = storagesArray.find(findStorageByPathFn(storage));
+    obj = filteredStoragesArray.find(findStorageByPathFn(storage));
   } else if (typeof storage === 'object' && storage.id) {
     obj = {...storage};
   }
   if (obj) {
     const objectStorage = new ObjectStorage(obj);
-    await objectStorage.initialize(permissions);
+    if (generateCredentials) {
+      await objectStorage.initialize(permissions);
+    }
     return objectStorage;
   }
   return undefined;
@@ -209,10 +214,10 @@ export async function createObjectStorageWrapper (
 
 async function getStorageFileAccessInfo (path) {
   const objectStorage = await createObjectStorageWrapper(
-    storages,
+    storagesRequest,
     path,
     {write: false, read: true},
-    {isURL: true}
+    {isURL: true, generateCredentials: false}
   );
   if (objectStorage) {
     if (objectStorage.pathMask) {

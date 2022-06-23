@@ -46,7 +46,6 @@ import styles from './Browser.css';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import MetadataPanel from '../../special/metadataPanel/MetadataPanel';
 import DropdownWithMultiselect from '../../special/DropdownWithMultiselect';
-import AdaptedLink from '../../special/AdaptedLink';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
@@ -81,6 +80,7 @@ import * as metadataFilterUtilities from './metadata-controls/metadata-filters';
 import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUpdateSampleSheet';
 import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
 import RunsAttribute, {isRunsValue} from '../../special/metadata/special/runs-attribute';
+import AttributeValue from '../../special/metadata/special/attribute-value';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -601,37 +601,6 @@ export default class Metadata extends React.Component {
       </FilterControl>
     );
   }
-
-  renderDataStorageLinks = (data) => {
-    const urls = [];
-    let title = '';
-    if (data.dataStorageLinks) {
-      for (let i = 0; i < data.dataStorageLinks.length; i++) {
-        const link = data.dataStorageLinks[i];
-        let url = `/storage/${link.dataStorageId}`;
-        const parts = (link.absolutePath || link.path).split('/');
-        const name = parts[parts.length - 1];
-        title = `${title} ${name}`;
-        if (link.path && link.path.length) {
-          url = `/storage/${link.dataStorageId}?path=${link.path}`;
-        }
-        urls.push((
-          <AdaptedLink
-            key={i}
-            to={url}
-            location={this.props.router ? this.props.router.location : {}}>{name}</AdaptedLink>
-        ));
-      }
-      return <span title={title}>{urls.map((url, index) => {
-        return (
-          <Row key={index}>
-            {url}
-          </Row>
-        );
-      })}</span>;
-    }
-    return <span title={data.value}>{data.value}</span>;
-  };
 
   onDeleteSelectedItems = () => {
     const removeConfiguration = async () => {
@@ -2215,7 +2184,12 @@ export default class Metadata extends React.Component {
                 </a>;
               }
               if (data.type.toLowerCase() === 'path') {
-                return this.renderDataStorageLinks(data);
+                return (
+                  <AttributeValue
+                    value={data.value}
+                    showFileNameOnly
+                  />
+                );
               }
               if (/^date$/i.test(data.type)) {
                 return (
