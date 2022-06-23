@@ -67,7 +67,6 @@ export default class Breadcrumbs extends React.Component {
     if (!pipelinesLibrary.loaded || !preferences.loaded) {
       return [];
     }
-    console.log('here');
     const rootElements = [{
       id: 'root',
       name: 'Library',
