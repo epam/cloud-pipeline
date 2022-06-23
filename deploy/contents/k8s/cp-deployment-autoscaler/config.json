@@ -27,7 +27,7 @@
     ]
   },
   "trigger": {
-    "cluster_nodes_per_target_replicas": 5,
+    "cluster_nodes_per_target_replicas": 100,
     "target_replicas_per_target_nodes": 1,
     "memory_pressured_nodes": 1,
     "disk_pressured_nodes": 1,

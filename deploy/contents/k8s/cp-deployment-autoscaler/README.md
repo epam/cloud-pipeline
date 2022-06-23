@@ -13,8 +13,7 @@ In order to deploy deployment autoscaler for some kubernetes deployment use the 
 CP_WORKDIR="$(mktemp -d)"
 CP_URL="https://raw.githubusercontent.com/epam/cloud-pipeline/develop/deploy/contents/k8s/cp-deployment-autoscaler/"
 wget "${CP_URL}/cp-deployment-autoscaler-dpl.yaml" -O "${CP_WORKDIR}/cp-deployment-autoscaler-dpl.yaml"
-wget "${CP_URL}/config.json" -O "${CP_WORKDIR}/config.json" 
-nano "${CP_WORKDIR}/config.json"
+wget "${CP_URL}/config.json" -O "${CP_WORKDIR}/config.json"
 
 # Specify autoscaler settings
 export CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_NAME="cp-api-srv-autoscaler"
@@ -22,6 +21,7 @@ export CP_DEPLOYMENT_AUTOSCALER_CONFIGMAP_NAME="${CP_DEPLOYMENT_AUTOSCALER_DEPLO
 export CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_FILE="${CP_WORKDIR}/cp-deployment-autoscaler-dpl.yaml"
 export CP_DEPLOYMENT_AUTOSCALER_CONFIG_FILE="${CP_WORKDIR}/config.json"
 export CP_DOCKER_DIST_SRV="${CP_DOCKER_DIST_SRV:-"quay.io/"}"
+export CP_VERSION="${CP_VERSION:-"0.17"}"
 
 # Prepare autoscaler configuration
 nano "${CP_DEPLOYMENT_AUTOSCALER_CONFIG_FILE}"
@@ -33,9 +33,8 @@ fi
 kubectl create cm "${CP_DEPLOYMENT_AUTOSCALER_CONFIGMAP_NAME}" --from-file="${CP_DEPLOYMENT_AUTOSCALER_CONFIG_FILE}"
 
 # Prepare autoscaler deployment configuration
-CP_TMP=$(<"${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_FILE}")
-envsubst < "${CP_TMP}" > "${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_FILE}"
-rm "${CP_TMP}"
+envsubst < "${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_FILE}" > "${CP_WORKDIR}/_tmp"
+cp "${CP_WORKDIR}/_tmp" "${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_FILE}"
 
 # Create or replace autoscaler deployment
 if kubectl get deploy "${CP_DEPLOYMENT_AUTOSCALER_DEPLOYMENT_NAME}"; then
@@ -99,7 +98,7 @@ Deployment autoscaler parameter descriptions can be found in the following code 
     // Specifies cluster nodes per target replicas coefficient.
     // The autoscaler tries to minimize a difference between 
     // the actual and target coefficient value by scaling replicas.
-    "cluster_nodes_per_target_replicas": 5,
+    "cluster_nodes_per_target_replicas": 100,
     
     // Specifies target replicas per target nodes coefficient.
     // The autoscaler tries to minimize a difference between 
