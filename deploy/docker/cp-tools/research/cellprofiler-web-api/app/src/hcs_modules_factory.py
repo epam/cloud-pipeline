@@ -1,6 +1,7 @@
 import os
 
 from cellprofiler.modules.erodeimage import ErodeImage
+from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
 from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
@@ -84,6 +85,8 @@ class HcsModulesFactory(object):
             processor = MaskImageModuleProcessor(module)
         elif module_name == 'ErodeImage':
             processor = ErodeImageModuleProcessor(module)
+        elif module_name == 'ExportToSpreadsheet':
+            processor = ExportToSpreadsheetModuleProcessor(module)
         else:
             raise RuntimeError('Unsupported module type {}'.format(module_name))
         return processor
@@ -246,6 +249,34 @@ class MaskImageModuleProcessor(ModuleProcessor):
         return MaskImage()
 
 
+class OutputModuleProcessor(ModuleProcessor):
+    def __init__(self, save_root, module=None):
+        ModuleProcessor.__init__(self, module)
+        self.save_root = os.path.join(save_root, str(self.module.id))
+
+    def _output_location(self):
+        return 'Elsewhere...|' + self.save_root
+
+
+class ExportToSpreadsheetModuleProcessor(OutputModuleProcessor):
+    def new_module(self):
+        return ExportToSpreadsheet()
+
+    def generated_params(self):
+        return {'Output file location': self._output_location()}
+
+
+class SaveImagesModuleProcessor(OutputModuleProcessor):
+    def new_module(self):
+        return SaveImages()
+
+    def generated_params(self):
+        return {'Overwrite existing files without warning?': 'Yes',
+                'Save with lossless compression?': 'No',
+                'Append a suffix to the image file name?': 'Yes',
+                'Output file location': self._output_location()}
+
+
 class OverlayOutlinesModuleProcessor(ModuleProcessor):
 
     OUTPUT_OBJECTS_KEY = 'output'
@@ -265,21 +296,6 @@ class OverlayOutlinesModuleProcessor(ModuleProcessor):
                 self.module.outlines.append(group)
         ModuleProcessor.configure_module(self, module_config)
         return self.module
-
-
-class SaveImagesModuleProcessor(ModuleProcessor):
-    def __init__(self, save_root, module=None):
-        ModuleProcessor.__init__(self, module)
-        self.save_root = os.path.join(save_root, str(self.module.id))
-
-    def new_module(self):
-        return SaveImages()
-
-    def generated_params(self):
-        return {'Overwrite existing files without warning?': 'Yes',
-                'Save with lossless compression?': 'No',
-                'Append a suffix to the image file name?': 'Yes',
-                'Output file location': 'Elsewhere...|{}'.format(self.save_root)}
 
 
 class ImageMathModuleProcessor(ModuleProcessor):

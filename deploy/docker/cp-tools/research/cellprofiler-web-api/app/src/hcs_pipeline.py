@@ -24,6 +24,7 @@ from typing import List
 
 MANDATORY_MODULES_COUNT = 4
 RAW_IMAGE_DATA_ROOT = os.getenv('HCS_RAW_IMAGE_DATA_ROOT')
+HCS_PIPELINE_METADATA_EXPRESSION = '^r(?P<WellRow>\\d{2})c(?P<WellColumn>\\d{2})f(?P<Field>\\d{2})p(?P<Plane>\\d{2})-ch(?P<ChannelNumber>\\d{2})t(?P<Timepoint>\\d{2})'
 
 
 class PipelineState(Enum):
@@ -188,7 +189,11 @@ class HcsPipeline(object):
 
     def _add_default_modules(self):
         self.add_module('Images', 1, {})
-        self.add_module('Metadata', 2, {})
+        self.add_module('Metadata', 2,
+                        {'Extract metadata?': 'Yes',
+                         'Metadata extraction method': 'Extract from file/folder names',
+                         'Metadata source': 'File name',
+                         'Regular expression to extract from file name': HCS_PIPELINE_METADATA_EXPRESSION})
         self.add_module('NamesAndTypes', 3, {'Assign a name to': 'Images matching rules'})
         self.add_module('Groups', 4, {})
 
