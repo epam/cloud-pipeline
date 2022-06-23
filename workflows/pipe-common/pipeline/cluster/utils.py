@@ -41,7 +41,7 @@ def create_directory(path, name, lock):
     directory = os.path.join(path, name)
     with lock:
         if not os.path.exists(directory):
-            os.makedirs(directory)
+            os.makedirs(directory, exist_ok=True)
     return directory
 
 

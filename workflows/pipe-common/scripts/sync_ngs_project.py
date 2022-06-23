@@ -5,7 +5,8 @@ import os
 
 from pipeline import Logger, PipelineAPI, common
 
-DEFAULT_FOLDERS = ['Config', 'Data', 'Images', 'InterOp', 'Logs', 'RTALogs', 'Recipe', 'Thumbnail_Images']
+DEFAULT_FOLDERS = ['Config', 'Data', 'Images', 'InterOp', 'Logs', 'RTALogs',
+                   'Recipe', 'Thumbnail_Images', 'Stats', 'Reports']
 REQUIRED_FIELDS = ['BCLs', 'Results', 'SampleSheet',   'ExperimentType', 'ExperimentName', 'PairedEnd', 'ConfigFile']
 
 
@@ -20,7 +21,7 @@ class Event(object):
 class Settings(object):
 
     def __init__(self, api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
-                 configuration_id, configuration_entry_name):
+                 configuration_id, configuration_entry_name, launch_from_date):
         self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')['value']
         self.sample_sheet_glob = api.get_preference('ngs.preprocessing.samplesheet.pattern')['value']
         self.machine_run_class = api.get_preference('ngs.preprocessing.machine.run.metadata.class.name')['value']
@@ -34,6 +35,7 @@ class Settings(object):
         self.notify_users = notify_users.split(',')
         self.configuration_id = configuration_id
         self.configuration_entry_name = configuration_entry_name
+        self.launch_from_date = datetime.datetime.strptime(launch_from_date, '%y%m%d') if launch_from_date else None
 
 
 class MachineRun(object):
@@ -110,18 +112,19 @@ class MachineRun(object):
             if metadata:
                 Logger.info('Machine run %s is already registered.' % machine_run, task_name=self.machine_run)
                 return
-            config, experiment_name, experiment_type = self.get_configuration(machine_run, run_folder)
+            demultiplex_file, demultiplex_config = self.find_demultiplex_config(run_folder)
             data = {
-                'MachineRun': {'type': 'string', 'value': machine_run},
-                'BCLs': {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run)},
-                'Results':  self.build_results(machine_run, results, experiment_name),
+                'MachineRunID': {'type': 'string', 'value': machine_run},
+                'MachineRun': {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run)},
+                'Results':  self.build_results(machine_run, results, demultiplex_config),
+                'Output': {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run)},
                 'Processed': {'type': 'string', 'value': 'Yes' if results else 'No'},
                 'SampleSheet': {'type': 'Path', 'value':
                     os.path.join(self.settings.cloud_path, machine_run, sample_sheet) if sample_sheet else None},
-                'ExperimentType': {'type': 'string', 'value': experiment_type},
-                'ExperimentName': {'type': 'string', 'value': experiment_name},
+                'ExperimentType': {'type': 'string', 'value': 'multiple'},
                 'PairedEnd': {'type': 'string', 'value': 'false'},
-                'ConfigFile': {'type': 'Path', 'value': config},
+                'ConfigFile': {'type': 'Path', 'value':
+                    os.path.join(self.settings.cloud_path, machine_run, demultiplex_file) if demultiplex_file else None},
                 'SequenceDate': {'type': 'Date', 'value': self.parse_seq_date(machine_run)}
             }
             entity = {
@@ -138,24 +141,6 @@ class MachineRun(object):
             self.notifications.append(Event(self.machine_run, 'Metadata created', 'Success'))
             if not results and trigger_run and self.settings.configuration_id and sample_sheet is not None:
                 self.run_analysis(metadata_entity)
-
-    def get_configuration(self, machine_run, run_folder):
-        demultiplex_file, demultiplex_config = self.find_demultiplex_config(run_folder)
-        if demultiplex_config:
-            if len(demultiplex_config) == 1:
-                for key, val in demultiplex_config.items():
-                    experiment_type = 'single'
-                    experiment_name = val[0]
-                    config = val[1]
-            else:
-                experiment_type = 'multiple'
-                experiment_name = None
-                config = os.path.join(self.settings.cloud_path, machine_run, demultiplex_file)
-        else:
-            experiment_type = None
-            experiment_name = self.machine_run
-            config = None
-        return config, experiment_name, experiment_type
 
     def check_results(self, run_folder):
         res = []
@@ -176,6 +161,14 @@ class MachineRun(object):
 
     def run_analysis(self, metadata_entity):
         Logger.info('Launching analysis for machine run %s.' % self.machine_run, task_name=self.machine_run)
+        if self.settings.launch_from_date:
+            seq_date = metadata_entity['data']['SequenceDate']['value']
+            if seq_date is None or datetime.datetime.strptime(seq_date,
+                                                              '%Y-%m-%d %H:%M:%S.%f') < self.settings.launch_from_date:
+                msg = 'Analysis for machine run %s won\'t be launched as sequence date %s is before configured theshold %s' \
+                      % (self.machine_run, str(seq_date), self.settings.launch_from_date.strftime('%Y-%m-%d %H:%M:%S.%f'))
+                Logger.info(msg, task_name=self.machine_run)
+                return
         for field in REQUIRED_FIELDS:
             if field not in metadata_entity['data'] or metadata_entity['data'][field] is None:
                 msg = 'Required metadata field %s in missing for machine run %s. Analysis won\'t be launched,' % \
@@ -206,9 +199,15 @@ class MachineRun(object):
                                                                                      task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Analysis launch', 'Failure', message=str(e.message)))
 
-    def build_results(self, machine_run, results, experiment_name):
+    def build_results(self, machine_run, results, demultiplex_config):
         if not results:
-            return {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run, experiment_name)}
+            if demultiplex_config:
+                experiments = [exp for exp in demultiplex_config.keys()]
+                return self.build_res_value(experiments, machine_run)
+            return self.build_res_value([''], machine_run)
+        return self.build_res_value(results, machine_run)
+
+    def build_res_value(self, results, machine_run):
         if len(results) == 1:
             return {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run, results[0])}
         value = json.dumps([os.path.join(self.settings.cloud_path, machine_run, res) for res in results])
@@ -232,7 +231,7 @@ class MachineRun(object):
                 parts = line.split('\t')
                 name = parts[0]
                 path = parts[1]
-                result[demultiplex_config] = [name, path]
+                result[name] = path
         return demultiplex_config, result
 
 
@@ -284,9 +283,10 @@ def main():
     notify_users = os.getenv('NGS_SYNC_NOTIFY_USERS', '')
     configuration_id = os.getenv('NGS_SYNC_CONFIG_ID', None)
     configuration_entry_name = os.getenv('NGS_SYNC_CONFIG_ENTRY_NAME', 'default')
+    launch_from_date = os.getenv('NGS_SYNC_LAUNCH_START', None)
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs')
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
-                        configuration_id, configuration_entry_name)
+                        configuration_id, configuration_entry_name, launch_from_date)
     NGSSync(api, settings).sync_ngs_project(folder)
 
 
