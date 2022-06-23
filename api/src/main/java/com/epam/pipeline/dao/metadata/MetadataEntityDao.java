@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -268,7 +268,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                         MetadataEntityParameters.getClassMapper());
     }
 
-
     public Set<MetadataEntity> loadExisting(Long folderId, String className, Set<String> externalIds) {
         String idClause = externalIds.stream().map(s -> format("('%s')", s))
                 .collect(Collectors.joining(","));
@@ -295,7 +294,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return new HashSet<>(getJdbcTemplate().query(format(loadBylIdsQuery, idClause),
                 MetadataEntityParameters.getRowMapper()));
     }
-
 
     private String buildFilterQuery(MetadataFilter filter) {
         String baseQuery = filter.isRecursive() ? recursiveFilterQuery : baseFilterQuery;
@@ -370,9 +368,19 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             clause.append(AND);
             final String filterClause = filter.isPredefined()
                     ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
-                    : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey());
+                    : (CollectionUtils.isEmpty(filter.getValues())
+                        ? getEmptyFieldClause(filter.getKey())
+                        : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey()));
             clause.append(filterClause);
         });
+    }
+
+    private String getEmptyFieldClause(final String key) {
+        return "(" +
+                format("(e.data #>> '{%s,value}') IS NULL", key) +
+                format(" OR trim(e.data #>> '{%s,value}') = ''", key) +
+                format(" OR (e.data #>> '{%s,value}') IN ('{}', '[]')", key) +
+                ")";
     }
 
     private String getDBName(final String filterKey) {
@@ -474,7 +482,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
             return params;
         }
 
-
         static ResultSetExtractor<Collection<MetadataClassDescription>> getClassMapper() {
             return (rs) -> {
                 Map<Long, MetadataClassDescription> results = new HashMap<>();
@@ -495,7 +502,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 return results.values();
             };
         }
-
 
         static RowMapper<MetadataEntity> getRowMapper() {
             return (rs, rowNum) -> {
