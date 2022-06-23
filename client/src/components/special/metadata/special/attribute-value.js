@@ -76,6 +76,10 @@ class AttributeValue extends React.PureComponent {
       style
     } = this.props;
     const {dataStorageInfo} = this.state;
+    const componentStyle = {
+      wordBreak: 'break-word',
+      ...(style || {})
+    };
     if (dataStorageInfo) {
       const {
         storageId,
@@ -89,7 +93,7 @@ class AttributeValue extends React.PureComponent {
           to={url}
           onClick={e => e.stopPropagation()}
           className={className}
-          style={style}
+          style={componentStyle}
         >
           {this.displayValue}
         </Link>
@@ -98,7 +102,7 @@ class AttributeValue extends React.PureComponent {
     return (
       <span
         className={className}
-        style={style}
+        style={componentStyle}
       >
         {this.displayValue}
       </span>
