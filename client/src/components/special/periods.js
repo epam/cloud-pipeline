@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ function getTickFormat (start, end) {
   if (!start || !end) {
     return '1M';
   }
-  return moment.duration(end.diff(start)).asMonths() >= 1 ? '1M' : '1d';
+  return end.diff(start, 'month') >= 1 ? '1M' : '1d';
 }
 
 function buildRangeString ({start, end}, period) {
