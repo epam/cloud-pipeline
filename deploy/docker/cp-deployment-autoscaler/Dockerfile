@@ -21,7 +21,7 @@ ENV PYTHONPATH "${PYTHONPATH}:${DEPLOYMENT_AUTOSCALER_HOME}"
 
 RUN apk add g++ make
 
-COPY ${DEPLOYMENT_AUTOSCALER_HOME}/requirements.txt ${DEPLOYMENT_AUTOSCALER_HOME}/requirements.txt
+COPY requirements.txt ${DEPLOYMENT_AUTOSCALER_HOME}/requirements.txt
 RUN pip install -r ${DEPLOYMENT_AUTOSCALER_HOME}/requirements.txt
 
 COPY autoscale_deploy.py ${DEPLOYMENT_AUTOSCALER_HOME}/autoscale_deploy.py
