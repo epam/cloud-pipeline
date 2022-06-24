@@ -72,7 +72,8 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
-import getDefaultColumns, {getDefaultColumnsSorting} from './metadata-controls/get-default-columns';
+import getDefaultMetadataProperties, {METADATA_KEYS}
+  from './metadata-controls/get-default-metadata-properties';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
 import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
@@ -117,6 +118,16 @@ function getDefaultColumnName (displayName) {
     return 'createdDate';
   }
   return unmapColumnName(displayName);
+}
+
+function getDefaultSorting (sorting = [], columns = []) {
+  return sorting.map(rule => {
+    const [field, order = 'ASC'] = rule.trim().split(':');
+    return {
+      field,
+      desc: /^desc$/i.test(order)
+    };
+  }).filter(rule => columns.find(col => mapColumnName(col) === rule.field));
 }
 
 function getColumnTitle (key) {
@@ -238,8 +249,10 @@ export default class Metadata extends React.Component {
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
     currentMetadata: [],
-    defaultColumnsFetched: false,
-    defaultColumnsFetching: false
+    defaultColumnsFilter: {},
+    defaultOrderBy: [],
+    defaultMetadataPropertiesFetched: false,
+    defaultMetadataPropertiesFetching: false
   };
 
   uploadButton;
@@ -326,6 +339,12 @@ export default class Metadata extends React.Component {
       return metadataClassObj.id;
     }
     return null;
+  }
+
+  get defaultColumnsFilter () {
+    const {defaultColumnsFilter = {}} = this.state;
+    const {metadataClass} = this.props;
+    return defaultColumnsFilter[metadataClass] || {};
   }
 
   operationWrapper = (operation) => (...props) => {
@@ -2580,7 +2599,7 @@ export default class Metadata extends React.Component {
     this.onFolderChanged();
     authenticatedUserInfo
       .fetchIfNeededOrWait()
-      .then(() => this.fetchDefaultColumnsIfRequested());
+      .then(() => this.fetchDefaultMetadataProperties());
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
@@ -2597,7 +2616,7 @@ export default class Metadata extends React.Component {
     ) {
       this.onFolderChanged(folderChanged, metadataClassChanged);
     } else {
-      this.fetchDefaultColumnsIfRequested();
+      this.fetchDefaultMetadataProperties();
     }
     if (prevProps.initialSelection !== this.props.initialSelection) {
       this.updateInitialSelection();
@@ -2608,7 +2627,7 @@ export default class Metadata extends React.Component {
     this.setState({selectedItems: (this.props.initialSelection || []).slice()});
   };
 
-  onFolderChanged = (folderChanged = true, classChanged = true) => {
+  onFolderChanged = (folderChanged = true) => {
     if (this.props.onSelectItems) {
       this.props.onSelectItems([]);
     }
@@ -2631,78 +2650,79 @@ export default class Metadata extends React.Component {
       totalCount: 0
     };
     if (folderChanged) {
-      newState.defaultColumnsFetched = false;
-      newState.defaultColumnsFetching = false;
+      newState.defaultMetadataPropertiesFetched = false;
+      newState.defaultMetadataPropertiesFetching = false;
       newState.defaultColumnsNames = [];
     }
     this.setState(newState, () => {
       this.clearSelection();
       const promises = [
         folderChanged
-          ? this.fetchDefaultColumnsIfRequested()
+          ? this.fetchDefaultMetadataProperties()
           : this.loadColumns({reset: true}),
         folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
         this.loadCurrentProject()
       ];
-      return Promise.all(promises).then(async () => {
-        if (folderChanged || classChanged) {
-          await this.fetchDefaultSorting();
-        }
-        await this.loadData();
+      return Promise.all(promises).then(() => {
+        const {defaultOrderBy, columns} = this.state;
+        this.setState(prevState => ({
+          filterModel: {
+            ...prevState.filterModel,
+            orderBy: getDefaultSorting(
+              defaultOrderBy,
+              columns
+            )
+          }
+        }), async () => {
+          await this.loadData();
+        });
       });
     });
   };
 
-  fetchDefaultSorting = () => {
-    const {authenticatedUserInfo, folderId} = this.props;
-    const {columns} = this.state;
+  fetchDefaultMetadataProperties = () => {
+    const {
+      defaultMetadataPropertiesFetched,
+      defaultMetadataPropertiesFetching
+    } = this.state;
+    const {authenticatedUserInfo, folderId, metadataClass} = this.props;
     return new Promise((resolve) => {
-      getDefaultColumnsSorting(
-        folderId,
-        authenticatedUserInfo.value
-      )
-        .then(sorting => {
-          if (sorting) {
-            const defaultOrderBy = sorting.map(rule => {
-              const [field, order = 'ASC'] = rule.trim().split(':');
-              if (!columns.find(col => mapColumnName(col) === field)) {
-                return undefined;
-              }
-              return {
-                field,
-                desc: /^desc$/i.test(order)
-              };
-            }).filter(Boolean);
-            this.setState(prevState => ({
-              filterModel: {
-                ...prevState.filterModel,
-                orderBy: defaultOrderBy
-              }
-            }), () => resolve());
-          } else {
-            resolve();
-          }
-        });
-    });
-  };
-
-  fetchDefaultColumnsIfRequested = () => {
-    const {defaultColumnsFetched, defaultColumnsFetching} = this.state;
-    const {authenticatedUserInfo, folderId} = this.props;
-    return new Promise((resolve) => {
-      if (authenticatedUserInfo.loaded && !defaultColumnsFetched && !defaultColumnsFetching) {
+      if (
+        authenticatedUserInfo.loaded &&
+        !defaultMetadataPropertiesFetched &&
+        !defaultMetadataPropertiesFetching
+      ) {
         this.setState({
-          defaultColumnsFetching: true
+          defaultMetadataPropertiesFetching: true
         }, () => {
-          getDefaultColumns(folderId, authenticatedUserInfo.value)
-            .then(defaultColumns => {
+          getDefaultMetadataProperties(
+            folderId,
+            authenticatedUserInfo.value,
+            metadataClass
+          )
+            .then(metadata => {
+              const {columns, filters, columnsSorting} = METADATA_KEYS;
+              const defaultColumnsNames = (metadata[columns] || []).map(getDefaultColumnName);
               this.setState({
-                defaultColumnsNames: (defaultColumns || []).map(getDefaultColumnName),
-                defaultColumnsFetching: false,
-                defaultColumnsFetched: true
+                defaultColumnsNames,
+                defaultMetadataPropertiesFetching: false,
+                defaultMetadataPropertiesFetched: true,
+                defaultColumnsFilter: metadata[filters] || {},
+                defaultOrderBy: metadata[columnsSorting]
               }, () => {
                 this.loadColumns({reset: true})
-                  .then(resolve);
+                  .then(() => {
+                    const {columns: metadataColumns} = this.state;
+                    this.setState(prevState => ({
+                      filterModel: {
+                        ...prevState.filterModel,
+                        orderBy: getDefaultSorting(
+                          metadata[columnsSorting],
+                          metadataColumns
+                        )
+                      }
+                    }), () => resolve());
+                  });
               });
             });
         });

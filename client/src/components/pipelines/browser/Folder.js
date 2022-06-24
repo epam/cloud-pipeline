@@ -70,6 +70,7 @@ import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
   from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
+import {METADATA_KEYS} from './metadata-controls/get-default-metadata-properties';
 import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
 import ItemsTable, {isJson} from '../../special/metadata/items-table';
 import Issues from '../../special/issues/Issues';
@@ -80,7 +81,7 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import DropDownWrapper from '../../special/dropdown-wrapper';
-import { formatTreeItems, generateTreeData, ItemTypes } from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import UploadButton from '../../special/UploadButton';
@@ -246,6 +247,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       return null;
     }
     const {value} = metadata;
+    const ignoredKey = () => {
+      return Object.values(METADATA_KEYS).includes(key);
+    };
+    if (ignoredKey()) {
+      return null;
+    }
     const renderSpecialMetadataComponent = () => {
       const SpecialMetadataComponent = SpecialTags[key];
       return (
