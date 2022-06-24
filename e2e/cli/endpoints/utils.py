@@ -62,10 +62,14 @@ def update_tool_info(tool, max_retry=100):
 
 def run_test(tool, command, endpoints_structure, url_checker=None, check_access=True, friendly_url=None,
              no_machine=False, spark=False, custom_dns_endpoints=0):
+    logging.info("Trying to start pipeline run with command: {}".format(command))
     run_id, node_name = run(tool, command, no_machine=no_machine, spark=spark, friendly_url=friendly_url)
+
+    logging.info("Getting edge services")
     edge_services = get_edge_services()
     # calculate number of endpoints should be generated regarding to existing edges
     number_of_endpoints = custom_dns_endpoints + (len(endpoints_structure) - custom_dns_endpoints) * len(edge_services)
+    logging.info("Number of endpoints to check: {}".format(number_of_endpoints))
     try:
         endpoints = get_endpoint_urls(run_id)
         check_for_number_of_endpoints(endpoints, number_of_endpoints)
@@ -80,6 +84,7 @@ def run_test(tool, command, endpoints_structure, url_checker=None, check_access=
             assert is_accessible, "service url: {} : {} : {}, is not accessible.".format(name, region, url)
         return run_id, node_name
     finally:
+        logging.info("Stopping pipeline run: {}".format(run_id))
         stop_pipe_with_retry(run_id)
 
 
