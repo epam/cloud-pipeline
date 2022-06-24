@@ -2267,7 +2267,7 @@ export default class Metadata extends React.Component {
             key="clear_filters"
             size="small"
             onClick={this.onClearFilters}
-            style={{marginLeft: 5, marginRight: 5}}
+            style={{margin: 5}}
           >
             <Icon
               type="close"
@@ -2285,7 +2285,7 @@ export default class Metadata extends React.Component {
       if (selectedItemsAreShowing && selectedItems.length > 0) {
         return (
           <span
-            style={{marginLeft: 5}}
+            style={{margin: 5}}
             key="info"
           > Currently viewing {selectedItemsString}
           </span>
@@ -2356,7 +2356,7 @@ export default class Metadata extends React.Component {
         </Menu>
       );
       return (
-        <Button.Group>
+        <Button.Group style={{margin: 5}}>
           <Button
             size="small"
             onClick={this.handleClickShowSelectedItems}
@@ -2379,6 +2379,25 @@ export default class Metadata extends React.Component {
           </Dropdown>
         </Button.Group>
       );
+    };
+    const renderPredefinedFilters = () => {
+      if (!selectedItemsAreShowing && this.predefinedFilters) {
+        return this.predefinedFilters.map((filter, index) => {
+          const type = this.isFilterApplied(filter) ? 'primary' : 'default';
+          return (
+            <Button
+              key={`predefined_filter_${index}`}
+              size="small"
+              style={{margin: 5}}
+              type={type}
+              onClick={() => this.handleClickPredefinedFilter(filter)}
+            >
+              {`${filter.title}: ${filter.count}`}
+            </Button>
+          );
+        });
+      }
+      return null;
     };
     const renderRunButton = () => {
       if (
@@ -2407,18 +2426,20 @@ export default class Metadata extends React.Component {
         )}
         type="flex"
         justify="space-between"
-        align="middle"
+        align="top"
       >
         <div
           style={{
             display: 'inline-flex',
             flexDirection: 'row',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexWrap: 'wrap'
           }}
         >
           {renderSelectionControl()}
           {renderClearFiltersButton()}
           {renderSelectionInfo()}
+          {renderPredefinedFilters()}
         </div>
         {renderRunButton()}
       </Row>
@@ -2431,6 +2452,59 @@ export default class Metadata extends React.Component {
       metadata: false,
       selectedItemsAreShowing: !this.state.selectedItemsAreShowing
     }, () => this.paginationOnChange(FIRST_PAGE));
+  }
+
+  isFilterApplied = (predefinedFilters) => {
+    const {filterModel} = this.state;
+
+    const isEmpty = (filter) => {
+      const {filters, endDateTo, startDateFrom} = filter;
+      return !endDateTo && !startDateFrom && !filters.length;
+    };
+    const areDatesSame = () => {
+      return predefinedFilters.endDateTo === filterModel.endDateTo &&
+      predefinedFilters.startDateFrom === filterModel.startDateFrom;
+    };
+
+    if (isEmpty(filterModel)) {
+      return isEmpty(predefinedFilters);
+    } else {
+      if (!areDatesSame()) {
+        return false;
+      } else {
+        return filterModel.filters.every((filter, index) => {
+          const predefinedFilter = predefinedFilters.filters[index] || {};
+          const areValuesSame = filter.values.every((value, i) => {
+            return value === (predefinedFilter.values || [])[i];
+          });
+          return filter.key === predefinedFilter.key && areValuesSame;
+        });
+      }
+    }
+  };
+
+  handleClickPredefinedFilter = (filter) => {
+    const {filters, startDateFrom, endDateTo} = filter;
+    const {filterModel} = this.state;
+    if (this.isFilterApplied(filter)) {
+      this.onClearFilters();
+    } else {
+      filterModel.filters = [...filters];
+      filterModel.startDateFrom = startDateFrom;
+      filterModel.endDateTo = endDateTo;
+      filterModel.page = 1;
+      filterModel.searchQueries = [];
+      this.setState(
+        {
+          filterModel,
+          searchQuery: undefined
+        },
+        () => {
+          this.clearSelection();
+          this.loadData();
+        }
+      );
+    }
   }
 
   paginationOnChange = async (page) => {

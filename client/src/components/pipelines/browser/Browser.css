@@ -365,6 +365,7 @@ tr.table-row-selected {
   border-bottom: none;
   padding: 5px;
   min-height: 37px;
+  flex-wrap: nowrap;
 }
 
 .action-link:hover {
