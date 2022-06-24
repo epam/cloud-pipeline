@@ -15,8 +15,7 @@
 ARG BASE_IMAGE="library/centos:7"
 FROM $BASE_IMAGE
 
-RUN  yum install -y -q  awscli \
-                        gcc \
+RUN  yum install -y -q  gcc \
                         gcc-c++ \
                         make \
                         java-11-openjdk-headless \
@@ -35,6 +34,7 @@ RUN  yum install -y -q  awscli \
 # Install tools
 ARG BFTOOLS_VERSION="6.8.0"
 ARG VIPS_VERSION="8.11.2"
+ARG AWS_CLI_DISTR_URL="https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"
 ENV WSI_PARSER_HOME=/opt/local/wsi-parser
 
 RUN mkdir -p $WSI_PARSER_HOME && \
@@ -49,9 +49,13 @@ RUN mkdir -p $WSI_PARSER_HOME && \
     cd "$WSI_PARSER_HOME/vips-$VIPS_VERSION" && \
     ./configure && \
     make && \
-    make install
+    make install && \
+    wget "$AWS_CLI_DISTR_URL" -O "awscliv2.zip" && \
+    unzip awscliv2.zip && \
+    ./aws/install -i /usr/local/aws-cli -b /usr/local/bin && \
+    rm -f awscliv2.zip
 
-ENV PATH="$WSI_PARSER_HOME/bftools:$PATH"
+ENV PATH="$WSI_PARSER_HOME/bftools:/usr/local/bin:$PATH"
 ADD create_deepzoom.sh "$WSI_PARSER_HOME/create_deepzoom.sh"
 ADD process_files.py "$WSI_PARSER_HOME/process_files.py"
 ADD start.sh /start.sh
