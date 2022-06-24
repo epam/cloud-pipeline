@@ -299,21 +299,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,
                                       final Map<String, String> labels) {
 
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeLabel)
-                .sshKey(region.getSshPublicKeyPath())
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .kubeCertHash(kubeCertHash)
-                .kubeNodeToken(kubeNodeToken)
-                .region(region.getRegionCode())
-                .prePulledImages(instance.getPrePulledDockerImages())
-                .additionalLabels(labels);
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+                        .sshKey(region.getSshPublicKeyPath())
+                        .additionalLabels(labels);
 
         final Boolean clusterSpotStrategy = instance.getSpot() == null
                 ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)

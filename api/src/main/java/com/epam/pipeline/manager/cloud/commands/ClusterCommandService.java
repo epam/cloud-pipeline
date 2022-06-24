@@ -59,6 +59,7 @@ public class ClusterCommandService {
                 .cloud(cloud)
                 .availabilityZone(instance.getAvailabilityZone())
                 .networkInterface(instance.getNetworkInterfaceId())
+                .prePulledImages(instance.getPrePulledDockerImages())
                 .region(region.getRegionCode());
     }
 

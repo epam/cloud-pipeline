@@ -325,7 +325,6 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
             commandBuilder.encryptionKey(region.getKmsKeyId());
         }
         addSpotArguments(instance, commandBuilder, region.getId());
-        commandBuilder.prePulledImages(instance.getPrePulledDockerImages());
         commandBuilder.additionalLabels(labels);
         return commandBuilder.build().getCommand();
     }

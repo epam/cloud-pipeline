@@ -275,7 +275,6 @@ public class GCPInstanceService implements CloudInstanceService<GCPRegion> {
                         .orElse(false))
             .bidPrice(StringUtils.EMPTY)
             .additionalLabels(labels)
-            .prePulledImages(instance.getPrePulledDockerImages())
             .build()
             .getCommand();
     }
