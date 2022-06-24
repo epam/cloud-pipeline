@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ public abstract class AbstractSystemPreference<T> {
     private String group;
     private BiPredicate<String, Map<String, Preference>> validator;
     private final PreferenceType type;
+    private boolean visible = false;
     private Map<String, AbstractSystemPreference> dependencies = Collections.emptyMap();
 
     public AbstractSystemPreference(String key, T defaultValue, String group, BiPredicate<String,
@@ -55,6 +56,13 @@ public abstract class AbstractSystemPreference<T> {
         }
     }
 
+    public AbstractSystemPreference(String key, T defaultValue, String group, BiPredicate<String,
+            Map<String, Preference>> validator, PreferenceType type, boolean visible,
+                                    AbstractSystemPreference... dependencies) {
+        this(key, defaultValue, group, validator, type, dependencies);
+        this.visible = visible;
+    }
+
     /**
      * Parses the string value of a preference to a typed value of this AbstractSystemPreference
      * @param value a string value
@@ -68,7 +76,7 @@ public abstract class AbstractSystemPreference<T> {
 
     public Preference toPreference() {
         return new Preference(key, defaultValue == null ? null : defaultValue.toString(), group, null, type,
-                false);
+                visible);
     }
 
     void setValidator(BiPredicate<String, Map<String, Preference>> validator) {
@@ -92,6 +100,11 @@ public abstract class AbstractSystemPreference<T> {
             super(key, defaultValue, group, validator, PreferenceType.STRING, dependencies);
         }
 
+        public StringPreference(String key, String defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, boolean visible, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.STRING, visible, dependencies);
+        }
+
         @Override
         public String parse(String value) {
             return value;
@@ -102,6 +115,11 @@ public abstract class AbstractSystemPreference<T> {
         public IntPreference(String key, Integer defaultValue, String group, BiPredicate<String,
                 Map<String, Preference>> validator, AbstractSystemPreference... dependencies) {
             super(key, defaultValue, group, validator, PreferenceType.INTEGER, dependencies);
+        }
+
+        public IntPreference(String key, Integer defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, boolean visible, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.INTEGER, visible, dependencies);
         }
 
         @Override
@@ -119,6 +137,11 @@ public abstract class AbstractSystemPreference<T> {
             super(key, defaultValue, group, validator, PreferenceType.LONG, dependencies);
         }
 
+        public LongPreference(String key, Long defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, boolean visible, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.LONG, visible, dependencies);
+        }
+
         @Override
         public Long parse(String value) {
             if (StringUtils.isBlank(value)) {
@@ -132,6 +155,11 @@ public abstract class AbstractSystemPreference<T> {
         public FloatPreference(String key, Float defaultValue, String group, BiPredicate<String,
                 Map<String, Preference>> validator, AbstractSystemPreference... dependencies) {
             super(key, defaultValue, group, validator, PreferenceType.FLOAT, dependencies);
+        }
+
+        public FloatPreference(String key, Float defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, boolean visible, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.FLOAT, visible, dependencies);
         }
 
         @Override
@@ -150,6 +178,11 @@ public abstract class AbstractSystemPreference<T> {
             super(key, defaultValue, group, validator, PreferenceType.FLOAT, dependencies);
         }
 
+        public DoublePreference(String key, Double defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, boolean visible, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.FLOAT, visible, dependencies);
+        }
+
         @Override
         public Double parse(String value) {
             if (StringUtils.isBlank(value)) {
@@ -164,6 +197,11 @@ public abstract class AbstractSystemPreference<T> {
         public BooleanPreference(String key, Boolean defaultValue, String group, BiPredicate<String,
                 Map<String, Preference>> validator, AbstractSystemPreference... dependencies) {
             super(key, defaultValue, group, validator, PreferenceType.BOOLEAN, dependencies);
+        }
+
+        public BooleanPreference(String key, Boolean defaultValue, String group, BiPredicate<String,
+                Map<String, Preference>> validator, boolean visible, AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.BOOLEAN, visible, dependencies);
         }
 
         @Override
@@ -182,10 +220,16 @@ public abstract class AbstractSystemPreference<T> {
             this.typeReference = typeReference;
         }
 
+        public ObjectPreference(String key, T defaultValue, TypeReference<T> typeReference, String group,
+                                BiPredicate<String, Map<String, Preference>> validator, boolean visible,
+                                AbstractSystemPreference... dependencies) {
+            super(key, defaultValue, group, validator, PreferenceType.OBJECT, visible, dependencies);
+            this.typeReference = typeReference;
+        }
+
         @Override
         public T parse(String value) {
             return JsonMapper.parseData(value, typeReference);
         }
     }
 }
-
