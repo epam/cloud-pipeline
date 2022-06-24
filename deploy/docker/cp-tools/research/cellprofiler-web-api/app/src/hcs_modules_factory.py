@@ -1,14 +1,19 @@
 import os
 
+from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
+from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
 from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
+from cellprofiler.modules.opening import Opening
 from cellprofiler.modules.overlayobjects import OverlayObjects
 from cellprofiler.modules.overlayoutlines import OverlayOutlines
+from cellprofiler.modules.reducenoise import ReduceNoise
 from cellprofiler.modules.relateobjects import RelateObjects
 from cellprofiler.modules.saveimages import SaveImages
+from cellprofiler.modules.smooth import Smooth
 from cellprofiler_core.module import Module
 from cellprofiler_core.modules.groups import Groups
 from cellprofiler_core.modules.images import Images
@@ -87,6 +92,16 @@ class HcsModulesFactory(object):
             processor = ErodeImageModuleProcessor(module)
         elif module_name == 'ExportToSpreadsheet':
             processor = ExportToSpreadsheetModuleProcessor(module)
+        elif module_name == 'EnhanceOrSuppressFeatures':
+            processor = EnhanceOrSuppressFeaturesModuleProcessor(module)
+        elif module_name == 'CorrectIlluminationApply':
+            processor = CorrectIlluminationApplyModuleProcessor(module)
+        elif module_name == 'Smooth':
+            processor = SmoothModuleProcessor(module)
+        elif module_name == 'ReduceNoise':
+            processor = ReduceNoiseModuleProcessor(module)
+        elif module_name == 'Opening':
+            processor = OpeningModuleProcessor(module)
         else:
             raise RuntimeError('Unsupported module type {}'.format(module_name))
         return processor
@@ -244,9 +259,34 @@ class ClosingModuleProcessor(StructuringElementImagesModuleProcessor):
         return Closing()
 
 
+class OpeningModuleProcessor(StructuringElementImagesModuleProcessor):
+    def new_module(self):
+        return Opening()
+
+
 class MaskImageModuleProcessor(ModuleProcessor):
     def new_module(self):
         return MaskImage()
+
+
+class EnhanceOrSuppressFeaturesModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return EnhanceOrSuppressFeatures()
+
+
+class CorrectIlluminationApplyModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return CorrectIlluminationApply()
+
+
+class SmoothModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return Smooth()
+
+
+class ReduceNoiseModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ReduceNoise()
 
 
 class OutputModuleProcessor(ModuleProcessor):
