@@ -365,6 +365,18 @@ tr.table-row-selected {
   border-bottom: none;
   padding: 5px;
   min-height: 37px;
+  flex-wrap: nowrap;
+}
+
+.metadata-predefined-filters {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: none;
+  border-top: none;
+  padding: 0 5px 5px;
+  min-height: 37px;
+  flex-wrap: wrap;
+  display: flex;
+  align-items: center;
 }
 
 .action-link:hover {

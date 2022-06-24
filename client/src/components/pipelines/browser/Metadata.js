@@ -41,7 +41,7 @@ import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
 import styles from './Browser.css';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import MetadataPanel from '../../special/metadataPanel/MetadataPanel';
@@ -72,7 +72,10 @@ import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
-import getDefaultColumns, {getDefaultColumnsSorting} from './metadata-controls/get-default-columns';
+import getDefaultMetadataProperties, {
+  METADATA_KEYS
+} from './metadata-controls/get-default-metadata-properties';
+import PredefinedFilterButton from './metadata-controls/predefined-filter-button';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
 import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
@@ -117,6 +120,16 @@ function getDefaultColumnName (displayName) {
     return 'createdDate';
   }
   return unmapColumnName(displayName);
+}
+
+function getDefaultSorting (sorting = [], columns = []) {
+  return sorting.map(rule => {
+    const [field, order = 'ASC'] = rule.trim().split(':');
+    return {
+      field,
+      desc: /^desc$/i.test(order)
+    };
+  }).filter(rule => columns.find(col => mapColumnName(col) === rule.field));
 }
 
 function getColumnTitle (key) {
@@ -238,8 +251,10 @@ export default class Metadata extends React.Component {
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
     currentMetadata: [],
-    defaultColumnsFetched: false,
-    defaultColumnsFetching: false
+    predefinedFilters: [],
+    defaultOrderBy: [],
+    defaultMetadataPropertiesFetched: false,
+    defaultMetadataPropertiesFetching: false
   };
 
   uploadButton;
@@ -328,6 +343,19 @@ export default class Metadata extends React.Component {
     return null;
   }
 
+  get predefinedFilters () {
+    const {predefinedFilters = {}} = this.state;
+    const {metadataClass} = this.props;
+    return Object.entries(predefinedFilters || {})
+      .map(([key, filters]) => {
+        const classes = key.split(/\s*,\s*/g);
+        return classes.map((metadataClass) => ({key: metadataClass.trim(), filters}));
+      })
+      .reduce((r, c) => ([...r, ...c]), [])
+      .filter(predefined => predefined.key === metadataClass || predefined.key === '*')
+      .reduce((r, c) => ([...r, ...c.filters]), []);
+  }
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -401,10 +429,10 @@ export default class Metadata extends React.Component {
     }
   };
 
-  handleFilterApplied = (key, dataArray) => {
+  handleFilterApplied = (key, fieldFilter) => {
     const filterModel = {...this.state.filterModel};
-    if (key && dataArray && dataArray.length) {
-      const filterObj = {key: unmapColumnName(key), values: dataArray};
+    if (key && !!fieldFilter) {
+      const filterObj = {key: unmapColumnName(key), values: fieldFilter};
       const currentFilterIndex = filterModel.filters
         .findIndex(filter => filter.key === unmapColumnName(key));
       if (currentFilterIndex > -1) {
@@ -559,7 +587,9 @@ export default class Metadata extends React.Component {
       endDateTo
     } = filterModel;
     const filter = filters.find(filter => filter.key === unmapColumnName(key));
-    const values = filter ? (filter.values || []) : [];
+    const values = filter
+      ? filter.values
+      : undefined;
     const button = (
       <Button
         shape="circle"
@@ -575,7 +605,14 @@ export default class Metadata extends React.Component {
           border: 'none'
         }}
       >
-        <Icon type="filter" />
+        <Icon
+          type="filter"
+          className={
+            classNames(
+              {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))}
+            )
+          }
+        />
       </Button>);
 
     if (key === 'createdDate') {
@@ -1760,6 +1797,7 @@ export default class Metadata extends React.Component {
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {this.renderTableActions()}
+          {this.renderPredefinedFilters()}
           {renderTable()}
           {renderConfigurationBrowser()}
           {renderCopyEntitiesDialog()}
@@ -2243,7 +2281,7 @@ export default class Metadata extends React.Component {
             key="clear_filters"
             size="small"
             onClick={this.onClearFilters}
-            style={{marginLeft: 5, marginRight: 5}}
+            style={{margin: '0 5px'}}
           >
             <Icon
               type="close"
@@ -2261,7 +2299,7 @@ export default class Metadata extends React.Component {
       if (selectedItemsAreShowing && selectedItems.length > 0) {
         return (
           <span
-            style={{marginLeft: 5}}
+            style={{margin: '0 5px'}}
             key="info"
           > Currently viewing {selectedItemsString}
           </span>
@@ -2332,7 +2370,7 @@ export default class Metadata extends React.Component {
         </Menu>
       );
       return (
-        <Button.Group>
+        <Button.Group style={{margin: '0 5px'}}>
           <Button
             size="small"
             onClick={this.handleClickShowSelectedItems}
@@ -2384,13 +2422,14 @@ export default class Metadata extends React.Component {
         )}
         type="flex"
         justify="space-between"
-        align="middle"
+        align="center"
       >
         <div
           style={{
             display: 'inline-flex',
             flexDirection: 'row',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexWrap: 'wrap'
           }}
         >
           {
@@ -2412,12 +2451,68 @@ export default class Metadata extends React.Component {
     );
   };
 
+  renderPredefinedFilters = () => {
+    const {selectedItemsAreShowing} = this.state;
+    if (!selectedItemsAreShowing && this.predefinedFilters.length > 0) {
+      return (
+        <div
+          className={
+            classNames(
+              styles.metadataPredefinedFilters,
+              'cp-library-metadata-additional-actions'
+            )
+          }
+        >
+          {
+            this.predefinedFilters.map((filter, index) => {
+              return (
+                <PredefinedFilterButton
+                  key={`predefined_filter_${index}_${filter.name || filter.title || ''}`}
+                  filter={filter}
+                  style={{marginRight: 5, marginBottom: 2}}
+                  onClick={this.handleClickPredefinedFilter}
+                  currentFilter={this.state.filterModel}
+                  folderId={this.props.folderId}
+                  metadataClass={this.props.metadataClass}
+                />
+              );
+            })
+          }
+        </div>
+      );
+    }
+    return null;
+  };
+
   handleClickShowSelectedItems = () => {
     this.setState({
       selectedItem: null,
       metadata: false,
       selectedItemsAreShowing: !this.state.selectedItemsAreShowing
     }, () => this.paginationOnChange(FIRST_PAGE));
+  }
+
+  handleClickPredefinedFilter = (filter) => {
+    if (!filter) {
+      this.onClearFilters();
+      return;
+    }
+    const {filterModel} = this.state;
+    this.setState(
+      {
+        filterModel: {
+          ...(filterModel || {}),
+          ...(filter || {}),
+          searchQueries: [],
+          page: 1
+        },
+        searchQuery: undefined
+      },
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
   }
 
   paginationOnChange = async (page) => {
@@ -2580,7 +2675,7 @@ export default class Metadata extends React.Component {
     this.onFolderChanged();
     authenticatedUserInfo
       .fetchIfNeededOrWait()
-      .then(() => this.fetchDefaultColumnsIfRequested());
+      .then(() => this.fetchDefaultMetadataProperties());
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
@@ -2595,9 +2690,9 @@ export default class Metadata extends React.Component {
       folderChanged ||
       filtersChanged
     ) {
-      this.onFolderChanged(folderChanged, metadataClassChanged);
+      this.onFolderChanged(folderChanged);
     } else {
-      this.fetchDefaultColumnsIfRequested();
+      (this.fetchDefaultMetadataProperties)();
     }
     if (prevProps.initialSelection !== this.props.initialSelection) {
       this.updateInitialSelection();
@@ -2608,7 +2703,7 @@ export default class Metadata extends React.Component {
     this.setState({selectedItems: (this.props.initialSelection || []).slice()});
   };
 
-  onFolderChanged = (folderChanged = true, classChanged = true) => {
+  onFolderChanged = (folderChanged = true) => {
     if (this.props.onSelectItems) {
       this.props.onSelectItems([]);
     }
@@ -2631,78 +2726,75 @@ export default class Metadata extends React.Component {
       totalCount: 0
     };
     if (folderChanged) {
-      newState.defaultColumnsFetched = false;
-      newState.defaultColumnsFetching = false;
+      newState.defaultMetadataPropertiesFetched = false;
+      newState.defaultMetadataPropertiesFetching = false;
       newState.defaultColumnsNames = [];
     }
     this.setState(newState, () => {
       this.clearSelection();
       const promises = [
         folderChanged
-          ? this.fetchDefaultColumnsIfRequested()
+          ? this.fetchDefaultMetadataProperties()
           : this.loadColumns({reset: true}),
         folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
         this.loadCurrentProject()
       ];
-      return Promise.all(promises).then(async () => {
-        if (folderChanged || classChanged) {
-          await this.fetchDefaultSorting();
-        }
-        await this.loadData();
+      return Promise.all(promises).then(() => {
+        const {defaultOrderBy, columns} = this.state;
+        this.setState(prevState => ({
+          filterModel: {
+            ...prevState.filterModel,
+            orderBy: getDefaultSorting(
+              defaultOrderBy,
+              columns
+            )
+          }
+        }), async () => {
+          await this.loadData();
+        });
       });
     });
   };
 
-  fetchDefaultSorting = () => {
-    const {authenticatedUserInfo, folderId} = this.props;
-    const {columns} = this.state;
-    return new Promise((resolve) => {
-      getDefaultColumnsSorting(
-        folderId,
-        authenticatedUserInfo.value
-      )
-        .then(sorting => {
-          if (sorting) {
-            const defaultOrderBy = sorting.map(rule => {
-              const [field, order = 'ASC'] = rule.trim().split(':');
-              if (!columns.find(col => mapColumnName(col) === field)) {
-                return undefined;
-              }
-              return {
-                field,
-                desc: /^desc$/i.test(order)
-              };
-            }).filter(Boolean);
-            this.setState(prevState => ({
-              filterModel: {
-                ...prevState.filterModel,
-                orderBy: defaultOrderBy
-              }
-            }), () => resolve());
-          } else {
-            resolve();
-          }
-        });
-    });
-  };
-
-  fetchDefaultColumnsIfRequested = () => {
-    const {defaultColumnsFetched, defaultColumnsFetching} = this.state;
+  fetchDefaultMetadataProperties = () => {
+    const {
+      defaultMetadataPropertiesFetched,
+      defaultMetadataPropertiesFetching
+    } = this.state;
     const {authenticatedUserInfo, folderId} = this.props;
     return new Promise((resolve) => {
-      if (authenticatedUserInfo.loaded && !defaultColumnsFetched && !defaultColumnsFetching) {
+      if (
+        authenticatedUserInfo.loaded &&
+        !defaultMetadataPropertiesFetched &&
+        !defaultMetadataPropertiesFetching
+      ) {
         this.setState({
-          defaultColumnsFetching: true
+          defaultMetadataPropertiesFetching: true
         }, () => {
-          getDefaultColumns(folderId, authenticatedUserInfo.value)
-            .then(defaultColumns => {
+          getDefaultMetadataProperties(folderId, authenticatedUserInfo.value)
+            .then(metadata => {
+              const {columns, filters, columnsSorting} = METADATA_KEYS;
+              const defaultColumnsNames = (metadata[columns] || []).map(getDefaultColumnName);
               this.setState({
-                defaultColumnsNames: (defaultColumns || []).map(getDefaultColumnName),
-                defaultColumnsFetching: false,
-                defaultColumnsFetched: true
+                defaultColumnsNames,
+                defaultMetadataPropertiesFetching: false,
+                defaultMetadataPropertiesFetched: true,
+                predefinedFilters: metadata[filters] || [],
+                defaultOrderBy: metadata[columnsSorting]
               }, () => {
                 this.loadColumns({reset: true})
-                  .then(resolve);
+                  .then(() => {
+                    const {columns: metadataColumns} = this.state;
+                    this.setState(prevState => ({
+                      filterModel: {
+                        ...prevState.filterModel,
+                        orderBy: getDefaultSorting(
+                          metadata[columnsSorting],
+                          metadataColumns
+                        )
+                      }
+                    }), () => resolve());
+                  });
               });
             });
         });

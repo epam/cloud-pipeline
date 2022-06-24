@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Popover, Button, Icon, Select} from 'antd';
+import {Popover, Button, Icon, Select, Checkbox} from 'antd';
 
 function tagsAreEqual (tagsA, tagsB) {
   if (!tagsA && !tagsB) {
@@ -10,11 +10,13 @@ function tagsAreEqual (tagsA, tagsB) {
   if (!tagsA || !tagsB) {
     return false;
   }
-  if (tagsA.length !== tagsB.length) {
+  const a = [...new Set(tagsA)].sort();
+  const b = [...new Set(tagsB)].sort();
+  if (a.length !== b.length) {
     return false;
   }
-  for (let i = 0; i < tagsA.length; i++) {
-    if (tagsA[i] !== tagsB[i]) {
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
       return false;
     }
   }
@@ -25,6 +27,7 @@ function tagsAreEqual (tagsA, tagsB) {
 class FilterControl extends React.PureComponent {
   state = {
     selectedTags: [],
+    emptyValue: false,
     popoverVisible: false
   }
   static propTypes = {
@@ -32,11 +35,23 @@ class FilterControl extends React.PureComponent {
     onSearch: PropTypes.func,
     children: PropTypes.node,
     value: PropTypes.arrayOf(PropTypes.string),
-    visibilityChanged: PropTypes.func
+    visibilityChanged: PropTypes.func,
+    supportEmptyValue: PropTypes.bool
+  }
+  static defaultProps = {
+    supportEmptyValue: true
+  };
+
+  get selectedValues () {
+    if (this.state.emptyValue) {
+      return [];
+    }
+    const result = this.state.selectedTags || [];
+    return result.length === 0 ? null : result;
   }
 
   get modified () {
-    return !tagsAreEqual(this.props.value || [], this.state.selectedTags || []);
+    return !tagsAreEqual(this.props.value, this.selectedValues);
   }
 
   componentDidMount () {
@@ -44,39 +59,43 @@ class FilterControl extends React.PureComponent {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (!tagsAreEqual(prevProps.value || [], this.props.value || [])) {
+    if (!tagsAreEqual(prevProps.value, this.props.value)) {
       this.updateStateFromProps();
     }
   }
   updateStateFromProps = () => {
-    const {value = []} = this.props;
-    this.setState({selectedTags: value});
+    const {value} = this.props;
+    const empty = value && value.length === 0;
+    this.setState({
+      selectedTags: empty ? [] : (value || []).filter(o => o.length),
+      emptyValue: empty
+    });
   };
 
   resetFilter = () => {
     this.setState({
-      selectedTags: []
+      selectedTags: [],
+      emptyValue: false
     });
     this.props.onSearch(null);
     this.handlePopoverVisibleChange(false);
   }
-  onChange = async (value) => {
-    await this.setState({
+  onChange = (value) => {
+    this.setState({
       selectedTags: value
     });
-  }
+  };
+  onChangeEmptyValue = (e) => {
+    this.setState({
+      emptyValue: e.target.checked
+    });
+  };
   handleApplyFilter = () => {
-    const {
-      selectedTags = []
-    } = this.state;
     const {
       onSearch
     } = this.props;
-    if (selectedTags.length === 0) {
-      onSearch && onSearch(null);
-    } else {
-      onSearch && onSearch(selectedTags);
-    }
+    const result = this.selectedValues;
+    onSearch && onSearch(result);
     this.handlePopoverVisibleChange(false);
   }
   handlePopoverVisibleChange = (visible) => {
@@ -88,12 +107,35 @@ class FilterControl extends React.PureComponent {
     });
   }
   render () {
-    const {value = []} = this.props;
-    const {selectedTags, popoverVisible} = this.state;
+    const {value, supportEmptyValue} = this.props;
+    const {
+      selectedTags = [],
+      popoverVisible,
+      emptyValue
+    } = this.state;
     const content = (
       <div style={{width: 280, padding: '8px 0px'}}>
+        {
+          supportEmptyValue && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                marginBottom: 8
+              }}
+            >
+              <Checkbox
+                checked={emptyValue}
+                onChange={this.onChangeEmptyValue}
+              >
+                Empty
+              </Checkbox>
+            </div>
+          )
+        }
         <div style={{width: 280, display: 'flex', alignItems: 'center'}}>
           <Select
+            disabled={emptyValue}
             value={selectedTags}
             mode="tags"
             style={{width: 280}}
@@ -113,7 +155,7 @@ class FilterControl extends React.PureComponent {
           <Button
             type="danger"
             onClick={this.resetFilter}
-            disabled={value.length === 0}
+            disabled={!value}
           >
             Reset
           </Button>
