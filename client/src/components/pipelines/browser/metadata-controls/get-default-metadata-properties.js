@@ -47,7 +47,7 @@ function postprocessValue (value, key) {
   return value;
 }
 
-function getDefaultMetadataProperties (folderId, userInfo, metadataClass) {
+function getDefaultMetadataProperties (folderId, userInfo) {
   const requestBody = [
     {
       entityClass: FOLDER,
@@ -81,7 +81,7 @@ function getDefaultMetadataProperties (folderId, userInfo, metadataClass) {
                 );
               if (entityObject) {
                 const {value} = entityObject.data[key];
-                metadataParameters[key] = postprocessValue(value, key, metadataClass);
+                metadataParameters[key] = postprocessValue(value, key);
               }
             }
           }

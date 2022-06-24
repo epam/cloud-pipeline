@@ -2685,7 +2685,7 @@ export default class Metadata extends React.Component {
       defaultMetadataPropertiesFetched,
       defaultMetadataPropertiesFetching
     } = this.state;
-    const {authenticatedUserInfo, folderId, metadataClass} = this.props;
+    const {authenticatedUserInfo, folderId} = this.props;
     return new Promise((resolve) => {
       if (
         authenticatedUserInfo.loaded &&
@@ -2695,11 +2695,7 @@ export default class Metadata extends React.Component {
         this.setState({
           defaultMetadataPropertiesFetching: true
         }, () => {
-          getDefaultMetadataProperties(
-            folderId,
-            authenticatedUserInfo.value,
-            metadataClass
-          )
+          getDefaultMetadataProperties(folderId, authenticatedUserInfo.value)
             .then(metadata => {
               const {columns, filters, columnsSorting} = METADATA_KEYS;
               const defaultColumnsNames = (metadata[columns] || []).map(getDefaultColumnName);
