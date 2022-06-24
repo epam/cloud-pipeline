@@ -1039,7 +1039,7 @@ class WsiFileParser:
             self.log_processing_info('Some errors occurred during copying files from the bucket, exiting...')
             return 1
         local_file_path = os.path.join(self.tmp_local_dir, os.path.basename(self.file_path))
-        conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}"'
+        conversion_result = os.system('bash "{}" "{}" {} {} "{}" "{}" >> $ANALYSIS_DIR/parser-create-dz-$RUN_ID.log 2>&1'
                                       .format(self._DEEP_ZOOM_CREATION_SCRIPT,
                                               local_file_path,
                                               target_series,
