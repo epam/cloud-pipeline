@@ -3,10 +3,12 @@ import os
 from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
 from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
 from cellprofiler.modules.erodeimage import ErodeImage
+from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
 from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
+from cellprofiler.modules.maskobjects import MaskObjects
 from cellprofiler.modules.opening import Opening
 from cellprofiler.modules.overlayobjects import OverlayObjects
 from cellprofiler.modules.overlayoutlines import OverlayOutlines
@@ -102,6 +104,10 @@ class HcsModulesFactory(object):
             processor = ReduceNoiseModuleProcessor(module)
         elif module_name == 'Opening':
             processor = OpeningModuleProcessor(module)
+        elif module_name == 'MaskObjects':
+            processor = MaskObjectsModuleProcessor(module)
+        elif module_name == 'ExpandOrShrinkObjects':
+            processor = ExpandOrShrinkObjectsModuleProcessor(module)
         else:
             raise RuntimeError('Unsupported module type {}'.format(module_name))
         return processor
@@ -287,6 +293,16 @@ class SmoothModuleProcessor(ModuleProcessor):
 class ReduceNoiseModuleProcessor(ModuleProcessor):
     def new_module(self):
         return ReduceNoise()
+
+
+class MaskObjectsModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MaskObjects()
+
+
+class ExpandOrShrinkObjectsModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ExpandOrShrinkObjects()
 
 
 class OutputModuleProcessor(ModuleProcessor):
