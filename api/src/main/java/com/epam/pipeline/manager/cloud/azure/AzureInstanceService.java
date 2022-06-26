@@ -74,10 +74,6 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
-    private final String kubeCertHash;
-    private final String kubeNodeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final ClusterCommandService commandService,
@@ -88,11 +84,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
                                 @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
                                 @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
-                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
-                                @Value("${kube.master.ip}") final String kubeMasterIP,
-                                @Value("${kube.kubeadm.token}") final String kubeToken,
-                                @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
-                                @Value("${kube.node.token}") final String kubeNodeToken) {
+                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript) {
         this.instanceService = instanceService;
         this.commandService = commandService;
         this.cloudRegionManager = regionManager;
@@ -103,10 +95,6 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
-        this.kubeCertHash = kubeCertHash;
-        this.kubeNodeToken = kubeNodeToken;
     }
 
     @Override
