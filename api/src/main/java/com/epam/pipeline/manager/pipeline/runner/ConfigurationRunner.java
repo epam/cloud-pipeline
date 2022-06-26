@@ -116,6 +116,7 @@ public class ConfigurationRunner {
                 .entries(env.getValue())
                 .entitiesIds(entitiesIds)
                 .expansionExpression(expansionExpression)
+                .notifications(runConfiguration.getNotifications())
                 .refreshToken(refreshToken)
                 .build())
             .collect(Collectors.toList());
