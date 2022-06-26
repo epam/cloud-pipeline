@@ -144,6 +144,7 @@ public class PipelineRunManager {
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String LIMIT_MOUNTS_NONE = "none";
     private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
+    private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -1576,6 +1577,9 @@ public class PipelineRunManager {
                 .startDate(run.getStartDate())
                 .endDate(run.getEndDate())
                 .build();
+
+        final Optional<String> reportEndDateParameter = run.getParameterValue(CP_REPORT_RUN_PROCESSED_DATE);
+
         final List<MetadataEntity> metadataEntities = metadataEntityManager
                 .loadEntitiesByIds(new HashSet<>(entitiesIds)).stream()
                 .peek(metadataEntity -> {
@@ -1583,12 +1587,26 @@ public class PipelineRunManager {
                         metadataEntity.setData(new HashMap<>());
                     }
                     addRunStatusMetadata(metadataEntity.getData(), dataKey, runStatusMetadata);
+                    if (run.getStatus().isFinal() && Objects.nonNull(run.getEndDate()) &&
+                            reportEndDateParameter.isPresent()) {
+                        addProcessedDate(metadataEntity.getData(), reportEndDateParameter.get(),
+                                run.getEndDate());
+                    }
                 })
                 .collect(Collectors.toList());
         metadataEntityManager.updateMetadataEntities(metadataEntities);
     }
 
-    private void addRunStatusMetadata(final Map<String, PipeConfValue> currentData, final String dataKey,
+    private void addProcessedDate(final Map<String, PipeConfValue> data,
+                                  final String key,
+                                  final Date endDate) {
+        final PipeConfValue value = new PipeConfValue(PipeConfValueType.DATE.toString(),
+                DateUtils.formatDate(endDate));
+        data.put(key, value);
+    }
+
+    private void addRunStatusMetadata(final Map<String, PipeConfValue> currentData,
+                                      final String dataKey,
                                       final RunStatusMetadata runStatusMetadata) {
         final List<RunStatusMetadata> runStatuses = currentData.containsKey(dataKey)
                 ? prepareExistingRunStatusMetadata(currentData.get(dataKey), runStatusMetadata)

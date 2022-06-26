@@ -24,9 +24,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public final class DateUtils {
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     private DateUtils() {
         //no op
@@ -75,5 +79,9 @@ public final class DateUtils {
 
     public static long hoursBetweenDates(final LocalDateTime one, final LocalDateTime another) {
         return Math.abs(Duration.between(one, another).toHours());
+    }
+
+    public static String formatDate(final Date date) {
+        return DATE_TIME_FORMATTER.format(DateUtils.convertDateToLocalDateTime(date));
     }
 }
