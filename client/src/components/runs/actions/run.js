@@ -251,7 +251,10 @@ function runFn (
     let launchVersion;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
-    const {dataStorageAvailable} = stores;
+    const {
+      dataStorageAvailable,
+      authenticatedUserInfo
+    } = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -430,6 +433,7 @@ function runFn (
             }
             preferences={stores.preferences}
             skipCheck={skipCheck}
+            authenticatedUserInfo={authenticatedUserInfo}
           />
         ),
         style: {
@@ -1104,7 +1108,8 @@ export class RunSpotConfirmationWithPrice extends React.Component {
       title: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
       payload: PropTypes.object
     }),
-    skipCheck: PropTypes.bool
+    skipCheck: PropTypes.bool,
+    authenticatedUserInfo: PropTypes.object
   };
 
   static defaultProps = {
@@ -1266,10 +1271,12 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
-        <AllowedInstancesCountWarning
-          payload={this.props.runInfo.payload}
-          style={{margin: '4px 2px'}}
-        />
+        <Provider authenticatedUserInfo={this.props.authenticatedUserInfo}>
+          <AllowedInstancesCountWarning
+            payload={this.props.runInfo.payload}
+            style={{margin: '4px 2px'}}
+          />
+        </Provider>
       </div>
     );
   }

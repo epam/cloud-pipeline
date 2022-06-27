@@ -38,12 +38,14 @@ import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
 import getToolLaunchingOptions from './utilities/get-tool-launching-options';
 import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
+import roleModel from '../../../utils/roleModel';
 
 const DTS_ENVIRONMENT = 'DTS';
 
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
+@roleModel.authenticationInfo
 @inject('awsRegions', 'pipelines', 'preferences')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
