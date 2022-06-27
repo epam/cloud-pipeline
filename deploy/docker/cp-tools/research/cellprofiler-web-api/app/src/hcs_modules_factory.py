@@ -2,15 +2,24 @@ import inspect
 import os
 import sys
 
+from cellprofiler.modules.colortogray import ColorToGray
 from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
+from cellprofiler.modules.correctilluminationcalculate import CorrectIlluminationCalculate
+from cellprofiler.modules.crop import Crop
+from cellprofiler.modules.enhanceedges import EnhanceEdges
 from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
+from cellprofiler.modules.flipandrotate import FlipAndRotate
+from cellprofiler.modules.graytocolor import GrayToColor
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
 from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
+from cellprofiler.modules.invertforprinting import InvertForPrinting
+from cellprofiler.modules.makeprojection import MakeProjection
 from cellprofiler.modules.maskobjects import MaskObjects
+from cellprofiler.modules.morph import Morph
 from cellprofiler.modules.opening import Opening
 from cellprofiler.modules.overlayobjects import OverlayObjects
 from cellprofiler.modules.overlayoutlines import OverlayOutlines
@@ -18,7 +27,10 @@ from cellprofiler.modules.reducenoise import ReduceNoise
 from cellprofiler.modules.relateobjects import RelateObjects
 from cellprofiler.modules.saveimages import SaveImages
 from cellprofiler.modules.smooth import Smooth
+from cellprofiler.modules.tile import Tile
+from cellprofiler.modules.unmixcolors import UnmixColors
 from cellprofiler_core.module import Module
+from cellprofiler_core.modules.align import Align
 from cellprofiler_core.modules.groups import Groups
 from cellprofiler_core.modules.images import Images
 from cellprofiler_core.modules.metadata import Metadata
@@ -38,7 +50,7 @@ from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement
-from cellprofiler_core.setting.text import Float
+from cellprofiler_core.setting.text import Float, ImageName
 
 
 class HcsModulesFactory(object):
@@ -257,6 +269,61 @@ class ExpandOrShrinkObjectsModuleProcessor(ModuleProcessor):
         return ExpandOrShrinkObjects()
 
 
+class ColorToGrayModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ColorToGray()
+
+
+class CorrectIlluminationCalculateModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return CorrectIlluminationCalculate()
+
+
+class CropModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return Crop()
+
+
+class EnhanceEdgesModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return EnhanceEdges()
+
+
+class FlipAndRotateModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return FlipAndRotate()
+
+
+class GrayToColorModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return GrayToColor()
+
+
+class InvertForPrintingModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return InvertForPrinting()
+
+
+class MakeProjectionModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MakeProjection()
+
+
+class MorphModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return Morph()
+
+
+class TileModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return Tile()
+
+
+class UnmixColorsModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return UnmixColors()
+
+
 class OutputModuleProcessor(ModuleProcessor):
     def __init__(self, save_root, module=None):
         ModuleProcessor.__init__(self, module)
@@ -365,4 +432,48 @@ class ImageMathModuleProcessor(ModuleProcessor):
             element_description[self._ELEMENT_FACTOR_KEY] = objects_settings[i + 2].value
             elements.append(element_description)
         module_settings_dictionary[self._ELEMENTS_KEY] = elements
+        return module_settings_dictionary
+
+
+class AlignModuleProcessor(ModuleProcessor):
+    _ADDITIONAL_IMAGES = 'additional_images'
+    _IMAGE_NAME = 'image'
+    _OUTPUT_IMAGE = 'output_image'
+    _ALIGNMENT = 'alignment'
+
+    def new_module(self):
+        return Align()
+
+    def configure_module(self, module_config: dict) -> Module:
+        if self._ADDITIONAL_IMAGES in module_config:
+            self.module.additional_images.clear()
+            rules = module_config.pop(self._ADDITIONAL_IMAGES)
+            for rule in rules:
+                additional_image = rule[self._IMAGE_NAME]
+                output_image = rule[self._OUTPUT_IMAGE]
+                alignment = rule[self._ALIGNMENT]
+                component = SettingsGroup()
+                component.input_image_name = ImageSubscriber('Select the additional image', value=additional_image)
+                component.output_image_name = ImageName('Name the output image', value=output_image)
+                component.align_choice = Choice('Select how the alignment is to be applied',
+                                                ['Similarly', 'Separately'], value=alignment)
+                self.module.additional_images.append(component)
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        general_setting = module_settings[:6]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        additional_images_settings = module_settings[6:]
+        additional_images = list()
+        for i in range(0, len(additional_images_settings), 3):
+            additional_image_description = dict()
+            additional_image_description[self._IMAGE_NAME] = additional_images_settings[i].value
+            additional_image_description[self._OUTPUT_IMAGE] = additional_images_settings[i + 1].value
+            additional_image_description[self._ALIGNMENT] = additional_images_settings[i + 2].value
+            additional_images.append(additional_image_description)
+        module_settings_dictionary[self._ADDITIONAL_IMAGES] = additional_images
         return module_settings_dictionary
