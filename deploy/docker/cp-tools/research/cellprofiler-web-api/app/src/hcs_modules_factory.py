@@ -352,6 +352,7 @@ class SaveImagesModuleProcessor(OutputModuleProcessor):
                 'Output file location': self._output_location()}
 
 
+# TODO refactor to use SettingsWithListElementModuleProcessor
 class OverlayOutlinesModuleProcessor(ModuleProcessor):
 
     OUTPUT_OBJECTS_KEY = 'output'
@@ -373,8 +374,77 @@ class OverlayOutlinesModuleProcessor(ModuleProcessor):
         return self.module
 
 
-class ImageMathModuleProcessor(ModuleProcessor):
+class SettingsWithListElementModuleProcessor(ModuleProcessor):
 
+    def get_list_key(self):
+        """
+        Used to retrieve a key while extracting the settings from config and converting settings to dictionary.
+        :return: a string, that represents the key for the list element in module configuration dictionary
+        """
+        return ''
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        """
+        Maps a dictionary onto settings group according to a class structure
+        :param element_dict: dictionary containing
+        :return: configured SettingsGroup entity
+        """
+        return SettingsGroup()
+
+    def get_module_list_element(self):
+        """
+        Retrieve a list, containing target elements, from module
+        """
+        return list()
+
+    def configure_module(self, module_config: dict) -> Module:
+        """
+        General strategy of configuring modules with some list elements
+        :param module_config: config as a dictionary
+        :return: module after all configuration steps
+        """
+        list_key = self.get_list_key()
+        if list_key in module_config:
+            module_list_element = self.get_module_list_element()
+            module_list_element.clear()
+            rules = module_config.pop(list_key)
+            for rule in rules:
+                module_list_element.append(self.build_settings_group_from_list_element(rule))
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def build_list_elements(self, settings_dict):
+        """
+        Convert all elements of adjustable part of a module configuration to elements list.
+        :param settings_dict: all various elements as a dict
+        :return: elements converted to list
+        """
+        return list()
+
+    def get_mandatory_args_length(self):
+        """
+        Define count of values, that are always presented in a module's settings
+        :return: border value
+        """
+        return 1
+
+    def get_settings_as_dict(self):
+        """
+        General strategy of converting module's confguration to dictionary
+        :return: all settings in a form of a dictionary, that can be JSON serialized
+        """
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        mandatory_args_length = self.get_mandatory_args_length()
+        general_setting = module_settings[:mandatory_args_length]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        objects_settings = module_settings[mandatory_args_length:]
+        module_settings_dictionary[self.get_list_key()] = self.build_list_elements(objects_settings)
+        return module_settings_dictionary
+
+
+class ImageMathModuleProcessor(SettingsWithListElementModuleProcessor):
     _ELEMENTS_KEY = 'images'
     _ELEMENT_TYPE_KEY = 'type'
     _ELEMENT_VALUE_KEY = 'value'
@@ -383,59 +453,55 @@ class ImageMathModuleProcessor(ModuleProcessor):
     def new_module(self):
         return ImageMath()
 
-    def configure_module(self, module_config: dict) -> Module:
-        if self._ELEMENTS_KEY in module_config:
-            self.module.images.clear()
-            rules = module_config.pop(self._ELEMENTS_KEY)
-            for rule in rules:
-                type = rule[self._ELEMENT_TYPE_KEY]
-                value = rule[self._ELEMENT_VALUE_KEY]
-                component = SettingsGroup()
-                component.divider = Divider()
-                component.factor = Float('Multiply the image by')
-                component.factor.value = float(rule[self._ELEMENT_FACTOR_KEY])
-                if type == 'Image':
-                    component.image_name = ImageSubscriber('Select the image', value=value)
-                    component.image_or_measurement = Choice('Image or measurement?', ['Image', 'Measurement'],
-                                                            value='Image')
-                    component.measurement = Measurement('Measurement', '')
-                elif type == 'Measurement':
-                    component.image_name = ImageSubscriber('Select the image', value=None)
-                    component.image_or_measurement = Choice('Image or measurement?', ['Image', 'Measurement'],
-                                                            value='Measurement')
-                    component.measurement = Measurement('Measurement', None, value=value)
-                else:
-                    raise RuntimeError('Unknown type [{}]: should be Image or Measurement')
-                self.module.images.append(component)
-        ModuleProcessor.configure_module(self, module_config)
-        return self.module
+    def get_list_key(self):
+        return self._ELEMENTS_KEY
 
-    def get_settings_as_dict(self):
-        module_settings_dictionary = dict()
-        module_settings = self.module.settings()
-        general_setting = module_settings[:9]
-        for setting in general_setting:
-            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
-        objects_settings = module_settings[9:]
+    def get_module_list_element(self):
+        return self.module.images
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        type = element_dict[self._ELEMENT_TYPE_KEY]
+        value = element_dict[self._ELEMENT_VALUE_KEY]
+        component = SettingsGroup()
+        component.divider = Divider()
+        component.factor = Float('Multiply the image by')
+        component.factor.value = float(element_dict[self._ELEMENT_FACTOR_KEY])
+        if type == 'Image':
+            component.image_name = ImageSubscriber('Select the image', value=value)
+            component.image_or_measurement = Choice('Image or measurement?', ['Image', 'Measurement'],
+                                                    value='Image')
+            component.measurement = Measurement('Measurement', '')
+        elif type == 'Measurement':
+            component.image_name = ImageSubscriber('Select the image', value=None)
+            component.image_or_measurement = Choice('Image or measurement?', ['Image', 'Measurement'],
+                                                    value='Measurement')
+            component.measurement = Measurement('Measurement', None, value=value)
+        else:
+            raise RuntimeError('Unknown type [{}]: should be Image or Measurement')
+        return component
+
+    def get_mandatory_args_length(self):
+        return 9
+
+    def build_list_elements(self, settings_dict):
         elements = list()
-        for i in range(0, len(objects_settings), 4):
-            element_description = dict()
-            element_type = objects_settings[i].value
-            element_description[self._ELEMENT_TYPE_KEY] = element_type
+        for i in range(0, len(settings_dict), 4):
+            element_type = settings_dict[i].value
             if element_type == 'Image':
-                element_value = objects_settings[i + 1].value
+                element_value = settings_dict[i + 1].value
             elif element_type == 'Measurement':
-                element_value = objects_settings[i + 3].value
+                element_value = settings_dict[i + 3].value
             else:
                 element_value = 'Unknown type'
-            element_description[self._ELEMENT_VALUE_KEY] = element_value
-            element_description[self._ELEMENT_FACTOR_KEY] = objects_settings[i + 2].value
-            elements.append(element_description)
-        module_settings_dictionary[self._ELEMENTS_KEY] = elements
-        return module_settings_dictionary
+            elements.append({
+                self._ELEMENT_TYPE_KEY: element_type,
+                self._ELEMENT_VALUE_KEY: element_value,
+                self._ELEMENT_FACTOR_KEY: settings_dict[i + 2].value
+            })
+        return elements
 
 
-class AlignModuleProcessor(ModuleProcessor):
+class AlignModuleProcessor(SettingsWithListElementModuleProcessor):
     _ADDITIONAL_IMAGES = 'additional_images'
     _IMAGE_NAME = 'image'
     _OUTPUT_IMAGE = 'output_image'
@@ -444,36 +510,30 @@ class AlignModuleProcessor(ModuleProcessor):
     def new_module(self):
         return Align()
 
-    def configure_module(self, module_config: dict) -> Module:
-        if self._ADDITIONAL_IMAGES in module_config:
-            self.module.additional_images.clear()
-            rules = module_config.pop(self._ADDITIONAL_IMAGES)
-            for rule in rules:
-                additional_image = rule[self._IMAGE_NAME]
-                output_image = rule[self._OUTPUT_IMAGE]
-                alignment = rule[self._ALIGNMENT]
-                component = SettingsGroup()
-                component.input_image_name = ImageSubscriber('Select the additional image', value=additional_image)
-                component.output_image_name = ImageName('Name the output image', value=output_image)
-                component.align_choice = Choice('Select how the alignment is to be applied',
-                                                ['Similarly', 'Separately'], value=alignment)
-                self.module.additional_images.append(component)
-        ModuleProcessor.configure_module(self, module_config)
-        return self.module
+    def get_list_key(self):
+        return self._ADDITIONAL_IMAGES
 
-    def get_settings_as_dict(self):
-        module_settings_dictionary = dict()
-        module_settings = self.module.settings()
-        general_setting = module_settings[:6]
-        for setting in general_setting:
-            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
-        additional_images_settings = module_settings[6:]
+    def get_module_list_element(self):
+        return self.module.additional_images
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.input_image_name = ImageSubscriber('Select the additional image',
+                                                     value=element_dict[self._IMAGE_NAME])
+        component.output_image_name = ImageName('Name the output image', value=element_dict[self._OUTPUT_IMAGE])
+        component.align_choice = Choice('Select how the alignment is to be applied',
+                                        ['Similarly', 'Separately'], value=element_dict[self._ALIGNMENT])
+        return component
+
+    def get_mandatory_args_length(self):
+        return 6
+
+    def build_list_elements(self, settings_dict):
         additional_images = list()
-        for i in range(0, len(additional_images_settings), 3):
-            additional_image_description = dict()
-            additional_image_description[self._IMAGE_NAME] = additional_images_settings[i].value
-            additional_image_description[self._OUTPUT_IMAGE] = additional_images_settings[i + 1].value
-            additional_image_description[self._ALIGNMENT] = additional_images_settings[i + 2].value
-            additional_images.append(additional_image_description)
-        module_settings_dictionary[self._ADDITIONAL_IMAGES] = additional_images
-        return module_settings_dictionary
+        for i in range(0, len(settings_dict), 3):
+            additional_images.append({
+                self._IMAGE_NAME: settings_dict[i].value,
+                self._OUTPUT_IMAGE: settings_dict[i + 1].value,
+                self._ALIGNMENT: settings_dict[i + 2].value
+            })
+        return additional_images
