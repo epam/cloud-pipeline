@@ -1220,6 +1220,8 @@ function execute_deployment_command {
     local DEPLOYMENT_NAME=$1
     local CONTAINER_NAME=$2
     local CMD="$3"
+    # Should be one of [ALL, SINGLE_POD] or empty
+    local POD_PROPAGATION="${4:-ALL}"
 
     if [ "$CONTAINER_NAME" != "default" ]; then
         CONTAINER_NAME="--container $CONTAINER_NAME"
@@ -1228,6 +1230,10 @@ function execute_deployment_command {
     fi
 
     pods=$(get_deployment_pods $DEPLOYMENT_NAME)
+    if [ "$POD_PROPAGATION" == "SINGLE_POD" ]; then
+        pods=(${pods[0]})
+    fi
+
     for p in $pods; do
         bash -c "kubectl exec -i $CONTAINER_NAME $p -- $CMD"
     done

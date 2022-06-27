@@ -548,7 +548,7 @@ if is_service_requested cp-api-srv; then
                                                                             --claim user_id=1 \
                                                                             --claim user_name=$CP_DEFAULT_ADMIN_NAME \
                                                                             --claim role=ROLE_ADMIN \
-                                                                            --claim group=ADMIN")
+                                                                            --claim group=ADMIN" "SINGLE_POD")
         if [ $? -ne 0 ]; then
             print_err "Error ocurred while generating admin JWT token, docker registry and edge services cannot be configured to integrate with the API Services"
         else
