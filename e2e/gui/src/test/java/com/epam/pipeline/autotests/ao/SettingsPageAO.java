@@ -885,6 +885,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     }
 
                     public EditUserPopup doNotMountStoragesSelect (boolean isSelected) {
+                        if(!get(DO_NOT_MOUNT_STORAGES).exists()) {
+                            return this;
+                        }
                         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
                             click(DO_NOT_MOUNT_STORAGES);
