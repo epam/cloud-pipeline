@@ -17,6 +17,8 @@ import sys
 import click
 
 from prettytable import prettytable
+
+from src.api.pipeline_run import PipelineRun
 from src.api.user import User
 
 
@@ -39,6 +41,9 @@ class UserOperationsManager:
             click.echo("[%s] %s" % (event.get('status', ''), event.get('message', '')))
 
     def get_instance_limits(self, verbose=False):
+        username = self.user['userName']
+        active_runs_count = PipelineRun.count_user_runs(target_statuses=['RUNNING', 'RESUMING'], owner=username)
+        click.echo('Active runs detected for a user: [{}: {}]'.format(username, active_runs_count))
         active_limits = User.load_launch_limits(verbose)
         if len(active_limits) == 0:
             click.echo('No restrictions on runs launching configured')
