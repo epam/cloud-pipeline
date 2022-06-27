@@ -1,4 +1,6 @@
+import inspect
 import os
+import sys
 
 from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
 from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
@@ -41,76 +43,26 @@ from cellprofiler_core.setting.text import Float
 
 class HcsModulesFactory(object):
 
-    @staticmethod
-    def get_module_processor(module: Module, module_name: str, pipeline_output_dir: str):
+    def __init__(self, pipeline_output_dir):
+        self._pipeline_output_dir = pipeline_output_dir
+        self._output_modules_processors = dict()
+        self._modules_processors = dict()
+        for name, clazz in inspect.getmembers(sys.modules[__name__]):
+            if inspect.isclass(clazz):
+                base_classes = [base_class.__name__ for base_class in inspect.getmro(clazz)]
+                if 'OutputModuleProcessor' in base_classes:
+                    self._output_modules_processors[name[:-15]] = clazz
+                elif 'ModuleProcessor' in base_classes:
+                    self._modules_processors[name[:-15]] = clazz
+
+    def get_module_processor(self, module: Module, module_name: str):
         module_name = module_name.strip()
-        if module_name == 'Images':
-            processor = ImagesModuleProcessor(module)
-        elif module_name == 'Metadata':
-            processor = MetadataModuleProcessor(module)
-        elif module_name == 'NamesAndTypes':
-            processor = NamesAndTypesModuleProcessor(module)
-        elif module_name == 'Groups':
-            processor = GroupsModuleProcessor(module)
-        elif module_name == 'IdentifyPrimaryObjects':
-            processor = IdentifyPrimaryObjectsModuleProcessor(module)
-        elif module_name == 'IdentifySecondaryObjects':
-            processor = IdentifySecondaryObjectsModuleProcessor(module)
-        elif module_name == 'IdentifyTertiaryObjects':
-            processor = IdentifyTertiaryObjectsModuleProcessor(module)
-        elif module_name == 'OverlayObjects':
-            processor = OverlayObjectsModuleProcessor(module)
-        elif module_name == 'RelateObjects':
-            processor = RelateObjectsModuleProcessor(module)
-        elif module_name == 'OverlayOutlines':
-            processor = OverlayOutlinesModuleProcessor(module)
-        elif module_name == 'SaveImages':
-            processor = SaveImagesModuleProcessor(pipeline_output_dir, module)
-        elif module_name == 'RescaleIntensity':
-            processor = RescaleIntensityModuleProcessor(module)
-        elif module_name == 'Resize':
-            processor = ResizeModuleProcessor(module)
-        elif module_name == 'MedianFilter':
-            processor = MedianFilterModuleProcessor(module)
-        elif module_name == 'Threshold':
-            processor = ThresholdModuleProcessor(module)
-        elif module_name == 'RemoveHoles':
-            processor = RemoveHolesModuleProcessor(module)
-        elif module_name == 'Watershed':
-            processor = WatershedModuleProcessor(module)
-        elif module_name == 'ResizeObjects':
-            processor = ResizeObjectsModuleProcessor(module)
-        elif module_name == 'ErodeObjects':
-            processor = ErodeObjectsModuleProcessor(module)
-        elif module_name == 'ConvertObjectsToImage':
-            processor = ConvertObjectsToImageModuleProcessor(module)
-        elif module_name == 'ImageMath':
-            processor = ImageMathModuleProcessor(module)
-        elif module_name == 'Closing':
-            processor = ClosingModuleProcessor(module)
-        elif module_name == 'MaskImage':
-            processor = MaskImageModuleProcessor(module)
-        elif module_name == 'ErodeImage':
-            processor = ErodeImageModuleProcessor(module)
-        elif module_name == 'ExportToSpreadsheet':
-            processor = ExportToSpreadsheetModuleProcessor(module)
-        elif module_name == 'EnhanceOrSuppressFeatures':
-            processor = EnhanceOrSuppressFeaturesModuleProcessor(module)
-        elif module_name == 'CorrectIlluminationApply':
-            processor = CorrectIlluminationApplyModuleProcessor(module)
-        elif module_name == 'Smooth':
-            processor = SmoothModuleProcessor(module)
-        elif module_name == 'ReduceNoise':
-            processor = ReduceNoiseModuleProcessor(module)
-        elif module_name == 'Opening':
-            processor = OpeningModuleProcessor(module)
-        elif module_name == 'MaskObjects':
-            processor = MaskObjectsModuleProcessor(module)
-        elif module_name == 'ExpandOrShrinkObjects':
-            processor = ExpandOrShrinkObjectsModuleProcessor(module)
+        if module_name in self._output_modules_processors:
+            return self._output_modules_processors[module_name](self._pipeline_output_dir, module)
+        elif module_name in self._modules_processors:
+            return self._modules_processors[module_name](module)
         else:
-            raise RuntimeError('Unsupported module type {}'.format(module_name))
-        return processor
+            raise RuntimeError('Unsupported module type [{}]'.format(module_name))
 
 
 class ModuleProcessor(object):

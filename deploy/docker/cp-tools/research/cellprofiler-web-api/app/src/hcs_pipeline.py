@@ -58,6 +58,7 @@ class HcsPipeline(object):
         self._pipeline_state = PipelineState.CONFIGURING
         self._pipeline_state_message = ''
         self._input_sets = set()
+        self._modules_factory = HcsModulesFactory(self._pipeline_output_dir)
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
@@ -136,7 +137,7 @@ class HcsPipeline(object):
     def configure_module(self, module_config, module=None, module_name=None):
         if module is not None:
             module_name = module.module_name
-        processor = HcsModulesFactory.get_module_processor(module, module_name, self._pipeline_output_dir)
+        processor = self._modules_factory.get_module_processor(module, module_name)
         module = processor.configure_module(module_config)
         return module
 
@@ -208,7 +209,7 @@ class HcsPipeline(object):
         module_name = module.module_name
         summary['name'] = module_name
         summary['id'] = str(module.id)
-        processor = HcsModulesFactory.get_module_processor(module, module_name, self._pipeline_output_dir)
+        processor = self._modules_factory.get_module_processor(module, module_name)
         summary['settings'] = processor.get_settings_as_dict()
         summary['outputs'] = self.get_module_outputs(module)
         return summary
