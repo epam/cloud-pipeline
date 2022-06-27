@@ -16,11 +16,12 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer, inject} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, message} from 'antd';
 import roleModel from '../../../../../utils/roleModel';
 import LaunchLimits, {LIMIT_TYPES} from '../../../../../models/user/LaunchLimits';
+import {UserRunCount} from '../../../../../models/pipelines/RunCount';
 
 const WARNING_TYPES = {
   exceedLimits: 'exceedLimits',
@@ -28,20 +29,25 @@ const WARNING_TYPES = {
 };
 
 @roleModel.authenticationInfo
-@inject('counter')
 @observer
 export default class AllowedInstancesCountWarning extends React.Component {
   @observable userLimits;
+  @observable userRunsCount;
+  userRunsCountToken;
 
   componentDidMount () {
-    this.fetchData();
+    (this.fetchData)();
+    (this.fetchUserRuns)();
   };
+
+  componentWillUnmount () {
+    this.clearUserRunsToken();
+  }
 
   @computed
   get runningInstancesCount () {
-    const {counter} = this.props;
-    if (counter && counter.loaded) {
-      return counter.value;
+    if (this.userRunsCount && this.userRunsCount.loaded) {
+      return this.userRunsCount.value;
     }
     return undefined;
   }
@@ -99,10 +105,32 @@ export default class AllowedInstancesCountWarning extends React.Component {
       : undefined;
   }
 
+  clearUserRunsToken = () => {
+    clearTimeout(this.userRunsCountToken);
+  };
+
+  fetchUserRuns = async () => {
+    clearTimeout(this.userRunsCountToken);
+    const {authenticatedUserInfo} = this.props;
+    if (!this.userRunsCount) {
+      try {
+        await authenticatedUserInfo.fetchIfNeededOrWait();
+        const userName = (authenticatedUserInfo.value || {}).userName;
+        this.userRunsCount = new UserRunCount(userName);
+      } catch (e) {
+        console.warn(e.message);
+      }
+    }
+    if (!this.userRunsCount) {
+      return;
+    }
+    await this.userRunsCount.fetch();
+    const INTERVAL_MS = 5000;// 5 seconds
+    this.userRunsCountToken = setTimeout(this.fetchUserRuns, INTERVAL_MS);
+  };
+
   fetchData = async () => {
-    const {counter} = this.props;
     const limitsRequest = new LaunchLimits();
-    counter.fetch();
     await limitsRequest.fetchIfNeededOrWait();
     if (limitsRequest.error) {
       message.error('Error loading maximum running instances limits', 5);
