@@ -44,6 +44,8 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import AllowedInstancesCountWarning from
+  '../../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../../../runs/run-name';
 import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
@@ -792,6 +794,10 @@ export default class PersonalToolsPanel extends React.Component {
               </Col>
             </Row>
           }>
+          <AllowedInstancesCountWarning
+            payload={(this.state.runToolInfo || {}).payload}
+            style={{margin: '2px'}}
+          />
           {
             this.state.runToolInfo &&
               <RunConfirmation

@@ -35,6 +35,8 @@ import PipelineRunEstimatedPrice from '../../../models/pipelines/PipelineRunEsti
 import {names} from '../../../models/utils/ContextualPreference';
 import {autoScaledClusterEnabled} from '../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import AllowedInstancesCountWarning from
+  '../../pipelines/launch/form/utilities/allowed-instances-count-warning';
 import RunName from '../run-name';
 import '../../../staticStyles/tooltip-nowrap.css';
 import AWSRegionTag from '../../special/AWSRegionTag';
@@ -170,7 +172,10 @@ function runFn (
     let launchVersion;
     let availableInstanceTypes = [];
     let availablePriceTypes = [true, false];
-    const {dataStorageAvailable} = stores;
+    const {
+      dataStorageAvailable,
+      authenticatedUserInfo
+    } = stores;
     allowedInstanceTypesRequest && await allowedInstanceTypesRequest.fetchIfNeededOrWait();
     if (allowedInstanceTypesRequest && allowedInstanceTypesRequest.loaded) {
       if (payload.dockerImage) {
@@ -321,7 +326,8 @@ function runFn (
               name: launchName,
               alias: payload.runNameAlias,
               version: launchVersion,
-              title
+              title,
+              payload
             }}
             ref={ref}
             warning={warning}
@@ -347,6 +353,7 @@ function runFn (
             }
             preferences={stores.preferences}
             skipCheck={skipCheck}
+            authenticatedUserInfo={authenticatedUserInfo}
           />
         ),
         style: {
@@ -1011,7 +1018,15 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     parameters: PropTypes.object,
     permissionErrors: PropTypes.array,
     preferences: PropTypes.object,
-    skipCheck: PropTypes.bool
+    runInfo: PropTypes.shape({
+      name: PropTypes.string,
+      alias: PropTypes.string,
+      version: PropTypes.string,
+      title: PropTypes.oneOfType([PropTypes.string, PropTypes.func]),
+      payload: PropTypes.object
+    }),
+    skipCheck: PropTypes.bool,
+    authenticatedUserInfo: PropTypes.object
   };
 
   static defaultProps = {
@@ -1171,6 +1186,12 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
+        <Provider authenticatedUserInfo={this.props.authenticatedUserInfo}>
+          <AllowedInstancesCountWarning
+            payload={this.props.runInfo.payload}
+            style={{margin: '4px 2px'}}
+          />
+        </Provider>
       </div>
     );
   }

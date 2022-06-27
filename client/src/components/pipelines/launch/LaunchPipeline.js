@@ -36,12 +36,14 @@ import LoadingView from '../../special/LoadingView';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
+import roleModel from '../../../utils/roleModel';
 
 const DTS_ENVIRONMENT = 'DTS';
 
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
+@roleModel.authenticationInfo
 @inject('pipelines', 'preferences')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);

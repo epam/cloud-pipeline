@@ -27,6 +27,7 @@ import {
 import {
   Button,
   Input,
+  InputNumber,
   message,
   Row,
   Select
@@ -34,6 +35,7 @@ import {
 import LoadingView from '../../special/LoadingView';
 
 const valueNames = {
+  allowedInstanceMaxCount: 'allowedInstanceMaxCount',
   allowedInstanceTypes: 'allowedInstanceTypes',
   allowedToolInstanceTypes: 'allowedToolInstanceTypes',
   allowedPriceTypes: 'allowedPriceTypes',
@@ -59,6 +61,7 @@ const valueNames = {
     return {};
   };
   return {
+    ...loadPreference(valueNames.allowedInstanceMaxCount),
     ...loadPreference(valueNames.allowedInstanceTypes),
     ...loadPreference(valueNames.allowedToolInstanceTypes),
     ...loadPreference(valueNames.allowedPriceTypes),
@@ -95,7 +98,8 @@ export default class InstanceTypesManagementForm extends React.Component {
 
   @computed
   get pending () {
-    return this.valuePending(valueNames.allowedPriceTypes) ||
+    return this.valuePending(valueNames.allowedInstanceMaxCount) ||
+      this.valuePending(valueNames.allowedPriceTypes) ||
       this.valuePending(valueNames.allowedInstanceTypes) ||
       this.valuePending(valueNames.allowedToolInstanceTypes) ||
       this.valuePending(valueNames.jobsVisibility) ||
@@ -113,8 +117,14 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   onValueChanged = (field) => (e) => {
+    let value;
+    if (typeof e === 'object') {
+      value = e.target.value;
+    } else {
+      value = e || '';
+    }
     const state = this.state;
-    state[field] = e.target.value;
+    state[field] = value;
     this.setState(state, this.reportModified);
   };
 
@@ -124,7 +134,8 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   getModified () {
-    return this.valueModified(valueNames.allowedInstanceTypes) ||
+    return this.valueModified(valueNames.allowedInstanceMaxCount) ||
+      this.valueModified(valueNames.allowedInstanceTypes) ||
       this.valueModified(valueNames.allowedToolInstanceTypes) ||
       this.valueModified(valueNames.allowedPriceTypes) ||
       this.valueModified(valueNames.jobsVisibility) ||
@@ -186,12 +197,23 @@ export default class InstanceTypesManagementForm extends React.Component {
     }, this.reportModified);
   };
 
-  valueInputDecorator = (field, disabled) =>
-    <Input
+  valueInputDecorator = (field, disabled, type) => {
+    if (type === 'number') {
+      return <InputNumber
+        disabled={disabled}
+        style={{flex: 1}}
+        value={this.getValue(field)}
+        onChange={this.onValueChanged(field)}
+        parser={value => `${value}`.replaceAll(/\D/g, '')}
+      />;
+    }
+    return <Input
       disabled={disabled}
       style={{flex: 1}}
       value={this.getValue(field)}
-      onChange={this.onValueChanged(field)} />;
+      onChange={this.onValueChanged(field)}
+    />;
+  }
 
   operationWrapper = (fn) => (...opts) => {
     this.setState({
@@ -239,6 +261,7 @@ export default class InstanceTypesManagementForm extends React.Component {
 
   reset = async () => {
     this.setState({
+      [valueNames.allowedInstanceMaxCount]: undefined,
       [valueNames.allowedInstanceTypes]: undefined,
       [valueNames.allowedToolInstanceTypes]: undefined,
       [valueNames.allowedPriceTypes]: undefined,
@@ -253,6 +276,7 @@ export default class InstanceTypesManagementForm extends React.Component {
   onApplyClicked = async () => {
     const hide = message.loading('Updating launch options...', 0);
     const results = [];
+    results.push(await this.applyValue(valueNames.allowedInstanceMaxCount));
     results.push(await this.applyValue(valueNames.allowedInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedToolInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedPriceTypes));
@@ -263,12 +287,14 @@ export default class InstanceTypesManagementForm extends React.Component {
       hide();
       message.error(errors.join('\n'), 5);
     } else {
+      await this.reloadValue(valueNames.allowedInstanceMaxCount);
       await this.reloadValue(valueNames.allowedInstanceTypes);
       await this.reloadValue(valueNames.allowedToolInstanceTypes);
       await this.reloadValue(valueNames.allowedPriceTypes);
       await this.reloadValue(valueNames.jobsVisibility);
       await this.reloadValue(valueNames.jwtTokenExpirationRefreshThreshold);
       this.setState({
+        [valueNames.allowedInstanceMaxCount]: undefined,
         [valueNames.allowedInstanceTypes]: undefined,
         [valueNames.allowedToolInstanceTypes]: undefined,
         [valueNames.allowedPriceTypes]: undefined,
@@ -294,6 +320,22 @@ export default class InstanceTypesManagementForm extends React.Component {
         style={Object.assign({flex: 1, overflow: 'auto'}, style)}
       >
         <div style={{padding: 2, width: '100%'}}>
+          {
+            this.props.level !== 'TOOL' &&
+            <Row type="flex" style={{marginTop: 5}}>
+              <b>Allowed instance max count</b>
+            </Row>
+          }
+          {
+            this.props.level !== 'TOOL' &&
+            <Row type="flex">
+              {this.valueInputDecorator(
+                valueNames.allowedInstanceMaxCount,
+                disabled,
+                'number'
+              )}
+            </Row>
+          }
           {
             this.props.level !== 'TOOL' &&
             <Row type="flex" style={{marginTop: 5}}>
