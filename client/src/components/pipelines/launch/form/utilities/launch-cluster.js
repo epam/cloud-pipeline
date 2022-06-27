@@ -34,6 +34,7 @@ import {
 } from './launch-cluster-tooltips';
 import {getSpotTypeName} from '../../../../special/spot-instance-names';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
+import AllowedInstancesCountWarning from './allowed-instances-count-warning';
 import {
   CP_CAP_SGE,
   CP_CAP_SPARK,
@@ -517,6 +518,23 @@ class ConfigureClusterDialog extends React.Component {
           value={this.state.nodesCount}
           onChange={this.onChangeNodeCount} />
       </Row>,
+      <Row
+        key="nodes count warning row"
+        type="flex"
+        style={{
+          marginTop: 5,
+          marginLeft: 115
+        }}
+      >
+        <AllowedInstancesCountWarning
+          key="nodes count warning"
+          payload={{
+            nodeCount: this.state.nodesCount,
+            maxNodeCount: this.state.maxNodesCount
+          }}
+          style={{width: '100%'}}
+        />
+      </Row>,
       this.getValidationRow('nodesCount'),
       <Row key="enable grid engine" type="flex" align="middle" style={{marginTop: 5}}>
         <Checkbox
@@ -747,6 +765,25 @@ class ConfigureClusterDialog extends React.Component {
           onChange={this.onChangeMaxNodeCount} />
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo, {marginLeft: 5})}
       </Row>,
+      <Row
+        key="nodes count warning row"
+        type="flex"
+        style={{
+          marginTop: 5,
+          marginLeft: 115,
+          marginRight: 17
+        }}
+      >
+        <AllowedInstancesCountWarning
+          payload={{
+            nodeCount: this.state.nodesCount,
+            maxNodeCount: this.state.maxNodesCount
+          }}
+          style={{
+            width: '100%'
+          }}
+        />
+      </Row>,
       this.getValidationRow('maxNodesCount'),
       <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 5}}>
         <Checkbox
@@ -821,6 +858,20 @@ class ConfigureClusterDialog extends React.Component {
               {renderTooltip(LaunchClusterTooltip.clusterMode, {marginLeft: 10})}
             </div>
           </Row>
+          {this.selectedClusterType === CLUSTER_TYPE.singleNode && (
+            <Row
+              type="flex"
+              justify="center"
+            >
+              <AllowedInstancesCountWarning
+                payload={{
+                  nodeCount: this.state.nodesCount,
+                  maxNodeCount: this.state.maxNodesCount
+                }}
+                style={{width: '100%', marginTop: '5px'}}
+              />
+            </Row>
+          )}
           {
             this.state.launchCluster && !this.state.autoScaledCluster &&
             this.renderFixedClusterConfiguration()

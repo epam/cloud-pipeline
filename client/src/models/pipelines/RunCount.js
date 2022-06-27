@@ -15,6 +15,38 @@
  */
 
 import Remote from '../basic/Remote';
+import RemotePost from '../basic/RemotePost';
+
+export class UserRunCount extends RemotePost {
+  static fetchOptions = {
+    headers: {
+      'Content-type': 'application/json; charset=UTF-8'
+    },
+    mode: 'cors',
+    credentials: 'include',
+    method: 'POST'
+  };
+
+  url = '/run/count';
+
+  constructor (user) {
+    super();
+    this.user = user;
+  }
+
+  fetch () {
+    return super.send({
+      statuses: [
+        'RUNNING',
+        'PAUSED',
+        'PAUSING',
+        'RESUMING'
+      ],
+      userModified: false,
+      owners: this.user ? [this.user] : undefined
+    });
+  }
+}
 
 export default class RunCount extends Remote {
   static defaultValue = 0;
