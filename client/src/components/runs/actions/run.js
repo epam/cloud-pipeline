@@ -429,7 +429,6 @@ function runFn (
                 : undefined
             }
             preferences={stores.preferences}
-            counter={stores.counter}
             skipCheck={skipCheck}
           />
         ),
@@ -1089,7 +1088,6 @@ export class RunSpotConfirmationWithPrice extends React.Component {
     availableInstanceTypes: PropTypes.array,
     hddSize: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     nodeCount: PropTypes.number,
-    counter: PropTypes.object,
     cloudRegionId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
     cloudRegions: PropTypes.array,
     dataStorages: PropTypes.array,
@@ -1268,14 +1266,10 @@ export class RunSpotConfirmationWithPrice extends React.Component {
                 }$</b> per hour.</JobEstimatedPriceInfo></Row>
             } />
         }
-        <Provider
-          counter={this.props.counter}
-        >
-          <AllowedInstancesCountWarning
-            payload={this.props.runInfo.payload}
-            style={{margin: '4px 2px'}}
-          />
-        </Provider>
+        <AllowedInstancesCountWarning
+          payload={this.props.runInfo.payload}
+          style={{margin: '4px 2px'}}
+        />
       </div>
     );
   }
