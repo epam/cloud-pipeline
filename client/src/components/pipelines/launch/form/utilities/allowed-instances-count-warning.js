@@ -105,6 +105,20 @@ export default class AllowedInstancesCountWarning extends React.Component {
       : undefined;
   }
 
+  get warningMessage () {
+    if (this.warningType === WARNING_TYPES.exceedLimits) {
+      return `You have exceeded maximum number of running jobs (${this.userLimits}).`;
+    }
+    if (this.warningType === WARNING_TYPES.possibleExceedLimits) {
+      const count = this.runningInstancesCount;
+      // eslint-disable-next-line max-len
+      const explanation = `There ${count === 1 ? 'is' : 'are'} ${count} job${count === 1 ? '' : 's'} running out of ${this.userLimits}.`;
+      // eslint-disable-next-line max-len
+      return `Your cluster configuration may exceed the maximum number of running jobs. ${explanation}`;
+    }
+    return undefined;
+  }
+
   clearUserRunsToken = () => {
     clearTimeout(this.userRunsCountToken);
   };
@@ -137,7 +151,7 @@ export default class AllowedInstancesCountWarning extends React.Component {
     } else {
       this.userLimits = limitsRequest.loaded && limitsRequest.value
         ? limitsRequest.value[LIMIT_TYPES.userLimit]
-        : undefined;
+        : 3;
     }
   };
 
@@ -149,10 +163,7 @@ export default class AllowedInstancesCountWarning extends React.Component {
     return (
       <div>
         <Alert
-          message={this.warningType === WARNING_TYPES.exceedLimits
-            ? 'Active runs limits exceeded'
-            : 'Possible exceeding of active runs limits'
-          }
+          message={this.warningMessage}
           type="warning"
           showIcon
           style={style}

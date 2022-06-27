@@ -868,7 +868,7 @@ class ConfigureClusterDialog extends React.Component {
                   nodeCount: this.state.nodesCount,
                   maxNodeCount: this.state.maxNodesCount
                 }}
-                style={{width: '70%', marginTop: '5px'}}
+                style={{width: '100%', marginTop: '5px'}}
               />
             </Row>
           )}
