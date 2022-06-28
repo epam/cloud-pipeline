@@ -169,7 +169,7 @@ class WebdavFileSystem extends FileSystem {
                 content.isObjectStorage = true;
               }
             });
-            return result.filter(o => !o.isObjectStorage || !isHiddenStorage(o.name));
+            return result.filter(o => !isHiddenStorage(o.name));
           };
           this.webdavClient.getDirectoryContents(directoryCorrected)
             .then(contents => {
