@@ -2593,6 +2593,35 @@ export default `
 @THEME .cp-sample-sheet-table td {
   border-color: @card-border-color;
 }
+@THEME .cp-metadata-predefined-filter.cp-primary {
+  color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-primary:not(.cp-library-metadata-cell) {
+  border-color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-primary.applied.cp-library-metadata-cell,
+@THEME .cp-metadata-predefined-filter.cp-primary.applied {
+  color: @primary-text-color;
+  background-color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-primary.applied:not(.cp-library-metadata-cell) {
+  border-color: @primary-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger.cp-library-metadata-cell,
+@THEME .cp-metadata-predefined-filter.cp-danger {
+  color: @btn-danger-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger:not(.cp-library-metadata-cell) {
+  border-color: @btn-danger-color;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger.applied.cp-library-metadata-cell,
+@THEME .cp-metadata-predefined-filter.cp-danger.applied {
+  color: @btn-danger-active-color;
+  background-color: @btn-danger-active-background;
+}
+@THEME .cp-metadata-predefined-filter.cp-danger.applied:not(.cp-library-metadata-cell) {
+  background-color: @btn-danger-active-background;
+}
 
 @THEME .cp-node-tag {
   border-color: @application-color-disabled;

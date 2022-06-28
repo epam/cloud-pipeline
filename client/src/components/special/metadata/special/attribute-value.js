@@ -73,7 +73,8 @@ class AttributeValue extends React.PureComponent {
   render () {
     const {
       className,
-      style
+      style,
+      children
     } = this.props;
     const {dataStorageInfo} = this.state;
     const componentStyle = {
@@ -95,6 +96,7 @@ class AttributeValue extends React.PureComponent {
           className={className}
           style={componentStyle}
         >
+          {children}
           {this.displayValue}
         </Link>
       );
@@ -104,6 +106,7 @@ class AttributeValue extends React.PureComponent {
         className={className}
         style={componentStyle}
       >
+        {children}
         {this.displayValue}
       </span>
     );
@@ -114,7 +117,8 @@ AttributeValue.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   value: PropTypes.any,
-  showFileNameOnly: PropTypes.bool
+  showFileNameOnly: PropTypes.bool,
+  children: PropTypes.node
 };
 
 export default AttributeValue;

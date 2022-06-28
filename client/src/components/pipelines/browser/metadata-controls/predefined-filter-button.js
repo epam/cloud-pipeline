@@ -19,14 +19,8 @@ import PropTypes from 'prop-types';
 import {Button, Icon} from 'antd';
 import moment from 'moment-timezone';
 import MetadataEntityFilter from '../../../../models/folderMetadata/MetadataEntityFilter';
-
-const localDateToUTC = (date) => {
-  if (!date) {
-    return undefined;
-  }
-  const localTime = moment(date).toDate();
-  return moment(localTime).utc();
-};
+import classNames from 'classnames';
+import {getPredefinedFilterClassName, localDateToUTC} from './predefined-filter-utilities';
 
 function mapColumnName (name) {
   if (name === 'externalId') {
@@ -144,7 +138,7 @@ async function getFilterCount (filter, folderId, metadataClass) {
   return (metadataRequest.value || {}).totalCount || 0;
 }
 
-class PredefinedFilterButton extends React.Component {
+class PredefinedFilterButton extends React.PureComponent {
   state = {
     count: 0,
     countPending: true
@@ -269,12 +263,34 @@ class PredefinedFilterButton extends React.Component {
     }
   };
 
-  render () {
+  getButtonProps = () => {
     const {
       filter,
       className,
       style
     } = this.props;
+    if (!filter) {
+      return null;
+    }
+    const {scheme = {}} = filter;
+    const {
+      icon,
+      style: schemeStyle
+    } = scheme;
+    const applied = this.isApplied;
+    return {
+      className: classNames(
+        className,
+        getPredefinedFilterClassName(scheme, applied)
+      ),
+      style: Object.assign({}, style, schemeStyle),
+      icon,
+      type: 'default'
+    };
+  };
+
+  render () {
+    const {filter} = this.props;
     if (!filter) {
       return null;
     }
@@ -288,10 +304,8 @@ class PredefinedFilterButton extends React.Component {
     } = filter;
     return (
       <Button
-        type={this.isApplied ? 'primary' : 'default'}
+        {...this.getButtonProps()}
         onClick={this.onClick}
-        className={className}
-        style={style}
         size="small"
       >
         {name || title}
@@ -317,6 +331,11 @@ PredefinedFilterButton.propTypes = {
   style: PropTypes.object,
   filter: PropTypes.shape({
     name: PropTypes.string,
+    scheme: PropTypes.shape({
+      icon: PropTypes.string,
+      type: PropTypes.string,
+      style: PropTypes.object
+    }),
     title: PropTypes.string,
     filters: PropTypes.object
   }),

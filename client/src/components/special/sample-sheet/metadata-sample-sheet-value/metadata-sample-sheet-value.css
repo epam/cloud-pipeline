@@ -17,7 +17,6 @@
 .buttons {
   display: flex;
   align-items: center;
-  justify-content: space-between;
 }
 
 .button:not(:last-child) {

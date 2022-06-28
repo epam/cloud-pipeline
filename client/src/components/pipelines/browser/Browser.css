@@ -379,6 +379,11 @@ tr.table-row-selected {
   align-items: center;
 }
 
+.metadata-predefined-filter {
+  margin-right: 5px;
+  margin-bottom: 2px;
+}
+
 .action-link:hover {
   text-decoration: underline;
 }

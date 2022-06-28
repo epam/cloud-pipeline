@@ -171,7 +171,8 @@ class MetadataSampleSheetValue extends React.Component {
   render () {
     const {
       className,
-      style
+      style,
+      children
     } = this.props;
     const {
       editDialogVisible,
@@ -191,6 +192,7 @@ class MetadataSampleSheetValue extends React.Component {
         onMouseUp={e => e.stopPropagation()}
         onDoubleClick={this.sampleSheetAvailable ? undefined : this.onEditClick}
       >
+        {children}
         {this.renderEditActions()}
         <SampleSheetEditDialog
           title={this.sampleSheetAvailable ? 'Edit SampleSheet' : 'Create SampleSheet'}
@@ -211,7 +213,8 @@ MetadataSampleSheetValue.propTypes = {
   style: PropTypes.object,
   value: PropTypes.string,
   onRemove: PropTypes.func,
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  children: PropTypes.node
 };
 
 export default MetadataSampleSheetValue;

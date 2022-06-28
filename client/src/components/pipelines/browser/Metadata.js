@@ -84,6 +84,11 @@ import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUp
 import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
 import RunsAttribute, {isRunsValue} from '../../special/metadata/special/runs-attribute';
 import AttributeValue from '../../special/metadata/special/attribute-value';
+import {
+  getConditionStyles,
+  getPredefinedFilterForItem,
+  parseScheme
+} from './metadata-controls/predefined-filter-utilities';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -251,7 +256,9 @@ export default class Metadata extends React.Component {
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
     currentMetadata: [],
+    currentMetadataConditions: [],
     predefinedFilters: [],
+    predefinedConditions: [],
     defaultOrderBy: [],
     defaultMetadataPropertiesFetched: false,
     defaultMetadataPropertiesFetching: false
@@ -344,16 +351,17 @@ export default class Metadata extends React.Component {
   }
 
   get predefinedFilters () {
-    const {predefinedFilters = {}} = this.state;
+    const {predefinedFilters = []} = this.state;
     const {metadataClass} = this.props;
-    return Object.entries(predefinedFilters || {})
-      .map(([key, filters]) => {
-        const classes = key.split(/\s*,\s*/g);
-        return classes.map((metadataClass) => ({key: metadataClass.trim(), filters}));
-      })
-      .reduce((r, c) => ([...r, ...c]), [])
-      .filter(predefined => predefined.key === metadataClass || predefined.key === '*')
-      .reduce((r, c) => ([...r, ...c.filters]), []);
+    return predefinedFilters
+      .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
+  }
+
+  get predefinedConditions () {
+    const {predefinedConditions = []} = this.state;
+    const {metadataClass} = this.props;
+    return predefinedConditions
+      .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
   }
 
   operationWrapper = (operation) => (...props) => {
@@ -527,7 +535,13 @@ export default class Metadata extends React.Component {
         currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
-    this.setState({loading: false, currentMetadata});
+    const conditions = currentMetadata
+      .map(item => getPredefinedFilterForItem(item, this.predefinedConditions));
+    this.setState({
+      loading: false,
+      currentMetadata,
+      currentMetadataConditions: conditions
+    });
   };
 
   sortSelectedItems = () => {
@@ -1064,7 +1078,8 @@ export default class Metadata extends React.Component {
 
   onRowClick = (item) => {
     const [selectedItem] =
-      this.state.currentMetadata.filter(column => column.rowKey === item.rowKey);
+      this.state.currentMetadata
+        .filter(column => column.rowKey === item.rowKey);
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
@@ -1081,7 +1096,7 @@ export default class Metadata extends React.Component {
     filterModel.searchQueries = [];
     this.setState(
       {
-        filterModel,
+        filterModel: {...filterModel},
         searchQuery: undefined
       },
       () => {
@@ -1417,7 +1432,11 @@ export default class Metadata extends React.Component {
             currentMetadata.splice(index, 1, item);
           }
         });
-        this.setState({currentMetadata});
+        this.setState({
+          currentMetadata,
+          currentMetadataConditions: currentMetadata
+            .map(item => getPredefinedFilterForItem(item, this.predefinedConditions))
+        });
         return Promise.resolve();
       })
       .catch(e => message.error(e.message, 5))
@@ -2032,6 +2051,7 @@ export default class Metadata extends React.Component {
   };
 
   get tableColumns () {
+    const {currentMetadataConditions = []} = this.state;
     const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
@@ -2103,18 +2123,27 @@ export default class Metadata extends React.Component {
     const cellWrapper = (props, reactElementFn) => {
       const {column, index} = props;
       const item = props.original;
+      const cellClassName = getCellClassName(item, styles.metadataColumnCell);
+      const selected = cellClassName.search('selected') > -1;
+      const condition = currentMetadataConditions[index];
+      const {
+        style,
+        className: filterClassName
+      } = getConditionStyles(condition, selected);
       const className = classNames(
-        getCellClassName(item, styles.metadataColumnCell),
+        cellClassName,
+        filterClassName,
         {
-          'cp-library-metadata-table-cell-selected':
-            getCellClassName(item, styles.metadataColumnCell).search('selected') > -1
-        });
+          'cp-library-metadata-table-cell-selected': selected
+        }
+      );
       return (
         <div
           className={className}
           style={{
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            ...style
           }}
         >
           <AutoFillEntitiesMarker
@@ -2175,13 +2204,19 @@ export default class Metadata extends React.Component {
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
             const item = props.original;
+            const condition = currentMetadataConditions[props.index];
+            const icon = index === 0 && condition && condition.scheme && condition.scheme.icon
+              ? (<Icon type={condition.scheme.icon} style={{marginRight: 5}} />)
+              : undefined;
             if (this.isSampleSheetColumn(key)) {
               return (
                 <MetadataSampleSheetValue
                   value={data ? data.value : undefined}
                   onChange={content => this.onEditSampleSheet(item, content)}
                   onRemove={() => this.onRemoveSampleSheet(item)}
-                />
+                >
+                  {icon}
+                </MetadataSampleSheetValue>
               );
             }
             if (data) {
@@ -2209,7 +2244,7 @@ export default class Metadata extends React.Component {
                       item
                     )}
                   >
-                    {value}
+                    {icon}{value}
                   </a>
                 );
               }
@@ -2218,7 +2253,7 @@ export default class Metadata extends React.Component {
                   title={data.value}
                   className={styles.actionLink}
                   onClick={(e) => this.onReferenceTypesClick(e, data)}>
-                  {data.value}
+                  {icon}{data.value}
                 </a>;
               }
               if (data.type.toLowerCase() === 'path') {
@@ -2226,12 +2261,15 @@ export default class Metadata extends React.Component {
                   <AttributeValue
                     value={data.value}
                     showFileNameOnly
-                  />
+                  >
+                    {icon}
+                  </AttributeValue>
                 );
               }
               if (/^date$/i.test(data.type)) {
                 return (
                   <span title={data.value}>
+                    {icon}
                     {displayDate(data.value)}
                   </span>
                 );
@@ -2245,6 +2283,7 @@ export default class Metadata extends React.Component {
               }
               return (
                 <span title={data.value}>
+                  {icon}
                   {data.value}
                 </span>
               );
@@ -2467,9 +2506,9 @@ export default class Metadata extends React.Component {
             this.predefinedFilters.map((filter, index) => {
               return (
                 <PredefinedFilterButton
+                  className={styles.metadataPredefinedFilter}
                   key={`predefined_filter_${index}_${filter.name || filter.title || ''}`}
                   filter={filter}
-                  style={{marginRight: 5, marginBottom: 2}}
                   onClick={this.handleClickPredefinedFilter}
                   currentFilter={this.state.filterModel}
                   folderId={this.props.folderId}
@@ -2519,7 +2558,9 @@ export default class Metadata extends React.Component {
     const {filterModel} = this.state;
     filterModel.page = page;
     this.setState(
-      {filterModel},
+      {
+        filterModel: {...filterModel}
+      },
       () => {
         this.clearSelection();
         this.loadData();
@@ -2709,6 +2750,7 @@ export default class Metadata extends React.Component {
     }
     const newState = {
       currentMetadata: [],
+      currentMetadataConditions: [],
       columns: [],
       searchQuery: undefined,
       selectedItem: null,
@@ -2775,11 +2817,28 @@ export default class Metadata extends React.Component {
             .then(metadata => {
               const {columns, filters, columnsSorting} = METADATA_KEYS;
               const defaultColumnsNames = (metadata[columns] || []).map(getDefaultColumnName);
+              const predefined = Object.entries(metadata[filters] || {})
+                .map(([key, filters]) => {
+                  const classes = key.split(/\s*,\s*/g);
+                  return classes
+                    .map(metadataClass => filters.map(filter => ({...filter, metadataClass})))
+                    .reduce((r, c) => ([...r, ...c]), []);
+                })
+                .reduce((r, c) => ([...r, ...c]), [])
+                .map(fc => ({
+                  ...fc,
+                  scheme: parseScheme(fc.scheme),
+                  isCondition: /(^|\+)(condition)($|\+)/i.test(fc.type),
+                  isFilter: !fc.type || /(^|\+)(filter)($|\+)/i.test(fc.type)
+                }));
               this.setState({
                 defaultColumnsNames,
                 defaultMetadataPropertiesFetching: false,
                 defaultMetadataPropertiesFetched: true,
-                predefinedFilters: metadata[filters] || [],
+                predefinedFilters: predefined
+                  .filter(fc => fc.isFilter),
+                predefinedConditions: predefined
+                  .filter(fc => fc.isCondition),
                 defaultOrderBy: metadata[columnsSorting]
               }, () => {
                 this.loadColumns({reset: true})
