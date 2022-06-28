@@ -1220,7 +1220,10 @@ function execute_deployment_command {
     local DEPLOYMENT_NAME=$1
     local CONTAINER_NAME=$2
     local CMD="$3"
+    # Pod propagation regulates on which amount of pods this command will be executed.
     # Should be one of [ALL, SINGLE_POD] or empty
+    # ALL - command will run for all pods
+    # SINGLE_POD - command will be executed only for first pod from the list
     local POD_PROPAGATION="${4:-ALL}"
 
     if [ "$CONTAINER_NAME" != "default" ]; then
