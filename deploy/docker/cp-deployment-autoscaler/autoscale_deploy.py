@@ -230,6 +230,7 @@ if __name__ == '__main__':
         except Exception:
             kube_config_path = os.path.join(os.path.expanduser('~'), '.kube', 'config')
             kube_client = pykube.HTTPClient(pykube.KubeConfig.from_file(kube_config_path))
+        kube_client.session.verify = False
         node_provider = KubeProvider(kube=kube_client, configuration=configuration)
         pod_provider = node_provider
         deployment_provider = node_provider
