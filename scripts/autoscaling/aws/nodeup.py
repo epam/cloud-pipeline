@@ -53,6 +53,7 @@ LOCAL_NVME_INSTANCE_TYPES = [ 'c5d.' , 'm5d.', 'r5d.' ]
 DEFAULT_FS_TYPE = 'btrfs'
 SUPPORTED_FS_TYPES = [DEFAULT_FS_TYPE, 'ext4']
 POOL_ID_KEY = 'pool_id'
+KUBE_CONFIG_PATH = '~/.kube/config'
 
 current_run_id = 0
 api_url = None
@@ -1307,7 +1308,10 @@ def main():
             ec2 = boto3.client('ec2', config=Config(retries={'max_attempts': BOTO3_RETRY_COUNT}))
 
         # Setup kubernetes client
-        api = pykube.HTTPClient(pykube.KubeConfig.from_file("~/.kube/config"))
+        try:
+            api = pykube.HTTPClient(pykube.KubeConfig.from_service_account())
+        except Exception:
+            api = pykube.HTTPClient(pykube.KubeConfig.from_file(KUBE_CONFIG_PATH))
         api.session.verify = False
 
         instance_additional_spec = None
