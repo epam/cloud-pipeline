@@ -2,10 +2,14 @@ import inspect
 import os
 import sys
 
+from cellprofiler.modules.classifyobjects import ClassifyObjects
 from cellprofiler.modules.colortogray import ColorToGray
+from cellprofiler.modules.combineobjects import CombineObjects
+from cellprofiler.modules.convertimagetoobjects import ConvertImageToObjects
 from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
 from cellprofiler.modules.correctilluminationcalculate import CorrectIlluminationCalculate
 from cellprofiler.modules.crop import Crop
+from cellprofiler.modules.editobjectsmanually import EditObjectsManually
 from cellprofiler.modules.enhanceedges import EnhanceEdges
 from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
 from cellprofiler.modules.erodeimage import ErodeImage
@@ -13,6 +17,8 @@ from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 from cellprofiler.modules.flipandrotate import FlipAndRotate
 from cellprofiler.modules.graytocolor import GrayToColor
+from cellprofiler.modules.identifyobjectsingrid import IdentifyObjectsInGrid
+from cellprofiler.modules.identifyobjectsmanually import IdentifyObjectsManually
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
 from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
@@ -27,7 +33,9 @@ from cellprofiler.modules.reducenoise import ReduceNoise
 from cellprofiler.modules.relateobjects import RelateObjects
 from cellprofiler.modules.saveimages import SaveImages
 from cellprofiler.modules.smooth import Smooth
+from cellprofiler.modules.splitormergeobjects import SplitOrMergeObjects
 from cellprofiler.modules.tile import Tile
+from cellprofiler.modules.trackobjects import TrackObjects
 from cellprofiler.modules.unmixcolors import UnmixColors
 from cellprofiler_core.module import Module
 from cellprofiler_core.modules.align import Align
@@ -49,8 +57,8 @@ from cellprofiler.modules.threshold import Threshold
 from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
-from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement
-from cellprofiler_core.setting.text import Float, ImageName
+from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
+from cellprofiler_core.setting.text import Float, ImageName, Integer, Text
 
 
 class HcsModulesFactory(object):
@@ -111,6 +119,11 @@ class ModuleProcessor(object):
         if name in module_config:
             setting.value = module_config[name]
         return setting
+
+    def _str_to_bool(self, input_value):
+        if not input_value:
+            return None
+        return input_value.lower() in ("true", "t")
 
 
 class StructuringElementImagesModuleProcessor(ModuleProcessor):
@@ -430,7 +443,7 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
 
     def get_settings_as_dict(self):
         """
-        General strategy of converting module's confguration to dictionary
+        General strategy of converting module's configuration to dictionary
         :return: all settings in a form of a dictionary, that can be JSON serialized
         """
         module_settings_dictionary = dict()
@@ -537,3 +550,137 @@ class AlignModuleProcessor(SettingsWithListElementModuleProcessor):
                 self._ALIGNMENT: settings_dict[i + 2].value
             })
         return additional_images
+
+
+class IdentifyObjectsInGridModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return IdentifyObjectsInGrid()
+
+
+class ClassifyObjectsModuleProcessor(OutputModuleProcessor):
+    _CLASSIFICATIONS = 'classifications'
+    _BIN_CHOICES = 'bin_spacing'
+    _BIN_COUNT = 'bin_count'
+    _BIN_NAMES = 'bin_names'
+    _CAN_DELETE = 'can_delete'
+    _CUSTOM_THRESHOLDS = 'custom_thresholds'
+    _UPPER_THRESHOLD = 'upper_threshold'
+    _LOWER_THRESHOLD = 'lower_threshold'
+    _IMAGE_NAME = 'image_name'
+    _MEASUREMENT = 'measurement'
+    _OBJECT_NAME = 'object_name'
+    _WANTS_BIN_NAMES = 'wants_bean_names'
+    _WANTS_UPPER_BIN = 'wants_upper_bin'
+    _WANTS_LOWER_BIN = 'wants_lower_bin'
+    _WANTS_IMAGES = 'wants_images'
+
+    def new_module(self):
+        return ClassifyObjects()
+
+    def get_list_key(self):
+        return self._CLASSIFICATIONS
+
+    def get_module_list_element(self):
+        return self.module.single_measurements
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.bin_choice = Choice('Select bin spacing', ['Evenly spaced bins', 'Custom-defined bins'],
+                                      value=element_dict[self._BIN_CHOICES])
+        component.bin_count = Integer('Number of bins', value=element_dict[self._BIN_COUNT])
+        component.bin_names = Text('Enter the bin names separated by commas', value=element_dict[self._BIN_NAMES])
+        component.can_delete = self._str_to_bool(element_dict[self._CAN_DELETE])
+        component.custom_thresholds = Text('Enter the custom thresholds separating the values between bins',
+                                           value=element_dict[self._CUSTOM_THRESHOLDS])
+        component.high_threshold = Float('Upper threshold', value=element_dict[self._UPPER_THRESHOLD])
+        component.low_threshold = Float('Lower threshold', value=element_dict[self._LOWER_THRESHOLD])
+        component.image_name = ImageName('Name the output image', value=element_dict[self._IMAGE_NAME])
+        component.measurement = Measurement('Select the measurement to classify by', None,
+                                            value=element_dict[self._MEASUREMENT])
+        component.object_name = LabelSubscriber('Select the object to be classified',
+                                                value=element_dict[self._OBJECT_NAME])
+        component.wants_custom_names = Binary('Give each bin a name?',
+                                              value=self._str_to_bool(element_dict[self._WANTS_BIN_NAMES]))
+        component.wants_high_bin = Binary('Use a bin for objects above the threshold?',
+                                          value=self._str_to_bool(element_dict[self._WANTS_UPPER_BIN]))
+        component.wants_low_bin = Binary('Use a bin for objects below the threshold?',
+                                         value=self._str_to_bool(element_dict[self._WANTS_LOWER_BIN]))
+        component.wants_images = Binary('Retain an image of the classified objects?',
+                                        value=self._str_to_bool(element_dict[self._WANTS_IMAGES]))
+        return component
+
+    def get_mandatory_args_length(self):
+        return 22
+
+    def build_list_elements(self, settings_dict):
+        additional_images = list()
+        for i in range(0, len(settings_dict), 13):
+            additional_images.append({
+                self._OBJECT_NAME: settings_dict[i].value,
+                self._MEASUREMENT: settings_dict[i + 1].value,
+                self._BIN_CHOICES: settings_dict[i + 2].value,
+                self._BIN_COUNT: settings_dict[i + 3].value,
+                self._LOWER_THRESHOLD: settings_dict[i + 4].value,
+                self._WANTS_LOWER_BIN: settings_dict[i + 5].value,
+                self._UPPER_THRESHOLD: settings_dict[i + 6].value,
+                self._WANTS_UPPER_BIN: settings_dict[i + 7].value,
+                self._CUSTOM_THRESHOLDS: settings_dict[i + 8].value,
+                self._WANTS_BIN_NAMES: settings_dict[i + 9].value,
+                self._BIN_NAMES: settings_dict[i + 10].value,
+                self._WANTS_IMAGES: settings_dict[i + 11].value,
+                self._IMAGE_NAME: settings_dict[i + 12].value
+            })
+        return additional_images
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        general_setting = module_settings[:3]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        objects_settings = module_settings[3:-19]
+        module_settings_dictionary[self.get_list_key()] = self.build_list_elements(objects_settings)
+        general_setting = module_settings[-19:]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        return module_settings_dictionary
+
+    def generated_params(self):
+        return {'Select the location of the classifier model file': self._output_location()}
+
+
+class ConvertImageToObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return ConvertImageToObjects()
+
+
+class EditObjectsManuallyModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return EditObjectsManually()
+
+
+class CombineObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return CombineObjects()
+
+
+class IdentifyObjectsManuallyModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return IdentifyObjectsManually()
+
+
+class SplitOrMergeObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return SplitOrMergeObjects()
+
+
+class TrackObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return TrackObjects()
