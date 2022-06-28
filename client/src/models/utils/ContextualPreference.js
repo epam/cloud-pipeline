@@ -19,6 +19,7 @@ import RemotePost from '../basic/RemotePost';
 
 export const names = {
   allowedInstanceMaxCount: 'launch.max.runs.user',
+  allowedInstanceMaxCountGroup: 'launch.max.runs.group',
   allowedInstanceTypes: 'cluster.allowed.instance.types',
   allowedToolInstanceTypes: 'cluster.allowed.instance.types.docker',
   allowedPriceTypes: 'cluster.allowed.price.types',

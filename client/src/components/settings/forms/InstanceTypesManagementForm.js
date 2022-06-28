@@ -36,6 +36,7 @@ import LoadingView from '../../special/LoadingView';
 
 const valueNames = {
   allowedInstanceMaxCount: 'allowedInstanceMaxCount',
+  allowedInstanceMaxCountGroup: 'allowedInstanceMaxCountGroup',
   allowedInstanceTypes: 'allowedInstanceTypes',
   allowedToolInstanceTypes: 'allowedToolInstanceTypes',
   allowedPriceTypes: 'allowedPriceTypes',
@@ -45,14 +46,24 @@ const valueNames = {
 @inject(({preferences}, props) => {
   const loadPreference = (field) => {
     if (props.resourceId && props.level) {
-      return {
-        [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
-      };
+      if (
+        (field === valueNames.allowedInstanceMaxCountGroup && props.level === 'ROLE') ||
+        (field === valueNames.allowedInstanceMaxCount && props.level === 'USER') ||
+        (
+          ![valueNames.allowedInstanceMaxCount, valueNames.allowedInstanceMaxCountGroup]
+            .includes(field)
+        )
+      ) {
+        return {
+          [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
+        };
+      }
     }
     return {};
   };
   return {
     ...loadPreference(valueNames.allowedInstanceMaxCount),
+    ...loadPreference(valueNames.allowedInstanceMaxCountGroup),
     ...loadPreference(valueNames.allowedInstanceTypes),
     ...loadPreference(valueNames.allowedToolInstanceTypes),
     ...loadPreference(valueNames.allowedPriceTypes),
@@ -89,6 +100,7 @@ export default class InstanceTypesManagementForm extends React.Component {
   @computed
   get pending () {
     return this.valuePending(valueNames.allowedInstanceMaxCount) ||
+      this.valuePending(valueNames.allowedInstanceMaxCountGroup) ||
       this.valuePending(valueNames.allowedPriceTypes) ||
       this.valuePending(valueNames.allowedInstanceTypes) ||
       this.valuePending(valueNames.allowedToolInstanceTypes) ||
@@ -124,6 +136,7 @@ export default class InstanceTypesManagementForm extends React.Component {
 
   getModified () {
     return this.valueModified(valueNames.allowedInstanceMaxCount) ||
+      this.valueModified(valueNames.allowedInstanceMaxCountGroup) ||
       this.valueModified(valueNames.allowedInstanceTypes) ||
       this.valueModified(valueNames.allowedToolInstanceTypes) ||
       this.valueModified(valueNames.allowedPriceTypes) ||
@@ -215,6 +228,9 @@ export default class InstanceTypesManagementForm extends React.Component {
   };
 
   applyValue = async (field) => {
+    if (!this.props[field]) {
+      return;
+    }
     await this.props[field].fetchIfNeededOrWait();
     if (
       this.state[field] !== undefined ||
@@ -250,6 +266,7 @@ export default class InstanceTypesManagementForm extends React.Component {
   reset = async () => {
     this.setState({
       [valueNames.allowedInstanceMaxCount]: undefined,
+      [valueNames.allowedInstanceMaxCountGroup]: undefined,
       [valueNames.allowedInstanceTypes]: undefined,
       [valueNames.allowedToolInstanceTypes]: undefined,
       [valueNames.allowedPriceTypes]: undefined,
@@ -264,6 +281,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     const hide = message.loading('Updating launch options...', 0);
     const results = [];
     results.push(await this.applyValue(valueNames.allowedInstanceMaxCount));
+    results.push(await this.applyValue(valueNames.allowedInstanceMaxCountGroup));
     results.push(await this.applyValue(valueNames.allowedInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedToolInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedPriceTypes));
@@ -274,12 +292,14 @@ export default class InstanceTypesManagementForm extends React.Component {
       message.error(errors.join('\n'), 5);
     } else {
       await this.reloadValue(valueNames.allowedInstanceMaxCount);
+      await this.reloadValue(valueNames.allowedInstanceMaxCountGroup);
       await this.reloadValue(valueNames.allowedInstanceTypes);
       await this.reloadValue(valueNames.allowedToolInstanceTypes);
       await this.reloadValue(valueNames.allowedPriceTypes);
       await this.reloadValue(valueNames.jobsVisibility);
       this.setState({
         [valueNames.allowedInstanceMaxCount]: undefined,
+        [valueNames.allowedInstanceMaxCountGroup]: undefined,
         [valueNames.allowedInstanceTypes]: undefined,
         [valueNames.allowedToolInstanceTypes]: undefined,
         [valueNames.allowedPriceTypes]: undefined,
@@ -311,10 +331,20 @@ export default class InstanceTypesManagementForm extends React.Component {
             </Row>
           }
           {
-            this.props.level !== 'TOOL' &&
+            this.props.level === 'USER' &&
             <Row type="flex">
               {this.valueInputDecorator(
                 valueNames.allowedInstanceMaxCount,
+                disabled,
+                'number'
+              )}
+            </Row>
+          }
+          {
+            this.props.level === 'ROLE' &&
+            <Row type="flex">
+              {this.valueInputDecorator(
+                valueNames.allowedInstanceMaxCountGroup,
                 disabled,
                 'number'
               )}
