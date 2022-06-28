@@ -20,7 +20,7 @@ import {observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, message} from 'antd';
 import roleModel from '../../../../../utils/roleModel';
-import LaunchLimits, {LIMIT_TYPES} from '../../../../../models/user/LaunchLimits';
+import LaunchLimits from '../../../../../models/user/LaunchLimits';
 import {UserRunCount} from '../../../../../models/pipelines/RunCount';
 
 const WARNING_TYPES = {
@@ -149,9 +149,16 @@ export default class AllowedInstancesCountWarning extends React.Component {
     if (limitsRequest.error) {
       message.error('Error loading maximum running instances limits', 5);
     } else {
-      this.userLimits = limitsRequest.loaded && limitsRequest.value
-        ? limitsRequest.value[LIMIT_TYPES.userLimit]
-        : 3;
+      let userLimits;
+      if (limitsRequest.loaded) {
+        const anyValue = Object
+          .values(limitsRequest.value || {})
+          .pop();
+        if (anyValue !== undefined && !Number.isNaN(Number(anyValue))) {
+          userLimits = Number(anyValue);
+        }
+      }
+      this.userLimits = userLimits;
     }
   };
 

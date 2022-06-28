@@ -16,15 +16,9 @@
 
 import Remote from '../basic/Remote';
 
-const LIMIT_TYPES = {
-  userLimit: '<user-contextual-limit>'
-};
-
 export default class LaunchLimits extends Remote {
   constructor (loadAll = false) {
     super();
     this.url = `/user/launchLimits?loadAll=${loadAll}`;
   }
 }
-
-export {LIMIT_TYPES};
