@@ -15,6 +15,7 @@ from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeat
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
+from cellprofiler.modules.filterobjects import FilterObjects
 from cellprofiler.modules.flipandrotate import FlipAndRotate
 from cellprofiler.modules.graytocolor import GrayToColor
 from cellprofiler.modules.identifyobjectsingrid import IdentifyObjectsInGrid
@@ -58,7 +59,13 @@ from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
-from cellprofiler_core.setting.text import Float, ImageName, Integer, Text
+from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName
+
+
+def _str_to_bool(input_value):
+    if not input_value:
+        return None
+    return input_value.lower() in ("true", "t")
 
 
 class HcsModulesFactory(object):
@@ -119,11 +126,6 @@ class ModuleProcessor(object):
         if name in module_config:
             setting.value = module_config[name]
         return setting
-
-    def _str_to_bool(self, input_value):
-        if not input_value:
-            return None
-        return input_value.lower() in ("true", "t")
 
 
 class StructuringElementImagesModuleProcessor(ModuleProcessor):
@@ -387,7 +389,7 @@ class OverlayOutlinesModuleProcessor(ModuleProcessor):
         return self.module
 
 
-class SettingsWithListElementModuleProcessor(ModuleProcessor):
+class SettingsWithListElement:
 
     def get_list_key(self):
         """
@@ -395,6 +397,18 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
         :return: a string, that represents the key for the list element in module configuration dictionary
         """
         return ''
+
+    def set_module_list_element(self, module_list_element):
+        """
+        Specifies a list, containing target elements, from module
+        """
+        pass
+
+    def get_module_list_element(self):
+        """
+        Retrieve a list, containing target elements, from module
+        """
+        return list()
 
     def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
         """
@@ -404,11 +418,16 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
         """
         return SettingsGroup()
 
-    def get_module_list_element(self):
+    def build_list_elements(self, settings_dict):
         """
-        Retrieve a list, containing target elements, from module
+        Convert all elements of adjustable part of a module configuration to elements list.
+        :param settings_dict: all various elements as a dict
+        :return: elements converted to list
         """
         return list()
+
+
+class SettingsWithListElementModuleProcessor(SettingsWithListElement, ModuleProcessor):
 
     def configure_module(self, module_config: dict) -> Module:
         """
@@ -425,14 +444,6 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
                 module_list_element.append(self.build_settings_group_from_list_element(rule))
         ModuleProcessor.configure_module(self, module_config)
         return self.module
-
-    def build_list_elements(self, settings_dict):
-        """
-        Convert all elements of adjustable part of a module configuration to elements list.
-        :param settings_dict: all various elements as a dict
-        :return: elements converted to list
-        """
-        return list()
 
     def get_mandatory_args_length(self):
         """
@@ -558,7 +569,7 @@ class IdentifyObjectsInGridModuleProcessor(ModuleProcessor):
         return IdentifyObjectsInGrid()
 
 
-class ClassifyObjectsModuleProcessor(OutputModuleProcessor):
+class ClassifyObjectsModuleProcessor(OutputModuleProcessor, SettingsWithListElementModuleProcessor):
     _CLASSIFICATIONS = 'classifications'
     _BIN_CHOICES = 'bin_spacing'
     _BIN_COUNT = 'bin_count'
@@ -575,6 +586,9 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor):
     _WANTS_LOWER_BIN = 'wants_lower_bin'
     _WANTS_IMAGES = 'wants_images'
 
+    def __init__(self, save_root):
+        super(ClassifyObjectsModuleProcessor, self).__init__(save_root=save_root)
+
     def new_module(self):
         return ClassifyObjects()
 
@@ -590,7 +604,7 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor):
                                       value=element_dict[self._BIN_CHOICES])
         component.bin_count = Integer('Number of bins', value=element_dict[self._BIN_COUNT])
         component.bin_names = Text('Enter the bin names separated by commas', value=element_dict[self._BIN_NAMES])
-        component.can_delete = self._str_to_bool(element_dict[self._CAN_DELETE])
+        component.can_delete = _str_to_bool(element_dict[self._CAN_DELETE])
         component.custom_thresholds = Text('Enter the custom thresholds separating the values between bins',
                                            value=element_dict[self._CUSTOM_THRESHOLDS])
         component.high_threshold = Float('Upper threshold', value=element_dict[self._UPPER_THRESHOLD])
@@ -601,13 +615,13 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor):
         component.object_name = LabelSubscriber('Select the object to be classified',
                                                 value=element_dict[self._OBJECT_NAME])
         component.wants_custom_names = Binary('Give each bin a name?',
-                                              value=self._str_to_bool(element_dict[self._WANTS_BIN_NAMES]))
+                                              value=_str_to_bool(element_dict[self._WANTS_BIN_NAMES]))
         component.wants_high_bin = Binary('Use a bin for objects above the threshold?',
-                                          value=self._str_to_bool(element_dict[self._WANTS_UPPER_BIN]))
+                                          value=_str_to_bool(element_dict[self._WANTS_UPPER_BIN]))
         component.wants_low_bin = Binary('Use a bin for objects below the threshold?',
-                                         value=self._str_to_bool(element_dict[self._WANTS_LOWER_BIN]))
+                                         value=_str_to_bool(element_dict[self._WANTS_LOWER_BIN]))
         component.wants_images = Binary('Retain an image of the classified objects?',
-                                        value=self._str_to_bool(element_dict[self._WANTS_IMAGES]))
+                                        value=_str_to_bool(element_dict[self._WANTS_IMAGES]))
         return component
 
     def get_mandatory_args_length(self):
@@ -684,3 +698,129 @@ class TrackObjectsModuleProcessor(ModuleProcessor):
 
     def new_module(self):
         return TrackObjects()
+
+
+class FilterObjectsMeasurementsSettings(SettingsWithListElement):
+    _MEASUREMENTS = 'measurements'
+    _MAX_VALUE = 'max_value'
+    _MIN_VALUE = 'min_value'
+    _MEASUREMENT = 'measurement'
+    _WANTS_MAXIMUM = 'use_max_filter'
+    _WANTS_MINIMUM = 'use_min_filter'
+    _MEASUREMENT_TEXT = 'Select the measurement to filter by'
+
+    def __init__(self):
+        self.module_list_element = list()
+
+    def set_module_list_element(self, module_list_element):
+        self.module_list_element = module_list_element
+
+    def get_module_list_element(self):
+        return self.module_list_element
+
+    def get_list_key(self):
+        return self._MEASUREMENTS
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.max_limit = Float('Maximum value', value=element_dict[self._MAX_VALUE])
+        component.min_limit = Float('Minimum value', value=element_dict[self._MIN_VALUE])
+        component.measurement = Measurement(self._MEASUREMENT_TEXT, None, value=element_dict[self._MEASUREMENT])
+        component.wants_maximum = Binary('Filter using a maximum measurement value?',
+                                         value=element_dict[self._WANTS_MAXIMUM])
+        component.wants_minimum = Binary('Filter using a minimum measurement value?',
+                                         value=element_dict[self._WANTS_MINIMUM])
+        return component
+
+    def build_list_elements(self, settings_dict):
+        measurements = list()
+        for i in range(0, len(settings_dict), 5):
+            if not settings_dict[i].text == self._MEASUREMENT_TEXT:
+                continue
+            measurements.append({
+                self._MEASUREMENT: settings_dict[i].value,
+                self._WANTS_MINIMUM: settings_dict[i + 1].value,
+                self._MIN_VALUE: settings_dict[i + 2].value,
+                self._WANTS_MAXIMUM: settings_dict[i + 3].value,
+                self._MAX_VALUE: settings_dict[i + 4].value
+            })
+        return measurements
+
+
+class FilterObjectsAdditionalObjectsSettings(SettingsWithListElement):
+    _ADDITIONAL_OBJECTS = 'objects'
+    _OBJECT_NAME = 'object_name'
+    _TARGET_NAME = 'relabel_name'
+    _OBJECT_NAME_TEXT = 'Select additional object to relabel'
+
+    def __init__(self):
+        self.module_list_element = list()
+
+    def set_module_list_element(self, module_list_element):
+        self.module_list_element = module_list_element
+
+    def get_module_list_element(self):
+        return self.module_list_element
+
+    def get_list_key(self):
+        return self._ADDITIONAL_OBJECTS
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.object_name = LabelSubscriber(self._OBJECT_NAME_TEXT, value=element_dict[self._OBJECT_NAME])
+        component.target_name = LabelName('Name the relabeled objects', value=element_dict[self._TARGET_NAME])
+        return component
+
+    def build_list_elements(self, settings_dict):
+        objects = list()
+        for i in range(0, len(settings_dict), 2):
+            if not settings_dict[i].text == self._OBJECT_NAME_TEXT:
+                continue
+            objects.append({
+                self._OBJECT_NAME: settings_dict[i].value,
+                self._TARGET_NAME: settings_dict[i + 1].value
+            })
+        return objects
+
+
+class FilterObjectsModuleProcessor(OutputModuleProcessor):
+
+    def new_module(self):
+        return FilterObjects()
+
+    def generated_params(self):
+        return {'Select the location of the rules or classifier file': self._output_location()}
+
+    def get_settings_groups(self):
+
+        return [FilterObjectsMeasurementsSettings(self.module.measurements),
+                FilterObjectsAdditionalObjectsSettings(self.module.additional_objects)]
+
+    def configure_module(self, module_config: dict) -> Module:
+        settings_groups = self.get_settings_groups()
+        for settings_group in settings_groups:
+            list_key = settings_group.get_list_key()
+            if list_key in module_config:
+                module_list_element = settings_group.get_module_list_element()
+                module_list_element.clear()
+                rules = module_config.pop(list_key)
+                for rule in rules:
+                    module_list_element.append(settings_group.build_settings_group_from_list_element(rule))
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        fist_args_length = 13
+        general_setting = module_settings[:fist_args_length]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        group_settings = module_settings[fist_args_length:]
+        measurements_group = self.get_settings_groups()[0]
+        additional_objects_group = self.get_settings_groups()[1]
+        module_settings_dictionary[measurements_group.get_list_key()] = \
+            measurements_group.build_list_elements(group_settings)
+        module_settings_dictionary[additional_objects_group.get_list_key()] = \
+            additional_objects_group.build_list_elements(group_settings)
+        return module_settings_dictionary
