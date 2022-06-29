@@ -30,6 +30,7 @@ import {
   generateTreeData,
   getExpandedKeys,
   getTreeItemByKey,
+  getTreeItemInfoByKey,
   ItemTypes,
   search, formatTreeItems
 } from './model/treeStructureFunctions';
@@ -45,7 +46,10 @@ import ConfigurationUpdate from '../../models/configuration/ConfigurationUpdate'
 import pipelines from '../../models/pipelines/Pipelines';
 import FolderUpdate from '../../models/folders/FolderUpdate';
 import DataStorageUpdate from '../../models/dataStorage/DataStorageUpdate';
+import DataStorageUpdateStoragePolicy
+  from '../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import UpdatePipeline from '../../models/pipelines/UpdatePipeline';
+import UpdatePipelineToken from '../../models/pipelines/UpdatePipelineToken';
 import AWSRegionTag from '../special/AWSRegionTag';
 import HiddenObjects from '../../utils/hidden-objects';
 
@@ -144,6 +148,42 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     }
   };
 
+  getItemByKeyFromStore = async ({id, type}) => {
+    if (!id || !type) {
+      return null;
+    }
+    let item;
+    let error;
+    switch (type) {
+      case ItemTypes.pipeline:
+      case ItemTypes.versionedStorage:
+        const pipelineRequest = this.props.pipelines.getPipeline(id);
+        await pipelineRequest.fetchIfNeededOrWait();
+        item = pipelineRequest.value;
+        error = pipelineRequest.error;
+        break;
+      case ItemTypes.folder:
+        const folderRequest = this.props.folders.load(id);
+        await folderRequest.fetchIfNeededOrWait();
+        item = folderRequest.value;
+        error = folderRequest.error;
+        break;
+      case ItemTypes.storage:
+        const storageRequest = this.props.dataStorages.load(id);
+        await storageRequest.fetchIfNeededOrWait();
+        item = storageRequest.value;
+        error = storageRequest.error;
+        break;
+      case ItemTypes.configuration:
+        const configurationRequest = this.props.configurations.getConfiguration(id);
+        await configurationRequest.fetchIfNeededOrWait();
+        item = configurationRequest.value;
+        error = configurationRequest.error;
+        break;
+    }
+    return {item, error};
+  };
+
   onDrop = async ({node, dragNode}) => {
     if (!this.dragEnabled) {
       return;
@@ -169,43 +209,64 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       const hide = message.loading(`Moving '${dragItem.name}' to '${dropItem.name}'`, 0);
       let request;
       let body;
+      const {
+        item: storeItem,
+        error: storeItemError
+      } = await this.getItemByKeyFromStore(getTreeItemInfoByKey(dragItem.key));
+      if (storeItemError) {
+        return message.error(storeItemError.error, 5);
+      }
+      if (!storeItem) {
+        return;
+      }
       switch (dragItem.type) {
         case ItemTypes.pipeline:
         case ItemTypes.versionedStorage:
           request = new UpdatePipeline();
           body = {
-            id: dragItem.id,
-            name: dragItem.name,
-            description: dragItem.description,
+            id: storeItem.id,
+            name: storeItem.name,
+            description: storeItem.description,
             parentFolderId: dropItem.id === 'root' ? undefined : dropItem.id,
-            repositoryToken: dragItem.repositoryToken
+            repositoryToken: storeItem.repositoryToken
           };
           break;
         case ItemTypes.folder:
           request = new FolderUpdate();
           body = {
-            id: dragItem.id,
+            id: storeItem.id,
             parentId: dropItem.id === 'root' ? undefined : dropItem.id,
-            name: dragItem.name
+            name: storeItem.name
           };
           break;
         case ItemTypes.storage:
           request = new DataStorageUpdate();
           body = {
-            id: dragItem.id,
-            name: dragItem.name,
-            description: dragItem.description,
-            storagePolicy: dragItem.storagePolicy,
-            parentFolderId: dropItem.id === 'root' ? undefined : dropItem.id
+            id: storeItem.id,
+            name: storeItem.name,
+            description: storeItem.description,
+            parentFolderId: dropItem.id === 'root' ? undefined : dropItem.id,
+            path: storeItem.path,
+            mountDisabled: storeItem.mountDisabled,
+            mountPoint: !storeItem.mountDisabled
+              ? storeItem.mountPoint
+              : undefined,
+            mountOptions: !storeItem.mountDisabled
+              ? storeItem.mountOptions
+              : undefined,
+            sensitive: storeItem.sensitive,
+            toolsToMount: !storeItem.mountDisabled
+              ? storeItem.toolsToMount
+              : undefined
           };
           break;
         case ItemTypes.configuration:
           request = new ConfigurationUpdate();
           body = {
-            id: dragItem.id,
-            name: dragItem.name,
-            description: dragItem.description,
-            entries: dragItem.entries,
+            id: storeItem.id,
+            name: storeItem.name,
+            description: storeItem.description,
+            entries: storeItem.entries,
             parentId: dropItem.id === 'root' ? undefined : dropItem.id
           };
           break;
@@ -214,7 +275,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         await request.send(body);
       }
       hide();
-      if (request.error) {
+      if (request && request.error) {
         message.error(request.error, 5);
       } else {
         switch (dropItem.type) {
@@ -231,10 +292,43 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             break;
           case ItemTypes.pipeline:
           case ItemTypes.versionedStorage:
+            if (storeItem.token !== undefined) {
+              const updatePipelineTokenRequest = new UpdatePipelineToken();
+              await updatePipelineTokenRequest.send({
+                id: storeItem.id,
+                repositoryToken: storeItem.repositoryToken
+              });
+              if (updatePipelineTokenRequest.error) {
+                message.error(updatePipelineTokenRequest.error, 5);
+              }
+            }
             this.props.pipelines.invalidatePipeline(dragItem.id);
             this.props.pipelines.getPipeline(dragItem.id).fetch();
             break;
           case ItemTypes.storage:
+            const fileShare = /^nfs$/i.test(storeItem.storageType);
+            const shouldUpdateStoragePolicy = (
+              storeItem.policySupported &&
+              !fileShare &&
+              (
+                storeItem.longTermStorageDuration !== undefined ||
+                storeItem.shortTermStorageDuration !== undefined ||
+                storeItem.backupDuration !== undefined ||
+                !storeItem.versioningEnabled
+              )
+            );
+            if (shouldUpdateStoragePolicy) {
+              const hide = message.loading(`Updating '${storeItem.name}' policy`, 0);
+              const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
+              await updatePolicyRequest.send({
+                id: storeItem.id,
+                storagePolicy: storeItem.storagePolicy
+              });
+              hide();
+              if (updatePolicyRequest.error) {
+                message.error(updatePolicyRequest.error, 5);
+              }
+            }
             this.props.dataStorages.invalidateCache(dragItem.id);
             this.props.dataStorages.load(dragItem.id).fetch();
             break;
