@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -333,6 +333,14 @@ function upgrade_installed_packages {
       return $?
 }
 
+function remove_repository_configurations() {
+      IFS=',' read -r -a REMOVE_FILES_LIST <<< "$CP_CAP_REMOVE_FILES"
+      for FILE_TO_REMOVE in "${REMOVE_FILES_LIST[@]}"
+      do
+          rm -f $FILE_TO_REMOVE
+      done
+}
+
 # This function handle any distro/version - specific package manager state, e.g. clean up or reconfigure
 function configure_package_manager {
       # Get the distro name and version
@@ -364,6 +372,11 @@ function configure_package_manager {
 
       export CP_OS
       export CP_VER
+
+      # Remove apt repository configurations if needed
+      if [ "$CP_OS" == "ubuntu" ] && [ ! -z "$CP_CAP_REMOVE_FILES" ]; then
+            remove_repository_configurations
+      fi
 
       # Perform any specific cleanup/configuration
       if [ "$CP_OS" == "debian" ] && [ "$CP_VER" == "8" ]; then
