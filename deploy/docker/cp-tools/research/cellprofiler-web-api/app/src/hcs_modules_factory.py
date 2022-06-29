@@ -24,6 +24,8 @@ from cellprofiler.modules.invertforprinting import InvertForPrinting
 from cellprofiler.modules.makeprojection import MakeProjection
 from cellprofiler.modules.maskobjects import MaskObjects
 from cellprofiler.modules.matchtemplate import MatchTemplate
+from cellprofiler.modules.measureimageareaoccupied import MeasureImageAreaOccupied
+from cellprofiler.modules.measureimageintensity import MeasureImageIntensity
 from cellprofiler.modules.measureobjectintensity import MeasureObjectIntensity
 from cellprofiler.modules.measureobjectsizeshape import MeasureObjectSizeShape
 from cellprofiler.modules.medialaxis import MedialAxis
@@ -388,6 +390,16 @@ class MeasureObjectSizeShapeModuleProcessor(ModuleProcessor):
 class MeasureObjectIntensityModuleProcessor(ModuleProcessor):
     def new_module(self):
         return MeasureObjectIntensity()
+
+
+class MeasureImageAreaOccupiedModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MeasureImageAreaOccupied()
+
+
+class MeasureImageIntensityModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MeasureImageIntensity()
 
 
 class MatchTemplateModuleProcessor(ModuleProcessor):
