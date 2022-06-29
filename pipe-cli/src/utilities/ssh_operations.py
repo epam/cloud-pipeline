@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ from scp import SCPClient, SCPException
 from src.api.cluster import Cluster
 from src.api.user import User
 
-from src.config import is_frozen
+from src.config import Config, is_frozen
 from src.utilities.pipe_shell import plain_shell, interactive_shell
 from src.utilities.platform_utilities import is_windows, is_mac
 from src.api.pipeline_run import PipelineRun
@@ -198,10 +198,17 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
     sock = None
     try:
         import socket
+        import base64
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         sock.connect(proxy)
-        cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n\r\n" % target
+
+        config = Config.instance()
+        auth_token = base64.b64encode('%s:%s' % (config.get_current_user().split('@')[0], config.access_key))
+        headers = {'proxy-authorization': 'Basic ' + auth_token}
+
+        cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n" % target
+        cmd_connect += '\r\n'.join('%s: %s' % (k, v) for (k, v) in headers.items()) + '\r\n\r\n'
         sock.sendall(cmd_connect.encode('UTF-8'))
         response = []
         sock.settimeout(2)  # quick hack - replace this with something better performing.
