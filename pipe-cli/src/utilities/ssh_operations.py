@@ -313,6 +313,7 @@ def setup_authenticated_paramiko_transport(run_id, user, retries, region=None):
                    else resolve_run_ssh_mode(conn_info)
     run_owner = conn_info.owner.split('@')[0]
     user = user or User.whoami().get('userName')
+    user = user.split('@')[0]
     if run_ssh_mode == 'user':
         sshuser = user
         sshpass = sshuser
@@ -354,10 +355,11 @@ def resolve_run_ssh_mode(conn_info):
 
 
 def resolve_run_ssh_user(run_ssh_mode, run_owner):
-    return User.whoami().get('userName') if run_ssh_mode == 'user' \
+    user = User.whoami().get('userName') if run_ssh_mode == 'user' \
            else run_owner if run_ssh_mode == 'owner' \
            else run_owner if run_ssh_mode == 'owner-sshpass' \
            else DEFAULT_SSH_USER
+    return user.split('@')[0]
 
 
 def resolve_run_ssh_pass(conn_info, region=None):
