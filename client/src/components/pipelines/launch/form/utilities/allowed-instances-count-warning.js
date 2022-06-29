@@ -69,6 +69,7 @@ export default class AllowedInstancesCountWarning extends React.Component {
 
   get instancesToLaunch () {
     const {payload} = this.props;
+    const masterNode = 1;
     if (this.isSingleNode) {
       return {
         min: 1,
@@ -81,8 +82,8 @@ export default class AllowedInstancesCountWarning extends React.Component {
       }
       return +value;
     };
-    let min = correctValue(payload.nodeCount);
-    let max = correctValue(payload.maxNodeCount);
+    let min = correctValue(payload.nodeCount) + masterNode;
+    let max = correctValue(payload.maxNodeCount) + masterNode;
     if (min > max) {
       max = min;
     }
