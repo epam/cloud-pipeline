@@ -1,4 +1,4 @@
-# Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -103,6 +103,7 @@ ADD validate_cookie_ssh.lua /etc/nginx/validate_cookie_ssh.lua
 ADD validate_cookie_dav.lua /etc/nginx/validate_cookie_dav.lua
 ADD validate_cookie_fsbrowser.lua /etc/nginx/validate_cookie_fsbrowser.lua
 ADD create_cookie_dav.lua /etc/nginx/create_cookie_dav.lua
+ADD validate_proxy_auth.lua /etc/nginx/validate_proxy_auth.lua
 COPY maintenance*.lua /etc/nginx/
 
 ## DAV auth page
