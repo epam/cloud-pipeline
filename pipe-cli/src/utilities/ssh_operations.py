@@ -35,7 +35,7 @@ from src.api.cluster import Cluster
 from src.api.user import User
 
 from src.config import Config, is_frozen
-from src.utilities.pipe_shell import plain_shell, interactive_shell
+from src.utilities.pipe_shell import plain_shell, interactive_shell, PYTHON3
 from src.utilities.platform_utilities import is_windows, is_mac
 from src.api.pipeline_run import PipelineRun
 from src.api.preferenceapi import PreferenceAPI
@@ -192,19 +192,31 @@ def direct_connect(target, timeout=None, retries=None):
             raise
 
 
+def base64ify(bytes_or_str):
+    import base64
+    if PYTHON3 and isinstance(bytes_or_str, str):
+        input_bytes = bytes_or_str.encode('utf8')
+    else:
+        input_bytes = bytes_or_str
+
+    output_bytes = base64.urlsafe_b64encode(input_bytes)
+    if PYTHON3:
+        return output_bytes.decode('ascii')
+    else:
+        return output_bytes
+
 def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
     timeout = timeout or None
     retries = retries or 0
     sock = None
     try:
         import socket
-        import base64
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(timeout)
         sock.connect(proxy)
 
         config = Config.instance()
-        auth_token = base64.b64encode('%s:%s' % (config.get_current_user().split('@')[0], config.access_key))
+        auth_token = base64ify('%s:%s' % (config.get_current_user().split('@')[0], config.access_key))
         headers = {'proxy-authorization': 'Basic ' + auth_token}
 
         cmd_connect = "CONNECT %s:%d HTTP/1.0\r\n" % target
