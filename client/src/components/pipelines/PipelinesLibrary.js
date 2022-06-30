@@ -292,43 +292,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             break;
           case ItemTypes.pipeline:
           case ItemTypes.versionedStorage:
-            if (storeItem.token !== undefined) {
-              const updatePipelineTokenRequest = new UpdatePipelineToken();
-              await updatePipelineTokenRequest.send({
-                id: storeItem.id,
-                repositoryToken: storeItem.repositoryToken
-              });
-              if (updatePipelineTokenRequest.error) {
-                message.error(updatePipelineTokenRequest.error, 5);
-              }
-            }
             this.props.pipelines.invalidatePipeline(dragItem.id);
             this.props.pipelines.getPipeline(dragItem.id).fetch();
             break;
           case ItemTypes.storage:
-            const fileShare = /^nfs$/i.test(storeItem.storageType);
-            const shouldUpdateStoragePolicy = (
-              storeItem.policySupported &&
-              !fileShare &&
-              (
-                storeItem.longTermStorageDuration !== undefined ||
-                storeItem.shortTermStorageDuration !== undefined ||
-                storeItem.backupDuration !== undefined ||
-                !storeItem.versioningEnabled
-              )
-            );
-            if (shouldUpdateStoragePolicy) {
-              const hide = message.loading(`Updating '${storeItem.name}' policy`, 0);
-              const updatePolicyRequest = new DataStorageUpdateStoragePolicy();
-              await updatePolicyRequest.send({
-                id: storeItem.id,
-                storagePolicy: storeItem.storagePolicy
-              });
-              hide();
-              if (updatePolicyRequest.error) {
-                message.error(updatePolicyRequest.error, 5);
-              }
-            }
             this.props.dataStorages.invalidateCache(dragItem.id);
             this.props.dataStorages.load(dragItem.id).fetch();
             break;
