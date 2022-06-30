@@ -54,11 +54,11 @@ class HcsPipeline(object):
         self._pipeline_output_dir = self._init_results_dir(service_root_dir, measurement_id)
         self._pipeline_input_dir = os.path.join(RAW_IMAGE_DATA_ROOT, measurement_id)
         self._pipeline_output_dir_cloud_path = self._extract_cloud_path()
+        self._modules_factory = HcsModulesFactory(self._pipeline_output_dir)
         self._add_default_modules()
         self._pipeline_state = PipelineState.CONFIGURING
         self._pipeline_state_message = ''
         self._input_sets = set()
-        self._modules_factory = HcsModulesFactory(self._pipeline_output_dir)
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):

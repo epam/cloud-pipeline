@@ -10,13 +10,17 @@ from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApp
 from cellprofiler.modules.correctilluminationcalculate import CorrectIlluminationCalculate
 from cellprofiler.modules.crop import Crop
 from cellprofiler.modules.editobjectsmanually import EditObjectsManually
+from cellprofiler.modules.definegrid import DefineGrid
+from cellprofiler.modules.dilateimage import DilateImage
+from cellprofiler.modules.dilateobjects import DilateObjects
 from cellprofiler.modules.enhanceedges import EnhanceEdges
-from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 from cellprofiler.modules.filterobjects import FilterObjects
+from cellprofiler.modules.fillobjects import FillObjects
 from cellprofiler.modules.flipandrotate import FlipAndRotate
+from cellprofiler.modules.gaussianfilter import GaussianFilter
 from cellprofiler.modules.graytocolor import GrayToColor
 from cellprofiler.modules.identifyobjectsingrid import IdentifyObjectsInGrid
 from cellprofiler.modules.identifyobjectsmanually import IdentifyObjectsManually
@@ -26,13 +30,22 @@ from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
 from cellprofiler.modules.invertforprinting import InvertForPrinting
 from cellprofiler.modules.makeprojection import MakeProjection
 from cellprofiler.modules.maskobjects import MaskObjects
+from cellprofiler.modules.matchtemplate import MatchTemplate
+from cellprofiler.modules.measureimageareaoccupied import MeasureImageAreaOccupied
+from cellprofiler.modules.measureimageintensity import MeasureImageIntensity
+from cellprofiler.modules.measureobjectintensity import MeasureObjectIntensity
+from cellprofiler.modules.measureobjectsizeshape import MeasureObjectSizeShape
+from cellprofiler.modules.medialaxis import MedialAxis
 from cellprofiler.modules.morph import Morph
+from cellprofiler.modules.morphologicalskeleton import MorphologicalSkeleton
 from cellprofiler.modules.opening import Opening
 from cellprofiler.modules.overlayobjects import OverlayObjects
 from cellprofiler.modules.overlayoutlines import OverlayOutlines
 from cellprofiler.modules.reducenoise import ReduceNoise
 from cellprofiler.modules.relateobjects import RelateObjects
+from cellprofiler.modules.savecroppedobjects import SaveCroppedObjects
 from cellprofiler.modules.saveimages import SaveImages
+from cellprofiler.modules.shrinktoobjectcenters import ShrinkToObjectCenters
 from cellprofiler.modules.smooth import Smooth
 from cellprofiler.modules.splitormergeobjects import SplitOrMergeObjects
 from cellprofiler.modules.tile import Tile
@@ -46,6 +59,7 @@ from cellprofiler_core.modules.metadata import Metadata
 from cellprofiler_core.modules.namesandtypes import NamesAndTypes
 from cellprofiler.modules.closing import Closing
 from cellprofiler.modules.convertobjectstoimage import ConvertObjectsToImage
+from cellprofiler.modules.enhanceorsuppressfeatures import EnhanceOrSuppressFeatures
 from cellprofiler.modules.erodeobjects import ErodeObjects
 from cellprofiler.modules.imagemath import ImageMath
 from cellprofiler.modules.maskimage import MaskImage
@@ -83,6 +97,10 @@ class HcsModulesFactory(object):
                     self._modules_processors[name[:-15]] = clazz
 
     def get_module_processor(self, module: Module, module_name: str):
+        if module is not None:
+            module_name = module.module_name
+        if module_name is None:
+            raise RuntimeError('Either a module or target module name should be specified!')
         module_name = module_name.strip()
         if module_name in self._output_modules_processors:
             return self._output_modules_processors[module_name](self._pipeline_output_dir, module)
@@ -124,7 +142,12 @@ class ModuleProcessor(object):
     def _process_setting(self, setting, module_config: dict):
         name = setting.text
         if name in module_config:
-            setting.value = module_config[name]
+            new_value = module_config[name]
+            if isinstance(setting.value, list):
+                setting.value.clear()
+                setting.value.extend(new_value)
+            else:
+                setting.value = new_value
         return setting
 
 
@@ -249,6 +272,16 @@ class OpeningModuleProcessor(StructuringElementImagesModuleProcessor):
         return Opening()
 
 
+class DilateImageModuleProcessor(StructuringElementImagesModuleProcessor):
+    def new_module(self):
+        return DilateImage()
+
+
+class DilateObjectsModuleProcessor(StructuringElementImagesModuleProcessor):
+    def new_module(self):
+        return DilateObjects()
+
+
 class MaskImageModuleProcessor(ModuleProcessor):
     def new_module(self):
         return MaskImage()
@@ -339,6 +372,82 @@ class UnmixColorsModuleProcessor(ModuleProcessor):
         return UnmixColors()
 
 
+class FillObjectsModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return FillObjects()
+
+
+class GaussianFilterModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return GaussianFilter()
+
+
+class MedialAxisModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MedialAxis()
+
+
+class MorphologicalSkeletonModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MorphologicalSkeleton()
+
+
+class ShrinkToObjectCentersModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return ShrinkToObjectCenters()
+
+
+class DefineGridModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return DefineGrid()
+
+
+class MeasureObjectSizeShapeModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MeasureObjectSizeShape()
+
+
+class MeasureObjectIntensityModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MeasureObjectIntensity()
+
+
+class MeasureImageAreaOccupiedModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MeasureImageAreaOccupied()
+
+
+class MeasureImageIntensityModuleProcessor(ModuleProcessor):
+    def new_module(self):
+        return MeasureImageIntensity()
+
+
+class MatchTemplateModuleProcessor(ModuleProcessor):
+
+    _INPUT_TEMPLATE_PATH_KEY = 'Template'
+
+    def new_module(self):
+        return MatchTemplate()
+
+    def configure_module(self, module_config: dict):
+        self._check_template_path(module_config)
+        return ModuleProcessor.configure_module(self, module_config)
+
+    def _check_template_path(self, module_config, cloud_scheme='s3'):
+        if self._INPUT_TEMPLATE_PATH_KEY not in module_config:
+            raise RuntimeError('Template path should be specified in a module config!')
+        template_path = module_config[self._INPUT_TEMPLATE_PATH_KEY]
+        template_path = template_path if template_path is None else template_path.strip()
+        if not template_path:
+            raise RuntimeError('Template path should be specified in a module config!')
+        cloud_prefix = cloud_scheme + '://'
+        if template_path.startswith(cloud_prefix):
+            template_path = os.path.join('/cloud-data', template_path[len(cloud_prefix):])
+        if not os.path.exists(template_path):
+            raise RuntimeError('No such file [{}] available!'.format(template_path))
+        module_config[self._INPUT_TEMPLATE_PATH_KEY] = template_path
+
+
 class OutputModuleProcessor(ModuleProcessor):
     def __init__(self, save_root, module=None):
         ModuleProcessor.__init__(self, module)
@@ -353,7 +462,9 @@ class ExportToSpreadsheetModuleProcessor(OutputModuleProcessor):
         return ExportToSpreadsheet()
 
     def generated_params(self):
-        return {'Output file location': self._output_location()}
+        return {'Output file location': self._output_location(),
+                'Add a prefix to file names?': 'No',
+                'Overwrite existing files without warning?': 'Yes'}
 
 
 class SaveImagesModuleProcessor(OutputModuleProcessor):
@@ -365,6 +476,14 @@ class SaveImagesModuleProcessor(OutputModuleProcessor):
                 'Save with lossless compression?': 'No',
                 'Append a suffix to the image file name?': 'Yes',
                 'Output file location': self._output_location()}
+
+
+class SaveCroppedObjectsModuleProcessor(OutputModuleProcessor):
+    def new_module(self):
+        return SaveCroppedObjects()
+
+    def generated_params(self):
+        return {'Directory': self._output_location()}
 
 
 # TODO refactor to use SettingsWithListElementModuleProcessor
