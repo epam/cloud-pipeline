@@ -523,8 +523,9 @@ public class SystemPreferences {
     public static final IntPreference LAUNCH_MAX_RUNS_GROUP_LIMIT = new IntPreference(
         "launch.max.runs.group", null, LAUNCH_GROUP, isGreaterThan(0));
 
-    public static final IntPreference LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT = new IntPreference(
-        "launch.max.runs.user.global", null, LAUNCH_GROUP, isGreaterThan(0));
+    public static final ObjectPreference<Integer> LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT = new ObjectPreference<>(
+        "launch.max.runs.user.global", null, new TypeReference<Integer>() {},
+        LAUNCH_GROUP, isNullOrGreaterThan(0));
 
     /**
      * Sets task status update rate, on which application will query Kubernetes cluster for running task status,
