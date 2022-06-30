@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,7 @@ import ConfigurationUpdate from '../../models/configuration/ConfigurationUpdate'
 import pipelines from '../../models/pipelines/Pipelines';
 import FolderUpdate from '../../models/folders/FolderUpdate';
 import DataStorageUpdate from '../../models/dataStorage/DataStorageUpdate';
-import DataStorageUpdateStoragePolicy
-  from '../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import UpdatePipeline from '../../models/pipelines/UpdatePipeline';
-import UpdatePipelineToken from '../../models/pipelines/UpdatePipelineToken';
 import AWSRegionTag from '../special/AWSRegionTag';
 import HiddenObjects from '../../utils/hidden-objects';
 
@@ -83,7 +80,6 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
 @HiddenObjects.injectTreeFilter
 @observer
 export default class PipelinesLibrary extends localization.LocalizedReactComponent {
-
   state = {
     rootItems: [],
     expandedKeys: [],
@@ -142,7 +138,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     } else if (item.type === ItemTypes.pipeline) {
       event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.id}`);
     } else if (item.type === ItemTypes.version && item.parent) {
-      event.dataTransfer.setData('dropDataKey', `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`);
+      event.dataTransfer.setData(
+        'dropDataKey',
+        `${ItemTypes.pipeline}_${item.parent.id}_${item.name}`
+      );
     } else {
       event.dataTransfer.setData('dropDataKey', node.props.eventKey);
     }
@@ -472,7 +471,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
               className={`pipelines-library-tree-node-${item.key}`}
               title={this.renderItemTitle(item)}
               key={item.key}
-              isLeaf={item.isLeaf}/>
+              isLeaf={item.isLeaf}
+            />
           );
         } else {
           return (
@@ -590,7 +590,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           maxSize={this._paneWidth ? this._paneWidth / 2.0 : 400}
           defaultSize="15%"
           pane1Style={{overflowY: 'auto', display: 'flex', flexDirection: 'column'}}
-          pane2Style={{overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column'}}
+          pane2Style={{
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
           resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
             width: 8,
