@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# This hook script prepares a commit message in respecting format conventions.
+# An issue number will be placed as a prefix of the commit message using the branch msg_suggestion if the issue includes in it.
+# Otherwise, the 'Issue #undefined' will be inserted.
+
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+SHA1=$3
+
+if [ -z "$COMMIT_SOURCE" ] ; then
+  ref="$(git rev-parse --abbrev-ref HEAD)"
+  msg_suggestion=$(echo $ref | grep -oE '(issue_[0-9]+)' | sed 's|_| #|g')
+  if [ ! -z "$msg_suggestion" ] ; then
+    default=$(cat "$COMMIT_MSG_FILE")
+  else
+    msg_suggestion="Issue #undefined"
+  fi
+  echo "${msg_suggestion}: " > "$COMMIT_MSG_FILE"
+  echo "$default" >> "$COMMIT_MSG_FILE"
+fi
