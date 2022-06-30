@@ -792,9 +792,11 @@ class FilterObjectsModuleProcessor(OutputModuleProcessor):
         return {'Select the location of the rules or classifier file': self._output_location()}
 
     def get_settings_groups(self):
-
-        return [FilterObjectsMeasurementsSettings(self.module.measurements),
-                FilterObjectsAdditionalObjectsSettings(self.module.additional_objects)]
+        measurements_settings = FilterObjectsMeasurementsSettings()
+        measurements_settings.set_module_list_element(self.module.measurements)
+        additional_objects_settings = FilterObjectsAdditionalObjectsSettings()
+        additional_objects_settings.set_module_list_element(self.module.additional_objects)
+        return [measurements_settings, additional_objects_settings]
 
     def configure_module(self, module_config: dict) -> Module:
         settings_groups = self.get_settings_groups()
