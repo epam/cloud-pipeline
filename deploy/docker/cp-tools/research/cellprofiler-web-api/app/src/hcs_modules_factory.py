@@ -127,7 +127,12 @@ class ModuleProcessor(object):
     def _process_setting(self, setting, module_config: dict):
         name = setting.text
         if name in module_config:
-            setting.value = module_config[name]
+            new_value = module_config[name]
+            if isinstance(setting.value, list):
+                setting.value.clear()
+                setting.value.extend(new_value)
+            else:
+                setting.value = new_value
         return setting
 
 
