@@ -336,6 +336,12 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO launchWithError(String errorMessage) {
+        launch();
+        messageShouldAppear(errorMessage);
+        return this;
+    }
+
     public PipelineRunFormAO validateThereIsParameterOfType(String name, String value, ParameterType type, boolean required) {
         final String parameterNameClass = "launch-pipeline-form__parameter-name";
         final SelenideElement nameElement = $(byXpath(format(
