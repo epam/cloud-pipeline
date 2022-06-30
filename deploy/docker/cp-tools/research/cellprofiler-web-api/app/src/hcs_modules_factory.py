@@ -688,7 +688,7 @@ class IdentifyObjectsInGridModuleProcessor(ModuleProcessor):
         return IdentifyObjectsInGrid()
 
 
-class ClassifyObjectsModuleProcessor(OutputModuleProcessor, SettingsWithListElementModuleProcessor):
+class ClassifyObjectsModuleProcessor(SettingsWithListElementModuleProcessor):
     _CLASSIFICATIONS = 'classifications'
     _BIN_CHOICES = 'bin_spacing'
     _BIN_COUNT = 'bin_count'
@@ -704,9 +704,8 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor, SettingsWithListElem
     _WANTS_UPPER_BIN = 'wants_upper_bin'
     _WANTS_LOWER_BIN = 'wants_lower_bin'
     _WANTS_IMAGES = 'wants_images'
-
-    def __init__(self, save_root):
-        super(ClassifyObjectsModuleProcessor, self).__init__(save_root=save_root)
+    _MODEL_DIRECTORY = 'model_directory_path'
+    _MODEL_FILE_NAME = 'model_file_path'
 
     def new_module(self):
         return ClassifyObjects()
@@ -747,9 +746,9 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor, SettingsWithListElem
         return 22
 
     def build_list_elements(self, settings_dict):
-        additional_images = list()
+        measurements = list()
         for i in range(0, len(settings_dict), 13):
-            additional_images.append({
+            measurements.append({
                 self._OBJECT_NAME: settings_dict[i].value,
                 self._MEASUREMENT: settings_dict[i + 1].value,
                 self._BIN_CHOICES: settings_dict[i + 2].value,
@@ -764,7 +763,7 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor, SettingsWithListElem
                 self._WANTS_IMAGES: settings_dict[i + 11].value,
                 self._IMAGE_NAME: settings_dict[i + 12].value
             })
-        return additional_images
+        return measurements
 
     def get_settings_as_dict(self):
         module_settings_dictionary = dict()
@@ -779,8 +778,26 @@ class ClassifyObjectsModuleProcessor(OutputModuleProcessor, SettingsWithListElem
             module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
         return module_settings_dictionary
 
-    def generated_params(self):
-        return {'Select the location of the classifier model file': self._output_location()}
+    def configure_module(self, module_config: dict) -> Module:
+        self._check_input_path(module_config, self._MODEL_DIRECTORY)
+        self._check_input_path(module_config, self._MODEL_FILE_NAME)
+        SettingsWithListElementModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    @staticmethod
+    def _check_input_path(module_config, input_path_key, cloud_scheme='s3'):
+        if input_path_key not in module_config:
+            return
+        input_path = module_config[input_path_key]
+        input_path = input_path if input_path is None else input_path.strip()
+        if not input_path:
+            return
+        cloud_prefix = cloud_scheme + '://'
+        if input_path.startswith(cloud_prefix):
+            input_path = os.path.join('/cloud-data', input_path[len(cloud_prefix):])
+        if not os.path.exists(input_path):
+            raise RuntimeError('No such file [{}] available!'.format(input_path))
+        module_config[input_path_key] = input_path
 
 
 class ConvertImageToObjectsModuleProcessor(ModuleProcessor):
@@ -933,11 +950,11 @@ class FilterObjectsModuleProcessor(OutputModuleProcessor):
     def get_settings_as_dict(self):
         module_settings_dictionary = dict()
         module_settings = self.module.settings()
-        fist_args_length = 13
-        general_setting = module_settings[:fist_args_length]
+        first_args_length = 13
+        general_setting = module_settings[:first_args_length]
         for setting in general_setting:
             module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
-        group_settings = module_settings[fist_args_length:]
+        group_settings = module_settings[first_args_length:]
         measurements_group = self.get_settings_groups()[0]
         additional_objects_group = self.get_settings_groups()[1]
         module_settings_dictionary[measurements_group.get_list_key()] = \
