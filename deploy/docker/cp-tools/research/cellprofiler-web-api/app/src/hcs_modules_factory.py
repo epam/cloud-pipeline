@@ -76,12 +76,6 @@ from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, 
 from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName
 
 
-def _str_to_bool(input_value):
-    if not input_value:
-        return None
-    return input_value.lower() in ("true", "t")
-
-
 class HcsModulesFactory(object):
 
     def __init__(self, pipeline_output_dir):
@@ -149,6 +143,21 @@ class ModuleProcessor(object):
             else:
                 setting.value = new_value
         return setting
+
+    @staticmethod
+    def _configure_input_path(module_config, input_path_key, cloud_scheme='s3'):
+        if input_path_key not in module_config:
+            return
+        input_path = module_config[input_path_key]
+        input_path = input_path if input_path is None else input_path.strip()
+        if not input_path:
+            return
+        cloud_prefix = cloud_scheme + '://'
+        if input_path.startswith(cloud_prefix):
+            input_path = os.path.join('/cloud-data', input_path[len(cloud_prefix):])
+        if not os.path.exists(input_path):
+            raise RuntimeError('No such file [{}] available!'.format(input_path))
+        module_config[input_path_key] = input_path
 
 
 class StructuringElementImagesModuleProcessor(ModuleProcessor):
@@ -722,7 +731,7 @@ class ClassifyObjectsModuleProcessor(SettingsWithListElementModuleProcessor):
                                       value=element_dict[self._BIN_CHOICES])
         component.bin_count = Integer('Number of bins', value=element_dict[self._BIN_COUNT])
         component.bin_names = Text('Enter the bin names separated by commas', value=element_dict[self._BIN_NAMES])
-        component.can_delete = _str_to_bool(element_dict[self._CAN_DELETE])
+        component.can_delete = element_dict[self._CAN_DELETE]
         component.custom_thresholds = Text('Enter the custom thresholds separating the values between bins',
                                            value=element_dict[self._CUSTOM_THRESHOLDS])
         component.high_threshold = Float('Upper threshold', value=element_dict[self._UPPER_THRESHOLD])
@@ -732,14 +741,13 @@ class ClassifyObjectsModuleProcessor(SettingsWithListElementModuleProcessor):
                                             value=element_dict[self._MEASUREMENT])
         component.object_name = LabelSubscriber('Select the object to be classified',
                                                 value=element_dict[self._OBJECT_NAME])
-        component.wants_custom_names = Binary('Give each bin a name?',
-                                              value=_str_to_bool(element_dict[self._WANTS_BIN_NAMES]))
+        component.wants_custom_names = Binary('Give each bin a name?', value=element_dict[self._WANTS_BIN_NAMES])
         component.wants_high_bin = Binary('Use a bin for objects above the threshold?',
-                                          value=_str_to_bool(element_dict[self._WANTS_UPPER_BIN]))
+                                          value=element_dict[self._WANTS_UPPER_BIN])
         component.wants_low_bin = Binary('Use a bin for objects below the threshold?',
-                                         value=_str_to_bool(element_dict[self._WANTS_LOWER_BIN]))
+                                         value=element_dict[self._WANTS_LOWER_BIN])
         component.wants_images = Binary('Retain an image of the classified objects?',
-                                        value=_str_to_bool(element_dict[self._WANTS_IMAGES]))
+                                        value=element_dict[self._WANTS_IMAGES])
         return component
 
     def get_mandatory_args_length(self):
@@ -779,25 +787,10 @@ class ClassifyObjectsModuleProcessor(SettingsWithListElementModuleProcessor):
         return module_settings_dictionary
 
     def configure_module(self, module_config: dict) -> Module:
-        self._check_input_path(module_config, self._MODEL_DIRECTORY)
-        self._check_input_path(module_config, self._MODEL_FILE_NAME)
+        self._configure_input_path(module_config, self._MODEL_DIRECTORY)
+        self._configure_input_path(module_config, self._MODEL_FILE_NAME)
         SettingsWithListElementModuleProcessor.configure_module(self, module_config)
         return self.module
-
-    @staticmethod
-    def _check_input_path(module_config, input_path_key, cloud_scheme='s3'):
-        if input_path_key not in module_config:
-            return
-        input_path = module_config[input_path_key]
-        input_path = input_path if input_path is None else input_path.strip()
-        if not input_path:
-            return
-        cloud_prefix = cloud_scheme + '://'
-        if input_path.startswith(cloud_prefix):
-            input_path = os.path.join('/cloud-data', input_path[len(cloud_prefix):])
-        if not os.path.exists(input_path):
-            raise RuntimeError('No such file [{}] available!'.format(input_path))
-        module_config[input_path_key] = input_path
 
 
 class ConvertImageToObjectsModuleProcessor(ModuleProcessor):
@@ -919,13 +912,11 @@ class FilterObjectsAdditionalObjectsSettings(SettingsWithListElement):
         return objects
 
 
-class FilterObjectsModuleProcessor(OutputModuleProcessor):
+class FilterObjectsModuleProcessor(ModuleProcessor):
+    _RULES_DIRECTORY = 'Select the location of the rules or classifier file'
 
     def new_module(self):
         return FilterObjects()
-
-    def generated_params(self):
-        return {'Select the location of the rules or classifier file': self._output_location()}
 
     def get_settings_groups(self):
         measurements_settings = FilterObjectsMeasurementsSettings()
@@ -944,6 +935,7 @@ class FilterObjectsModuleProcessor(OutputModuleProcessor):
                 rules = module_config.pop(list_key)
                 for rule in rules:
                     module_list_element.append(settings_group.build_settings_group_from_list_element(rule))
+        self._configure_input_path(module_config, self._RULES_DIRECTORY)
         ModuleProcessor.configure_module(self, module_config)
         return self.module
 
