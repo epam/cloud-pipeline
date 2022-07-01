@@ -16,14 +16,7 @@
 
 package com.epam.pipeline.entity.ldap;
 
-import lombok.Value;
-
-import java.util.List;
-import java.util.Map;
-
-@Value
-public class LdapEntity {
-    String name;
-    LdapEntityType type;
-    Map<String, List<String>> attributes;
+public enum LdapBlockedUserSearchMethod {
+    LOAD_BLOCKED,
+    LOAD_ACTIVE_AND_INTERCEPT
 }
