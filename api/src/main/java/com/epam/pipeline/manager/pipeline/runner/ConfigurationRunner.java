@@ -73,7 +73,7 @@ public class ConfigurationRunner {
     /**
      * Schedules execution of a {@link RunConfiguration} and creates a number
      * of associated {@link PipelineRun} instances. Default values of {@link RunConfiguration}
-     * may be overriden by {@code runConfiguration} parameter. If {@code entitiesIds} or {@code metadataClass}
+     * may be overridden by {@code runConfiguration} parameter. If {@code entitiesIds} or {@code metadataClass}
      * are passed method will try to resolve {@link RunConfiguration} parameters according to
      * {@link MetadataEntity} instances. For {@code metadataClass} method will try to find
      * {@link MetadataEntity} instances in the whole project with matching {@link MetadataClass}.
@@ -116,7 +116,8 @@ public class ConfigurationRunner {
                 .entries(env.getValue())
                 .entitiesIds(entitiesIds)
                 .expansionExpression(expansionExpression)
-                .notifications(runConfiguration.getNotifications())
+                .notifications(env instanceof RunConfigurationEntry ?
+                        ((RunConfigurationEntry) env).getConfiguration().getNotifications() : null)
                 .refreshToken(refreshToken)
                 .build())
             .collect(Collectors.toList());
@@ -158,6 +159,4 @@ public class ConfigurationRunner {
         dbConfiguration.setEntries(mergedEntries);
         return dbConfiguration;
     }
-
-
 }
