@@ -20,15 +20,20 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
+import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 
@@ -37,12 +42,20 @@ public class LaunchParametersRestrictionRunsTest
         implements Navigation, Authorization {
 
     private final String LAUNCH_MAX_RUNS_USER_GLOBAL = "launch.max.runs.user.global";
+    private final String ALLOWED_INSTANCES_MAX_COUNT = "Allowed instance max count";
     private final String registry = C.DEFAULT_REGISTRY;
     private final String group = C.DEFAULT_GROUP;
     private final String tool = C.TESTING_TOOL_NAME;
+    private final String USER_GROUP = C.ROLE_USER;
     private final String GLOBAL_MAX_RUNS = "3";
+    private final String GROUP_MAX_RUNS1 = "2";
+    private final String GROUP_MAX_RUNS2 = "4";
+    private final String USER_GROUP2 = "TEST_GROUP_2642";
     private String[] launchMaxRunsUserGlobalInitial;
     private String errorMessage = "You have exceeded maximum number of running jobs (%s).";
+    private String launchErrorMessage = "Launch of new jobs is restricted as [%s] user " +
+            "will exceed [%s] runs limit [%s]";
+    private String[] runID3 = new String[2];
 
 
     @BeforeClass(alwaysRun = true)
@@ -50,51 +63,164 @@ public class LaunchParametersRestrictionRunsTest
         launchMaxRunsUserGlobalInitial = navigationMenu()
                 .settings()
                 .switchToPreferences()
-                .getLinePreference(LAUNCH_MAX_RUNS_USER_GLOBAL);
+                .getPreference(LAUNCH_MAX_RUNS_USER_GLOBAL);
+        setGroupAllowedInstanceMaxCount(USER_GROUP, "");
+        setUserAllowedInstanceMaxCount(user, "");
+    }
+
+    @AfterClass(alwaysRun = true)
+    public void restorePreferences() {
+        navigationMenu()
+                .settings()
+                .switchToPreferences()
+                .setNumberPreference(LAUNCH_MAX_RUNS_USER_GLOBAL, launchMaxRunsUserGlobalInitial[0], true)
+                .saveIfNeeded();
+        setGroupAllowedInstanceMaxCount(USER_GROUP, "");
+        setUserAllowedInstanceMaxCount(user, "");
     }
 
     @Test
     @TestCase(value = {"2642_1"})
     public void checkGlobalRestrictionCountOfRunningInstances() {
-        String message = format("Launch of new jobs is restricted as [%s] user " +
-                "will exceed [<user-global-limit>] runs limit [%s]", user.login, GLOBAL_MAX_RUNS);
+        String message = format(launchErrorMessage, user.login, "<user-global-limit>", GLOBAL_MAX_RUNS);
+        List<String> runIDs = new ArrayList<>();
+        try {
+            navigationMenu()
+                    .settings()
+                    .switchToPreferences()
+                    .setNumberPreference(LAUNCH_MAX_RUNS_USER_GLOBAL, GLOBAL_MAX_RUNS, true)
+                    .saveIfNeeded();
+            logout();
+            loginAs(user);
+            runIDs.addAll(launchSeveralRuns(parseInt(GLOBAL_MAX_RUNS)));
+            launchToolWithError(GLOBAL_MAX_RUNS, format(errorMessage, GLOBAL_MAX_RUNS), message);
+
+            logout();
+            loginAs(admin);
+            runIDs.addAll(launchSeveralRuns(parseInt(GLOBAL_MAX_RUNS)));
+            tools()
+                    .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                    .expandTab(EXEC_ENVIRONMENT)
+                    .ensure(byText(format(errorMessage, GLOBAL_MAX_RUNS)), not(visible))
+                    .checkLaunchMessage("message",
+                            format(errorMessage, GLOBAL_MAX_RUNS), false)
+                    .launch(this);
+            runIDs.add(getLastRunId());
+        } finally {
+            logout();
+            loginAs(admin);
+            for (String runID : runIDs) {
+                      runsMenu().viewAvailableActiveRuns().stopRun(runID);
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = "checkGlobalRestrictionCountOfRunningInstances")
+    @TestCase(value = {"2642_2"})
+    public void checkRunningInstancesRestrictionAppliedToGroup() {
+        List<String> runIDs = new ArrayList<>();
+        try {
+            setGroupAllowedInstanceMaxCount(USER_GROUP, GROUP_MAX_RUNS1);
+            logout();
+            loginAs(user);
+            runIDs.addAll(launchSeveralRuns(parseInt(GROUP_MAX_RUNS1)));
+            launchToolWithError(GROUP_MAX_RUNS1, format(errorMessage, GROUP_MAX_RUNS1),
+                    format(launchErrorMessage, user.login, USER_GROUP, GROUP_MAX_RUNS1));
+            logout();
+            loginAs(admin);
+            setGroupAllowedInstanceMaxCount(USER_GROUP, GROUP_MAX_RUNS2);
+            logout();
+            loginAs(user);
+            runIDs.addAll(launchSeveralRuns(parseInt(GROUP_MAX_RUNS1)));
+            launchToolWithError(GROUP_MAX_RUNS1, format(errorMessage, GROUP_MAX_RUNS2),
+                    format(launchErrorMessage, user.login, USER_GROUP, GROUP_MAX_RUNS2));
+        } finally {
+            logout();
+            loginAs(admin);
+            for (String runID : runIDs) {
+                runsMenu().viewAvailableActiveRuns().stopRun(runID);
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = "checkGlobalRestrictionCountOfRunningInstances")
+    @TestCase(value = {"2642_3"})
+    public void checkSimultaneousApplyingTwoGroupLevelRunningInstancesRestrictions() {
         navigationMenu()
                 .settings()
-                .switchToPreferences()
-                .setPreference(LAUNCH_MAX_RUNS_USER_GLOBAL, GLOBAL_MAX_RUNS, true)
-                .saveIfNeeded();
+                .switchToUserManagement()
+                .switchToGroups()
+                .pressCreateGroup()
+                .enterGroupName(USER_GROUP2)
+                .create();
+        setGroupAllowedInstanceMaxCount(USER_GROUP2, GROUP_MAX_RUNS1);
         logout();
         loginAs(user);
-        String [] userRunIDs = launchSeveralRuns(parseInt(GLOBAL_MAX_RUNS));
         tools()
-            .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-            .expandTab(EXEC_ENVIRONMENT)
-            .ensure(byText(format(errorMessage, GLOBAL_MAX_RUNS)), visible)
-            .checkLaunchMessage("message", format(errorMessage, GLOBAL_MAX_RUNS), true)
-            .launchWithError(message);
-        IntStream.range(0, parseInt(GLOBAL_MAX_RUNS))
-                .forEach(i -> runsMenu().stopRun(userRunIDs[i]));
-        logout();
-        loginAs(admin);
-        String [] adminRunIDs = launchSeveralRuns(parseInt(GLOBAL_MAX_RUNS));
-        tools()
-            .perform(registry, group, tool, ToolTab::runWithCustomSettings)
-            .expandTab(EXEC_ENVIRONMENT)
-            .ensure(byText(format(errorMessage, GLOBAL_MAX_RUNS)), not(visible))
-            .checkLaunchMessage("message", format(errorMessage, GLOBAL_MAX_RUNS), false)
-            .launch(this);
-        runsMenu().stopRun(getLastRunId());
-        IntStream.range(0, parseInt(GLOBAL_MAX_RUNS))
-                .forEach(i -> runsMenu().stopRun(adminRunIDs[i]));
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .setPriceType(ON_DEMAND)
+                .doNotMountStoragesSelect(true)
+                .launch(this);
+        runID3[0] = getLastRunId();
+        tools().perform(registry, group, tool, tool ->
+                tool.run(this));
+        runID3[1] = getLastRunId();
+        launchToolWithError(GROUP_MAX_RUNS1, format(errorMessage, GROUP_MAX_RUNS1),
+                    format(launchErrorMessage, user.login, USER_GROUP2, GROUP_MAX_RUNS1));
+        runsMenu()
+                .showLog(runID3[0])
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(runID3[0])
+                        .execute(format("pipe run -di %s:latest -y", tool))
+                        .assertPageContainsString(format(launchErrorMessage, user.login,
+                                    USER_GROUP2, GROUP_MAX_RUNS1))
+                        .execute("pipe users instances")
+                        .close());
+        runsMenu()
+                .pause(runID3[0], nameWithoutGroup(tool))
+                .waitUntilResumeButtonAppear(runID3[0])
+                .stopRun(runID3[1]);
     }
-    private String[] launchSeveralRuns(int count) {
-        String[] runIDs = new String[count];
+
+    private List<String> launchSeveralRuns(int count) {
+        List<String> runIDs = new ArrayList<>();
         IntStream.range(0, count)
                 .forEach(i -> {
                     tools().perform(registry, group, tool, tool ->
                             tool.run(this));
-                    runIDs[i] = getLastRunId();
+                    runIDs.add(getLastRunId());
                 });
         return runIDs;
+    }
+
+    private void launchToolWithError(String count, String formMessage, String launchMessage) {
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .expandTab(EXEC_ENVIRONMENT)
+                .ensure(byText(format(formMessage, count)), visible)
+                .checkLaunchMessage("message", format(formMessage, count), true)
+                .launchWithError(launchMessage);
+    }
+
+    private void setGroupAllowedInstanceMaxCount(String group, String value) {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToGroups()
+                .editGroup(group)
+                .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
+                .ok();
+    }
+
+    private void setUserAllowedInstanceMaxCount(Account user, String value) {
+        navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(user.login)
+                .edit()
+                .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
+                .ok();
     }
 }

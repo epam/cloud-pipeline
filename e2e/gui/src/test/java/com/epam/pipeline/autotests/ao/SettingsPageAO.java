@@ -27,6 +27,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
@@ -1227,6 +1228,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
             click(pref)
                     .clear(pref)
                     .setValue(pref, value);
+            setEyeOption(eyeIsChecked);
+            return this;
+        }
+
+        public PreferencesAO setNumberPreference(String preference, String value, boolean eyeIsChecked) {
+            searchPreference(preference);
+            Actions action = actions().moveToElement($(byClassName("CodeMirror-line"))).click();
+            action.sendKeys(Keys.chord(Keys.CONTROL, "a")).sendKeys(value).perform();
             setEyeOption(eyeIsChecked);
             return this;
         }
