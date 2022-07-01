@@ -29,9 +29,10 @@ export class UserRunCount extends RemotePost {
 
   url = '/run/count';
 
-  constructor (user) {
+  constructor (user, countChildNodes = false) {
     super();
     this.user = user;
+    this.countChildNodes = countChildNodes;
   }
 
   fetch () {
@@ -42,7 +43,7 @@ export class UserRunCount extends RemotePost {
         'PAUSING',
         'RESUMING'
       ],
-      userModified: false,
+      userModified: this.countChildNodes,
       owners: this.user ? [this.user] : undefined
     });
   }
