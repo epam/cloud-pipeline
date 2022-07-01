@@ -11,6 +11,7 @@ spec:
       labels:
         cloud-pipeline/cp-api-srv: "true"
     spec:
+      terminationGracePeriodSeconds: 40
       nodeSelector:
         cloud-pipeline/cp-api-srv: "true"
       tolerations:
