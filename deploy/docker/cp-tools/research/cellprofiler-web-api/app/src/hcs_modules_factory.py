@@ -12,7 +12,7 @@ from cellprofiler.modules.dilateobjects import DilateObjects
 from cellprofiler.modules.enhanceedges import EnhanceEdges
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
-from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
+from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet, EEObjectNameSubscriber
 from cellprofiler.modules.fillobjects import FillObjects
 from cellprofiler.modules.flipandrotate import FlipAndRotate
 from cellprofiler.modules.gaussianfilter import GaussianFilter
@@ -63,8 +63,8 @@ from cellprofiler.modules.threshold import Threshold
 from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
-from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement
-from cellprofiler_core.setting.text import Float, ImageName
+from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
+from cellprofiler_core.setting.text import Float, ImageName, Text
 
 
 class HcsModulesFactory(object):
@@ -443,8 +443,40 @@ class OutputModuleProcessor(ModuleProcessor):
 
 
 class ExportToSpreadsheetModuleProcessor(OutputModuleProcessor):
+    _EXPORT_DATA_KEY = 'Data to export'
+    _ALL_MEASUREMENT_TYPES_SELECTOR_KEY = 'Export all measurement types?'
+    _EXPORT_MEASUREMENT_KEY = 'Press button to select measurements'
+    _ALL_MEASUREMENT_SELECTOR_KEY = 'Select the measurements to export'
+
     def new_module(self):
         return ExportToSpreadsheet()
+
+    def configure_module(self, module_config: dict) -> Module:
+        if self._EXPORT_DATA_KEY in module_config:
+            module_config[self._ALL_MEASUREMENT_TYPES_SELECTOR_KEY] = False
+            self.module.object_groups.clear()
+            objects = module_config.pop(self._EXPORT_DATA_KEY).split('|')
+            for object_name in objects:
+                group = SettingsGroup()
+                group.file_name = Text('File name', object_name + '.csv')
+                group.name = EEObjectNameSubscriber('Data to export', object_name)
+                group.previous_file = Binary('Combine these object measurements with those of the previous object?',
+                                             False)
+                group.wants_automatic_file_name = Binary('Use the object name for the file name?', False)
+                self.module.object_groups.append(group)
+        module_config[self._ALL_MEASUREMENT_SELECTOR_KEY] = self._EXPORT_MEASUREMENT_KEY in module_config
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def get_settings_as_dict(self):
+        settings = dict()
+        for setting in self.module.settings():
+            settings[setting.text] = self.map_setting_to_text_value(setting)
+        if self._EXPORT_DATA_KEY in settings and settings[self._EXPORT_DATA_KEY] != 'Do not use':
+            output_object_names = [output_object.name.value for output_object in self.module.object_groups]
+            settings[self._EXPORT_DATA_KEY] = '|'.join(output_object_names)
+            settings.pop('File name')
+        return settings
 
     def generated_params(self):
         return {'Output file location': self._output_location(),
