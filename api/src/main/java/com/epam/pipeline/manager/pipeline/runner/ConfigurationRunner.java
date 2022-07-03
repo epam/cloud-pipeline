@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
@@ -110,17 +111,24 @@ public class ConfigurationRunner {
             .collect(Collectors.groupingBy(AbstractRunConfigurationEntry::getExecutionEnvironment))
             .entrySet()
             .stream()
-            .map(env -> AnalysisConfiguration
-                .builder()
-                .configurationId(configuration.getId())
-                .entries(env.getValue())
-                .entitiesIds(entitiesIds)
-                .expansionExpression(expansionExpression)
-                .notifications(env instanceof RunConfigurationEntry ?
-                        ((RunConfigurationEntry) env).getConfiguration().getNotifications() : null)
-                .refreshToken(refreshToken)
-                .build())
-            .collect(Collectors.toList());
+                .map(env -> {
+                    List<PipelineStartNotificationRequest> notifications = null;
+                    if (CollectionUtils.isNotEmpty(env.getValue())) {
+                        notifications = env.getValue().get(0) instanceof RunConfigurationEntry ?
+                                ((RunConfigurationEntry) env.getValue().get(0)).getConfiguration().getNotifications() :
+                                null;
+                    }
+                    return AnalysisConfiguration
+                            .builder()
+                            .configurationId(configuration.getId())
+                            .entries(env.getValue())
+                            .entitiesIds(entitiesIds)
+                            .expansionExpression(expansionExpression)
+                            .notifications(notifications)
+                            .refreshToken(refreshToken)
+                            .build();
+                })
+                .collect(Collectors.toList());
         final int configurationsNodes = configurations.stream()
             .map(AnalysisConfiguration::getEntries)
             .flatMap(Collection::stream)
