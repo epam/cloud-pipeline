@@ -180,6 +180,11 @@ public class PipelineConfigurationManager {
         } else {
             configuration.setInstanceImage(defaultConfig.getInstanceImage());
         }
+        if (runVO.getNotifications() != null) {
+            configuration.setNotifications(runVO.getNotifications());
+        } else {
+            configuration.setNotifications(defaultConfig.getNotifications());
+        }
 
         //client always sends actual node-count
         configuration.setNodeCount(runVO.getNodeCount());
@@ -270,17 +275,10 @@ public class PipelineConfigurationManager {
         return hasBooleanParameter(entry, NFS_CLUSTER_ROLE);
     }
 
-    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
-        return entry.getParameters().entrySet().stream().anyMatch(e ->
-                e.getKey().equals(parameterName) && e.getValue().getValue() != null
-                        && e.getValue().getValue().equalsIgnoreCase("true"));
-    }
-
-    private void setEndpointsErasure(PipelineConfiguration configuration) {
-        if (MapUtils.isEmpty(configuration.getParameters())) {
-            return;
-        }
-        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
+    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
+        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
+                .map(ConfigurationEntry::getConfiguration)
+                .orElseGet(PipelineConfiguration::new);
     }
 
     public PipelineConfiguration getConfigurationFromRun(PipelineRun run) {
@@ -318,6 +316,19 @@ public class PipelineConfigurationManager {
         }
         configuration.buildEnvVariables();
         return configuration;
+    }
+
+    private static boolean hasBooleanParameter(PipelineConfiguration entry, String parameterName) {
+        return entry.getParameters().entrySet().stream().anyMatch(e ->
+                e.getKey().equals(parameterName) && e.getValue().getValue() != null
+                        && e.getValue().getValue().equalsIgnoreCase("true"));
+    }
+
+    private void setEndpointsErasure(PipelineConfiguration configuration) {
+        if (MapUtils.isEmpty(configuration.getParameters())) {
+            return;
+        }
+        configuration.setEraseRunEndpoints(hasBooleanParameter(configuration, ERASE_RUN_ENDPOINTS));
     }
 
     private String chooseDockerImage(PipelineStart runVO, PipelineConfiguration defaultConfig) {
@@ -390,12 +401,6 @@ public class PipelineConfigurationManager {
             runVO.setConfigurationName(entry.getName());
         }
         return defaultConfiguration;
-    }
-
-    public PipelineConfiguration getConfigurationForTool(final Tool tool, final PipelineConfiguration configuration) {
-        return Optional.ofNullable(getConfigurationForToolVersion(tool.getId(), configuration.getDockerImage(), null))
-                .map(ConfigurationEntry::getConfiguration)
-                .orElseGet(PipelineConfiguration::new);
     }
 
     private String mergeRunAs(final PipelineStart runVO, final PipelineConfiguration configuration) {
