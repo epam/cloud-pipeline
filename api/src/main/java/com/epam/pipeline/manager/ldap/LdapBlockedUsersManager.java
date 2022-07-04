@@ -78,6 +78,9 @@ public class LdapBlockedUsersManager {
                 .collect(Collectors.toList());
     }
 
+    // We need to make sure, when configure SystemPreference, that we are consistent between `searchMethod`
+    // and `filterTemplate`. e.g. if we have LOAD_ACTIVE_AND_INTERCEPT then we also should have `filterTemplate`
+    // that actually will search users that are active.
     private List<PipelineUser> findLdapBlockedUsers(final List<PipelineUser> patch,
                                                     final LdapBlockedUserSearchMethod searchMethod,
                                                     final String filterTemplate,
