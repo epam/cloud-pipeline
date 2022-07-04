@@ -725,14 +725,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return runs;
     }
 
-    public List<PipelineRun> loadAllRunsWithServiceURL(final String serviceUrl) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(PipelineRunParameters.SERVICE_URL.name(),
-                DaoHelper.POSTGRES_LIKE_CHARACTER + serviceUrl + DaoHelper.POSTGRES_LIKE_CHARACTER);
-        return getNamedParameterJdbcTemplate().query(loadAllRunsByServiceURL, params,
-                PipelineRunParameters.getRowMapper());
-    }
-
     private MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
