@@ -724,14 +724,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
         return runs;
     }
 
-    public List<PipelineRun> loadAllRunsWithServiceURL(final String serviceUrl) {
-        final MapSqlParameterSource params = new MapSqlParameterSource();
-        params.addValue(PipelineRunParameters.SERVICE_URL.name(),
-                DaoHelper.POSTGRES_LIKE_CHARACTER + serviceUrl + DaoHelper.POSTGRES_LIKE_CHARACTER);
-        return getNamedParameterJdbcTemplate().query(loadAllRunsByServiceURL, params,
-                PipelineRunParameters.getRowMapper());
-    }
-
     private MapSqlParameterSource[] getParamsForBatchUpdate(final Collection<PipelineRun> runs) {
         return runs.stream()
                 .map(run -> PipelineRunParameters.getParameters(run, getConnection()))
@@ -1067,7 +1059,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     new TypeReference<Map<String, String>>() {});
         }
     }
-
     private static Array mapListToSqlArray(List<Long> list, Connection connection) {
         Long[] emptyArray = new Long[0];
         Long[] javaArray = list != null ? list.toArray(emptyArray) : emptyArray;
@@ -1318,5 +1309,4 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
         this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
     }
-
 }

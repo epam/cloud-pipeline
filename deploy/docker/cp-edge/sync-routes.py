@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
 import os
 import json
 import glob
@@ -107,7 +106,7 @@ class ServiceEndpoint:
                 self.additional = additional
 
 def do_log(msg):
-        print('[{}] {}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
+        print('[{}] {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
 
 def call_api(method_url, data=None):
         result = None
@@ -427,6 +426,7 @@ def append_additional_endpoints(tool_endpoints, run_details):
                         tool_endpoints.append(json.dumps(tool_endpoint))
         return tool_endpoints, overridden_endpoints_count
 
+
 def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
         non_matching_tool_endpoints = []
         is_default_endpoint = False
@@ -578,6 +578,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                                 additional = additional.replace(EDGE_EXTERNAL_APP, "")
                                                 is_external_app = True
 
+
                                         service_list[edge_location_id] = {"pod_id": pod_id,
                                                                         "pod_ip": target_ip,
                                                                         "pod_owner": pod_owner,
@@ -710,7 +711,6 @@ def create_service_location(service_spec, added_route, service_url_dict):
                                 .replace('{run_id}', service_spec["run_id"]) \
                                 .replace('{edge_route_shared_users}', service_spec["shared_users_sids"]) \
                                 .replace('{edge_route_shared_groups}', service_spec["shared_groups_sids"]) \
-                                .replace('{edge_route_schema}', 'https' if service_spec["is_ssl_backend"] else 'http') \
                                 .replace('{additional}', service_spec["additional"])
                         nginx_sensitive_route_definitions.append(nginx_sensitive_route_definition)
         path_to_route = os.path.join(nginx_sites_path, added_route + '.conf')
@@ -726,6 +726,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
         if has_custom_domain:
                 do_log('Adding {} route to the server block {}'.format(path_to_route, service_hostname))
                 add_custom_domain(service_hostname, path_to_route, is_external_app=service_spec['external_app'])
+
         service_url = SVC_URL_TMPL.format(external_ip=service_hostname,
                                           edge_location=service_spec["edge_location"] if service_spec[
                                                   "edge_location"] else "",
