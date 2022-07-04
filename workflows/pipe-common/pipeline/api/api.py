@@ -706,6 +706,18 @@ class PipelineAPI:
             raise RuntimeError("Failed to get system preference %s. "
                                "Error message: %s" % (preference_name, e.message))
 
+    def get_contextual_preference(self, preference_name, preference_level, resource_id):
+        try:
+            url = self.api_url \
+                  + '/contextual/preference/load?name=' +  preference_name \
+                  + '&level=' + preference_level \
+                  + '&resourceId=' + str(resource_id)
+            result = self.execute_request(url, method='get')
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
+                               "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
+
     def load_tool_version_settings(self, tool_id, version):
         get_tool_version_settings_url = self.TOOL_VERSION_SETTINGS % tool_id
         if version:
@@ -957,6 +969,18 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+
+    def generate_user_token(self, user_name, duration=None):
+        try:
+            if duration:
+                expiration_query = '&expiration=' + str(duration)
+            url = str(self.api_url) \
+                  + '/user/token?name=' + user_name \
+                  + (expiration_query if duration else '')
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
+
 
     def load_roles(self, load_users=False):
         try:
