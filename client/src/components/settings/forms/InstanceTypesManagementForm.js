@@ -37,15 +37,24 @@ const valueNames = {
   allowedInstanceTypes: 'allowedInstanceTypes',
   allowedToolInstanceTypes: 'allowedToolInstanceTypes',
   allowedPriceTypes: 'allowedPriceTypes',
-  jobsVisibility: 'jobsVisibility'
+  jobsVisibility: 'jobsVisibility',
+  jwtTokenExpirationRefreshThreshold: 'jwtTokenExpirationRefreshThreshold'
 };
 
 @inject(({preferences}, props) => {
   const loadPreference = (field) => {
     if (props.resourceId && props.level) {
-      return {
-        [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
-      };
+      if (
+        (
+          ![valueNames.jwtTokenExpirationRefreshThreshold]
+            .includes(field)
+        ) ||
+        (field === valueNames.jwtTokenExpirationRefreshThreshold && props.level === 'USER')
+      ) {
+        return {
+          [field]: new ContextualPreferenceLoad(props.level, names[field], props.resourceId)
+        };
+      }
     }
     return {};
   };
@@ -54,6 +63,7 @@ const valueNames = {
     ...loadPreference(valueNames.allowedToolInstanceTypes),
     ...loadPreference(valueNames.allowedPriceTypes),
     ...loadPreference(valueNames.jobsVisibility),
+    ...loadPreference(valueNames.jwtTokenExpirationRefreshThreshold),
     preferences
   };
 })
@@ -88,7 +98,8 @@ export default class InstanceTypesManagementForm extends React.Component {
     return this.valuePending(valueNames.allowedPriceTypes) ||
       this.valuePending(valueNames.allowedInstanceTypes) ||
       this.valuePending(valueNames.allowedToolInstanceTypes) ||
-      this.valuePending(valueNames.jobsVisibility);
+      this.valuePending(valueNames.jobsVisibility) ||
+      this.valuePending(valueNames.jwtTokenExpirationRefreshThreshold);
   }
 
   @computed
@@ -116,7 +127,8 @@ export default class InstanceTypesManagementForm extends React.Component {
     return this.valueModified(valueNames.allowedInstanceTypes) ||
       this.valueModified(valueNames.allowedToolInstanceTypes) ||
       this.valueModified(valueNames.allowedPriceTypes) ||
-      this.valueModified(valueNames.jobsVisibility);
+      this.valueModified(valueNames.jobsVisibility) ||
+      this.valueModified(valueNames.jwtTokenExpirationRefreshThreshold);
   }
 
   valueModified = (field) => {
@@ -231,6 +243,7 @@ export default class InstanceTypesManagementForm extends React.Component {
       [valueNames.allowedToolInstanceTypes]: undefined,
       [valueNames.allowedPriceTypes]: undefined,
       [valueNames.jobsVisibility]: undefined,
+      [valueNames.jwtTokenExpirationRefreshThreshold]: undefined,
       jobsVisibilityUpdated: false
     }, this.reportModified);
   };
@@ -244,6 +257,7 @@ export default class InstanceTypesManagementForm extends React.Component {
     results.push(await this.applyValue(valueNames.allowedToolInstanceTypes));
     results.push(await this.applyValue(valueNames.allowedPriceTypes));
     results.push(await this.applyValue(valueNames.jobsVisibility));
+    results.push(await this.applyValue(valueNames.jwtTokenExpirationRefreshThreshold));
     const errors = results.filter(r => !!r);
     if (errors.length) {
       hide();
@@ -253,11 +267,13 @@ export default class InstanceTypesManagementForm extends React.Component {
       await this.reloadValue(valueNames.allowedToolInstanceTypes);
       await this.reloadValue(valueNames.allowedPriceTypes);
       await this.reloadValue(valueNames.jobsVisibility);
+      await this.reloadValue(valueNames.jwtTokenExpirationRefreshThreshold);
       this.setState({
         [valueNames.allowedInstanceTypes]: undefined,
         [valueNames.allowedToolInstanceTypes]: undefined,
         [valueNames.allowedPriceTypes]: undefined,
         [valueNames.jobsVisibility]: undefined,
+        [valueNames.jwtTokenExpirationRefreshThreshold]: undefined,
         jobsVisibilityUpdated: false
       }, hide);
     }
@@ -338,6 +354,22 @@ export default class InstanceTypesManagementForm extends React.Component {
               </Select.Option>
             </Select>
           </Row>
+          {
+            this.props.level === 'USER' && (
+              <div style={{marginTop: 5, width: '100%'}}>
+                <Row type="flex">
+                  <b>Instance token refresh ratio</b>
+                </Row>
+                <Row type="flex">
+                  {this.valueInputDecorator(
+                    valueNames.jwtTokenExpirationRefreshThreshold,
+                    disabled,
+                    'number'
+                  )}
+                </Row>
+              </div>
+            )
+          }
           {
             this.props.showApplyButton && (
               <Row type="flex" justify="end" style={{marginTop: 10}}>
