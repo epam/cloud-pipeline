@@ -529,8 +529,7 @@ class ConfigureClusterDialog extends React.Component {
         <AllowedInstancesCountWarning
           key="nodes count warning"
           payload={{
-            nodeCount: this.state.nodesCount,
-            maxNodeCount: this.state.maxNodesCount
+            nodeCount: this.state.nodesCount
           }}
           style={{width: '100%'}}
         />
@@ -776,7 +775,9 @@ class ConfigureClusterDialog extends React.Component {
       >
         <AllowedInstancesCountWarning
           payload={{
-            nodeCount: this.state.nodesCount,
+            nodeCount: this.state.setDefaultNodesCount
+              ? this.state.nodesCount
+              : 0,
             maxNodeCount: this.state.maxNodesCount
           }}
           style={{
@@ -864,7 +865,7 @@ class ConfigureClusterDialog extends React.Component {
               justify="center"
             >
               <AllowedInstancesCountWarning
-                payload={{nodeCount: 1}}
+                singleNode
                 style={{width: '100%', marginTop: '5px'}}
               />
             </Row>
