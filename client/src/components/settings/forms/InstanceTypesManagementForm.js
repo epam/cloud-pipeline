@@ -51,7 +51,11 @@ const valueNames = {
         (field === valueNames.allowedInstanceMaxCountGroup && props.level === 'ROLE') ||
         (field === valueNames.allowedInstanceMaxCount && props.level === 'USER') ||
         (
-          ![valueNames.allowedInstanceMaxCount, valueNames.allowedInstanceMaxCountGroup]
+          ![
+            valueNames.allowedInstanceMaxCount,
+            valueNames.allowedInstanceMaxCountGroup,
+            valueNames.jwtTokenExpirationRefreshThreshold
+          ]
             .includes(field)
         ) ||
         (field === valueNames.jwtTokenExpirationRefreshThreshold && props.level === 'USER')
