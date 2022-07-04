@@ -2,6 +2,8 @@ import inspect
 import os
 import sys
 
+from cellprofiler.modules.calculatemath import CalculateMath
+from cellprofiler.modules.calculatestatistics import CalculateStatistics
 from cellprofiler.modules.classifyobjects import ClassifyObjects
 from cellprofiler.modules.colortogray import ColorToGray
 from cellprofiler.modules.combineobjects import CombineObjects
@@ -9,6 +11,11 @@ from cellprofiler.modules.convertimagetoobjects import ConvertImageToObjects
 from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
 from cellprofiler.modules.correctilluminationcalculate import CorrectIlluminationCalculate
 from cellprofiler.modules.crop import Crop
+from cellprofiler.modules.displaydataonimage import DisplayDataOnImage
+from cellprofiler.modules.displaydensityplot import DisplayDensityPlot
+from cellprofiler.modules.displayhistogram import DisplayHistogram
+from cellprofiler.modules.displayplatemap import DisplayPlatemap
+from cellprofiler.modules.displayscatterplot import DisplayScatterPlot
 from cellprofiler.modules.editobjectsmanually import EditObjectsManually
 from cellprofiler.modules.definegrid import DefineGrid
 from cellprofiler.modules.dilateimage import DilateImage
@@ -73,7 +80,7 @@ from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
-from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName
+from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName, Directory
 
 
 class HcsModulesFactory(object):
@@ -596,6 +603,16 @@ class SettingsWithListElementModuleProcessor(SettingsWithListElement, ModuleProc
         return module_settings_dictionary
 
 
+class SettingsWithListElementAndOutputModuleProcessor(SettingsWithListElementModuleProcessor):
+
+    def __init__(self, save_root, module=None):
+        SettingsWithListElementModuleProcessor.__init__(self, module)
+        self.save_root = os.path.join(save_root, str(self.module.id))
+
+    def _output_location(self):
+        return 'Elsewhere...|' + self.save_root
+
+
 class ImageMathModuleProcessor(SettingsWithListElementModuleProcessor):
     _ELEMENTS_KEY = 'images'
     _ELEMENT_TYPE_KEY = 'type'
@@ -954,3 +971,82 @@ class FilterObjectsModuleProcessor(ModuleProcessor):
         module_settings_dictionary[additional_objects_group.get_list_key()] = \
             additional_objects_group.build_list_elements(group_settings)
         return module_settings_dictionary
+
+
+class CalculateMathModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return CalculateMath()
+
+
+class CalculateStatisticsModuleProcessor(SettingsWithListElementAndOutputModuleProcessor):
+    _DOSE_VALUES = 'dose_values'
+    _MEASUREMENT = 'measurement'
+    _LOG_TRANSFORM = 'log_transform'
+    _WANTS_SAVE_FIGURE = 'wants_save_figure'
+    _FIGURE_NAME = 'figure_name'
+    _OUTPUT = 'output'
+
+    def new_module(self):
+        return CalculateStatistics()
+
+    def get_list_key(self):
+        return self._DOSE_VALUES
+
+    def get_module_list_element(self):
+        return self.module.dose_values
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.measurement = Measurement('Select the image measurement describing the treatment dose', None,
+                                            value=element_dict[self._MEASUREMENT])
+        component.log_transform = Binary('Log-transform the dose values?', value=element_dict[self._LOG_TRANSFORM])
+        component.wants_save_figure = Binary('Create dose-response plots?', value=element_dict[self._WANTS_SAVE_FIGURE])
+        component.figure_name = Text('Figure prefix', value=element_dict[self._FIGURE_NAME])
+        component.pathname = Directory('Output file location', value=self._output_location())
+        return component
+
+    def get_mandatory_args_length(self):
+        return 1
+
+    def build_list_elements(self, settings_dict):
+        dose_values = list()
+        for i in range(0, len(settings_dict), 5):
+            dose_values.append({
+                self._MEASUREMENT: settings_dict[i].value,
+                self._LOG_TRANSFORM: settings_dict[i + 1].value,
+                self._WANTS_SAVE_FIGURE: settings_dict[i + 2].value,
+                self._FIGURE_NAME: settings_dict[i + 3].value,
+                self._OUTPUT: settings_dict[i + 4].value
+            })
+        return dose_values
+
+
+class DisplayDataOnImageModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayDataOnImage()
+
+
+class DisplayDensityPlotModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayDensityPlot()
+
+
+class DisplayHistogramModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayHistogram()
+
+
+class DisplayPlatemapModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayPlatemap()
+
+
+class DisplayScatterPlotModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayScatterPlot()
