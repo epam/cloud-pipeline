@@ -17,6 +17,13 @@
 import Remote from '../basic/Remote';
 import RemotePost from '../basic/RemotePost';
 
+const DEFAULT_STATUSES = [
+  'RUNNING',
+  'PAUSED',
+  'PAUSING',
+  'RESUMING'
+];
+
 export class UserRunCount extends RemotePost {
   static fetchOptions = {
     headers: {
@@ -29,20 +36,16 @@ export class UserRunCount extends RemotePost {
 
   url = '/run/count';
 
-  constructor (user, countChildNodes = false) {
+  constructor (user, statuses, countChildNodes = false) {
     super();
     this.user = user;
     this.countChildNodes = countChildNodes;
+    this.statuses = statuses || DEFAULT_STATUSES;
   }
 
   fetch () {
     return super.send({
-      statuses: [
-        'RUNNING',
-        'PAUSED',
-        'PAUSING',
-        'RESUMING'
-      ],
+      statuses: this.statuses,
       userModified: this.countChildNodes,
       owners: this.user ? [this.user] : undefined
     });

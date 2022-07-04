@@ -146,7 +146,11 @@ export default class AllowedInstancesCountWarning extends React.Component {
       try {
         await authenticatedUserInfo.fetchIfNeededOrWait();
         const userName = (authenticatedUserInfo.value || {}).userName;
-        this.userRunsCount = new UserRunCount(userName, true);
+        this.userRunsCount = new UserRunCount(
+          userName,
+          ['RUNNING', 'PAUSING', 'RESUMING'],
+          true
+        );
       } catch (e) {
         console.warn(e.message);
       }
