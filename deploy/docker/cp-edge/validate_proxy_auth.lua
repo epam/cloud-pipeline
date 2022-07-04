@@ -53,14 +53,25 @@ local function check_run_permissions(username, token)
     local run_id_api_url = run_api_url .. 'run/search'
     local connect_host = ngx.var.connect_host
     local body_content = [[{
-                            "filterExpression":{
-                                "field":"pod.ip",
-                                "value":"']] .. connect_host .. [['",
-                                "operand":"=",
-                                "filterExpressionType":"LOGICAL"},
-                            "page":1,
-                            "pageSize":1,
-                            "timezoneOffsetInMinutes":180
+                            "filterExpression": {
+                                "filterExpressionType": "AND",
+                                "expressions": [
+                                    {
+                                        "field": "pod.ip",
+                                        "value": "']] .. connect_host .. [['",
+                                        "operand": "=",
+                                        "filterExpressionType": "LOGICAL"
+                                    },
+                                    {
+                                        "field": "status",
+                                        "value": "RUNNING",
+                                        "operand": "=",
+                                        "filterExpressionType": "LOGICAL"
+                                    }
+                                ]
+                            },
+                            "page": 1,
+                            "pageSize": 1
                           }]]
     local res, err = httpc:request_uri(run_id_api_url, {
         method = "POST",
