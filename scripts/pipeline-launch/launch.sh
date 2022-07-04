@@ -1815,6 +1815,21 @@ fi
 
 ######################################################
 
+######################################################
+# Enable API_TOKEN refresher
+######################################################
+
+echo "Setup API_TOKEN refresher"
+echo "-"
+
+if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
+    echo "API_TOKEN refresh is not requested"
+else
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
+fi
+
+######################################################
+
 
 ######################################################
 echo Executing task
