@@ -32,6 +32,120 @@ local function is_empty(str)
     return str == nil or str == ''
 end
 
+local function dict_contains(dict, key)
+    return dict[key] ~= nil
+end
+
+local function check_run_permissions(username, token)
+    local run_api_url = os.getenv("API")
+    if not run_api_url or not token then
+        ngx.log(ngx.ERR, "[SECURITY] Application: Request: " .. ngx.var.request .. "; User: " .. username ..
+                "; Status: Authentication failed; Message: Cannot get API environment variable or api token was not provided.")
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        return
+    end
+
+    local http = require "resty.http"
+    local httpc = http.new()
+
+    -- Perform the <API>/run/search request
+    local run_id_api_url = run_api_url .. 'run/search'
+    local connect_host = ngx.var.connect_host
+    local body_content = [[{
+                            "filterExpression": {
+                                "filterExpressionType": "AND",
+                                "expressions": [
+                                    {
+                                        "field": "pod.ip",
+                                        "value": "']] .. connect_host .. [['",
+                                        "operand": "=",
+                                        "filterExpressionType": "LOGICAL"
+                                    },
+                                    {
+                                        "field": "status",
+                                        "value": "RUNNING",
+                                        "operand": "=",
+                                        "filterExpressionType": "LOGICAL"
+                                    }
+                                ]
+                            },
+                            "page": 1,
+                            "pageSize": 1
+                          }]]
+    local res, err = httpc:request_uri(run_id_api_url, {
+        method = "POST",
+        body = body_content,
+        headers = {
+            ["Authorization"] = "Bearer " .. token,
+            ["Content-Type"] = 'application/json'
+        },
+        ssl_verify = false
+    })
+
+    if not res then
+        ngx.log(ngx.ERR, "[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username ..
+                "; Status: Authentication failed; Message: Failed to request API for the SSH Password. API: " ..
+                run_id_api_url .. ', Error: ' .. err)
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        return
+    end
+
+    local cjson = require "cjson"
+
+    -- Parse the response and get run id
+    local data = cjson.decode(res.body)
+    local run_id = ''
+    if not dict_contains(data, 'payload') or
+       not dict_contains(data.payload, 'elements') or
+       is_empty(data.payload.elements[1]) or
+       is_empty(data.payload.elements[1].id) then
+        ngx.log(ngx.ERR, "[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username ..
+                "; Status: Authentication failed; Message: Requested from pod IP run is not found.")
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        return
+    else
+        run_id = data.payload.elements[1].id
+    end
+
+    -- Perform the <API>/run/<run_id> request
+    local run_sshpassword_api_url = run_api_url .. 'run/' .. run_id
+    local res, err = httpc:request_uri(run_sshpassword_api_url, {
+        method = "GET",
+        headers = {
+            ["Authorization"] = "Bearer " .. token,
+            ["Content-Type"] = 'application/json'
+        },
+        ssl_verify = false
+    })
+
+    if not res then
+        ngx.log(ngx.ERR, "[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username ..
+                "; Status: Authentication failed; Message: Failed to request API for the ssh password. API: " ..
+                run_sshpassword_api_url .. ', Error: ' .. err)
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        return
+    end
+
+    -- Parse the response and get the sshPassword parameter
+    local data = cjson.decode(res.body)
+    if not dict_contains(data, 'payload') or is_empty(data.payload.sshPassword) then
+        if is_empty(data[message]) then
+            message = "Cannot get sshPassword from the API response"
+        else
+            message = data.message
+        end
+        ngx.log(ngx.ERR, "[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username ..
+                "; Status: Authentication failed; Message: " .. message)
+        ngx.status = ngx.HTTP_UNAUTHORIZED
+        ngx.exit(ngx.HTTP_UNAUTHORIZED)
+        return
+    end
+end
+
 local function get_basic_token()
     local authorization = ngx.var.http_proxy_authorization
 
@@ -104,5 +218,7 @@ if not jwt_obj["verified"] then
             "; User: " .. username .. "; Status: Authentication failed; Message: " .. jwt_obj.reason)
     ngx.exit(ngx.HTTP_UNAUTHORIZED)
 end
+
+check_run_permissions(username, token)
 
 ngx.log(ngx.WARN,"[SECURITY] Request: " .. ngx.var.request .. "; User: " .. username .. "; Status: Successfully authenticated.")
