@@ -1903,7 +1903,7 @@ echo "-"
 if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
     echo "API_TOKEN refresh is not requested"
 else
-    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_experation_refresher.py 1>/dev/null 2> $LOG_DIR/.nohup.token.refresher.log &
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
 fi
 
 ######################################################
