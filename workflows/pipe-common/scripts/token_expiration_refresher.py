@@ -103,9 +103,9 @@ def refresh_token():
 
     new_token = get_user_token(api, username)
     if token_from_file:
-        os.system("sed -i 's|API_TOKEN=.*|API_TOKEN=%s|g' %s" % (new_token, ENV_SRC))
+        os.system('sed -i \'s|API_TOKEN=.*|API_TOKEN="%s"|g\' %s' % (new_token, ENV_SRC))
     else:
-        os.system('echo "export API_TOKEN=%s" >> %s' % (new_token, ENV_SRC))
+        os.system('echo \'export API_TOKEN=\"%s\"\' >> %s' % (new_token, ENV_SRC))
     print("[INFO] Token has been refreshed on {}".format(datetime.now()))
 
 
