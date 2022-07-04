@@ -65,7 +65,7 @@ from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
 from cellprofiler_core.setting.text import Float, ImageName, Text
-from .modules.define_results import DefineResults
+from .modules.define_results import DefineResults, CalculationSpec
 
 
 class HcsModulesFactory(object):
@@ -491,6 +491,7 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
 
     def configure_module(self, module_config: dict) -> Module:
         specs = module_config['specs'] if 'specs' in module_config else []
+        specs = [CalculationSpec.from_json(spec) for spec in specs]
         grouping = module_config['grouping'] if 'grouping' in module_config else None
         self._validate_configuration(specs, grouping)
         self.module.set_calculation_spec(specs, grouping)
@@ -506,6 +507,12 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         if None in all_objects:
             all_objects.remove(None)
         module_config[self._EXPORT_DATA_KEY] = '|'.join(all_objects)
+
+    def get_settings_as_dict(self):
+        settings = ExportToSpreadsheetModuleProcessor.get_settings_as_dict(self)
+        settings['specs'] = self.module.get_calculation_specs_as_json()
+        settings['grouping'] = self.module.get_grouping()
+        return settings
 
     def generated_params(self):
         return {'Output file location': self._output_location(),
