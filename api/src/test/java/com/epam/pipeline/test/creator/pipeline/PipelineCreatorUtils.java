@@ -43,6 +43,7 @@ import com.epam.pipeline.entity.pipeline.run.ScheduleType;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -169,6 +170,7 @@ public final class PipelineCreatorUtils {
         vo.setNodeCount(TEST_INT);
         vo.setIsSpot(true);
         vo.setParams(params);
+        vo.setNotifications(Collections.emptyList());
         return vo;
     }
 
