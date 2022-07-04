@@ -23,20 +23,18 @@ export const names = {
   allowedInstanceTypes: 'cluster.allowed.instance.types',
   allowedToolInstanceTypes: 'cluster.allowed.instance.types.docker',
   allowedPriceTypes: 'cluster.allowed.price.types',
-  jobsVisibility: 'launch.run.visibility'
+  jobsVisibility: 'launch.run.visibility',
+  jwtTokenExpirationRefreshThreshold: 'launch.jwt.token.expiration.refresh.threshold'
 };
 
 export class ContextualPreferenceLoad extends Remote {
-
   constructor (level, name, resourceId) {
     super();
     this.url = `/contextual/preference/load?name=${name}&level=${level}&resourceId=${resourceId}`;
   }
-
 }
 
 export class ContextualPreferenceUpdate extends RemotePost {
-
   constructor () {
     super();
     this.constructor.fetchOptions = {
@@ -49,11 +47,9 @@ export class ContextualPreferenceUpdate extends RemotePost {
     };
     this.url = '/contextual/preference';
   }
-
 }
 
 export class ContextualPreferenceDelete extends RemotePost {
-
   constructor (name, level, resourceId) {
     super();
     this.constructor.fetchOptions = {
