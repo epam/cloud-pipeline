@@ -21,6 +21,7 @@ import {computed, observable} from 'mobx';
 import {Alert, message} from 'antd';
 import roleModel from '../../../../../utils/roleModel';
 import LaunchLimits from '../../../../../models/user/LaunchLimits';
+import {CP_CAP_AUTOSCALE_WORKERS} from './parameters';
 import {UserRunCount} from '../../../../../models/pipelines/RunCount';
 
 const WARNING_TYPES = {
@@ -62,13 +63,27 @@ export default class AllowedInstancesCountWarning extends React.Component {
   }
 
   get isSingleNode () {
+    const {singleNode} = this.props;
+    const {nodeCount, maxNodeCount} = this.payload;
+    return singleNode || (!nodeCount && !maxNodeCount);
+  }
+
+  get payload () {
     const {payload = {}} = this.props;
-    return (!payload.maxNodeCount && +payload.nodeCount === 1) ||
-      (!payload.nodeCount && !payload.maxNodeCount);
+    let maxNodeCount;
+    if (payload.maxNodeCount !== undefined) {
+      maxNodeCount = Number(payload.maxNodeCount);
+    } else if (payload.params && payload.params[CP_CAP_AUTOSCALE_WORKERS]) {
+      maxNodeCount = Number(payload.params[CP_CAP_AUTOSCALE_WORKERS].value);
+    }
+    return {
+      nodeCount: Number(payload.nodeCount),
+      maxNodeCount: maxNodeCount
+    };
   }
 
   get instancesToLaunch () {
-    const {payload} = this.props;
+    const {nodeCount, maxNodeCount} = this.payload;
     const masterNode = 1;
     if (this.isSingleNode) {
       return {
@@ -80,10 +95,10 @@ export default class AllowedInstancesCountWarning extends React.Component {
       if (value === undefined || isNaN(value)) {
         return 0;
       }
-      return +value;
+      return value;
     };
-    let min = correctValue(payload.nodeCount) + masterNode;
-    let max = correctValue(payload.maxNodeCount) + masterNode;
+    let min = correctValue(nodeCount) + masterNode;
+    let max = correctValue(maxNodeCount) + masterNode;
     if (min > max) {
       max = min;
     }
@@ -183,5 +198,6 @@ export default class AllowedInstancesCountWarning extends React.Component {
 
 AllowedInstancesCountWarning.PropTypes = {
   payload: PropTypes.object,
+  singleNode: PropTypes.bool,
   style: PropTypes.object
 };
