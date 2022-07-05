@@ -1846,8 +1846,10 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
         if (StringUtils.isBlank(mask)) {
             clearByKey(optionField);
+            $(byText(option)).click();
             return;
         }
         setValue(optionField, mask);
+        $(byText(option)).click();
     }
 }

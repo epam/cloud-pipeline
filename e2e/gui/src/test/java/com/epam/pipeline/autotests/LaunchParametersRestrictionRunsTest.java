@@ -30,8 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static com.codeborne.selenide.Condition.not;
-import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
@@ -285,7 +284,7 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToUserManagement()
                 .switchToGroups()
                 .editGroup(group)
-                .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible)
+                .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
                 .ok();
     }
@@ -297,7 +296,7 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToUsers()
                 .searchUserEntry(user.login)
                 .edit()
-                .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible)
+                .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
                 .ok();
     }
