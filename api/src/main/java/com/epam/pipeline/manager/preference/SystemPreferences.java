@@ -32,6 +32,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageConvertRequestAction;
 import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.datastorage.nfs.NFSMountPolicy;
 import com.epam.pipeline.entity.git.GitlabVersion;
+import com.epam.pipeline.entity.ldap.LdapBlockedUserSearchMethod;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.notification.filter.NotificationFilter;
@@ -1005,6 +1006,11 @@ public class SystemPreferences {
             "ldap.response.timeout", 60000, LDAP_GROUP, isGreaterThanOrEquals(0));
     public static final StringPreference LDAP_BLOCKED_USER_FILTER = new StringPreference(
             "ldap.blocked.user.filter", "", LDAP_GROUP, pass);
+
+    public static final StringPreference LDAP_BLOCKED_USER_SEARCH_METHOD = new StringPreference(
+            "ldap.blocked.user.search.method",
+            LdapBlockedUserSearchMethod.LOAD_BLOCKED.name(), LDAP_GROUP,
+            isValidEnum(LdapBlockedUserSearchMethod.class));
     public static final StringPreference LDAP_BLOCKED_USER_NAME_ATTRIBUTE = new StringPreference(
             "ldap.blocked.user.name.attribute", "sAMAccountName", LDAP_GROUP, pass);
     public static final IntPreference LDAP_BLOCKED_USERS_FILTER_PAGE_SIZE = new IntPreference(
