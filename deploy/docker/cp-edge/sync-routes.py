@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
 import os
 import json
 import glob
@@ -107,7 +106,7 @@ class ServiceEndpoint:
                 self.additional = additional
 
 def do_log(msg):
-        print('[{}] {}'.format(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
+        print('[{}] {}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), msg))
 
 def call_api(method_url, data=None):
         result = None
