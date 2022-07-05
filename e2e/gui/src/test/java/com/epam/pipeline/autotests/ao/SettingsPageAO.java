@@ -833,6 +833,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                     public EditUserPopup addAllowedLaunchOptions(final String option, final String mask) {
                         SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                        sleep(1, SECONDS);
                         return this;
                     }
 
@@ -1073,6 +1074,7 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
 
                 public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
                     SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
+                    sleep(1, SECONDS);
                     return this;
                 }
 
