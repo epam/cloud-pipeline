@@ -262,3 +262,9 @@
   border-radius: 5px;
   padding: 20px;
 }
+
+.raw-edit-checkbox {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}

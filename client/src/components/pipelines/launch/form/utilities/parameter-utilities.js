@@ -204,8 +204,8 @@ function getDependencyLevel (tree, node) {
   return tree[node].iteration;
 }
 
-function correctFormFieldValues (parameters) {
-  if (!parameters) {
+function correctFormFieldValues (parameters, rawEdit = false) {
+  if (!parameters || rawEdit) {
     return false;
   }
   const {keys = [], params = {}} = parameters;

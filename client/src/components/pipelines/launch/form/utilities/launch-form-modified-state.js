@@ -293,6 +293,10 @@ function notificationsCheck (parameters, form) {
   return !notificationArraysAreEqual(formNotifications, propsNotifications);
 }
 
+function rawEditCheck (parameters, state) {
+  return parameters.raw !== state.isRawEditEnabled;
+}
+
 export default function (props, state, options) {
   const {form, parameters, preferences} = props;
   const {
@@ -345,5 +349,7 @@ export default function (props, state, options) {
     // check root entity id
     checkRootEntityModified(props, state) ||
     // check notifications
-    notificationsCheck(parameters, form);
+    notificationsCheck(parameters, form) ||
+    // raw mode
+    rawEditCheck(parameters, state);
 }
