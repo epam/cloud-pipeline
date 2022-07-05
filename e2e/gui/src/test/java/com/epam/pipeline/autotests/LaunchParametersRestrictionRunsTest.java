@@ -28,6 +28,7 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -38,6 +39,7 @@ import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParametersRestrictionRunsTest
         extends AbstractSeveralPipelineRunningTest
@@ -286,6 +288,7 @@ public class LaunchParametersRestrictionRunsTest
                 .editGroup(group)
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedInstanceMaxCount(value)
+                .sleep(3, SECONDS)
                 .ok();
     }
 
@@ -298,6 +301,7 @@ public class LaunchParametersRestrictionRunsTest
                 .edit()
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedInstanceMaxCount(value)
+                .sleep(3, SECONDS)
                 .ok();
     }
 }
