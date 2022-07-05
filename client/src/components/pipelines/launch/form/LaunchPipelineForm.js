@@ -335,7 +335,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     runCapabilities: [],
     useResolvedParameters: false,
     notifications: [],
-    runNameAlias: undefined
+    runNameAlias: undefined,
+    isRawEditEnabled: false
   };
 
   formItemLayout = {
@@ -2749,8 +2750,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         this.buildDefaultParameters(isSystemParametersSection);
     }
 
+    const readOnlyAndCanNotExecute = this.props.readOnly && !this.props.canExecute;
+
     const keysFormItem = this.props.isDetachedConfiguration &&
-    this.props.selectedPipelineParametersIsLoading
+      this.props.selectedPipelineParametersIsLoading
       ? null
       : (
         <FormItem
@@ -2761,7 +2764,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           {this.getSectionFieldDecorator(sectionName)('keys',
             {
               initialValue: parameters.keys
-            })(<Input disabled={this.props.readOnly && !this.props.canExecute} />)}
+            })(<Input disabled={this.state.isRawEditEnabled || readOnlyAndCanNotExecute} />)}
         </FormItem>
       );
     const onSelect = ({key}) => {
@@ -2784,6 +2787,10 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
 
     const addParameterButtonFn = () => {
+      const isDisabledAddButton = this.state.isRawEditEnabled
+        ? false
+        : (readOnlyAndCanNotExecute ||
+          (!!this.state.pipeline && this.props.detached));
       if (isSystemParametersSection) {
         const notToShowSystemParametersFn = (section, isSystem) => {
           const sectionValue = this.getSectionValue(section) ||
@@ -2801,8 +2808,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             type="flex"
             justify="space-around">
             <Button
-              disabled={(this.props.readOnly && !this.props.canExecute) ||
-              (!!this.state.pipeline && this.props.detached)}
+              disabled={isDisabledAddButton}
               id="add-system-parameter-button"
               onClick={this.openSystemParameterBrowser}>
               Add system parameter
@@ -2835,8 +2841,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
             justify="space-around">
             <Button.Group>
               <Button
-                disabled={(this.props.readOnly && !this.props.canExecute) ||
-                (!!this.state.pipeline && this.props.detached)}
+                disabled={isDisabledAddButton}
                 id="add-parameter-button"
                 onClick={
                   () => this.addParameter(sectionName, {type: 'string'}, isSystemParametersSection)
@@ -2844,13 +2849,14 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                 Add parameter
               </Button>
               {
-                !(this.props.readOnly && !this.props.canExecute) &&
-                !(this.state.pipeline && this.props.detached)
+                this.state.isRawEditEnabled ||
+                (!readOnlyAndCanNotExecute &&
+                  !(this.state.pipeline && this.props.detached))
                   ? (
                     <Dropdown overlay={parameterTypeMenu} placement="bottomRight">
                       <Button
                         id="add-parameter-dropdown-button"
-                        disabled={this.props.readOnly && !this.props.canExecute}
+                        disabled={this.state.isRawEditEnabled ? false : readOnlyAndCanNotExecute}
                         style={{padding: '0px 8px'}}
                       >
                         <Icon type="down" />
@@ -2952,15 +2958,18 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
           if (parameter && parameter.initial) {
             readOnly = readOnly || restrictedSystemParameter;
           }
+          readOnly = this.state.isRawEditEnabled ? false : readOnly;
           const noOverride = parameter ? parameter.noOverride : false;
-          const systemParameterValueIsBlocked = isSystemParametersSection &&
-            getSystemParameterDisabledState(this, name);
+          const systemParameterValueIsBlocked = this.state.isRawEditEnabled
+            ? false
+            : (isSystemParametersSection &&
+              getSystemParameterDisabledState(this, name));
           let required = parameter ? `${parameter.required}` === 'true' : false;
           let enumeration = parameter ? parameter.enumeration : undefined;
           const initialEnumeration = parameter ? parameter.initialEnumeration : undefined;
           let description = parameter ? parameter.description : undefined;
           let section = parameter ? parameter.section : OTHER_PARAMETERS_GROUP;
-          let visible = parameter ? parameter.visible : undefined;
+          let visible = parameter ? (this.state.isRawEditEnabled || parameter.visible) : undefined;
           let validation = parameter ? parameter.validation : undefined;
           const validator = validation
             ? (rule, value, callback) => {
@@ -2975,7 +2984,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               callback(parameterUtilities.validate(parameter, modifiedParameters));
             }
             : undefined;
-          const parameterIsVisible = parameterUtilities.isVisible(parameter, normalizedParameters);
+          const parameterIsVisible = this.state.isRawEditEnabled || parameterUtilities.isVisible(parameter, normalizedParameters);
           const systemParameter = this.getSystemParameter(parameter);
           const parameterHint = systemParameter ? systemParameter.description : description;
           const parameterHintFn = parameterHint
@@ -3018,9 +3027,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
               }
               break;
           }
-          const nameDisabled = (this.props.readOnly && !this.props.canExecute) ||
+          const nameDisabled = this.state.isRawEditEnabled
+            ? false
+            : (readOnlyAndCanNotExecute ||
             required || isSystemParametersSection ||
-            (!!this.state.pipeline && this.props.detached);
+            (!!this.state.pipeline && this.props.detached));
+          const disabled = this.state.isRawEditEnabled ? false : readOnlyAndCanNotExecute;
           return (
             <FormItem
               key={key}
@@ -3039,7 +3051,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.readOnly`,
                     {initialValue: readOnly}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3047,7 +3059,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.noOverride`,
                     {initialValue: noOverride}
-                  )(<Input disabled />)
+                  )(<Input disabled={!this.state.isRawEditEnabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3055,7 +3067,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.key`,
                     {initialValue: key}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3063,7 +3075,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.type`,
                     {initialValue: type}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3071,7 +3083,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.enumeration`,
                     {initialValue: enumeration}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3079,7 +3091,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.initialEnumeration`,
                     {initialValue: initialEnumeration}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3087,7 +3099,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.visible`,
                     {initialValue: visible}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3095,7 +3107,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.validation`,
                     {initialValue: validation}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3103,7 +3115,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.required`,
                     {initialValue: `${required}`}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3111,7 +3123,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.resolvedValue`,
                     {initialValue: resolvedValue}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3119,7 +3131,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.hasResolvedValue`,
                     {initialValue: hasResolvedValue}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3127,7 +3139,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.description`,
                     {initialValue: description}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <FormItem className={styles.hiddenItem}>
@@ -3135,7 +3147,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                   this.getSectionFieldDecorator(sectionName)(
                     `params.${key}.section`,
                     {initialValue: section}
-                  )(<Input disabled={this.props.readOnly && !this.props.canExecute} />)
+                  )(<Input disabled={disabled} />)
                 }
               </FormItem>
               <Col
@@ -3197,10 +3209,11 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
                     : styles.removeParameter
                 }>
                 {
-                  !required &&
-                  !(this.props.readOnly && !this.props.canExecute) &&
+                  this.state.isRawEditEnabled ||
+                  (!required &&
+                  !(readOnlyAndCanNotExecute) &&
                   !(this.state.pipeline && this.props.detached) &&
-                  removeAllowed
+                  removeAllowed)
                     ? (
                       <Icon
                         id="remove-parameter-button"
@@ -3293,11 +3306,26 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     };
 
+    const renderRawEditCheckbox = () => {
+      const handleChangeRawEdit = () => {
+        this.setState({isRawEditEnabled: !this.state.isRawEditEnabled});
+      };
+      return (
+        <div key={'key'} className={styles.rawEditCheckbox}>
+          <Checkbox
+            checked={this.state.isRawEditEnabled} onChange={handleChangeRawEdit}>
+            raw edit
+          </Checkbox>
+        </div>
+      );
+    };
+
     const currentParameters = this.isFireCloudSelected
       ? []
       : renderCurrentParameters(isSystemParametersSection);
 
     return [
+      renderRawEditCheckbox(),
       renderUseResolvedParameters(),
       this.props.isDetachedConfiguration && !isSystemParametersSection && renderRootEntity(),
       isSystemParametersSection && currentParameters.length > 0 &&
