@@ -1059,7 +1059,6 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
                     new TypeReference<Map<String, String>>() {});
         }
     }
-
     private static Array mapListToSqlArray(List<Long> list, Connection connection) {
         Long[] emptyArray = new Long[0];
         Long[] javaArray = list != null ? list.toArray(emptyArray) : emptyArray;
@@ -1310,5 +1309,4 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
     public void setLoadRunsByPoolIdQuery(final String loadRunsByPoolIdQuery) {
         this.loadRunsByPoolIdQuery = loadRunsByPoolIdQuery;
     }
-
 }
