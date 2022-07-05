@@ -840,10 +840,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     public EditUserPopup addAllowedInstanceMaxCount(final String value) {
                         if (StringUtils.isBlank(value)) {
                             clearByKey(byClassName("ant-input-number-input"));
+                            enter();
                             click(PRICE_TYPE);
                             return this;
                         }
                         setValue(byClassName("ant-input-number-input"), value);
+                        enter();
                         click(PRICE_TYPE);
                         return this;
                     }
@@ -1093,11 +1095,12 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                     final By optionField = byClassName("ant-input-number-input");
                     if (StringUtils.isBlank(value)) {
                         clearByKey(optionField);
-                        click(PRICE_TYPE);
+                        enter();
                         return this;
                     }
                     Actions action = actions().moveToElement($(optionField)).click();
                     action.sendKeys(Keys.chord(Keys.CONTROL, "a")).sendKeys(value).perform();
+                    enter();
                     click(PRICE_TYPE);
                     return this;
                 }
