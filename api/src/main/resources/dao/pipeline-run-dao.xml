@@ -723,8 +723,8 @@
                       r.tags,
                       r.sensitive,
                       r.kube_service_enabled,
-                      r.cluster_price,
                       r.pipeline_name,
+                      r.cluster_price,
                       r.node_pool_id,
                       CASE
                         WHEN EXISTS (
@@ -1855,7 +1855,6 @@
                         actual_cmd,
                         timeout,
                         owner,
-                        service_url,
                         pod_ip,
                         commit_status,
                         last_change_commit_time,
@@ -1918,7 +1917,6 @@
                         cmd_template,
                         actual_cmd,
                         timeout,
-                        service_url,
                         owner,
                         pod_ip,
                         commit_status,
