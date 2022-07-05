@@ -314,10 +314,10 @@ def setup_authenticated_paramiko_transport(run_id, user, retries, region=None):
         sshpass = sshuser
     elif run_ssh_mode == 'owner-sshpass':
         sshuser = run_owner
-        sshpass = resolve_run_ssh_pass(conn_info)
+        sshpass = resolve_run_ssh_pass(conn_info, region)
     else:
         sshuser = DEFAULT_SSH_USER
-        sshpass = resolve_run_ssh_pass(conn_info)
+        sshpass = resolve_run_ssh_pass(conn_info, region)
     try:
         transport.auth_password(sshuser, sshpass)
         return transport
@@ -353,11 +353,11 @@ def resolve_run_ssh_user(run_ssh_mode, run_owner):
            else DEFAULT_SSH_USER
 
 
-def resolve_run_ssh_pass(conn_info):
+def resolve_run_ssh_pass(conn_info, region=None):
     parent_run_id = conn_info.parameters.get('parent-id')
     run_shared_users_enabled = get_boolean(conn_info.parameters.get('CP_CAP_SHARE_USERS'))
     if run_shared_users_enabled and parent_run_id:
-        parent_conn_info = get_conn_info(parent_run_id)
+        parent_conn_info = get_conn_info(parent_run_id, region)
         return parent_conn_info.ssh_pass
     else:
         return conn_info.ssh_pass
@@ -457,7 +457,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
                   ssh, ssh_path, ssh_host, ssh_user, ssh_keep, direct, log_file, log_level,
                   timeout, timeout_stop, foreground,
                   keep_existing, keep_same, replace_existing, replace_different, ignore_owner, ignore_existing,
-                  retries, parse_tunnel_args, region=None):
+                  retries, region, parse_tunnel_args):
     logging.basicConfig(level=log_level or logging.ERROR, format=DEFAULT_LOGGING_FORMAT)
     if not local_ports_str and not remote_ports_str:
         raise RuntimeError('Either --lp/--local-port or --rp/--remote-port option should be specified.')
@@ -481,7 +481,7 @@ def create_tunnel(host_id, local_ports_str, remote_ports_str, connection_timeout
         check_existing_tunnels(host_id, local_ports, remote_ports,
                                ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
                                keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
-                               retries, parse_tunnel_args)
+                               region, retries, parse_tunnel_args)
         check_local_ports(local_ports)
     if run_id:
         create_tunnel_to_run(run_id, local_ports, remote_ports, connection_timeout,
@@ -512,7 +512,7 @@ def parse_ports(port_str):
 def check_existing_tunnels(host_id, local_ports, remote_ports,
                            ssh, ssh_path, ssh_host, ssh_user, direct, log_file, timeout_stop,
                            keep_existing, keep_same, replace_existing, replace_different, ignore_owner,
-                           retries, parse_tunnel_args):
+                           region, retries, parse_tunnel_args):
     for existing_tunnel in find_tunnels(parse_tunnel_args):
         existing_tunnel_args = TunnelArgs.from_args(existing_tunnel.parsed_args)
         creating_tunnel_args = TunnelArgs(host_id=host_id, local_ports=local_ports, remote_ports=remote_ports,
