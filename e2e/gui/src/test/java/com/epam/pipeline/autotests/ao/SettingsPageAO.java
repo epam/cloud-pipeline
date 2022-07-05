@@ -1095,6 +1095,8 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
                     setValue(optionField, value);
+                    Actions action = actions().moveToElement($(optionField)).click();
+                    action.sendKeys(Keys.chord(Keys.CONTROL, "a")).sendKeys(value).perform();
                     return this;
                 }
 
