@@ -393,6 +393,11 @@ public class RunsMenuAO implements AccessObject<RunsMenuAO> {
         return this;
     }
 
+    public PipelineRunFormAO rerun(final String runId, final String pipelineName) {
+        $("#run-" + runId + "-rerun-button").shouldBe(visible).click();
+        return new PipelineRunFormAO();
+    }
+
     public RunsMenuAO waitUntilStopButtonAppear(final String runId) {
         $("#run-" + runId + "-stop-button").waitUntil(appear, APPEARING_TIMEOUT);
         return this;

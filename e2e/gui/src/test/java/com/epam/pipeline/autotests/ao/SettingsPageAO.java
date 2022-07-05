@@ -943,6 +943,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 return new CreateGroupPopup(this);
             }
 
+            public GroupsTabAO createGroupIfNoPresent(String group) {
+                searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
+                performIf(!context().$$(byText(group)).filterBy(visible).first().exists(), t -> {
+                    pressCreateGroup().enterGroupName(group).create();
+                });
+                return this;
+            }
+
             public GroupsTabAO deleteGroupIfPresent(String group) {
                 sleep(2, SECONDS);
                 searchGroupBySubstring(group.split(StringUtils.SPACE)[0]);
@@ -1033,7 +1041,9 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public final Map<Primitive, SelenideElement> elements = initialiseElements(
                         entry(OK, context().find(By.id("close-edit-user-form"))),
                         entry(PRICE_TYPE, context().find(byXpath(
-                                format("//div/b[text()='%s']/following::div/input", "Allowed price types"))))
+                                format("//div/b[text()='%s']/following::div/input", "Allowed price types")))),
+                        entry(SEARCH, $(By.id("find-user-autocomplete-container"))),
+                        entry(ADD, context().find(By.id("add-user-button")))
                 );
 
                 public EditGroupPopup(final GroupsTabAO parentAO) {
@@ -1050,6 +1060,15 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public GroupsTabAO ok() {
                     click(OK);
                     return parentAO;
+                }
+
+                public EditGroupPopup addUser(final Account name) {
+                    click(SEARCH);
+                    actions().sendKeys(user.login).perform();
+                    $(byClassName("ant-select-dropdown")).shouldBe(Condition.visible);
+                    enter();
+                    click(ADD);
+                    return this;
                 }
 
                 public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
