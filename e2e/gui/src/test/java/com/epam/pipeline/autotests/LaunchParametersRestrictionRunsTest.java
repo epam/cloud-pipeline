@@ -285,6 +285,7 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToUserManagement()
                 .switchToGroups()
                 .editGroup(group)
+                .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible)
                 .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
                 .ok();
     }
@@ -296,6 +297,7 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToUsers()
                 .searchUserEntry(user.login)
                 .edit()
+                .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible)
                 .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
                 .ok();
     }
