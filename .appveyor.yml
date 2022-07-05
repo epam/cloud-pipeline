@@ -5,6 +5,7 @@ branches:
     - develop
     - /release\/.*/
     - /stage\/.*/
+    - issue_1715-0.16
 
 skip_tags: true
 max_jobs: 1
