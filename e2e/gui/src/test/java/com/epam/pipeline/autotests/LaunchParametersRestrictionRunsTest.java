@@ -172,7 +172,7 @@ public class LaunchParametersRestrictionRunsTest
         }
     }
 
-    @Test(dependsOnMethods = "checkGlobalRestrictionCountOfRunningInstances")
+    @Test(dependsOnMethods = "checkRunningInstancesRestrictionAppliedToGroup")
     @TestCase(value = {"2642_3"})
     public void checkSimultaneousApplyingTwoGroupLevelRunningInstancesRestrictions() {
         setGroupAllowedInstanceMaxCount(USER_GROUP2, GROUP_MAX_RUNS1);
