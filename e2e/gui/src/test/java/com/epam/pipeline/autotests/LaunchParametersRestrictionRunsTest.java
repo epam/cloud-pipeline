@@ -285,19 +285,19 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToGroups()
                 .editGroup(group)
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
-                .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
+                .addAllowedInstanceMaxCount(value)
                 .ok();
     }
 
-    private void setUserAllowedInstanceMaxCount(Account user, String value) {
+    private void setUserAllowedInstanceMaxCount(Account userName, String value) {
         navigationMenu()
                 .settings()
                 .switchToUserManagement()
                 .switchToUsers()
-                .searchUserEntry(user.login)
+                .searchUserEntry(userName.login)
                 .edit()
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
-                .addAllowedLaunchOptions(ALLOWED_INSTANCES_MAX_COUNT, value)
+                .addAllowedInstanceMaxCount(value)
                 .ok();
     }
 }

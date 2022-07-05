@@ -837,6 +837,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                         return this;
                     }
 
+                    public EditUserPopup addAllowedInstanceMaxCount(final String value) {
+                        final By optionField = byClassName("ant-input-number-input");
+                        if (StringUtils.isBlank(value)) {
+                            clearByKey(optionField);
+                            return this;
+                        }
+                        setValue(optionField, value);
+                        return this;
+                    }
+
                     public EditUserPopup setAllowedPriceType(final String priceType) {
                         click(PRICE_TYPE);
                         context().find(byClassName("ant-select-dropdown")).find(byText(priceType))
@@ -1075,6 +1085,16 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
                 public EditGroupPopup addAllowedLaunchOptions(String option, String mask) {
                     SettingsPageAO.this.addAllowedLaunchOptions(option, mask);
                     sleep(1, SECONDS);
+                    return this;
+                }
+
+                public EditGroupPopup addAllowedInstanceMaxCount(final String value) {
+                    final By optionField = byClassName("ant-input-number-input");
+                    if (StringUtils.isBlank(value)) {
+                        clearByKey(optionField);
+                        return this;
+                    }
+                    setValue(optionField, value);
                     return this;
                 }
 
@@ -1851,5 +1871,14 @@ public class SettingsPageAO extends PopupAO<SettingsPageAO, PipelinesLibraryAO> 
         }
         setValue(optionField, mask);
         sleep(3, SECONDS);
+    }
+
+    private void addAllowedLaunchNumberOptions(final String option, final String mask) {
+        final By optionField = byXpath(format("//div/b[text()='%s']/following::div/input", option));
+        if (StringUtils.isBlank(mask)) {
+            clearByKey(optionField);
+            return;
+        }
+        setValue(optionField, mask);
     }
 }
