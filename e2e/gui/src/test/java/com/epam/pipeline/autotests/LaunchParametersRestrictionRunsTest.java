@@ -285,12 +285,12 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToUserManagement()
                 .switchToGroups()
                 .editGroup(group)
-                .sleep(5, SECONDS)
+                .sleep(10, SECONDS)
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedInstanceMaxCount(value)
-                .sleep(3, SECONDS)
+                .sleep(10, SECONDS)
                 .ok()
-                .sleep(5, SECONDS);
+                .sleep(10, SECONDS);
     }
 
     private void setUserAllowedInstanceMaxCount(Account userName, String value) {
@@ -300,7 +300,6 @@ public class LaunchParametersRestrictionRunsTest
                 .switchToUsers()
                 .searchUserEntry(userName.login)
                 .edit()
-                .sleep(5, SECONDS)
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedInstanceMaxCount(value)
                 .sleep(3, SECONDS)
