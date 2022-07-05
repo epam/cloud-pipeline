@@ -28,7 +28,6 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static com.codeborne.selenide.Condition.*;
@@ -290,7 +289,8 @@ public class LaunchParametersRestrictionRunsTest
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedInstanceMaxCount(value)
                 .sleep(3, SECONDS)
-                .ok();
+                .ok()
+                .sleep(5, SECONDS);
     }
 
     private void setUserAllowedInstanceMaxCount(Account userName, String value) {
@@ -304,6 +304,7 @@ public class LaunchParametersRestrictionRunsTest
                 .ensure(byText(ALLOWED_INSTANCES_MAX_COUNT), visible, enabled)
                 .addAllowedInstanceMaxCount(value)
                 .sleep(3, SECONDS)
-                .ok();
+                .ok()
+                .sleep(5, SECONDS);
     }
 }
