@@ -26,6 +26,7 @@ from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 from cellprofiler.modules.filterobjects import FilterObjects
 from cellprofiler.modules.fillobjects import FillObjects
+from cellprofiler.modules.flagimage import FlagImage
 from cellprofiler.modules.flipandrotate import FlipAndRotate
 from cellprofiler.modules.gaussianfilter import GaussianFilter
 from cellprofiler.modules.graytocolor import GrayToColor
@@ -78,9 +79,11 @@ from cellprofiler.modules.resizeobjects import ResizeObjects
 from cellprofiler.modules.threshold import Threshold
 from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
+from cellprofiler_core.setting.multichoice import MultiChoice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
-from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
-from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName, Directory
+from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary, \
+    HiddenCount
+from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName, Directory, Filename
 
 
 class HcsModulesFactory(object):
@@ -1050,3 +1053,164 @@ class DisplayScatterPlotModuleProcessor(ModuleProcessor):
 
     def new_module(self):
         return DisplayScatterPlot()
+
+
+class FlagImageMeasurementSettings(SettingsWithListElement):
+    _MEASUREMENTS = 'measurements'
+    _SOURCES_CHOICES_VALUES = ['Whole-image measurement',
+                               'Average measurement for all objects in each image',
+                               'Measurements for all objects in each image',
+                               'Rules',
+                               'Classifier']
+    _SOURCES_CHOICES = 'choices'
+    _OBJECT_NAME = 'object_name'
+    _RULES_FILE_NAME = 'rules_file_name'
+    _RULES_DIRECTORY = 'rules_directory'
+    _RULES_CLASS = 'rules_class'
+    _MEASUREMENT = 'measurement'
+    _WANTS_MIN = 'wants_min'
+    _MIN_VALUE = 'min_value'
+    _WANTS_MAX = 'wants_max'
+    _MAX_VALUE = 'max_value'
+
+    def __init__(self):
+        self.module_list_element = list()
+
+    def set_module_list_element(self, module_list_element):
+        self.module_list_element = module_list_element
+
+    def get_module_list_element(self):
+        return self.module_list_element
+
+    def get_list_key(self):
+        return self._MEASUREMENTS
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.source_choice = Choice('Flag is based on', self._SOURCES_CHOICES_VALUES,
+                                         value=element_dict[self._SOURCES_CHOICES])
+        component.object_name = LabelSubscriber('Select the object to be used for flagging',
+                                                value=element_dict[self._OBJECT_NAME])
+        component.measurement = Measurement('Which measurement?', None, value=element_dict[self._MEASUREMENT])
+        component.wants_minimum = Binary('Flag images based on low values?', value=element_dict[self._WANTS_MIN])
+        component.minimum_value = Float('Minimum value', value=element_dict[self._MIN_VALUE])
+        component.wants_maximum = Binary('Flag images based on high values?', value=element_dict[self._WANTS_MAX])
+        component.maximum_value = Float('Maximum value', value=element_dict[self._MAX_VALUE])
+        component.rules_directory = Directory('Rules file location',
+                                              value=self._configure_input_path(element_dict[self._RULES_DIRECTORY]))
+        component.rules_file_name = Filename('Rules file name', value=element_dict[self._RULES_FILE_NAME])
+        component.rules_class = MultiChoice('Class number', [], value=element_dict[self._RULES_CLASS])
+        return component
+
+    def build_list_elements(self, settings_dict):
+        measurements = list()
+        for i in range(0, len(settings_dict), 10):
+            measurements.append({
+                self._SOURCES_CHOICES: settings_dict[i].value,
+                self._OBJECT_NAME: settings_dict[i + 1].value,
+                self._MEASUREMENT: settings_dict[i + 2].value,
+                self._WANTS_MIN: settings_dict[i + 3].value,
+                self._MIN_VALUE: settings_dict[i + 4].value,
+                self._WANTS_MAX: settings_dict[i + 5].value,
+                self._MAX_VALUE: settings_dict[i + 6].value,
+                self._RULES_DIRECTORY: settings_dict[i + 7].value,
+                self._RULES_FILE_NAME: settings_dict[i + 8].value,
+                self._RULES_CLASS: settings_dict[i + 9].value
+            })
+        return measurements
+
+    @staticmethod
+    def _configure_input_path(input_path, cloud_scheme='s3'):
+        input_path = input_path if input_path is None else input_path.strip()
+        if not input_path:
+            return None
+        cloud_prefix = cloud_scheme + '://'
+        if input_path.startswith(cloud_prefix):
+            input_path = os.path.join('/cloud-data', input_path[len(cloud_prefix):])
+        if not os.path.exists(input_path):
+            raise RuntimeError('No such file [{}] available!'.format(input_path))
+        return input_path
+
+
+class FlagImageModuleProcessor(SettingsWithListElementModuleProcessor):
+    _FLAGS = 'flags'
+    _MEASUREMENTS = 'measurements'
+    _CATEGORY = 'category'
+    _CATEGORY_TEXT = 'Name the flag\'s category'
+    _FLAG_NAME = 'flag_name'
+    _FAIL_CHOICES_VALUES = ['Flag if any fail', 'Flag if all fail']
+    _FAIL_CHOICES = 'fail_choices'
+    _SKIP_IMAGE = 'skip_image'
+
+    def __init__(self, raw_module: Module = None):
+        super().__init__(raw_module)
+        self.internal_settings = FlagImageMeasurementSettings()
+
+    def new_module(self):
+        return FlagImage()
+
+    def get_list_key(self):
+        return self._FLAGS
+
+    def get_module_list_element(self):
+        return self.module.flags
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+
+        measurements = element_dict[self._MEASUREMENTS]
+        component_measurements = list()
+        for element in measurements:
+            component_measurements.append(self.internal_settings.build_settings_group_from_list_element(element))
+        component.measurement_settings = component_measurements
+        component.measurement_count = HiddenCount(component_measurements)
+
+        component.category = Text(self._CATEGORY_TEXT, value=element_dict[self._CATEGORY])
+        component.feature_name = Text('Name the flag', value=element_dict[self._FLAG_NAME])
+        component.combination_choice = Choice('How should measurements be linked?', self._FAIL_CHOICES_VALUES,
+                                              value=element_dict[self._FAIL_CHOICES])
+        component.wants_skip = Binary('Skip image set if flagged?', value=element_dict[self._SKIP_IMAGE])
+        return component
+
+    def get_mandatory_args_length(self):
+        return 1
+
+    def build_list_elements(self, settings_dict):
+        flags = list()
+        for i in range(1, len(settings_dict)):
+            if not settings_dict[i].text == 'Hidden':
+                continue
+            measurements_count = int(settings_dict[i].value)
+            measurements = list()
+            measurements_start = i + 4 + 1
+            measurements_end = measurements_start + measurements_count * 10
+            if measurements_count > 0:
+                measurements = settings_dict[measurements_start:measurements_end]
+            flags.append({
+                self._CATEGORY: settings_dict[i + 1].value,
+                self._FLAG_NAME: settings_dict[i + 2].value,
+                self._FAIL_CHOICES: settings_dict[i + 3].value,
+                self._SKIP_IMAGE: settings_dict[i + 4].value,
+                self._MEASUREMENTS: self.internal_settings.build_list_elements(measurements),
+            })
+        return flags
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        objects_settings = module_settings[:-1]
+        module_settings_dictionary[self.get_list_key()] = self.build_list_elements(objects_settings)
+        general_setting = module_settings[-1]
+        module_settings_dictionary[general_setting.text] = self.map_setting_to_text_value(general_setting)
+        return module_settings_dictionary
+
+    def configure_module(self, module_config: dict) -> Module:
+        flags_key = self.get_list_key()
+        if flags_key in module_config:
+            module_list_element = self.get_module_list_element()
+            module_list_element.clear()
+            rules = module_config.pop(flags_key)
+            for rule in rules:
+                module_list_element.append(self.build_settings_group_from_list_element(rule))
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
