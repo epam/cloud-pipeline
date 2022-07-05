@@ -23,7 +23,7 @@ from cellprofiler.modules.dilateobjects import DilateObjects
 from cellprofiler.modules.enhanceedges import EnhanceEdges
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
-from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
+from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet, EEObjectNameSubscriber
 from cellprofiler.modules.filterobjects import FilterObjects
 from cellprofiler.modules.fillobjects import FillObjects
 from cellprofiler.modules.flagimage import FlagImage
@@ -83,7 +83,8 @@ from cellprofiler_core.setting.multichoice import MultiChoice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary, \
     HiddenCount
-from cellprofiler_core.setting.text import Float, ImageName, Integer, Text, LabelName, Directory, Filename
+from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
+from .modules.define_results import DefineResults, CalculationSpec
 
 
 class HcsModulesFactory(object):
@@ -477,13 +478,90 @@ class OutputModuleProcessor(ModuleProcessor):
 
 
 class ExportToSpreadsheetModuleProcessor(OutputModuleProcessor):
+    _EXPORT_DATA_KEY = 'Data to export'
+    _ALL_MEASUREMENT_TYPES_SELECTOR_KEY = 'Export all measurement types?'
+    _EXPORT_MEASUREMENT_KEY = 'Press button to select measurements'
+    _ALL_MEASUREMENT_SELECTOR_KEY = 'Select the measurements to export'
+
     def new_module(self):
         return ExportToSpreadsheet()
+
+    def configure_module(self, module_config: dict) -> Module:
+        if self._EXPORT_DATA_KEY in module_config:
+            module_config[self._ALL_MEASUREMENT_TYPES_SELECTOR_KEY] = False
+            self.module.object_groups.clear()
+            objects = module_config.pop(self._EXPORT_DATA_KEY).split('|')
+            for object_name in objects:
+                group = SettingsGroup()
+                group.file_name = Text('File name', object_name + '.csv')
+                group.name = EEObjectNameSubscriber('Data to export', object_name)
+                group.previous_file = Binary('Combine these object measurements with those of the previous object?',
+                                             False)
+                group.wants_automatic_file_name = Binary('Use the object name for the file name?', False)
+                self.module.object_groups.append(group)
+        module_config[self._ALL_MEASUREMENT_SELECTOR_KEY] = self._EXPORT_MEASUREMENT_KEY in module_config
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def get_settings_as_dict(self):
+        settings = dict()
+        for setting in self.module.settings():
+            settings[setting.text] = self.map_setting_to_text_value(setting)
+        if self._EXPORT_DATA_KEY in settings and settings[self._EXPORT_DATA_KEY] != 'Do not use':
+            output_object_names = [output_object.name.value for output_object in self.module.object_groups]
+            settings[self._EXPORT_DATA_KEY] = '|'.join(output_object_names)
+            settings.pop('File name')
+        return settings
 
     def generated_params(self):
         return {'Output file location': self._output_location(),
                 'Add a prefix to file names?': 'No',
                 'Overwrite existing files without warning?': 'Yes'}
+
+
+class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
+    def new_module(self):
+        return DefineResults()
+
+    def configure_module(self, module_config: dict) -> Module:
+        specs = module_config['specs'] if 'specs' in module_config else []
+        specs = [CalculationSpec.from_json(spec) for spec in specs]
+        grouping = module_config['grouping'] if 'grouping' in module_config else None
+        self._validate_configuration(specs, grouping)
+        self.module.set_calculation_spec(specs, grouping)
+        self.set_required_data_to_module_config(module_config, specs)
+        ExportToSpreadsheetModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def set_required_data_to_module_config(self, module_config, specs):
+        all_objects = set()
+        for spec in specs:
+            all_objects.add(spec.primary)
+            all_objects.add(spec.secondary)
+        if None in all_objects:
+            all_objects.remove(None)
+        module_config[self._EXPORT_DATA_KEY] = '|'.join(all_objects)
+
+    def get_settings_as_dict(self):
+        settings = ExportToSpreadsheetModuleProcessor.get_settings_as_dict(self)
+        settings['specs'] = self.module.get_calculation_specs_as_json()
+        settings['grouping'] = self.module.get_grouping()
+        return settings
+
+    def generated_params(self):
+        return {'Output file location': self._output_location(),
+                'Add a prefix to file names?': 'No',
+                'Overwrite existing files without warning?': 'Yes',
+                'Add image metadata columns to your object data file?': 'Yes'}
+
+    def _validate_configuration(self, specs, grouping):
+        # TODO check grouping is presented in metadata
+        # TODO check if a corresponding RelateObject module exists for objects, specified as primary and secondary
+        for spec in specs:
+            unknown_stat_functions = set(spec.stat_functions) - DefineResults.SUPPORTED_STAT_FUNCTIONS
+            if len(unknown_stat_functions) > 0:
+                raise RuntimeError('Unknown {} stat function(s) passed in a configuration. Supported ones: {}'
+                                   .format(list(unknown_stat_functions), list(DefineResults.SUPPORTED_STAT_FUNCTIONS)))
 
 
 class SaveImagesModuleProcessor(OutputModuleProcessor):

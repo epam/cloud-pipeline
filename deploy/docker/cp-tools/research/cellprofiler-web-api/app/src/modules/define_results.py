@@ -1,0 +1,349 @@
+import os
+import pandas
+from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
+
+
+class CalculationSpec(object):
+    _SINGLE_OBJECT_OPERATIONS = ['Number of Objects', 'Mean Intensity', 'Background Intensity', 'Corrected Intensity',
+                                 'Relative Object Intensity', 'Uncorrected Peak Intensity', 'Contrast', 'Area',
+                                 'Region Intensity', 'To Region Intensity']
+
+    def __init__(self, primary, operation, secondary=None, stat_functions=None, column_operation_name=None):
+        self.primary = primary
+        self.operation = operation
+        self.stat_functions = stat_functions if stat_functions is not None else []
+        self.secondary = secondary
+        self.column_operation_name = column_operation_name
+
+    @staticmethod
+    def from_json(json: dict):
+        return CalculationSpec(json.get('primary'), json.get('operation'), secondary=json.get('secondary'),
+                               stat_functions=json.get('stat_functions'),
+                               column_operation_name=json.get('column_operation_name'))
+
+    def to_json(self):
+        json = {'primary': self.primary, 'operation': self.operation}
+        if len(self.stat_functions) > 0:
+            json['stat_functions'] = self.stat_functions
+        if self.secondary is not None:
+            json['secondary'] = self.secondary
+        if self.column_operation_name is not None:
+            json['column_operation_name'] = self.column_operation_name
+        return json
+
+    def requires_secondary(self):
+        return self.operation not in self._SINGLE_OBJECT_OPERATIONS
+
+
+class DefineResults(ExportToSpreadsheet):
+    _EMPTY_GROUPING_VALUE = 'ALL'
+    _METADATA_COLUMN_PREFIX = 'Metadata_'
+    _MEAN_STAT_FUNC_KEY = 'Mean'
+    _MEDIAN_STAT_FUNC_KEY = 'Median'
+    _STANDARD_DEV_STAT_FUNC_KEY = 'StdDev'
+    _COEFFICIENT_OF_VARIATION_STAT_FUNC_KEY = 'CV %'
+    _SUM_STAT_FUNC_KEY = 'Sum'
+    _MAX_STAT_FUNC_KEY = 'Max'
+    _MIN_STAT_FUNC_KEY = 'Min'
+    SUPPORTED_STAT_FUNCTIONS = {_MEAN_STAT_FUNC_KEY, _MEDIAN_STAT_FUNC_KEY, _STANDARD_DEV_STAT_FUNC_KEY,
+                                _COEFFICIENT_OF_VARIATION_STAT_FUNC_KEY, _SUM_STAT_FUNC_KEY, _MAX_STAT_FUNC_KEY,
+                                _MIN_STAT_FUNC_KEY}
+    _AREA_SHAPE_AREA = 'AreaShape_Area'
+    _MAX_INTENSITY = 'Intensity_MaxIntensity'
+    _MEAN_INTENSITY = 'Intensity_MeanIntensity'
+    _MEAN_EDGE_INTENSITY = 'Intensity_MeanIntensityEdge'
+    _INTEGRATED_INTENSITY = 'Intensity_IntegratedIntensity'
+
+    def __init__(self):
+        super(DefineResults, self).__init__()
+        self._calculation_specs = []
+        self._grouping = None
+        self.module_name = 'DefineResults'
+
+    def update_settings(self, setting: list):
+        pass
+
+    def set_calculation_spec(self, specs, grouping):
+        self._calculation_specs = specs if specs is not None else []
+        self._grouping = grouping
+
+    def get_calculation_specs_as_json(self):
+        return [spec.to_json() for spec in self._calculation_specs]
+
+    def get_grouping(self):
+        return self._grouping
+
+    def post_run(self, workspace):
+        super(DefineResults, self).post_run(workspace)
+        result_dataframe = self.calculate_results()
+        result_dataframe.to_csv(self._build_object_csv_path('Results'))
+
+    def calculate_results(self):
+        result_data_dict = {}
+        for spec in self._calculation_specs:
+            operation = spec.operation
+            if operation == 'Number of Objects':
+                self._process_number_of_objects(result_data_dict, spec)
+            elif operation == 'Total Area':
+                self._process_total_area(result_data_dict, spec)
+            elif operation == 'Relative Intensity':
+                self._process_relative_intensity(result_data_dict, spec)
+            elif operation == 'Number of':
+                self._process_column_from_primary_dataframe(result_data_dict, spec, self._children_count_column(spec))
+            elif operation == 'Number of per Area':
+                self._process_number_of_secondary_per_area(result_data_dict, spec)
+            elif operation == 'Mean Intensity':
+                self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MEAN_INTENSITY)
+            elif operation == 'Background Intensity':
+                self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MEAN_EDGE_INTENSITY)
+            elif operation == 'Corrected Intensity':
+                self._process_corrected_intensity(result_data_dict, spec)
+            elif operation == 'Relative Object Intensity':
+                self._process_relative_object_intensity(result_data_dict, spec)
+            elif operation == 'Uncorrected Peak Intensity':
+                self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MAX_INTENSITY)
+            elif operation == 'Contrast':
+                self._process_contrast(result_data_dict, spec)
+            elif operation == 'Area':
+                self._process_column_from_primary_dataframe(result_data_dict, spec, self._AREA_SHAPE_AREA)
+            elif operation == 'Region Intensity':
+                self._process_region_intensity(result_data_dict, spec)
+            elif operation == 'To Region Intensity':
+                self._process_secondary_to_primary_region_intensity(result_data_dict, spec)
+            else:
+                raise RuntimeError('Unsupported operation [{}]'.format(operation))
+        result_index = list()
+        result_data_list = list()
+        for group_name, group_calculation_results in result_data_dict.items():
+            result_index.append(group_name)
+            result_data_list.append(group_calculation_results)
+        result_dataframe = pandas.DataFrame(result_data_list, index=result_index)
+        if self._grouping is None:
+            result_dataframe.index.name = 'Data'
+        else:
+            result_dataframe.index.name = self._grouping
+        return result_dataframe
+
+    def _process_number_of_objects(self, result_data_dict, spec):
+        object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        grouping_datasets_dictionary = self._build_groupings(object_dataframe)
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            value = int(grouping_dataframe.get('ObjectNumber').max())
+            feature_name = self._build_feature_name(spec)
+            self._append_spec_value_to_results(result_data_dict, grouping_value, feature_name, value)
+
+    def _process_total_area(self, result_data_dict, spec: CalculationSpec):
+        object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.secondary))
+        grouping_datasets_dictionary = self._build_groupings(object_dataframe)
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            secondary_by_primary_grouping_result = self._group_secondary_by_primary_parent(grouping_dataframe, spec)
+            secondary_objects_areas = list()
+            for secondary_object_dataframe in secondary_by_primary_grouping_result.values():
+                secondary_objects_areas.append(int(secondary_object_dataframe.get(self._AREA_SHAPE_AREA).sum()))
+            secondary_object_areas_dataseries = pandas.Series(data=secondary_objects_areas)
+            self._calculate_and_add_all_stat_functions(result_data_dict, secondary_object_areas_dataseries,
+                                                       grouping_value, spec)
+
+    def _process_relative_intensity(self, result_data_dict, spec: CalculationSpec):
+        secondary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.secondary))
+        secondary_grouping_datasets_dictionary = self._build_groupings(secondary_object_dataframe)
+        secondary_integrated_intensity_series = {}
+        intensity_channel_name = ''
+        for grouping_value, grouping_dataframe in secondary_grouping_datasets_dictionary.items():
+            secondary_by_primary_grouping_result = self._group_secondary_by_primary_parent(grouping_dataframe, spec)
+            secondary_objects_intensity_integrated = list()
+            for secondary_object_dataframe in secondary_by_primary_grouping_result.values():
+                intensity_channel_name = self._extract_intensity_channel_name(secondary_object_dataframe,
+                                                                              self._INTEGRATED_INTENSITY)
+                a = float(secondary_object_dataframe.get(self._INTEGRATED_INTENSITY + intensity_channel_name).sum())
+                b = float(secondary_object_dataframe.get(self._MEAN_EDGE_INTENSITY + intensity_channel_name).sum())
+                secondary_objects_intensity_integrated.append(a - b)
+            secondary_integrated_intensity_series[grouping_value] = \
+                pandas.Series(secondary_objects_intensity_integrated)
+        primary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        primary_grouping_datasets_dictionary = self._build_groupings(primary_object_dataframe)
+        for grouping_value, grouping_dataframe in primary_grouping_datasets_dictionary.items():
+            grouping_dataframe = grouping_dataframe[grouping_dataframe[self._children_count_column(spec)] != 0]
+            primary_objects_integrated_intensity_dataseries = grouping_dataframe.get(self._INTEGRATED_INTENSITY
+                                                                                    + intensity_channel_name)
+            secondary_integrated_intensity_dataseries = secondary_integrated_intensity_series[grouping_value]
+            relative_intensity_dataseries = secondary_integrated_intensity_dataseries / primary_objects_integrated_intensity_dataseries
+            self._calculate_and_add_all_stat_functions(result_data_dict, relative_intensity_dataseries,
+                                                       grouping_value, spec)
+
+    def _process_column_from_primary_dataframe(self, result_data_dict, spec: CalculationSpec, target_column):
+        primary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        grouping_datasets_dictionary = self._build_groupings(primary_object_dataframe)
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            column_dataseries = grouping_dataframe.get(target_column)
+            self._calculate_and_add_all_stat_functions(result_data_dict, column_dataseries, grouping_value, spec)
+    
+    def _process_number_of_secondary_per_area(self, result_data_dict, spec):
+        object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        grouping_datasets_dictionary = self._build_groupings(object_dataframe)
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            secondary_objects_count_dataseries = grouping_dataframe.get(self._children_count_column(spec))
+            primary_objects_area_dataseries = grouping_dataframe.get(self._AREA_SHAPE_AREA)
+            secondary_objects_per_area_dataseries = secondary_objects_count_dataseries / primary_objects_area_dataseries
+            self._calculate_and_add_all_stat_functions(result_data_dict, secondary_objects_per_area_dataseries,
+                                                       grouping_value, spec)
+    
+    def _children_count_column(self, spec):
+        return 'Children_{}_Count'.format(spec.secondary)
+
+    def _group_secondary_by_primary_parent(self, grouping_dataframe, spec):
+        secondary_by_primary_grouping_result = self._build_groupings(grouping_dataframe, 'Parent_' + spec.primary)
+        if 0 in secondary_by_primary_grouping_result:
+            secondary_by_primary_grouping_result.pop(0)
+        return secondary_by_primary_grouping_result
+
+    def _calculate_and_add_all_stat_functions(self, result_data_dict, target_dataseries, grouping_value, spec):
+        for function_name in spec.stat_functions:
+            feature_name = self._build_feature_name(spec, function_name)
+            value = self._calculate_stat_for_dataframe(target_dataseries, function_name)
+            self._append_spec_value_to_results(result_data_dict, grouping_value, feature_name, value)
+
+    def _calculate_stat_for_dataframe(self, frame: pandas.Series, func_name):
+        if func_name == self._MAX_STAT_FUNC_KEY:
+            return float(frame.max())
+        elif func_name == self._MIN_STAT_FUNC_KEY:
+            return float(frame.min())
+        elif func_name == self._MEAN_STAT_FUNC_KEY:
+            return float(frame.mean())
+        elif func_name == self._MEDIAN_STAT_FUNC_KEY:
+            return float(frame.median())
+        elif func_name == self._SUM_STAT_FUNC_KEY:
+            return float(frame.sum())
+        elif func_name == self._STANDARD_DEV_STAT_FUNC_KEY:
+            return float(frame.std())
+        elif func_name == self._COEFFICIENT_OF_VARIATION_STAT_FUNC_KEY:
+            std = float(frame.std())
+            mean = float(frame.mean())
+            return std / mean * 100
+        else:
+            return float('nan')
+
+    def _build_groupings(self, object_dataframe, grouping_key=None):
+        """
+        Method to build a grouping from a dataset
+        :param object_dataframe: input dataframe
+        :param grouping_key: str, specifying a grouping attribute.
+        If nothing is specified - use general grouping metadata column name
+        :return: dictionary, where keys are grouping buckets keys and values are corresponding dataframes
+        """
+        if grouping_key is None and self._grouping is not None:
+            grouping_key = self._METADATA_COLUMN_PREFIX + self._grouping
+        if grouping_key is None:
+            return {self._EMPTY_GROUPING_VALUE: object_dataframe}
+        else:
+            return self._extract_grouping_entries(object_dataframe.groupby(grouping_key))
+
+    def _append_spec_value_to_results(self, result_data_dict, general_grouping_value, feature_name, value):
+        group_calculation_results = result_data_dict.get(general_grouping_value)
+        if group_calculation_results is None:
+            group_calculation_results = {}
+        group_calculation_results[feature_name] = value
+        result_data_dict[general_grouping_value] = group_calculation_results
+
+    def _extract_grouping_entries(self, grouping_result: pandas.core.groupby.generic.DataFrameGroupBy):
+        return {grouping_key: grouping_result.get_group(grouping_key) for grouping_key in grouping_result.groups.keys()}
+
+    def _extract_intensity_channel_name(self, dataframe, intensity_column):
+        for key in dataframe.keys():
+            if key.startswith(intensity_column + '_'):
+                return key[len(intensity_column):]
+        return ''
+
+    def _extract_group_calc_results(self, result_data_dict, group_name):
+        group_calculation_results = result_data_dict.get(group_name)
+        if group_calculation_results is None:
+            group_calculation_results = {}
+        return group_calculation_results
+
+    def _build_object_csv_path(self, obj_name):
+        return os.path.join(self.directory.custom_path, obj_name + '.csv')
+
+    def _build_feature_name(self, spec: CalculationSpec, stat_func_name=None):
+        if spec.column_operation_name is not None:
+            name = spec.column_operation_name
+        elif spec.requires_secondary():
+            name = '{} - {},{}'.format(spec.primary, spec.secondary, spec.operation)
+        else:
+            name = '{} - {}'.format(spec.primary, spec.operation)
+        if stat_func_name is not None:
+            name = name + ' - {}'.format(stat_func_name)
+        if self._grouping is not None:
+            name = name + ' per ' + self._grouping
+        return name
+
+    def _process_primary_object_intensity(self, result_data_dict, spec, extract_intensity_lambda):
+        primary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        intensity_channel_name = self._extract_intensity_channel_name(primary_object_dataframe, self._MEAN_INTENSITY)
+        grouping_datasets_dictionary = self._build_groupings(primary_object_dataframe)
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            calculated_intensity = extract_intensity_lambda(grouping_dataframe, intensity_channel_name)
+            self._calculate_and_add_all_stat_functions(result_data_dict, calculated_intensity, grouping_value, spec)
+
+    def _process_intensity_column_from_primary_dataframe(self, result_data_dict, spec: CalculationSpec, target_column):
+        target_column_extractor = lambda frame, intensity_channel: frame.get(target_column + intensity_channel)
+        self._process_primary_object_intensity(result_data_dict, spec, target_column_extractor)
+
+    def _calculate_frame_corrected_intensity(self, grouping_dataframe, intensity_channel_name):
+        mean_intensity_dataseries = grouping_dataframe.get(self._MEAN_INTENSITY + intensity_channel_name)
+        background_intensity_dataseries = grouping_dataframe.get(self._MEAN_EDGE_INTENSITY + intensity_channel_name)
+        return mean_intensity_dataseries / background_intensity_dataseries
+
+    def _process_corrected_intensity(self, result_data_dict, spec):
+        self._process_primary_object_intensity(result_data_dict, spec, self._calculate_frame_corrected_intensity)
+
+    def _calculate_frame_relative_object_intensity(self, grouping_dataframe, intensity_channel_name):
+        mean_intensity_dataseries = grouping_dataframe.get(self._MEAN_INTENSITY + intensity_channel_name)
+        background_intensity_dataseries = grouping_dataframe.get(self._MEAN_EDGE_INTENSITY + intensity_channel_name)
+        relative_object_intensity = mean_intensity_dataseries - background_intensity_dataseries
+        return relative_object_intensity / mean_intensity_dataseries
+
+    def _process_relative_object_intensity(self, result_data_dict, spec):
+        self._process_primary_object_intensity(result_data_dict, spec, self._calculate_frame_relative_object_intensity)
+
+    def _calculate_frame_contrast(self, grouping_dataframe, intensity_channel_name):
+        max_intensity_dataseries = grouping_dataframe.get(self._MAX_INTENSITY + intensity_channel_name)
+        background_intensity_dataseries = grouping_dataframe.get(self._MEAN_EDGE_INTENSITY + intensity_channel_name)
+        negate_intensity = max_intensity_dataseries - background_intensity_dataseries
+        sum_intensity = max_intensity_dataseries + background_intensity_dataseries
+        return negate_intensity / sum_intensity
+
+    def _process_contrast(self, result_data_dict, spec):
+        self._process_primary_object_intensity(result_data_dict, spec, self._calculate_frame_contrast)
+
+    def _process_region_intensity(self, result_data_dict, spec):
+        primary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        intensity_channel_name = self._extract_intensity_channel_name(primary_object_dataframe, self._MEAN_INTENSITY)
+        grouping_datasets_dictionary = self._build_groupings(primary_object_dataframe)
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            grouping_dataframe = grouping_dataframe[grouping_dataframe[self._children_count_column(spec)] != 0]
+            primary_objects_mean_intensity = grouping_dataframe.get(self._MEAN_INTENSITY + intensity_channel_name)
+            self._calculate_and_add_all_stat_functions(result_data_dict, primary_objects_mean_intensity, grouping_value,
+                                                       spec)
+
+    def _process_secondary_to_primary_region_intensity(self, result_data_dict, spec):
+        primary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
+        intensity_channel_name = self._extract_intensity_channel_name(primary_object_dataframe, self._MEAN_INTENSITY)
+        mean_intensity_column = self._MEAN_INTENSITY + intensity_channel_name
+        primary_object_dataframe = primary_object_dataframe[primary_object_dataframe[self._children_count_column(spec)] != 0]
+        primary_objects_intensities = {}
+        for row in primary_object_dataframe.itertuples():
+            region_intensity = getattr(row, mean_intensity_column)
+            primary_objects_intensities['{}-{}'.format(row.ImageNumber, row.ObjectNumber)] = region_intensity
+        secondary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.secondary))
+        grouping_datasets_dictionary = self._build_groupings(secondary_object_dataframe)
+        primary_parent_column_name = 'Parent_' + spec.primary
+        for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
+            grouping_dataframe = grouping_dataframe[grouping_dataframe[primary_parent_column_name] != 0]
+            series_list = [child_intensity / primary_objects_intensities['{}-{}'.format(img_num, parent_num)]
+                           for img_num, parent_num, child_intensity
+                           in zip(grouping_dataframe['ImageNumber'],
+                                  grouping_dataframe[primary_parent_column_name],
+                                  grouping_dataframe[mean_intensity_column])]
+            secondary_to_primary_region_intensity_dataseries = pandas.Series(data=series_list)
+            self._calculate_and_add_all_stat_functions(
+                result_data_dict, secondary_to_primary_region_intensity_dataseries, grouping_value, spec)
