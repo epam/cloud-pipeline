@@ -331,8 +331,8 @@ class DefineResults(ExportToSpreadsheet):
         mean_intensity_column = self._MEAN_INTENSITY + intensity_channel_name
         primary_object_dataframe = primary_object_dataframe[primary_object_dataframe[self._children_count_column(spec)] != 0]
         primary_objects_intensities = {}
-        for row in primary_object_dataframe.itertuples():
-            region_intensity = getattr(row, mean_intensity_column)
+        for idx, row in primary_object_dataframe.iterrows():
+            region_intensity = row[mean_intensity_column]
             primary_objects_intensities['{}-{}'.format(row.ImageNumber, row.ObjectNumber)] = region_intensity
         secondary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.secondary))
         grouping_datasets_dictionary = self._build_groupings(secondary_object_dataframe)
