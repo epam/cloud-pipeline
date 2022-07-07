@@ -186,6 +186,12 @@ public class PipelineConfigurationManager {
             configuration.setNotifications(defaultConfig.getNotifications());
         }
 
+        if (MapUtils.isNotEmpty(runVO.getKubeLabels())) {
+            configuration.setKubeLabels(runVO.getKubeLabels());
+        } else {
+            configuration.setKubeLabels(defaultConfig.getKubeLabels());
+        }
+
         //client always sends actual node-count
         configuration.setNodeCount(runVO.getNodeCount());
 
