@@ -303,14 +303,49 @@ const imageMath = {
       )
     },
     'Raise the power of the result by|float|1.0|IF (operation!=Not OR operation!=Equals)',
-    'Multiply the result by|float|1.0|IF (operation!=Not OR operation!=Equals)',
+    'Multiply the result by|float|1.0|IF (operation!=Not OR operation!=Equals)|ALIAS multiply',
     'Add to result|float|0.0|IF (operation!=Not OR operation!=Equals)',
     'Set values less than 0 equal to 0?|boolean|true|IF (operation!=Not OR operation!=Equals)',
     'Set values greater than 1 equal to 1?|boolean|true|IF (operation!=Not OR operation!=Equals)',
     'Replace invalid values with 0?|boolean|true|IF (operation!=Not OR operation!=Equals)',
     'Ignore the image masks?|boolean|false'
+  ]
+};
+
+const multiplyImageIntensity = {
+  name: 'MultiplyImageIntensity',
+  group: 'Image Processing',
+  output: 'output|file',
+  composed: true,
+  parameters: [
+    'Input image|file|ALIAS input',
+    'Output image|string|ALIAS output',
+    'Multiply intensity by|float|1|ALIAS ratio'
   ],
-  notes: 'Add another button allows to add next parameters: Image or measurement?,Select the Nth image,Multiply the Nth image by.Remove another button allows to remove all this stuff'
+  subModules: [
+    {
+      module: 'ImageMath',
+      values: {
+        output: '{parent.output}|COMPUTED',
+        operation: 'Add',
+        multiply: '{parent.ratio}|COMPUTED',
+        images: (cpModule, modules) => {
+          const parent = modules.parent;
+          if (!parent) {
+            return undefined;
+          }
+          const input = parent.getParameterValue('input');
+          if (input) {
+            return [{
+              name: input,
+              value: 1
+            }];
+          }
+          return [];
+        }
+      }
+    }
+  ]
 };
 
 const invertForPrinting = {
@@ -606,6 +641,7 @@ export default [
   maskImage,
   makeProjection,
   morph,
+  multiplyImageIntensity,
   rescaleIntensity,
   resize,
   smooth,

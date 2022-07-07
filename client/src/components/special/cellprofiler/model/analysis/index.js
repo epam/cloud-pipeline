@@ -436,8 +436,7 @@ class Analysis {
     }
     this.status = 'Acquiring CellProfiler job endpoint...';
     const jobEndpoint = await waitForJobToBeInitialized(job);
-    const token = await fetchToken();
-    this.analysisAPI = new AnalysisApi(jobEndpoint, token);
+    this.analysisAPI = new AnalysisApi(jobEndpoint);
     this.status = `CellProfiler job: #${job.id} (${this.analysisAPI.endpoint})`;
     this.pending = false;
     return this.analysisAPI;

@@ -16,12 +16,13 @@
 
 import {observable} from 'mobx';
 import {getAnalysisMethodURL} from './analysis-endpoint-utilities';
+import {fetchToken} from '../../../../../models/user/UserToken';
 
 class AnalysisApi {
   @observable endpoint;
   constructor (endpoint, token) {
     this.endpoint = endpoint;
-    this.token = token;
+    this.token = token ? Promise.resolve(token) : undefined;
   }
 
   getMethodURL = (uri, query) => {
@@ -59,6 +60,10 @@ class AnalysisApi {
    * @param {APICallOptions} options
    */
   apiCall = async (options = {}) => {
+    if (!this.token) {
+      this.token = fetchToken();
+    }
+    const token = await this.token;
     const {
       uri,
       url: rawURL,
@@ -81,7 +86,7 @@ class AnalysisApi {
         body: bodyFormatted,
         mode: 'cors',
         headers: {
-          bearer: this.token
+          bearer: token
         }
       }
     );
