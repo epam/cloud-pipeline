@@ -26,6 +26,7 @@ import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
 import runAnalysisPipeline from './analysis-pipeline-utilities';
 import {loadPipeline, savePipeline} from './analysis-pipeline-management';
+import { fetchToken } from "../../../../../models/user/UserToken";
 
 const AUTOUPDATE = false;
 
@@ -313,24 +314,35 @@ class Analysis {
       this.error = undefined;
       const names = this.namesAndTypes.outputs.map(output => output.name);
       const {
-        well = {x: 0, y: 0},
-        image,
-        time,
-        z
+        wells = [],
+        images = [],
+        timePoints = [],
+        zCoordinates = []
       } = this.namesAndTypes.sourceFile || {};
-      const {
-        x: column = 0,
-        y: row = 0
-      } = well;
-      const files = names.map((name, index) => ({
-        x: row,
-        y: column,
-        z,
-        timepoint: time,
-        fieldId: image,
-        channel: index + 1,
-        channelName: name
-      }));
+      const files = [];
+      timePoints.forEach(timePoint => {
+        zCoordinates.forEach(z => {
+          wells.forEach(well => {
+            const {
+              x: column = 0,
+              y: row = 0
+            } = well;
+            images.forEach(image => {
+              names.forEach((channel, index) => {
+                files.push({
+                  x: row,
+                  y: column,
+                  z,
+                  timepoint: timePoint,
+                  fieldId: image,
+                  channel: index + 1,
+                  channelName: channel
+                });
+              });
+            });
+          });
+        });
+      });
       await this.analysisAPI.attachFiles(this.pipelineId, ...files);
       this.status = `Image attached to pipeline: #${this.pipelineId}`;
     } catch (error) {
@@ -424,7 +436,8 @@ class Analysis {
     }
     this.status = 'Acquiring CellProfiler job endpoint...';
     const jobEndpoint = await waitForJobToBeInitialized(job);
-    this.analysisAPI = new AnalysisApi(jobEndpoint);
+    const token = await fetchToken();
+    this.analysisAPI = new AnalysisApi(jobEndpoint, token);
     this.status = `CellProfiler job: #${job.id} (${this.analysisAPI.endpoint})`;
     this.pending = false;
     return this.analysisAPI;

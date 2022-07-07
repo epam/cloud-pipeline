@@ -43,6 +43,8 @@ function getWellCoordinateString (coordinate, dimension) {
  * @property {string|number} x
  * @property {string|number} y
  * @property {string|number} id
+ * @property {number} fieldID
+ * @property {number} wellID
  */
 
 /**
@@ -141,6 +143,26 @@ class HCSImageWell {
         hcs
       ));
   }
+}
+
+export function getImageInfoFromName (imageName) {
+  if (!imageName) {
+    return {};
+  }
+  const getID = (key) => {
+    const regExp = new RegExp(`${key} ([\\d]+)\\s*(\\s|,|$)`, 'i');
+    if (imageName && regExp.test(imageName)) {
+      const e = regExp.exec(imageName);
+      if (e && e.length) {
+        return Number(e[1]);
+      }
+    }
+    return undefined;
+  };
+  return {
+    well: getID('well'),
+    field: getID('field')
+  };
 }
 
 export default HCSImageWell;

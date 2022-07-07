@@ -19,8 +19,9 @@ import {getAnalysisMethodURL} from './analysis-endpoint-utilities';
 
 class AnalysisApi {
   @observable endpoint;
-  constructor (endpoint) {
+  constructor (endpoint, token) {
     this.endpoint = endpoint;
+    this.token = token;
   }
 
   getMethodURL = (uri, query) => {
@@ -68,10 +69,8 @@ class AnalysisApi {
     } = options || {};
     const url = rawURL || this.getMethodURL(uri, query);
     let bodyFormatted;
-    let contentType;
     if (typeof body === 'object') {
       bodyFormatted = JSON.stringify(body);
-      contentType = 'application/json; charset=UTF-8';
     } else if (typeof body !== 'undefined') {
       bodyFormatted = body;
     }
@@ -80,10 +79,9 @@ class AnalysisApi {
       {
         method: httpMethod,
         body: bodyFormatted,
-        credentials: 'include',
         mode: 'cors',
         headers: {
-          ...(contentType ? {'Content-Type': contentType} : {})
+          bearer: this.token
         }
       }
     );

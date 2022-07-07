@@ -42,6 +42,7 @@ import {Analysis} from '../cellprofiler/model/analysis';
 import roleModel from '../../../utils/roleModel';
 import styles from './hcs-image.css';
 import ObjectsOutline from "../cellprofiler/components/objects-outline";
+import { getImageInfoFromName } from "./utilities/hcs-image-well";
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -356,6 +357,38 @@ class HcsImage extends React.PureComponent {
     }
   };
 
+  updateFieldsInfo = () => {
+    if (
+      !this.hcsInfo ||
+      !this.hcsImageViewer ||
+      !this.hcsImageViewer.state ||
+      !this.hcsImageViewer.state.metadata ||
+      this.hcsImageViewer.state.metadata.length === 0 ||
+      this.state.showEntireWell
+    ) {
+      return;
+    }
+    const {metadata} = this.hcsImageViewer.state;
+    const {sequences = []} = this.hcsInfo;
+    sequences.forEach(sequence => {
+      const {wells = []} = sequence;
+      wells.forEach(well => {
+        const {images = []} = well;
+        images.forEach(image => {
+          const info = metadata.find(m => m.ID === image.id);
+          if (info) {
+            const {
+              field: fieldID,
+              well: wellID
+            } = getImageInfoFromName(info.Name);
+            image.wellID = wellID;
+            image.fieldID = fieldID;
+          }
+        });
+      });
+    });
+  };
+
   loadImage = () => {
     const {
       sequenceId,
@@ -410,6 +443,7 @@ class HcsImage extends React.PureComponent {
     const {
       sequenceId,
       wellId,
+      imageId,
       showEntireWell
     } = this.state;
     if (this.wellViewAvailable && showEntireWell) {
@@ -417,37 +451,34 @@ class HcsImage extends React.PureComponent {
       return;
     }
     if (this.hcsInfo && this.hcsAnalysis && this.hcsImageViewer) {
+      this.updateFieldsInfo();
       const viewerState = this.hcsImageViewer.viewerState;
       const {
         channels = [],
         globalSelection = {},
-        metadata
       } = viewerState || {};
-      let image;
-      if (metadata && metadata.Name && /field [\d]+/i.test(metadata.Name)) {
-        const e = /field ([\d]+)/i.exec(metadata.Name);
-        if (e && e.length) {
-          image = Number(e[1]);
-        }
-      }
       const {
         z = 0,
         t = 0
       } = globalSelection;
       const {sequences = []} = this.hcsInfo;
       const sequence = sequences.find(s => s.id === sequenceId);
-      if (sequence && sequence.sourceDirectory && image) {
+      if (sequence && sequence.sourceDirectory) {
         let analysisPath = sequence.sourceDirectory;
         const {wells = []} = sequence;
         const well = wells.find(w => w.id === wellId);
-        this.hcsAnalysis.changeFile({
-          sourceDirectory: analysisPath,
-          image,
-          well,
-          z: z + 1,
-          time: t + 1,
-          channels
-        });
+        const {images = []} = well;
+        const image = images.find(i => i.id === imageId);
+        if (image) {
+          this.hcsAnalysis.changeFile({
+            sourceDirectory: analysisPath,
+            images: image ? [image.fieldID].filter(Boolean) : [],
+            wells: [well],
+            zCoordinates: [z + 1],
+            timePoints: [t + 1],
+            channels
+          });
+        }
       }
     }
   }
@@ -486,7 +517,6 @@ class HcsImage extends React.PureComponent {
       this.hcsImageViewer = undefined;
     }
     this.hcsAnalysis.hcsImageViewer = this.hcsImageViewer;
-    console.log(this.hcsImageViewer);
   };
 
   renderDetailsActions = (className = styles.detailsActions, handleClick = true) => {
@@ -537,6 +567,8 @@ class HcsImage extends React.PureComponent {
     const {showAnalysis} = this.state;
     this.setState({
       showAnalysis: !showAnalysis
+    }, () => {
+      window.dispatchEvent(new Event('resize'));
     });
   };
 

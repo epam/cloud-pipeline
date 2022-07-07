@@ -28,13 +28,88 @@ class AnalysisFile {
   }
 }
 
+function asc (a, b) {
+  return a - b;
+}
+
+function numberArraysAreEqual (array1, array2) {
+  const a = [...(new Set(array1 || []))].sort(asc);
+  const b = [...(new Set(array2 || []))].sort(asc);
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function stringArraysAreEqual (array1, array2) {
+  const a = [...(new Set(array1 || []))].sort();
+  const b = [...(new Set(array2 || []))].sort();
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function wellsAreEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return true;
+  }
+  const {
+    x: ax,
+    y: ay
+  } = a;
+  const {
+    x: bx,
+    y: by
+  } = b;
+  return ax === bx && ay === by;
+}
+
+function wellsArraysAreEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b) {
+    return true;
+  }
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    const bWell = b.find(bb => wellsAreEqual(bb, a[i]));
+    if (!bWell) {
+      return false;
+    }
+  }
+  for (let i = 0; i < b.length; i++) {
+    const aWell = a.find(aa => wellsAreEqual(aa, b[i]));
+    if (!aWell) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * @typedef {Object} HCSSourceFileOptions
  * @property {string} sourceDirectory
- * @property {{x: number, y: number}} well
- * @property {string} image
- * @property {number} z
- * @property {number} time
+ * @property {HCSImageWell[]} [wells]
+ * @property {number[]} [images]
+ * @property {number[]} [zCoordinates]
+ * @property {number[]} [timePoints]
  * @property {string[]} [channels]
  */
 
@@ -46,32 +121,26 @@ class AnalysisFile {
 function sourceFileOptionsEqual (optionsA, optionsB) {
   const {
     sourceDirectory: aSourceDirectory,
-    well: aWell,
-    image: aImage,
-    z: aZ,
-    time: aTime
+    images: aImages = [],
+    wells: aWells = [],
+    zCoordinates: aZCoordinates = [],
+    timePoints: aTimePoints = [],
+    channels: aChannels = []
   } = optionsA || {};
   const {
-    x: aX,
-    y: aY
-  } = aWell || {};
-  const {
     sourceDirectory: bSourceDirectory,
-    well: bWell,
-    image: bImage,
-    z: bZ,
-    time: bTime
+    images: bImages = [],
+    wells: bWells = [],
+    zCoordinates: bZCoordinates = [],
+    timePoints: bTimePoints = [],
+    channels: bChannels = []
   } = optionsB || {};
-  const {
-    x: bX,
-    y: bY
-  } = bWell || {};
   return aSourceDirectory === bSourceDirectory &&
-    aX === bX &&
-    aY === bY &&
-    aZ === bZ &&
-    aTime === bTime &&
-    aImage === bImage;
+    wellsArraysAreEqual(aWells, bWells) &&
+    numberArraysAreEqual(aImages, bImages) &&
+    numberArraysAreEqual(aZCoordinates, bZCoordinates) &&
+    numberArraysAreEqual(aTimePoints, bTimePoints) &&
+    stringArraysAreEqual(aChannels, bChannels);
 }
 
 class HCSSourceFile extends AnalysisFile {
@@ -82,10 +151,16 @@ class HCSSourceFile extends AnalysisFile {
   static check (options) {
     const {
       sourceDirectory,
-      well,
-      image
+      wells = [],
+      images = [],
+      zCoordinates = [],
+      timePoints = []
     } = options || {};
-    return !!sourceDirectory && !!well && well.x !== undefined && well.y !== undefined && !!image;
+    return !!sourceDirectory &&
+      wells.length > 0 &&
+      images.length > 0 &&
+      zCoordinates.length > 0 &&
+      timePoints.length > 0;
   }
   /**
    *
@@ -95,18 +170,19 @@ class HCSSourceFile extends AnalysisFile {
   constructor (cpModule, options) {
     const {
       sourceDirectory,
-      well,
-      image,
-      z = 0,
-      time = 0
+      wells = [],
+      images = [],
+      zCoordinates = [1],
+      timePoints = [1],
+      channels = []
     } = options;
-    super(cpModule, sourceDirectory, image);
+    super(cpModule, sourceDirectory, `${images[0] || 'image'}`);
     this.sourceDirectory = sourceDirectory;
-    this.x = well ? well.x : undefined;
-    this.y = well ? well.y : undefined;
-    this.image = image;
-    this.z = z;
-    this.time = time;
+    this.wells = wells;
+    this.timePoints = timePoints;
+    this.images = images;
+    this.zCoordinates = zCoordinates;
+    this.channels = channels;
   }
 }
 

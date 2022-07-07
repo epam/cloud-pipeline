@@ -39,7 +39,7 @@ const ObjectPropertyName = {
   [ObjectProperty.totalSpotArea]: 'Total Spot Area',
   [ObjectProperty.relativeSpotsIntensity]: 'Relative Spot Intensity',
   [ObjectProperty.numberOfSpots]: 'Number of Spots',
-  [ObjectProperty.numberOfSpotsPerAreaOf]: 'Number of Spots per... ',
+  [ObjectProperty.numberOfSpotsPerAreaOf]: 'Number of Spots per Area ',
   [ObjectProperty.meanSpotIntensity]: 'Mean Spot Intensity',
   [ObjectProperty.spotBackgroundIntensity]: 'Spot Background Intensity',
   [ObjectProperty.correctedSpotIntensity]: 'Corrected Spot Intensity',
