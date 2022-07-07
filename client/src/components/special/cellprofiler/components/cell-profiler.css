@@ -34,6 +34,10 @@
   font-size: smaller;
 }
 
+.cell-profiler-footer + .cell-profiler-footer {
+  margin-top: 5px;
+}
+
 .cell-profiler-header .title {
   margin-right: auto;
   font-weight: bold;
@@ -97,11 +101,97 @@
   line-height: 24px;
 }
 
-.cell-profiler-parameter-title::after {
+.cell-profiler-parameter-title:not(.hidden)::after {
   content: ':';
+}
+
+.cell-profiler-parameter-title.hidden {
+  display: none;
 }
 
 .cell-profiler-parameter-value {
   margin-left: 5px;
   flex: 1;
+  min-width: 100px;
+}
+
+.open-pipeline-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.analysis-pipeline-row {
+  cursor: pointer;
+}
+
+.analysis-pipeline-cell {
+  white-space: pre;
+  word-break: break-word;
+}
+
+.analysis-pipeline-cell-name {
+  min-width: 200px;
+}
+
+.analysis-output-container .analysis-output-header {
+  display: flex;
+  align-items: center;
+}
+
+.analysis-output-table-container {
+  overflow: auto;
+  max-height: 33vh;
+}
+
+.analysis-output-table {
+  border-collapse: collapse;
+}
+
+.analysis-output-table td,
+.analysis-output-table th {
+  padding: 5px;
+  min-width: 50px;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.cp-module-execution-indicator {
+  fill: currentColor;
+  stroke: currentColor;
+  margin-right: 5px;
+}
+
+.cp-module-execution-indicator.empty {
+  fill: transparent;
+}
+
+.cp-module-execution-indicator.pending {
+  animation: blink-animation 1s infinite;
+}
+
+.cp-analysis-objects-outlines {
+  padding: 5px;
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.cp-analysis-objects-outline-row {
+  display: flex;
+  align-items: center;
+  line-height: 32px;
+}
+
+@keyframes blink-animation {
+  from {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

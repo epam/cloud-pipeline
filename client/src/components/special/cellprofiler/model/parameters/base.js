@@ -14,9 +14,10 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, isObservableArray, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
+import {getComputedValue} from '../modules/implementation/parse-module-configuration';
 
 function mapListItem (listItem) {
   if (typeof listItem !== 'object') {
@@ -47,14 +48,21 @@ function mapListItem (listItem) {
  * @property {string} [title]
  * @property {string} [type]
  * @property {boolean} [isList]
+ * @property {bool} [multiple]
  * @property {boolean} [isRange]
  * @property {boolean} [local]
  * @property {boolean} [required]
  * @property {*} [value]
  * @property {boolean} [advanced]
+ * @property {boolean} [hidden]
+ * @property {string|function} [computed]
  * @property {function} [visibilityHandler]
  * @property {*[]|function} [values]
  * @property {function(ModuleParameterValue, string, object)} [renderer]
+ * @property {{min: number?, max: number?}} [range]
+ * @property {string} [emptyValue]
+ * @property {boolean} [showTitle=true]
+ * @property {boolean} [exportParameter=true]
  */
 
 class ModuleParameter {
@@ -66,11 +74,12 @@ class ModuleParameter {
   title;
   type;
   isList;
+  multiple;
   isRange;
   /**
    * @type {AnalysisModule}
    */
-  cpModule;
+  @observable cpModule;
   required;
   advanced;
   visibilityHandler;
@@ -78,6 +87,12 @@ class ModuleParameter {
   valueParser;
   _defaultValue;
   _values;
+  range;
+  hidden;
+  computed;
+  emptyValue;
+  showTitle;
+  exportParameter = true;
 
   /**
    * @param {ModuleParameterOptions} [options]
@@ -89,6 +104,7 @@ class ModuleParameter {
       parameterName = name,
       type = AnalysisTypes.string,
       isList = false,
+      multiple = false,
       isRange = false,
       title = name,
       required = false,
@@ -99,13 +115,20 @@ class ModuleParameter {
       renderer,
       valueParser = (o => o),
       valueFormatter = (o => o),
-      local = false
+      local = false,
+      range,
+      hidden = false,
+      computed,
+      emptyValue,
+      showTitle = true,
+      exportParameter = true
     } = options;
     this.name = name;
     this.parameterName = parameterName;
     this.title = title;
     this.type = type;
     this.isList = isList;
+    this.multiple = multiple;
     this.isRange = isRange;
     this.required = required;
     this._defaultValue = value;
@@ -116,20 +139,57 @@ class ModuleParameter {
     this.valueFormatter = valueFormatter;
     this.valueParser = valueParser;
     this.local = local;
+    this.range = range;
+    this.hidden = hidden;
+    this.computed = computed;
+    this.emptyValue = emptyValue;
+    this.showTitle = showTitle;
+    this.exportParameter = exportParameter;
+  }
+
+  @computed
+  get pipeline () {
+    if (!this.cpModule) {
+      return undefined;
+    }
+    return this.cpModule.pipeline;
+  }
+
+  @computed
+  get analysis () {
+    if (!this.pipeline) {
+      return undefined;
+    }
+    return this.pipeline.analysis;
+  }
+
+  @computed
+  get channels () {
+    if (!this.pipeline) {
+      return [];
+    }
+    return this.pipeline.channels;
   }
 
   @computed
   get values () {
     if (typeof this._values === 'function') {
-      return (this._values(this.cpModule) || []).map(mapListItem);
+      return (this._values(this.cpModule) || [])
+        .map(mapListItem)
+        .filter(Boolean);
     }
     if (this._values !== undefined && this._values.length) {
-      return this._values.map(mapListItem);
+      return this._values
+        .map(mapListItem)
+        .filter(Boolean);
     }
     return [];
   }
   @computed
   get visible () {
+    if (this.hidden) {
+      return false;
+    }
     if (this.name === 'advanced' && this.cpModule) {
       return this.cpModule.parametersConfigurations.some(config => config.advanced);
     }
@@ -145,6 +205,9 @@ class ModuleParameter {
     return true;
   }
   get defaultValue () {
+    if (typeof this._defaultValue === 'function') {
+      return this._defaultValue(this.cpModule);
+    }
     if (this._defaultValue !== undefined) {
       return this._defaultValue;
     }
@@ -173,7 +236,7 @@ class ModuleParameterValue {
    * @type {ModuleParameter}
    */
   @observable parameter;
-  @observable value;
+  @observable _value;
 
   /**
    * @param {ModuleParameter} parameter
@@ -183,12 +246,84 @@ class ModuleParameterValue {
     this.value = parameter.defaultValue;
   }
 
+  @computed
+  get cpModule () {
+    if (!this.parameter) {
+      return undefined;
+    }
+    return this.parameter.cpModule;
+  }
+
+  @computed
+  get pipeline () {
+    if (!this.parameter) {
+      return undefined;
+    }
+    return this.parameter.pipeline;
+  }
+
+  @computed
+  get analysis () {
+    if (!this.parameter) {
+      return undefined;
+    }
+    return this.parameter.analysis;
+  }
+
+  @computed
+  get channels () {
+    if (!this.parameter) {
+      return undefined;
+    }
+    return this.parameter.channels;
+  }
+
+  @computed
+  get value () {
+    if (this.parameter && this.parameter.computed) {
+      return getComputedValue(this.parameter.computed, this.parameter.cpModule);
+    }
+    return this._value;
+  }
+
+  set value (aValue) {
+    if (this.parameter && this.parameter.multiple) {
+      this._value = aValue && (isObservableArray(aValue) || Array.isArray(aValue))
+        ? aValue
+        : [aValue].filter(o => o !== undefined);
+    } else {
+      this._value = aValue;
+    }
+  }
+
+  get payload () {
+    return this.getPayload();
+  }
+
   getPayload () {
     if (!this.parameter) {
       return {};
     }
-    const {type, isRange, valueFormatter} = this.parameter;
-    const formattedValue = valueFormatter(this.value, this.parameter.cpModule);
+    const {
+      type,
+      isRange,
+      valueFormatter,
+      isList,
+      multiple,
+      local
+    } = this.parameter;
+    if (local) {
+      return {};
+    }
+    const multipleFormatter = o => {
+      if (!multiple) {
+        return o;
+      }
+      return o && (isObservableArray(o) || Array.isArray(o))
+        ? o
+        : [o].filter(oo => oo !== undefined);
+    };
+    let formattedValue = valueFormatter(multipleFormatter(this.value), this.parameter.cpModule);
     if (isRange) {
       return {
         [this.parameter.parameterName]: (formattedValue || []).map(idx =>
@@ -196,7 +331,15 @@ class ModuleParameterValue {
         )
       };
     }
+    if (isList && !formattedValue) {
+      formattedValue = valueFormatter(multipleFormatter(this.parameter.emptyValue));
+    }
     switch (type) {
+      case AnalysisTypes.string:
+        return {
+          [this.parameter.parameterName]:
+            `${formattedValue === undefined ? '' : formattedValue}`
+        };
       default:
         return {[this.parameter.parameterName]: formattedValue};
     }
@@ -212,17 +355,20 @@ class ModuleParameterValue {
 
   @action
   reportChanged = () => {
-    if (
-      !this.parameter ||
-      !this.parameter.cpModule ||
-      this.parameter.cpModule.predefined
-    ) {
+    if (!this.cpModule || this.cpModule.predefined) {
       return;
     }
-    this.parameter.cpModule.changed = true;
-    this.parameter.cpModule.analysis.changed = true;
-    this.parameter.cpModule.analysis.analysisRequested = true;
+    this.cpModule.changed = true;
+    if (this.analysis) {
+      this.analysis.changed = true;
+      this.analysis.analysisRequested = true;
+    }
   };
+  exportParameterValue = () => {
+    const payload = this.payload;
+    return Object.entries(payload)
+      .map(([name, value]) => `${name}:${JSON.stringify(value)}`);
+  }
 }
 
 export {

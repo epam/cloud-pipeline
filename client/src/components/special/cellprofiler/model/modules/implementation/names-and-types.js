@@ -18,19 +18,9 @@ import {computed, observable} from 'mobx';
 import {AnalysisModule} from '../base';
 import {HCSSourceFile, sourceFileOptionsEqual} from '../../common/analysis-file';
 import {AnalysisTypes} from '../../common/analysis-types';
-import {
-  ChannelsParameter
-} from '../../parameters';
 
 class NamesAndTypes extends AnalysisModule {
   static predefined = true;
-  static get identifier () {
-    return 'NamesAndTypes';
-  }
-  @computed
-  get channel () {
-    return this.getParameterValue('channel');
-  }
   path;
   /**
    * @type {HCSSourceFileOptions}
@@ -38,28 +28,33 @@ class NamesAndTypes extends AnalysisModule {
   @observable sourceFile;
 
   /**
-   * @param {Analysis} analysis
    * @param {HCSSourceFileOptions} source
    */
-  constructor (analysis, source) {
-    super(analysis);
+  constructor (source) {
+    super(undefined);
     this.title = 'Input';
     this.changeFile(source);
-  }
-
-  initialize () {
-    super.initialize();
-    this.registerParameters(
-      new ChannelsParameter({
-        name: 'channel',
-        title: 'Channel'
-      })
-    );
   }
 
   @computed
   get available () {
     return HCSSourceFile.check(this.sourceFile);
+  }
+
+  @computed
+  get outputs () {
+    if (this.sourceFile && HCSSourceFile.check(this.sourceFile)) {
+      let channels = this.sourceFile.channels;
+      if (!channels || !channels.length) {
+        channels = ['input'];
+      }
+      return channels.map(name => ({
+        type: AnalysisTypes.file,
+        name,
+        cpModule: this
+      }));
+    }
+    return [];
   }
 
   /**
@@ -71,19 +66,6 @@ class NamesAndTypes extends AnalysisModule {
       return false;
     }
     this.sourceFile = sourceFileOptions;
-    if (HCSSourceFile.check(this.sourceFile)) {
-      this.moduleOutputs = [
-        {
-          type: AnalysisTypes.file,
-          value: 'input',
-          name: 'input',
-          cpModule: this,
-          file: new HCSSourceFile(this, this.sourceFile)
-        }
-      ];
-    } else {
-      this.moduleOutputs = [];
-    }
     return true;
   }
 }

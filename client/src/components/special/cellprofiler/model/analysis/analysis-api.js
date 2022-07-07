@@ -132,6 +132,12 @@ class AnalysisApi {
     httpMethod: 'POST'
   });
 
+  runPipelineModule = (pipelineId, moduleId) => this.apiCall({
+    uri: 'hcs/run/pipelines',
+    query: {pipelineId, moduleId},
+    httpMethod: 'POST'
+  });
+
   attachFiles = (pipelineId, ...files) => this.apiCall({
     uri: 'hcs/pipelines/files',
     query: {pipelineId},

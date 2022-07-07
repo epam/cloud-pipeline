@@ -19,10 +19,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {
   Checkbox,
-  Popover,
   Slider
 } from 'antd';
-import {ChromePicker} from 'react-color';
+import ColorPicker from '../../color-picker';
 import styles from './hcs-image-controls.css';
 
 class Channel extends React.PureComponent {
@@ -33,60 +32,22 @@ class Channel extends React.PureComponent {
   renderColorConfiguration = () => {
     const {
       color = [],
-      loading,
       onColorChanged
     } = this.props;
     if (color.length === 3) {
-      const presenter = (
-        <div
-          key="color-presenter"
-          className={styles.colorPresenter}
-        >
-          <div
-            className={styles.fill}
-            style={{
-              color: `rgb(${color.join(', ')})`
-            }}
-          >
-            {'\u00A0'}
-          </div>
-        </div>
-      );
-      if (loading || !onColorChanged) {
-        return presenter;
-      }
-      const {colorPickerVisible} = this.state;
-      const handleColorPickerVisibility = (visible) => this.setState({
-        colorPickerVisible: visible
-      });
-      const value = {
-        r: color[0],
-        g: color[1],
-        b: color[2]
-      };
-      const onChange = (options) => {
-        const {rgb = {}} = options;
-        const {r = 255, g = 255, b = 255} = rgb;
+      const onChange = (channels) => {
+        const {r = 255, g = 255, b = 255} = channels;
         if (onColorChanged) {
           onColorChanged([r, g, b]);
         }
       };
       return (
-        <Popover
-          overlayClassName="popover-overlay-content-no-padding"
-          onVisibleChange={handleColorPickerVisibility}
-          key="color picker"
-          trigger={['click']}
-          content={colorPickerVisible && (
-            <ChromePicker
-              color={value}
-              onChange={onChange}
-              disableAlpha
-            />
-          )}
-        >
-          {presenter}
-        </Popover>
+        <ColorPicker
+          color={`rgb(${color.join(',')})`}
+          onChange={onChange}
+          ignoreAlpha
+          channels
+        />
       );
     }
     return null;

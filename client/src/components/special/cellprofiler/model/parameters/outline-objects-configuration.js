@@ -23,8 +23,6 @@ import {
   Icon,
   Select
 } from 'antd';
-import {ModuleParameter} from './base';
-import {AnalysisTypes} from '../common/analysis-types';
 import {getObjectsForModule} from './object-parameter';
 import styles from './outline-object-configuration.css';
 import ColorPicker from '../../../color-picker';
@@ -34,8 +32,6 @@ const displayModes = {
   color: 'Color',
   grayscale: 'Grayscale'
 };
-
-const displayModeParameter = 'displayMode';
 
 class OutlineConfigRenderer extends React.Component {
   get parameter () {
@@ -187,33 +183,4 @@ OutlineConfigRenderer.propTypes = {
 
 const OutlineConfig = observer(OutlineConfigRenderer);
 
-class OutlineObjectsConfigurationParameter extends ModuleParameter {
-  static displayModes = displayModes;
-  static displayModeParameter = displayModeParameter;
-  /**
-   * @param {ModuleParameterOptions} options
-   */
-  constructor (options = {}) {
-    super({
-      ...options,
-      name: 'output',
-      title: 'Objects to display',
-      type: AnalysisTypes.custom,
-      valueParser: value => value,
-      valueFormatter: (value, cpModule) => {
-        const grayScale = cpModule &&
-          cpModule.getParameterValue('displayMode') === displayModes.grayscale;
-        return (value || []).map(({name, color}) => grayScale ? name : `${name}|${color}`);
-      },
-      renderer: (moduleParameterValue, className, style) => (
-        <OutlineConfig
-          parameterValue={moduleParameterValue}
-          className={className}
-          style={style}
-        />
-      )
-    });
-  }
-}
-
-export {OutlineObjectsConfigurationParameter};
+export default OutlineConfig;
