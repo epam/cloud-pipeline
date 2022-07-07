@@ -3,6 +3,7 @@ import {useSettings} from '../use-settings';
 import fetchMountsForPlaceholders from '../../models/parse-limit-mounts-placeholders-config';
 import fetchPlaceholderTagsDependencies from '../../models/cloud-pipeline-api/fetch-tag-dependencies';
 import getAvailableDataStorages from '../../models/cloud-pipeline-api/data-storage-available';
+import { displayPorts, parsePorts, portsStringValidation } from '../../models/utilities/ports';
 
 const ExtendedSettingsContext = React.createContext({});
 export {ExtendedSettingsContext};
@@ -180,6 +181,26 @@ export default function useExtendedSettings () {
       itemSubOptions: () => [],
       valueHasSubOptions: () => false,
       availableForApp: () => true
+    });
+    appendDivider({
+      key: 'specify-ports-divider',
+      type: 'divider',
+    });
+    extendedSettings.push({
+      key: 'specify-ports',
+      title: 'Specify ports:',
+      type: 'string',
+      linkRenderFn: (value) => `${value.length > 0 ? value : 'Specify ports'}`,
+      required: false,
+      optionsField: 'specifyPorts',
+      default: '',
+      hiddenUnderLink: true,
+      itemSubOptions: () => [],
+      valueHasSubOptions: () => false,
+      availableForApp: () => settings && !!settings.customToolEndpointsEnabled,
+      validateFn: (value = '') => portsStringValidation(value, settings),
+      formatterFn: (value) => `${value}`.replaceAll(/[^0-9\, ;]/g, ''),
+      correctFn: (value) => displayPorts(parsePorts(value))
     });
     return {
       appExtendedSettings: extendedSettings,

@@ -1,6 +1,7 @@
 import React, {useCallback, useContext, useState} from 'react';
 import classNames from 'classnames';
 import SettingValue from './setting-value';
+import StringInput from './string-input';
 import {useSettings} from '../../use-settings';
 import {ExtendedSettingsContext} from '../../utilities/use-extended-settings';
 import LoadingIndicator from '../loading-indicator';
@@ -25,10 +26,12 @@ export default function ApplicationSettings (
   }
 ) {
   const appSettings = useSettings();
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
   const [subMenu, setSubMenu] = useState(undefined);
   const [multiSelectionSubMenu, setMultiSelectionSubMenu] = useState(undefined);
   const [filter, setFilter] = useState(undefined);
   const onContextMenuVisibilityChanged = useCallback((visible) => {
+    setContextMenuVisible(visible)
     if (!visible) {
       setSubMenu(undefined);
       setMultiSelectionSubMenu(undefined);
@@ -113,7 +116,7 @@ export default function ApplicationSettings (
   const extendedOptionsPresentation = [];
   for (let setting of appExtendedSettingsFiltered) {
     const value = getSettingValue(setting);
-    if (/^(divider|boolean)$/i.test(setting.type)) {
+    if (/^(divider|boolean|string)$/i.test(setting.type)) {
       continue;
     }
     if (/^multi-selection$/i.test(setting.type) && (value || []).length === 0) {
@@ -185,73 +188,92 @@ export default function ApplicationSettings (
           onVisibilityChange={onContextMenuVisibilityChanged}
         >
           {
-            appExtendedSettingsFiltered.map((setting) => [
-              /^radio$/i.test(setting.type) && (
-                <div
-                  key={setting.key}
-                  className="application-setting"
-                >
-                  <div className="application-setting-title">
-                    {setting.title}:
+            contextMenuVisible ? (appExtendedSettingsFiltered.map((setting) => [
+                /^radio$/i.test(setting.type) && (
+                  <div
+                    key={setting.key}
+                    className="application-setting"
+                  >
+                    <div className="application-setting-title">
+                      {setting.title}:
+                    </div>
+                    <div className="application-setting-value">
+                      <SettingValue
+                        config={setting}
+                        onChange={(value, event) => onChangeOptions(setting, value, event)}
+                        value={getSettingValue(setting)}
+                        dependency={getSettingDependencyValues(setting)}
+                      />
+                    </div>
                   </div>
-                  <div className="application-setting-value">
-                    <SettingValue
-                      config={setting}
-                      onChange={(value, event) => onChangeOptions(setting, value, event)}
-                      value={getSettingValue(setting)}
-                      dependency={getSettingDependencyValues(setting)}
-                    />
-                  </div>
-                </div>
-              ),
-              /^boolean$/i.test(setting.type) && (
-                <div
-                  key={setting.key}
-                  className="application-setting boolean-setting"
-                  onClick={() => onChange(setting, !getSettingValue(setting, true), true)}
-                >
-                  <div className="application-setting-title">
-                    {setting.title}
-                  </div>
-                  {
-                    getSettingValue(setting, true)
-                      ? (<Check className="boolean-setting-value" />)
-                      : (<span>{'\u00A0'}</span>)
-                  }
-                </div>
-              ),
-              /^multi-selection$/i.test(setting.type) && (
-                <div
-                  key={setting.key}
-                  className="application-setting multi-selection-setting"
-                  onClick={e => onOpenMultiSelectionSubMenu(setting, e)}
-                >
-                  <div className="application-setting-title">
-                    {setting.title}
-                  </div>
-                  <div className="multi-selection-value">
+                ),
+                /^boolean$/i.test(setting.type) && (
+                  <div
+                    key={setting.key}
+                    className="application-setting boolean-setting"
+                    onClick={() => onChange(setting, !getSettingValue(setting, true), true)}
+                  >
+                    <div className="application-setting-title">
+                      {setting.title}
+                    </div>
                     {
-                      (getSettingValue(setting) || []).length > 0 && (
-                        <span>
+                      getSettingValue(setting, true)
+                        ? (<Check className="boolean-setting-value" />)
+                        : (<span>{'\u00A0'}</span>)
+                    }
+                  </div>
+                ),
+                /^multi-selection$/i.test(setting.type) && (
+                  <div
+                    key={setting.key}
+                    className="application-setting multi-selection-setting"
+                    onClick={e => onOpenMultiSelectionSubMenu(setting, e)}
+                  >
+                    <div className="application-setting-title">
+                      {setting.title}
+                    </div>
+                    <div className="multi-selection-value">
+                      {
+                        (getSettingValue(setting) || []).length > 0 && (
+                          <span>
                           {(getSettingValue(setting) || []).length}
                         </span>
-                      )
-                    }
-                    <Arrow direction="right" />
+                        )
+                      }
+                      <Arrow direction="right" />
+                    </div>
                   </div>
-                </div>
-              ),
-              /^divider$/i.test(setting.type) && (
-                <div
-                  key={setting.key}
-                  className="application-setting-divider"
-                >
-                  {'\u00A0'}
-                </div>
-              )
-            ])
-              .reduce((r, c) => ([...r, ...c]), [])
-              .filter(Boolean)
+                ),
+                /^divider$/i.test(setting.type) && (
+                  <div
+                    key={setting.key}
+                    className="application-setting-divider"
+                  >
+                    {'\u00A0'}
+                  </div>
+                ),
+                /^string$/i.test(setting.type) && (
+                  <StringInput
+                    key={setting.key}
+                    title={setting.title}
+                    linkRenderFn={setting.linkRenderFn}
+                    linkText={setting.linkText}
+                    value={getSettingValue(setting, true)}
+                    onChange={(value) => onChange(
+                      setting,
+                      value,
+                      true
+                    )}
+                    hiddenUnderLink={setting.hiddenUnderLink}
+                    validateFn={setting.validateFn}
+                    formatterFn={setting.formatterFn}
+                    correctFn={setting.correctFn}
+                  />
+                ),
+              ])
+                .reduce((r, c) => ([...r, ...c]), [])
+                .filter(Boolean)
+            ) : null
           }
           {
             hasSessionInfoSettings && (

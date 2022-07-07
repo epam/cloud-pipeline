@@ -20,6 +20,7 @@ import parseGatewaySpec from './parse-gateway-spec';
 import {findUserRun} from './find-user-run';
 import applicationAvailable from "./folder-applications/application-available";
 import performPreRunChecks from './pre-run-checks';
+import {getPortParameters} from './utilities/ports';
 
 function pollRun(run, resolve, reject, initialPoll = false, appSettings) {
   const {id, status, initialized, serviceUrl} = run || {};
@@ -380,6 +381,12 @@ async function launchTool(application, user, options) {
         payload.parameters,
         joinedLaunchOptions.gatewaySpecParameters || {}
       )
+      if (!!(appSettings?.customToolEndpointsEnabled) && joinedLaunchOptions.specifyPorts) {
+        payload.parameters = attachParameters(
+          payload.parameters,
+          getPortParameters(joinedLaunchOptions.specifyPorts)
+        );
+      }
       const launchedRun = await launchToolRequest(
         application.id,
         `${application.image}:${version || 'latest'}`,

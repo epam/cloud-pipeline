@@ -15,6 +15,54 @@
   justify-content: space-between;
 }
 
+.string-setting {
+  align-items: stretch;
+  position: relative;
+}
+
+.string-setting.error.show-message {
+  padding-bottom: 12px;
+}
+
+.string-setting.error input{
+  border-color: #f5222d;
+  outline-color: #f5222d;
+  background-color: rgba(255, 204, 199, 0.75);
+}
+
+.string-setting input {
+  box-sizing: border-box;
+  padding: 0 3px;
+  height: 32px;
+  margin: 0;
+  background-color: rgba(255,255,255, 0.75);
+}
+
+.string-setting .link {
+  color: #ddd;
+  cursor: pointer;
+  padding-left: 5px;
+  text-decoration: none;
+}
+
+.string-setting .link:hover {
+  color: white;
+  text-decoration: underline;
+}
+
+.string-setting.error .link {
+  color: #ff7875;
+}
+
+.string-setting .error-text {
+  font-size: 12px;
+  padding-left: 5px;
+  position: absolute;
+  bottom: 5px;
+  color: #f5222d;
+  line-height: 0;
+}
+
 .application-setting.boolean-setting .boolean-setting-value {
   display: inline-flex;
 }
