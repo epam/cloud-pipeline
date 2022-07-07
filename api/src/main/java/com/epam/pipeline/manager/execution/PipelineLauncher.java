@@ -128,7 +128,8 @@ public class PipelineLauncher {
                 configuration, gitCredentials);
         checkRunOnParentNode(run, nodeIdLabel, systemParams);
         List<EnvVar> envVars = EnvVarsBuilder.buildEnvVars(run, configuration, systemParams,
-                buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive()));
+                buildRegionSpecificEnvVars(run.getInstance().getCloudRegionId(), run.getSensitive(),
+                        configuration.getKubeLabels()));
 
         Assert.isTrue(!StringUtils.isEmpty(configuration.getCmdTemplate()), messageHelper.getMessage(
                 MessageConstants.ERROR_CMD_TEMPLATE_NOT_RESOLVED));
@@ -146,14 +147,16 @@ public class PipelineLauncher {
     }
 
     private Map<String, String> buildRegionSpecificEnvVars(final Long cloudRegionId,
-                                                           final boolean sensitiveRun) {
-        final Map<String, String> externalProperties = getExternalProperties(cloudRegionId, sensitiveRun);
+                                                           final boolean sensitiveRun,
+                                                           final Map<String, String> kubeLabels) {
+        final Map<String, String> externalProperties = getExternalProperties(cloudRegionId, sensitiveRun, kubeLabels);
         final Map<String, String> cloudEnvVars = cloudFacade.buildContainerCloudEnvVars(cloudRegionId);
         return CommonUtils.mergeMaps(externalProperties, cloudEnvVars);
     }
 
     private Map<String, String> getExternalProperties(final Long regionId,
-                                                      final boolean sensitiveRun) {
+                                                      final boolean sensitiveRun,
+                                                      final Map<String, String> kubeLabels) {
         final EnvVarsSettings podEnvVarsFileMap =
                 preferenceManager.getPreference(SystemPreferences.LAUNCH_ENV_PROPERTIES);
         if (podEnvVarsFileMap == null) {
@@ -164,6 +167,12 @@ public class PipelineLauncher {
         if (sensitiveRun) {
             mergedEnvVars.putAll(MapUtils.emptyIfNull(podEnvVarsFileMap.getSensitiveEnvVars()));
         }
+        if (MapUtils.isNotEmpty(kubeLabels)) {
+            final Map<String, Map<String, Object>> labelEnvVars =
+                    MapUtils.emptyIfNull(podEnvVarsFileMap.getLabelEnvVars());
+            kubeLabels.values()
+                    .forEach(label -> mergedEnvVars.putAll(MapUtils.emptyIfNull(labelEnvVars.get(label))));
+        }
         ListUtils.emptyIfNull(podEnvVarsFileMap.getRegionEnvVars())
                 .stream()
                 .filter(region -> regionId.equals(region.getRegionId()))
@@ -173,6 +182,10 @@ public class PipelineLauncher {
                     if (sensitiveRun) {
                         mergedEnvVars.putAll(MapUtils.emptyIfNull(region.getSensitiveEnvVars()));
                     }
+                    final Map<String, Map<String, Object>> labelEnvVars =
+                            MapUtils.emptyIfNull(region.getLabelEnvVars());
+                    kubeLabels.values()
+                            .forEach(label -> mergedEnvVars.putAll(MapUtils.emptyIfNull(labelEnvVars.get(label))));
                 });
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
     }
