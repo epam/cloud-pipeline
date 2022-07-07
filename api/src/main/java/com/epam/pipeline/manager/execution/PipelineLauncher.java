@@ -140,7 +140,8 @@ public class PipelineLauncher {
                 : pipelineCommand;
         LOGGER.debug("Start script command: {}", rootPodCommand);
         executor.launchRootPod(rootPodCommand, run, envVars,
-                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(), clusterId, imagePullPolicy);
+                endpoints, pipelineId, nodeIdLabel, configuration.getSecretName(),
+                clusterId, imagePullPolicy, configuration.getKubeLabels());
         return pipelineCommand;
     }
 

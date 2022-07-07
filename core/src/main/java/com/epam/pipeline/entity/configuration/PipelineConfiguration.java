@@ -144,6 +144,8 @@ public class PipelineConfiguration {
 
     private Map<String, String> tags;
 
+    private Map<String, String> kubeLabels;
+
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {
         this.parameters = parameters;
