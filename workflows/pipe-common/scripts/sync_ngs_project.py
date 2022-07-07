@@ -12,8 +12,8 @@ EVENT_FAILURE = 'Failure'
 EVENT_SUCCESS = 'Success'
 
 DEFAULT_FOLDERS = ['Config', 'Data', 'Images', 'InterOp', 'Logs', 'RTALogs',
-                   'Recipe', 'Thumbnail_Images', 'Stats', 'Reports']
-REQUIRED_FIELDS = ['BCLs', 'Results', 'SampleSheet',   'ExperimentType', 'ExperimentName', 'PairedEnd', 'ConfigFile']
+                   'Recipe', 'Thumbnail_Images', 'Stats', 'Reports', 'tmp']
+REQUIRED_FIELDS = ['MachineRun', 'Results', 'SampleSheet', 'ExperimentType', 'PairedEnd', 'ConfigFile']
 
 EMAIL_TEMPLATE = '''
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -34,7 +34,8 @@ EMAIL_TEMPLATE = '''
 <body>
 <p>Dear user,</p>
 <p>*** This is a system generated email, do not reply to this email ***</p>
-<p> Please find list of the latest metadata synchronization events for NGS data: </p>
+<p> Please find list of the latest metadata synchronization events for NGS data below. </p>
+<p>You can verify the NGS data status: <a href="{api}/#/folder/{folder_id}/metadata/MachineRun">Machine Runs</a></p>
 <p>
 <table>
     <tr>
@@ -46,7 +47,6 @@ EMAIL_TEMPLATE = '''
     {events}
 </table>
 </p>
-<p>You can verify the NGS data status: <a href="{api}/#/folder/{folder_id}/metadata/MachineRun">Machine Runs</a></p>
 <p>Best regards,</p>
 <p>{deploy_name} Platform</p>
 </body>
@@ -58,7 +58,7 @@ EVENT_PATTERN = '''
  <tr>
             <td>{run}</td>
             <td>{event}</td>
-            <td>{status}</td>
+            <td><a href="{api}/#/run/{run_id}/plain/{run}">{status}</a></td>
             <td>{message}</td>
  </tr>
 '''
@@ -76,8 +76,9 @@ class Settings(object):
 
     def __init__(self, api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                  configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
-                 deploy_name):
-        self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')['value']
+                 deploy_name, run_id, last_processed_column):
+        self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')[
+            'value']
         self.sample_sheet_glob = api.get_preference('ngs.preprocessing.samplesheet.pattern')['value']
         self.machine_run_class = api.get_preference('ngs.preprocessing.machine.run.metadata.class.name')['value']
         self.machine_run_class_id = int(api.get_preference('ngs.preprocessing.machine.run.metadata.class.id')['value'])
@@ -93,6 +94,8 @@ class Settings(object):
         self.launch_from_date = datetime.datetime.strptime(launch_from_date, '%y%m%d') if launch_from_date else None
         self.processed_to_date = datetime.datetime.strptime(processed_to_date, '%y%m%d') if processed_to_date else None
         self.deploy_name = deploy_name
+        self.run_id = run_id
+        self.last_processed_column = last_processed_column
 
 
 class MachineRun(object):
@@ -126,10 +129,11 @@ class MachineRun(object):
                             task_name=self.machine_run)
             self.register_metadata(self.machine_run, self.run_folder, sample_sheets, trigger_run)
             Logger.success('Finished % synchronization' % self.machine_run, task_name=self.machine_run)
-        except Exception as e:
+        except BaseException as e:
             Logger.fail('An error occurred during machine run processing %s: %s.' % (self.machine_run, str(e.message)),
                         task_name=self.machine_run)
-            self.notifications.append(Event(self.machine_run, 'Metadata Created', EVENT_FAILURE, message=str(e.message)))
+            self.notifications.append(
+                Event(self.machine_run, 'Metadata Created', EVENT_FAILURE, message=str(e.message)))
 
     def find_sample_sheet(self, run_folder):
         return [os.path.basename(s) for s in glob.glob(os.path.join(run_folder, self.settings.sample_sheet_glob))]
@@ -147,6 +151,8 @@ class MachineRun(object):
         generated = self.find_sample_sheet(run_folder)
         if not generated:
             return self.handle_sample_sheet_error(machine_run, err, out)
+        Logger.info('Generated sample sheet for run %s. Output: %s.' % (machine_run, self.collect_output(err, out)),
+                    task_name=self.machine_run)
         self.notifications.append(Event(self.machine_run, 'SampleSheet generated', EVENT_SUCCESS))
         return generated
 
@@ -154,16 +160,21 @@ class MachineRun(object):
         Logger.fail('Failed to generate sample sheet for %s.' % machine_run, task_name=self.machine_run)
         metadata = self.api.find_metadata_entity(self.settings.project_id, machine_run, self.settings.machine_run_class)
         if metadata:
-            Logger.info('Metadata for class is already registered, skipping sample sheet error.')
+            Logger.info('Metadata for class is already registered, skipping sample sheet error.',
+                        task_name=self.machine_run)
             return [None]
+        output = self.collect_output(err, out)
+        Logger.warn(str(output), task_name=self.machine_run)
+        self.notifications.append(Event(self.machine_run, 'SampleSheet generated', EVENT_FAILURE, message=output))
+        return [None]
+
+    def collect_output(self, err, out):
         output = ''
         if err:
             output += str(err)
         if out:
             output = output + '\n' + str(out)
-            Logger.warn(str(output), task_name=self.machine_run)
-        self.notifications.append(Event(self.machine_run, 'SampleSheet generated', EVENT_FAILURE, message=output))
-        return [None]
+        return output
 
     def register_metadata(self, machine_run, run_folder, sample_sheets, trigger_run):
         results = self.check_results(run_folder)
@@ -178,16 +189,18 @@ class MachineRun(object):
             data = {
                 'MachineRunID': {'type': 'string', 'value': machine_run},
                 'MachineRun': {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run)},
-                'Results':  self.build_results(machine_run, results, demultiplex_config),
+                'Results': self.build_results(machine_run, results, demultiplex_config),
                 'Output': {'type': 'Path', 'value': os.path.join(self.settings.cloud_path, machine_run)},
-                'Processed': {'type': 'string', 'value': 'Yes' if results or self.is_before_processed_date(sequence_date) else 'No'},
                 'SampleSheet': {'type': 'Path', 'value':
                     os.path.join(self.settings.cloud_path, machine_run, sample_sheet) if sample_sheet else None},
                 'ExperimentType': {'type': 'string', 'value': 'multiple'},
                 'PairedEnd': {'type': 'string', 'value': 'false'},
                 'ConfigFile': {'type': 'Path', 'value':
-                    os.path.join(self.settings.cloud_path, machine_run, demultiplex_file) if demultiplex_file else None},
-                'SequenceDate': {'type': 'Date', 'value': sequence_date}
+                    os.path.join(self.settings.cloud_path, machine_run,
+                                 demultiplex_file) if demultiplex_file else None},
+                'SequenceDate': {'type': 'Date', 'value': sequence_date},
+                self.settings.last_processed_column: {'type': 'Date',
+                                                      'value': sequence_date if self.is_before_processed_date(sequence_date) else None}
             }
             entity = {
                 'parentId': self.settings.project_id,
@@ -201,7 +214,9 @@ class MachineRun(object):
             Logger.info('Created metadata for machine run %s with sample sheet %s.' % (machine_run, sample_sheet),
                         task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Metadata created', EVENT_SUCCESS))
-            if not results and trigger_run and self.settings.configuration_id and sample_sheet is not None:
+            if self.is_before_processed_date(sequence_date):
+                continue
+            if not results and trigger_run and self.settings.configuration_id:
                 self.run_analysis(metadata_entity)
             failure_events = ['%s:%s' % (event.type, event.message)
                               for event in self.notifications
@@ -212,7 +227,7 @@ class MachineRun(object):
                 loaded = self.api.find_metadata_entity(self.settings.project_id, id, self.settings.machine_run_class)
                 entity['entityId'] = metadata_entity['id']
                 entity['data'] = loaded['data']
-                entity['data']['Errors'] = {'type': 'string', 'value': '; '.join(failure_events)}
+                entity['data']['Errors'] = {'type': 'string', 'value': ' '.join(failure_events)}
                 self.api.save_metadata_entity(entity)
 
     def check_results(self, run_folder):
@@ -246,19 +261,22 @@ class MachineRun(object):
                       % (self.machine_run, str(seq_date), self.settings.launch_from_date.strftime(DATE_PATTERN))
                 Logger.info(msg, task_name=self.machine_run)
                 return
-        for field in REQUIRED_FIELDS:
-            if field not in metadata_entity['data'] or metadata_entity['data'][field] is None:
-                msg = 'Required metadata field %s in missing for machine run %s. Analysis won\'t be launched,' % \
-                      (field, self.machine_run)
-                raise RuntimeError(msg)
         try:
+            for field in REQUIRED_FIELDS:
+                if field not in metadata_entity['data'] or 'value' not in metadata_entity['data'][field] or \
+                        not metadata_entity['data'][field]['value']:
+                    msg = 'Required metadata field %s in missing for machine run %s. Analysis won\'t be launched,' % \
+                          (field, self.machine_run)
+                    raise ValueError(msg)
+
             configuration = self.api.load_configuration(int(self.settings.configuration_id))
             target_entry = None
             for entry in configuration['entries']:
                 if entry['configName'] == self.settings.configuration_entry_name:
                     target_entry = entry
             if not target_entry:
-                raise RuntimeError('Analysis configuration is misconfigured. Failed to find configuration entry %s.' % self.settings.configuration_entry_name)
+                raise ValueError(
+                    'Analysis configuration is misconfigured. Failed to find configuration entry %s.' % self.settings.configuration_entry_name)
             configuration['entries'] = [target_entry]
             data = {
                 "entitiesIds": [int(metadata_entity['id'])],
@@ -272,10 +290,10 @@ class MachineRun(object):
             msg = 'Successfully launched analysis for machine run %s. Run id: %d.' % (self.machine_run, result[0]['id'])
             Logger.info(msg, task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_SUCCESS, message=msg))
-        except Exception as e:
+        except BaseException as e:
             Logger.warn('Failed to launch analysis for machine run %s. Error: %s' % (self.machine_run, str(e.message)),
-                                                                                     task_name=self.machine_run)
-            self.notifications.append(Event(self.machine_run, 'Analysis launch', 'Failure', message=str(e.message)))
+                        task_name=self.machine_run)
+            self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_FAILURE, message=str(e.message)))
 
     def build_run_notification(self, metadata_entity):
         if not self.settings.notify_users:
@@ -307,6 +325,8 @@ class MachineRun(object):
         result = {}
         files = [os.path.basename(s) for s in glob.glob(os.path.join(run_folder, self.settings.demultiplex_file))]
         if not files:
+            Logger.warn('Failed to find demultiplex configuration file for machine run %s.' % self.machine_run,
+                        task_name=self.machine_run)
             return None, result
         if len(files) > 1:
             Logger.warn('Multiple demultiplex files found for machine run %s: %s. First one will be processed.' %
@@ -347,14 +367,18 @@ class NGSSync(object):
 
     def build_notification_text(self, notifications):
         event_str = ''
+        api_link = self.api.api_url.rstrip('/').replace('/restapi', '')
         for event in notifications:
+            # https: // genie.alnylam.com / pipeline /  # /run/9767/plain/210727_NB501391_0312_AHTJHCBGXJ
             event_str += EVENT_PATTERN.format(**{'run': event.machine_run,
                                                  'event': event.type,
                                                  'status': event.status,
-                                                 'message': event.message})
+                                                 'message': event.message,
+                                                 'api': api_link,
+                                                 'run_id': str(self.settings.run_id)})
 
         return EMAIL_TEMPLATE.format(**{'events': event_str,
-                                        'api': self.api.api_url.rstrip('/').replace('/restapi', ''),
+                                        'api': api_link,
                                         'folder_id': str(self.settings.project_id),
                                         'deploy_name': self.settings.deploy_name})
 
@@ -367,6 +391,7 @@ def get_required_env_var(name):
 
 
 def main():
+    run_id = os.getenv('RUN_ID', None)
     folder = get_required_env_var('NGS_SYNC_FOLDER')
     project_id = get_required_env_var('NGS_SYNC_PROJECT_ID')
     cloud_path = get_required_env_var('NGS_SYNC_CLOUD_PATH')
@@ -379,13 +404,13 @@ def main():
     launch_from_date = os.getenv('NGS_SYNC_LAUNCH_START', None)
     processed_to_date = os.getenv('NGS_SYNC_PROCESSED_TO_DATE', None)
     deploy_name = os.getenv('NGS_SYNC_DEPLOY_NAME', 'Cloud Pipeline')
+    last_processed_column = os.getenv('NGS_SYNC_LAST_PROCESSD_COLUMN', 'LastProcessed')
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs')
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
-                        deploy_name)
+                        deploy_name, run_id, last_processed_column)
     NGSSync(api, settings).sync_ngs_project(folder)
 
 
 if __name__ == '__main__':
     main()
-
