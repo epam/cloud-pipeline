@@ -170,7 +170,7 @@ public class PipelineLauncher {
         if (MapUtils.isNotEmpty(kubeLabels)) {
             final Map<String, Map<String, Object>> labelEnvVars =
                     MapUtils.emptyIfNull(podEnvVarsFileMap.getLabelEnvVars());
-            kubeLabels.values()
+            kubeLabels.keySet()
                     .forEach(label -> mergedEnvVars.putAll(MapUtils.emptyIfNull(labelEnvVars.get(label))));
         }
         ListUtils.emptyIfNull(podEnvVarsFileMap.getRegionEnvVars())
@@ -184,7 +184,7 @@ public class PipelineLauncher {
                     }
                     final Map<String, Map<String, Object>> labelEnvVars =
                             MapUtils.emptyIfNull(region.getLabelEnvVars());
-                    kubeLabels.values()
+                    kubeLabels.keySet()
                             .forEach(label -> mergedEnvVars.putAll(MapUtils.emptyIfNull(labelEnvVars.get(label))));
                 });
         return new ObjectMapper().convertValue(mergedEnvVars, new TypeReference<Map<String, String>>() {});
