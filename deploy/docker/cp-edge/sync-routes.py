@@ -24,6 +24,7 @@ from time import sleep
 import time
 from multiprocessing.pool import ThreadPool as Pool
 
+CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 
 try:
         from pykube.config import KubeConfig
@@ -317,37 +318,97 @@ def is_system_endpoint_name(endpoint):
         else:
                 return False
 
-def append_system_endpoints(tool_endpoints, run_details):
+# Function to construct endpoint was configured with Run Parameters.
+# Group of Run Parameters started with CP_CAP_CUSTOM_TOOL_ENDPOINT_<num> considered as configuration of additional endpoint
+# that should be available for this run. Full list of supported params are:
+#
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_PORT
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_NAME
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_ADDITIONAL
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_NUM
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_SSL_BACKEND
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_SAME_TAB
+#
+# Method will group such parametes by <num> and construct from such group an endpoint.
+def construct_additional_endpoints_from_run_parameters(run_details):
+
+        def extract_endpoint_num_from_run_parameter(run_parameter):
+                match = re.search('{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
+                if match:
+                        return match.group(1)
+                return None
+
+
+        custom_endpoint_run_parameters = [rp for rp in run_details["pipelineRunParameters"]
+                                          if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
+
+        do_log('Found {} run parameters related to custom endpoints.'.format(len(custom_endpoint_run_parameters)))
+
+        custom_endpoints_nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_endpoint_num_from_run_parameter(rp)
+                                     for rp in custom_endpoint_run_parameters])
+        do_log('Run parameter groups with ids: {} related to custom endpoints were found.'.format(", ".join(str(num) for num in custom_endpoints_nums)))
+
+        custom_endpoint_param_groups = {
+                id : {
+                        rp["name"] : rp["value"]
+                        for rp in custom_endpoint_run_parameters if rp["name"].startswith(id)
+                } for id in custom_endpoints_nums
+        }
+
+        return [
+                {
+                        "name" : e_id,
+                        "endpoint": e.get(e_id + "_PORT"),
+                        "friendly_name": e.get(e_id + "_NAME", "pipeline-" + str(run_details['id']) + "-" + e.get(e_id + "_PORT")),
+                        "endpoint_additional": e.get(e_id + "_ADDITIONAL", ""),
+                        "ssl_backend": e.get(e_id + "_SSL_BACKEND", "false"),
+                        "endpoint_same_tab": e.get(e_id + "_SAME_TAB", "false")
+                } for e_id, e in custom_endpoint_param_groups.items()
+        ]
+
+def append_additional_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
         system_endpoints_params = SYSTEM_ENDPOINTS.keys()
         overridden_endpoints_count = 0
         if run_details and "pipelineRunParameters" in run_details:
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
-                system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
-                                                if x["name"] in system_endpoints_params
-                                                   and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
-                                                   and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
-                                                   and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
+                additional_endpoints_to_configure = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
+                                                     if x["name"] in system_endpoints_params
+                                                        and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
+                                                        and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
+                                                        and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
+                additional_endpoint_ports_to_configure = set([e["endpoint"] for e in additional_endpoints_to_configure])
+
+                # Filter out any endpoint if it matches with system ones
+                for custom_endpoint in construct_additional_endpoints_from_run_parameters(run_details):
+                        if custom_endpoint["endpoint"] in additional_endpoint_ports_to_configure:
+                                do_log('Endpoint {} with port: {} conflict with already configured ones, it will be filtered out.'
+                                       .format(custom_endpoint["name"], custom_endpoint["endpoint"]))
+                                continue
+                        # Append additional custom endpoint that are configured with run parameters
+                        additional_endpoints_to_configure.append(custom_endpoint)
+                        additional_endpoint_ports_to_configure.add(custom_endpoint["endpoint"])
 
                 # If only a single endpoint is defined for the tool - we shall make sure it is set to default. Otherwise "system endpoint" may become a default one
                 # If more then one endpoint is defined - we shall not make the changes, as it is up to the owner of the tool
-                if len(system_endpoints_matched) > 0 and len(tool_endpoints) == 1:
+                if len(additional_endpoints_to_configure) > 0 and len(tool_endpoints) == 1:
                         current_tool_endpoint = json.loads(tool_endpoints[0])
                         current_tool_endpoint["isDefault"] = "true"
                         tool_endpoints[0] = json.dumps(current_tool_endpoint)
-                # Append system endpoints to the existing list
-                for system_endpoint in system_endpoints_matched:
-                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"], "additional": system_endpoint["endpoint_additional"] }}
-                        system_endpoint_port = system_endpoint["endpoint"]
-                        system_endpoint_ssl_backend = system_endpoint["ssl_backend"]
-                        system_endpoint_same_tab = system_endpoint["endpoint_same_tab"]
+
+                # Append additional endpoints to the existing list
+                for additional_endpoint in additional_endpoints_to_configure:
+                        tool_endpoint = { "nginx": { "port": additional_endpoint["endpoint"], "additional": additional_endpoint["endpoint_additional"] }}
+                        system_endpoint_port = additional_endpoint["endpoint"]
+                        system_endpoint_ssl_backend = additional_endpoint["ssl_backend"]
+                        system_endpoint_same_tab = additional_endpoint["endpoint_same_tab"]
                         system_endpoint_name = None
-                        if "friendly_name" in system_endpoint:
-                                tool_endpoint["name"] = system_endpoint["friendly_name"]
-                                system_endpoint_name = system_endpoint["friendly_name"]
-                        if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
-                                tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
+                        if "friendly_name" in additional_endpoint:
+                                tool_endpoint["name"] = additional_endpoint["friendly_name"]
+                                system_endpoint_name = additional_endpoint["friendly_name"]
+                        if "endpoint_num" in additional_endpoint and additional_endpoint["endpoint_num"]:
+                                tool_endpoint["endpoint_num"] = additional_endpoint["endpoint_num"]
                         non_matching_with_system_tool_endpoints, \
                                 is_default_endpoint, \
                                 is_ssl_backend, \
@@ -363,7 +424,6 @@ def append_system_endpoints(tool_endpoints, run_details):
                                 overridden_endpoints_count += removed_endpoints_count
                         tool_endpoints.append(json.dumps(tool_endpoint))
         return tool_endpoints, overridden_endpoints_count
-
 
 def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
         non_matching_tool_endpoints = []
@@ -449,7 +509,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                         endpoints_data = []
                 tool_endpoints_count = len(endpoints_data)
                 do_log('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
-                endpoints_data, overridden_endpoints_count = append_system_endpoints(endpoints_data, run_info)
+                endpoints_data, overridden_endpoints_count = append_additional_endpoints(endpoints_data, run_info)
                 additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
                 do_log('{} additional system endpoints are set for the tool {} via run parameters'
                       .format(additional_system_endpoints_count, docker_image))
