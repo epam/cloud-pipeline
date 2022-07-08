@@ -214,7 +214,7 @@ export default class InstanceTypesManagementForm extends React.Component {
         style={{flex: 1}}
         value={this.getValue(field)}
         onChange={this.onValueChanged(field)}
-        parser={value => `${value}`.replaceAll(/\D/g, '')}
+        parser={value => `${value}`.replace(/\D/g, '')}
       />;
     }
     return <Input

@@ -43,7 +43,7 @@ class OpenToolInfo extends React.Component {
   get template () {
     const {template} = this.props;
     return (template || DEFAULT_TEMPLATE)
-      .replaceAll(/\\n/g, '\n')
+      .replace(/\\n/g, '\n')
       .split('\n')
       .join('\n\n');
   }
