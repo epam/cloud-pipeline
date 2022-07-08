@@ -21,20 +21,16 @@ import Menu, {MenuItem, SubMenu} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import {CellProfilerModule, CellProfilerModuleHeader} from './module';
 import {allModules} from '../model/modules';
-import AnalysisPipelineInfo from './info';
 import OpenPipelineModal from './open-pipeline-modal';
-import {ObjectsOutlineRenderer} from './objects-outline';
-import Collapse from './collapse';
+import CellProfilerPipeline from './pipeline';
 import styles from './cell-profiler.css';
 
 class CellProfiler extends React.Component {
   state = {
     addModuleSelectorVisible: false,
     managementActionsVisible: false,
-    openPipelineModalVisible: false,
-    expanded: []
+    openPipelineModalVisible: false
   };
 
   renderAddModuleSelector = () => {
@@ -44,10 +40,7 @@ class CellProfiler extends React.Component {
     const onSelect = ({key}) => {
       const cpModule = filtered.find((cpModule) => cpModule.name === key);
       if (analysis) {
-        analysis.add(cpModule)
-          .then((newModule) => {
-            this.toggleExpanded(newModule);
-          });
+        analysis.add(cpModule);
       }
       handleVisibility(false);
     };
@@ -201,23 +194,6 @@ class CellProfiler extends React.Component {
     );
   };
 
-  getExpanded = (key) => {
-    const {expanded = []} = this.state;
-    return expanded.includes(key);
-  }
-
-  toggleExpanded = (key) => {
-    const {expandSingle} = this.props;
-    const {expanded = []} = this.state;
-    if (expanded.includes(key)) {
-      this.setState({expanded: expanded.filter(o => o !== key)});
-    } else if (expandSingle) {
-      this.setState({expanded: [key]});
-    } else {
-      this.setState({expanded: [...expanded, key]});
-    }
-  };
-
   runAnalysis = () => {
     const {
       analysis
@@ -284,63 +260,11 @@ class CellProfiler extends React.Component {
           </Button>
           {this.renderAddModuleSelector()}
         </div>
-        <div
+        <CellProfilerPipeline
           className={styles.cellProfilerModules}
-        >
-          <Collapse
-            header={(
-              <b className={styles.title}>
-                <Icon type="info-circle-o" /> Info
-              </b>
-            )}
-          >
-            <AnalysisPipelineInfo
-              pipeline={analysis.pipeline}
-            />
-          </Collapse>
-          {
-            (analysis.pipeline.modules || [])
-              .filter(cpModule => !cpModule.hidden)
-              .map((cpModule) => (
-                <Collapse
-                  key={cpModule.displayName}
-                  expanded={this.getExpanded(cpModule.id)}
-                  onExpandedChange={() => this.toggleExpanded(cpModule.id)}
-                  header={(
-                    <CellProfilerModuleHeader
-                      cpModule={cpModule}
-                    />
-                  )}
-                >
-                  <CellProfilerModule cpModule={cpModule} />
-                </Collapse>
-              ))
-          }
-          <Collapse
-            header={(
-              <CellProfilerModuleHeader
-                cpModule={analysis.pipeline.defineResults}
-                removable={false}
-                movable={false}
-              />
-            )}
-          >
-            <CellProfilerModule
-              cpModule={analysis.pipeline.defineResults}
-            />
-          </Collapse>
-          {
-            analysis.pipeline &&
-            analysis.pipeline.objectsOutlines &&
-            analysis.pipeline.objectsOutlines.configurations.length > 0 && (
-              <Collapse header="Display objects">
-                <ObjectsOutlineRenderer
-                  hcsAnalysis={analysis}
-                />
-              </Collapse>
-            )
-          }
-        </div>
+          pipeline={analysis.pipeline}
+          viewer={analysis.hcsImageViewer}
+        />
         {
           (analysis.analysisOutput) && (
             <div

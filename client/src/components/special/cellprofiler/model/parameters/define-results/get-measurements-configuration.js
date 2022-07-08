@@ -69,6 +69,8 @@ function getConfigurationProperties (configuration, pipeline) {
         object,
         image: pipeline.getSourceImageForObjet(object),
         spots: spots.filter(aSpot => aSpot.parent === object),
+        parents: spots.filter(aSpot => aSpot.name === object)
+          .map(aSpot => aSpot.parent),
         property,
         stats: stat ? [stat] : AllStats
       }));

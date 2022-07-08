@@ -28,19 +28,19 @@ class ObjectsOutline extends React.Component {
   };
   updateOutlines = () => {
     const {
-      hcsAnalysis
+      pipeline,
+      viewer
     } = this.props;
     if (
-      !hcsAnalysis ||
-      !hcsAnalysis.pipeline ||
-      !hcsAnalysis.pipeline.objectsOutlines
+      !pipeline ||
+      !pipeline.objectsOutlines
     ) {
       return;
     }
     this.setState({
       pending: true
     }, () => {
-      hcsAnalysis.pipeline.objectsOutlines.renderOutlines(hcsAnalysis.hcsImageViewer)
+      pipeline.objectsOutlines.renderOutlines(viewer)
         .then(() => {
           this.setState({
             pending: false
@@ -50,16 +50,15 @@ class ObjectsOutline extends React.Component {
   };
   toggleGlobalVisibilitySelector = (e) => {
     const {
-      hcsAnalysis
+      pipeline
     } = this.props;
     if (
-      !hcsAnalysis ||
-      !hcsAnalysis.pipeline ||
-      !hcsAnalysis.pipeline.objectsOutlines
+      !pipeline ||
+      !pipeline.objectsOutlines
     ) {
       return null;
     }
-    hcsAnalysis.pipeline.objectsOutlines.hidden = !e.target.checked;
+    pipeline.objectsOutlines.hidden = !e.target.checked;
     this.updateOutlines();
   };
 
@@ -74,10 +73,7 @@ class ObjectsOutline extends React.Component {
     const {
       color
     } = configuration;
-    const {
-      hcsAnalysis
-    } = this.props;
-    if (!color || !hcsAnalysis) {
+    if (!color) {
       return null;
     }
     const {
@@ -101,21 +97,21 @@ class ObjectsOutline extends React.Component {
     const {
       className,
       style,
-      hcsAnalysis
+      pipeline,
+      viewer
     } = this.props;
     if (
-      !hcsAnalysis ||
-      !hcsAnalysis.pipeline ||
-      !hcsAnalysis.pipeline.objectsOutlines ||
-      !hcsAnalysis.pipeline.objectsOutlines.configurations ||
-      !hcsAnalysis.pipeline.objectsOutlines.configurations.length
+      !pipeline ||
+      !pipeline.objectsOutlines ||
+      !pipeline.objectsOutlines.configurations ||
+      !pipeline.objectsOutlines.configurations.length
     ) {
       return null;
     }
     const {
       pending
     } = this.state;
-    const objectsOutlines = hcsAnalysis.pipeline.objectsOutlines;
+    const objectsOutlines = pipeline.objectsOutlines;
     const configurations = objectsOutlines.configurations;
     return (
       <div
@@ -162,7 +158,7 @@ class ObjectsOutline extends React.Component {
               <Button
                 style={{marginRight: 5}}
                 disabled={index === 0 || pending}
-                onClick={() => objectsOutlines.moveUp(index, hcsAnalysis.hcsImageViewer)}
+                onClick={() => objectsOutlines.moveUp(index, viewer)}
                 size="small"
               >
                 <Icon type="up" />
@@ -170,7 +166,7 @@ class ObjectsOutline extends React.Component {
               <Button
                 style={{marginRight: 5}}
                 disabled={index === configurations.length - 1 || pending}
-                onClick={() => objectsOutlines.moveDown(index, hcsAnalysis.hcsImageViewer)}
+                onClick={() => objectsOutlines.moveDown(index, viewer)}
                 size="small"
               >
                 <Icon type="down" />
@@ -188,11 +184,22 @@ class ObjectsOutline extends React.Component {
 
 ObjectsOutline.propTypes = {
   className: PropTypes.string,
-  hcsAnalysis: PropTypes.object,
+  pipeline: PropTypes.object,
+  viewer: PropTypes.object,
   style: PropTypes.object
 };
 
 const ObjectsOutlineRenderer = observer(ObjectsOutline);
 
 export {ObjectsOutlineRenderer};
-export default inject('hcsAnalysis')(ObjectsOutlineRenderer);
+export default inject('hcsAnalysis')(
+  inject(({hcsAnalysis}) => {
+    if (hcsAnalysis) {
+      return {
+        pipeline: hcsAnalysis.pipeline,
+        viewer: hcsAnalysis.hcsImageViewer
+      };
+    }
+    return {};
+  })(ObjectsOutlineRenderer)
+);
