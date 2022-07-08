@@ -6,7 +6,7 @@ from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 class CalculationSpec(object):
     _SINGLE_OBJECT_OPERATIONS = ['Number of Objects', 'Mean Intensity', 'Background Intensity', 'Corrected Intensity',
                                  'Relative Object Intensity', 'Uncorrected Peak Intensity', 'Contrast', 'Area',
-                                 'Region Intensity', 'To Region Intensity']
+                                 'Region Intensity']
 
     def __init__(self, primary, operation, secondary=None, stat_functions=None, column_operation_name=None):
         self.primary = primary
@@ -128,7 +128,7 @@ class DefineResults(ExportToSpreadsheet):
         object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
         grouping_datasets_dictionary = self._build_groupings(object_dataframe)
         for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
-            value = int(grouping_dataframe.get('ObjectNumber').max())
+            value = int(grouping_dataframe.get('ObjectNumber').count())
             feature_name = self._build_feature_name(spec)
             self._append_spec_value_to_results(result_data_dict, grouping_value, feature_name, value)
 
@@ -267,7 +267,15 @@ class DefineResults(ExportToSpreadsheet):
         if spec.column_operation_name is not None:
             name = spec.column_operation_name
         elif spec.requires_secondary():
-            name = '{} - {},{}'.format(spec.primary, spec.secondary, spec.operation)
+            name = '{} - '.format(spec.primary)
+            if spec.operation == 'Total Area' or spec.operation == 'Relative Intensity':
+                name = name + '{} of {}'.format(spec.operation, spec.secondary)
+            elif spec.operation == 'Number of':
+                name = name + '{} {}'.format(spec.operation, spec.secondary)
+            elif spec.operation == 'Number of per Area':
+                name = name + 'Number of {} per Area'.format(spec.secondary)
+            else:
+                name = '{} - {} To {} Region Intensity'.format(spec.secondary, spec.secondary, spec.primary)
         else:
             name = '{} - {}'.format(spec.primary, spec.operation)
         if stat_func_name is not None:
@@ -291,7 +299,7 @@ class DefineResults(ExportToSpreadsheet):
     def _calculate_frame_corrected_intensity(self, grouping_dataframe, intensity_channel_name):
         mean_intensity_dataseries = grouping_dataframe.get(self._MEAN_INTENSITY + intensity_channel_name)
         background_intensity_dataseries = grouping_dataframe.get(self._MEAN_EDGE_INTENSITY + intensity_channel_name)
-        return mean_intensity_dataseries / background_intensity_dataseries
+        return mean_intensity_dataseries - background_intensity_dataseries
 
     def _process_corrected_intensity(self, result_data_dict, spec):
         self._process_primary_object_intensity(result_data_dict, spec, self._calculate_frame_corrected_intensity)
@@ -332,7 +340,7 @@ class DefineResults(ExportToSpreadsheet):
         primary_object_dataframe = primary_object_dataframe[primary_object_dataframe[self._children_count_column(spec)] != 0]
         primary_objects_intensities = {}
         for idx, row in primary_object_dataframe.iterrows():
-            region_intensity = row[mean_intensity_column]
+            region_intensity = row[mean_intensity_column] 
             primary_objects_intensities['{}-{}'.format(row.ImageNumber, row.ObjectNumber)] = region_intensity
         secondary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.secondary))
         grouping_datasets_dictionary = self._build_groupings(secondary_object_dataframe)
