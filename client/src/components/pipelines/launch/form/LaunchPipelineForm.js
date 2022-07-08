@@ -1039,7 +1039,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       is_spot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
-        : undefined
+        : undefined,
+      notifications: this.state.notifications
     };
     if (this.isWindowsPlatform) {
       payload.node_count = undefined;
@@ -1450,6 +1451,21 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     } else if (!this.props.parameters[key]) {
       return undefined;
+    } else if (key === 'notifications') {
+      return (this.props.parameters.notifications || []).map(notification => {
+        const {subject, body} = notification;
+        const triggerStatuses = (notification.triggerStatuses || []).slice();
+        const recipients = (notification.recipients || []).slice();
+        if (!subject && !body && !triggerStatuses.length && !recipients.length) {
+          return null;
+        }
+        return {
+          subject,
+          body,
+          triggerStatuses,
+          recipients
+        };
+      }).filter(item => item);
     }
     return `${this.props.parameters[key]}`;
   };
@@ -4342,34 +4358,28 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
   };
 
   renderJobNotificationsItem = () => {
-    if (
-      this.props.detached ||
-      this.props.isDetachedConfiguration ||
-      this.props.editConfigurationMode
-    ) {
-      return null;
-    }
     return (
       <FormItem
         className={getFormItemClassName(styles.formItemRow, 'notifications')}
         {...this.leftFormItemLayout}
-        label="Notifications"
-      >
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-          >
-            <JobNotifications
-              notifications={this.state.notifications}
-              onChange={notifications => this.setState({
-                notifications: (notifications || []).slice()
-              })}
-            />
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
-        </Col>
+        label="Notifications">
+        <Row type="flex" align="middle">
+          <Col span={10}>
+            <FormItem className={styles.formItemRow}>
+              {this.getSectionFieldDecorator(ADVANCED)('Notifications')(
+                <JobNotifications
+                  notifications={this.state.notifications}
+                  onChange={notifications => this.setState({
+                    notifications: (notifications || []).slice()
+                  }, this.formFieldsChanged)}
+                />
+              )}
+            </FormItem>
+          </Col>
+          <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+            {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
+          </Col>
+        </Row>
       </FormItem>
     );
   };
@@ -5479,6 +5489,9 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       }
     }
     this.props.onInitialized && this.props.onInitialized(this);
+    this.setState({
+      notifications: this.getDefaultValue('notifications')
+    });
   }
 
   componentDidUpdate (prevProps, prevState) {

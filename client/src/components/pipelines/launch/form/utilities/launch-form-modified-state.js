@@ -283,6 +283,56 @@ function checkRootEntityModified (props, state) {
   return false;
 }
 
+function checkNotifications (parameters, state) {
+  const isParametersNotificationsEmpty = (
+    !parameters.notifications ||
+    !parameters.notifications.length ||
+    Object.keys(parameters.notifications[0]).length === 1
+  );
+  if (isParametersNotificationsEmpty) {
+    if (state.notifications && state.notifications.length) {
+      const {triggerStatuses, subject, body, recipients} = state.notifications[0];
+      return triggerStatuses.length || subject || recipients.length || body;
+    }
+    return false;
+  } else {
+    if (!state.notifications.length) {
+      return true;
+    } else {
+      const {triggerStatuses, subject, body, recipients} = state.notifications[0];
+      const parametersNotifications = parameters.notifications.map(notification => {
+        const {subject, body} = notification;
+        const triggerStatuses = (notification.triggerStatuses || []).slice();
+        const recipients = (notification.recipients || []).slice();
+        return {
+          subject,
+          body,
+          triggerStatuses,
+          recipients
+        };
+      });
+      if (parametersNotifications[0].body !== body ||
+        parametersNotifications[0].subject !== subject) {
+        return true;
+      }
+      const parameterTriggerStatuses = (parametersNotifications[0].triggerStatuses || []).sort();
+      const parameterRecipients = (parametersNotifications[0].recipients || []).sort();
+      if (parameterTriggerStatuses.length !== (triggerStatuses || []).length ||
+        parameterRecipients.length !== (recipients || []).length) {
+        return true;
+      } else {
+        if (recipients.some((item, index) => item !== parameterRecipients[index])) {
+          return true;
+        }
+        if (triggerStatuses.some((item, index) => item !== parameterTriggerStatuses[index])) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
+}
+
 export default function (props, state, options) {
   const {form, parameters, preferences} = props;
   const {
@@ -333,5 +383,7 @@ export default function (props, state, options) {
     // check additional run capabilities
     runCapabilitiesCheck(state, parameters, preferences) ||
     // check root entity id
-    checkRootEntityModified(props, state);
+    checkRootEntityModified(props, state) ||
+    // check notifications
+    checkNotifications(parameters, state);
 }

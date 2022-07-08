@@ -86,6 +86,7 @@ import {
   getSkippedParameters as getGPUScalingSkippedParameters,
   readGPUScalingPreference
 } from '../../pipelines/launch/form/utilities/enable-gpu-scaling';
+import JobNotifications from '../../pipelines/launch/dialogs/job-notifications';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -166,7 +167,8 @@ export default class EditToolForm extends React.Component {
     slurmEnabled: false,
     kubeEnabled: false,
     launchCluster: false,
-    runCapabilities: []
+    runCapabilities: [],
+    notifications: []
   };
 
   @observable defaultLimitMounts;
@@ -342,7 +344,8 @@ export default class EditToolForm extends React.Component {
           instance_disk: values.disk,
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
-          is_spot: `${values.is_spot}` === 'true'
+          is_spot: `${values.is_spot}` === 'true',
+          notifications: values.notifications
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
@@ -374,6 +377,7 @@ export default class EditToolForm extends React.Component {
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
       case 'allowCommit': return this.getAllowCommitInitialValue();
+      case 'notifications': return this.notifications;
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -429,6 +433,31 @@ export default class EditToolForm extends React.Component {
   };
 
   getAllowCommitInitialValue = () => this.props.allowCommitVersion;
+
+  get notifications () {
+    const notifications = (
+      (this.props.configuration && this.props.configuration.notifications) ||
+      (this.props.tool && this.props.tool.notifications) ||
+      []
+    ).slice();
+    if (notifications.length) {
+      return notifications.map(notification => {
+        const {subject, body} = notification;
+        const triggerStatuses = (notification.triggerStatuses || []).slice();
+        const recipients = (notification.recipients || []).slice();
+        if (!subject && !body && !triggerStatuses.length && !recipients.length) {
+          return null;
+        }
+        return {
+          subject,
+          body,
+          triggerStatuses,
+          recipients
+        };
+      }).filter(item => item);
+    }
+    return [];
+  }
 
   getAllowSensitiveInitialValue = () => {
     if (this.props.mode === 'version') {
@@ -824,6 +853,41 @@ export default class EditToolForm extends React.Component {
         this.props.preferences
       );
     };
+    const notificationsChanged = () => {
+      const formField = this.props.form.getFieldValue('notifications');
+      const toolField = this.getInitialValue('notifications');
+      if (!toolField || !toolField.length) {
+        if (formField && formField.length) {
+          const {triggerStatuses, subject, body, recipients} = formField[0];
+          return triggerStatuses.length || subject || recipients.length || body;
+        }
+        return false;
+      } else {
+        if (!formField || !formField.length) {
+          return true;
+        } else {
+          const {triggerStatuses, subject, body, recipients} = formField[0];
+          if (toolField[0].body !== body ||
+            toolField[0].subject !== subject) {
+            return true;
+          }
+          const toolTriggerStatuses = (toolField[0].triggerStatuses || []).sort();
+          const toolRecipients = (toolField[0].recipients || []).sort();
+          if (toolTriggerStatuses.length !== triggerStatuses.length ||
+            toolRecipients.length !== recipients.length) {
+            return true;
+          } else {
+            if (recipients.some((item, index) => item !== toolRecipients[index])) {
+              return true;
+            }
+            if (triggerStatuses.some((item, index) => item !== toolTriggerStatuses[index])) {
+              return true;
+            }
+          }
+          return false;
+        }
+      }
+    };
 
     return configurationFormFieldChanged('is_spot') ||
       configurationFormFieldChanged('instance_size', 'instanceType') ||
@@ -847,7 +911,8 @@ export default class EditToolForm extends React.Component {
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      notificationsChanged();
   };
 
   initializeEndpointsControl = (control) => {
@@ -1114,6 +1179,20 @@ export default class EditToolForm extends React.Component {
     }
   };
 
+  setNotifications = (notifications) => {
+    const newNotifications = notifications.map(notification => {
+      const cloneNotification = {};
+      for (let key in notification) {
+        cloneNotification[key] = Array.isArray(notification[key])
+          ? notification[key].slice() : notification[key];
+      }
+      return cloneNotification;
+    });
+    this.setState({
+      notifications: newNotifications
+    }, this.modified);
+  }
+
   renderExecutionEnvironment = () => {
     const renderExecutionEnvironmentSection = () => {
       const {getFieldDecorator, getFieldValue} = this.props.form;
@@ -1204,6 +1283,20 @@ export default class EditToolForm extends React.Component {
                           .map(t => <Select.Option key={`${t.isSpot}`}>{t.name}</Select.Option>)
                       }
                     </Select>
+                )}
+              </Form.Item>
+              <Form.Item
+                style={{marginTop: 10, marginBottom: 10}}
+                {...this.formItemLayout}
+                label="Notifications"
+              >
+                {getFieldDecorator('notifications', {
+                  initialValue: this.notifications
+                })(
+                  <JobNotifications
+                    notifications={this.state.notifications}
+                    onChange={this.setNotifications}
+                  />
                 )}
               </Form.Item>
               <Form.Item {...this.formItemLayout} label="Disk (Gb)" style={{marginTop: 10, marginBottom: 10}} required>
@@ -1494,7 +1587,12 @@ export default class EditToolForm extends React.Component {
     if (!this.props.tool) {
       return renderExecutionEnvironmentSection();
     } else {
-      const onOpenPanel = panels => this.setState({openedPanels: panels});
+      const onOpenPanel = panels => {
+        this.setState({openedPanels: panels});
+        if (panels.includes(Panels.executionDefaults)) {
+          this.setNotifications(this.notifications);
+        }
+      };
       return (
         <Collapse
           bordered={false}
