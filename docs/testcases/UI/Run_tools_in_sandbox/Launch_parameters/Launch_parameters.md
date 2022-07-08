@@ -15,11 +15,6 @@
 | [**2342_4**](2342/2342_4.md) | Check allowed "system" parameters for Pipeline and Detached Configuration |
 | [**2342_5**](2342/2342_5.md) | Check possibility to change restricted "system" parameters added to the Tool settings, pipeline and Detached configuration |
 | [**2342_6**](2342/2342_6.md) | Check restricted only to specific users groups "system" parameters via CLI |
-| [**2423_1**](2423/2423_1.md) | Maintenance mode notification |
-| [**2423_2**](2423/2423_2.md) | Check launch run in Maintenance mode |
-| [**2423_3**](2423/2423_3.md) | Check switch to Maintenance mode during the run Committing |
-| [**2423_4**](2423/2423_4.md) | Check switch to Maintenance mode during the run Pausing and Resuming operations |
-| [**2423_5**](2423/2423_5.md) | Check disabled Hot node pools autoscaling in Maintenance mode |
 | [**783**](783.md) | Check the configure CPU resource |
 | [**TC-PARAMETERS-1**](TC-PARAMETERS-1.md) | Check the configure allowed instance types |
 | [**TC-PARAMETERS-2**](TC-PARAMETERS-2.md) | Check the configure allowed instance types for docker images |
