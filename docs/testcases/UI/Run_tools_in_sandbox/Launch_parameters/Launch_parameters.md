@@ -15,6 +15,11 @@
 | [**2342_4**](2342/2342_4.md)              | Check allowed "system" parameters for Pipeline and Detached Configuration |
 | [**2342_5**](2342/2342_5.md)              | Check possibility to change restricted "system" parameters added to the Tool settings, pipeline and Detached configuration |
 | [**2342_6**](2342/2342_6.md)              | Check restricted only to specific users groups "system" parameters via CLI |
+| [**2423_1**](2423/2423_1.md) | Maintenance mode notification |
+| [**2423_2**](2423/2423_2.md) | Check launch run in Maintenance mode |
+| [**2423_3**](2423/2423_3.md) | Check switch to Maintenance mode during the run Committing |
+| [**2423_4**](2423/2423_4.md) | Check switch to Maintenance mode during the run Pausing and Resuming operations |
+| [**2423_5**](2423/2423_5.md) | Check disabled Hot node pools autoscaling in Maintenance mode |
 | [**2642_1**](2642/2642_1.md)              | Check Global Restriction a count of the running instances |
 | [**2642_2**](2642/2642_2.md)              | Check running instances restriction applied to Group |
 | [**2642_3**](2642/2642_3.md)              | Check simultaneous applying of two Group level running instances restrictions |
