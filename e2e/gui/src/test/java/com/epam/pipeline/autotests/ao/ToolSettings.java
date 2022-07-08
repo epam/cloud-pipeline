@@ -17,7 +17,6 @@ package com.epam.pipeline.autotests.ao;
 
 import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
-import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import java.util.Arrays;
 import java.util.List;
@@ -31,18 +30,17 @@ import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.enabled;
 import static com.codeborne.selenide.Condition.exist;
 import static com.codeborne.selenide.Condition.visible;
-import static com.codeborne.selenide.Selectors.by;
 import static com.codeborne.selenide.Selectors.byAttribute;
 import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
-import static com.codeborne.selenide.Selectors.byTitle;
 import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
+import static com.epam.pipeline.autotests.ao.PipelineRunFormAO.ConfigureClusterPopupAO;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -82,7 +80,8 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 entry(ADD_SYSTEM_PARAMETER, context().find(button("Add system parameters"))),
                 entry(ADD_PARAMETER, context().find(byId("add-parameter-button"))),
                 entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
-                        .closest(".ant-row").find(className("ant-form-item-control ")))
+                        .closest(".ant-row").find(className("ant-form-item-control "))),
+                entry(LAUNCH_CLUSTER, context().find(byClassName("underline")))
         );
     }
 
@@ -298,4 +297,9 @@ public class ToolSettings extends ToolTab<ToolSettings> {
                 .shouldHave(Condition.text(text));
         return this;
     }
-}
+
+    public ConfigureClusterPopupAO<ToolSettings> enableClusterLaunch() {
+        click(LAUNCH_CLUSTER);
+        return new ConfigureClusterPopupAO(this);
+    }
+    }

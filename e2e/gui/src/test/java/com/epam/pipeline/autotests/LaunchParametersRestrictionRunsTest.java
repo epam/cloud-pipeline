@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.RunsMenuAO;
+import com.epam.pipeline.autotests.ao.ToolSettings;
 import com.epam.pipeline.autotests.ao.ToolTab;
 import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Navigation;
@@ -34,11 +35,11 @@ import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selenide.open;
 import static com.epam.pipeline.autotests.ao.Primitive.EXEC_ENVIRONMENT;
+import static com.epam.pipeline.autotests.ao.Primitive.SAVE;
 import static com.epam.pipeline.autotests.utils.Utils.ON_DEMAND;
 import static com.epam.pipeline.autotests.utils.Utils.nameWithoutGroup;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class LaunchParametersRestrictionRunsTest
         extends AbstractSeveralPipelineRunningTest
@@ -58,11 +59,13 @@ public class LaunchParametersRestrictionRunsTest
     private final String USER_MAX_RUNS = "3";
     private final String USER_GROUP2 = "TEST_GROUP_2642";
     private String[] launchMaxRunsUserGlobalInitial;
-    private String errorMessage = "You have exceeded maximum number of running jobs (%s).";
+    private final String warningMessage = "You have exceeded maximum number of running jobs (%s).";
+    private final String autoScaledClusterWarning = "Your cluster configuration may exceed the maximum " +
+            "number of running jobs. There %s running out of %s.";
     private String launchErrorMessage = "Launch of new jobs is restricted as [%s] user " +
             "will exceed [%s] runs limit [%s]";
     private String[] runID3 = new String[2];
-
+    private List<String> runID5 = new ArrayList<>();
 
     @BeforeClass(alwaysRun = true)
     public void getPreferences() {
@@ -108,7 +111,7 @@ public class LaunchParametersRestrictionRunsTest
                 .deleteGroupIfPresent(USER_GROUP2);
     }
 
-    @Test
+    @Test(priority = 1)
     @TestCase(value = {"2642_1"})
     public void checkGlobalRestrictionCountOfRunningInstances() {
         String message = format(launchErrorMessage, user.login, GLOBAL_LIMIT, GLOBAL_MAX_RUNS);
@@ -122,7 +125,7 @@ public class LaunchParametersRestrictionRunsTest
             logout();
             loginAs(user);
             runIDs.addAll(launchSeveralRuns(parseInt(GLOBAL_MAX_RUNS)));
-            launchToolWithError(GLOBAL_MAX_RUNS, format(errorMessage, GLOBAL_MAX_RUNS), message);
+            launchToolWithError(GLOBAL_MAX_RUNS, format(warningMessage, GLOBAL_MAX_RUNS), message);
 
             logout();
             loginAs(admin);
@@ -130,9 +133,9 @@ public class LaunchParametersRestrictionRunsTest
             tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
-                    .ensure(byText(format(errorMessage, GLOBAL_MAX_RUNS)), not(visible))
+                    .ensure(byText(format(warningMessage, GLOBAL_MAX_RUNS)), not(visible))
                     .checkLaunchMessage("message",
-                            format(errorMessage, GLOBAL_MAX_RUNS), false)
+                            format(warningMessage, GLOBAL_MAX_RUNS), false)
                     .launch(this);
             runIDs.add(getLastRunId());
         } finally {
@@ -144,7 +147,7 @@ public class LaunchParametersRestrictionRunsTest
         }
     }
 
-    @Test(dependsOnMethods = "checkGlobalRestrictionCountOfRunningInstances")
+    @Test(priority = 1, dependsOnMethods = "checkGlobalRestrictionCountOfRunningInstances")
     @TestCase(value = {"2642_2"})
     public void checkRunningInstancesRestrictionAppliedToGroup() {
         List<String> runIDs = new ArrayList<>();
@@ -153,7 +156,7 @@ public class LaunchParametersRestrictionRunsTest
             logout();
             loginAs(user);
             runIDs.addAll(launchSeveralRuns(parseInt(GROUP_MAX_RUNS1)));
-            launchToolWithError(GROUP_MAX_RUNS1, format(errorMessage, GROUP_MAX_RUNS1),
+            launchToolWithError(GROUP_MAX_RUNS1, format(warningMessage, GROUP_MAX_RUNS1),
                     format(launchErrorMessage, user.login, USER_GROUP, GROUP_MAX_RUNS1));
             logout();
             loginAs(admin);
@@ -161,7 +164,7 @@ public class LaunchParametersRestrictionRunsTest
             logout();
             loginAs(user);
             runIDs.addAll(launchSeveralRuns(parseInt(GROUP_MAX_RUNS1)));
-            launchToolWithError(GROUP_MAX_RUNS1, format(errorMessage, GROUP_MAX_RUNS2),
+            launchToolWithError(GROUP_MAX_RUNS1, format(warningMessage, GROUP_MAX_RUNS2),
                     format(launchErrorMessage, user.login, USER_GROUP, GROUP_MAX_RUNS2));
         } finally {
             logout();
@@ -172,7 +175,7 @@ public class LaunchParametersRestrictionRunsTest
         }
     }
 
-    @Test(dependsOnMethods = "checkRunningInstancesRestrictionAppliedToGroup")
+    @Test(priority = 1, dependsOnMethods = "checkRunningInstancesRestrictionAppliedToGroup")
     @TestCase(value = {"2642_3"})
     public void checkSimultaneousApplyingTwoGroupLevelRunningInstancesRestrictions() {
         setGroupAllowedInstanceMaxCount(USER_GROUP2, GROUP_MAX_RUNS1);
@@ -187,7 +190,7 @@ public class LaunchParametersRestrictionRunsTest
         tools().perform(registry, group, tool, tool ->
                 tool.run(this));
         runID3[1] = getLastRunId();
-        launchToolWithError(GROUP_MAX_RUNS1, format(errorMessage, GROUP_MAX_RUNS1),
+        launchToolWithError(GROUP_MAX_RUNS1, format(warningMessage, GROUP_MAX_RUNS1),
                     format(launchErrorMessage, user.login, USER_GROUP2, GROUP_MAX_RUNS1));
         runsMenu()
                 .showLog(runID3[0])
@@ -207,7 +210,7 @@ public class LaunchParametersRestrictionRunsTest
                 .stopRun(runID3[1]);
     }
 
-    @Test(dependsOnMethods = "checkSimultaneousApplyingTwoGroupLevelRunningInstancesRestrictions")
+    @Test(priority = 1, dependsOnMethods = "checkSimultaneousApplyingTwoGroupLevelRunningInstancesRestrictions")
     @TestCase(value = {"2642_4"})
     public void checkRunningInstancesRestrictionAppliedToUser() {
         List<String> runIDs = new ArrayList<>();
@@ -216,7 +219,7 @@ public class LaunchParametersRestrictionRunsTest
             logout();
             loginAs(user);
             runIDs.addAll(launchSeveralRuns(parseInt(USER_MAX_RUNS)));
-            launchToolWithError(USER_MAX_RUNS, format(errorMessage, USER_MAX_RUNS),
+            launchToolWithError(USER_MAX_RUNS, format(warningMessage, USER_MAX_RUNS),
                         format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS));
             runsMenu()
                     .viewAvailableActiveRuns()
@@ -226,9 +229,9 @@ public class LaunchParametersRestrictionRunsTest
                     .completedRuns()
                     .rerun(runID3[1], nameWithoutGroup(tool))
                     .expandTab(EXEC_ENVIRONMENT)
-                    .ensure(byText(format(format(errorMessage, USER_MAX_RUNS), USER_MAX_RUNS)), visible)
+                    .ensure(byText(format(warningMessage, USER_MAX_RUNS)), visible)
                     .checkLaunchMessage("message",
-                            format(format(errorMessage, USER_MAX_RUNS), USER_MAX_RUNS), true)
+                            format(warningMessage, USER_MAX_RUNS), true)
                     .launchWithError(format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS));
             runsMenu()
                     .showLog(runIDs.get(0))
@@ -246,8 +249,7 @@ public class LaunchParametersRestrictionRunsTest
                             .assertPageContains(USER_LIMIT, USER_MAX_RUNS)
                             .close());
         } finally {
-            logout();
-            loginAs(admin);
+            refreshPage();
             final RunsMenuAO runsMenuAO = runsMenu();
             if (runsMenuAO.isActiveRun(runID3[0])) {
                 runsMenuAO
@@ -257,6 +259,113 @@ public class LaunchParametersRestrictionRunsTest
                 runsMenuAO.viewAvailableActiveRuns().stopRun(runID);
             }
         }
+    }
+
+    @Test(priority = 2)
+    @TestCase(value = {"2642_5"})
+    public void checkRunningInstancesRestrictionForClusterRun() {
+        setUserAllowedInstanceMaxCount(user, USER_MAX_RUNS);
+        logout();
+        loginAs(user);
+        runID5.addAll(launchSeveralRuns(1));
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .enableClusterLaunch()
+                .clusterSettingsForm("Cluster")
+                .setWorkingNodesCount("2")
+                .checkWarningMessageExist(format(warningMessage, USER_MAX_RUNS))
+                .ok()
+                .doNotMountStoragesSelect(true)
+                .ensure(byText(format(warningMessage, USER_MAX_RUNS)), visible)
+                .checkLaunchMessage("message",
+                            format(warningMessage, USER_MAX_RUNS), true)
+                .launchWithError(format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS));
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .enableClusterLaunch()
+                .clusterSettingsForm("Cluster")
+                .setWorkingNodesCount("1")
+                .checkWarningMessageNotExist()
+                .ok()
+                .doNotMountStoragesSelect(true)
+                .launch(this);
+        runID5.add(getLastRunId());
+        runsMenu()
+                .showLog(runID5.get(0))
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(runID5.get(0))
+                        .execute("pipe users instances")
+                        .assertPageContains(format("Active runs detected for a user: [%s: %s]", user.login, USER_MAX_RUNS))
+                        .close());
+    }
+
+    @Test(priority = 2, dependsOnMethods = "checkRunningInstancesRestrictionForClusterRun")
+    @TestCase(value = {"2642_6"})
+    public void checkRunningInstancesRestrictionForLaunchToolWithConfiguredClusterRun() {
+        try {
+            tools()
+                    .performWithin(registry, group, tool, tool ->
+                            tool.settings()
+                                    .enableClusterLaunch()
+                                    .clusterSettingsForm("Cluster")
+                                    .setWorkingNodesCount("2")
+                                    .ok()
+                                    .performIf(SAVE, enabled, ToolSettings::save)
+                    );
+            logout();
+            loginAs(user);
+            launchToolWithError(USER_MAX_RUNS, format(warningMessage, USER_MAX_RUNS),
+                    format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS));
+        } finally {
+            refreshPage();
+            tools()
+                    .performWithin(registry, group, tool, tool ->
+                            tool.settings()
+                                    .enableClusterLaunch()
+                                    .clusterSettingsForm("Single node")
+                                    .ok()
+                                    .performIf(SAVE, enabled, ToolSettings::save)
+                    );
+            for (String runID : runID5) {
+                runsMenu().viewAvailableActiveRuns().stopRun(runID);
+            }
+        }
+    }
+
+    @Test(priority = 3)
+    @TestCase(value = {"2642_7"})
+    public void checkRunningInstancesRestrictionForAutoScaledClusterRun() {
+        setUserAllowedInstanceMaxCount(user, USER_MAX_RUNS);
+        logout();
+        loginAs(user);
+        launchSeveralRuns(1);
+        tools()
+                .perform(registry, group, tool, ToolTab::runWithCustomSettings)
+                .enableClusterLaunch()
+                .clusterSettingsForm("Auto-scaled cluster")
+                .setWorkingNodesCount("3")
+                .checkWarningMessageExist(format(autoScaledClusterWarning, "is 1 job", USER_MAX_RUNS))
+                .setDefaultChildNodes("2")
+                .checkWarningMessageExist(format(warningMessage, USER_MAX_RUNS))
+                .setDefaultChildNodes("1")
+                .checkWarningMessageExist(format(autoScaledClusterWarning, "is 1 job", USER_MAX_RUNS))
+                .ok()
+                .doNotMountStoragesSelect(true)
+                .ensure(byText(format(autoScaledClusterWarning, "is 1 job", USER_MAX_RUNS)), visible)
+                .checkLaunchMessage("message",
+                        format(autoScaledClusterWarning, "is 1 job", USER_MAX_RUNS), true)
+                .launch(this)
+                .shouldContainRun("pipeline", getLastRunId())
+                .openClusterRuns(getLastRunId())
+                .shouldContainRunsWithParentRun(1, getLastRunId())
+                .showLog(getLastRunId())
+                .waitForSshLink()
+                .ssh(shell -> shell
+                        .waitUntilTextAppears(getLastRunId())
+                        .execute("pipe users instances")
+                        .assertPageContains(format("Active runs detected for a user: [%s: %s]", user.login, USER_MAX_RUNS))
+                        .close());
     }
 
     private List<String> launchSeveralRuns(int count) {
