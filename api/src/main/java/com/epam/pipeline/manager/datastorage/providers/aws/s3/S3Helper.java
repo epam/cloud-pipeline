@@ -55,12 +55,14 @@ import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
 import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 import com.amazonaws.services.s3.model.SetObjectTaggingRequest;
-import com.amazonaws.services.s3.model.StorageClass;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.services.s3.model.TagSet;
 import com.amazonaws.services.s3.model.VersionListing;
+import com.amazonaws.services.s3.model.lifecycle.LifecycleAndOperator;
 import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
+import com.amazonaws.services.s3.model.lifecycle.LifecycleFilterPredicate;
 import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
+import com.amazonaws.services.s3.model.lifecycle.LifecycleTagPredicate;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
 import com.amazonaws.waiters.Waiter;
@@ -82,6 +84,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleFilter;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
@@ -104,6 +107,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -249,16 +253,27 @@ public class S3Helper {
             }
 
             if (policy != null) {
-                if (policy.getShortTermStorageDuration() != null) {
-                    rules.add(createStsRule(STS_RULE_ID, policy.getShortTermStorageDuration()));
-                } else {
-                    disableRule(rules, currentRules, STS_RULE_ID);
-                }
-                if (policy.getLongTermStorageDuration() != null) {
-                    rules.add(createLtsRule(LTS_RULE_ID, policy.getLongTermStorageDuration()));
-                } else {
-                    disableRule(rules, currentRules, LTS_RULE_ID);
-                }
+                rules.addAll(
+                        Optional.ofNullable(policy.getLifecyclePolicy()).map(storageLifecyclePolicy ->
+                            ListUtils.emptyIfNull(storageLifecyclePolicy.getRules())
+                                    .stream()
+                                    .map(storageLifecycleRule ->
+                                            new BucketLifecycleConfiguration.Rule()
+                                                    .withId(storageLifecycleRule.getId())
+                                                    .withTransitions(
+                                                            storageLifecycleRule.getTransitions().stream().map(
+                                                                    trn -> new BucketLifecycleConfiguration.Transition()
+                                                                            .withDays(trn.getTransitionAfterDays())
+                                                                            .withStorageClass(trn.getStorageClass())
+                                                            ).collect(Collectors.toList())
+                                                    )
+                                                    .withFilter(
+                                                            constructS3LifecycleRuleFilter(storageLifecycleRule.getFilter())
+                                                    ).withExpirationInDays(storageLifecycleRule.getExpirationAfterDays())
+                                                    .withStatus(BucketLifecycleConfiguration.ENABLED)
+                                    ).collect(Collectors.toList())
+                        ).orElse(Collections.emptyList())
+                );
                 if (policy.getIncompleteUploadCleanupDays() != null) {
                     rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
                             policy.getIncompleteUploadCleanupDays()));
@@ -270,6 +285,26 @@ public class S3Helper {
         } catch (AmazonS3Exception e) {
             LOGGER.error("Bucket Lifecycle configuration is not available for this account");
         }
+    }
+
+    private LifecycleFilter constructS3LifecycleRuleFilter(
+            final StorageLifecycleRuleFilter filter) {
+
+        List<LifecycleFilterPredicate> prefixPredicates = ListUtils.emptyIfNull(filter.getPrefixes()).stream()
+                .map(LifecyclePrefixPredicate::new).collect(Collectors.toList());
+        LifecycleAndOperator prefixesPredicate = new LifecycleAndOperator(prefixPredicates);
+
+        List<LifecycleFilterPredicate> tagPredicates = ListUtils.emptyIfNull(filter.getTags())
+                .stream()
+                .map(t -> new Tag(t.getKey(), t.getValue()))
+                .map(LifecycleTagPredicate::new).collect(Collectors.toList());
+        LifecycleAndOperator tagsPredicate = new LifecycleAndOperator(tagPredicates);
+
+        LifecycleAndOperator tagAndPrefixPredicate = new LifecycleAndOperator(
+                Arrays.asList(prefixesPredicate, tagsPredicate)
+        );
+
+        return new LifecycleFilter().withPredicate(tagAndPrefixPredicate);
     }
 
     private void enableBucketEncryption(AmazonS3 s3client, String bucketName, String kmsDataEncryptionKeyId) {
@@ -696,25 +731,6 @@ public class S3Helper {
 
         pathDescription.setCompleted(true);
         return pathDescription;
-    }
-
-    private BucketLifecycleConfiguration.Rule createLtsRule(String ltsRuleId, Integer longTermStorageDuration) {
-        return new BucketLifecycleConfiguration.Rule()
-                .withId(ltsRuleId)
-                .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(EMPTY_STRING)))
-                .withExpirationInDays(longTermStorageDuration)
-                .withStatus(BucketLifecycleConfiguration.ENABLED);
-    }
-
-    private BucketLifecycleConfiguration.Rule createStsRule(String stsRuleId, Integer shortTermStorageDuration) {
-        return new BucketLifecycleConfiguration.Rule()
-                .withId(stsRuleId)
-                .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(EMPTY_STRING)))
-                .addTransition(
-                        new BucketLifecycleConfiguration.Transition()
-                                .withDays(shortTermStorageDuration)
-                                .withStorageClass(StorageClass.Glacier))
-                .withStatus(BucketLifecycleConfiguration.ENABLED);
     }
 
     private BucketLifecycleConfiguration.Rule createIncompleteUploadCleanupRule(String ruleId,

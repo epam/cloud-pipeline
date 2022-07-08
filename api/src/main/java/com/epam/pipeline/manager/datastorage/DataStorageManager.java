@@ -49,6 +49,8 @@ import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicy;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleTransition;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -1104,6 +1106,22 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(policy.getBackupDuration() == null || policy.getBackupDuration() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ILLEGAL_DURATION,
                         policy.getBackupDuration()));
+
+        StorageLifecyclePolicy lifecyclePolicy = policy.getLifecyclePolicy();
+        if (lifecyclePolicy == null) {
+            return;
+        }
+        ListUtils.emptyIfNull(lifecyclePolicy.getRules()).forEach(storageLifecycleRule -> {
+            Assert.isTrue(storageLifecycleRule.getExpirationAfterDays() == null
+                    || storageLifecycleRule.getExpirationAfterDays() >= 0, "expirationAfterDays should be > 0");
+            List<StorageLifecycleRuleTransition> transitions = storageLifecycleRule.getTransitions();
+            if (!CollectionUtils.isEmpty(transitions)) {
+                transitions.forEach(t -> {
+                    Assert.isTrue(t.getTransitionAfterDays() != null, "transitionAfterDays should be present");
+                    Assert.isTrue(t.getTransitionAfterDays() >= 0, "transitionAfterDays should be > 0");
+                });
+            }
+        });
     }
 
     private DataStorageFolder createDataStorageFolder(final AbstractDataStorage storage, final String path)

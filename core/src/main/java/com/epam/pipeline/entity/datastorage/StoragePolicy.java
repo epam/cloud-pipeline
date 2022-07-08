@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage;
 
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicy;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -25,10 +26,21 @@ public class StoragePolicy {
 
     private Boolean versioningEnabled = false;
     private Integer backupDuration;
-    private Integer shortTermStorageDuration;
-    private Integer longTermStorageDuration;
-    private Integer incompleteUploadCleanupDays;
 
+    /**
+     * Use it only for backward capability, for new code please use {@link StorageLifecyclePolicy}
+     * */
+    @Deprecated
+    private Integer shortTermStorageDuration;
+
+    /**
+     * Use it only for backward capability, for new code please use {@link StorageLifecyclePolicy}
+     * */
+    @Deprecated
+    private Integer longTermStorageDuration;
+
+    private Integer incompleteUploadCleanupDays;
+    private StorageLifecyclePolicy lifecyclePolicy;
     public boolean isVersioningEnabled() {
         return versioningEnabled != null && versioningEnabled;
     }

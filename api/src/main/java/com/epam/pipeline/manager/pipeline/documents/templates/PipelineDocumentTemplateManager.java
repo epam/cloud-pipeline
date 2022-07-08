@@ -18,7 +18,6 @@ package com.epam.pipeline.manager.pipeline.documents.templates;
 
 import com.epam.pipeline.controller.vo.TaskGraphVO;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
 import com.epam.pipeline.entity.graph.TaskNode;
@@ -158,9 +157,8 @@ public class PipelineDocumentTemplateManager {
                 .filter(ds -> ds.getName().toLowerCase().contains("analysis"))
                 .findAny();
         if (dataStorageOptional.isPresent()) {
-            AbstractDataStorage abstractDataStorage = dataStorageOptional.get();
-            StoragePolicy policy = abstractDataStorage.getStoragePolicy();
-            Integer totalDays =  policy == null ? 0 : policy.getLongTermStorageDuration();
+            // TODO fix this with respect to new lifecycle policy
+            Integer totalDays = 0;
             final Integer daysInYear = 365;
             final Integer daysInMonth = 30;
             Integer years = Math.floorDiv(totalDays, daysInYear);
