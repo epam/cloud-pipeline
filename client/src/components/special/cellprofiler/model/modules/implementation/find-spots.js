@@ -35,12 +35,12 @@ const findSpots = {
   sourceImageParameter: 'input',
   composed: true,
   parameters: [
-    'Parent objects|object|ALIAS parentObject',
-    'Select the input image|file|ALIAS input',
-    'Objects name|string|Spots|ALIAS output',
+    'Parent objects|object|ALIAS parentObject|REQUIRED',
+    'Select the input image|file|ALIAS input|REQUIRED',
+    'Objects name|string|Spots|ALIAS output|REQUIRED',
     `Method|[${[methods.enhanceAndIdentify].map(o => `"${o}"`).join(',')}]|"${methods.enhanceAndIdentify}"|ALIAS mainMethod`,
-    'Feature size|integer|10|ADVANCED|ALIAS featureSize',
-    `Typical diameter of objects, in pixel units (Min,Max)|integer[0,Infinity]|[2, 20]|ALIAS=diameterRange|ADVANCED|IF mainMethod==${methods.enhanceAndIdentify}`,
+    'Enhance feature by|units|2|ADVANCED|ALIAS featureSize|PARAMETER Feature size',
+    `Typical diameter of objects (Min,Max)|units[0,Infinity]|[0.1, 5]|ALIAS=diameterRange|ADVANCED|IF mainMethod==${methods.enhanceAndIdentify}|PARAMETER Typical diameter of objects, in pixel units (Min,Max)`,
     ...parameters
   ],
   subModules: (cpModule) => {

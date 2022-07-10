@@ -16,7 +16,7 @@
 
 /* eslint-disable max-len */
 
-import {AnalysisTypes} from '../../common/analysis-types';
+import {AnalysisTypes} from '../common/analysis-types';
 
 const brackets = ['[]', '()', '{}', '""'];
 const splitCharacters = [',|'];
@@ -350,6 +350,8 @@ function getParameterType (typeParts) {
         return {type: AnalysisTypes.integer};
       case 'float':
         return {type: AnalysisTypes.float};
+      case 'units':
+        return {type: AnalysisTypes.units};
       case 'color':
         return {type: AnalysisTypes.color};
       case 'object':
@@ -380,7 +382,7 @@ function getParameterType (typeParts) {
     if (
       additionalPart &&
       ['[', '('].includes(additionalPart.open) &&
-      [AnalysisTypes.integer, AnalysisTypes.float].includes(typeDefinition.type)
+      [AnalysisTypes.integer, AnalysisTypes.float, AnalysisTypes.units].includes(typeDefinition.type)
     ) {
       const [
         startStr = '-Infinity',
@@ -432,7 +434,7 @@ function parseDefaultValue (defaultValueParts, typeInfo) {
 
 function processParameter (input) {
   if (typeof input === 'object') {
-    return input;
+    return [input];
   }
   const parts = breakLine(input);
   let splitParts = splitPartsBy(parts, '|');
@@ -483,7 +485,7 @@ function processParameter (input) {
   if (typeof defaultValueParsed === 'string' && e && e[1]) {
     defaultValue = e[1];
   }
-  return {
+  const parameter = {
     advanced,
     local,
     required,
@@ -498,6 +500,26 @@ function processParameter (input) {
     multiple,
     emptyValue: empty
   };
+  if (type.type === AnalysisTypes.units) {
+    const unitsAlias = `${alias}Units`;
+    const pixelsParameter = {
+      ...parameter,
+      local: false,
+      type: AnalysisTypes.float,
+      hidden: true,
+      computed: `{${unitsAlias}:pixels}`,
+      exportParameter: false
+    };
+    parameter.local = true;
+    parameter.parameterName = unitsAlias;
+    parameter.name = unitsAlias;
+    parameter.exportParameter = true;
+    return [
+      pixelsParameter,
+      parameter
+    ];
+  }
+  return [parameter];
 }
 
 function processOutput (output) {
@@ -552,10 +574,14 @@ export function getComputedValue (computed, cpModule) {
   let e = groupsRegExp.exec(computed);
   const map = {};
   while (e && e.length >= 3) {
-    map[e[1]] = cpModule.getParameterValue(e[2]);
+    const [aName, ...modifier] = e[2].split(':');
+    map[e[1]] = cpModule.getParameterValue(aName, ...modifier);
     e = groupsRegExp.exec(computed);
   }
   const replacements = Object.entries(map).map(([placeholder, value]) => ({placeholder, value}));
+  if (replacements.length === 1 && typeof replacements[0].value !== 'string') {
+    return replacements[0].value;
+  }
   let result = computed;
   for (let r = 0; r < replacements.length; r += 1) {
     result = result.replace(new RegExp(replacements[r].placeholder, 'g'), replacements[r].value || '');
@@ -573,6 +599,6 @@ export default function parseModuleConfiguration (cpModule) {
   return {
     ...rest,
     outputs: processOutputs(outputs),
-    parameters: parameters.map(processParameter)
+    parameters: parameters.map(processParameter).reduce((r, c) => ([...r, ...c]), [])
   };
 }

@@ -48,7 +48,8 @@ function getComputedValue (rule, module, modules) {
     e = regExp.exec(rule);
   }
   const placeholders = [...placeholderSet].map((placeholder) => {
-    const [parameter, alias = 'this'] = placeholder.split('.').reverse();
+    const [parameterName, ...modifiers] = placeholder.split(':');
+    const [parameter, alias = 'this'] = parameterName.split('.').reverse();
     let link;
     if (alias === 'this') {
       link = module;
@@ -56,7 +57,7 @@ function getComputedValue (rule, module, modules) {
       link = modules[alias];
     }
     if (link) {
-      return {placeholder, value: link.getParameterValue(parameter)};
+      return {placeholder, value: link.getParameterValue(parameter, ...modifiers)};
     }
     return {placeholder, value: placeholder};
   });

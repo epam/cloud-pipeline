@@ -82,11 +82,17 @@ const DefineResults = (cpModule) => {
   };
 };
 
-const defineResultsSubModules = (cpModule) => [
-  ...ObjectsIntensities(cpModule),
-  ObjectSizes(cpModule),
-  DefineResults(cpModule)
-].filter(Boolean);
+const defineResultsSubModules = (cpModule) => {
+  const configuration = cpModule.getParameterValue('configuration') || [];
+  if (!configuration || !configuration.length) {
+    return [];
+  }
+  return [
+    ...ObjectsIntensities(cpModule),
+    ObjectSizes(cpModule),
+    DefineResults(cpModule)
+  ].filter(Boolean);
+};
 
 export {
   DefineResultsParameter,

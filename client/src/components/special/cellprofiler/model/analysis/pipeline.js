@@ -18,7 +18,7 @@ import {action, computed, observable} from 'mobx';
 import moment from 'moment-timezone';
 import {AnalysisModule} from '../modules/base';
 import {AnalysisTypes} from '../common/analysis-types';
-import {DefineResultsModuleName} from '../modules/implementation/configurations/define-results';
+import {DefineResultsModuleName} from '../modules/implementation/define-results';
 import OutlineObjectsConfiguration from './outline-objects-configuration';
 
 const CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE = 'CloudPipeline CellProfiler pipeline';
@@ -71,6 +71,14 @@ class AnalysisPipeline {
       return [];
     }
     return this.namesAndTypes.outputs.map(output => output.name);
+  }
+
+  @computed
+  get physicalSize () {
+    if (!this.analysis) {
+      return undefined;
+    }
+    return this.analysis.physicalSize;
   }
 
   /**

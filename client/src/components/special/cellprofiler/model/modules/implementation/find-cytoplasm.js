@@ -19,9 +19,9 @@ const findCytoplasm = {
   composed: true,
   output: 'output|object',
   parameters: [
-    'Nuclei objects|object|ALIAS nuclei',
-    'Cells objects|object|ALIAS cells',
-    'Objects name|string|Cytoplasm|ALIAS output'
+    'Nuclei objects|object|ALIAS nuclei|REQUIRED',
+    'Cells objects|object|ALIAS cells|REQUIRED',
+    'Objects name|string|Cytoplasm|ALIAS output|REQUIRED'
   ],
   subModules: [
     {

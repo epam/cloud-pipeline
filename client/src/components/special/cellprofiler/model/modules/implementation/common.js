@@ -58,7 +58,7 @@ const thresholding = (options = {}) => {
       // Thresholding - common
       'Threshold smoothing scale|float(0,2)|1.3488|ALIAS thresholdSmoothingScale|ADVANCED|IF configureThreshold==true',
       'Threshold correction factor|float(0,2)|1.0|IF thresholdingMethod!==Manual AND configureThreshold==true|ALIAS thresholdCorrectionFactor|ADVANCED',
-      `Adaptive size|integer|50|IF configureThreshold==true AND ${adaptiveThresholdingIf}|ALIAS adaptive|ADVANCED`,
+      `Adaptive size|units|10|IF configureThreshold==true AND ${adaptiveThresholdingIf}|ALIAS adaptive|ADVANCED`,
       `Manual threshold|${manualThresholdType}|${manualDefault}|IF ${globalThresholdingIf}|ALIAS manualThreshold|ADVANCED`
     ],
     values: {

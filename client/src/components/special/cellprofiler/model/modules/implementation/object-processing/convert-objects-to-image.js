@@ -13,15 +13,16 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable max-len */
 
 export default {
-  name: 'IdentifyTertiaryObjects',
+  name: 'ConvertObjectsToImage',
   group: 'Object Processing',
-  output: 'output|object',
+  output: 'output|file',
   parameters: [
-    'Select the larger identified objects|object|ALIAS large',
-    'Select the smaller identified objects|object|ALIAS small',
-    'Name the tertiary objects to be identified|string|Cytoplasm|ALIAS output',
-    'Shrink smaller object prior to subtraction?|flag|false|ALIAS shrink'
+    'Select the input objects|object|ALIAS input|REQUIRED',
+    'Name the output image|ALIAS output|REQUIRED',
+    'Select the color format|[Color,"Binary (black & white)",Grayscale,uint16]|Color|ALIAS format',
+    'Select the colormap|[Default]|Default|COMPUTED|HIDDEN'
   ]
 };

@@ -170,13 +170,8 @@ function getVariableOptions (pipeline) {
       const hasChild = pipeline.getObjectHasSpots(object);
       const props = getObjectProperties({spot, hasChild});
       return props
-        .map(prop => {
-          const stats = getObjectPropertyFunction(prop);
-          return [
-            {object, property: prop},
-            ...stats.map(stat => ({object, property: prop, function: stat}))
-          ];
-        })
+        .map(prop => getObjectPropertyFunction(prop)
+          .map(stat => ({object, property: prop, function: stat})))
         .reduce((r, c) => ([...r, ...c]), []);
     })
     .reduce((r, c) => ([...r, ...c]), []);

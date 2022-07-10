@@ -15,7 +15,7 @@
  */
 
 import {action, computed, observable} from 'mobx';
-import {NamesAndTypes} from '../modules';
+import {NamesAndTypes} from '../modules/names-and-types';
 import {HCSSourceFile} from '../common/analysis-file';
 import {
   findJobWithDockerImage,
@@ -26,7 +26,7 @@ import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
 import runAnalysisPipeline from './analysis-pipeline-utilities';
 import {loadPipeline, savePipeline} from './analysis-pipeline-management';
-import { fetchToken } from "../../../../../models/user/UserToken";
+import PhysicalSize from './physical-size';
 
 const AUTOUPDATE = false;
 
@@ -42,6 +42,7 @@ class Analysis {
    * @type {AnalysisPipeline}
    */
   @observable pipeline;
+  @observable physicalSize = new PhysicalSize();
   @observable error;
   @observable pending;
   @observable analysing;
@@ -137,6 +138,12 @@ class Analysis {
 
   newPipeline = () => {
     this.pipeline = new AnalysisPipeline(this);
+    (async () => {
+      await this.userInfo.fetchIfNeededOrWait();
+      if (this.userInfo.loaded) {
+        this.pipeline.author = (this.userInfo.value || {}).userName;
+      }
+    })();
     this.changed = true;
     this.analysisRequested = true;
   };
@@ -223,6 +230,11 @@ class Analysis {
   @computed
   get ready () {
     return this.available && this.analysisAPI && this.pipelineId;
+  }
+
+  @action
+  updatePhysicalSize (unitsInPixel, units) {
+    this.physicalSize.update(unitsInPixel, units);
   }
 
   @action

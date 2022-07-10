@@ -15,35 +15,16 @@
  */
 /* eslint-disable max-len */
 
-import {
-  DefineResultsParameter,
-  defineResultsSubModules
-} from '../../../parameters/define-results';
-
-const DefineResultsModuleName = 'Results';
-
-const defineResults = {
-  name: DefineResultsModuleName,
-  predefined: true,
-  title: 'DefineResults',
-  hidden: true,
-  composed: true,
-  parameters: [DefineResultsParameter],
-  subModules: defineResultsSubModules
-};
-
-const defineResultsInternal = {
-  name: 'DefineResults',
-  group: 'System',
-  hidden: true,
+export default {
+  name: 'RelateObjects',
+  group: 'Object Processing',
+  output: 'name|object|IF saveAsNew==true AND name!==""',
   parameters: [
-    'specs|custom|ALIAS specs',
-    'grouping|string|Well|ALIAS grouping'
+    'Parent objects|object|ALIAS parent|REQUIRED',
+    'Child objects|object|ALIAS child|REQUIRED',
+    'Calculate per-parent means for all child measurements?|flag|true',
+    'Calculate child-parent distances?|[None,Centroid,Minimum,Both]|None',
+    'Do you want to save the children with parents as a new object set?|flag|false|ALIAS saveAsNew',
+    'Name the output object|IF saveAsNew==true|ALIAS name|REQUIRED'
   ]
-};
-
-export {
-  defineResults,
-  defineResultsInternal,
-  DefineResultsModuleName
 };

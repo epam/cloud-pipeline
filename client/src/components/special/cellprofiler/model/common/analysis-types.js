@@ -17,6 +17,7 @@
 const AnalysisTypes = {
   integer: 'integer',
   float: 'float',
+  units: 'units',
   string: 'string',
   boolean: 'boolean',
   file: 'file',

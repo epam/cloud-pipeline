@@ -14,15 +14,15 @@
  *  limitations under the License.
  */
 
-import {action, computed, observable} from 'mobx';
+import {action, computed, isObservableArray, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
 import {BooleanParameter} from '../parameters';
 import parseModuleConfiguration, {
   splitStringWithBrackets
-} from './implementation/parse-module-configuration';
+} from './parse-module-configuration';
 import parameterInitializer from '../parameters/parameter-initializer';
-import {allModules} from './implementation';
+import allModules from './implementation';
 
 const IGNORED_PARAMETERS = [
   'Select objects to display',
@@ -59,6 +59,15 @@ function expandModules (modules = []) {
     []
   );
 }
+
+function searchParameterCriteria (property) {
+  return function search (name) {
+    return (p) => p.parameter[property] === name;
+  };
+}
+
+const searchParameterByName = searchParameterCriteria('name');
+const searchParameterByParameterName = searchParameterCriteria('parameterName');
 
 class AnalysisModule {
   id;
@@ -208,7 +217,8 @@ class AnalysisModule {
     this.parametersConfigurations.push(new BooleanParameter({
       name: 'advanced',
       title: 'Show advanced settings',
-      value: false
+      value: false,
+      exportParameter: false
     }));
   }
 
@@ -222,17 +232,38 @@ class AnalysisModule {
     return this.parametersConfigurations.find(config => config.name === name) ||
       this.parametersConfigurations.find(config => config.parameterName === name);
   }
-  getParameterValue (name) {
+  getParameterValue (name, ...modifier) {
     if (/^uuid$/i.test(name)) {
       return this.uuid;
     }
     if (/^id$/i.test(name)) {
       return this.id;
     }
-    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name) ||
-      this.parameters.find(parameter => parameter.parameter.parameterName === name);
+    const parameterValue = this.parameters.find(searchParameterByName(name)) ||
+      this.parameters.find(searchParameterByParameterName(name));
+    const modification = (o, singleModifier) => {
+      if (o && (Array.isArray(o) || isObservableArray(o))) {
+        return o.map(item => modification(item, singleModifier));
+      }
+      switch (singleModifier.toLowerCase()) {
+        case 'pixels':
+          if (
+            o !== undefined &&
+            o !== '' && !Number.isNaN(o) &&
+            this.pipeline &&
+            this.pipeline.physicalSize
+          ) {
+            return this.pipeline.physicalSize.getPixels(Number(o));
+          }
+          return o;
+        default:
+          return o;
+      }
+    };
+    const modify = (o) => modifier
+      .reduce((result, singleModifier) => modification(result, singleModifier), o);
     if (parameterValue) {
-      return parameterValue.value;
+      return modify(parameterValue.value);
     } else {
       console.warn(`parameter not found: ${name}`);
     }
@@ -242,8 +273,8 @@ class AnalysisModule {
     return ['true', 'on', 'yes'].includes(`${this.getParameterValue(name)}`.toLowerCase());
   }
   setParameterValue (name, value) {
-    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name) ||
-      this.parameters.find(parameter => parameter.parameter.parameterName === name);
+    const parameterValue = this.parameters.find(searchParameterByName(name)) ||
+      this.parameters.find(searchParameterByParameterName(name));
     if (parameterValue) {
       parameterValue.applyValue(value);
     } else {
@@ -348,14 +379,14 @@ class AnalysisModule {
     }
   }
 
-  getPayload = () => {
+  getPayload = (validate = false) => {
     return this.parameters
       .filter((parameter) =>
         !/^advanced$/i.test(parameter.parameter.name) && !parameter.parameter.local
       )
       .reduce((payload, item) => ({
         ...payload,
-        ...item.getPayload()
+        ...item.getPayload(validate)
       }), {...this.extraParameters});
   }
 
@@ -390,6 +421,7 @@ class AnalysisModule {
           parameterValue.parameter.exportParameter
         )
         .map(parameterValue => parameterValue.exportParameterValue())
+        .filter(parameterValue => parameterValue && parameterValue.length)
         .map(parameterValue => `\t${parameterValue}`)
     ].join('\n');
   }
@@ -415,7 +447,11 @@ class AnalysisModule {
           ...moduleConfiguration
         });
       Object.entries(values || {}).forEach(([parameter, value]) => {
-        cpModule.setParameterValue(parameter, value);
+        try {
+          cpModule.setParameterValue(parameter, value);
+        } catch (e) {
+          console.warn(`Error setting parameter value. ${parameter} =`, value);
+        }
       });
       return cpModule;
     }

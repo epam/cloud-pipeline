@@ -23,10 +23,10 @@ import {
   loadAvailablePipelines,
   CP_CELLPROFILER_PIPELINE_NAME,
   CP_CELLPROFILER_PIPELINE_DESCRIPTION
-} from '../model/analysis/analysis-pipeline-management';
-import LoadingView from '../../LoadingView';
-import styles from './cell-profiler.css';
-import UserName from '../../UserName';
+} from '../../model/analysis/analysis-pipeline-management';
+import LoadingView from '../../../LoadingView';
+import UserName from '../../../UserName';
+import styles from '../cell-profiler.css';
 
 const PAGE_SIZE = 20;
 
@@ -236,7 +236,7 @@ class OpenPipelineModal extends React.Component {
         title="Open analysis pipeline"
         onCancel={onClose}
         footer={(
-          <div className={styles.openPipelineModalFooter}>
+          <div className={styles.modalFooter}>
             <Button
               onClick={onClose}
             >

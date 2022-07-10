@@ -44,7 +44,7 @@ export async function loadAvailablePipelines () {
   await preferences.fetchIfNeededOrWait();
   const configuration = preferences.hcsAnalysisConfiguration || {};
   const {
-    pipelinesPath = 's3://pathology-storage/HCS/HarmonyBackup/.pipelines'
+    pipelinesPath
   } = configuration;
   if (!pipelinesPath) {
     throw new Error('CellProfiler analysis pipelines path is not specified');
@@ -112,7 +112,7 @@ export async function savePipeline (pipeline) {
   await preferences.fetchIfNeededOrWait();
   const configuration = preferences.hcsAnalysisConfiguration || {};
   const {
-    pipelinesPath = 's3://pathology-storage/HCS/HarmonyBackup/.pipelines'
+    pipelinesPath
   } = configuration;
   if (!pipelinesPath) {
     throw new Error('CellProfiler analysis pipelines path is not specified');

@@ -199,8 +199,8 @@ const watershed = {
   group: 'Advanced',
   output: 'output|object',
   parameters: [
-    'Select the input image|file|ALIAS input',
-    'Name the output object|string|Watershed|ALIAS output',
+    'Select the input image|file|ALIAS input|REQUIRED',
+    'Name the output object|string|Watershed|ALIAS output|REQUIRED',
     'Generate from|[Distance,Markers]|Distance|ALIAS generate',
     'Markers|file|IF generate==Markers|ALIAS markers',
     'Mask|file|IF generate==Markers|ALIAS mask|EMPTY Left blank',

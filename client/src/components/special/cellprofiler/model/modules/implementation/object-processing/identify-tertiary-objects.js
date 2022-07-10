@@ -13,19 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-/* eslint-disable max-len */
 
 export default {
-  name: 'ResizeObjects',
+  name: 'IdentifyTertiaryObjects',
   group: 'Object Processing',
   output: 'output|object',
   parameters: [
-    'Select the input object|object|ALIAS input',
-    'Name the output object|string|ResizedObjects|ALIAS output',
-    'Method|[Dimensions,Factor,Match image]|Factor|ALIAS method',
-    'Factor|float|0.25|IF method==Factor|ALIAS factor',
-    'Width|integer|100|IF method==Dimensions',
-    'Height|integer|100|IF method==Dimensions',
-    'Select the image with the desired dimensions|file|IF method=="Match image"'
+    'Select the larger identified objects|object|ALIAS large|REQUIRED',
+    'Select the smaller identified objects|object|ALIAS small|REQUIRED',
+    'Name the tertiary objects to be identified|string|Cytoplasm|ALIAS output|REQUIRED',
+    'Shrink smaller object prior to subtraction?|flag|false|ALIAS shrink'
   ]
 };

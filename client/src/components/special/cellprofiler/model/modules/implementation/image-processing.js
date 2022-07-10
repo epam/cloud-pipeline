@@ -16,15 +16,14 @@
 /* eslint-disable max-len */
 
 import React from 'react';
-import {AnalysisTypes} from '../../../common/analysis-types';
-import OutlineConfig from '../../../parameters/outline-objects-configuration';
+import {AnalysisTypes} from '../../common/analysis-types';
+import OutlineConfig from '../../parameters/outline-objects-configuration';
 import ImageMathImages, {
   SINGLE_FILE_OPERATIONS,
   VALUE_SUPPORTED_OPERATIONS
-} from '../../../parameters/image-selectors/image-math';
-import GrayToColor, {VALUE_SUPPORTED_SCHEMES} from '../../../parameters/image-selectors/gray-to-color';
+} from '../../parameters/image-selectors/image-math';
+import GrayToColor, {VALUE_SUPPORTED_SCHEMES} from '../../parameters/image-selectors/gray-to-color';
 
-// Todo: Кнопка Add another image позволяет множить последние три параметра (select additional, name output, how applied).
 const align = {
   name: 'Align',
   group: 'Image Processing',

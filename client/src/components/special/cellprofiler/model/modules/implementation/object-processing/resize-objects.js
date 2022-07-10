@@ -16,15 +16,16 @@
 /* eslint-disable max-len */
 
 export default {
-  name: 'RelateObjects',
+  name: 'ResizeObjects',
   group: 'Object Processing',
-  output: 'name|object|IF saveAsNew==true AND name!==""',
+  output: 'output|object',
   parameters: [
-    'Parent objects|object|ALIAS parent',
-    'Child objects|object|ALIAS child',
-    'Calculate per-parent means for all child measurements?|flag|true',
-    'Calculate child-parent distances?|[None,Centroid,Minimum,Both]|None',
-    'Do you want to save the children with parents as a new object set?|flag|false|ALIAS saveAsNew',
-    'Name the output object|IF saveAsNew==true|ALIAS name'
+    'Select the input object|object|ALIAS input|REQUIRED',
+    'Name the output object|string|ResizedObjects|ALIAS output|REQUIRED',
+    'Method|[Dimensions,Factor,Match image]|Factor|ALIAS method',
+    'Factor|float|0.25|IF method==Factor|ALIAS factor',
+    'Width|integer|100|IF method==Dimensions',
+    'Height|integer|100|IF method==Dimensions',
+    'Select the image with the desired dimensions|file|IF method=="Match image"'
   ]
 };

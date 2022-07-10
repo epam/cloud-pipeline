@@ -15,8 +15,8 @@
  */
 /* eslint-disable max-len */
 
-import {AnalysisTypes} from '../../../common/analysis-types';
 import {isObservableArray} from 'mobx';
+import {AnalysisTypes} from '../../common/analysis-types';
 
 const saveImages = {
   name: 'SaveImages',

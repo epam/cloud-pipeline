@@ -17,11 +17,11 @@
 
 import React from 'react';
 import {thresholding, getParentParameter} from './common';
-import {AnalysisTypes} from '../../../common/analysis-types';
+import {AnalysisTypes} from '../../common/analysis-types';
 import ImageMathImages, {
   SINGLE_FILE_OPERATIONS,
   VALUE_SUPPORTED_OPERATIONS
-} from '../../../parameters/image-selectors/image-math';
+} from '../../parameters/image-selectors/image-math';
 
 const {
   parameters: thresholdingParameters,
@@ -32,9 +32,9 @@ const findCells = {
   name: 'FindCells',
   composed: true,
   parameters: [
-    'Nuclei objects|object|ALIAS nuclei',
-    'Image|file|ALIAS input|IF multipleChannels==false OR mainMethod=="A"',
-    'Objects name|string|Cells|ALIAS name',
+    'Nuclei objects|object|ALIAS nuclei|REQUIRED',
+    'Image|file|ALIAS input|IF multipleChannels==false OR mainMethod=="A"|REQUIRED',
+    'Objects name|string|Cells|ALIAS name|REQUIRED',
     'Method|[A,B]|A|ALIAS mainMethod',
     'Use multiple channels|flag|false|ADVANCED|ALIAS multipleChannels|IF mainMethod!="A"',
     // 'Erode nuclei?|flag|false|ALIAS erode|ADVANCED',
@@ -107,7 +107,7 @@ const findCells = {
     ...thresholdingParameters,
 
     // Remove holes
-    'Holes size|float(1, 100)|10|ALIAS holesSize|ADVANCED'
+    'Holes size|units|10|ALIAS holesSize|ADVANCED'
   ],
   output: 'name|object',
   sourceImageParameter: 'inputImage',

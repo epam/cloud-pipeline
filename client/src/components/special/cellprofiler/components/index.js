@@ -17,86 +17,73 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Icon, message} from 'antd';
-import Menu, {MenuItem, SubMenu} from 'rc-menu';
+import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
 import classNames from 'classnames';
-import {allModules} from '../model/modules';
-import OpenPipelineModal from './open-pipeline-modal';
+import OpenPipelineModal from './modals/open-pipeline-modal';
 import CellProfilerPipeline from './pipeline';
+import AddModulesButton from './add-modules-button';
+import SavePipelineModal from './modals/save-pipeline-modal';
 import styles from './cell-profiler.css';
 
 class CellProfiler extends React.Component {
   state = {
-    addModuleSelectorVisible: false,
     managementActionsVisible: false,
-    openPipelineModalVisible: false
+    openPipelineModalVisible: false,
+    savePipelineOptions: undefined
   };
 
-  renderAddModuleSelector = () => {
-    const {analysis} = this.props;
-    const handleVisibility = (visible) => this.setState({addModuleSelectorVisible: visible});
-    const filtered = allModules.filter(module => !module.hidden);
-    const onSelect = ({key}) => {
-      const cpModule = filtered.find((cpModule) => cpModule.name === key);
-      if (analysis) {
-        analysis.add(cpModule);
-      }
-      handleVisibility(false);
-    };
-    const groups = [...(new Set(filtered.map(module => module.group)))].filter(Boolean);
-    const mainModules = filtered.filter(module => !module.group);
-    const menu = (
-      <div>
-        <Menu
-          selectedKeys={[]}
-          onClick={onSelect}
-        >
-          {
-            mainModules
-              .map((cpModule) => (
-                <MenuItem key={cpModule.name}>
-                  {cpModule.title || cpModule.name}
-                </MenuItem>
-              ))
-          }
-          {
-            groups.map((group) => (
-              <SubMenu
-                key={group}
-                title={group}
-                selectedKeys={[]}
-              >
-                {
-                  filtered
-                    .filter(module => module.group === group)
-                    .map((cpModule) => (
-                      <MenuItem key={cpModule.name}>
-                        {cpModule.title || cpModule.name}
-                      </MenuItem>
-                    ))
-                }
-              </SubMenu>
-            ))
-          }
-        </Menu>
-      </div>
-    );
-    return (
-      <Dropdown
-        overlay={menu}
-        trigger={['click']}
-        onVisibleChange={handleVisibility}
-      >
-        <Button
-          size="small"
-          disabled={!analysis.ready || analysis.pending || analysis.analysing}
-        >
-          <Icon type="plus" />
-          <span>Add module</span>
-        </Button>
-      </Dropdown>
-    );
+  onSavePipelineClicked = async (asNew = false) => {
+    const {
+      analysis
+    } = this.props;
+    if (!analysis) {
+      return;
+    }
+    if (asNew || !analysis.pipeline.name) {
+      this.openSavePipelineModal(asNew);
+    } else {
+      return this.savePipeline(asNew);
+    }
+  };
+
+  savePipeline = async (asNew) => {
+    const {
+      analysis
+    } = this.props;
+    if (!analysis) {
+      return;
+    }
+    const hide = message.loading('Saving pipeline...', 0);
+    try {
+      await analysis.savePipeline(asNew);
+    } catch (error) {
+      message.error(error.message, 5);
+    } finally {
+      hide();
+    }
+  };
+
+  openSavePipelineModal = (asNew = false) => {
+    this.setState({
+      savePipelineOptions: {asNew}
+    });
+  };
+
+  closeSavePipelineModal = () => {
+    this.setState({
+      savePipelineOptions: undefined
+    });
+  };
+
+  onNameSpecified = () => {
+    const {savePipelineOptions} = this.state;
+    const {
+      asNew = false
+    } = savePipelineOptions || {};
+    this.closeSavePipelineModal();
+    return this.savePipeline(asNew);
   };
 
   renderTitle = () => {
@@ -105,7 +92,8 @@ class CellProfiler extends React.Component {
       return null;
     }
     const {
-      openPipelineModalVisible
+      openPipelineModalVisible,
+      savePipelineOptions
     } = this.state;
     const openModal = () => {
       this.setState({openPipelineModalVisible: true});
@@ -126,28 +114,10 @@ class CellProfiler extends React.Component {
           analysis.newPipeline();
           break;
         case 'Save':
-          (async () => {
-            const hide = message.loading('Saving pipeline...', 0);
-            try {
-              await analysis.savePipeline();
-            } catch (error) {
-              message.error(error.message, 5);
-            } finally {
-              hide();
-            }
-          })();
+          (this.onSavePipelineClicked)();
           break;
         case 'SaveAsNew':
-          (async () => {
-            const hide = message.loading('Saving pipeline...', 0);
-            try {
-              await analysis.savePipeline(true);
-            } catch (error) {
-              message.error(error.message, 5);
-            } finally {
-              hide();
-            }
-          })();
+          (this.onSavePipelineClicked)(true);
           break;
         case 'Open': openModal(); break;
       }
@@ -183,11 +153,17 @@ class CellProfiler extends React.Component {
         <a
           className="cp-text"
         >
-          Analysis <Icon type="down" />
+          Analysis <Icon type="bars" />
           <OpenPipelineModal
             visible={openPipelineModalVisible}
             onSelect={onPipelineSelected}
             onClose={closeModal}
+          />
+          <SavePipelineModal
+            pipeline={analysis.pipeline}
+            visible={!!savePipelineOptions}
+            onClose={this.closeSavePipelineModal}
+            onSave={this.onNameSpecified}
           />
         </a>
       </Dropdown>
@@ -258,7 +234,7 @@ class CellProfiler extends React.Component {
               )
             }
           </Button>
-          {this.renderAddModuleSelector()}
+          <AddModulesButton analysis={analysis} />
         </div>
         <CellProfilerPipeline
           className={styles.cellProfilerModules}

@@ -15,9 +15,9 @@
  */
 
 import {computed, observable} from 'mobx';
-import {AnalysisModule} from '../base';
-import {HCSSourceFile, sourceFileOptionsEqual} from '../../common/analysis-file';
-import {AnalysisTypes} from '../../common/analysis-types';
+import {AnalysisModule} from './base';
+import {HCSSourceFile, sourceFileOptionsEqual} from '../common/analysis-file';
+import {AnalysisTypes} from '../common/analysis-types';
 
 class NamesAndTypes extends AnalysisModule {
   static predefined = true;

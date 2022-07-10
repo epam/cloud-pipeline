@@ -26,11 +26,11 @@ const {
 const findNuclei = {
   name: 'FindNuclei',
   parameters: [
-    'Select the input image|file|ALIAS input',
-    'Objects name|string|Nuclei|ALIAS name',
+    'Select the input image|file|ALIAS input|REQUIRED',
+    'Objects name|string|Nuclei|ALIAS name|REQUIRED',
     'Downsample|flag|false|ADVANCED|ALIAS downsample',
     'Downsample factor, %|float(0, 100)|50|ADVANCED|IF downsample==true|ALIAS downsampleFactor',
-    'Remove holes of size, px|float(0, 50)|10|ADVANCED|ALIAS holeSize',
+    'Holes size|units|10|ADVANCED|ALIAS holeSize|PARAMETER Remove holes of size, px',
     ...thresholdingParameters
   ],
   output: 'name|object',

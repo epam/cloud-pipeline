@@ -41,8 +41,8 @@ import AnalysisOutput from '../cellprofiler/components/analysis-output';
 import {Analysis} from '../cellprofiler/model/analysis';
 import roleModel from '../../../utils/roleModel';
 import styles from './hcs-image.css';
-import ObjectsOutline from "../cellprofiler/components/objects-outline";
-import { getImageInfoFromName } from "./utilities/hcs-image-well";
+import ObjectsOutline from '../cellprofiler/components/objects-outline';
+import {getImageInfoFromName} from './utilities/hcs-image-well';
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -417,6 +417,7 @@ class HcsImage extends React.PureComponent {
         }
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
+            console.log(this.hcsImageViewer);
             if (this.hcsImageViewer) {
               this.hcsImageViewer.setImage({
                 ID: id,
@@ -456,11 +457,19 @@ class HcsImage extends React.PureComponent {
       const {
         channels = [],
         globalSelection = {},
+        metadata = {}
       } = viewerState || {};
       const {
         z = 0,
         t = 0
       } = globalSelection;
+      const {
+        Pixels = {}
+      } = metadata;
+      const {
+        PhysicalSizeX,
+        PhysicalSizeXUnit
+      } = Pixels;
       const {sequences = []} = this.hcsInfo;
       const sequence = sequences.find(s => s.id === sequenceId);
       if (sequence && sequence.sourceDirectory) {
@@ -470,6 +479,7 @@ class HcsImage extends React.PureComponent {
         const {images = []} = well;
         const image = images.find(i => i.id === imageId);
         if (image) {
+          this.hcsAnalysis.updatePhysicalSize(PhysicalSizeX, PhysicalSizeXUnit);
           this.hcsAnalysis.changeFile({
             sourceDirectory: analysisPath,
             images: image ? [image.fieldID].filter(Boolean) : [],

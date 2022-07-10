@@ -17,7 +17,7 @@
 import {action, computed, isObservableArray, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
-import {getComputedValue} from '../modules/implementation/parse-module-configuration';
+import {getComputedValue} from '../modules/parse-module-configuration';
 
 function mapListItem (listItem) {
   if (typeof listItem !== 'object') {
@@ -156,6 +156,14 @@ class ModuleParameter {
   }
 
   @computed
+  get physicalSize () {
+    if (!this.pipeline) {
+      return undefined;
+    }
+    return this.pipeline.physicalSize;
+  }
+
+  @computed
   get analysis () {
     if (!this.pipeline) {
       return undefined;
@@ -286,6 +294,22 @@ class ModuleParameterValue {
     return this._value;
   }
 
+  @computed
+  get isEmpty () {
+    const aValue = this.value;
+    return aValue === undefined ||
+    (typeof aValue === 'string' && aValue.trim() === '') ||
+    (typeof aValue === 'object' && aValue.length === 0);
+  }
+
+  @computed
+  get isInvalid () {
+    if (!this.parameter) {
+      return true;
+    }
+    return this.parameter.required && this.isEmpty;
+  }
+
   set value (aValue) {
     if (this.parameter && this.parameter.multiple) {
       this._value = aValue && (isObservableArray(aValue) || Array.isArray(aValue))
@@ -300,7 +324,7 @@ class ModuleParameterValue {
     return this.getPayload();
   }
 
-  getPayload () {
+  getPayload (validate = false, exportLocal = false) {
     if (!this.parameter) {
       return {};
     }
@@ -310,9 +334,10 @@ class ModuleParameterValue {
       valueFormatter,
       isList,
       multiple,
-      local
+      local,
+      required
     } = this.parameter;
-    if (local) {
+    if (local && !exportLocal) {
       return {};
     }
     const multipleFormatter = o => {
@@ -334,6 +359,19 @@ class ModuleParameterValue {
     if (isList && !formattedValue) {
       formattedValue = valueFormatter(multipleFormatter(this.parameter.emptyValue));
     }
+    const isEmpty = formattedValue === undefined ||
+      (typeof formattedValue === 'string' && formattedValue.trim() === '') ||
+      (typeof formattedValue === 'object' && formattedValue.length === 0);
+    if (validate && this.parameter.visible && required && isEmpty) {
+      const moduleName = this.parameter.cpModule
+        ? (this.parameter.cpModule.title || this.parameter.cpModule.name)
+        : '';
+      const parameterName = this.parameter.title || this.parameter.name;
+      const moduleString = moduleName ? ` of the "${moduleName}" module ` : '';
+      throw new Error(
+        `"${parameterName}" parameter${moduleString}is required`
+      );
+    }
     switch (type) {
       case AnalysisTypes.string:
         return {
@@ -349,7 +387,11 @@ class ModuleParameterValue {
     if (!this.parameter) {
       return;
     }
-    this.value = this.parameter.valueParser(value, this.parameter.cpModule);
+    try {
+      this.value = this.parameter.valueParser(value, this.parameter.cpModule);
+    } catch (e) {
+      console.warn('Error applying value to parameter', this.parameter.name, 'value:', value);
+    }
     this.parameter.cpModule.changed = true;
   }
 
@@ -365,7 +407,7 @@ class ModuleParameterValue {
     }
   };
   exportParameterValue = () => {
-    const payload = this.payload;
+    const payload = this.getPayload(false, true);
     return Object.entries(payload)
       .map(([name, value]) => `${name}:${JSON.stringify(value)}`);
   }
