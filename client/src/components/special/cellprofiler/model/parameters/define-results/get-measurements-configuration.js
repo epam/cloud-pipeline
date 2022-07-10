@@ -45,13 +45,23 @@ function expandProperties (properties, pipeline, object) {
  * @property {SpotInfo[]} spots
  * @property {string[]} parents
  * @property {string} property
- * @property {string[]} stats
+ * @property {string[]} [stats]
+ * @property {string} [variable]
+ * @property {string} [customName]
+ */
+
+/**
+ * @typedef {Object} ConfigurationFormula
+ * @property {ConfigurationProperty[]} variables
+ * @property {string[]} expression
+ * @property {boolean} isFormula
+ * @property {string} name
  */
 
 /**
  * @param configuration
  * @param pipeline
- * @returns {ConfigurationProperty[]}
+ * @returns {(ConfigurationProperty | ConfigurationFormula)[]}
  */
 function getConfigurationProperties (configuration, pipeline) {
   if (!pipeline || !configuration) {
@@ -60,20 +70,31 @@ function getConfigurationProperties (configuration, pipeline) {
   const spots = pipeline.spots.slice();
   if (configuration.isFormula) {
     const {
+      name,
+      expression = [],
       variables = {}
     } = configuration;
-    // todo: formula usage
-    return Object
-      .values(variables)
-      .map(({object, property, function: stat}) => ({
-        object,
-        image: pipeline.getSourceImageForObjet(object),
-        spots: spots.filter(aSpot => aSpot.parent === object),
-        parents: spots.filter(aSpot => aSpot.name === object)
-          .map(aSpot => aSpot.parent),
-        property,
-        stats: stat ? [stat] : AllStats
-      }));
+    const variableConfigurations = Object
+      .entries(variables || {})
+      .map(([variableName, variableValue]) => {
+        const {object, property, function: stat} = variableValue;
+        return {
+          object,
+          image: pipeline.getSourceImageForObjet(object),
+          spots: spots.filter(aSpot => aSpot.parent === object),
+          parents: spots.filter(aSpot => aSpot.name === object)
+            .map(aSpot => aSpot.parent),
+          property,
+          stats: stat ? [stat] : AllStats,
+          variable: variableName
+        };
+      });
+    return [{
+      isFormula: true,
+      name,
+      variables: variableConfigurations,
+      expression
+    }];
   }
   const {
     object,
@@ -103,6 +124,12 @@ export function getMeasureObjectIntensityTargets (pipeline, configurations) {
     .slice()
     .map(aConfiguration => {
       return getConfigurationProperties(aConfiguration, pipeline)
+        .reduce((result, current) => {
+          if (current.isFormula) {
+            return [...result, ...current.variables];
+          }
+          return [...result, current];
+        }, [])
         .map((aProperty) => {
           switch (aProperty.property) {
             case ObjectProperty.meanSpotIntensity:
@@ -160,6 +187,12 @@ export function getMeasureObjectSizeTargets (pipeline, configurations) {
     .slice()
     .map(aConfiguration => {
       return getConfigurationProperties(aConfiguration, pipeline)
+        .reduce((result, current) => {
+          if (current.isFormula) {
+            return [...result, ...current.variables];
+          }
+          return [...result, current];
+        }, [])
         .map((aProperty) => {
           switch (aProperty.property) {
             case ObjectProperty.area:
@@ -180,6 +213,74 @@ export function getMeasureObjectSizeTargets (pipeline, configurations) {
 }
 
 /**
+ * @typedef {Object} SpecItem
+ * @property {string} primary
+ * @property {string} [secondary]
+ * @property {string} operation
+ * @property {string[]} [stat_functions]
+ * @property {string} [column_operation_name]
+ */
+
+/**
+ * @param {ConfigurationProperty|ConfigurationFormula} aProperty
+ * @returns {SpecItem[]}
+ */
+function processConfigurationProperty (aProperty) {
+  switch (aProperty.property) {
+    case ObjectProperty.numberOfObjects:
+      return [{
+        primary: aProperty.object,
+        operation: aProperty.property,
+        stat_functions: []
+      }];
+    case ObjectProperty.meanSpotIntensity:
+    case ObjectProperty.spotBackgroundIntensity:
+    case ObjectProperty.correctedSpotIntensity:
+    case ObjectProperty.uncorrectedSpotIntensity:
+    case ObjectProperty.relativeSpotIntensity:
+    case ObjectProperty.spotContrast:
+    case ObjectProperty.area:
+      return [{
+        primary: aProperty.object,
+        operation: aProperty.property,
+        stat_functions: aProperty.stats || AllStats
+      }];
+    case ObjectProperty.relativeSpotsIntensity:
+    case ObjectProperty.totalSpotArea:
+    case ObjectProperty.numberOfSpots:
+    case ObjectProperty.numberOfSpotsPerAreaOf:
+      return aProperty.spots.map(childSpot => ({
+        primary: aProperty.object,
+        secondary: childSpot.name,
+        operation: aProperty.property,
+        stat_functions: aProperty.stats || AllStats
+      }));
+    case ObjectProperty.regionIntensity:
+      return aProperty.parents.map(primary => ({
+        primary: primary,
+        secondary: aProperty.object,
+        operation: aProperty.property,
+        stat_functions: aProperty.stats || AllStats,
+        column_operation_name:
+          `${aProperty.object} - ${primary} ${ObjectPropertyName[aProperty.property]}`
+      }));
+    case ObjectProperty.spotToRegionIntensity:
+      return aProperty.parents.map(primary => ({
+        primary: primary,
+        secondary: aProperty.object,
+        operation: aProperty.property,
+        stat_functions: aProperty.stats || AllStats
+      }));
+    default:
+      return [{
+        primary: aProperty.object,
+        operation: aProperty.property,
+        stat_functions: aProperty.stats || AllStats
+      }];
+  }
+}
+
+/**
  * @param {AnalysisPipeline} pipeline
  * @param {*[]} configurations
  * @returns {*[]}
@@ -193,53 +294,19 @@ export function getSpecs (pipeline, configurations) {
     .map(aConfiguration => {
       return getConfigurationProperties(aConfiguration, pipeline)
         .map((aProperty) => {
-          switch (aProperty.property) {
-            case ObjectProperty.numberOfObjects:
-            case ObjectProperty.meanSpotIntensity:
-            case ObjectProperty.spotBackgroundIntensity:
-            case ObjectProperty.correctedSpotIntensity:
-            case ObjectProperty.uncorrectedSpotIntensity:
-            case ObjectProperty.relativeSpotIntensity:
-            case ObjectProperty.spotContrast:
-            case ObjectProperty.area:
-              return [{
-                primary: aProperty.object,
-                operation: aProperty.property,
-                stat_functions: aProperty.stats || AllStats
-              }];
-            case ObjectProperty.relativeSpotsIntensity:
-            case ObjectProperty.totalSpotArea:
-            case ObjectProperty.numberOfSpots:
-            case ObjectProperty.numberOfSpotsPerAreaOf:
-              return aProperty.spots.map(childSpot => ({
-                primary: aProperty.object,
-                secondary: childSpot.name,
-                operation: aProperty.property,
-                stat_functions: aProperty.stats || AllStats
-              }));
-            case ObjectProperty.regionIntensity:
-              return aProperty.parents.map(primary => ({
-                primary: primary,
-                secondary: aProperty.object,
-                operation: aProperty.property,
-                stat_functions: aProperty.stats || AllStats,
-                column_operation_name:
-                  `${aProperty.object} - ${primary} ${ObjectPropertyName[aProperty.property]}`
-              }));
-            case ObjectProperty.spotToRegionIntensity:
-              return aProperty.parents.map(primary => ({
-                primary: primary,
-                secondary: aProperty.object,
-                operation: aProperty.property,
-                stat_functions: aProperty.stats || AllStats
-              }));
-            default:
-              return [{
-                primary: aProperty.object,
-                operation: aProperty.property,
-                stat_functions: aProperty.stats || AllStats
-              }];
+          if (aProperty.isFormula) {
+            return [{
+              properties: aProperty.variables
+                .map(aVariable => ({
+                  ...(processConfigurationProperty(aVariable) || [])[0],
+                  column_operation_name: aVariable.variable
+                })),
+              expression: aProperty.expression,
+              formula: true,
+              column_operation_name: aProperty.name
+            }];
           }
+          return processConfigurationProperty(aProperty);
         }).reduce((r, c) => ([...r, ...c]), []);
     })
     .reduce((r, c) => ([...r, ...c]), []);

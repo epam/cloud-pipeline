@@ -20,7 +20,7 @@ import {observer} from 'mobx-react';
 import {Button, Icon, Input, Select} from 'antd';
 import classNames from 'classnames';
 import {
-  getObjectProperties,
+  getObjectProperties, ObjectProperty,
   ObjectPropertyName
 } from '../object-properties';
 import {getObjectPropertyFunction, PropertyFunctionNames} from '../property-functions';
@@ -57,6 +57,9 @@ function parseExpression (parts = []) {
       i += 1;
       switch (part.toLowerCase()) {
         case '(':
+          if (result.length > 0 && !result[result.length - 1].operator) {
+            result.push({operator: true, value: '*'});
+          }
           result.push({value: parse(false)});
           break;
         case ')':
@@ -77,13 +80,9 @@ function parseExpression (parts = []) {
           if (e) {
             const number = e[1];
             const variable = e[2];
-            result.push({
-              value: [
-                {value: number},
-                {value: '*', operator: true},
-                {value: variable}
-              ]
-            });
+            result.push({value: number});
+            result.push({value: '*', operator: true});
+            result.push({value: variable});
             variables.add(variable);
           } else {
             result.push({value: part});
@@ -101,7 +100,7 @@ function parseExpression (parts = []) {
     if (typeof parsedExpression === 'string') {
       return true;
     }
-    if (parsedExpression.length < 3 || parsedExpression.length % 2 !== 1) {
+    if (parsedExpression.length % 2 !== 1) {
       throw new Error('Wrong expression');
     }
     if (parsedExpression[0].operator) {
@@ -126,8 +125,17 @@ function parseExpression (parts = []) {
   };
   validate(parsed);
   const extract = (parsedExpression) => {
+    if (typeof parsedExpression === 'string') {
+      return parsedExpression;
+    }
+    if (typeof parsedExpression === 'object' && parsedExpression.value) {
+      return extract(parsedExpression.value);
+    }
     const isArray = o => typeof o !== 'string' && Array.isArray(o);
     const result = [...parsedExpression].map(o => o.value);
+    if (isArray(result) && result.length === 1) {
+      return extract(result[0]);
+    }
     const extractByOperator = (...operator) => {
       const idx = result.findIndex(o => operator.includes(o));
       if (idx > 0) {
@@ -148,7 +156,18 @@ function parseExpression (parts = []) {
     extractByOperator('+', '-');
     return result[0];
   };
-  return {expression: extract(parsed), variables: [...variables]};
+  const wrap = (part) => {
+    if (typeof part === 'string') {
+      return part;
+    }
+    const {
+      left,
+      right,
+      operator
+    } = part;
+    return [wrap(left), operator, wrap(right)];
+  };
+  return {expression: wrap(extract(parsed)), variables: [...variables]};
 }
 
 function parseFormula (formula) {
@@ -170,8 +189,13 @@ function getVariableOptions (pipeline) {
       const hasChild = pipeline.getObjectHasSpots(object);
       const props = getObjectProperties({spot, hasChild});
       return props
-        .map(prop => getObjectPropertyFunction(prop)
-          .map(stat => ({object, property: prop, function: stat})))
+        .map(prop => {
+          if (prop === ObjectProperty.numberOfObjects) {
+            return [{object, property: prop}];
+          }
+          return getObjectPropertyFunction(prop)
+            .map(stat => ({object, property: prop, function: stat}));
+        })
         .reduce((r, c) => ([...r, ...c]), []);
     })
     .reduce((r, c) => ([...r, ...c]), []);
@@ -207,6 +231,7 @@ function OutputFormula (props) {
   };
   const onChangeFormula = (e) => {
     const {
+      expression,
       variables: parsedVariables = [],
       error: parsingError
     } = parseFormula(e.target.value);
@@ -217,8 +242,10 @@ function OutputFormula (props) {
         .reduce((r, c) => ({...r, ...c}), {});
     onChange({
       ...formula,
+      expression,
       variables: newVariables,
-      value: e.target.value
+      value: e.target.value,
+      error: parsingError
     });
   };
   const {error} = parseFormula(value);
