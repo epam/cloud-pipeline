@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageListing;
 import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
@@ -272,6 +273,11 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public PathDescription getDataSize(final AzureBlobStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getAzureStorageHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    @Override
+    public void verifyStoragePolicy(StoragePolicy storagePolicy) {
+        // pass on
     }
 
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {

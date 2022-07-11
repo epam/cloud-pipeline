@@ -21,6 +21,7 @@ import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.re
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -40,6 +41,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicy;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
@@ -55,6 +57,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
@@ -62,18 +65,25 @@ import org.apache.commons.collections4.CollectionUtils;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
+
+    private final Set<StorageClass> ALLOWED_GLACIER_STORAGE_CLASSES = new HashSet<>(
+            Arrays.asList(StorageClass.Glacier, StorageClass.GlacierInstantRetrieval, StorageClass.DeepArchive)
+    );
 
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
@@ -143,7 +153,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public void applyStoragePolicy(S3bucketDataStorage dataStorage) {
+    public void applyStoragePolicy(final S3bucketDataStorage dataStorage) {
         final AwsRegion awsRegion = getAwsRegion(dataStorage);
         final StoragePolicy storagePolicy = buildPolicy(awsRegion, dataStorage.getStoragePolicy());
         getS3Helper(dataStorage).applyStoragePolicy(dataStorage.getRoot(), storagePolicy);
@@ -376,6 +386,30 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).getDataSize(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
+    }
+
+    @Override
+    public void verifyStoragePolicy(final StoragePolicy storagePolicy) {
+        final StorageLifecyclePolicy lifecyclePolicy = storagePolicy.getLifecyclePolicy();
+        if (lifecyclePolicy == null) {
+            return;
+        }
+        ListUtils.emptyIfNull(lifecyclePolicy.getRules()).forEach(rule -> {
+           ListUtils.emptyIfNull(rule.getTransitions()).forEach(transition -> {
+               boolean isCorrectStorageClassType = ALLOWED_GLACIER_STORAGE_CLASSES.stream()
+                       .anyMatch(storageClass -> storageClass.toString().equals(transition.getStorageClass()));
+               if (!isCorrectStorageClassType) {
+                   throw new IllegalArgumentException(
+                           String.format(
+                                   "Wrong StorageClass specified for storage type: %s, allowed values are: %s",
+                                   getStorageType(),
+                                   ALLOWED_GLACIER_STORAGE_CLASSES.stream().map(StorageClass::toString)
+                                           .collect(Collectors.joining(", "))
+                           )
+                   );
+               }
+           });
+        });
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

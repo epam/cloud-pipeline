@@ -525,8 +525,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(BACKUP_DURATION.name(), policy.getBackupDuration());
                 params.addValue(STS_DURATION.name(), policy.getShortTermStorageDuration());
                 params.addValue(LTS_DURATION.name(), policy.getLongTermStorageDuration());
-                params.addValue(LIFECYCLE_POLICY.name(),
-                        JsonMapper.convertDataToJsonStringForQuery(policy.getLifecyclePolicy()));
+                if (policy.getLifecyclePolicy() != null) {
+                    params.addValue(LIFECYCLE_POLICY.name(),
+                            JsonMapper.convertDataToJsonStringForQuery(policy.getLifecyclePolicy()));
+                }
                 params.addValue(INCOMPLETE_UPLOAD_CLEANUP_DAYS.name(), policy.getIncompleteUploadCleanupDays());
             }
         }
@@ -701,7 +703,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 policy.setLongTermStorageDuration(ltsDuration);
             }
             String lifecyclePolicy = rs.getString(LIFECYCLE_POLICY.name());
-            if (!rs.wasNull()) {
+            if (!rs.wasNull() && !lifecyclePolicy.isEmpty()) {
                 policy.setLifecyclePolicy(JsonMapper.parseData(lifecyclePolicy,
                         new TypeReference<StorageLifecyclePolicy>() {}));
             }

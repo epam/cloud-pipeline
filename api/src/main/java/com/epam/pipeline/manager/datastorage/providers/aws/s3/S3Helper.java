@@ -253,27 +253,10 @@ public class S3Helper {
             }
 
             if (policy != null) {
-                rules.addAll(
-                        Optional.ofNullable(policy.getLifecyclePolicy()).map(storageLifecyclePolicy ->
-                            ListUtils.emptyIfNull(storageLifecyclePolicy.getRules())
-                                    .stream()
-                                    .map(storageLifecycleRule ->
-                                            new BucketLifecycleConfiguration.Rule()
-                                                    .withId(storageLifecycleRule.getId())
-                                                    .withTransitions(
-                                                            storageLifecycleRule.getTransitions().stream().map(
-                                                                    trn -> new BucketLifecycleConfiguration.Transition()
-                                                                            .withDays(trn.getTransitionAfterDays())
-                                                                            .withStorageClass(trn.getStorageClass())
-                                                            ).collect(Collectors.toList())
-                                                    )
-                                                    .withFilter(
-                                                            constructS3LifecycleRuleFilter(storageLifecycleRule.getFilter())
-                                                    ).withExpirationInDays(storageLifecycleRule.getExpirationAfterDays())
-                                                    .withStatus(BucketLifecycleConfiguration.ENABLED)
-                                    ).collect(Collectors.toList())
-                        ).orElse(Collections.emptyList())
-                );
+                List<BucketLifecycleConfiguration.Rule> bucketLifecycleRules = buildBucketLifecycleRulesIfAny(policy);
+                if (!bucketLifecycleRules.isEmpty()) {
+                    rules.addAll(bucketLifecycleRules);
+                }
                 if (policy.getIncompleteUploadCleanupDays() != null) {
                     rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
                             policy.getIncompleteUploadCleanupDays()));
@@ -287,20 +270,40 @@ public class S3Helper {
         }
     }
 
-    private LifecycleFilter constructS3LifecycleRuleFilter(
-            final StorageLifecycleRuleFilter filter) {
+    private List<BucketLifecycleConfiguration.Rule> buildBucketLifecycleRulesIfAny(final StoragePolicy policy) {
+        return Optional.ofNullable(policy.getLifecyclePolicy())
+                .map(storageLifecyclePolicy -> ListUtils.emptyIfNull(storageLifecyclePolicy.getRules())
+                        .stream()
+                        .map(storageLifecycleRule ->
+                                new BucketLifecycleConfiguration.Rule()
+                                        .withId(storageLifecycleRule.getId())
+                                        .withTransitions(
+                                                storageLifecycleRule.getTransitions().stream().map(
+                                                        trn -> new BucketLifecycleConfiguration.Transition()
+                                                                .withDays(trn.getTransitionAfterDays())
+                                                                .withStorageClass(trn.getStorageClass())
+                                                ).collect(Collectors.toList())
+                                        )
+                                        .withFilter(
+                                                constructS3LifecycleRuleFilter(storageLifecycleRule.getFilter())
+                                        ).withExpirationInDays(storageLifecycleRule.getExpirationAfterDays())
+                                        .withStatus(BucketLifecycleConfiguration.ENABLED)
+                        ).collect(Collectors.toList()))
+                .orElse(Collections.emptyList());
+    }
 
-        List<LifecycleFilterPredicate> prefixPredicates = ListUtils.emptyIfNull(filter.getPrefixes()).stream()
+    private LifecycleFilter constructS3LifecycleRuleFilter(final StorageLifecycleRuleFilter filter) {
+        final List<LifecycleFilterPredicate> prefixPredicates = ListUtils.emptyIfNull(filter.getPrefixes()).stream()
                 .map(LifecyclePrefixPredicate::new).collect(Collectors.toList());
-        LifecycleAndOperator prefixesPredicate = new LifecycleAndOperator(prefixPredicates);
+        final LifecycleAndOperator prefixesPredicate = new LifecycleAndOperator(prefixPredicates);
 
-        List<LifecycleFilterPredicate> tagPredicates = ListUtils.emptyIfNull(filter.getTags())
+        final List<LifecycleFilterPredicate> tagPredicates = ListUtils.emptyIfNull(filter.getTags())
                 .stream()
                 .map(t -> new Tag(t.getKey(), t.getValue()))
                 .map(LifecycleTagPredicate::new).collect(Collectors.toList());
-        LifecycleAndOperator tagsPredicate = new LifecycleAndOperator(tagPredicates);
+        final LifecycleAndOperator tagsPredicate = new LifecycleAndOperator(tagPredicates);
 
-        LifecycleAndOperator tagAndPrefixPredicate = new LifecycleAndOperator(
+        final LifecycleAndOperator tagAndPrefixPredicate = new LifecycleAndOperator(
                 Arrays.asList(prefixesPredicate, tagsPredicate)
         );
 
