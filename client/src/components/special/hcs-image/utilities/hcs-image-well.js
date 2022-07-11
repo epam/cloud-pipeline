@@ -42,9 +42,17 @@ function getWellCoordinateString (coordinate, dimension) {
  * @typedef {Object} WellField
  * @property {string|number} x
  * @property {string|number} y
+ * @property {string|number} width
+ * @property {string|number} height
+ * @property {string|number} depth
  * @property {string|number} id
  * @property {number} fieldID
  * @property {number} wellID
+ * @property {string[]} channels
+ * @property {number} physicalSize
+ * @property {string} unit
+ * @property {number} physicalDepthSize
+ * @property {string} depthUnit
  */
 
 /**
@@ -116,7 +124,9 @@ class HCSImageWell {
         ...parsed,
         id: (images || {})[key],
         x: parsed.x,
-        y: parsed.y
+        y: parsed.y,
+        unit: 'px',
+        physicalSize: 1
       }));
     /**
      * Well overview image id

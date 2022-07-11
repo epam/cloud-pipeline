@@ -14,8 +14,9 @@
  *  limitations under the License.
  */
 
+import {fetchSourceInfo} from '../hcs-image-viewer';
 import * as HCSConstants from './constants';
-import HCSImageWell from './hcs-image-well';
+import HCSImageWell, {getImageInfoFromName} from './hcs-image-well';
 
 /**
  * @typedef {Object} HCSTimeSeries
@@ -83,6 +84,7 @@ class HCSImageSequence {
     this.error = undefined;
     this.omeTiff = undefined;
     this.offsetsJson = undefined;
+    this.metadata = [];
   }
 
   fetch () {
@@ -140,6 +142,58 @@ class HCSImageSequence {
       .catch(() => {});
     return promise;
   }
+
+  fetchMetadata = () => {
+    if (!this.metadataPromise) {
+      this.metadataPromise = new Promise((resolve) => {
+        Promise.all([
+          this.generateOMETiffURL(),
+          this.generateOffsetsJsonURL()
+        ])
+          .then(() => {
+            if (this.omeTiff && this.offsetsJson) {
+              return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
+            }
+            return Promise.resolve();
+          })
+          .then(array => {
+            this.metadata = array.map(item => item.metadata);
+            this.wells.forEach(well => {
+              const {images = []} = well;
+              images.forEach(image => {
+                const {id} = image;
+                const metadata = this.metadata.find(o => o.ID === id);
+                image.metadata = metadata;
+                if (metadata && metadata.Name) {
+                  const {
+                    field: fieldID,
+                    well: wellID
+                  } = getImageInfoFromName(metadata.Name);
+                  image.wellID = wellID;
+                  image.fieldID = fieldID;
+                }
+                if (metadata && metadata.Pixels) {
+                  image.width = metadata.Pixels.SizeX;
+                  image.height = metadata.Pixels.SizeY;
+                  image.depth = metadata.Pixels.SizeZ || 1;
+                  image.physicalSize = metadata.Pixels.PhysicalSizeX || 1;
+                  image.unit = metadata.Pixels.PhysicalSizeXUnit || 'px';
+                  image.physicalDepthSize = metadata.Pixels.PhysicalSizeZ || 1;
+                  image.depthUnit = metadata.Pixels.PhysicalSizeZUnit || '';
+                }
+                if (metadata && metadata.Pixels && metadata.Pixels.Channels) {
+                  image.channels = metadata.Pixels.Channels.map(o => o.Name);
+                }
+              });
+            });
+            resolve(this.metadata);
+          })
+          .catch(() => {
+          });
+      });
+    }
+    return this.metadataPromise;
+  };
 
   generateOverviewOMETiffURL () {
     const promise = this.objectStorage

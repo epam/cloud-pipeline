@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Slider} from 'antd';
-import {inject, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 
 import {MAX_Z_POSITIONS_TO_DISPLAY} from '../utilities/constants';
 import styles from './hcs-z-position-selector.css';
@@ -34,20 +34,50 @@ function zPositionSorter (a, b) {
   return a.z - b.z;
 }
 
+function buildZPositionsArray (max, zSize, zUnit) {
+  const basePower = Math.floor(Math.log10(zSize || 1));
+  const base = 10 ** basePower;
+  const decimalDigits = 2;
+  const format = o => {
+    const rounded = Math.round(o / base * (10 ** decimalDigits)) / (10 ** decimalDigits);
+    const postfix = basePower !== 0 ? `e${basePower}` : '';
+    return [
+      `${rounded}${postfix}`,
+      zUnit
+    ].filter(Boolean).join('');
+  };
+  return (new Array(max))
+    .fill('')
+    .map((o, z) => ({
+      z,
+      title: format((z + 1) * zSize)
+    }));
+}
+
 function HcsZPositionSelector (props) {
   const {
     className,
     type = SelectorType.horizontal,
-    hcsViewerState
+    image,
+    selection = [0],
+    onChange
   } = props;
-  if (!hcsViewerState) {
+  if (!image) {
     return null;
   }
   const {
-    availableZPositions: positions = [],
-    imageZPosition: value
-  } = hcsViewerState;
-  const onChange = z => hcsViewerState.changeGlobalZPosition(z);
+    depth = 1,
+    physicalDepthSize = 1,
+    depthUnit = ''
+  } = image;
+  const positions = buildZPositionsArray(depth, physicalDepthSize, depthUnit);
+  const [value] = selection;
+  const onChangeWrapper = z => {
+    // todo: multiple
+    if (typeof onChange === 'function') {
+      onChange([z]);
+    }
+  };
   if (positions.length > 1) {
     const sorted = positions
       .slice()
@@ -117,7 +147,7 @@ function HcsZPositionSelector (props) {
             max={max}
             min={min}
             step={1}
-            onChange={onChange}
+            onChange={onChangeWrapper}
             tipFormatter={tipFormatter}
           />
         </div>
@@ -132,15 +162,18 @@ HcsZPositionSelector.propTypes = {
   type: PropTypes.oneOf([
     SelectorType.vertical,
     SelectorType.horizontal
-  ])
+  ]),
+  image: PropTypes.object,
+  selection: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.arrayOf(PropTypes.number)
+  ]),
+  onChange: PropTypes.func,
+  multiple: PropTypes.bool
 };
 
 HcsZPositionSelector.defaultProps = {
   type: SelectorType.horizontal
 };
 
-const selector = inject('hcsViewerState')(observer(HcsZPositionSelector));
-
-selector.Type = SelectorType;
-
-export default selector;
+export default observer(HcsZPositionSelector);
