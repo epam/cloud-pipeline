@@ -45,6 +45,8 @@ def create_pipeline():
         measurement_uuid = flask.request.args.get("measurementUUID")
         if not measurement_uuid:
             raise RuntimeError("Parameter 'measurementUUID' must be specified.")
+        # To address older hcs files, which contained "s3://<bucket>/..." as a measurement id
+        measurement_uuid = measurement_uuid.split('/')[-1]
         pipeline_id = manager.create_pipeline(measurement_uuid)
         return jsonify(success({"pipelineId": pipeline_id}))
     except Exception as e:

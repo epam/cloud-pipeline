@@ -6,7 +6,7 @@ from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
 class CalculationSpec(object):
     _SINGLE_OBJECT_OPERATIONS = ['Number of Objects', 'Mean Intensity', 'Background Intensity', 'Corrected Intensity',
                                  'Relative Object Intensity', 'Uncorrected Peak Intensity', 'Contrast', 'Area',
-                                 'Region Intensity', 'To Region Intensity']
+                                 'Region Intensity']
 
     def __init__(self, primary, operation, secondary=None, stat_functions=None, column_operation_name=None):
         self.primary = primary
@@ -14,6 +14,7 @@ class CalculationSpec(object):
         self.stat_functions = stat_functions if stat_functions is not None else []
         self.secondary = secondary
         self.column_operation_name = column_operation_name
+        self.formula = False
 
     @staticmethod
     def from_json(json: dict):
@@ -22,7 +23,7 @@ class CalculationSpec(object):
                                column_operation_name=json.get('column_operation_name'))
 
     def to_json(self):
-        json = {'primary': self.primary, 'operation': self.operation}
+        json = {'primary': self.primary, 'operation': self.operation, 'formula': False}
         if len(self.stat_functions) > 0:
             json['stat_functions'] = self.stat_functions
         if self.secondary is not None:
@@ -33,6 +34,41 @@ class CalculationSpec(object):
 
     def requires_secondary(self):
         return self.operation not in self._SINGLE_OBJECT_OPERATIONS
+
+
+class FormulaSpec(object):
+
+    def __init__(self, expression, properties, column_operation_name):
+        self.expression = expression if expression is not None else []
+        properties_array = properties if properties is not None else []
+        self.properties = [CalculationSpec.from_json(x) for x in properties_array]
+        self.column_operation_name = column_operation_name
+        self.formula = True
+
+    @staticmethod
+    def from_json(json: dict):
+        return FormulaSpec(json.get('expression'), json.get('properties'), json.get('column_operation_name'))
+
+    def to_json(self):
+        json = {'formula': True}
+        if len(self.expression) > 0:
+            json['expression'] = self.expression
+        if self.properties is not None:
+            json['properties'] = [x.to_json() for x in self.properties]
+        if self.column_operation_name is not None:
+            json['column_operation_name'] = self.column_operation_name
+        return json
+
+
+class SpecItem(object):
+
+    @staticmethod
+    def from_json(json: dict):
+        if json is None:
+            return None
+        if json.get('formula') is True:
+            return FormulaSpec.from_json(json)
+        return CalculationSpec.from_json(json)
 
 
 class DefineResults(ExportToSpreadsheet):
@@ -78,40 +114,95 @@ class DefineResults(ExportToSpreadsheet):
         result_dataframe = self.calculate_results()
         result_dataframe.to_csv(self._build_object_csv_path('Results'))
 
+    def _do_operation(self, spec: CalculationSpec, result_data_dict):
+        operation = spec.operation
+        if operation == 'Number of Objects':
+            self._process_number_of_objects(result_data_dict, spec)
+        elif operation == 'Total Area':
+            self._process_total_area(result_data_dict, spec)
+        elif operation == 'Relative Intensity':
+            self._process_relative_intensity(result_data_dict, spec)
+        elif operation == 'Number of':
+            self._process_column_from_primary_dataframe(result_data_dict, spec, self._children_count_column(spec))
+        elif operation == 'Number of per Area':
+            self._process_number_of_secondary_per_area(result_data_dict, spec)
+        elif operation == 'Mean Intensity':
+            self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MEAN_INTENSITY)
+        elif operation == 'Background Intensity':
+            self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MEAN_EDGE_INTENSITY)
+        elif operation == 'Corrected Intensity':
+            self._process_corrected_intensity(result_data_dict, spec)
+        elif operation == 'Relative Object Intensity':
+            self._process_relative_object_intensity(result_data_dict, spec)
+        elif operation == 'Uncorrected Peak Intensity':
+            self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MAX_INTENSITY)
+        elif operation == 'Contrast':
+            self._process_contrast(result_data_dict, spec)
+        elif operation == 'Area':
+            self._process_column_from_primary_dataframe(result_data_dict, spec, self._AREA_SHAPE_AREA)
+        elif operation == 'Region Intensity':
+            self._process_region_intensity(result_data_dict, spec)
+        elif operation == 'To Region Intensity':
+            self._process_secondary_to_primary_region_intensity(result_data_dict, spec)
+        else:
+            raise RuntimeError('Unsupported operation [{}]'.format(operation))
+
+    def _do_formula(self, spec: FormulaSpec, result_data_dict):
+        local_data_dict = {}
+        variables_dict = {}
+        for prop in spec.properties:
+            self._do_operation(prop, local_data_dict)
+            if prop.column_operation_name is not None:
+                if len(prop.stat_functions) == 1:
+                    variables_dict[prop.column_operation_name] = self._build_feature_name(prop, prop.stat_functions[0])
+                else:
+                    variables_dict[prop.column_operation_name] = self._build_feature_name(prop)
+        def _is_float(o):
+            try:
+                float(o)
+                return True
+            except Exception as e:
+                return False
+        def _process_formula(dataset, expression):
+            if isinstance(expression, list) and len(expression) == 1:
+                return _process_formula(dataset, expression[0])
+            if isinstance(expression, list) and len(expression) == 3:
+                left, operator, right = expression
+                left_value = _process_formula(dataset, left)
+                right_value = _process_formula(dataset, right)
+                if left_value is None or right_value is None:
+                    return None
+                if operator == '*':
+                    return left_value * right_value
+                elif operator == '/':
+                    if right_value == 0:
+                        return None
+                    return left_value / right_value
+                elif operator == '-':
+                    return left_value - right_value
+                elif operator == '+':
+                    return left_value + right_value
+                elif operator == '^':
+                    return pow(left_value, right_value)
+                else:
+                    raise RuntimeError('Unsupported operator [{}]'.format(operator))
+            elif _is_float(expression):
+                return float(expression)
+            elif isinstance(expression, str):
+                return float(dataset[variables_dict[expression]])
+            else:
+                raise RuntimeError('Unsupported expression {}'.format(expression))
+        for group_name, group_calculation_results in local_data_dict.items():
+            value = _process_formula(group_calculation_results, spec.expression)
+            self._append_spec_value_to_results(result_data_dict, group_name, spec.column_operation_name, value)
+
     def calculate_results(self):
         result_data_dict = {}
         for spec in self._calculation_specs:
-            operation = spec.operation
-            if operation == 'Number of Objects':
-                self._process_number_of_objects(result_data_dict, spec)
-            elif operation == 'Total Area':
-                self._process_total_area(result_data_dict, spec)
-            elif operation == 'Relative Intensity':
-                self._process_relative_intensity(result_data_dict, spec)
-            elif operation == 'Number of':
-                self._process_column_from_primary_dataframe(result_data_dict, spec, self._children_count_column(spec))
-            elif operation == 'Number of per Area':
-                self._process_number_of_secondary_per_area(result_data_dict, spec)
-            elif operation == 'Mean Intensity':
-                self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MEAN_INTENSITY)
-            elif operation == 'Background Intensity':
-                self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MEAN_EDGE_INTENSITY)
-            elif operation == 'Corrected Intensity':
-                self._process_corrected_intensity(result_data_dict, spec)
-            elif operation == 'Relative Object Intensity':
-                self._process_relative_object_intensity(result_data_dict, spec)
-            elif operation == 'Uncorrected Peak Intensity':
-                self._process_intensity_column_from_primary_dataframe(result_data_dict, spec, self._MAX_INTENSITY)
-            elif operation == 'Contrast':
-                self._process_contrast(result_data_dict, spec)
-            elif operation == 'Area':
-                self._process_column_from_primary_dataframe(result_data_dict, spec, self._AREA_SHAPE_AREA)
-            elif operation == 'Region Intensity':
-                self._process_region_intensity(result_data_dict, spec)
-            elif operation == 'To Region Intensity':
-                self._process_secondary_to_primary_region_intensity(result_data_dict, spec)
+            if spec.formula:
+                self._do_formula(spec, result_data_dict)
             else:
-                raise RuntimeError('Unsupported operation [{}]'.format(operation))
+                self._do_operation(spec, result_data_dict)
         result_index = list()
         result_data_list = list()
         for group_name, group_calculation_results in result_data_dict.items():
@@ -128,7 +219,7 @@ class DefineResults(ExportToSpreadsheet):
         object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
         grouping_datasets_dictionary = self._build_groupings(object_dataframe)
         for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
-            value = int(grouping_dataframe.get('ObjectNumber').max())
+            value = int(grouping_dataframe.get('ObjectNumber').count())
             feature_name = self._build_feature_name(spec)
             self._append_spec_value_to_results(result_data_dict, grouping_value, feature_name, value)
 
@@ -267,7 +358,15 @@ class DefineResults(ExportToSpreadsheet):
         if spec.column_operation_name is not None:
             name = spec.column_operation_name
         elif spec.requires_secondary():
-            name = '{} - {},{}'.format(spec.primary, spec.secondary, spec.operation)
+            name = '{} - '.format(spec.primary)
+            if spec.operation == 'Total Area' or spec.operation == 'Relative Intensity':
+                name = name + '{} of {}'.format(spec.operation, spec.secondary)
+            elif spec.operation == 'Number of':
+                name = name + '{} {}'.format(spec.operation, spec.secondary)
+            elif spec.operation == 'Number of per Area':
+                name = name + 'Number of {} per Area'.format(spec.secondary)
+            else:
+                name = '{} - {} To {} Region Intensity'.format(spec.secondary, spec.secondary, spec.primary)
         else:
             name = '{} - {}'.format(spec.primary, spec.operation)
         if stat_func_name is not None:
@@ -291,7 +390,7 @@ class DefineResults(ExportToSpreadsheet):
     def _calculate_frame_corrected_intensity(self, grouping_dataframe, intensity_channel_name):
         mean_intensity_dataseries = grouping_dataframe.get(self._MEAN_INTENSITY + intensity_channel_name)
         background_intensity_dataseries = grouping_dataframe.get(self._MEAN_EDGE_INTENSITY + intensity_channel_name)
-        return mean_intensity_dataseries / background_intensity_dataseries
+        return mean_intensity_dataseries - background_intensity_dataseries
 
     def _process_corrected_intensity(self, result_data_dict, spec):
         self._process_primary_object_intensity(result_data_dict, spec, self._calculate_frame_corrected_intensity)
@@ -331,8 +430,8 @@ class DefineResults(ExportToSpreadsheet):
         mean_intensity_column = self._MEAN_INTENSITY + intensity_channel_name
         primary_object_dataframe = primary_object_dataframe[primary_object_dataframe[self._children_count_column(spec)] != 0]
         primary_objects_intensities = {}
-        for row in primary_object_dataframe.itertuples():
-            region_intensity = getattr(row, mean_intensity_column)
+        for idx, row in primary_object_dataframe.iterrows():
+            region_intensity = row[mean_intensity_column] 
             primary_objects_intensities['{}-{}'.format(row.ImageNumber, row.ObjectNumber)] = region_intensity
         secondary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.secondary))
         grouping_datasets_dictionary = self._build_groupings(secondary_object_dataframe)
