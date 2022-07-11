@@ -87,6 +87,10 @@ from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Di
 from .modules.define_results import DefineResults, CalculationSpec
 
 
+BATCH_ENABLED = os.getenv('CELLPROFILER_API_BATCH_SPEC_FILE', None)
+RESULTS_DIR = os.getenv('CELLPROFILER_API_BATCH_RESULTS_DIR', None)
+
+
 class HcsModulesFactory(object):
 
     def __init__(self, pipeline_output_dir):
@@ -549,7 +553,11 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         return settings
 
     def generated_params(self):
-        return {'Output file location': self._output_location(),
+        if BATCH_ENABLED and RESULTS_DIR:
+            results_location = 'Elsewhere...|' + RESULTS_DIR
+        else:
+            results_location = self._output_location()
+        return {'Output file location': results_location,
                 'Add a prefix to file names?': 'No',
                 'Overwrite existing files without warning?': 'Yes',
                 'Add image metadata columns to your object data file?': 'Yes'}
