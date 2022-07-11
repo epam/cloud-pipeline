@@ -524,12 +524,6 @@ public class SystemPreferences {
     /**
      * Controls maximum number of active runs for specific user/group
      */
-    public static final IntPreference LAUNCH_MAX_RUNS_USER_LIMIT = new IntPreference(
-        "launch.max.runs.user", null, LAUNCH_GROUP, isGreaterThan(0));
-
-    public static final IntPreference LAUNCH_MAX_RUNS_GROUP_LIMIT = new IntPreference(
-        "launch.max.runs.group", null, LAUNCH_GROUP, isGreaterThan(0));
-
     public static final ObjectPreference<Integer> LAUNCH_MAX_RUNS_USER_GLOBAL_LIMIT = new ObjectPreference<>(
         "launch.max.runs.user.global", null, new TypeReference<Integer>() {},
         LAUNCH_GROUP, isNullOrGreaterThan(0));
