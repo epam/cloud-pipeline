@@ -17,8 +17,9 @@ FROM registry:2
 ADD update_config.sh /update_config.sh
 RUN chmod +x /update_config.sh
 
-RUN apk add nginx gettext && \
-    mkdir /run/nginx
+RUN apk add nginx \
+            gettext && \
+    mkdir -p /run/nginx
 ADD update_nginx_config.sh /update_nginx_config.sh
 RUN chmod +x /update_nginx_config.sh
 
