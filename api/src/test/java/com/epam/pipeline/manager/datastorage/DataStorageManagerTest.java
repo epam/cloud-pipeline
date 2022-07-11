@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.AbstractSpringTest;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
@@ -25,6 +26,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecyclePolicy;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRule;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRuleTransition;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -53,6 +57,7 @@ import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.util.TestUtils;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
 import org.junit.Before;
@@ -113,6 +118,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public static final String DAV_MOUNT_TAG = "dav-mount";
     public static final long SECS_IN_HOUR = 3600L;
     public static final long SECS_IN_MIN = 60L;
+    public static final String EMPTY_STORAGE_LIFECYCLE_POLICY = StringUtils.EMPTY;
 
 
     @Mock
@@ -174,7 +180,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public void testAddRelationForDataStorageAndToolVersion() {
         final Tool tool = createTool();
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         storageVO.setToolsToMount(
                 Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
@@ -214,7 +220,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public void testCantAddRelationForDataStorageAndToolVersionIfItDoesNotExists() {
         final Tool tool = createTool();
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         storageVO.setToolsToMount(
                 Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
@@ -234,7 +240,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersions() {
         final Tool tool = createTool();
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         storageVO.setToolsToMount(
                     Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
@@ -261,7 +267,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     public void testRelationForDataStorageAndToolVersionIsRemovedWhenDeleteToolVersion() {
         final Tool tool = createTool();
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         storageVO.setToolsToMount(
                 Collections.singletonList(ToolFingerprint.builder().id(tool.getId())
@@ -328,7 +334,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void saveDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
@@ -337,11 +344,72 @@ public class DataStorageManagerTest extends AbstractSpringTest {
 
     @Test
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void saveDataStorageSucceedIfLifecyclePolicyCorrectTest() {
+        S3StorageLifecyclePolicy lifecyclePolicy = S3StorageLifecyclePolicy.builder()
+                .rules(
+                        Collections.singletonList(S3StorageLifecycleRule.builder().expirationAfterDays(25)
+                                .transitions(
+                                    Arrays.asList(
+                                            S3StorageLifecycleRuleTransition.builder()
+                                                .transitionAfterDays(1)
+                                                .storageClass("GLACIER_IR").build(),
+                                            S3StorageLifecycleRuleTransition.builder()
+                                                    .transitionAfterDays(2)
+                                                    .storageClass("GLACIER").build(),
+                                            S3StorageLifecycleRuleTransition.builder()
+                                                    .transitionAfterDays(3)
+                                                    .storageClass("DEEP_ARCHIVE").build()
+                                    )
+                                ).build())
+                ).build();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION,
+                JsonMapper.convertDataToJsonStringForQuery(lifecyclePolicy),
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage storage = storageManager.create(storageVO, false, false, false).getEntity();
+        AbstractDataStorage loaded = storageManager.load(storage.getId());
+        Assert.assertEquals(storage, loaded);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void saveDataStorageFailIfLifecyclePolicyIsntCorrectTest() {
+        S3StorageLifecyclePolicy lifecyclePolicy = S3StorageLifecyclePolicy.builder()
+                .rules(
+                        Collections.singletonList(S3StorageLifecycleRule.builder().transitions(
+                                Collections.singletonList(S3StorageLifecycleRuleTransition.builder()
+                                        .transitionAfterDays(1)
+                                        .storageClass("ABRACADABRA").build())
+                        ).build())
+                ).build();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, JsonMapper.convertDataToJsonStringForQuery(lifecyclePolicy),
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageManager.create(storageVO, false, false, false);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void saveDataStorageFailIfLifecyclePolicyExpirationDateIsntCorrectTest() {
+        S3StorageLifecyclePolicy lifecyclePolicy = S3StorageLifecyclePolicy.builder()
+                .rules(
+                        Collections.singletonList(S3StorageLifecycleRule.builder().expirationAfterDays(-1).build())
+                ).build();
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, JsonMapper.convertDataToJsonStringForQuery(lifecyclePolicy),
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        storageManager.create(storageVO, false, false, false);
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void existsDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                                                                            PATH, STS_DURATION, LTS_DURATION,
-                                                                            WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
-                                                                            TEST_MOUNT_OPTIONS);
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         Assert.assertTrue(storageManager.exists(saved.getId()));
     }
@@ -350,7 +418,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void loadByIdsDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         storageVO.setName(storageVO.getName() + UUID.randomUUID());
@@ -373,7 +442,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void requestDavMountByIdsDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
@@ -389,7 +459,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void failToRequestForSmallerTimeDavMountIfAlreadyExistsTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
@@ -407,7 +478,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void successToRequestForBiggerTimeDavMountIfAlreadyExistsTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
@@ -431,7 +503,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void callOffRequestDavMountByIdsDataStorageTest() throws Exception {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
@@ -457,8 +530,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         folderManager.create(folder);
 
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION,
-                DataStorageType.S3, PATH, STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT,
-                                                                            TEST_MOUNT_OPTIONS
+                DataStorageType.S3, PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
 
@@ -575,7 +648,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         preferenceManager.update(Collections.singletonList(preference));
 
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         storageVO.setShared(true);
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
@@ -587,7 +661,8 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void testFailToGenerateSharedURLForNotSharedStorage() {
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                PATH, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
+                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         storageManager.generateSharedUrlForStorage(saved.getId());
@@ -614,7 +689,7 @@ public class DataStorageManagerTest extends AbstractSpringTest {
                                                                             DESCRIPTION, DataStorageType.S3,
                                                                             expectedDefaultUserStorageName,
                                                                             STS_DURATION, LTS_DURATION,
-                                                                            WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
+                EMPTY_STORAGE_LIFECYCLE_POLICY, WITHOUT_PARENT_ID, TEST_MOUNT_POINT,
                                                                             TEST_MOUNT_OPTIONS);
         storageManager.create(storageVO, false, false, false);
         Assert.assertFalse(storageManager.createDefaultStorageForUser(NAME).isPresent());

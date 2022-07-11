@@ -69,6 +69,7 @@ import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
@@ -84,10 +85,12 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleFilter;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecyclePolicy;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRuleFilter;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.primitives.SignedBytes;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -253,10 +256,7 @@ public class S3Helper {
             }
 
             if (policy != null) {
-                List<BucketLifecycleConfiguration.Rule> bucketLifecycleRules = buildBucketLifecycleRulesIfAny(policy);
-                if (!bucketLifecycleRules.isEmpty()) {
-                    rules.addAll(bucketLifecycleRules);
-                }
+                S3LifecyclePolicyUtils.buildBucketLifecycleRulesIfAny(policy).ifPresent(rules::addAll);
                 if (policy.getIncompleteUploadCleanupDays() != null) {
                     rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
                             policy.getIncompleteUploadCleanupDays()));
@@ -268,46 +268,6 @@ public class S3Helper {
         } catch (AmazonS3Exception e) {
             LOGGER.error("Bucket Lifecycle configuration is not available for this account");
         }
-    }
-
-    private List<BucketLifecycleConfiguration.Rule> buildBucketLifecycleRulesIfAny(final StoragePolicy policy) {
-        return Optional.ofNullable(policy.getLifecyclePolicy())
-                .map(storageLifecyclePolicy -> ListUtils.emptyIfNull(storageLifecyclePolicy.getRules())
-                        .stream()
-                        .map(storageLifecycleRule ->
-                                new BucketLifecycleConfiguration.Rule()
-                                        .withId(storageLifecycleRule.getId())
-                                        .withTransitions(
-                                                storageLifecycleRule.getTransitions().stream().map(
-                                                        trn -> new BucketLifecycleConfiguration.Transition()
-                                                                .withDays(trn.getTransitionAfterDays())
-                                                                .withStorageClass(trn.getStorageClass())
-                                                ).collect(Collectors.toList())
-                                        )
-                                        .withFilter(
-                                                constructS3LifecycleRuleFilter(storageLifecycleRule.getFilter())
-                                        ).withExpirationInDays(storageLifecycleRule.getExpirationAfterDays())
-                                        .withStatus(BucketLifecycleConfiguration.ENABLED)
-                        ).collect(Collectors.toList()))
-                .orElse(Collections.emptyList());
-    }
-
-    private LifecycleFilter constructS3LifecycleRuleFilter(final StorageLifecycleRuleFilter filter) {
-        final List<LifecycleFilterPredicate> prefixPredicates = ListUtils.emptyIfNull(filter.getPrefixes()).stream()
-                .map(LifecyclePrefixPredicate::new).collect(Collectors.toList());
-        final LifecycleAndOperator prefixesPredicate = new LifecycleAndOperator(prefixPredicates);
-
-        final List<LifecycleFilterPredicate> tagPredicates = ListUtils.emptyIfNull(filter.getTags())
-                .stream()
-                .map(t -> new Tag(t.getKey(), t.getValue()))
-                .map(LifecycleTagPredicate::new).collect(Collectors.toList());
-        final LifecycleAndOperator tagsPredicate = new LifecycleAndOperator(tagPredicates);
-
-        final LifecycleAndOperator tagAndPrefixPredicate = new LifecycleAndOperator(
-                Arrays.asList(prefixesPredicate, tagsPredicate)
-        );
-
-        return new LifecycleFilter().withPredicate(tagAndPrefixPredicate);
     }
 
     private void enableBucketEncryption(AmazonS3 s3client, String bucketName, String kmsDataEncryptionKeyId) {

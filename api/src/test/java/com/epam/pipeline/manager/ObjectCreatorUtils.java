@@ -47,6 +47,7 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,7 +70,8 @@ public final class ObjectCreatorUtils {
 
     public static DataStorageVO constructDataStorageVO(String name, String description, DataStorageType storageType,
                                                        String path, Integer stsDuration, Integer ltsDuration,
-                                                       Long parentFolderId, String mountPoint, String mountOptions) {
+                                                       String lifecyclePolicy, Long parentFolderId, String mountPoint,
+                                                       String mountOptions) {
         DataStorageVO storageVO = constructDataStorageVO(name, description, storageType, path, parentFolderId,
                 mountPoint, mountOptions);
 
@@ -79,6 +81,9 @@ public final class ObjectCreatorUtils {
         }
         if (ltsDuration != null) {
             policy.setLongTermStorageDuration(ltsDuration);
+        }
+        if (!StringUtils.isEmpty(lifecyclePolicy)) {
+            policy.setStorageLifecyclePolicy(lifecyclePolicy);
         }
         storageVO.setStoragePolicy(policy);
 

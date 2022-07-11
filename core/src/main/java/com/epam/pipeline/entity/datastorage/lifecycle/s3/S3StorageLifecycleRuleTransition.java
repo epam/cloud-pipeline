@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.entity.datastorage.lifecycle.s3;
 
 import lombok.Builder;
 import lombok.Value;
 
-import java.util.List;
-
 @Value
 @Builder
-public class StorageLifecyclePolicy {
-    List<StorageLifecycleRule> rules;
+public class S3StorageLifecycleRuleTransition {
+    Integer transitionAfterDays;
+    String storageClass;
 }

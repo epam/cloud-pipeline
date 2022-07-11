@@ -41,7 +41,8 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicy;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecyclePolicy;
+import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRuleTransition;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.VersioningAwareRegion;
 import com.epam.pipeline.manager.cloud.aws.AWSUtils;
@@ -62,6 +63,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -390,10 +392,26 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public void verifyStoragePolicy(final StoragePolicy storagePolicy) {
-        final StorageLifecyclePolicy lifecyclePolicy = storagePolicy.getLifecyclePolicy();
+        final S3StorageLifecyclePolicy lifecyclePolicy = JsonMapper.parseData(storagePolicy.getStorageLifecyclePolicy(),
+                new TypeReference<S3StorageLifecyclePolicy>() {});
         if (lifecyclePolicy == null) {
             return;
         }
+
+        ListUtils.emptyIfNull(lifecyclePolicy.getRules()).forEach(rule -> {
+            Assert.hasLength(rule.getId(), "Lifecycle rule should have an ID!");
+            Assert.isTrue(rule.getExpirationAfterDays() == null
+                    || rule.getExpirationAfterDays() >= 0, "expirationAfterDays should be > 0");
+            List<S3StorageLifecycleRuleTransition> transitions = rule.getTransitions();
+            if (!CollectionUtils.isEmpty(transitions)) {
+                transitions.forEach(t -> {
+                    Assert.isTrue(t.getTransitionAfterDays() != null, "transitionAfterDays should be present");
+                    Assert.isTrue(t.getTransitionAfterDays() >= 0, "transitionAfterDays should be > 0");
+                    Assert.hasLength(t.getStorageClass(), "Transition storageClass should be present!");
+                });
+            }
+        });
+
         ListUtils.emptyIfNull(lifecyclePolicy.getRules()).forEach(rule -> {
            ListUtils.emptyIfNull(rule.getTransitions()).forEach(transition -> {
                boolean isCorrectStorageClassType = ALLOWED_GLACIER_STORAGE_CLASSES.stream()

@@ -27,7 +27,6 @@ import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.azure.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.gcp.GSBucketStorage;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicy;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.ToolFingerprint;
@@ -525,9 +524,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 params.addValue(BACKUP_DURATION.name(), policy.getBackupDuration());
                 params.addValue(STS_DURATION.name(), policy.getShortTermStorageDuration());
                 params.addValue(LTS_DURATION.name(), policy.getLongTermStorageDuration());
-                if (policy.getLifecyclePolicy() != null) {
-                    params.addValue(LIFECYCLE_POLICY.name(),
-                            JsonMapper.convertDataToJsonStringForQuery(policy.getLifecyclePolicy()));
+                if (policy.getStorageLifecyclePolicy() != null) {
+                    params.addValue(LIFECYCLE_POLICY.name(), policy.getStorageLifecyclePolicy());
                 }
                 params.addValue(INCOMPLETE_UPLOAD_CLEANUP_DAYS.name(), policy.getIncompleteUploadCleanupDays());
             }
@@ -703,9 +701,8 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
                 policy.setLongTermStorageDuration(ltsDuration);
             }
             String lifecyclePolicy = rs.getString(LIFECYCLE_POLICY.name());
-            if (!rs.wasNull() && !lifecyclePolicy.isEmpty()) {
-                policy.setLifecyclePolicy(JsonMapper.parseData(lifecyclePolicy,
-                        new TypeReference<StorageLifecyclePolicy>() {}));
+            if (!rs.wasNull()) {
+                policy.setStorageLifecyclePolicy(lifecyclePolicy);
             }
             int incompleteUploadCleanupDays = rs.getInt(INCOMPLETE_UPLOAD_CLEANUP_DAYS.name());
             if (!rs.wasNull()) {
