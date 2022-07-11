@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-export function getWellMesh (well) {
+export function getWellMesh (well, fields = []) {
   if (!well) {
     return undefined;
   }
@@ -30,7 +30,8 @@ export function getWellMesh (well) {
   return {
     columns: longestSeries,
     rows: longestSeries,
-    cells: images.map(image => ({column: image.x - minX, row: maxY - image.y}))
+    cells: images.map(image => ({column: image.x - minX, row: maxY - image.y})),
+    selected: fields.map(image => ({column: image.x - minX, row: maxY - image.y}))
   };
 }
 

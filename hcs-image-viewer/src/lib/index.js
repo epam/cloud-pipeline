@@ -16,5 +16,6 @@
 
 import Viewer from './viewer';
 import * as constants from './state/constants';
+import { fetchSourceInfo } from './state/utilities/fetch-source-info';
 
-export { Viewer, constants };
+export { Viewer, constants, fetchSourceInfo };

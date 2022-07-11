@@ -15,7 +15,7 @@
  */
 
 const HcsImageViewer = window.HcsImageViewer;
-const {Viewer, constants = {}} = HcsImageViewer || {};
+const {Viewer, constants = {}, fetchSourceInfo} = HcsImageViewer || {};
 
-export {Viewer, constants};
+export {Viewer, constants, fetchSourceInfo};
 export default Viewer;
