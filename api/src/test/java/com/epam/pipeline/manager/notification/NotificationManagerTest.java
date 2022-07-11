@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
                 HIGH_CONSUMED_RESOURCES.getDefaultThreshold(), HIGH_CONSUMED_RESOURCES.getDefaultResendDelay());
 
         longRunnging = new PipelineRun();
-        DateTime date = DateTime.now(DateTimeZone.UTC).minus(LONG_RUNNING_DURATION);
+        final DateTime date = DateTime.now(DateTimeZone.UTC).minus(LONG_RUNNING_DURATION);
         longRunnging.setStartDate(date.toDate());
         longRunnging.setStatus(TaskStatus.RUNNING);
         longRunnging.setOwner(admin.getUserName());
@@ -233,19 +233,19 @@ public class NotificationManagerTest extends AbstractManagerTest {
         when(pipelineRunManager.loadPipelineRun(org.mockito.Matchers.any())).thenReturn(longRunnging);
         when(kubernetesManager.getKubernetesClient()).thenReturn(mockClient);
 
-        ExtendedRole noAdmins = new ExtendedRole();
+        final ExtendedRole noAdmins = new ExtendedRole();
         noAdmins.setUsers(Collections.emptyList());
 
-        Pod mockPod = mock(Pod.class);
-        PodStatus podStatus = new PodStatus(null, null, "hostIp", null, "", "",
-                                            "podIp", "bla-bla", "5 o'clock",  "");
+        final Pod mockPod = mock(Pod.class);
+        final PodStatus podStatus = new PodStatus(null, null, "hostIp", null, "",
+                "", "podIp", "bla-bla", "5 o'clock",  "");
         podMetadata = new ObjectMeta();
         podMetadata.setLabels(Collections.emptyMap());
 
         when(mockPod.getStatus()).thenReturn(podStatus);
         when(mockPod.getMetadata()).thenReturn(podMetadata);
 
-        MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> mockPods =
+        final MixedOperation<Pod, PodList, DoneablePod, PodResource<Pod, DoneablePod>> mockPods =
             new KubernetesTestUtils.MockPods()
                 .mockNamespace(Matchers.any(String.class))
                     .mockWithName(Matchers.any(String.class))
@@ -259,16 +259,16 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Test
     public void testNotifyLongRunning() {
         podMonitor.updateStatus();
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
         Assert.assertEquals(admin.getId(), messages.get(0).getToUserId());
         Assert.assertTrue(messages.get(0).getCopyUserIds().contains(admin.getId()));
         Assert.assertEquals(longRunningTemplate.getId(), messages.get(0).getTemplate().getId());
 
-        ArgumentCaptor<PipelineRun> runCaptor = ArgumentCaptor.forClass(PipelineRun.class);
+        final ArgumentCaptor<PipelineRun> runCaptor = ArgumentCaptor.forClass(PipelineRun.class);
         verify(pipelineRunManager).updatePipelineRunLastNotification(runCaptor.capture());
 
-        PipelineRun capturedRun = runCaptor.getValue();
+        final PipelineRun capturedRun = runCaptor.getValue();
         Assert.assertNotNull(capturedRun.getLastNotificationTime());
     }
 
@@ -277,7 +277,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         notificationSettingsDao.deleteNotificationSettingsById(longRunningSettings.getId());
         notificationTemplateDao.deleteNotificationTemplate(longRunningTemplate.getId());
         podMonitor.updateStatus();
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(0, messages.size());
     }
 
@@ -286,7 +286,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         updateKeepInformedOwner(longRunningSettings, false);
 
         podMonitor.updateStatus();
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
         Assert.assertNull(messages.get(0).getToUserId());
     }
@@ -297,7 +297,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
         longRunnging.setLastNotificationTime(DateTime.now(DateTimeZone.UTC).minusMinutes(6).toDate());
 
         podMonitor.updateStatus();
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
         Assert.assertEquals(admin.getId(), messages.get(0).getToUserId());
         Assert.assertTrue(messages.get(0).getCopyUserIds().contains(admin.getId()));
@@ -309,13 +309,13 @@ public class NotificationManagerTest extends AbstractManagerTest {
         podMetadata.setLabels(Collections.singletonMap("cluster_id", "some_id"));
         podMonitor.updateStatus();
 
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertTrue(messages.isEmpty());
     }
 
     @Test
     public void testWontNotifyAdminsIfConfigured() {
-        NotificationSettings settings = notificationSettingsDao.loadNotificationSettings(1L);
+        final NotificationSettings settings = notificationSettingsDao.loadNotificationSettings(1L);
         settings.setKeepInformedAdmins(false);
         notificationSettingsDao.updateNotificationSettings(settings);
         notificationManager.notifyLongRunningTask(longRunnging, LONG_RUNNING_DURATION.getStandardSeconds(), settings);
@@ -336,8 +336,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testNotifyIssue() {
-        Pipeline pipeline = createPipeline(testOwner);
-        Issue issue = createIssue(testUser2, pipeline);
+        final Pipeline pipeline = createPipeline(testOwner);
+        final Issue issue = createIssue(testUser2, pipeline);
 
         notificationManager.notifyIssue(issue, pipeline, issue.getText());
 
@@ -359,47 +359,34 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldNotifyRunsStuckInStatus() {
-        final PipelineRun notified = new PipelineRun();
-        notified.setId(1L);
-        notified.setStatus(TaskStatus.PAUSING);
-        notified.setOwner(testUser1.getUserName());
-        notified.setStartDate(new Date());
-        notified.setRunStatuses(Collections.singletonList(
-                RunStatus.builder()
-                        .runId(notified.getId())
-                        .status(TaskStatus.PAUSING)
-                        .timestamp(DateUtils.nowUTC().minusDays(1))
-                        .build()));
+        final PipelineRun notified = buildPausingRun(DateUtils.nowUTC().minusDays(1));
 
-        final PipelineRun skipped = new PipelineRun();
-        skipped.setId(1L);
-        skipped.setStartDate(new Date());
-        skipped.setStatus(TaskStatus.PAUSING);
-        skipped.setOwner(testUser2.getUserName());
-        skipped.setRunStatuses(Collections.singletonList(
-                RunStatus.builder()
-                        .runId(skipped.getId())
-                        .status(TaskStatus.PAUSING)
-                        .timestamp(DateUtils.nowUTC())
-                        .build()));
+        final PipelineRun notifiedExclude = buildPausingRun(DateUtils.nowUTC().minusDays(1));
+        final RunInstance instance = buildRunInstance();
+        instance.setNodeType("m5.large");
+        notifiedExclude.setInstance(instance);
+
+        final PipelineRun skipped = buildPausingRun(DateUtils.nowUTC());
+
+        doReturn("r5.*,m5.large")
+                .when(preferenceManager).getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
 
         createSettings(LONG_STATUS, createTemplate(5L, "stuckStatusTemplate").getId(),
                 LONG_STATUS_THRESHOLD, LONG_STATUS_THRESHOLD);
 
-        notificationManager.notifyStuckInStatusRuns(Arrays.asList(notified, skipped));
+        notificationManager.notifyStuckInStatusRuns(Arrays.asList(notified, skipped, notifiedExclude));
         final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
         Assert.assertEquals(testUser1.getId(), messages.get(0).getToUserId());
-
     }
 
     @Test
     public void testNotifyIssueComment() {
-        Pipeline pipeline = createPipeline(testOwner);
-        Issue issue = createIssue(testUser2, pipeline);
+        final Pipeline pipeline = createPipeline(testOwner);
+        final Issue issue = createIssue(testUser2, pipeline);
         issueDao.createIssue(issue);
 
-        IssueComment comment = new IssueComment();
+        final IssueComment comment = new IssueComment();
         comment.setIssueId(issue.getId());
         comment.setText("Notify @TestUser1");
         comment.setAuthor(testUser2.getUserName());
@@ -408,7 +395,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(1, messages.size());
-        NotificationMessage message = messages.get(0);
+        final NotificationMessage message = messages.get(0);
 
         Assert.assertEquals(testUser2.getId(), message.getToUserId());
         Assert.assertEquals(issueCommentTemplate.getId(), message.getTemplate().getId());
@@ -435,20 +422,20 @@ public class NotificationManagerTest extends AbstractManagerTest {
             new ImmutablePair<>(run1, TEST_CPU_RATE1),
             new ImmutablePair<>(run2, TEST_CPU_RATE2)), IDLE_RUN);
 
-        List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
+        final List<NotificationMessage> messages = monitoringNotificationDao.loadAllNotifications();
         Assert.assertEquals(2, messages.size());
         messages.forEach(m -> Assert.assertEquals(
             SystemPreferences.SYSTEM_IDLE_CPU_THRESHOLD_PERCENT.getDefaultValue().doubleValue(),
             m.getTemplateParameters().get("idleCpuLevel")));
 
-        NotificationMessage run1Message = messages.stream()
+        final NotificationMessage run1Message = messages.stream()
             .filter(m -> m.getToUserId().equals(testUser1.getId()))
             .findFirst().get();
 
         Assert.assertEquals(TEST_CPU_RATE1 * PERCENT, run1Message.getTemplateParameters().get("cpuRate"));
         Assert.assertEquals(run1.getId().intValue(), run1Message.getTemplateParameters().get("id"));
 
-        NotificationMessage run2Message = messages.stream()
+        final NotificationMessage run2Message = messages.stream()
             .filter(m -> m.getToUserId().equals(testUser2.getId()))
             .findFirst().get();
 
@@ -458,10 +445,10 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void testNotifyHighConsumingRun() {
-        PipelineRun run1 = createTestPipelineRun();
-        PipelineRun run2 = createTestPipelineRun();
+        final PipelineRun run1 = createTestPipelineRun();
+        final PipelineRun run2 = createTestPipelineRun();
 
-        List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics = Arrays.asList(
+        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics = Arrays.asList(
                 new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE)),
                 new ImmutablePair<>(run2, Collections.singletonMap(ELKUsageMetric.FS, TEST_DISK_RATE)));
 
@@ -493,8 +480,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         highConsuming.setResendDelay(-1L);
         notificationSettingsDao.updateNotificationSettings(highConsuming);
 
-        PipelineRun run1 = createTestPipelineRun();
-        List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics = Collections.singletonList(
+        final PipelineRun run1 = createTestPipelineRun();
+        final List<Pair<PipelineRun, Map<ELKUsageMetric, Double>>> pipelinesMetrics = Collections.singletonList(
                 new ImmutablePair<>(run1, Collections.singletonMap(ELKUsageMetric.MEM, TEST_MEMORY_RATE)));
 
         notificationManager.notifyHighResourceConsumingRuns(pipelinesMetrics, HIGH_CONSUMED_RESOURCES);
@@ -705,6 +692,21 @@ public class NotificationManagerTest extends AbstractManagerTest {
                 .contains(pausedRunToInclude1.getId(), pausedRunToInclude2.getId());
     }
 
+    private PipelineRun buildPausingRun(final LocalDateTime timestamp) {
+        final PipelineRun run = new PipelineRun();
+        run.setId(1L);
+        run.setStatus(TaskStatus.PAUSING);
+        run.setOwner(testUser1.getUserName());
+        run.setStartDate(new Date());
+        run.setRunStatuses(Collections.singletonList(
+                RunStatus.builder()
+                        .runId(run.getId())
+                        .status(TaskStatus.PAUSING)
+                        .timestamp(timestamp)
+                        .build()));
+        return run;
+    }
+
     private PipelineRun buildPausedRun(final LocalDateTime statusUpdateTime) {
         final PipelineRun pausedRun = createTestPipelineRun();
         pausedRun.setStatus(TaskStatus.PAUSED);
@@ -733,8 +735,9 @@ public class NotificationManagerTest extends AbstractManagerTest {
         return pausedRun;
     }
 
-    private NotificationSettings createSettings(NotificationType type, long templateId, long threshold, long delay) {
-        NotificationSettings settings = new NotificationSettings();
+    private NotificationSettings createSettings(final NotificationType type, final long templateId,
+                                                final long threshold, final long delay) {
+        final NotificationSettings settings = new NotificationSettings();
         settings.setType(type);
         settings.setKeepInformedAdmins(true);
         settings.setInformedUserIds(Collections.emptyList());
@@ -747,13 +750,13 @@ public class NotificationManagerTest extends AbstractManagerTest {
         return settings;
     }
 
-    private void updateKeepInformedOwner(NotificationSettings settings, boolean keepInformedOwner) {
+    private void updateKeepInformedOwner(final NotificationSettings settings, final boolean keepInformedOwner) {
         settings.setKeepInformedOwner(keepInformedOwner);
         notificationSettingsDao.updateNotificationSettings(settings);
     }
 
-    private NotificationTemplate createTemplate(Long id, String name) {
-        NotificationTemplate template = new NotificationTemplate(id);
+    private NotificationTemplate createTemplate(final Long id, final String name) {
+        final NotificationTemplate template = new NotificationTemplate(id);
         template.setName(name);
         template.setBody("//");
         template.setSubject("//");
@@ -766,8 +769,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         return createTestPipelineRun(null);
     }
 
-    private PipelineRun createTestPipelineRun(Long pipelineId) {
-        PipelineRun run = new PipelineRun();
+    private PipelineRun createTestPipelineRun(final Long pipelineId) {
+        final PipelineRun run = new PipelineRun();
         if (pipelineId != null) {
             run.setPipelineId(pipelineId);
         }
@@ -781,8 +784,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         run.setOwner(testOwner.getUserName());
         run.setPlatform(TEST_PLATFORM);
 
-        Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
-        PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
+        final Map<SystemParams, String> systemParams = EnvVarsBuilderTest.matchSystemParams();
+        final PipelineConfiguration configuration = EnvVarsBuilderTest.matchPipeConfig();
         EnvVarsBuilder.buildEnvVars(run, configuration, systemParams, null);
         run.setEnvVars(run.getEnvVars());
         setRunInstance(run);
@@ -802,8 +805,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         return runInstance;
     }
 
-    private Pipeline createPipeline(PipelineUser testOwner) {
-        Pipeline pipeline = new Pipeline();
+    private Pipeline createPipeline(final PipelineUser testOwner) {
+        final Pipeline pipeline = new Pipeline();
         pipeline.setName("testPipeline");
         pipeline.setRepository("testRepo");
         pipeline.setRepositorySsh("testRepoSsh");
@@ -812,8 +815,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
         return pipeline;
     }
 
-    private Issue createIssue(PipelineUser author, AbstractSecuredEntity entity) {
-        Issue issue = new Issue();
+    private Issue createIssue(final PipelineUser author, final AbstractSecuredEntity entity) {
+        final Issue issue = new Issue();
         issue.setName("testIssue");
         issue.setText("Notifying @TestUser1, @TestUser2, also add @admin here");
         issue.setAuthor(author.getUserName());
