@@ -65,7 +65,7 @@ from cellprofiler_core.setting.choice import Choice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
 from cellprofiler_core.setting.text import Float, ImageName, Text
-from .modules.define_results import DefineResults, CalculationSpec
+from .modules.define_results import DefineResults, SpecItem
 
 
 class HcsModulesFactory(object):
@@ -491,7 +491,7 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
 
     def configure_module(self, module_config: dict) -> Module:
         specs = module_config['specs'] if 'specs' in module_config else []
-        specs = [CalculationSpec.from_json(spec) for spec in specs]
+        specs = [SpecItem.from_json(spec) for spec in specs]
         grouping = module_config['grouping'] if 'grouping' in module_config else None
         self._validate_configuration(specs, grouping)
         self.module.set_calculation_spec(specs, grouping)
@@ -502,8 +502,13 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
     def set_required_data_to_module_config(self, module_config, specs):
         all_objects = set()
         for spec in specs:
-            all_objects.add(spec.primary)
-            all_objects.add(spec.secondary)
+            if spec.formula:
+                for prop in spec.properties:
+                    all_objects.add(prop.primary)
+                    all_objects.add(prop.secondary)
+            else:
+                all_objects.add(spec.primary)
+                all_objects.add(spec.secondary)
         if None in all_objects:
             all_objects.remove(None)
         module_config[self._EXPORT_DATA_KEY] = '|'.join(all_objects)
@@ -524,7 +529,11 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         # TODO check grouping is presented in metadata
         # TODO check if a corresponding RelateObject module exists for objects, specified as primary and secondary
         for spec in specs:
-            unknown_stat_functions = set(spec.stat_functions) - DefineResults.SUPPORTED_STAT_FUNCTIONS
+            unknown_stat_functions = set([])
+            if spec.formula:
+                self._validate_configuration(spec.properties, grouping)
+            if not spec.formula:
+                unknown_stat_functions = set(spec.stat_functions) - DefineResults.SUPPORTED_STAT_FUNCTIONS
             if len(unknown_stat_functions) > 0:
                 raise RuntimeError('Unknown {} stat function(s) passed in a configuration. Supported ones: {}'
                                    .format(list(unknown_stat_functions), list(DefineResults.SUPPORTED_STAT_FUNCTIONS)))
