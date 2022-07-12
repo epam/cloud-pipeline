@@ -298,6 +298,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     currentProjectId: null,
     currentLaunchKey: null,
     showOnlyFolderInBucketBrowser: false,
+    allowBucketSelectionInBucketBrowser: false,
     systemParameterBrowserVisible: false,
     systemParameters: [],
     fireCloudMethodName: (this.props.fireCloudMethod &&
@@ -1724,7 +1725,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       );
     }
   };
-  selectButcketPath = (path) => {
+  selectBucketPath = (path) => {
     const key = this.state.bucketPathParameterKey;
     const sectionName = this.state.bucketPathParameterSection;
     if (key && sectionName) {
@@ -1995,7 +1996,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       bucketPath: value,
       bucketPathParameterKey: key,
       bucketPathParameterSection: sectionName,
-      showOnlyFolderInBucketBrowser: type === 'output'
+      showOnlyFolderInBucketBrowser: type === 'output',
+      allowBucketSelectionInBucketBrowser: /^path$/i.test(type)
     });
   };
 
@@ -2005,7 +2007,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       bucketPath: null,
       bucketPathParameterKey: null,
       bucketPathParameterSection: null,
-      showOnlyFolderInBucketBrowser: false
+      showOnlyFolderInBucketBrowser: false,
+      allowBucketSelectionInBucketBrowser: false
     });
   };
   renderPathParameter = (
@@ -5251,11 +5254,12 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
         </div>
         <BucketBrowser
           multiple
-          onSelect={this.selectButcketPath}
+          onSelect={this.selectBucketPath}
           onCancel={this.closeBucketBrowser}
           visible={this.state.bucketBrowserVisible}
           path={this.state.bucketPath}
           showOnlyFolder={this.state.showOnlyFolderInBucketBrowser}
+          allowBucketSelection={this.state.allowBucketSelectionInBucketBrowser}
           checkWritePermissions={this.state.showOnlyFolderInBucketBrowser}
           bucketTypes={['AZ', 'S3', 'GS', 'DTS', 'NFS']} />
         <PipelineBrowser
