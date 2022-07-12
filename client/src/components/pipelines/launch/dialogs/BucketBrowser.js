@@ -70,6 +70,7 @@ export default class BucketBrowser extends React.Component {
     onCancel: PropTypes.func,
     multiple: PropTypes.bool,
     showOnlyFolder: PropTypes.bool,
+    allowBucketSelection: PropTypes.bool,
     checkWritePermissions: PropTypes.bool,
     bucketTypes: PropTypes.arrayOf(
       PropTypes.oneOf([
@@ -225,6 +226,7 @@ export default class BucketBrowser extends React.Component {
         this.state.bucket.type === NFS_BUCKET_TYPE
       )) {
       const type = this.state.bucket.storageType || this.state.bucket.type;
+      const buildPath = (root) => item && item.path ? `${root}/${item.path}` : root;
       if (type === 'NFS') {
         const storagePath = this.state.bucket.path.replace(':', '');
         const mountPoint = this.state.bucket.mountPoint
@@ -232,15 +234,13 @@ export default class BucketBrowser extends React.Component {
             ? this.state.bucket.mountPoint.slice(0, -1)
             : this.state.bucket.mountPoint
           : null;
-        return mountPoint
-          ? `${mountPoint}/${item.path}`
-          : `/cloud-data/${storagePath}/${item.path}`;
+        return buildPath(mountPoint || `/cloud-data/${storagePath}`);
       }
-      return `${type.toLowerCase()}://${this.state.bucket.path}/${item.path}`;
+      return buildPath(`${type.toLowerCase()}://${this.state.bucket.path}`);
     } else if (this.state.bucket && this.state.bucket.type === DTS_ROOT_ITEM_TYPE) {
-      return item.fullPath || '';
+      return item ? (item.fullPath || '') : '';
     }
-    return item.path || '';
+    return item ? (item.path || '') : '';
   };
 
   itemIsSelected = (item) => {
@@ -459,6 +459,13 @@ export default class BucketBrowser extends React.Component {
   onSelectClicked = () => {
     if (this.props.onSelect) {
       this.props.onSelect(this.state.selectedItems.map(item => item.name).join(', '));
+      this.setState({selectedItems: []});
+    }
+  };
+
+  onSelectBucketClicked = () => {
+    if (this.props.onSelect && this.state.bucket && this.props.allowBucketSelection) {
+      this.props.onSelect(this.getItemFullPath());
       this.setState({selectedItems: []});
     }
   };
@@ -739,6 +746,19 @@ export default class BucketBrowser extends React.Component {
                     : ''
                 }
               </Button>
+              {
+                this.props.allowBucketSelection && (
+                  <Button
+                    type="primary"
+                    disabled={
+                      !this.state.bucket || DTS_ROOT_ITEM_TYPE === this.state.bucket.type
+                    }
+                    onClick={() => this.onSelectBucketClicked()}
+                  >
+                    Select bucket
+                  </Button>
+                )
+              }
             </Col>
           </Row>
         }
@@ -753,6 +773,7 @@ export default class BucketBrowser extends React.Component {
   componentWillReceiveProps (nextProps) {
     if (nextProps.path !== this.props.path) {
       let path = nextProps.path;
+      const allowBucketSelection = nextProps.allowBucketSelection;
       const firstItemPath = (path || '').split(',').map(p => p.trim())[0];
       let bucket = this.getBucketByPath(firstItemPath);
       if (bucket) {
@@ -771,11 +792,13 @@ export default class BucketBrowser extends React.Component {
           }
         }
         let pathCorrected;
+        let mask;
         if (bucket.type === DTS_ROOT_ITEM_TYPE) {
           const prefix = `${bucket.prefix}/`.replace(/\/\//g, '/');
           pathCorrected = this.parentDirectory(firstItemPath.substring(prefix.length));
         } else {
           pathCorrected = this.parentDirectory(this.fixPath(firstItemPath));
+          mask = new RegExp(`^${bucket.pathMask}(.*)$`, 'i');
         }
         this.setState(
           {
@@ -783,7 +806,23 @@ export default class BucketBrowser extends React.Component {
             expandedKeys,
             selectedKeys: [bucketKey],
             path: decodeURIComponent(pathCorrected || ''),
-            selectedItems: (path || '').split(',').map(p => ({name: p.trim()}))
+            selectedItems: (path || '')
+              .split(',')
+              .map(p => ({name: p.trim()}))
+              .filter(item => {
+                if (
+                  bucket.type === DTS_ROOT_ITEM_TYPE ||
+                  !mask ||
+                  !allowBucketSelection
+                ) {
+                  return true;
+                }
+                const e = mask.exec(item.name);
+                if (e && e[1]) {
+                  return !['', '/'].includes(e[1]);
+                }
+                return false;
+              })
           });
       }
     }
