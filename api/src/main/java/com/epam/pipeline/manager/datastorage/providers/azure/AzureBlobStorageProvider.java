@@ -276,7 +276,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public void verifyStoragePolicy(StoragePolicy storagePolicy) {
+    public void verifyLifecycleStoragePolicy(StoragePolicy storagePolicy) {
         // pass on
     }
 

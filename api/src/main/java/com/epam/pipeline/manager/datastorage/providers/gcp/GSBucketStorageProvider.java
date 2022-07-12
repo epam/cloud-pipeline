@@ -231,7 +231,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public void verifyStoragePolicy(StoragePolicy storagePolicy) {
+    public void verifyLifecycleStoragePolicy(StoragePolicy storagePolicy) {
         // pass on
     }
 

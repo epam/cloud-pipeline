@@ -514,7 +514,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public void verifyStoragePolicy(StoragePolicy storagePolicy) {
+    public void verifyLifecycleStoragePolicy(StoragePolicy storagePolicy) {
         // pass on
     }
 

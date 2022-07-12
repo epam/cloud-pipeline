@@ -229,7 +229,7 @@ public class StorageProviderManager {
         return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
     }
 
-    public void verifyStoragePolicy(final AbstractDataStorage dataStorage) {
-        getStorageProvider(dataStorage).verifyStoragePolicy(dataStorage.getStoragePolicy());
+    public void verifyLifecycleStoragePolicy(final AbstractDataStorage dataStorage) {
+        getStorageProvider(dataStorage).verifyLifecycleStoragePolicy(dataStorage.getStoragePolicy());
     }
 }

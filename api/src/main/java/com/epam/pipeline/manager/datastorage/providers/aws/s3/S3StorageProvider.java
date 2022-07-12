@@ -391,7 +391,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public void verifyStoragePolicy(final StoragePolicy storagePolicy) {
+    public void verifyLifecycleStoragePolicy(final StoragePolicy storagePolicy) {
         final S3StorageLifecyclePolicy lifecyclePolicy = JsonMapper.parseData(storagePolicy.getStorageLifecyclePolicy(),
                 new TypeReference<S3StorageLifecyclePolicy>() {});
         if (lifecyclePolicy == null) {

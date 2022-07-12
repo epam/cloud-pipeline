@@ -316,7 +316,6 @@ public class DataStorageManager implements SecuredEntityManager {
     public AbstractDataStorage updatePolicy(DataStorageVO dataStorageVO) {
         AbstractDataStorage dataStorage = load(dataStorageVO.getId());
         AbstractDataStorage updated = updateStoragePolicy(dataStorage, dataStorageVO);
-        storageProviderManager.verifyStoragePolicy(dataStorage);
         storageProviderManager.applyStoragePolicy(dataStorage);
         dataStorageDao.updateDataStorage(updated);
         return updated;
@@ -1109,7 +1108,7 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(policy.getBackupDuration() == null || policy.getBackupDuration() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ILLEGAL_DURATION,
                         policy.getBackupDuration()));
-        storageProviderManager.verifyStoragePolicy(dataStorage);
+        storageProviderManager.verifyLifecycleStoragePolicy(dataStorage);
     }
 
     private DataStorageFolder createDataStorageFolder(final AbstractDataStorage storage, final String path)
