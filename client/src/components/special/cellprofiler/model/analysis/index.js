@@ -24,8 +24,9 @@ import {
 } from './job-utilities';
 import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
-import runAnalysisPipeline from './analysis-pipeline-utilities';
+import runAnalysisPipeline, {getPipelineModules} from './analysis-pipeline-utilities';
 import {loadPipeline, savePipeline} from './analysis-pipeline-management';
+import {submitBatchAnalysis} from './batch';
 import PhysicalSize from './physical-size';
 
 const AUTOUPDATE = false;
@@ -51,6 +52,7 @@ class Analysis {
   @observable status;
   @observable userInfo;
   @observable changed = false;
+  @observable alias;
   /**
    * @type {AnalysisOutputResult[]}
    */
@@ -58,9 +60,11 @@ class Analysis {
   analysisCache = [];
   @observable sourceFileChanged = true;
   @observable showAnalysisResults = true;
-  hcsImageViewer;
+  @observable _hcsImageViewer;
   _analysisRequested = false;
   eventListeners = [];
+  storageId;
+  path;
 
   @computed
   get analysisRequested () {
@@ -90,6 +94,23 @@ class Analysis {
       return [];
     }
     return [...this.pipeline.modules, this.pipeline.defineResults];
+  }
+
+  @computed
+  get batch () {
+    return this.namesAndTypes && this.namesAndTypes.multipleFields;
+  }
+
+  @computed
+  get hcsImageViewer () {
+    return this._hcsImageViewer;
+  }
+
+  set hcsImageViewer (aViewer) {
+    this._hcsImageViewer = aViewer;
+    if (this.pipeline && this._hcsImageViewer) {
+      (this.pipeline.objectsOutlines.renderOutlines)(this._hcsImageViewer);
+    }
   }
 
   constructor (hcsImageViewer) {
@@ -135,6 +156,11 @@ class Analysis {
       })();
     }
   }
+
+  setSource = (storageId, path) => {
+    this.storageId = storageId;
+    this.path = path;
+  };
 
   newPipeline = () => {
     this.pipeline = new AnalysisPipeline(this);
@@ -277,7 +303,7 @@ class Analysis {
       if (!this.analysisAPI) {
         throw new Error('HCS Analysis API could not be initialized');
       }
-      const {sourceDirectory: uuid} = this.namesAndTypes.sourceFile || {};
+      const uuid = this.namesAndTypes.sourceDirectory;
       if (!uuid) {
         throw new Error('MeasurementUUID is not defined');
       }
@@ -298,6 +324,21 @@ class Analysis {
     }
   };
 
+  getInputsPayload = () => {
+    if (!this.namesAndTypes) {
+      return [];
+    }
+    return this.namesAndTypes.sourceFiles.map(aFile => ({
+      x: aFile.x,
+      y: aFile.y,
+      z: aFile.z,
+      timepoint: aFile.t,
+      fieldId: aFile.fieldID,
+      channel: aFile.c,
+      channelName: aFile.channel
+    }));
+  }
+
   @action
   attachFileToPipeline = async () => {
     if (!this.analysisAPI || !this.pipelineId || !this.sourceFileChanged) {
@@ -308,38 +349,10 @@ class Analysis {
       this.status = 'Attaching image to CellProfiler pipeline...';
       this.pending = true;
       this.error = undefined;
-      const names = this.namesAndTypes.outputs.map(output => output.name);
-      const {
-        wells = [],
-        images = [],
-        timePoints = [],
-        zCoordinates = []
-      } = this.namesAndTypes.sourceFile || {};
-      const files = [];
-      timePoints.forEach(timePoint => {
-        zCoordinates.forEach(z => {
-          wells.forEach(well => {
-            const {
-              x: column = 0,
-              y: row = 0
-            } = well;
-            images.forEach(image => {
-              names.forEach((channel, index) => {
-                files.push({
-                  x: row,
-                  y: column,
-                  z,
-                  timepoint: timePoint,
-                  fieldId: image,
-                  channel: index + 1,
-                  channelName: channel
-                });
-              });
-            });
-          });
-        });
-      });
-      await this.analysisAPI.attachFiles(this.pipelineId, ...files);
+      await this.analysisAPI.attachFiles(
+        this.pipelineId,
+        ...this.getInputsPayload()
+      );
       this.sourceFileChanged = false;
       this.analysisCache = [];
       this.status = `Image attached to pipeline: #${this.pipelineId}`;
@@ -355,7 +368,48 @@ class Analysis {
   };
 
   @action
-  run = async () => {
+  runBatch = async () => {
+    try {
+      this.analysing = true;
+      this.pending = true;
+      this.error = undefined;
+      this.status = 'Submitting batch analysis...';
+      if (!this.namesAndTypes || !this.namesAndTypes.sourceDirectory) {
+        throw new Error('HCS file\'s measurement UUID not specified');
+      }
+      /**
+       * @type {BatchAnalysisSpecification}
+       */
+      const specification = {
+        alias: this.alias,
+        storage: this.storageId,
+        path: this.path,
+        pipeline: this.pipeline.exportPipeline(true),
+        measurementUUID: this.namesAndTypes.sourceDirectory,
+        inputs: this.getInputsPayload(),
+        modules: getPipelineModules(this.modules)
+          .map((module, idx) => ({
+            moduleName: module.name,
+            moduleId: idx + 1,
+            parameters: module.getPayload()
+          }))
+      };
+      const batchAnalysis = await submitBatchAnalysis(
+        specification
+      );
+      this.status = 'Batch analysis submitted';
+      return batchAnalysis;
+    } catch (error) {
+      this.error = error.message;
+      return undefined;
+    } finally {
+      this.pending = false;
+      this.analysing = false;
+    }
+  };
+
+  @action
+  run = async (debug = true) => {
     /**
      * @param {{module: AnalysisModule, done: boolean}} options
      */
@@ -365,16 +419,21 @@ class Analysis {
           module.pending = false;
           module.done = true;
         });
-        return;
-      }
-      const idx = this.modules.indexOf(options.module);
-      if (idx >= 0) {
-        this.modules.forEach((module, moduleIdx) => {
-          module.pending = module === options.module;
-          module.done = idx > moduleIdx;
+      } else if (!debug) {
+        this.modules.forEach(module => {
+          module.pending = true;
+          module.done = false;
         });
-        options.module.pending = !options.done;
-        options.module.done = !!options.done;
+      } else {
+        const idx = this.modules.indexOf(options.module);
+        if (idx >= 0) {
+          this.modules.forEach((module, moduleIdx) => {
+            module.pending = module === options.module;
+            module.done = idx > moduleIdx;
+          });
+          options.module.pending = !options.done;
+          options.module.done = !!options.done;
+        }
       }
     };
     try {
@@ -391,6 +450,12 @@ class Analysis {
       if (this.sourceFileChanged) {
         throw new Error(this.error || 'Error attaching images to the analysis pipeline');
       }
+      if (!debug) {
+        this.modules.forEach(module => {
+          module.pending = true;
+          module.done = false;
+        });
+      }
       const {
         results,
         cache
@@ -399,13 +464,18 @@ class Analysis {
         this.pipelineId,
         this.modules,
         this.analysisCache,
-        {debug: true, callback: reportModuleStatus}
+        {
+          debug,
+          objectsOutput: !this.batch,
+          callback: reportModuleStatus
+        }
       );
       this.analysisResults = results.filter(o => !o.object);
       this.pipeline.objectsOutlines.update(results, this.hcsImageViewer);
       this.analysisCache = cache;
       this.showAnalysisResults = true;
       this.status = 'Analysis done';
+      reportModuleStatus();
     } catch (error) {
       this.clearModulesState();
       this.error = error.message;
@@ -447,9 +517,9 @@ class Analysis {
   }
 
   /**
-   * @param {HCSSourceFileOptions} hcsSourceFile
+   * @param {HCSSourceFileOptions[]} hcsSourceFiles
    */
-  changeFile (hcsSourceFile) {
+  changeFile (hcsSourceFiles) {
     const onChange = () => {
       this.pipelineId = undefined;
       this.analysisResults = [];
@@ -463,12 +533,12 @@ class Analysis {
     };
     let changed = false;
     if (!this.namesAndTypes) {
-      this.namesAndTypes = new NamesAndTypes(hcsSourceFile);
+      this.namesAndTypes = new NamesAndTypes(hcsSourceFiles);
       changed = true;
     } else {
-      changed = this.namesAndTypes.changeFile(hcsSourceFile);
+      changed = this.namesAndTypes.changeFiles(hcsSourceFiles);
     }
-    if (HCSSourceFile.check(hcsSourceFile) && changed) {
+    if (HCSSourceFile.check(...hcsSourceFiles) && changed) {
       onChange();
     }
   }

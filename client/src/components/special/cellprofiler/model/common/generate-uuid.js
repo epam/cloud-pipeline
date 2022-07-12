@@ -14,44 +14,8 @@
  *  limitations under the License.
  */
 
-.container {
-  display: flex;
-  flex-direction: column;
-  padding: 5px;
-}
+import moment from 'moment-timezone';
 
-.header {
-  margin-bottom: 5px;
+export default function generateUUID () {
+  return Number(moment.utc().format('YYYYMMDDHHmmssSSS')).toString(16);
 }
-
-.active-badge {
-  margin-left: 15px;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.timepoints-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  margin-left: -5px;
-}
-
-.timepoint {
-  min-width: 25px;
-  padding: 0 3px;
-  height: 25px;
-  display: inline-flex;
-  margin-right: 2px;
-  margin-bottom: 2px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  user-select: none;
-}
-
-.timepoint.active {
-  cursor: default;
-}
-

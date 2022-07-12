@@ -38,3 +38,17 @@
 .cell-profiler-results-table th {
   border: 1px solid @table-border-color;
 }
+
+.cell-profiler-job:nth-child(even) {
+  background-color: @even-element-background;
+}
+
+.cell-profiler-job:hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
+
+.cell-profiler-job.selected {
+  background-color: @table-element-selected-background-color;
+  color: @table-element-selected-color;
+}

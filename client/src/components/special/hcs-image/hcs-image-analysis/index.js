@@ -17,42 +17,168 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {Alert} from 'antd';
-import CellProfiler from '../../cellprofiler/components';
+import classNames from 'classnames';
+import {Icon, Tabs} from 'antd';
+import CellProfiler, {CellProfilerJobs} from '../../cellprofiler/components';
+import styles from './hcs-image-analysis.css';
+import roleModel from '../../../../utils/roleModel';
 
-function HcsImageAnalysis (props) {
-  const {
-    hcsAnalysis,
-    className,
-    style,
-    expandSingle,
-    onToggleResults,
-    resultsVisible
-  } = props;
-  if (!hcsAnalysis || !hcsAnalysis.available) {
+const HcsAnalysisTabs = {
+  analysis: 'analysis',
+  batch: 'batch'
+};
+
+const HcsAnalysisTabName = {
+  [HcsAnalysisTabs.analysis]: (<span><Icon type="play-circle" /> Analysis</span>),
+  [HcsAnalysisTabs.batch]: (<span><Icon type="switcher" /> Evaluations</span>)
+};
+
+class HcsImageAnalysis extends React.Component {
+  state = {
+    activeTab: undefined,
+    currentJobId: undefined,
+    filters: undefined,
+    userName: undefined
+  };
+  componentDidMount () {
+    const {authenticatedUserInfo} = this.props;
+    if (authenticatedUserInfo) {
+      authenticatedUserInfo
+        .fetchIfNeededOrWait()
+        .then(() => {
+          if (authenticatedUserInfo.loaded) {
+            const userName = authenticatedUserInfo.value.userName;
+            this.setState({
+              filters: {userNames: [userName]},
+              userName
+            });
+          }
+        });
+    }
+  }
+
+  get activeTab () {
+    const {
+      batchMode,
+      toggleBatchMode
+    } = this.props;
+    if (batchMode !== undefined && typeof toggleBatchMode === 'function') {
+      // controlled
+      return batchMode ? HcsAnalysisTabs.batch : HcsAnalysisTabs.analysis;
+    }
+    const {
+      activeTab
+    } = this.state;
+    return activeTab || HcsAnalysisTabs.analysis;
+  }
+  get currentJobId () {
+    const {
+      batchJobId,
+      toggleBatchMode
+    } = this.props;
+    if (typeof toggleBatchMode === 'function') {
+      // controlled
+      return batchJobId;
+    }
+    const {
+      currentJobId
+    } = this.state;
+    return currentJobId;
+  }
+  onChangeTab = (key, batchJobId) => {
+    const {
+      batchMode,
+      toggleBatchMode
+    } = this.props;
+    if (batchMode !== undefined && typeof toggleBatchMode === 'function') {
+      toggleBatchMode(key === HcsAnalysisTabs.batch, batchJobId);
+    } else {
+      this.setState({activeTab: key, currentJobId: batchJobId});
+    }
+  };
+  openAnalysis = () => {
+    this.onChangeTab(HcsAnalysisTabs.analysis);
+  };
+  openEvaluations = (jobId) => {
+    this.onChangeTab(HcsAnalysisTabs.batch, jobId);
+  };
+  onChangeFilters = (newFilters) => {
+    this.setState({filters: newFilters});
+  };
+  renderAnalysis () {
+    const {
+      hcsAnalysis,
+      expandSingle,
+      onToggleResults,
+      resultsVisible
+    } = this.props;
+    return (
+      <CellProfiler
+        className={styles.content}
+        analysis={hcsAnalysis}
+        expandSingle={expandSingle}
+        onToggleResults={onToggleResults}
+        resultsVisible={resultsVisible}
+        onOpenEvaluations={this.openEvaluations}
+      />
+    );
+  }
+  renderEvaluations = () => {
+    return (
+      <CellProfilerJobs
+        className={styles.content}
+        jobId={this.currentJobId}
+        onJobSelected={this.openEvaluations}
+        filters={this.state.filters}
+        onFiltersChange={this.onChangeFilters}
+      />
+    );
+  };
+  renderContent () {
+    switch (this.activeTab) {
+      case HcsAnalysisTabs.batch:
+        return this.renderEvaluations();
+      case HcsAnalysisTabs.analysis:
+      default:
+        return this.renderAnalysis();
+    }
+  }
+  render () {
+    const {
+      className,
+      style
+    } = this.props;
     return (
       <div
-        className={className}
+        className={
+          classNames(
+            styles.container,
+            className,
+            'cp-panel',
+            'cp-panel-borderless'
+          )
+        }
         style={style}
       >
-        <Alert
-          showIcon
-          type="warning"
-          message="Analysis not available"
-        />
+        <Tabs
+          className="cp-tabs-no-padding"
+          size="small"
+          activeKey={this.activeTab}
+          onChange={key => this.onChangeTab(key)}
+        >
+          <Tabs.TabPane
+            key={HcsAnalysisTabs.analysis}
+            tab={HcsAnalysisTabName[HcsAnalysisTabs.analysis]}
+          />
+          <Tabs.TabPane
+            key={HcsAnalysisTabs.batch}
+            tab={HcsAnalysisTabName[HcsAnalysisTabs.batch]}
+          />
+        </Tabs>
+        {this.renderContent()}
       </div>
     );
   }
-  return (
-    <CellProfiler
-      analysis={hcsAnalysis}
-      className={className}
-      style={style}
-      expandSingle={expandSingle}
-      onToggleResults={onToggleResults}
-      resultsVisible={resultsVisible}
-    />
-  );
 }
 
 HcsImageAnalysis.propTypes = {
@@ -60,7 +186,14 @@ HcsImageAnalysis.propTypes = {
   style: PropTypes.object,
   expandSingle: PropTypes.bool,
   onToggleResults: PropTypes.func,
-  resultsVisible: PropTypes.bool
+  resultsVisible: PropTypes.bool,
+  batchMode: PropTypes.bool,
+  batchJobId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  toggleBatchMode: PropTypes.func
 };
 
-export default inject('hcsAnalysis')(observer(HcsImageAnalysis));
+export default inject('hcsAnalysis')(
+  roleModel.authenticationInfo(
+    observer(HcsImageAnalysis)
+  )
+);

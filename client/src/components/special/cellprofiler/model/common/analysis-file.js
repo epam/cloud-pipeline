@@ -28,89 +28,16 @@ class AnalysisFile {
   }
 }
 
-function asc (a, b) {
-  return a - b;
-}
-
-function numberArraysAreEqual (array1, array2) {
-  const a = [...(new Set(array1 || []))].sort(asc);
-  const b = [...(new Set(array2 || []))].sort(asc);
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function stringArraysAreEqual (array1, array2) {
-  const a = [...(new Set(array1 || []))].sort();
-  const b = [...(new Set(array2 || []))].sort();
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function wellsAreEqual (a, b) {
-  if (!a && !b) {
-    return true;
-  }
-  if (!a || !b) {
-    return true;
-  }
-  const {
-    x: ax,
-    y: ay
-  } = a;
-  const {
-    x: bx,
-    y: by
-  } = b;
-  return ax === bx && ay === by;
-}
-
-function wellsArraysAreEqual (a, b) {
-  if (!a && !b) {
-    return true;
-  }
-  if (!a || !b) {
-    return true;
-  }
-  if (a.length !== b.length) {
-    return false;
-  }
-  for (let i = 0; i < a.length; i++) {
-    const bWell = b.find(bb => wellsAreEqual(bb, a[i]));
-    if (!bWell) {
-      return false;
-    }
-  }
-  for (let i = 0; i < b.length; i++) {
-    const aWell = a.find(aa => wellsAreEqual(aa, b[i]));
-    if (!aWell) {
-      return false;
-    }
-  }
-  return true;
-}
-
 /**
  * @typedef {Object} HCSSourceFileOptions
  * @property {string} sourceDirectory
- * @property {HCSImageWell[]} [wells]
- * @property {number[]} [images]
- * @property {number[]} [zCoordinates]
- * @property {number[]} [timePoints]
- * @property {string[]} [channels]
+ * @property {number} x
+ * @property {number} y
+ * @property {number} z
+ * @property {number} t
+ * @property {number} c
+ * @property {string} channel
+ * @property {string} fieldID
  */
 
 /**
@@ -121,46 +48,97 @@ function wellsArraysAreEqual (a, b) {
 function sourceFileOptionsEqual (optionsA, optionsB) {
   const {
     sourceDirectory: aSourceDirectory,
-    images: aImages = [],
-    wells: aWells = [],
-    zCoordinates: aZCoordinates = [],
-    timePoints: aTimePoints = [],
-    channels: aChannels = []
+    x: ax,
+    y: ay,
+    z: az,
+    fieldID: aF,
+    channel: aChannel,
+    c: ac,
+    t: at
   } = optionsA || {};
   const {
     sourceDirectory: bSourceDirectory,
-    images: bImages = [],
-    wells: bWells = [],
-    zCoordinates: bZCoordinates = [],
-    timePoints: bTimePoints = [],
-    channels: bChannels = []
+    x: bx,
+    y: by,
+    z: bz,
+    fieldID: bF,
+    channel: bChannel,
+    c: bc,
+    t: bt
   } = optionsB || {};
   return aSourceDirectory === bSourceDirectory &&
-    wellsArraysAreEqual(aWells, bWells) &&
-    numberArraysAreEqual(aImages, bImages) &&
-    numberArraysAreEqual(aZCoordinates, bZCoordinates) &&
-    numberArraysAreEqual(aTimePoints, bTimePoints) &&
-    stringArraysAreEqual(aChannels, bChannels);
+    ax === bx &&
+    ay === by &&
+    az === bz &&
+    at === bt &&
+    ac === bc &&
+    aChannel === bChannel &&
+    aF === bF;
+}
+
+/**
+ * @param {HCSSourceFileOptions} a
+ * @param {HCSSourceFileOptions} b
+ * @returns {number}
+ */
+function sortSourceFiles (a, b) {
+  const {
+    x: ax,
+    y: ay,
+    z: az,
+    fieldID: aF,
+    c: ac,
+    t: at
+  } = a || {};
+  const {
+    x: bx,
+    y: by,
+    z: bz,
+    fieldID: bF,
+    c: bc,
+    t: bt
+  } = b || {};
+  return (ax - bx) || (ay - by) || (az - bz) || (at - bt) || (aF - bF) || (ac - bc);
+}
+
+/**
+ * @param {HCSSourceFileOptions[]} a
+ * @param {HCSSourceFileOptions[]} b
+ * @returns {boolean}
+ */
+function sourceFileOptionsSetsEqual (a, b) {
+  if (!a && !b) {
+    return true;
+  }
+  if (!a || !b || a.length !== b.length) {
+    return false;
+  }
+  const aSorted = a.slice().sort(sortSourceFiles);
+  const bSorted = b.slice().sort(sortSourceFiles);
+  for (let i = 0; i < aSorted.length; i++) {
+    if (!sourceFileOptionsEqual(aSorted[i], bSorted[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 class HCSSourceFile extends AnalysisFile {
   /**
-   * @param {HCSSourceFileOptions} options
+   * @param {HCSSourceFileOptions} aFile
    * @returns {boolean}
    */
-  static check (options) {
-    const {
-      sourceDirectory,
-      wells = [],
-      images = [],
-      zCoordinates = [],
-      timePoints = []
-    } = options || {};
-    return !!sourceDirectory &&
-      wells.length > 0 &&
-      images.length > 0 &&
-      zCoordinates.length > 0 &&
-      timePoints.length > 0;
+  static check (...aFile) {
+    return !aFile.some((fileInfo) => {
+      const {
+        sourceDirectory,
+        fieldID,
+        channel
+      } = fileInfo || {};
+      return !sourceDirectory ||
+        !fieldID ||
+        !channel;
+    });
   }
   /**
    *
@@ -170,24 +148,32 @@ class HCSSourceFile extends AnalysisFile {
   constructor (cpModule, options) {
     const {
       sourceDirectory,
-      wells = [],
-      images = [],
-      zCoordinates = [1],
-      timePoints = [1],
-      channels = []
+      c,
+      channel,
+      fieldID,
+      t,
+      y,
+      x,
+      z
     } = options;
-    super(cpModule, sourceDirectory, `${images[0] || 'image'}`);
+    super(
+      cpModule,
+      sourceDirectory,
+      `Field ${fieldID}, Well (${x},${y}), z=${z}, t=${t}, channel ${channel} (#${c})`
+    );
     this.sourceDirectory = sourceDirectory;
-    this.wells = wells;
-    this.timePoints = timePoints;
-    this.images = images;
-    this.zCoordinates = zCoordinates;
-    this.channels = channels;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    this.t = t;
+    this.c = c;
+    this.channel = channel;
+    this.fieldID = fieldID;
   }
 }
 
 export {
   AnalysisFile,
   HCSSourceFile,
-  sourceFileOptionsEqual
+  sourceFileOptionsSetsEqual
 };

@@ -50,7 +50,7 @@ class Collapse extends React.Component {
         );
       }
       if (typeof header === 'function') {
-        return header();
+        return header(this.state.expanded);
       }
       return header;
     };

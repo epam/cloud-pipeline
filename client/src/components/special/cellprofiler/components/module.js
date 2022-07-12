@@ -58,6 +58,9 @@ function CellProfilerModuleHeaderRenderer (props) {
     return null;
   }
   const renderIcon = () => {
+    if (!cpModule.statusReporting) {
+      return null;
+    }
     if (cpModule.pending || cpModule.done) {
       return (
         <Circle

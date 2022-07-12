@@ -57,17 +57,25 @@ class CellProfilerPipeline extends React.Component {
     if (!pipeline || hidden) {
       return null;
     }
+    let infoHeader = (
+      <b className={styles.title}>
+        <Icon type="info-circle-o" /> Info
+      </b>
+    );
+    if (pipeline.name) {
+      infoHeader = (
+        <b className={styles.title}>
+          <Icon type="info-circle-o" /> Info: {pipeline.name}
+        </b>
+      );
+    }
     return (
       <div
         className={className}
         style={style}
       >
         <Collapse
-          header={(
-            <b className={styles.title}>
-              <Icon type="info-circle-o" /> Info
-            </b>
-          )}
+          header={infoHeader}
         >
           <AnalysisPipelineInfo
             pipeline={pipeline}

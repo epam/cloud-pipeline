@@ -20,10 +20,12 @@ import {AnalysisModule} from '../modules/base';
 import {AnalysisTypes} from '../common/analysis-types';
 import {DefineResultsModuleName} from '../modules/implementation/define-results';
 import OutlineObjectsConfiguration from './outline-objects-configuration';
+import generateUUID from '../common/generate-uuid';
 
 const CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE = 'CloudPipeline CellProfiler pipeline';
 
 class AnalysisPipeline {
+  @observable uuid;
   @observable name;
   @observable author;
   @observable description;
@@ -50,6 +52,8 @@ class AnalysisPipeline {
   constructor (analysis) {
     this.analysis = analysis;
     this.createdDate = moment.utc();
+    this.modifiedDate = moment.utc();
+    this.uuid = generateUUID();
     this.defineResults = AnalysisModule.createModule(
       DefineResultsModuleName,
       {},
@@ -256,10 +260,22 @@ class AnalysisPipeline {
     return newModule;
   };
 
-  exportPipeline = () => {
+  exportPipeline = (json = false) => {
     let author = this.author;
+    if (json) {
+      return {
+        uuid: this.uuid,
+        path: this.path,
+        name: this.name,
+        description: this.description,
+        channels: this.channels,
+        modules: this.modules.map(module => module.exportModule(json)),
+        defineResults: this.defineResults.exportModule(json)
+      };
+    }
     const header = [
       CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE,
+      this.uuid ? `Identifier:${this.uuid}` : false,
       this.name ? `Name:${this.name}` : false,
       this.description ? `Description:${this.description}` : false,
       author ? `Author:${author}` : false,
@@ -297,7 +313,9 @@ class AnalysisPipeline {
       pipelineInfos.forEach(info => {
         const [key, ...valueParts] = info.split(':');
         const value = valueParts.join(':');
-        if (/^name$/i.test(key)) {
+        if (/^identifier$/i.test(key)) {
+          pipeline.uuid = value;
+        } else if (/^name$/i.test(key)) {
           pipeline.name = value;
         } else if (/^description$/i.test(key)) {
           pipeline.description = value;

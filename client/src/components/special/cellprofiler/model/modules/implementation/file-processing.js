@@ -53,30 +53,6 @@ const exportToSpreadsheet = {
       visibilityHandler: (cpModule) => cpModule.getBooleanParameterValue('all') === false
     },
     'Use the object name for the file name?|flag|true|ALIAS objectNameAsFileName'
-    /*
-    Add a prefix to file names?: false
-Add image file and folder names to your object data file?: false
-Add image metadata columns to your object data file?: false
-Calculate the per-image mean values for object measurements?: false
-Calculate the per-image median values for object measurements?: false
-Calculate the per-image standard deviation values for object measurements?: false
-Combine these object measurements with those of the previous object?: false
-Create a GenePattern GCT file?: false
-Data to export: "Do not use"
-Export all measurement types?: true
-File name: "DATA.csv"
-Filename prefix: "MyExpt_"
-Output file location: "Elsewhere...|/cloud-data/pathology-storage/HCS/HarmonyBackup/.cellprofiler-web-api/97de2a0c-5530-4fe5-929e-de3726ca05bf/aec0147d-ad89-4575-b2ad-d4e63a684c88/b1a2768a-71f1-4677-b538-be94ac83814d"
-Overwrite existing files without warning?: true
-Press button to select measurements: ""
-Representation of Nan/Inf: "NaN"
-Select source of sample row name: "Metadata"
-Select the column delimiter: "Comma (\",\")"
-Select the image to use as the identifier: "None"
-Select the measurements to export: false
-Select the metadata to use as the identifier: "None"
-Use the object name for the file name?: true
-     */
   ]
 };
 

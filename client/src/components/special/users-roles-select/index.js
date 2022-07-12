@@ -110,13 +110,17 @@ class UsersRolesSelect extends React.Component {
       searchString = '',
       adGroups = []
     } = this.state;
-    const {value = []} = this.props;
+    const {
+      value = [],
+      showRoles = true,
+      adGroups: showADGroups = showRoles
+    } = this.props;
     const uniqueRoleNames = new Set(this.roles.map(o => o.name));
     const filteredADGroups = adGroups.filter(o => !uniqueRoleNames.has(o.name));
     const usersAndRoles = [
       ...this.users,
-      ...this.roles,
-      ...filteredADGroups
+      ...(showRoles ? this.roles : []),
+      ...(showRoles && showADGroups ? filteredADGroups : [])
     ];
     const itemIsSelected = (item) => !!value
       .find(v => v.name === item.name && v.principal === item.principal);
@@ -142,7 +146,10 @@ class UsersRolesSelect extends React.Component {
   }
 
   onChangeSearchString = (e) => {
-    const {adGroups: showADGroups = true} = this.props;
+    const {
+      showRoles = true,
+      adGroups: showADGroups = showRoles
+    } = this.props;
     this.setState({
       searchString: e || ''
     }, () => {
@@ -182,7 +189,8 @@ class UsersRolesSelect extends React.Component {
       disabled: disabledProp,
       users,
       roles,
-      value = []
+      value = [],
+      showRoles = true
     } = this.props;
     const {
       searchString = ''
@@ -190,6 +198,9 @@ class UsersRolesSelect extends React.Component {
     const disabled = disabledProp ||
       (users && users.pending && !users.loaded) ||
       (roles && roles.pending && !roles.loaded);
+    const placeholder = showRoles
+      ? 'Specify user or group name'
+      : 'Specify user name';
     return (
       <Select
         disabled={disabled}
@@ -206,7 +217,7 @@ class UsersRolesSelect extends React.Component {
         notFoundContent={
           searchString.length >= MINIMUM_SEARCH_LENGTH
             ? `Nothing found for "${searchString}"`
-            : 'Specify user or group name'
+            : placeholder
         }
       >
         <Select.OptGroup label="Users">
@@ -251,6 +262,7 @@ class UsersRolesSelect extends React.Component {
 
 UsersRolesSelect.propTypes = {
   adGroups: PropTypes.bool,
+  showRoles: PropTypes.bool,
   placeholder: PropTypes.string,
   className: PropTypes.string,
   style: PropTypes.object,
@@ -260,7 +272,8 @@ UsersRolesSelect.propTypes = {
 };
 
 UsersRolesSelect.defaultProps = {
-  adGroups: true
+  adGroups: true,
+  showRoles: true
 };
 
 export default UsersRolesSelect;

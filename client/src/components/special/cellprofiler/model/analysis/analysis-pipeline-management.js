@@ -132,6 +132,7 @@ export async function savePipeline (pipeline) {
     throw new Error('CellProfiler analysis pipelines storage not found');
   }
   const request = new DataStorageItemUpdateContent(objectStorage.id, pipelinePath);
+  pipeline.modifiedDate = moment.utc();
   const content = pipeline.exportPipeline();
   await request.send(content);
   if (request.error) {

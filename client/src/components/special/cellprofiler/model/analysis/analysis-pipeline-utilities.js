@@ -584,8 +584,20 @@ function findInitialModule (initialModules = [], executionModules, index) {
 /**
  * @typedef {Object} RunAnalysisOptions
  * @property {boolean} [debug=false]
+ * @property {boolean} [objectsOutput=false]
  * @property {function} [callback]
  */
+
+/**
+ * @param {AnalysisModule[]} modules
+ * @returns {AnalysisModule[]}
+ */
+export function getPipelineModules (modules) {
+  return modules.reduce(
+    (analysisModules, module) => ([...analysisModules, ...extractModules(module)]),
+    []
+  );
+}
 
 /**
  * @param {AnalysisApi} api
@@ -604,6 +616,7 @@ export default async function runAnalysisPipeline (
 ) {
   const {
     debug = false,
+    objectsOutput = debug,
     callback: callbackFn
   } = options;
   if (!api) {
@@ -620,11 +633,8 @@ export default async function runAnalysisPipeline (
   const {
     modules: allModules,
     metadata
-  } = appendExtraOutputModules(modules, inputs[0], debug);
-  const analysis = allModules.reduce(
-    (analysisModules, module) => ([...analysisModules, ...extractModules(module)]),
-    []
-  );
+  } = appendExtraOutputModules(modules, inputs[0], objectsOutput);
+  const analysis = getPipelineModules(allModules);
   if (analysis.length === 0) {
     return {results: [], cache};
   }
