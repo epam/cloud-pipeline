@@ -77,17 +77,17 @@ EOF
 
   log "Loading environment..."
   source ./dts_env.sh
-
+  CRON_FILE="$DTS_DIR/CloudPipelineDTS.cron"
   log "Creating scheduled task if it doesn't exist..."
-  if [ -f "/etc/cron.d/CloudPipelineDTS" ]; then
+  if [ -f "$CRON_FILE" ]; then
     log "Scheduled task already exists."
   else
     log "Creating scheduled task..."
-    cat > "/etc/cron.d/CloudPipelineDTS" <<EOL
+    cat > "$CRON_FILE" <<EOL
 * * * * * cd '$DTS_DIR' && flock -w 1 '$DTS_LOCKS_DIR/CloudPipelineDTS.lock' /bin/bash '$DTS_LAUNCHER_PATH'
 EOL
-    chmod 0644 "/etc/cron.d/CloudPipelineDTS"
-    crontab "/etc/cron.d/CloudPipelineDTS"
+    chmod 0644 "$CRON_FILE"
+    crontab "$CRON_FILE"
     if [ "$?" == "0" ]; then
       log "Scheduled task was created successfully."
     else
