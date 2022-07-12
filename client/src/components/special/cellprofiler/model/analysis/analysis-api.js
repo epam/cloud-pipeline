@@ -17,25 +17,13 @@
 import EndpointAPI from '../../../../../models/basic/endpoint-api';
 
 class AnalysisApi extends EndpointAPI {
-  constructor (endpoint, settings) {
-    const {
-      healthCheckURI = 'hcs/pipelines',
-      authTimeOutSeconds = 60,
-      healthCheckTimeOutSeconds = 1,
-      initialHealthCheckTimeOutMs = 500,
-      authPopUp = 'popup=yes,width=500,height=500'
-    } = settings;
+  constructor (endpoint) {
     super(
       endpoint,
       {
         fetchToken: true,
         credentials: true,
-        name: 'Analysis endpoint',
-        healthCheckURI,
-        authenticationTimeoutMs: authTimeOutSeconds * 1000,
-        healthCheckTimeoutMs: healthCheckTimeOutSeconds * 1000,
-        initialHealthCheckTimeoutMs: initialHealthCheckTimeOutMs,
-        popupConfiguration: authPopUp
+        name: 'Analysis endpoint'
       }
     );
   }

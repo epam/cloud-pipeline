@@ -18,7 +18,7 @@ import {action, computed, observable} from 'mobx';
 import {NamesAndTypes} from '../modules/names-and-types';
 import {HCSSourceFile} from '../common/analysis-file';
 import {
-  findJobWithDockerImage, getAnalysisSettings,
+  findJobWithDockerImage,
   launchJobWithDockerImage,
   waitForJobToBeInitialized
 } from './job-utilities';
@@ -65,11 +65,6 @@ class Analysis {
   @computed
   get analysisRequested () {
     return this._analysisRequested;
-  }
-
-  @computed
-  get authenticationRequired () {
-    return this.analysisAPI && this.analysisAPI.requiresUserAuthentication;
   }
 
   set analysisRequested (requested) {
@@ -437,8 +432,7 @@ class Analysis {
     }
     this.status = 'Acquiring CellProfiler job endpoint...';
     const jobEndpoint = await waitForJobToBeInitialized(job);
-    const config = await getAnalysisSettings();
-    this.analysisAPI = new AnalysisApi(jobEndpoint, config);
+    this.analysisAPI = new AnalysisApi(jobEndpoint);
     this.status = `CellProfiler job: #${job.id} (${this.analysisAPI.endpoint})`;
     this.pending = false;
     return this.analysisAPI;

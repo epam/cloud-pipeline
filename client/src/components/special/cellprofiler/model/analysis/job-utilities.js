@@ -28,8 +28,7 @@ export async function getAnalysisSettings () {
 }
 
 export async function findJobWithDockerImage (options = {}) {
-  await preferences.fetchIfNeededOrWait();
-  const configuration = preferences.hcsAnalysisConfiguration || {};
+  const configuration = await getAnalysisSettings();
   const {
     dockerImage = DEFAULT_DOCKER_IMAGE,
     jobId
@@ -78,8 +77,7 @@ export async function findJobWithDockerImage (options = {}) {
 }
 
 export async function launchJobWithDockerImage () {
-  await preferences.fetchIfNeededOrWait();
-  const configuration = preferences.hcsAnalysisConfiguration || {};
+  const configuration = await getAnalysisSettings();
   const {
     dockerImage = DEFAULT_DOCKER_IMAGE
   } = configuration;
@@ -119,8 +117,7 @@ async function jobIsInitialized (job) {
       const defaultUrl = parsed.find(o => o.isDefault) || parsed[0];
       if (defaultUrl && defaultUrl.url) {
         const {url} = defaultUrl;
-        await preferences.fetchIfNeededOrWait();
-        const configuration = preferences.hcsAnalysisConfiguration || {};
+        const configuration = await getAnalysisSettings();
         const {
           endpointRegion
         } = configuration;

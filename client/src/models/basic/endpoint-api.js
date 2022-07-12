@@ -38,78 +38,6 @@ function getMethodURL (endpoint, method) {
     .join('/');
 }
 
-class AuthenticationRequiredError extends Error {
-  constructor (title) {
-    super(title ? `${title}: authentication required` : 'Authentication required');
-  }
-}
-
-function waitForAuthentication (
-  endpoint,
-  healthEndpoint,
-  fetchOptions = {mode: 'cors', credentials: 'include'},
-  options = {}
-) {
-  const {
-    authenticationTimeoutMs = 1000 * 60,
-    healthCheckTimeoutMs = 1000,
-    initialHealthCheckTimeoutMs = 500,
-    popupConfiguration
-  } = options;
-  const check = async () => {
-    try {
-      const response = await fetch(healthEndpoint || endpoint, fetchOptions);
-      if (response.redirected) {
-        throw new Error('redirected');
-      }
-      return true;
-    } catch (e) {
-      // Network-related error
-      return false;
-    }
-  };
-  return new Promise((resolve, reject) => {
-    let handled = false;
-    let healthCheckTimeOut;
-    let timeoutHandler;
-    const popup = popupConfiguration
-      ? window.open(endpoint, '_blank', popupConfiguration)
-      : window.open(endpoint, '_blank');
-    const healthCheck = async () => {
-      clearTimeout(healthCheckTimeOut);
-      const healthy = await check();
-      if (handled) {
-        return;
-      }
-      if (healthy) {
-        handled = true;
-        if (popup) {
-          popup.close();
-        }
-        clearTimeout(timeoutHandler);
-        resolve();
-      } else if (popup && popup.closed) {
-        clearTimeout(timeoutHandler);
-        reject(new Error('Authentication failed'));
-      } else {
-        healthCheckTimeOut = setTimeout(healthCheck, healthCheckTimeoutMs);
-      }
-    };
-    timeoutHandler = setTimeout(() => {
-      if (handled) {
-        return;
-      }
-      clearTimeout(healthCheckTimeOut);
-      handled = true;
-      if (popup) {
-        popup.close();
-      }
-      reject(new Error('Authentication timeout'));
-    }, authenticationTimeoutMs);
-    setTimeout(healthCheck, initialHealthCheckTimeoutMs);
-  });
-}
-
 class APICallError extends Error {
   constructor (options = {}) {
     const {
@@ -122,56 +50,19 @@ class APICallError extends Error {
 
 class EndpointAPI {
   @observable endpoint;
-  @observable requiresUserAuthentication = false;
-  authenticationPromise;
   constructor (endpoint, options = {}) {
     const {
       token,
       fetchToken = true,
       credentials = false,
-      name,
-      healthCheckURI,
-      authenticationTimeoutMs,
-      healthCheckTimeoutMs,
-      initialHealthCheckTimeoutMs,
-      popupConfiguration
+      name
     } = options;
     this.endpoint = endpoint;
     this.fetchToken = fetchToken;
     this.token = token ? Promise.resolve(token) : undefined;
     this.credentials = credentials ? 'include' : 'omit';
     this.name = name;
-    this._healthCheckURI = healthCheckURI || '';
-    this.authenticationTimeOutOptions = {
-      authenticationTimeoutMs,
-      healthCheckTimeoutMs,
-      initialHealthCheckTimeoutMs,
-      popupConfiguration
-    };
   }
-
-  authenticate = () => {
-    if (!this.authenticationPromise) {
-      this.authenticationPromise = waitForAuthentication(
-        this.endpoint,
-        this.getMethodURL(this._healthCheckURI),
-        {
-          mode: 'cors',
-          credentials: this.credentials
-        },
-        this.authenticationTimeOutOptions
-      );
-      this.authenticationPromise
-        .then(() => {
-          this.requiresUserAuthentication = false;
-        })
-        .catch(() => {})
-        .then(() => {
-          this.authenticationPromise = undefined;
-        });
-    }
-    return this.authenticationPromise;
-  };
 
   getMethodURL = (uri, query) => {
     const url = getMethodURL(this.endpoint, uri);
@@ -208,31 +99,6 @@ class EndpointAPI {
    * @param {APICallOptions} options
    */
   apiCall = async (options = {}) => {
-    const wrap = async () => {
-      try {
-        const result = await this._apiCall(options);
-        return {result};
-      } catch (error) {
-        return {error};
-      }
-    };
-    const {result, error} = await wrap();
-    if (!error) {
-      return result;
-    }
-    if (this.requiresUserAuthentication) {
-      console.log(options.uri, 'requires authentication');
-      await this.authenticate();
-      return this._apiCall(options);
-    } else if (error) {
-      throw error;
-    }
-  };
-
-  /**
-   * @param {APICallOptions} options
-   */
-  _apiCall = async (options = {}) => {
     if (!this.token && this.fetchToken) {
       this.token = fetchToken();
     }
@@ -256,54 +122,40 @@ class EndpointAPI {
     } else if (typeof body !== 'undefined') {
       bodyFormatted = body;
     }
-    try {
-      const response = await fetch(
-        url,
-        {
-          method: httpMethod,
-          body: bodyFormatted,
-          mode: 'cors',
-          credentials: this.credentials,
-          headers: {
-            ...(token ? {bearer: token} : {})
-          }
-        }
-      );
-      if (response.redirected) {
-        this.requiresUserAuthentication = true;
-        throw new AuthenticationRequiredError(errorName);
-      }
-      if (!response.ok) {
-        const infos = [
-          response.statusText,
-          response.status ? `(${response.status})` : false
-        ].filter(Boolean);
-        if (!infos.length) {
-          infos.push('error fetching data');
-        }
-        throw new APICallError(errorName, infos.join(' '));
-      }
-      if (isJSON) {
-        try {
-          const json = await response.json();
-          if (!/^ok$/i.test(json.status)) {
-            throw new APICallError(errorName, `${json.status} ${json.message || json.error}`);
-          }
-          return json.payload;
-        } catch (e) {
-          throw new APICallError(errorName, e.message);
+    const response = await fetch(
+      url,
+      {
+        method: httpMethod,
+        body: bodyFormatted,
+        mode: 'cors',
+        credentials: this.credentials,
+        headers: {
+          ...(token ? {bearer: token} : {})
         }
       }
-      return response.text();
-    } catch (e) {
-      // Network error
-      this.requiresUserAuthentication = !(e instanceof APICallError);
-      if (this.requiresUserAuthentication) {
-        throw new AuthenticationRequiredError(errorName);
-      } else {
-        throw e;
+    );
+    if (!response.ok) {
+      const infos = [
+        response.statusText,
+        response.status ? `(${response.status})` : false
+      ].filter(Boolean);
+      if (!infos.length) {
+        infos.push('error fetching data');
+      }
+      throw new APICallError(errorName, infos.join(' '));
+    }
+    if (isJSON) {
+      try {
+        const json = await response.json();
+        if (!/^ok$/i.test(json.status)) {
+          throw new APICallError(errorName, `${json.status} ${json.message || json.error}`);
+        }
+        return json.payload;
+      } catch (e) {
+        throw new APICallError(errorName, e.message);
       }
     }
+    return response.text();
   };
 }
 
