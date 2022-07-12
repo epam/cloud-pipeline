@@ -86,9 +86,17 @@ from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, 
 from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
 from .modules.define_results import DefineResults, SpecItem
 
-
 BATCH_ENABLED = os.getenv('CELLPROFILER_API_BATCH_SPEC_FILE', None)
 RESULTS_DIR = os.getenv('CELLPROFILER_API_BATCH_RESULTS_DIR', None)
+
+
+def prepare_input_path(input_path, cloud_scheme='s3'):
+    cloud_prefix = cloud_scheme + '://'
+    if input_path.startswith(cloud_prefix):
+        return os.path.join('/cloud-data', input_path[len(cloud_prefix):])
+    if not os.path.exists(input_path):
+        raise RuntimeError('No such file [{}] available!'.format(input_path))
+    return input_path
 
 
 class HcsModulesFactory(object):
@@ -167,12 +175,7 @@ class ModuleProcessor(object):
         input_path = input_path if input_path is None else input_path.strip()
         if not input_path:
             return
-        cloud_prefix = cloud_scheme + '://'
-        if input_path.startswith(cloud_prefix):
-            input_path = os.path.join('/cloud-data', input_path[len(cloud_prefix):])
-        if not os.path.exists(input_path):
-            raise RuntimeError('No such file [{}] available!'.format(input_path))
-        module_config[input_path_key] = input_path
+        module_config[input_path_key] = prepare_input_path(input_path, cloud_scheme)
 
 
 class StructuringElementImagesModuleProcessor(ModuleProcessor):
@@ -464,12 +467,7 @@ class MatchTemplateModuleProcessor(ModuleProcessor):
         template_path = template_path if template_path is None else template_path.strip()
         if not template_path:
             raise RuntimeError('Template path should be specified in a module config!')
-        cloud_prefix = cloud_scheme + '://'
-        if template_path.startswith(cloud_prefix):
-            template_path = os.path.join('/cloud-data', template_path[len(cloud_prefix):])
-        if not os.path.exists(template_path):
-            raise RuntimeError('No such file [{}] available!'.format(template_path))
-        module_config[self._INPUT_TEMPLATE_PATH_KEY] = template_path
+        module_config[self._INPUT_TEMPLATE_PATH_KEY] = prepare_input_path(template_path, cloud_scheme)
 
 
 class OutputModuleProcessor(ModuleProcessor):
@@ -1219,12 +1217,7 @@ class FlagImageMeasurementSettings(SettingsWithListElement):
         input_path = input_path if input_path is None else input_path.strip()
         if not input_path:
             return None
-        cloud_prefix = cloud_scheme + '://'
-        if input_path.startswith(cloud_prefix):
-            input_path = os.path.join('/cloud-data', input_path[len(cloud_prefix):])
-        if not os.path.exists(input_path):
-            raise RuntimeError('No such file [{}] available!'.format(input_path))
-        return input_path
+        return prepare_input_path(input_path, cloud_scheme)
 
 
 class FlagImageModuleProcessor(SettingsWithListElementModuleProcessor):
