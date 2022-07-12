@@ -392,11 +392,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public void verifyLifecycleStoragePolicy(final StoragePolicy storagePolicy) {
-        final S3StorageLifecyclePolicy lifecyclePolicy = JsonMapper.parseData(storagePolicy.getStorageLifecyclePolicy(),
-                new TypeReference<S3StorageLifecyclePolicy>() {});
-        if (lifecyclePolicy == null) {
+        if (StringUtils.isEmpty(storagePolicy.getStorageLifecyclePolicy())) {
             return;
         }
+
+        final S3StorageLifecyclePolicy lifecyclePolicy =
+                S3LifecyclePolicyUtils.parseS3LifecyclePolicy(storagePolicy.getStorageLifecyclePolicy());
 
         ListUtils.emptyIfNull(lifecyclePolicy.getRules()).forEach(rule -> {
             Assert.hasLength(rule.getId(), "Lifecycle rule should have an ID!");

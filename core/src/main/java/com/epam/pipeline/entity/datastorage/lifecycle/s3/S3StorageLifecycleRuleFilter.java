@@ -18,13 +18,19 @@ package com.epam.pipeline.entity.datastorage.lifecycle.s3;
 
 import lombok.Builder;
 import lombok.Value;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
 
 @Value
 @Builder
 public class S3StorageLifecycleRuleFilter {
-    List<String> prefixes;
-    List<Pair<String, String>> tags;
+    String prefix;
+    List<Tag> tags;
+
+    @Value
+    @Builder
+    public static class Tag {
+        String key;
+        String value;
+    }
 }
