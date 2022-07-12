@@ -84,10 +84,9 @@ from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscribe
 from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary, \
     HiddenCount
 from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
-from .modules.define_results import DefineResults, SpecItem
 
-BATCH_ENABLED = os.getenv('CELLPROFILER_API_BATCH_SPEC_FILE', None)
-RESULTS_DIR = os.getenv('CELLPROFILER_API_BATCH_RESULTS_DIR', None)
+from .config import Config
+from .modules.define_results import DefineResults, SpecItem
 
 
 def prepare_input_path(input_path, cloud_scheme='s3'):
@@ -556,8 +555,8 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         return settings
 
     def generated_params(self):
-        if BATCH_ENABLED and RESULTS_DIR:
-            results_location = 'Elsewhere...|' + RESULTS_DIR
+        if Config.BATCH_ENABLED and Config.RESULTS_DIR:
+            results_location = 'Elsewhere...|' + Config.RESULTS_DIR
         else:
             results_location = self._output_location()
         return {'Output file location': results_location,
