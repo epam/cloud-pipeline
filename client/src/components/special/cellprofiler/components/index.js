@@ -17,9 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Checkbox, Icon, message} from 'antd';
-import Menu, {MenuItem} from 'rc-menu';
+import Menu, {Divider, MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
+import {isObservableArray} from 'mobx';
 import classNames from 'classnames';
 import OpenPipelineModal from './modals/open-pipeline-modal';
 import CellProfilerPipeline from './pipeline';
@@ -28,10 +29,41 @@ import SavePipelineModal from './modals/save-pipeline-modal';
 import styles from './cell-profiler.css';
 
 class CellProfiler extends React.Component {
+  static Modes = {
+    analysis: 'analysis',
+    batchAnalysis: 'batch'
+  };
+  static getMode (batch = false) {
+    switch (batch) {
+      case true:
+        return CellProfiler.Modes.batchAnalysis;
+      default:
+        return CellProfiler.Modes.analysis;
+    }
+  }
+
   state = {
     managementActionsVisible: false,
     openPipelineModalVisible: false,
     savePipelineOptions: undefined
+  };
+
+  get availableModes () {
+    const {availableModes} = this.props;
+    if (typeof availableModes === 'string') {
+      return [availableModes];
+    }
+    if (availableModes && (Array.isArray(availableModes) || isObservableArray(availableModes))) {
+      return availableModes;
+    }
+    return [
+      CellProfiler.Modes.analysis,
+      CellProfiler.Modes.batchAnalysis
+    ];
+  }
+
+  modeIsAvailable = (mode) => {
+    return this.availableModes.includes(mode);
   };
 
   onSavePipelineClicked = async (asNew = false) => {
@@ -87,11 +119,16 @@ class CellProfiler extends React.Component {
   };
 
   renderTitle = () => {
-    const {analysis} = this.props;
+    const {
+      analysis,
+      batchMode,
+      toggleBatchMode
+    } = this.props;
     if (!analysis) {
       return null;
     }
     const disabled = false;
+    const switchModeOperationAvailable = this.modeIsAvailable(CellProfiler.getMode(!batchMode));
     const {
       openPipelineModalVisible,
       savePipelineOptions
@@ -121,6 +158,11 @@ class CellProfiler extends React.Component {
           (this.onSavePipelineClicked)(true);
           break;
         case 'Open': openModal(); break;
+        case 'batch':
+          if (typeof toggleBatchMode === 'function') {
+            toggleBatchMode(!batchMode);
+          }
+          break;
       }
       handleVisibility(false);
     };
@@ -142,6 +184,19 @@ class CellProfiler extends React.Component {
           <MenuItem key="SaveAsNew" disabled={disabled}>
             <Icon type="download" /> Save as new
           </MenuItem>
+          {
+            switchModeOperationAvailable && (<Divider />)
+          }
+          {
+            switchModeOperationAvailable && (
+              <MenuItem key="batch">
+                <Icon type={batchMode ? 'play-circle-o' : 'switcher'} />
+                <span>
+                  {batchMode ? 'Analysis' : 'Batch analysis'}
+                </span>
+              </MenuItem>
+            )
+          }
         </Menu>
       </div>
     );
@@ -151,10 +206,11 @@ class CellProfiler extends React.Component {
         trigger={['click']}
         onVisibleChange={handleVisibility}
       >
-        <a
-          className="cp-text"
+        <Button
+          size="small"
         >
-          Analysis <Icon type="bars" />
+          <Icon type="bars" />
+          {batchMode ? 'Batch analysis' : 'Analysis'}
           <OpenPipelineModal
             visible={openPipelineModalVisible}
             onSelect={onPipelineSelected}
@@ -166,7 +222,7 @@ class CellProfiler extends React.Component {
             onClose={this.closeSavePipelineModal}
             onSave={this.onNameSpecified}
           />
-        </a>
+        </Button>
       </Dropdown>
     );
   };
@@ -288,7 +344,17 @@ CellProfiler.propTypes = {
   analysis: PropTypes.object,
   expandSingle: PropTypes.bool,
   onToggleResults: PropTypes.func,
-  resultsVisible: PropTypes.bool
+  resultsVisible: PropTypes.bool,
+  batchMode: PropTypes.bool,
+  toggleBatchMode: PropTypes.func,
+  availableModes: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.arrayOf(PropTypes.string)
+  ])
+};
+
+CellProfiler.defaultProps = {
+  availableModes: [CellProfiler.Modes.analysis, CellProfiler.Modes.batchAnalysis]
 };
 
 export default observer(CellProfiler);

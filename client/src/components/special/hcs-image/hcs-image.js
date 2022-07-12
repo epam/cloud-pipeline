@@ -56,6 +56,7 @@ class HcsImage extends React.PureComponent {
     showConfiguration: false,
     showAnalysis: false,
     showAnalysisResults: false,
+    batchAnalysis: false,
     selectedSequenceTimePoints: [],
     selectedZCoordinates: [],
     selectedWells: [],
@@ -522,6 +523,12 @@ class HcsImage extends React.PureComponent {
     });
   };
 
+  toggleBatchAnalysis = (batchAnalysis) => {
+    this.setState({
+      batchAnalysis
+    });
+  };
+
   toggleAnalysisResults = (visible) => {
     const {showAnalysisResults} = this.state;
     this.setState({
@@ -723,6 +730,7 @@ class HcsImage extends React.PureComponent {
       showDetails,
       showAnalysis,
       showAnalysisResults,
+      batchAnalysis,
       selectedSequenceTimePoints = [],
       selectedZCoordinates = [],
       selectedWells = [],
@@ -757,6 +765,8 @@ class HcsImage extends React.PureComponent {
                 className={styles.analysis}
                 onToggleResults={this.toggleAnalysisResults}
                 resultsVisible={showAnalysisResults}
+                batchMode={batchAnalysis}
+                toggleBatchMode={this.toggleBatchAnalysis}
               />
             )
           }

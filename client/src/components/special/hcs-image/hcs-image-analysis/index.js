@@ -27,7 +27,10 @@ function HcsImageAnalysis (props) {
     style,
     expandSingle,
     onToggleResults,
-    resultsVisible
+    resultsVisible,
+    batchMode,
+    toggleBatchMode,
+    availableModes
   } = props;
   if (!hcsAnalysis || !hcsAnalysis.available) {
     return (
@@ -51,6 +54,9 @@ function HcsImageAnalysis (props) {
       expandSingle={expandSingle}
       onToggleResults={onToggleResults}
       resultsVisible={resultsVisible}
+      batchMode={batchMode}
+      toggleBatchMode={toggleBatchMode}
+      availableModes={availableModes}
     />
   );
 }
@@ -60,7 +66,13 @@ HcsImageAnalysis.propTypes = {
   style: PropTypes.object,
   expandSingle: PropTypes.bool,
   onToggleResults: PropTypes.func,
-  resultsVisible: PropTypes.bool
+  resultsVisible: PropTypes.bool,
+  batchMode: PropTypes.bool,
+  toggleBatchMode: PropTypes.func,
+  availableModes: PropTypes.oneOfType([
+    PropTypes.string,
+    PropTypes.arrayOf(PropTypes.string)
+  ])
 };
 
 export default inject('hcsAnalysis')(observer(HcsImageAnalysis));
