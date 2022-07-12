@@ -14,94 +14,31 @@
  *  limitations under the License.
  */
 
-import {observable} from 'mobx';
-import {getAnalysisMethodURL} from './analysis-endpoint-utilities';
-import {fetchToken} from '../../../../../models/user/UserToken';
+import EndpointAPI from '../../../../../models/basic/endpoint-api';
 
-class AnalysisApi {
-  @observable endpoint;
-  constructor (endpoint, token) {
-    this.endpoint = endpoint;
-    this.token = token ? Promise.resolve(token) : undefined;
-  }
-
-  getMethodURL = (uri, query) => {
-    const url = getAnalysisMethodURL(this.endpoint, uri);
-    if (!query) {
-      return url;
-    }
-    if (typeof query === 'string') {
-      return `${url}?${query.startsWith('?') ? query.slice(1) : query}`;
-    }
-    if (typeof query === 'object') {
-      const parameters = Object.entries(query)
-        .filter(([, value]) => value !== undefined && value !== null);
-      if (parameters.length) {
-        const queryString = parameters
-          .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-          .join('&');
-        return `${url}?${queryString}`;
-      }
-    }
-    return url;
-  }
-
-  /**
-   * @typedef {Object} APICallOptions
-   * @property {string} [uri]
-   * @property {string} [url]
-   * @property {string} [httpMethod=GET]
-   * @property {string|object} [body]
-   * @property {string|object} [query]
-   * @property {boolean} [isJSON=true]
-   */
-
-  /**
-   * @param {APICallOptions} options
-   */
-  apiCall = async (options = {}) => {
-    if (!this.token) {
-      this.token = fetchToken();
-    }
-    const token = await this.token;
+class AnalysisApi extends EndpointAPI {
+  constructor (endpoint, settings) {
     const {
-      uri,
-      url: rawURL,
-      body,
-      httpMethod = body ? 'POST' : 'GET',
-      query,
-      isJSON = true
-    } = options || {};
-    const url = rawURL || this.getMethodURL(uri, query);
-    let bodyFormatted;
-    if (typeof body === 'object') {
-      bodyFormatted = JSON.stringify(body);
-    } else if (typeof body !== 'undefined') {
-      bodyFormatted = body;
-    }
-    const response = await fetch(
-      url,
+      healthCheckURI = 'hcs/pipelines',
+      authTimeOutSeconds = 60,
+      healthCheckTimeOutSeconds = 1,
+      initialHealthCheckTimeOutMs = 500,
+      authPopUp = 'popup=yes,width=500,height=500'
+    } = settings;
+    super(
+      endpoint,
       {
-        method: httpMethod,
-        body: bodyFormatted,
-        mode: 'cors',
-        headers: {
-          bearer: token
-        }
+        fetchToken: true,
+        credentials: true,
+        name: 'Analysis endpoint',
+        healthCheckURI,
+        authenticationTimeoutMs: authTimeOutSeconds * 1000,
+        healthCheckTimeoutMs: healthCheckTimeOutSeconds * 1000,
+        initialHealthCheckTimeoutMs: initialHealthCheckTimeOutMs,
+        popupConfiguration: authPopUp
       }
     );
-    if (!response.ok) {
-      throw new Error(`${uri || url}: ${response.statusText} ${response.status}`);
-    }
-    if (isJSON) {
-      const json = await response.json();
-      if (!/^ok$/i.test(json.status)) {
-        throw new Error(`${uri || url}: ${json.status} ${json.message || json.error}`);
-      }
-      return json.payload;
-    }
-    return response.text();
-  };
+  }
 
   buildPipeline = (measurementUUID) => this.apiCall({
     uri: 'hcs/pipelines',

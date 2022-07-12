@@ -22,6 +22,11 @@ import LoadTool from '../../../../../models/tools/LoadTool';
 
 const DEFAULT_DOCKER_IMAGE = 'library/cellprofiler-web-api';
 
+export async function getAnalysisSettings () {
+  await preferences.fetchIfNeededOrWait();
+  return preferences.hcsAnalysisConfiguration || {};
+}
+
 export async function findJobWithDockerImage (options = {}) {
   await preferences.fetchIfNeededOrWait();
   const configuration = preferences.hcsAnalysisConfiguration || {};
@@ -32,7 +37,8 @@ export async function findJobWithDockerImage (options = {}) {
   if (jobId) {
     return {
       id: jobId,
-      status: 'RUNNING'
+      status: 'RUNNING',
+      __predefined__: true
     };
   }
   if (!dockerImage) {
@@ -60,7 +66,7 @@ export async function findJobWithDockerImage (options = {}) {
     page: 1,
     pageSize: 1000,
     userModified: false,
-    statuses: ['RUNNING', 'PAUSING', 'PAUSED', 'RESUMING'],
+    statuses: ['RUNNING'],
     owners
   }, true, false);
   await request.filter();
@@ -152,12 +158,13 @@ export async function waitForJobToBeInitialized (job, attempt = 0) {
   if (endpoint) {
     return endpoint;
   }
+  const interval = job.__predefined__ ? 0 : REFETCH_INTERVAL_MS;
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       fetchJobInfo(job.id)
         .then(info => waitForJobToBeInitialized(info, attempt + 1))
         .then(resolve)
         .catch(reject);
-    }, REFETCH_INTERVAL_MS);
+    }, interval);
   });
 }

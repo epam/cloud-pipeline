@@ -51,9 +51,10 @@ class CellProfilerPipeline extends React.Component {
       pipeline,
       viewer,
       className,
-      style
+      style,
+      hidden
     } = this.props;
-    if (!pipeline) {
+    if (!pipeline || hidden) {
       return null;
     }
     return (
@@ -125,7 +126,8 @@ CellProfilerPipeline.propTypes = {
   style: PropTypes.object,
   pipeline: PropTypes.object,
   viewer: PropTypes.object,
-  expandSingle: PropTypes.bool
+  expandSingle: PropTypes.bool,
+  hidden: PropTypes.bool
 };
 
 export default observer(CellProfilerPipeline);

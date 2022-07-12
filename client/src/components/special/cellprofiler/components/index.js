@@ -91,6 +91,7 @@ class CellProfiler extends React.Component {
     if (!analysis) {
       return null;
     }
+    const disabled = false;
     const {
       openPipelineModalVisible,
       savePipelineOptions
@@ -129,16 +130,16 @@ class CellProfiler extends React.Component {
           selectedKeys={[]}
           onClick={onSelect}
         >
-          <MenuItem key="New">
+          <MenuItem key="New" disabled={disabled}>
             <Icon type="file" /> New
           </MenuItem>
-          <MenuItem key="Open">
+          <MenuItem key="Open" disabled={disabled}>
             <Icon type="folder-open" /> Open
           </MenuItem>
-          <MenuItem key="Save">
+          <MenuItem key="Save" disabled={disabled}>
             <Icon type="download" /> Save
           </MenuItem>
-          <MenuItem key="SaveAsNew">
+          <MenuItem key="SaveAsNew" disabled={disabled}>
             <Icon type="download" /> Save as new
           </MenuItem>
         </Menu>
@@ -224,7 +225,7 @@ class CellProfiler extends React.Component {
               marginRight: 5
             }}
             size="small"
-            disabled={!analysis.ready || analysis.analysing}
+            disabled={!analysis.available || analysis.analysing}
             onClick={this.runAnalysis}
           >
             <Icon type="caret-right" />

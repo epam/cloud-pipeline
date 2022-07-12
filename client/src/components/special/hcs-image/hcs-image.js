@@ -79,9 +79,6 @@ class HcsImage extends React.PureComponent {
   componentDidMount () {
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
     this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
-    if (this.state.showAnalysis) {
-      this.hcsAnalysis.activate();
-    }
     this.prepare();
   }
 
@@ -92,12 +89,6 @@ class HcsImage extends React.PureComponent {
       prevProps.path !== this.props.path
     ) {
       this.prepare();
-    }
-    if (
-      prevState.showAnalysis !== this.state.showAnalysis &&
-      this.hcsAnalysis
-    ) {
-      this.hcsAnalysis.activate(this.state.showAnalysis);
     }
   }
 

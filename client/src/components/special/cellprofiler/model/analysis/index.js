@@ -18,7 +18,7 @@ import {action, computed, observable} from 'mobx';
 import {NamesAndTypes} from '../modules/names-and-types';
 import {HCSSourceFile} from '../common/analysis-file';
 import {
-  findJobWithDockerImage,
+  findJobWithDockerImage, getAnalysisSettings,
   launchJobWithDockerImage,
   waitForJobToBeInitialized
 } from './job-utilities';
@@ -51,12 +51,12 @@ class Analysis {
   @observable status;
   @observable userInfo;
   @observable changed = false;
-  @observable _active = false;
   /**
    * @type {AnalysisOutputResult[]}
    */
   @observable analysisResults = [];
   analysisCache = [];
+  @observable sourceFileChanged = true;
   @observable showAnalysisResults = true;
   hcsImageViewer;
   _analysisRequested = false;
@@ -65,6 +65,11 @@ class Analysis {
   @computed
   get analysisRequested () {
     return this._analysisRequested;
+  }
+
+  @computed
+  get authenticationRequired () {
+    return this.analysisAPI && this.analysisAPI.requiresUserAuthentication;
   }
 
   set analysisRequested (requested) {
@@ -213,23 +218,9 @@ class Analysis {
     this.analysisTimeout = setTimeout(this.checkNeedAnalyze, INTERVAL_MS);
   };
 
-  /**
-   * Describes if the analysis is active (i.e., opened by user)
-   * @returns {boolean}
-   */
-  @computed
-  get active () {
-    return this._active;
-  }
-
   @computed
   get available () {
     return this.namesAndTypes && this.namesAndTypes.available;
-  }
-
-  @computed
-  get ready () {
-    return this.available && this.analysisAPI && this.pipelineId;
   }
 
   @action
@@ -238,18 +229,11 @@ class Analysis {
   }
 
   @action
-  activate = async (active = true) => {
-    this._active = active;
-    if (active && !this.pipelineId) {
-      await this.buildPipeline();
-      await this.attachFileToPipeline();
+  authenticate = () => {
+    if (this.analysisAPI) {
+      return this.analysisAPI.authenticate();
     }
-  };
-
-  @action
-  deactivate = () => {
-    this._active = false;
-  };
+  }
 
   @action
   wrapAction = async (action, throwError = false) => {
@@ -261,11 +245,7 @@ class Analysis {
     let actionError;
     let actionResult;
     try {
-      if (typeof action.then === 'function') {
-        actionResult = await action();
-      } else {
-        actionResult = action();
-      }
+      actionResult = await action();
     } catch (error) {
       this.error = error;
       actionError = error;
@@ -281,14 +261,20 @@ class Analysis {
   };
 
   @action
+  clearModulesState = () => {
+    this.modules.forEach(module => {
+      module.pending = false;
+      module.done = false;
+    });
+  }
+
+  @action
   buildPipeline = async () => {
-    if (!this.active) {
-      return;
-    }
     if (this.pipelineId) {
       return this.pipelineId;
     }
     try {
+      this.clearModulesState();
       this.status = 'Building CellProfiler pipeline...';
       this.pending = true;
       this.error = undefined;
@@ -307,6 +293,8 @@ class Analysis {
         throw new Error('Error creating pipeline: pipelineId is not defined');
       }
       this.status = `CellProfiler pipeline: #${this.pipelineId}`;
+      this.sourceFileChanged = true;
+      this.analysisCache = [];
     } catch (error) {
       this.error = error.message;
       console.warn(error);
@@ -317,10 +305,11 @@ class Analysis {
 
   @action
   attachFileToPipeline = async () => {
-    if (!this.active || !this.analysisAPI) {
+    if (!this.analysisAPI || !this.pipelineId || !this.sourceFileChanged) {
       return;
     }
     try {
+      this.clearModulesState();
       this.status = 'Attaching image to CellProfiler pipeline...';
       this.pending = true;
       this.error = undefined;
@@ -356,6 +345,8 @@ class Analysis {
         });
       });
       await this.analysisAPI.attachFiles(this.pipelineId, ...files);
+      this.sourceFileChanged = false;
+      this.analysisCache = [];
       this.status = `Image attached to pipeline: #${this.pipelineId}`;
     } catch (error) {
       this.error = error.message;
@@ -370,13 +361,6 @@ class Analysis {
 
   @action
   run = async () => {
-    if (!this.active || !this.pipelineId || !this.analysisAPI) {
-      this.modules.forEach(module => {
-        module.pending = false;
-        module.done = false;
-      });
-      return;
-    }
     /**
      * @param {{module: AnalysisModule, done: boolean}} options
      */
@@ -390,9 +374,9 @@ class Analysis {
       }
       const idx = this.modules.indexOf(options.module);
       if (idx >= 0) {
-        this.modules.slice(0, idx).forEach(module => {
-          module.pending = false;
-          module.done = true;
+        this.modules.forEach((module, moduleIdx) => {
+          module.pending = module === options.module;
+          module.done = idx > moduleIdx;
         });
         options.module.pending = !options.done;
         options.module.done = !!options.done;
@@ -404,6 +388,14 @@ class Analysis {
       this.pending = true;
       this.error = undefined;
       this.status = 'Running analysis...';
+      await this.wrapAction(this.buildPipeline);
+      if (!this.pipelineId) {
+        throw new Error(this.error || 'Error building analysis pipeline');
+      }
+      await this.wrapAction(this.attachFileToPipeline);
+      if (this.sourceFileChanged) {
+        throw new Error(this.error || 'Error attaching images to the analysis pipeline');
+      }
       const {
         results,
         cache
@@ -420,10 +412,7 @@ class Analysis {
       this.showAnalysisResults = true;
       this.status = 'Analysis done';
     } catch (error) {
-      this.modules.forEach(module => {
-        module.pending = false;
-        module.done = false;
-      });
+      this.clearModulesState();
       this.error = error.message;
       console.warn(error);
     } finally {
@@ -434,7 +423,7 @@ class Analysis {
   };
 
   acquireJob = async () => {
-    if (this.analysisAPI || !this.active) {
+    if (this.analysisAPI) {
       return this.analysisAPI;
     }
     this.status = 'Acquiring CellProfiler job...';
@@ -448,7 +437,8 @@ class Analysis {
     }
     this.status = 'Acquiring CellProfiler job endpoint...';
     const jobEndpoint = await waitForJobToBeInitialized(job);
-    this.analysisAPI = new AnalysisApi(jobEndpoint);
+    const config = await getAnalysisSettings();
+    this.analysisAPI = new AnalysisApi(jobEndpoint, config);
     this.status = `CellProfiler job: #${job.id} (${this.analysisAPI.endpoint})`;
     this.pending = false;
     return this.analysisAPI;
@@ -458,7 +448,7 @@ class Analysis {
    * @param {HCSSourceFileOptions} hcsSourceFile
    */
   changeFile (hcsSourceFile) {
-    const onChange = (fileChanged) => {
+    const onChange = () => {
       this.pipelineId = undefined;
       this.analysisResults = [];
       this.modules.forEach(aModule => {
@@ -467,12 +457,7 @@ class Analysis {
       });
       this.pipeline.objectsOutlines.detachResults(this.hcsImageViewer);
       this.analysisCache = [];
-      (async () => {
-        await this.buildPipeline();
-        if (fileChanged) {
-          await this.attachFileToPipeline();
-        }
-      })();
+      this.sourceFileChanged = true;
     };
     let changed = false;
     if (!this.namesAndTypes) {
@@ -482,7 +467,7 @@ class Analysis {
       changed = this.namesAndTypes.changeFile(hcsSourceFile);
     }
     if (HCSSourceFile.check(hcsSourceFile) && changed) {
-      onChange(changed);
+      onChange();
     }
   }
 
