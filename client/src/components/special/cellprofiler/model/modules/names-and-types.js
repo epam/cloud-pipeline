@@ -16,35 +16,55 @@
 
 import {computed, observable} from 'mobx';
 import {AnalysisModule} from './base';
-import {HCSSourceFile, sourceFileOptionsEqual} from '../common/analysis-file';
+import {HCSSourceFile, sourceFileOptionsSetsEqual} from '../common/analysis-file';
 import {AnalysisTypes} from '../common/analysis-types';
 
 class NamesAndTypes extends AnalysisModule {
   static predefined = true;
   path;
   /**
-   * @type {HCSSourceFileOptions}
+   * @type {HCSSourceFileOptions[]}
    */
-  @observable sourceFile;
+  @observable sourceFiles = [];
 
   /**
-   * @param {HCSSourceFileOptions} source
+   * @param {HCSSourceFileOptions[]} sources
    */
-  constructor (source) {
+  constructor (sources) {
     super(undefined);
     this.title = 'Input';
-    this.changeFile(source);
+    this.changeFiles(sources);
   }
 
   @computed
   get available () {
-    return HCSSourceFile.check(this.sourceFile);
+    return this.sourceFiles.length > 0 && HCSSourceFile.check(...this.sourceFiles);
+  }
+
+  @computed
+  get sourceDirectory () {
+    return [...(new Set(this.sourceFiles.map(aFile => aFile.sourceDirectory)))].pop();
+  }
+
+  @computed
+  get multipleFields () {
+    return new Set(
+      this.sourceFiles
+        .map(aFile => [
+          aFile.sourceDirectory,
+          aFile.x,
+          aFile.y,
+          aFile.z,
+          aFile.t,
+          aFile.fieldID
+        ].join('|'))
+    ).size > 1;
   }
 
   @computed
   get outputs () {
-    if (this.sourceFile && HCSSourceFile.check(this.sourceFile)) {
-      let channels = this.sourceFile.channels;
+    if (this.sourceFiles && HCSSourceFile.check(...this.sourceFiles)) {
+      let channels = [...new Set(this.sourceFiles.map(a => a.channel))];
       if (!channels || !channels.length) {
         channels = ['input'];
       }
@@ -58,14 +78,14 @@ class NamesAndTypes extends AnalysisModule {
   }
 
   /**
-   * @param {HCSSourceFileOptions} sourceFileOptions
+   * @param {HCSSourceFileOptions[]} sourceFilesOptions
    * @returns {boolean} true if changed
    */
-  changeFile (sourceFileOptions) {
-    if (sourceFileOptionsEqual(this.sourceFile, sourceFileOptions)) {
+  changeFiles (sourceFilesOptions = []) {
+    if (sourceFileOptionsSetsEqual(this.sourceFiles, sourceFilesOptions)) {
       return false;
     }
-    this.sourceFile = sourceFileOptions;
+    this.sourceFiles = sourceFilesOptions.slice();
     return true;
   }
 }

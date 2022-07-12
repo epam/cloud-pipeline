@@ -269,12 +269,12 @@ class HcsImage extends React.PureComponent {
       const newSequenceId = newSequence ? newSequence.id : undefined;
       const timePointId = this.selectedTimePoint;
       if (timePointId === currentTimePointId && currentSequenceId === newSequenceId) {
-        return;
-      }
-      if (newSequenceId !== currentSequenceId) {
+        this.loadImageForAnalysis();
+      } else if (newSequenceId !== currentSequenceId) {
         this.changeSequence();
       } else {
         this.hcsImageViewer.setGlobalTimePosition(timePointId);
+        this.loadImageForAnalysis();
       }
     });
   };
@@ -285,10 +285,10 @@ class HcsImage extends React.PureComponent {
       selectedZCoordinates: selection.slice()
     }, () => {
       const newZ = this.selectedZCoordinate;
-      if (newZ === currentZ || !this.hcsImageViewer) {
-        return;
+      if (newZ !== currentZ && this.hcsImageViewer) {
+        this.hcsImageViewer.setGlobalZPosition(Number(newZ));
       }
-      this.hcsImageViewer.setGlobalZPosition(Number(newZ));
+      this.loadImageForAnalysis();
     });
   };
 
@@ -311,6 +311,8 @@ class HcsImage extends React.PureComponent {
               const firstWell = wells[0];
               if (firstWell) {
                 this.changeWells([firstWell]);
+              } else {
+                this.loadImageForAnalysis();
               }
             });
           })
@@ -337,6 +339,8 @@ class HcsImage extends React.PureComponent {
         const {images = []} = well;
         const fields = wellViewByDefault ? images.slice() : images.slice(0, 1);
         this.changeWellImages(fields);
+      } else {
+        this.loadImageForAnalysis();
       }
     });
   };
@@ -388,6 +392,7 @@ class HcsImage extends React.PureComponent {
                   : undefined
               };
               this.hcsImageViewer.setImage(imagePayload);
+              this.loadImageForAnalysis();
             }
           });
       }
@@ -403,35 +408,60 @@ class HcsImage extends React.PureComponent {
 
   loadImageForAnalysis = () => {
     if (this.hcsInfo && this.hcsAnalysis && this.hcsImageViewer) {
-      const viewerState = this.hcsImageViewer.viewerState;
       const {
-        globalSelection = {}
-      } = viewerState || {};
-      const {
-        z = 0
-      } = globalSelection;
+        selectedWells,
+        selectedFields,
+        selectedSequenceTimePoints,
+        selectedZCoordinates: zCoordinates = []
+      } = this.state;
+      const selectedZCoordinates = zCoordinates.length > 0 ? zCoordinates : [0];
+      const analysisInputs = [];
+      const imageSelected = anImage => selectedFields
+        .some(aField => aField.x === anImage.x && aField.y === anImage.y);
+      this.selectedSequences.forEach(sequence => {
+        const timePoints = selectedSequenceTimePoints
+          .filter(o => o.sequence === sequence.id)
+          .map(o => Number(o.timePoint));
+        const wells = sequence.wells
+          .filter(aWell => selectedWells.some(w => w.x === aWell.x && w.y === aWell.y));
+        wells.forEach(aWell => {
+          const {
+            x: row,
+            y: column
+          } = aWell;
+          const images = aWell.images.filter(imageSelected);
+          images.forEach(anImage => {
+            timePoints.forEach(aTimePoint => {
+              selectedZCoordinates.forEach(z => {
+                (anImage.channels || []).forEach((channel, channelIndex) => {
+                  analysisInputs.push({
+                    sourceDirectory: sequence.sourceDirectory,
+                    x: column,
+                    y: row,
+                    z: Number(z) + 1,
+                    t: Number(aTimePoint) + 1,
+                    fieldID: anImage.fieldID,
+                    c: channelIndex + 1,
+                    channel: channel
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
       const sequence = this.selectedSequence;
-      const wells = this.selectedWells;
       const fields = this.selectedWellFields;
-      const timePoints = this.selectedTimePoints;
       if (
         sequence &&
         sequence.sourceDirectory &&
         fields.length > 0
       ) {
-        const analysisPath = sequence.sourceDirectory;
         this.hcsAnalysis.updatePhysicalSize(
           fields[0].physicalSize,
           fields[0].unit
         );
-        this.hcsAnalysis.changeFile({
-          sourceDirectory: analysisPath,
-          images: fields.map(field => field.fieldID),
-          wells: wells,
-          zCoordinates: [z + 1],
-          timePoints: timePoints.map(t => t + 1),
-          channels: fields[0].channels || []
-        });
+        this.hcsAnalysis.changeFile(analysisInputs);
       }
     }
   }
@@ -456,10 +486,6 @@ class HcsImage extends React.PureComponent {
       this.hcsImageViewer.addEventListener(
         this.hcsImageViewer.Events.onCellClick,
         this.onMeshCellClick.bind(this)
-      );
-      this.hcsImageViewer.addEventListener(
-        this.hcsImageViewer.Events.viewerStateChanged,
-        this.loadImageForAnalysis.bind(this)
       );
       this.hcsViewerState.attachToViewer(this.hcsImageViewer);
       this.hcsSourceState.attachToViewer(this.hcsImageViewer);

@@ -48,6 +48,14 @@ class CellProfiler extends React.Component {
     savePipelineOptions: undefined
   };
 
+  get batchMode () {
+    const {
+      batchMode,
+      analysis
+    } = this.props;
+    return batchMode || (analysis && analysis.batch);
+  }
+
   get availableModes () {
     const {availableModes} = this.props;
     if (typeof availableModes === 'string') {
@@ -63,6 +71,12 @@ class CellProfiler extends React.Component {
   }
 
   modeIsAvailable = (mode) => {
+    const {
+      analysis
+    } = this.props;
+    if (mode === CellProfiler.Modes.analysis && analysis && analysis.batch) {
+      return false;
+    }
     return this.availableModes.includes(mode);
   };
 
@@ -121,14 +135,15 @@ class CellProfiler extends React.Component {
   renderTitle = () => {
     const {
       analysis,
-      batchMode,
       toggleBatchMode
     } = this.props;
     if (!analysis) {
       return null;
     }
     const disabled = false;
-    const switchModeOperationAvailable = this.modeIsAvailable(CellProfiler.getMode(!batchMode));
+    const switchModeOperationAvailable = this.modeIsAvailable(
+      CellProfiler.getMode(!this.batchMode)
+    );
     const {
       openPipelineModalVisible,
       savePipelineOptions
@@ -160,7 +175,7 @@ class CellProfiler extends React.Component {
         case 'Open': openModal(); break;
         case 'batch':
           if (typeof toggleBatchMode === 'function') {
-            toggleBatchMode(!batchMode);
+            toggleBatchMode(!this.batchMode);
           }
           break;
       }
@@ -190,9 +205,9 @@ class CellProfiler extends React.Component {
           {
             switchModeOperationAvailable && (
               <MenuItem key="batch">
-                <Icon type={batchMode ? 'play-circle-o' : 'switcher'} />
+                <Icon type={this.batchMode ? 'play-circle-o' : 'switcher'} />
                 <span>
-                  {batchMode ? 'Analysis' : 'Batch analysis'}
+                  {this.batchMode ? 'Analysis' : 'Batch analysis'}
                 </span>
               </MenuItem>
             )
@@ -210,7 +225,7 @@ class CellProfiler extends React.Component {
           size="small"
         >
           <Icon type="bars" />
-          {batchMode ? 'Batch analysis' : 'Analysis'}
+          {this.batchMode ? 'Batch analysis' : 'Analysis'}
           <OpenPipelineModal
             visible={openPipelineModalVisible}
             onSelect={onPipelineSelected}
