@@ -37,13 +37,13 @@ import java.util.List;
 
 @RestController
 @Api(value = "Data Transfer Task Management")
-@RequestMapping(value = "/dts-task")
+@RequestMapping(value = "/dts")
 @AllArgsConstructor
 public class DtsTransferController extends AbstractRestController {
 
     private TransferTaskApiService transferTaskService;
 
-    @PostMapping
+    @PostMapping(path = "/tasks")
     @ApiOperation(
             value = "Creates new transfer tasks.",
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -51,7 +51,7 @@ public class DtsTransferController extends AbstractRestController {
         return Result.success(transferTaskService.create(tasks));
     }
 
-    @PostMapping(path = "/filter")
+    @PostMapping(path = "/tasks/filter")
     @ApiOperation(
             value = "Filters tasks.",
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -59,7 +59,7 @@ public class DtsTransferController extends AbstractRestController {
         return Result.success(transferTaskService.filter(filter));
     }
 
-    @GetMapping
+    @GetMapping(path = "/tasks")
     @ApiOperation(
             value = "Returns all tasks.",
             produces = MediaType.APPLICATION_JSON_VALUE)
