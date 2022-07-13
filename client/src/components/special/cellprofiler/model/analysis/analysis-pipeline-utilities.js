@@ -98,7 +98,7 @@ function extractModules (module) {
         const cpModule = AnalysisModule.createModule(
           name,
           {},
-          {id: `${module.id}_sub_${index + 1}`}
+          {id: `${module.id}_sub_${index + 1}`, pipeline: module.pipeline}
         );
         cpModule.parentModule = module;
         if (cpModule) {

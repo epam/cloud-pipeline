@@ -17,7 +17,12 @@
 import {action, computed, isObservableArray, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
-import {getComputedValue} from '../modules/parse-module-configuration';
+import {
+  getComputedValue,
+  getComputedValueLink,
+  modifyValue,
+  reverseModifyValue
+} from '../modules/parse-module-configuration';
 
 function mapListItem (listItem) {
   if (typeof listItem !== 'object') {
@@ -288,10 +293,11 @@ class ModuleParameterValue {
 
   @computed
   get value () {
-    if (this.parameter && this.parameter.computed) {
-      return getComputedValue(this.parameter.computed, this.parameter.cpModule);
-    }
-    return this._value;
+    return this.getValue();
+  }
+
+  set value (aValue) {
+    this.setValue(aValue);
   }
 
   @computed
@@ -308,16 +314,6 @@ class ModuleParameterValue {
       return true;
     }
     return this.parameter.required && this.isEmpty;
-  }
-
-  set value (aValue) {
-    if (this.parameter && this.parameter.multiple) {
-      this._value = aValue && (isObservableArray(aValue) || Array.isArray(aValue))
-        ? aValue
-        : [aValue].filter(o => o !== undefined);
-    } else {
-      this._value = aValue;
-    }
   }
 
   get payload () {
@@ -381,6 +377,36 @@ class ModuleParameterValue {
       default:
         return {[this.parameter.parameterName]: formattedValue};
     }
+  }
+
+  getValue (...modifier) {
+    let result = this._value;
+    if (this.parameter && this.parameter.computed) {
+      result = getComputedValue(this.parameter.computed, this.parameter.cpModule);
+    }
+    return modifyValue(
+      result,
+      this.pipeline,
+      ...modifier
+    );
+  }
+
+  setValue (aValue, ...modifier) {
+    let result = aValue;
+    if (this.parameter && this.parameter.multiple) {
+      result = aValue && (isObservableArray(aValue) || Array.isArray(aValue))
+        ? aValue
+        : [aValue].filter(o => o !== undefined);
+    }
+    result = reverseModifyValue(result, this.pipeline, ...modifier);
+    if (this.parameter && this.parameter.computed) {
+      const linkInfo = getComputedValueLink(this.parameter.computed, this.parameter.cpModule);
+      if (linkInfo) {
+        linkInfo.parameterValue.setValue(result, ...linkInfo.modifiers);
+        return;
+      }
+    }
+    this._value = result;
   }
 
   applyValue (value) {

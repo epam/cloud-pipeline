@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-import {action, computed, isObservableArray, observable} from 'mobx';
+import {action, computed, observable} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import generateId from '../common/generate-id';
 import {BooleanParameter} from '../parameters';
@@ -23,11 +23,6 @@ import parseModuleConfiguration, {
 } from './parse-module-configuration';
 import parameterInitializer from '../parameters/parameter-initializer';
 import allModules from './implementation';
-
-const IGNORED_PARAMETERS = [
-  'Select objects to display',
-  'Select outline color'
-];
 
 class AnalysisModuleOutput {
   /**
@@ -232,6 +227,15 @@ class AnalysisModule {
     return this.parametersConfigurations.find(config => config.name === name) ||
       this.parametersConfigurations.find(config => config.parameterName === name);
   }
+
+  /**
+   * @param {string} name
+   * @returns {ModuleParameterValue}
+   */
+  getParameterValueObject (name) {
+    return this.parameters.find(searchParameterByName(name)) ||
+      this.parameters.find(searchParameterByParameterName(name));
+  }
   getParameterValue (name, ...modifier) {
     if (/^uuid$/i.test(name)) {
       return this.uuid;
@@ -239,31 +243,9 @@ class AnalysisModule {
     if (/^id$/i.test(name)) {
       return this.id;
     }
-    const parameterValue = this.parameters.find(searchParameterByName(name)) ||
-      this.parameters.find(searchParameterByParameterName(name));
-    const modification = (o, singleModifier) => {
-      if (o && (Array.isArray(o) || isObservableArray(o))) {
-        return o.map(item => modification(item, singleModifier));
-      }
-      switch (singleModifier.toLowerCase()) {
-        case 'pixels':
-          if (
-            o !== undefined &&
-            o !== '' && !Number.isNaN(o) &&
-            this.pipeline &&
-            this.pipeline.physicalSize
-          ) {
-            return this.pipeline.physicalSize.getPixels(Number(o));
-          }
-          return o;
-        default:
-          return o;
-      }
-    };
-    const modify = (o) => modifier
-      .reduce((result, singleModifier) => modification(result, singleModifier), o);
+    const parameterValue = this.getParameterValueObject(name);
     if (parameterValue) {
-      return modify(parameterValue.value);
+      return parameterValue.getValue(...modifier);
     } else {
       console.warn(`parameter not found: ${name}`);
     }
@@ -390,18 +372,6 @@ class AnalysisModule {
       }), {...this.extraParameters});
   }
 
-  applySettings = (settings) => {
-    this.extraParameters = {};
-    Object.entries(settings || {})
-      .forEach(([parameterName, value]) => {
-        const parameter = this.parameters.find(p => p.parameter.parameterName === parameterName);
-        if (parameter) {
-          parameter.applyValue(value);
-        } else if (!IGNORED_PARAMETERS.includes(parameterName)) {
-          this.extraParameters[parameterName] = value;
-        }
-      });
-  };
   exportModule () {
     const properties = [
       this.hidden ? 'hidden' : false,

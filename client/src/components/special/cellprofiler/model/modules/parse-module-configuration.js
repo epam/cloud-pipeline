@@ -17,6 +17,7 @@
 /* eslint-disable max-len */
 
 import {AnalysisTypes} from '../common/analysis-types';
+import { isObservableArray } from "mobx";
 
 const brackets = ['[]', '()', '{}', '""'];
 const splitCharacters = [',|'];
@@ -587,6 +588,86 @@ export function getComputedValue (computed, cpModule) {
     result = result.replace(new RegExp(replacements[r].placeholder, 'g'), replacements[r].value || '');
   }
   return result;
+}
+
+export function getComputedValueLink (computed, cpModule) {
+  if (typeof computed === 'function') {
+    return undefined;
+  }
+  if (!cpModule) {
+    return undefined;
+  }
+  const groupsRegExp = /^({([^}]+)})$/g;
+  let e = groupsRegExp.exec(computed);
+  if (e && e.length >= 3) {
+    const [aName, ...modifier] = e[2].split(':');
+    const parameterValue = cpModule.getParameterValueObject(aName);
+    if (parameterValue) {
+      return {
+        parameterValue,
+        modifiers: modifier
+      };
+    }
+  }
+  return undefined;
+}
+
+function modification (o, singleModifier, pipeline) {
+  if (o && (Array.isArray(o) || isObservableArray(o))) {
+    return o.map(item => modification(item, singleModifier, pipeline));
+  }
+  switch (singleModifier.toLowerCase()) {
+    case 'pixels':
+      if (
+        o !== undefined &&
+        o !== '' && !Number.isNaN(o) &&
+        pipeline &&
+        pipeline.physicalSize
+      ) {
+        return pipeline.physicalSize.getPixels(Number(o));
+      }
+      return o;
+    default:
+      return o;
+  }
+}
+
+export function modifyValue (o, pipeline, ...modifier) {
+  return modifier
+    .reduce((result, singleModifier) => modification(
+      result,
+      singleModifier,
+      pipeline
+    ), o);
+}
+
+function reverseModification (o, singleModifier, pipeline) {
+  if (o && (Array.isArray(o) || isObservableArray(o))) {
+    return o.map(item => reverseModification(item, singleModifier, pipeline));
+  }
+  switch (singleModifier.toLowerCase()) {
+    case 'pixels':
+      if (
+        o !== undefined &&
+        o !== '' && !Number.isNaN(o) &&
+        pipeline &&
+        pipeline.physicalSize
+      ) {
+        return pipeline.physicalSize.getPhysicalSize(Number(o));
+      }
+      return o;
+    default:
+      return o;
+  }
+}
+
+export function reverseModifyValue (o, pipeline, ...modifier) {
+  return modifier
+    .reduce((result, singleModifier) => reverseModification(
+      result,
+      singleModifier,
+      pipeline
+    ), o);
 }
 
 export default function parseModuleConfiguration (cpModule) {
