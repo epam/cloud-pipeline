@@ -19,12 +19,6 @@
   flex-direction: column;
 }
 
-.labelContainer {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-}
-
 .input-container {
   display: flex;
   flex-direction: column;
