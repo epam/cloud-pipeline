@@ -404,6 +404,21 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get toolPredefinedKubeLabels () {
+    // TODO remove mocks when "ui.tool.kube.labels" or similar preference will be ready
+    const valueMock = ['kube_flag_1', 'kube_flag_2'];
+    return valueMock;
+    // const value = this.getPreferenceValue('ui.tool.kube.labels');
+    // if (value) {
+    //   try {
+    //     return JSON.parse(value);
+    //   } catch (e) {
+    //     console.warn('ui.tool.kube.labels', e);
+    //   }
+    // }
+    // return [];
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

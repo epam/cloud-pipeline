@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import {
 import classNames from 'classnames';
 
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
+import KubeLabels from '../elements/KubeLabels';
 import CodeEditor from '../../special/CodeEditor';
 import {getSpotTypeName} from '../../special/spot-instance-names';
 import EditToolFormParameters from './EditToolFormParameters';
@@ -148,6 +149,8 @@ export default class EditToolForm extends React.Component {
 
   state = {
     labels: [],
+    kubeLabels: [],
+    kubeLabelsErrors: {},
     labelInputVisible: false,
     labelInputValue: '',
     endpointInputVisible: false,
@@ -217,6 +220,51 @@ export default class EditToolForm extends React.Component {
 
   saveLabelInputRef = input => {
     this.input = input;
+  };
+
+  onKubeLabelsChange = (index, newLabelData, field) => {
+    const newKubeLabelsState = [...this.state.kubeLabels];
+    newKubeLabelsState[index] = newLabelData;
+    this.setState({kubeLabels: newKubeLabelsState}, () => {
+      if (field === 'key') {
+        this.validateKubeLabels();
+      }
+    });
+  };
+
+  onAddKubeLabel = (label) => {
+    const {kubeLabels} = this.state;
+    if (label) {
+      this.setState({kubeLabels: [...kubeLabels, label]}, () => {
+        this.validateKubeLabels();
+      });
+    }
+  };
+
+  onRemoveKubeLabel = (labelIndex) => {
+    const {kubeLabels} = this.state;
+    this.setState({kubeLabels: kubeLabels
+      .filter((label, index) => index !== labelIndex)
+    }, () => {
+      this.validateKubeLabels();
+    });
+  };
+
+  validateKubeLabels = () => {
+    const {kubeLabels} = this.state;
+    const keys = kubeLabels.map(label => label.key);
+    const errors = {};
+    for (let i = 0; i < keys.length; i++) {
+      const currentKey = keys[i];
+      if (!currentKey) {
+        errors[''] = 'Key is required';
+        continue;
+      }
+      if (keys.lastIndexOf(currentKey) !== i) {
+        errors[currentKey] = 'Key should be unique';
+      }
+    }
+    this.setState({kubeLabelsErrors: errors});
   };
 
   handleSubmit = (e) => {
@@ -332,6 +380,14 @@ export default class EditToolForm extends React.Component {
             }
           }
         }
+        const getKubeLabelsPayload = () => {
+          return (this.state.kubeLabels || [])
+            .filter(label => !label.predefined || (label.predefined && `${label.value}` === 'true'))
+            .reduce((acc, label) => {
+              acc[label.key] = label.value;
+              return acc;
+            }, {});
+        };
         const configuration = {
           parameters,
           node_count: this.state.launchCluster ? this.state.nodesCount : undefined,
@@ -342,7 +398,8 @@ export default class EditToolForm extends React.Component {
           instance_disk: values.disk,
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
-          is_spot: `${values.is_spot}` === 'true'
+          is_spot: `${values.is_spot}` === 'true',
+          kubeLabels: getKubeLabelsPayload()
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
@@ -449,6 +506,28 @@ export default class EditToolForm extends React.Component {
       this.awsRegions.filter((region) => `${region.id}` === initialValue).length === 0;
   };
 
+  getKubeLabels = () => {
+    const predefinedKeys = this.props.preferences && this.props.preferences.toolPredefinedKubeLabels
+      ? this.props.preferences.toolPredefinedKubeLabels
+      : [];
+    const labelsData = this.props.configuration && this.props.configuration.kubeLabels
+      ? this.props.configuration.kubeLabels
+      : {};
+    const predefined = predefinedKeys.map(key => ({
+      key,
+      value: labelsData[key] ? labelsData[key] === 'true' : false,
+      predefined: true
+    }));
+    const labels = Object.entries(labelsData)
+      .filter(([key]) => !predefinedKeys.includes(key))
+      .map(([key, value]) => ({
+        key,
+        value,
+        predefined: false
+      }));
+    return [...predefined, ...labels];
+  };
+
   rebuildComponent (props) {
     const state = this.state;
     state.labels = props.tool && props.tool.labels ? props.tool.labels.map(l => l) : [];
@@ -501,6 +580,7 @@ export default class EditToolForm extends React.Component {
         const gpuScalingParameters = state.gpuScalingConfiguration
           ? getGPUScalingSkippedParameters(this.props.preferences)
           : [];
+        state.kubeLabels = this.getKubeLabels();
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -755,6 +835,16 @@ export default class EditToolForm extends React.Component {
       }
       return true;
     };
+    const kubeLabelsChanged = () => {
+      const initialLabels = this.getKubeLabels();
+      const labels = this.state.kubeLabels.filter(label => label.key);
+      if (initialLabels.length !== labels.length) {
+        return true;
+      }
+      return labels.some(label => !initialLabels.find(
+        initial => initial.key === label.key && initial.value === label.value
+      ));
+    };
     const configurationFormFieldChanged = (field, formFieldName) => {
       formFieldName = formFieldName || field;
       const formField = this.props.form.getFieldValue(formFieldName);
@@ -847,7 +937,8 @@ export default class EditToolForm extends React.Component {
       autoScaledPriceTypeValue !== this.state.autoScaledPriceType ||
       (this.state.launchCluster && nodesCount !== this.state.nodesCount) ||
       (this.state.launchCluster && this.state.autoScaledCluster && maxNodesCount !== this.state.maxNodesCount) ||
-      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged();
+      limitMountsFieldChanged() || cloudRegionFieldChanged() || additionalCapabilitiesChanged() ||
+      kubeLabelsChanged();
   };
 
   initializeEndpointsControl = (control) => {
@@ -1316,6 +1407,30 @@ export default class EditToolForm extends React.Component {
                 )
               }
               {
+                <Row style={{marginBottom: 10, marginTop: 10}}>
+                  <Col
+                    xs={24}
+                    sm={6}
+                    style={{paddingRight: 10}}
+                    className={classNames(
+                      'cp-accent',
+                      styles.toolSettingsTitle
+                    )}
+                  >
+                    Kube labels:
+                  </Col>
+                  <Col xs={24} sm={12}>
+                    <KubeLabels
+                      labels={this.state.kubeLabels}
+                      onChange={this.onKubeLabelsChange}
+                      onAddLabel={this.onAddKubeLabel}
+                      onRemoveKubeLabel={this.onRemoveKubeLabel}
+                      errors={this.state.kubeLabelsErrors}
+                    />
+                  </Col>
+                </Row>
+              }
+              {
                 !this.isWindowsPlatform && (
                   <Row type="flex" align="middle" style={{marginBottom: 10}}>
                     <Col xs={24} sm={{span: 12, offset: 6}}>
@@ -1594,7 +1709,8 @@ export default class EditToolForm extends React.Component {
                   this.props.readOnly ||
                   !this.modified() ||
                   (this.toolFormSystemParameters && !this.toolFormSystemParameters.isValid) ||
-                  (this.toolFormParameters && !this.toolFormParameters.isValid)
+                  (this.toolFormParameters && !this.toolFormParameters.isValid) ||
+                  Object.keys(this.state.kubeLabelsErrors).length > 0
                 }>
                 SAVE
               </Button>
