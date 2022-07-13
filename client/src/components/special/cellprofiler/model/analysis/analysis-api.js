@@ -23,7 +23,8 @@ class AnalysisApi extends EndpointAPI {
       {
         fetchToken: true,
         credentials: true,
-        name: 'Analysis endpoint'
+        name: 'Analysis endpoint',
+        testConnectionURI: 'hcs/pipelines'
       }
     );
   }

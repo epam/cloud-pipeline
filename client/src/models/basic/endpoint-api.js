@@ -48,20 +48,49 @@ class APICallError extends Error {
   }
 }
 
+/**
+ * @typedef {Object} EndpointAPIOptions
+ * @property {string} [name]
+ * @property {boolean} [credentials=false] Include credentials (cookies) to the request
+ * @property {boolean} [fetchToken=true] Fetch user token if not provided
+ * @property {string} [token] User token (will be included as `bearer` header)
+ * @property {string} [testConnectionURI] Test endpoint availability
+ */
+
 class EndpointAPI {
+  /**
+   * @param {string} endpoint
+   * @param {EndpointAPIOptions} options
+   * @returns {Promise<boolean>}
+   */
+  static check (endpoint, options = {}) {
+    try {
+      const api = new this(endpoint, options);
+      return api.testConnection();
+    } catch (_) {
+      return Promise.resolve(false);
+    }
+  }
   @observable endpoint;
+
+  /**
+   * @param {string} endpoint
+   * @param {EndpointAPIOptions} options
+   */
   constructor (endpoint, options = {}) {
     const {
       token,
       fetchToken = true,
       credentials = false,
-      name
+      name,
+      testConnectionURI = ''
     } = options;
     this.endpoint = endpoint;
     this.fetchToken = fetchToken;
     this.token = token ? Promise.resolve(token) : undefined;
     this.credentials = credentials ? 'include' : 'omit';
     this.name = name;
+    this.testConnectionURI = testConnectionURI;
   }
 
   getMethodURL = (uri, query) => {
@@ -84,6 +113,23 @@ class EndpointAPI {
     }
     return url;
   }
+
+  /**
+   * @returns {Promise<boolean>}
+   */
+  testConnection = async () => {
+    try {
+      await this.apiCall({
+        uri: this.testConnectionURI
+      });
+      console.info(`Endpoint "${this.endpoint}" -> available`);
+      return true;
+    } catch (exception) {
+      const available = exception instanceof APICallError;
+      console.info(`Endpoint "${this.endpoint}" -> ${available ? 'available' : 'not available'}`);
+      return available;
+    }
+  };
 
   /**
    * @typedef {Object} APICallOptions
@@ -142,7 +188,7 @@ class EndpointAPI {
       if (!infos.length) {
         infos.push('error fetching data');
       }
-      throw new APICallError(errorName, infos.join(' '));
+      throw new Error(`${errorName} ${infos.join(' ')}`);
     }
     if (isJSON) {
       try {

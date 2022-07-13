@@ -27,6 +27,15 @@ export async function getAnalysisSettings () {
   return preferences.hcsAnalysisConfiguration || {};
 }
 
+export async function getAnalysisEndpointSetting () {
+  const configuration = await getAnalysisSettings();
+  const {
+    endpoint,
+    api = endpoint
+  } = configuration;
+  return api;
+}
+
 export async function findJobWithDockerImage (options = {}) {
   const configuration = await getAnalysisSettings();
   const {

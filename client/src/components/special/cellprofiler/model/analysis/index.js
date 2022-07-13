@@ -19,7 +19,7 @@ import {NamesAndTypes} from '../modules/names-and-types';
 import {HCSSourceFile} from '../common/analysis-file';
 import {
   findJobWithDockerImage,
-  launchJobWithDockerImage,
+  getAnalysisEndpointSetting,
   waitForJobToBeInitialized
 } from './job-utilities';
 import {AnalysisPipeline} from './pipeline';
@@ -421,19 +421,27 @@ class Analysis {
     if (this.analysisAPI) {
       return this.analysisAPI;
     }
-    this.status = 'Acquiring CellProfiler job...';
+    this.status = 'Configuration...';
     this.pending = true;
-    let job = await findJobWithDockerImage(this.userInfo);
-    if (!job) {
-      job = await launchJobWithDockerImage();
+    let endpoint = await getAnalysisEndpointSetting();
+    if (endpoint) {
+      this.status = 'Testing CellProfiler endpoint availability...';
+      const available = await AnalysisApi.check(endpoint);
+      if (!available) {
+        endpoint = undefined;
+      }
     }
-    if (!job) {
-      throw new Error('CellProfiler job cannot be initialized');
+    if (!endpoint) {
+      this.status = 'Acquiring CellProfiler job...';
+      const job = await findJobWithDockerImage(this.userInfo);
+      if (!job) {
+        throw new Error('CellProfiler job cannot be initialized');
+      }
+      this.status = 'Acquiring CellProfiler job endpoint...';
+      endpoint = await waitForJobToBeInitialized(job);
     }
-    this.status = 'Acquiring CellProfiler job endpoint...';
-    const jobEndpoint = await waitForJobToBeInitialized(job);
-    this.analysisAPI = new AnalysisApi(jobEndpoint);
-    this.status = `CellProfiler job: #${job.id} (${this.analysisAPI.endpoint})`;
+    this.analysisAPI = new AnalysisApi(endpoint);
+    this.status = 'Ready';
     this.pending = false;
     return this.analysisAPI;
   }
