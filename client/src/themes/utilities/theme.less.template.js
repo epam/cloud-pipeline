@@ -546,6 +546,9 @@ export default `
   border-right: 1px solid @card-border-color;
   border-bottom: 1px solid @card-border-color;
 }
+@THEME .cp-tabs-no-padding .ant-tabs-bar {
+  margin-bottom: 0;
+}
 @THEME .ant-checkbox-wrapper + span {
   color: @application-color;
 }
@@ -3163,6 +3166,17 @@ export default `
 @THEME .cell-profiler-results-table td,
 @THEME .cell-profiler-results-table th {
   border: 1px solid @table-border-color;
+}
+@THEME .cell-profiler-job:nth-child(even) {
+  background-color: @even-element-background;
+}
+@THEME .cell-profiler-job:hover {
+  background-color: @table-element-hover-background-color;
+  color: @table-element-hover-color;
+}
+@THEME .cell-profiler-job.selected {
+  background-color: @table-element-selected-background-color;
+  color: @table-element-selected-color;
 }
 
 `;

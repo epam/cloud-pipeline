@@ -18,14 +18,16 @@ import {action, computed, observable} from 'mobx';
 import {NamesAndTypes} from '../modules/names-and-types';
 import {HCSSourceFile} from '../common/analysis-file';
 import {
-  findJobWithDockerImage, getAnalysisSettings,
+  findJobWithDockerImage,
+  getAnalysisSettings,
   launchJobWithDockerImage,
   waitForJobToBeInitialized
 } from './job-utilities';
 import {AnalysisPipeline} from './pipeline';
 import AnalysisApi from './analysis-api';
-import runAnalysisPipeline from './analysis-pipeline-utilities';
+import runAnalysisPipeline, {getPipelineModules} from './analysis-pipeline-utilities';
 import {loadPipeline, savePipeline} from './analysis-pipeline-management';
+import {submitBatchAnalysis} from './batch';
 import PhysicalSize from './physical-size';
 
 const AUTOUPDATE = false;
@@ -51,6 +53,7 @@ class Analysis {
   @observable status;
   @observable userInfo;
   @observable changed = false;
+  @observable alias;
   /**
    * @type {AnalysisOutputResult[]}
    */
@@ -58,9 +61,11 @@ class Analysis {
   analysisCache = [];
   @observable sourceFileChanged = true;
   @observable showAnalysisResults = true;
-  hcsImageViewer;
+  @observable _hcsImageViewer;
   _analysisRequested = false;
   eventListeners = [];
+  storageId;
+  path;
 
   @computed
   get analysisRequested () {
@@ -100,6 +105,18 @@ class Analysis {
   @computed
   get batch () {
     return this.namesAndTypes && this.namesAndTypes.multipleFields;
+  }
+
+  @computed
+  get hcsImageViewer () {
+    return this._hcsImageViewer;
+  }
+
+  set hcsImageViewer (aViewer) {
+    this._hcsImageViewer = aViewer;
+    if (this.pipeline && this._hcsImageViewer) {
+      (this.pipeline.objectsOutlines.renderOutlines)(this._hcsImageViewer);
+    }
   }
 
   constructor (hcsImageViewer) {
@@ -145,6 +162,11 @@ class Analysis {
       })();
     }
   }
+
+  setSource = (storageId, path) => {
+    this.storageId = storageId;
+    this.path = path;
+  };
 
   newPipeline = () => {
     this.pipeline = new AnalysisPipeline(this);
@@ -308,6 +330,21 @@ class Analysis {
     }
   };
 
+  getInputsPayload = () => {
+    if (!this.namesAndTypes) {
+      return [];
+    }
+    return this.namesAndTypes.sourceFiles.map(aFile => ({
+      x: aFile.x,
+      y: aFile.y,
+      z: aFile.z,
+      timepoint: aFile.t,
+      fieldId: aFile.fieldID,
+      channel: aFile.c,
+      channelName: aFile.channel
+    }));
+  }
+
   @action
   attachFileToPipeline = async () => {
     if (!this.analysisAPI || !this.pipelineId || !this.sourceFileChanged) {
@@ -320,15 +357,7 @@ class Analysis {
       this.error = undefined;
       await this.analysisAPI.attachFiles(
         this.pipelineId,
-        ...this.namesAndTypes.sourceFiles.map(aFile => ({
-          x: aFile.x,
-          y: aFile.y,
-          z: aFile.z,
-          timepoint: aFile.t,
-          fieldId: aFile.fieldID,
-          channel: aFile.c,
-          channelName: aFile.channel
-        }))
+        ...this.getInputsPayload()
       );
       this.sourceFileChanged = false;
       this.analysisCache = [];
@@ -345,7 +374,48 @@ class Analysis {
   };
 
   @action
-  run = async () => {
+  runBatch = async () => {
+    try {
+      this.analysing = true;
+      this.pending = true;
+      this.error = undefined;
+      this.status = 'Submitting batch analysis...';
+      if (!this.namesAndTypes || !this.namesAndTypes.sourceDirectory) {
+        throw new Error('HCS file\'s measurement UUID not specified');
+      }
+      /**
+       * @type {BatchAnalysisSpecification}
+       */
+      const specification = {
+        alias: this.alias,
+        storage: this.storageId,
+        path: this.path,
+        pipeline: this.pipeline.exportPipeline(true),
+        measurementUUID: this.namesAndTypes.sourceDirectory,
+        inputs: this.getInputsPayload(),
+        modules: getPipelineModules(this.modules)
+          .map((module, idx) => ({
+            moduleName: module.name,
+            moduleId: idx + 1,
+            parameters: module.getPayload()
+          }))
+      };
+      const batchAnalysis = await submitBatchAnalysis(
+        specification
+      );
+      this.status = 'Batch analysis submitted';
+      return batchAnalysis;
+    } catch (error) {
+      this.error = error.message;
+      return undefined;
+    } finally {
+      this.pending = false;
+      this.analysing = false;
+    }
+  };
+
+  @action
+  run = async (debug = true) => {
     /**
      * @param {{module: AnalysisModule, done: boolean}} options
      */
@@ -355,7 +425,7 @@ class Analysis {
           module.pending = false;
           module.done = true;
         });
-      } else if (this.batch) {
+      } else if (!debug) {
         this.modules.forEach(module => {
           module.pending = true;
           module.done = false;
@@ -386,7 +456,7 @@ class Analysis {
       if (this.sourceFileChanged) {
         throw new Error(this.error || 'Error attaching images to the analysis pipeline');
       }
-      if (this.batch) {
+      if (!debug) {
         this.modules.forEach(module => {
           module.pending = true;
           module.done = false;
@@ -400,7 +470,11 @@ class Analysis {
         this.pipelineId,
         this.modules,
         this.analysisCache,
-        {debug: !this.batch, callback: reportModuleStatus}
+        {
+          debug,
+          objectsOutput: !this.batch,
+          callback: reportModuleStatus
+        }
       );
       this.analysisResults = results.filter(o => !o.object);
       this.pipeline.objectsOutlines.update(results, this.hcsImageViewer);

@@ -164,7 +164,7 @@ export default class OutlineObjectsConfiguration {
       aConfiguration.fetchUrl = undefined;
       aConfiguration.fetchBackgroundUrl = undefined;
     });
-    this.renderOutlines(hcsImageViewer);
+    (this.renderOutlines)(hcsImageViewer);
   };
 
   @action

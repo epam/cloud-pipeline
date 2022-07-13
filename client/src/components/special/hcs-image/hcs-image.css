@@ -35,6 +35,7 @@
   position: relative;
   display: flex;
   flex-direction: row;
+  padding: 0;
 }
 
 .alert-container {
@@ -60,6 +61,12 @@
   height: 100%;
   overflow: hidden;
   position: relative;
+}
+
+.hcs-batch-job-info {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
 }
 
 .hcs-image {
@@ -92,6 +99,7 @@
   position: relative;
   padding: 5px;
   overflow: auto;
+  max-height: 33vh;
 }
 
 .hcs-image-controls {

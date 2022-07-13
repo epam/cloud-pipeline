@@ -16,6 +16,7 @@
 
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
+import GenerateDownloadUrl from "../../../../../models/dataStorage/GenerateDownloadUrl";
 
 const expirationTimeoutMS = 1000 * 60; // 1 minute
 
@@ -46,15 +47,7 @@ export async function getOutputFileAccessInfo (output) {
       if (url) {
         return url;
       }
-      if (objectStorage.pathMask) {
-        const e = (new RegExp(`^${objectStorage.pathMask}/(.+)$`, 'i')).exec(path);
-        if (e && e.length) {
-          url = objectStorage.generateFileUrl(e[1]);
-          setExpirationTimeout();
-          return url;
-        }
-      }
-      url = objectStorage.generateFileUrl(path);
+      url = objectStorage.generateFileUrl(objectStorage.getRelativePath(path));
       setExpirationTimeout();
       return url;
     };
@@ -62,6 +55,37 @@ export async function getOutputFileAccessInfo (output) {
       ...output,
       fetchUrl
     };
+  }
+  return undefined;
+}
+
+/**
+ * @param {{url: string?, storageId: string?, path: string?}} options
+ * @returns {Promise<string>}
+ */
+export async function generateResourceUrl (options = {}) {
+  const {
+    url,
+    storageId,
+    path
+  } = options;
+  if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
+    return url;
+  }
+  if (typeof url === 'string') {
+    const accessInfo = await getOutputFileAccessInfo({file: url});
+    if (accessInfo) {
+      return accessInfo.fetchUrl();
+    }
+    return url;
+  }
+  if (storageId && path) {
+    const request = new GenerateDownloadUrl(storageId, path);
+    await request.fetch();
+    if (request.error) {
+      throw new Error(request.error);
+    }
+    return request.value.url;
   }
   return undefined;
 }

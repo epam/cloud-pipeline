@@ -14,19 +14,25 @@
  *  limitations under the License.
  */
 
-.cell-profiler {
+.cell-profiler,
+.cell-profiler-jobs-container {
   display: flex;
   flex-direction: column;
   overflow: auto;
 }
 
 .cell-profiler-header,
-.cell-profiler-footer {
+.cell-profiler-footer,
+.cell-profiler-pagination {
   line-height: 32px;
   padding: 0 5px;
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+.cell-profiler-pagination {
+  justify-content: flex-end;
 }
 
 .cell-profiler-footer {
@@ -43,7 +49,8 @@
   font-weight: bold;
 }
 
-.cell-profiler-modules {
+.cell-profiler-modules,
+.cell-profiler-jobs {
   flex: 1;
   overflow: auto;
 }
@@ -148,11 +155,12 @@
 .analysis-output-container .analysis-output-header {
   display: flex;
   align-items: center;
+  line-height: 20px;
 }
 
 .analysis-output-table-container {
+  flex: 1;
   overflow: auto;
-  max-height: 33vh;
 }
 
 .analysis-output-table {
@@ -209,6 +217,111 @@
 .units::before {
   content: ', ';
   white-space: pre;
+}
+
+.analysis-selection-info {
+  margin: 5px;
+}
+
+.analysis-selection-info .count:not(:last-child)::after {
+  content: ', ';
+  white-space: pre;
+}
+
+.analysis-selection-info .count:last-child::after {
+  content: '.';
+}
+
+.cell-profiler-job,
+.cell-profiler-jobs-row {
+  margin: 2px 0;
+  padding: 5px;
+}
+
+.cell-profiler-jobs-row {
+  line-height: 24px;
+}
+
+.cell-profiler-job {
+  cursor: pointer;
+}
+
+.cell-profiler-job .row {
+  display: flex;
+  align-items: center;
+  margin: 2px 0;
+}
+
+.cell-profiler-job .row.info {
+  line-height: initial;
+  font-size: smaller;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.cell-profiler-job .row.info > *:not(:last-child)::after {
+  content: ';';
+  margin-right: 5px;
+}
+
+.cell-profiler-job .title {
+  font-weight: bold;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-profiler-job .title:not(:first-child)::before {
+  margin-left: 5px;
+  content: '';
+}
+
+.cell-profiler-job-results {
+  display: flex;
+  flex-direction: column;
+  padding: 0 5px;
+}
+
+.cell-profiler-job-results .title {
+  line-height: 32px;
+  display: flex;
+  align-items: center;
+  font-size: larger;
+  word-break: normal;
+}
+
+.cell-profiler-job-results .title > *:not(:last-child) {
+  margin-right: 5px;
+}
+
+.cell-profiler-job-results-output {
+  flex: 1;
+  overflow: auto;
+  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+}
+
+.cell-profiler-job-info-row {
+  display: flex;
+  align-items: center;
+  line-height: 24px;
+}
+
+.cell-profiler-job-info-row .value {
+  margin-left: 5px;
+}
+
+.cell-profiler-jobs-filter-row {
+  display: flex;
+  align-items: center;
+}
+
+.cell-profiler-jobs-filter {
+  flex: 1;
+  margin-left: 5px;
 }
 
 @keyframes blink-animation {

@@ -48,17 +48,70 @@ class NamesAndTypes extends AnalysisModule {
 
   @computed
   get multipleFields () {
-    return new Set(
+    return this.wells.length > 1 ||
+      this.timePoints.length > 1 ||
+      this.zCoordinates.length > 1 ||
+      this.wellFields.some(({fields = []}) => fields.length > 1);
+  }
+
+  @computed
+  get wells () {
+    return [...new Set(
       this.sourceFiles
         .map(aFile => [
           aFile.sourceDirectory,
           aFile.x,
-          aFile.y,
-          aFile.z,
-          aFile.t,
-          aFile.fieldID
+          aFile.y
         ].join('|'))
-    ).size > 1;
+    )]
+      .map(o => o.split('|'))
+      .map(([sourceDirectory, x, y]) => ({
+        uuid: sourceDirectory,
+        x: Number(x),
+        y: Number(y)
+      }));
+  }
+
+  @computed
+  get timePoints () {
+    return [...new Set(this.sourceFiles.map(aFile => aFile.t))];
+  }
+
+  @computed
+  get zCoordinates () {
+    return [...new Set(this.sourceFiles.map(aFile => aFile.z))];
+  }
+
+  @computed
+  get wellFields () {
+    return this.wells.map(aWell => {
+      const fields = [...new Set(this.sourceFiles
+        .filter(aFile =>
+          aFile.sourceDirectory === aWell.uuid &&
+          aFile.x === aWell.x &&
+          aFile.y === aWell.y
+        )
+        .map(aFile => aFile.fieldID)
+      )];
+      return ({well: aWell, fields});
+    });
+  }
+
+  @computed
+  get commonFields () {
+    const all = new Set(
+      this.wellFields
+        .map(o => o.fields)
+        .reduce((r, c) => ([...r, ...c]), [])
+    );
+    this.wellFields.forEach(({fields = []}) => {
+      [...all].forEach(field => {
+        if (!fields.includes(field)) {
+          all.delete(field);
+        }
+      });
+    });
+    return [...all];
   }
 
   @computed

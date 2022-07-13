@@ -101,6 +101,7 @@ class AnalysisModule {
   parentModule;
   @observable pending = false;
   @observable done = false;
+  @observable statusReporting = false;
   composed = false;
 
   /**
@@ -379,6 +380,11 @@ class AnalysisModule {
     }
   }
 
+  /**
+   * Returns module's parameters payload
+   * @param {boolean} [validate=false]
+   * @returns {*}
+   */
   getPayload = (validate = false) => {
     return this.parameters
       .filter((parameter) =>
@@ -402,7 +408,7 @@ class AnalysisModule {
         }
       });
   };
-  exportModule () {
+  exportModule (json = false) {
     const properties = [
       this.hidden ? 'hidden' : false,
       this.composed ? 'composed' : false
@@ -411,17 +417,26 @@ class AnalysisModule {
     if (properties.length > 0) {
       propertiesString = `[${properties.join('|')}]`;
     }
+    const parametersPayload = this.parameters
+      .filter(parameterValue => parameterValue.parameter &&
+        parameterValue.parameter.exportParameter
+      )
+      .map(parameterValue => parameterValue.exportParameterValue())
+      .filter(parameterValue => parameterValue && parameterValue.length)
+    if (json) {
+      return {
+        name: this.name,
+        hidden: this.hidden,
+        composed: this.composed,
+        parameters: parametersPayload
+      };
+    }
     return [
       [
         this.name,
         propertiesString
       ].filter(o => o && o.length > 0).join(':'),
-      ...this.parameters
-        .filter(parameterValue => parameterValue.parameter &&
-          parameterValue.parameter.exportParameter
-        )
-        .map(parameterValue => parameterValue.exportParameterValue())
-        .filter(parameterValue => parameterValue && parameterValue.length)
+      ...parametersPayload
         .map(parameterValue => `\t${parameterValue}`)
     ].join('\n');
   }

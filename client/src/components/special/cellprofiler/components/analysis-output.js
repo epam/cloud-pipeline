@@ -18,27 +18,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {Alert, Icon} from 'antd';
-import readBlobContents from '../../../../utils/read-blob-contents';
+import {Icon} from 'antd';
 import {Analysis} from '../model/analysis';
+import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
+import {generateResourceUrl} from '../model/analysis/output-utilities';
 import styles from './cell-profiler.css';
-
-function splitHeaderColumns (string) {
-  if (!string || !string.length) {
-    return [];
-  }
-  if (!['"', '\''].includes(string[0])) {
-    const [column, ...rest] = string.split(',');
-    return [column, ...splitHeaderColumns(rest.join(','))];
-  }
-  const quota = string[0];
-  const r = new RegExp(`^${quota}([^${quota}]*)${quota}(,\\s*|$)(.*)$`);
-  const e = r.exec(string);
-  if (e) {
-    return [e[1], ...splitHeaderColumns(e[3])];
-  }
-  return [];
-}
 
 /**
  * @param {AnalysisOutputResult} output
@@ -54,35 +38,169 @@ function getDownloadUrl (output) {
   return Promise.resolve(output.url);
 }
 
-/**
- * @param {AnalysisOutputResult} output
- * @returns {Promise<{columns: ([]|*), rows}>}
- */
-async function fetchContents (output) {
-  const url = await getDownloadUrl(output);
-  if (!url) {
-    return undefined;
-  }
-  const response = await fetch(url);
-  const blob = await response.blob();
-  if (!blob) {
-    throw new Error('Error fetching results file');
-  }
-  const content = await readBlobContents(blob);
-  if (!content) {
-    throw new Error('Error fetching results file: empty');
-  }
-  const [header, ...data] = content.split(/\r?\n/);
-  return {
-    columns: splitHeaderColumns(header),
-    rows: data.map(row => row.split(','))
+@observer
+class AnalysisOutputWithDownload extends React.Component {
+  state = {
+    url: undefined,
+    data: undefined,
+    output: undefined,
+    pending: false,
+    error: undefined
   };
+
+  componentDidMount () {
+    this.updateUrl();
+  }
+
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (
+      prevProps.url !== this.props.url ||
+      prevProps.storageId !== this.props.storageId ||
+      prevProps.path !== this.props.path
+    ) {
+      this.updateUrl();
+    }
+  }
+
+  updateUrl = () => {
+    const {
+      url,
+      storageId,
+      path
+    } = this.props;
+    this.setState({
+      pending: true,
+      error: undefined,
+      url: undefined,
+      data: undefined
+    }, async () => {
+      const state = {
+        pending: false,
+        error: undefined,
+        data: undefined
+      };
+      try {
+        const _url = await generateResourceUrl({url, storageId, path});
+        if (!_url) {
+          throw new Error('Cannot generate download url');
+        }
+        state.data = await fetchContents(_url);
+        if (state.data) {
+          state.url = _url;
+        }
+      } catch (error) {
+        state.error = error.message;
+      } finally {
+        this.setState(state);
+      }
+    });
+  };
+
+  handleDownload = async (e) => {
+    e.preventDefault();
+    const {
+      url
+    } = this.state;
+    if (!url) {
+      return null;
+    }
+    window.open(url, '_blank');
+  };
+
+  renderHeader () {
+    const {
+      url,
+      pending
+    } = this.state;
+    const {
+      onClose
+    } = this.props;
+    if (!url) {
+      return null;
+    }
+    return (
+      <div
+        className={styles.analysisOutputHeader}
+      >
+        <b>Analysis results</b>
+        {
+          pending && (<Icon type="loading" style={{marginLeft: 5}} />)
+        }
+        <a
+          style={{marginLeft: 5}}
+          onClick={this.handleDownload}
+        >
+          Download
+        </a>
+        {
+          typeof onClose === 'function' && (
+            <Icon
+              type="close"
+              style={{
+                marginLeft: 'auto',
+                cursor: 'pointer'
+              }}
+              onClick={onClose}
+            />
+          )
+        }
+      </div>
+    );
+  }
+
+  render () {
+    const {
+      className,
+      style
+    } = this.props;
+    const {
+      url,
+      pending,
+      data
+    } = this.state;
+    return (
+      <div
+        className={
+          classNames(
+            styles.analysisOutputContainer,
+            className
+          )
+        }
+        style={style}
+      >
+        {
+          this.renderHeader()
+        }
+        {
+          pending && !url && (
+            <Icon type="loading" />
+          )
+        }
+        <div
+          className={styles.analysisOutputTableContainer}
+        >
+          <AnalysisOutputTable
+            data={data}
+          />
+        </div>
+      </div>
+    );
+  }
 }
+
+AnalysisOutputWithDownload.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object,
+  storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  path: PropTypes.string,
+  url: PropTypes.string,
+  onClose: PropTypes.func
+};
 
 @observer
 class AnalysisOutput extends React.Component {
   state = {
-    contents: undefined,
+    url: undefined,
     output: undefined,
     pending: false,
     error: undefined
@@ -118,25 +236,26 @@ class AnalysisOutput extends React.Component {
     if (output) {
       this.setState({
         pending: true,
-        error: undefined
+        error: undefined,
+        url: undefined
       }, () => {
-        fetchContents(output)
-          .then(contents => this.setState({
+        getDownloadUrl(output)
+          .then(url => this.setState({
             pending: false,
             error: undefined,
-            contents
+            url
           }))
           .catch(e => this.setState({
             pending: false,
             error: e.message,
-            contents: undefined
+            url: undefined
           }));
       });
     } else {
       this.setState({
         pending: true,
         error: undefined,
-        contents: undefined
+        url: undefined
       });
     }
   };
@@ -192,90 +311,24 @@ class AnalysisOutput extends React.Component {
     );
   }
 
-  renderContents = () => {
-    const {
-      error,
-      contents
-    } = this.state;
-    if (error) {
-      return (
-        <Alert message={error} type="error" />
-      );
-    }
-    if (contents) {
-      const {
-        rows = [],
-        columns = []
-      } = contents;
-      return (
-        <div
-          className={styles.analysisOutputTableContainer}
-        >
-          <table
-            className={
-              classNames(
-                styles.analysisOutputTable,
-                'cell-profiler-results-table'
-              )
-            }
-          >
-            <thead>
-              <tr>
-                {
-                  columns.map((column, index) => (
-                    <th key={`${column}-${index}`}>
-                      {column}
-                    </th>
-                  ))
-                }
-              </tr>
-            </thead>
-            <tbody>
-              {
-                rows.map((data, rowIndex) => (
-                  <tr key={`line-${rowIndex}`}>
-                    {
-                      data.map((cell, columnIndex) => (
-                        <td key={`data-${rowIndex}-${columnIndex}`}>
-                          {cell}
-                        </td>
-                      ))
-                    }
-                  </tr>
-                ))
-              }
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-    return null;
-  };
-
   render () {
     const {
       analysis,
-      className
+      className,
+      style,
+      onClose
     } = this.props;
     if (!analysis || !analysis.analysisOutput) {
       return null;
     }
+    const {url} = this.state;
     return (
-      <div
-        className={
-          classNames(
-            styles.analysisOutputContainer,
-            className
-          )
-        }
-      >
-        {
-          this.renderHeader()
-        }
-        {
-          this.renderContents()
-        }
-      </div>
+      <AnalysisOutputWithDownload
+        className={className}
+        style={style}
+        url={url}
+        onClose={onClose}
+      />
     );
   }
 }
@@ -287,4 +340,5 @@ AnalysisOutput.propTypes = {
   onClose: PropTypes.func
 };
 
+export {AnalysisOutputWithDownload};
 export default AnalysisOutput;

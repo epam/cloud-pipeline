@@ -19,6 +19,7 @@ import DataStorageItemContent from '../models/dataStorage/DataStorageItemContent
 import GenerateDownloadUrl from '../models/dataStorage/GenerateDownloadUrl';
 import storagesRequest from '../models/dataStorage/DataStorageAvailable';
 import DataStorageRequest from '../models/dataStorage/DataStoragePage';
+import DataStorageItemUpdateContent from '../models/dataStorage/DataStorageItemUpdateContent';
 
 const parser = new DOMParser();
 
@@ -76,7 +77,8 @@ class ObjectStorage {
       path,
       pathMask,
       region,
-      delimiter = '/'
+      delimiter = '/',
+      mountPoint
     } = options;
     this.id = id;
     this.type = type;
@@ -86,6 +88,16 @@ class ObjectStorage {
     this.delimiter = delimiter;
     this.s3Storage = undefined;
     this.permissions = permissions;
+    this.mountPoint = mountPoint;
+    if (/^nfs$/i.test(type)) {
+      if (mountPoint) {
+        this.localRoot = mountPoint;
+      } else {
+        this.localRoot = '/cloud-data/'.concat(path.replace(/[:]/g, ''));
+      }
+    } else {
+      this.localRoot = '/cloud-data/'.concat(path);
+    }
   }
 
   async initialize (permissions = {}) {
@@ -179,6 +191,42 @@ class ObjectStorage {
     }
     return fetchPage();
   }
+
+  getRelativePath = (path) => {
+    if (this.pathMask) {
+      const e = (new RegExp(`^${this.pathMask}/(.+)$`, 'i')).exec(path);
+      if (e && e.length) {
+        return e[1];
+      }
+    }
+    return path;
+  };
+
+  joinPaths = (...path) => {
+    const removeSlashes = o => {
+      let result = o || '';
+      if (result.startsWith(this.delimiter)) {
+        result = result.slice(1);
+      }
+      if (result.endsWith(this.delimiter)) {
+        result = result.slice(0, -1);
+      }
+      return result;
+    };
+    return path.map(removeSlashes).join(this.delimiter);
+  };
+
+  getLocalPath = (path) => {
+    return (this.localRoot || '').concat('/').concat(path).replace(/\/\//g, '/');
+  }
+
+  writeFile = async (path, content) => {
+    const request = new DataStorageItemUpdateContent(this.id, path);
+    await request.send(content);
+    if (request.error) {
+      throw new Error(request.error);
+    }
+  };
 }
 
 function findStorageByIdentifierFn (storageId) {
