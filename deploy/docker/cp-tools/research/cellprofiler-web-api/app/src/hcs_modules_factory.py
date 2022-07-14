@@ -2,10 +2,21 @@ import inspect
 import os
 import sys
 
+from cellprofiler.modules.calculatemath import CalculateMath
+from cellprofiler.modules.calculatestatistics import CalculateStatistics
+from cellprofiler.modules.classifyobjects import ClassifyObjects
 from cellprofiler.modules.colortogray import ColorToGray
+from cellprofiler.modules.combineobjects import CombineObjects
+from cellprofiler.modules.convertimagetoobjects import ConvertImageToObjects
 from cellprofiler.modules.correctilluminationapply import CorrectIlluminationApply
 from cellprofiler.modules.correctilluminationcalculate import CorrectIlluminationCalculate
 from cellprofiler.modules.crop import Crop
+from cellprofiler.modules.displaydataonimage import DisplayDataOnImage
+from cellprofiler.modules.displaydensityplot import DisplayDensityPlot
+from cellprofiler.modules.displayhistogram import DisplayHistogram
+from cellprofiler.modules.displayplatemap import DisplayPlatemap
+from cellprofiler.modules.displayscatterplot import DisplayScatterPlot
+from cellprofiler.modules.editobjectsmanually import EditObjectsManually
 from cellprofiler.modules.definegrid import DefineGrid
 from cellprofiler.modules.dilateimage import DilateImage
 from cellprofiler.modules.dilateobjects import DilateObjects
@@ -13,10 +24,14 @@ from cellprofiler.modules.enhanceedges import EnhanceEdges
 from cellprofiler.modules.erodeimage import ErodeImage
 from cellprofiler.modules.expandorshrinkobjects import ExpandOrShrinkObjects
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet, EEObjectNameSubscriber
+from cellprofiler.modules.filterobjects import FilterObjects
 from cellprofiler.modules.fillobjects import FillObjects
+from cellprofiler.modules.flagimage import FlagImage
 from cellprofiler.modules.flipandrotate import FlipAndRotate
 from cellprofiler.modules.gaussianfilter import GaussianFilter
 from cellprofiler.modules.graytocolor import GrayToColor
+from cellprofiler.modules.identifyobjectsingrid import IdentifyObjectsInGrid
+from cellprofiler.modules.identifyobjectsmanually import IdentifyObjectsManually
 from cellprofiler.modules.identifyprimaryobjects import IdentifyPrimaryObjects
 from cellprofiler.modules.identifysecondaryobjects import IdentifySecondaryObjects
 from cellprofiler.modules.identifytertiaryobjects import IdentifyTertiaryObjects
@@ -40,7 +55,9 @@ from cellprofiler.modules.savecroppedobjects import SaveCroppedObjects
 from cellprofiler.modules.saveimages import SaveImages
 from cellprofiler.modules.shrinktoobjectcenters import ShrinkToObjectCenters
 from cellprofiler.modules.smooth import Smooth
+from cellprofiler.modules.splitormergeobjects import SplitOrMergeObjects
 from cellprofiler.modules.tile import Tile
+from cellprofiler.modules.trackobjects import TrackObjects
 from cellprofiler.modules.unmixcolors import UnmixColors
 from cellprofiler_core.module import Module
 from cellprofiler_core.modules.align import Align
@@ -62,10 +79,23 @@ from cellprofiler.modules.resizeobjects import ResizeObjects
 from cellprofiler.modules.threshold import Threshold
 from cellprofiler.modules.watershed import Watershed
 from cellprofiler_core.setting.choice import Choice
+from cellprofiler_core.setting.multichoice import MultiChoice
 from cellprofiler_core.setting.subscriber import LabelSubscriber, ImageSubscriber
-from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary
-from cellprofiler_core.setting.text import Float, ImageName, Text
+from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, Divider, Measurement, Binary, \
+    HiddenCount
+from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
+
+from .config import Config
 from .modules.define_results import DefineResults, SpecItem
+
+
+def prepare_input_path(input_path, cloud_scheme='s3'):
+    cloud_prefix = cloud_scheme + '://'
+    if input_path.startswith(cloud_prefix):
+        return os.path.join('/cloud-data', input_path[len(cloud_prefix):])
+    if not os.path.exists(input_path):
+        raise RuntimeError('No such file [{}] available!'.format(input_path))
+    return input_path
 
 
 class HcsModulesFactory(object):
@@ -135,6 +165,16 @@ class ModuleProcessor(object):
             else:
                 setting.value = new_value
         return setting
+
+    @staticmethod
+    def _configure_input_path(module_config, input_path_key, cloud_scheme='s3'):
+        if input_path_key not in module_config:
+            return
+        input_path = module_config[input_path_key]
+        input_path = input_path if input_path is None else input_path.strip()
+        if not input_path:
+            return
+        module_config[input_path_key] = prepare_input_path(input_path, cloud_scheme)
 
 
 class StructuringElementImagesModuleProcessor(ModuleProcessor):
@@ -426,12 +466,7 @@ class MatchTemplateModuleProcessor(ModuleProcessor):
         template_path = template_path if template_path is None else template_path.strip()
         if not template_path:
             raise RuntimeError('Template path should be specified in a module config!')
-        cloud_prefix = cloud_scheme + '://'
-        if template_path.startswith(cloud_prefix):
-            template_path = os.path.join('/cloud-data', template_path[len(cloud_prefix):])
-        if not os.path.exists(template_path):
-            raise RuntimeError('No such file [{}] available!'.format(template_path))
-        module_config[self._INPUT_TEMPLATE_PATH_KEY] = template_path
+        module_config[self._INPUT_TEMPLATE_PATH_KEY] = prepare_input_path(template_path, cloud_scheme)
 
 
 class OutputModuleProcessor(ModuleProcessor):
@@ -520,7 +555,11 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         return settings
 
     def generated_params(self):
-        return {'Output file location': self._output_location(),
+        if Config.BATCH_ENABLED and Config.RESULTS_DIR:
+            results_location = 'Elsewhere...|' + Config.RESULTS_DIR
+        else:
+            results_location = self._output_location()
+        return {'Output file location': results_location,
                 'Add a prefix to file names?': 'No',
                 'Overwrite existing files without warning?': 'Yes',
                 'Add image metadata columns to your object data file?': 'Yes'}
@@ -580,7 +619,7 @@ class OverlayOutlinesModuleProcessor(ModuleProcessor):
         return self.module
 
 
-class SettingsWithListElementModuleProcessor(ModuleProcessor):
+class SettingsWithListElement:
 
     def get_list_key(self):
         """
@@ -588,6 +627,18 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
         :return: a string, that represents the key for the list element in module configuration dictionary
         """
         return ''
+
+    def set_module_list_element(self, module_list_element):
+        """
+        Specifies a list, containing target elements, from module
+        """
+        pass
+
+    def get_module_list_element(self):
+        """
+        Retrieve a list, containing target elements, from module
+        """
+        return list()
 
     def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
         """
@@ -597,11 +648,16 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
         """
         return SettingsGroup()
 
-    def get_module_list_element(self):
+    def build_list_elements(self, settings_dict):
         """
-        Retrieve a list, containing target elements, from module
+        Convert all elements of adjustable part of a module configuration to elements list.
+        :param settings_dict: all various elements as a dict
+        :return: elements converted to list
         """
         return list()
+
+
+class SettingsWithListElementModuleProcessor(SettingsWithListElement, ModuleProcessor):
 
     def configure_module(self, module_config: dict) -> Module:
         """
@@ -619,14 +675,6 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
         ModuleProcessor.configure_module(self, module_config)
         return self.module
 
-    def build_list_elements(self, settings_dict):
-        """
-        Convert all elements of adjustable part of a module configuration to elements list.
-        :param settings_dict: all various elements as a dict
-        :return: elements converted to list
-        """
-        return list()
-
     def get_mandatory_args_length(self):
         """
         Define count of values, that are always presented in a module's settings
@@ -636,7 +684,7 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
 
     def get_settings_as_dict(self):
         """
-        General strategy of converting module's confguration to dictionary
+        General strategy of converting module's configuration to dictionary
         :return: all settings in a form of a dictionary, that can be JSON serialized
         """
         module_settings_dictionary = dict()
@@ -648,6 +696,16 @@ class SettingsWithListElementModuleProcessor(ModuleProcessor):
         objects_settings = module_settings[mandatory_args_length:]
         module_settings_dictionary[self.get_list_key()] = self.build_list_elements(objects_settings)
         return module_settings_dictionary
+
+
+class SettingsWithListElementAndOutputModuleProcessor(SettingsWithListElementModuleProcessor):
+
+    def __init__(self, save_root, module=None):
+        SettingsWithListElementModuleProcessor.__init__(self, module)
+        self.save_root = os.path.join(save_root, str(self.module.id))
+
+    def _output_location(self):
+        return 'Elsewhere...|' + self.save_root
 
 
 class ImageMathModuleProcessor(SettingsWithListElementModuleProcessor):
@@ -743,3 +801,503 @@ class AlignModuleProcessor(SettingsWithListElementModuleProcessor):
                 self._ALIGNMENT: settings_dict[i + 2].value
             })
         return additional_images
+
+
+class IdentifyObjectsInGridModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return IdentifyObjectsInGrid()
+
+
+class ClassifyObjectsModuleProcessor(SettingsWithListElementModuleProcessor):
+    _CLASSIFICATIONS = 'classifications'
+    _BIN_CHOICES = 'bin_spacing'
+    _BIN_COUNT = 'bin_count'
+    _BIN_NAMES = 'bin_names'
+    _CAN_DELETE = 'can_delete'
+    _CUSTOM_THRESHOLDS = 'custom_thresholds'
+    _UPPER_THRESHOLD = 'upper_threshold'
+    _LOWER_THRESHOLD = 'lower_threshold'
+    _IMAGE_NAME = 'image_name'
+    _MEASUREMENT = 'measurement'
+    _OBJECT_NAME = 'object_name'
+    _WANTS_BIN_NAMES = 'wants_bean_names'
+    _WANTS_UPPER_BIN = 'wants_upper_bin'
+    _WANTS_LOWER_BIN = 'wants_lower_bin'
+    _WANTS_IMAGES = 'wants_images'
+    _MODEL_DIRECTORY = 'model_directory_path'
+    _MODEL_FILE_NAME = 'model_file_path'
+
+    def new_module(self):
+        return ClassifyObjects()
+
+    def get_list_key(self):
+        return self._CLASSIFICATIONS
+
+    def get_module_list_element(self):
+        return self.module.single_measurements
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.bin_choice = Choice('Select bin spacing', ['Evenly spaced bins', 'Custom-defined bins'],
+                                      value=element_dict[self._BIN_CHOICES])
+        component.bin_count = Integer('Number of bins', value=element_dict[self._BIN_COUNT])
+        component.bin_names = Text('Enter the bin names separated by commas', value=element_dict[self._BIN_NAMES])
+        component.can_delete = element_dict[self._CAN_DELETE]
+        component.custom_thresholds = Text('Enter the custom thresholds separating the values between bins',
+                                           value=element_dict[self._CUSTOM_THRESHOLDS])
+        component.high_threshold = Float('Upper threshold', value=element_dict[self._UPPER_THRESHOLD])
+        component.low_threshold = Float('Lower threshold', value=element_dict[self._LOWER_THRESHOLD])
+        component.image_name = ImageName('Name the output image', value=element_dict[self._IMAGE_NAME])
+        component.measurement = Measurement('Select the measurement to classify by', None,
+                                            value=element_dict[self._MEASUREMENT])
+        component.object_name = LabelSubscriber('Select the object to be classified',
+                                                value=element_dict[self._OBJECT_NAME])
+        component.wants_custom_names = Binary('Give each bin a name?', value=element_dict[self._WANTS_BIN_NAMES])
+        component.wants_high_bin = Binary('Use a bin for objects above the threshold?',
+                                          value=element_dict[self._WANTS_UPPER_BIN])
+        component.wants_low_bin = Binary('Use a bin for objects below the threshold?',
+                                         value=element_dict[self._WANTS_LOWER_BIN])
+        component.wants_images = Binary('Retain an image of the classified objects?',
+                                        value=element_dict[self._WANTS_IMAGES])
+        return component
+
+    def get_mandatory_args_length(self):
+        return 22
+
+    def build_list_elements(self, settings_dict):
+        measurements = list()
+        for i in range(0, len(settings_dict), 13):
+            measurements.append({
+                self._OBJECT_NAME: settings_dict[i].value,
+                self._MEASUREMENT: settings_dict[i + 1].value,
+                self._BIN_CHOICES: settings_dict[i + 2].value,
+                self._BIN_COUNT: settings_dict[i + 3].value,
+                self._LOWER_THRESHOLD: settings_dict[i + 4].value,
+                self._WANTS_LOWER_BIN: settings_dict[i + 5].value,
+                self._UPPER_THRESHOLD: settings_dict[i + 6].value,
+                self._WANTS_UPPER_BIN: settings_dict[i + 7].value,
+                self._CUSTOM_THRESHOLDS: settings_dict[i + 8].value,
+                self._WANTS_BIN_NAMES: settings_dict[i + 9].value,
+                self._BIN_NAMES: settings_dict[i + 10].value,
+                self._WANTS_IMAGES: settings_dict[i + 11].value,
+                self._IMAGE_NAME: settings_dict[i + 12].value
+            })
+        return measurements
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        general_setting = module_settings[:3]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        objects_settings = module_settings[3:-19]
+        module_settings_dictionary[self.get_list_key()] = self.build_list_elements(objects_settings)
+        general_setting = module_settings[-19:]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        return module_settings_dictionary
+
+    def configure_module(self, module_config: dict) -> Module:
+        self._configure_input_path(module_config, self._MODEL_DIRECTORY)
+        self._configure_input_path(module_config, self._MODEL_FILE_NAME)
+        SettingsWithListElementModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+
+class ConvertImageToObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return ConvertImageToObjects()
+
+
+class EditObjectsManuallyModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return EditObjectsManually()
+
+
+class CombineObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return CombineObjects()
+
+
+class IdentifyObjectsManuallyModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return IdentifyObjectsManually()
+
+
+class SplitOrMergeObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return SplitOrMergeObjects()
+
+
+class TrackObjectsModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return TrackObjects()
+
+
+class FilterObjectsMeasurementsSettings(SettingsWithListElement):
+    _MEASUREMENTS = 'measurements'
+    _MAX_VALUE = 'max_value'
+    _MIN_VALUE = 'min_value'
+    _MEASUREMENT = 'measurement'
+    _WANTS_MAXIMUM = 'use_max_filter'
+    _WANTS_MINIMUM = 'use_min_filter'
+    _MEASUREMENT_TEXT = 'Select the measurement to filter by'
+
+    def __init__(self):
+        self.module_list_element = list()
+
+    def set_module_list_element(self, module_list_element):
+        self.module_list_element = module_list_element
+
+    def get_module_list_element(self):
+        return self.module_list_element
+
+    def get_list_key(self):
+        return self._MEASUREMENTS
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.max_limit = Float('Maximum value', value=element_dict[self._MAX_VALUE])
+        component.min_limit = Float('Minimum value', value=element_dict[self._MIN_VALUE])
+        component.measurement = Measurement(self._MEASUREMENT_TEXT, None, value=element_dict[self._MEASUREMENT])
+        component.wants_maximum = Binary('Filter using a maximum measurement value?',
+                                         value=element_dict[self._WANTS_MAXIMUM])
+        component.wants_minimum = Binary('Filter using a minimum measurement value?',
+                                         value=element_dict[self._WANTS_MINIMUM])
+        return component
+
+    def build_list_elements(self, settings_dict):
+        measurements = list()
+        for i in range(0, len(settings_dict), 5):
+            if not settings_dict[i].text == self._MEASUREMENT_TEXT:
+                continue
+            measurements.append({
+                self._MEASUREMENT: settings_dict[i].value,
+                self._WANTS_MINIMUM: settings_dict[i + 1].value,
+                self._MIN_VALUE: settings_dict[i + 2].value,
+                self._WANTS_MAXIMUM: settings_dict[i + 3].value,
+                self._MAX_VALUE: settings_dict[i + 4].value
+            })
+        return measurements
+
+
+class FilterObjectsAdditionalObjectsSettings(SettingsWithListElement):
+    _ADDITIONAL_OBJECTS = 'objects'
+    _OBJECT_NAME = 'object_name'
+    _TARGET_NAME = 'relabel_name'
+    _OBJECT_NAME_TEXT = 'Select additional object to relabel'
+
+    def __init__(self):
+        self.module_list_element = list()
+
+    def set_module_list_element(self, module_list_element):
+        self.module_list_element = module_list_element
+
+    def get_module_list_element(self):
+        return self.module_list_element
+
+    def get_list_key(self):
+        return self._ADDITIONAL_OBJECTS
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.object_name = LabelSubscriber(self._OBJECT_NAME_TEXT, value=element_dict[self._OBJECT_NAME])
+        component.target_name = LabelName('Name the relabeled objects', value=element_dict[self._TARGET_NAME])
+        return component
+
+    def build_list_elements(self, settings_dict):
+        objects = list()
+        for i in range(0, len(settings_dict), 2):
+            if not settings_dict[i].text == self._OBJECT_NAME_TEXT:
+                continue
+            objects.append({
+                self._OBJECT_NAME: settings_dict[i].value,
+                self._TARGET_NAME: settings_dict[i + 1].value
+            })
+        return objects
+
+
+class FilterObjectsModuleProcessor(ModuleProcessor):
+    _RULES_DIRECTORY = 'Select the location of the rules or classifier file'
+
+    def new_module(self):
+        return FilterObjects()
+
+    def get_settings_groups(self):
+        measurements_settings = FilterObjectsMeasurementsSettings()
+        measurements_settings.set_module_list_element(self.module.measurements)
+        additional_objects_settings = FilterObjectsAdditionalObjectsSettings()
+        additional_objects_settings.set_module_list_element(self.module.additional_objects)
+        return [measurements_settings, additional_objects_settings]
+
+    def configure_module(self, module_config: dict) -> Module:
+        settings_groups = self.get_settings_groups()
+        for settings_group in settings_groups:
+            list_key = settings_group.get_list_key()
+            if list_key in module_config:
+                module_list_element = settings_group.get_module_list_element()
+                module_list_element.clear()
+                rules = module_config.pop(list_key)
+                for rule in rules:
+                    module_list_element.append(settings_group.build_settings_group_from_list_element(rule))
+        self._configure_input_path(module_config, self._RULES_DIRECTORY)
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        first_args_length = 13
+        general_setting = module_settings[:first_args_length]
+        for setting in general_setting:
+            module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
+        group_settings = module_settings[first_args_length:]
+        measurements_group = self.get_settings_groups()[0]
+        additional_objects_group = self.get_settings_groups()[1]
+        module_settings_dictionary[measurements_group.get_list_key()] = \
+            measurements_group.build_list_elements(group_settings)
+        module_settings_dictionary[additional_objects_group.get_list_key()] = \
+            additional_objects_group.build_list_elements(group_settings)
+        return module_settings_dictionary
+
+
+class CalculateMathModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return CalculateMath()
+
+
+class CalculateStatisticsModuleProcessor(SettingsWithListElementAndOutputModuleProcessor):
+    _DOSE_VALUES = 'dose_values'
+    _MEASUREMENT = 'measurement'
+    _LOG_TRANSFORM = 'log_transform'
+    _WANTS_SAVE_FIGURE = 'wants_save_figure'
+    _FIGURE_NAME = 'figure_name'
+    _OUTPUT = 'output'
+
+    def new_module(self):
+        return CalculateStatistics()
+
+    def get_list_key(self):
+        return self._DOSE_VALUES
+
+    def get_module_list_element(self):
+        return self.module.dose_values
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.measurement = Measurement('Select the image measurement describing the treatment dose', None,
+                                            value=element_dict[self._MEASUREMENT])
+        component.log_transform = Binary('Log-transform the dose values?', value=element_dict[self._LOG_TRANSFORM])
+        component.wants_save_figure = Binary('Create dose-response plots?', value=element_dict[self._WANTS_SAVE_FIGURE])
+        component.figure_name = Text('Figure prefix', value=element_dict[self._FIGURE_NAME])
+        component.pathname = Directory('Output file location', value=self._output_location())
+        return component
+
+    def get_mandatory_args_length(self):
+        return 1
+
+    def build_list_elements(self, settings_dict):
+        dose_values = list()
+        for i in range(0, len(settings_dict), 5):
+            dose_values.append({
+                self._MEASUREMENT: settings_dict[i].value,
+                self._LOG_TRANSFORM: settings_dict[i + 1].value,
+                self._WANTS_SAVE_FIGURE: settings_dict[i + 2].value,
+                self._FIGURE_NAME: settings_dict[i + 3].value,
+                self._OUTPUT: settings_dict[i + 4].value
+            })
+        return dose_values
+
+
+class DisplayDataOnImageModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayDataOnImage()
+
+
+class DisplayDensityPlotModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayDensityPlot()
+
+
+class DisplayHistogramModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayHistogram()
+
+
+class DisplayPlatemapModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayPlatemap()
+
+
+class DisplayScatterPlotModuleProcessor(ModuleProcessor):
+
+    def new_module(self):
+        return DisplayScatterPlot()
+
+
+class FlagImageMeasurementSettings(SettingsWithListElement):
+    _MEASUREMENTS = 'measurements'
+    _SOURCES_CHOICES_VALUES = ['Whole-image measurement',
+                               'Average measurement for all objects in each image',
+                               'Measurements for all objects in each image',
+                               'Rules',
+                               'Classifier']
+    _SOURCES_CHOICES = 'choices'
+    _OBJECT_NAME = 'object_name'
+    _RULES_FILE_NAME = 'rules_file_name'
+    _RULES_DIRECTORY = 'rules_directory'
+    _RULES_CLASS = 'rules_class'
+    _MEASUREMENT = 'measurement'
+    _WANTS_MIN = 'wants_min'
+    _MIN_VALUE = 'min_value'
+    _WANTS_MAX = 'wants_max'
+    _MAX_VALUE = 'max_value'
+
+    def __init__(self):
+        self.module_list_element = list()
+
+    def set_module_list_element(self, module_list_element):
+        self.module_list_element = module_list_element
+
+    def get_module_list_element(self):
+        return self.module_list_element
+
+    def get_list_key(self):
+        return self._MEASUREMENTS
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+        component.source_choice = Choice('Flag is based on', self._SOURCES_CHOICES_VALUES,
+                                         value=element_dict[self._SOURCES_CHOICES])
+        component.object_name = LabelSubscriber('Select the object to be used for flagging',
+                                                value=element_dict[self._OBJECT_NAME])
+        component.measurement = Measurement('Which measurement?', None, value=element_dict[self._MEASUREMENT])
+        component.wants_minimum = Binary('Flag images based on low values?', value=element_dict[self._WANTS_MIN])
+        component.minimum_value = Float('Minimum value', value=element_dict[self._MIN_VALUE])
+        component.wants_maximum = Binary('Flag images based on high values?', value=element_dict[self._WANTS_MAX])
+        component.maximum_value = Float('Maximum value', value=element_dict[self._MAX_VALUE])
+        component.rules_directory = Directory('Rules file location',
+                                              value=self._configure_input_path(element_dict[self._RULES_DIRECTORY]))
+        component.rules_file_name = Filename('Rules file name', value=element_dict[self._RULES_FILE_NAME])
+        component.rules_class = MultiChoice('Class number', [], value=element_dict[self._RULES_CLASS])
+        return component
+
+    def build_list_elements(self, settings_dict):
+        measurements = list()
+        for i in range(0, len(settings_dict), 10):
+            measurements.append({
+                self._SOURCES_CHOICES: settings_dict[i].value,
+                self._OBJECT_NAME: settings_dict[i + 1].value,
+                self._MEASUREMENT: settings_dict[i + 2].value,
+                self._WANTS_MIN: settings_dict[i + 3].value,
+                self._MIN_VALUE: settings_dict[i + 4].value,
+                self._WANTS_MAX: settings_dict[i + 5].value,
+                self._MAX_VALUE: settings_dict[i + 6].value,
+                self._RULES_DIRECTORY: settings_dict[i + 7].value,
+                self._RULES_FILE_NAME: settings_dict[i + 8].value,
+                self._RULES_CLASS: settings_dict[i + 9].value
+            })
+        return measurements
+
+    @staticmethod
+    def _configure_input_path(input_path, cloud_scheme='s3'):
+        input_path = input_path if input_path is None else input_path.strip()
+        if not input_path:
+            return None
+        return prepare_input_path(input_path, cloud_scheme)
+
+
+class FlagImageModuleProcessor(SettingsWithListElementModuleProcessor):
+    _FLAGS = 'flags'
+    _MEASUREMENTS = 'measurements'
+    _CATEGORY = 'category'
+    _CATEGORY_TEXT = 'Name the flag\'s category'
+    _FLAG_NAME = 'flag_name'
+    _FAIL_CHOICES_VALUES = ['Flag if any fail', 'Flag if all fail']
+    _FAIL_CHOICES = 'fail_choices'
+    _SKIP_IMAGE = 'skip_image'
+
+    def __init__(self, raw_module: Module = None):
+        super().__init__(raw_module)
+        self.internal_settings = FlagImageMeasurementSettings()
+
+    def new_module(self):
+        return FlagImage()
+
+    def get_list_key(self):
+        return self._FLAGS
+
+    def get_module_list_element(self):
+        return self.module.flags
+
+    def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        component = SettingsGroup()
+
+        measurements = element_dict[self._MEASUREMENTS]
+        component_measurements = list()
+        for element in measurements:
+            component_measurements.append(self.internal_settings.build_settings_group_from_list_element(element))
+        component.measurement_settings = component_measurements
+        component.measurement_count = HiddenCount(component_measurements)
+
+        component.category = Text(self._CATEGORY_TEXT, value=element_dict[self._CATEGORY])
+        component.feature_name = Text('Name the flag', value=element_dict[self._FLAG_NAME])
+        component.combination_choice = Choice('How should measurements be linked?', self._FAIL_CHOICES_VALUES,
+                                              value=element_dict[self._FAIL_CHOICES])
+        component.wants_skip = Binary('Skip image set if flagged?', value=element_dict[self._SKIP_IMAGE])
+        return component
+
+    def get_mandatory_args_length(self):
+        return 1
+
+    def build_list_elements(self, settings_dict):
+        flags = list()
+        for i in range(1, len(settings_dict)):
+            if not settings_dict[i].text == 'Hidden':
+                continue
+            measurements_count = int(settings_dict[i].value)
+            measurements = list()
+            measurements_start = i + 4 + 1
+            measurements_end = measurements_start + measurements_count * 10
+            if measurements_count > 0:
+                measurements = settings_dict[measurements_start:measurements_end]
+            flags.append({
+                self._CATEGORY: settings_dict[i + 1].value,
+                self._FLAG_NAME: settings_dict[i + 2].value,
+                self._FAIL_CHOICES: settings_dict[i + 3].value,
+                self._SKIP_IMAGE: settings_dict[i + 4].value,
+                self._MEASUREMENTS: self.internal_settings.build_list_elements(measurements),
+            })
+        return flags
+
+    def get_settings_as_dict(self):
+        module_settings_dictionary = dict()
+        module_settings = self.module.settings()
+        objects_settings = module_settings[:-1]
+        module_settings_dictionary[self.get_list_key()] = self.build_list_elements(objects_settings)
+        general_setting = module_settings[-1]
+        module_settings_dictionary[general_setting.text] = self.map_setting_to_text_value(general_setting)
+        return module_settings_dictionary
+
+    def configure_module(self, module_config: dict) -> Module:
+        flags_key = self.get_list_key()
+        if flags_key in module_config:
+            module_list_element = self.get_module_list_element()
+            module_list_element.clear()
+            rules = module_config.pop(flags_key)
+            for rule in rules:
+                module_list_element.append(self.build_settings_group_from_list_element(rule))
+        ModuleProcessor.configure_module(self, module_config)
+        return self.module

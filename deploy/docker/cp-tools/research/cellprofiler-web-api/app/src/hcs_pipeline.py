@@ -1,5 +1,7 @@
 import cellprofiler_core.preferences
 
+from .config import Config
+
 cellprofiler_core.preferences.set_headless()
 cellprofiler_core.preferences.set_awt_headless(True)
 
@@ -23,7 +25,6 @@ from typing import List
 
 
 MANDATORY_MODULES_COUNT = 4
-RAW_IMAGE_DATA_ROOT = os.getenv('HCS_RAW_IMAGE_DATA_ROOT')
 HCS_PIPELINE_METADATA_EXPRESSION = '^r(?P<WellRow>\\d{2})c(?P<WellColumn>\\d{2})f(?P<Field>\\d{2})p(?P<Plane>\\d{2})-ch(?P<ChannelNumber>\\d{2})t(?P<Timepoint>\\d{2})'
 
 
@@ -48,11 +49,11 @@ class ImageCoords(object):
 
 class HcsPipeline(object):
 
-    def __init__(self, service_root_dir, measurement_id):
+    def __init__(self, measurement_id):
         self._pipeline = cellprofiler_core.pipeline.Pipeline()
         self._pipeline_id = str(uuid.uuid4())
-        self._pipeline_output_dir = self._init_results_dir(service_root_dir, measurement_id)
-        self._pipeline_input_dir = os.path.join(RAW_IMAGE_DATA_ROOT, measurement_id)
+        self._pipeline_output_dir = self._init_results_dir(measurement_id)
+        self._pipeline_input_dir = os.path.join(Config.RAW_IMAGE_DATA_ROOT, measurement_id)
         self._pipeline_output_dir_cloud_path = self._extract_cloud_path()
         self._modules_factory = HcsModulesFactory(self._pipeline_output_dir)
         self._add_default_modules()
@@ -198,7 +199,8 @@ class HcsPipeline(object):
         self.add_module('NamesAndTypes', 3, {'Assign a name to': 'Images matching rules'})
         self.add_module('Groups', 4, {})
 
-    def _init_results_dir(self, service_root_dir, measurement_id):
+    def _init_results_dir(self, measurement_id):
+        service_root_dir = Config.COMMON_RESULTS_DIR
         dir_path = os.path.join(service_root_dir, measurement_id, self._pipeline_id)
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, mode=0o777, exist_ok=True)

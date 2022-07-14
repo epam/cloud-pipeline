@@ -4,13 +4,12 @@ from .hcs_pipeline_status_wrapper import HcsPipelineStatusWrapper
 
 class HCSManager:
 
-    def __init__(self, pipelines, pool, service_root_dir):
+    def __init__(self, pipelines, pool):
         self.pipelines = pipelines
         self.pool = pool
-        self.service_root_dir = service_root_dir
 
     def create_pipeline(self, measurement_uuid):
-        pipeline = HcsPipelineStatusWrapper(self.service_root_dir, measurement_uuid)
+        pipeline = HcsPipelineStatusWrapper(measurement_uuid)
         pipeline_id = pipeline.get_id()
         self.pipelines.update({pipeline_id: pipeline})
         return pipeline_id

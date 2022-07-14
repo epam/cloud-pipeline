@@ -209,9 +209,8 @@ def main():
 
     pool = ThreadPool(processes=int(args.process_count))
     pipelines = {}
-    service_root_dir = os.getenv('HCS_PROCESSING_RESULTS_DATA_ROOT')
 
-    app.config['hcs'] = HCSManager(pipelines, pool, service_root_dir)
+    app.config['hcs'] = HCSManager(pipelines, pool)
 
     app.run(host=args.host, port=args.port)
 

@@ -38,8 +38,8 @@ class Task:
 
 class HcsPipelineStatusWrapper:
 
-    def __init__(self, service_root_dir, measurement_uuid):
-        self.pipeline = HcsPipeline(service_root_dir, measurement_uuid)
+    def __init__(self, measurement_uuid):
+        self.pipeline = HcsPipeline(measurement_uuid)
         self.pipeline_task = None
         self.module_tasks = dict()
 
