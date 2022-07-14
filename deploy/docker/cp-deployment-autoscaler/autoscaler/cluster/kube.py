@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from typing import Iterator, Optional
 
 import logging
@@ -19,6 +20,7 @@ import pykube
 
 from autoscaler.cluster.provider import NodeProvider, PodProvider, DeploymentProvider
 from autoscaler.config import AutoscalingConfiguration
+from autoscaler.exception import NodeEvictionTimeoutError
 from autoscaler.model import Node, Condition, Pod, Deployment, Persistence
 
 
@@ -94,15 +96,49 @@ class KubeProvider(NodeProvider, PodProvider, DeploymentProvider):
     def get_all_nodes_count(self) -> int:
         return len(pykube.Node.objects(self._kube))
 
-    def cordon_node(self, node: Node):
-        logging.info('Evicting pods from node %s...', node.name)
+    def drain_node(self, node: Node):
+        logging.info('Draining node %s...', node.name)
+        self._cordon_node(node)
+        self._evict_node(node)
+        logging.info('Node %s has been drained.', node.name)
+
+    def _cordon_node(self, node: Node):
+        logging.info('Cordoning node %s...', node.name)
         kube_node = pykube.Node.objects(self._kube).get_by_name(node.name)
         kube_node.cordon()
+        logging.info('Node %s has been cordoned.', node.name)
+
+    def _evict_node(self, node: Node):
+        logging.info('Evicting node %s...', node.name)
+        kube_pods = []
+        for kube_pod in pykube.Pod.objects(self._kube):
+            if self._is_owned_by_daemon_set(kube_pod):
+                continue
+            if node.name and kube_pod.obj.get('spec', {}).get('nodeName', '') == node.name:
+                logging.info('Deleting pod %s...', kube_pod.name)
+                kube_pod.delete()
+                kube_pods.append(kube_pod)
+        timeout = self._configuration.timeout.scale_down_node_timeout
+        while timeout > 0:
+            time.sleep(self._configuration.timeout.scale_down_node_delay)
+            timeout -= self._configuration.timeout.scale_down_node_delay
+            for kube_pod in list(kube_pods):
+                if not kube_pod.exists():
+                    logging.info('Pod %s is deleted on node %s.', kube_pod.name, node.name)
+                    kube_pods.remove(kube_pod)
+            if not kube_pods:
+                break
+        if timeout <= 0:
+            logging.warning('Node %s has not been evicted after %s seconds.',
+                            node.name, self._configuration.timeout.scale_down_node_timeout)
+            raise NodeEvictionTimeoutError(node.name)
+        logging.info('Node %s has been evicted.', node.name)
 
     def delete_node(self, node: Node):
         logging.info('Deleting node %s...', node.name)
         kube_node = pykube.Node.objects(self._kube).get_by_name(node.name)
         kube_node.delete()
+        logging.info('Node %s has been deleted.', node.name)
 
     def get_pods_by_nodes(self, nodes: [Node]) -> Iterator[Pod]:
         for node in nodes:
