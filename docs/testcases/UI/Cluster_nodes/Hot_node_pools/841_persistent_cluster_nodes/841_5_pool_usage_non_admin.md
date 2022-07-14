@@ -1,5 +1,7 @@
 # Checking hot node pool usage by non-admin user
 
+Test verifies that non-admin user can use hot node pool at launch run
+
 **Prerequisites**:
 
 - non-admin user with the ability to run tools from `Default registry/library`

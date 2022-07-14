@@ -1,5 +1,7 @@
 # Checking hot node pool usage
 
+Test verifies that run with parameters corresponding created hot node pool can use it
+
 **Preparations**:
 
 Perform [_841\_1_](841_1_pool_creation.md) case

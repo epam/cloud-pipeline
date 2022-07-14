@@ -1,5 +1,7 @@
 # Checking disk delta for a node from the pool
 
+Test verifies disk delta for a node from the pool
+
 **Preparations**:
 
 1. Perform [_841\_1_](841_1_pool_creation.md) case

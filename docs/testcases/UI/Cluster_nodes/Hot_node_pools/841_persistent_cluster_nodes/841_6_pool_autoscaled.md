@@ -1,5 +1,7 @@
 # Checking the autoscaling of the hot node pool
 
+Test verifies the autoscaling of the hot node pool
+
 **Preparations**:
 
 Perform [_841\_1_](841_1_pool_creation.md) case

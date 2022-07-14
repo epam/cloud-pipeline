@@ -1,5 +1,7 @@
 # Checking filters for hot node pool
 
+Test verifies creation hot node pool with filters
+
 **Preparations**:
 
 1. Perform [_841\_1_](841_1_pool_creation.md) case

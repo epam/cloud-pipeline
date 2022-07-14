@@ -1,5 +1,7 @@
 # Hot node pool creation
 
+Test verifies hot node pool creation and its shown in the *Cluster* and *Hot node pools* tables.
+
 **Prerequisites**:
 
 - admin user
