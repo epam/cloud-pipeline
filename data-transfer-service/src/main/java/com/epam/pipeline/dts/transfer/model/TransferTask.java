@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.transfer.model;
 
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

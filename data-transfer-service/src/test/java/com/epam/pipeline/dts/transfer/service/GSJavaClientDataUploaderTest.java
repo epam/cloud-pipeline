@@ -17,12 +17,12 @@
 package com.epam.pipeline.dts.transfer.service;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.model.google.GoogleCredentials;
 import com.epam.pipeline.dts.transfer.model.google.GoogleTransferInfo;
 import com.epam.pipeline.dts.transfer.service.impl.GSJavaClientDataUploader;
 import com.epam.pipeline.dts.transfer.service.impl.GoogleStorageClient;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

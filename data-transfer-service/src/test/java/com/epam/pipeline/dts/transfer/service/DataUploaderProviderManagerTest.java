@@ -16,12 +16,12 @@
 
 package com.epam.pipeline.dts.transfer.service;
 
-import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import java.time.LocalDateTime;
 import java.util.Collections;
 
 import com.epam.pipeline.dts.transfer.service.impl.SyncDataUploaderProviderManager;
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.eq;

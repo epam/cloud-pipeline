@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,20 @@
 
 package com.epam.pipeline.dts.transfer.repository;
 
-import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface TaskRepository extends PagingAndSortingRepository<TransferTask, Long> {
 
     List<TransferTask> findAllByStatus(TaskStatus status);
+
+    @Query("SELECT t FROM TransferTask t WHERE " +
+            "t.created >= :updateTime or t.started >= :updateTime or t.finished >= :updateTime")
+    List<TransferTask> findUpdated(@Param("updateTime") LocalDateTime updateTime);
 }

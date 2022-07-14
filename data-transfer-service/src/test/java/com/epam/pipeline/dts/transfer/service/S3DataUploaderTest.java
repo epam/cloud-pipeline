@@ -18,9 +18,9 @@ package com.epam.pipeline.dts.transfer.service;
 
 import com.epam.pipeline.cmd.PipelineCLI;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.service.impl.S3DataUploader;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -161,5 +161,4 @@ public class S3DataUploaderTest extends AbstractTransferTest {
     private StorageItem existingLocalItem() {
         return localItem(existingLocalPath.toString());
     }
-
 }

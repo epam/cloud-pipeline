@@ -17,10 +17,11 @@
 package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
 import java.util.List;
+
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import org.springframework.util.Assert;
 
 public abstract class AbstractDataUploader implements DataUploader {

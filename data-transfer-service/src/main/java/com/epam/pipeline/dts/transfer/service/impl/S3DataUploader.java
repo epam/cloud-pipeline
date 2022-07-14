@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.dts.transfer.service.impl;
 
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.service.PipelineCliProvider;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 
 public class S3DataUploader extends AbstractPipeCliDataUploader {
 
@@ -36,5 +36,4 @@ public class S3DataUploader extends AbstractPipeCliDataUploader {
     public String getFilesPathPrefix() {
         return S3_PREFIX;
     }
-
 }

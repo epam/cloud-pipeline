@@ -26,11 +26,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.AllArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -43,12 +39,13 @@ public class DtsTransferController extends AbstractRestController {
 
     private TransferTaskApiService transferTaskService;
 
-    @PostMapping(path = "/tasks")
+    @PostMapping(path = "/tasks/{registryId}")
     @ApiOperation(
             value = "Creates new transfer tasks.",
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public Result<List<TransferTask>> createTasks(@RequestBody final List<TransferTask> tasks) {
-        return Result.success(transferTaskService.create(tasks));
+    public Result<List<TransferTask>> createTasks(@PathVariable String registryId,
+                                                  @RequestBody final List<TransferTask> tasks) {
+        return Result.success(transferTaskService.create(registryId, tasks));
     }
 
     @PostMapping(path = "/tasks/filter")

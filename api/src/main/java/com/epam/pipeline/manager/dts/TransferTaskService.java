@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.dts;
 
 import com.epam.pipeline.controller.vo.dts.TransferTask;
 import com.epam.pipeline.controller.vo.dts.TransferTaskFilter;
+import com.epam.pipeline.entity.dts.DtsRegistry;
 import com.epam.pipeline.entity.dts.TransferTaskEntity;
 import com.epam.pipeline.mapper.dts.TransferTaskMapper;
 import com.epam.pipeline.repository.dts.TaskRepository;
@@ -38,11 +39,14 @@ import java.util.stream.Collectors;
 public class TransferTaskService {
     private final TaskRepository taskRepository;
     private final TransferTaskMapper taskMapper;
+    private final DtsRegistryManager registryManager;
 
     @Transactional
-    public List<TransferTask> create(final List<TransferTask> transferTasks) {
+    public List<TransferTask> create(final String registryId, final List<TransferTask> transferTasks) {
+        final DtsRegistry registry = registryManager.loadByNameOrId(registryId);
         final List<TransferTaskEntity> entities = new ArrayList<>();
         for (TransferTask task : transferTasks) {
+            task.setRegistryId(registry.getId());
             TransferTaskEntity entity= taskMapper.transferTaskToEntity(task);
             entities.add(entity);
         }

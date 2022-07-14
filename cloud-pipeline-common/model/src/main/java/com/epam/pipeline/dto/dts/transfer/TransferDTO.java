@@ -16,9 +16,10 @@
 
 package com.epam.pipeline.dto.dts.transfer;
 
-import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -35,5 +36,5 @@ public class TransferDTO {
     private LocalDateTime started;
     private LocalDateTime finished;
     private List<String> included;
-
+    private String user;
 }

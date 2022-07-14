@@ -34,8 +34,8 @@ public class TransferTaskApiService {
     private TransferTaskService taskService;
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
-    public List<TransferTask> create(final List<TransferTask> transferTasks) {
-        return taskService.create(transferTasks);
+    public List<TransferTask> create(final String registryId, final List<TransferTask> transferTasks) {
+        return taskService.create(registryId, transferTasks);
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)

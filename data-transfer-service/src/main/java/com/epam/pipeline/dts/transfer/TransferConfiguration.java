@@ -18,7 +18,6 @@ package com.epam.pipeline.dts.transfer;
 
 import com.epam.pipeline.dts.security.service.SecurityService;
 import com.epam.pipeline.dts.transfer.configuration.TransferRestConfiguration;
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.service.CmdExecutorsProvider;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
 import com.epam.pipeline.dts.transfer.service.DataUploaderProvider;
@@ -34,6 +33,7 @@ import com.epam.pipeline.dts.transfer.service.impl.ImpersonatingTransferServiceI
 import com.epam.pipeline.dts.transfer.service.impl.PipelineCliProviderImpl;
 import com.epam.pipeline.dts.transfer.service.impl.S3DataUploader;
 import com.epam.pipeline.dts.transfer.service.impl.TransferServiceImpl;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;

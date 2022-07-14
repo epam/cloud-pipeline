@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.transfer.rest.dto;
 
+import com.epam.pipeline.dto.dts.transfer.StorageItemDTO;
 import com.epam.pipeline.dts.common.json.RawStringDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;

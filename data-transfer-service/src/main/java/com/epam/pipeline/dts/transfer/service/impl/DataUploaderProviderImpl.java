@@ -16,10 +16,10 @@
 
 package com.epam.pipeline.dts.transfer.service.impl;
 
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.service.DataUploader;
 import com.epam.pipeline.dts.transfer.service.DataUploaderProvider;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
 

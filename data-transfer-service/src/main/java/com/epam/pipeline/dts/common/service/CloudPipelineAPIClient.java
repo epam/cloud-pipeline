@@ -19,6 +19,7 @@ package com.epam.pipeline.dts.common.service;
 import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
+import com.epam.pipeline.dto.dts.transfer.TransferDTO;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -101,5 +102,9 @@ public class CloudPipelineAPIClient {
 
     public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
         return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
+    }
+
+    public List<TransferDTO> createTransferTasks(final String registryId, final List<TransferDTO> tasks) {
+        return pipelineApiExecutor.execute(cloudPipelineAPI.createTransferTasks(registryId, tasks));
     }
 }

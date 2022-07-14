@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,16 +17,17 @@
 package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.repository.TaskRepository;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.util.Utils;
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -101,6 +102,11 @@ public class TaskServiceImpl implements TaskService {
     @Override
     public List<TransferTask> loadAll() {
         return Utils.iterableToList(taskRepository.findAll());
+    }
+
+    @Override
+    public List<TransferTask> loadUpdated(LocalDateTime updateTime) {
+        return Utils.iterableToList(taskRepository.findUpdated(updateTime));
     }
 
     private TransferTask buildTaskWithStatus(TransferTask task, TaskStatus status) {

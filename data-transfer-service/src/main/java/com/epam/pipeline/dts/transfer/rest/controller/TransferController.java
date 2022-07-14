@@ -16,16 +16,16 @@
 
 package com.epam.pipeline.dts.transfer.rest.controller;
 
-import com.epam.pipeline.dts.transfer.model.TaskStatus;
+import com.epam.pipeline.dto.dts.transfer.TransferDTO;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.common.rest.controller.AbstractRestController;
 import com.epam.pipeline.dts.common.rest.Result;
 import com.epam.pipeline.dts.transfer.rest.dto.TaskCreationDTO;
-import com.epam.pipeline.dts.transfer.rest.dto.TransferDTO;
 import com.epam.pipeline.dts.transfer.rest.mapper.StorageItemMapper;
 import com.epam.pipeline.dts.transfer.rest.mapper.TransferTaskMapper;
 import com.epam.pipeline.dts.transfer.service.TaskService;
 import com.epam.pipeline.dts.transfer.service.TransferService;
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dts.transfer.model;
 
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,5 +36,4 @@ public class StorageItem {
     private String path;
     @Transient
     private String credentials;
-
 }

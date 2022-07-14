@@ -17,10 +17,10 @@
 package com.epam.pipeline.dts.transfer.service;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.repository.TaskRepository;
 import com.epam.pipeline.dts.transfer.service.impl.TaskServiceImpl;
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatcher;
