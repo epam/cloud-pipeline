@@ -206,7 +206,13 @@ Deployment autoscaler parameter descriptions can be found in the following code 
     "scale_up_instance_timeout": 60,
     
     // Specifies instances scaling ↑ polling delay.
-    "scale_up_instance_delay": 10
+    "scale_up_instance_delay": 10,
+    
+    // Specifies node scaling ↓ polling timeout.
+    "scale_down_node_timeout": 120,
+    
+    // Specifies node scaling ↓ polling delay.
+    "scale_down_node_delay": 10
   },
   "misc": {
     "boto3_retry_count": 10
