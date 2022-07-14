@@ -463,10 +463,10 @@ function buildAutoFillActions (elements, columns, source, target, backup, option
     .filter(item => targetItems.indexOf(item) === -1);
   const sourceColumns = columns
     .filter(item => item.column >= source.start.column && item.column <= source.end.column)
-    .filter(item => !/^(ID|createdDate)$/i.test(item.key));
+    .filter(item => !/^(ID|createdDate|SampleSheet)$/i.test(item.key));
   const targetColumns = columns
     .filter(item => item.column >= target.start.column && item.column <= target.end.column)
-    .filter(item => !/^(ID|createdDate)$/i.test(item.key));
+    .filter(item => !/^(ID|createdDate|SampleSheet)$/i.test(item.key));
   const insertedColumns = targetColumns
     .filter(item => sourceColumns.indexOf(item) === -1);
   if (target.start.column < source.start.column) {
@@ -520,7 +520,7 @@ function AutoFillEntitiesMarker ({visible, handleSize = 10, markerSize = 5}) {
     >
       <div
         data-auto-fill-entities="true"
-        className={styles.marker}
+        className={classNames(styles.marker, 'cp-library-metadata-table-marker')}
       >
         {'\u00A0'}
       </div>

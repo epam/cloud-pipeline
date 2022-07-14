@@ -24,6 +24,7 @@ from time import sleep
 import time
 from multiprocessing.pool import ThreadPool as Pool
 
+CP_CAP_CUSTOM_ENDPOINT_PREFIX = 'CP_CAP_CUSTOM_TOOL_ENDPOINT_'
 
 try:
         from pykube.config import KubeConfig
@@ -37,13 +38,14 @@ except ImportError:
 
 SVC_PORT_TMPL = 'svc-port-'
 SVC_PATH_TMPL = 'svc-path-'
-SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint} }}'
+SVC_URL_TMPL = '{{"url" : "{external_schema}://{external_ip}:{edge_port}/{edge_location}", "name": {service_name}, "isDefault": {is_default_endpoint}, "sameTab": {is_same_tab} }}'
 EDGE_ROUTE_LOCATION_TMPL = '{pod_id}-{endpoint_port}-{endpoint_num}'
 EDGE_ROUTE_TARGET_TMPL = '{pod_ip}:{endpoint_port}'
 EDGE_ROUTE_TARGET_PATH_TMPL = '{pod_ip}:{endpoint_port}/{endpoint_path}'
 EDGE_ROUTE_NO_PATH_CROP = 'CP_EDGE_NO_PATH_CROP'
 EDGE_ROUTE_CREATE_DNS = 'CP_EDGE_ROUTE_CREATE_DNS'
 EDGE_EXTERNAL_APP = 'CP_EDGE_EXTERNAL_APP'
+EDGE_INSTANCE_IP = 'CP_EDGE_INSTANCE_IP'
 RUN_ID = 'runid'
 API_UPDATE_SVC = 'run/{run_id}/serviceUrl?region={region}'
 API_GET_RUNS_LIST_DETAILS = 'runs?runIds={run_ids}'
@@ -66,6 +68,7 @@ nginx_root_config_path = '/etc/nginx/nginx.conf'
 nginx_sites_path = '/etc/nginx/sites-enabled'
 nginx_domains_path = '/etc/nginx/sites-enabled/custom-domains'
 external_apps_domains_path = '/etc/nginx/external-apps'
+api_domain_path = '/etc/nginx/ingress/cp-api-srv.conf'
 nginx_loc_module_template = '/etc/nginx/endpoints-config/route.template.loc.conf'
 nginx_srv_module_template = '/etc/nginx/endpoints-config/route.template' + nginx_custom_domain_config_ext
 nginx_sensitive_loc_module_template = '/etc/nginx/endpoints-config/sensitive.template.loc.conf'
@@ -83,6 +86,11 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 urllib3.disable_warnings()
 api_url = os.environ.get('API')
 api_token = os.environ.get('API_TOKEN')
+
+api_domain_name = os.environ.get('CP_API_SRV_EXTERNAL_HOST')
+if not api_domain_name:
+        api_domain_name = os.environ.get('CP_API_SRV_INTERNAL_HOST')
+
 if not api_url or not api_token:
         print('API url or API token are not set. Exiting')
         exit(1)
@@ -190,8 +198,11 @@ def store_file_from_lines(lines, path):
                 path_file.write('\n'.join(lines))
 
 def get_domain_config_path(domain, is_external_app=False):
-        domains_path =  external_apps_domains_path if is_external_app else nginx_domains_path
-        return os.path.join(domains_path, domain + nginx_custom_domain_config_ext)
+        if domain == api_domain_name:
+                return api_domain_path
+        else:
+                domains_path =  external_apps_domains_path if is_external_app else nginx_domains_path
+                return os.path.join(domains_path, domain + nginx_custom_domain_config_ext)
 
 def add_custom_domain(domain, location_block, is_external_app=False):
         if not os.path.isdir(nginx_domains_path):
@@ -200,9 +211,11 @@ def add_custom_domain(domain, location_block, is_external_app=False):
         domain_cert = search_custom_domain_cert(domain)
         domain_path_contents = None
         if os.path.exists(domain_path):
+                do_log('-> Adding new location block to existing configuration file at {}'.format(domain_path))
                 with open(domain_path, 'r') as domain_path_file:
                         domain_path_contents = domain_path_file.read()
         else:
+                do_log('-> Creating new custom domain configuration file at {}'.format(domain_path))
                 with open(nginx_srv_module_template, 'r') as nginx_srv_module_template_file:
                         domain_path_contents = nginx_srv_module_template_file.read()
                 domain_path_contents = domain_path_contents \
@@ -245,7 +258,7 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
                 return False
         del domain_path_lines[existing_loc[-1]]
 
-        if (not is_external_app and sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
+        if (not is_external_app and domain_path != api_domain_path and sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
                 # If no more location block exist in the domain - delete the config file
                 # Do not delete if this is an "external application", where the server block is managed externally
                 do_log('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
@@ -256,6 +269,10 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
         return True
 
 def remove_custom_domain_all(location_block):
+        remove_result = False
+        if api_domain_name:
+                if remove_custom_domain(api_domain_name, location_block, is_external_app=False):
+                        do_log('Removed {} location block from the API domain config {}'.format(location_block, api_domain_path))
         for domains_root_path in [ nginx_domains_path, external_apps_domains_path ]:
                 domain_path_list = [f for f in glob.glob(domains_root_path + '/*' + nginx_custom_domain_config_ext)]
                 for domain_path in domain_path_list:
@@ -300,7 +317,10 @@ def read_system_endpoints():
                                                                endpoint['endpoint_default'])),
                                 "endpoint_num":  str(os.environ.get(endpoint['endpoint_num_env'],
                                                                     endpoint['endpoint_num_default'])),
-                                "friendly_name": endpoint['friendly_name']
+                                "friendly_name": endpoint['friendly_name'],
+                                "endpoint_additional": endpoint['endpoint_additional'] if 'endpoint_additional' in endpoint else '',
+                                "endpoint_same_tab": endpoint['endpoint_same_tab'] if 'endpoint_same_tab' in endpoint else None,
+                                "ssl_backend": endpoint['ssl_backend'] if 'ssl_backend' in endpoint else None
                         }
         return system_endpoints
 
@@ -313,52 +333,121 @@ def is_system_endpoint_name(endpoint):
         else:
                 return False
 
-def append_system_endpoints(tool_endpoints, run_details):
+# Function to construct endpoint was configured with Run Parameters.
+# Group of Run Parameters started with CP_CAP_CUSTOM_TOOL_ENDPOINT_<num> considered as configuration of additional endpoint
+# that should be available for this run. Full list of supported params are:
+#
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_PORT
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_NAME
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_ADDITIONAL
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_NUM
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_SSL_BACKEND
+# CP_CAP_CUSTOM_TOOL_ENDPOINT_<num>_SAME_TAB
+#
+# Method will group such parametes by <num> and construct from such group an endpoint.
+def construct_additional_endpoints_from_run_parameters(run_details):
+
+        def extract_endpoint_num_from_run_parameter(run_parameter):
+                match = re.search('{}(\d+).*'.format(CP_CAP_CUSTOM_ENDPOINT_PREFIX), run_parameter["name"])
+                if match:
+                        return match.group(1)
+                return None
+
+
+        custom_endpoint_run_parameters = [rp for rp in run_details["pipelineRunParameters"]
+                                          if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
+
+        custom_endpoint_run_parameters_num = len(custom_endpoint_run_parameters)
+        do_log('Found {} run parameters related to custom endpoints.'.format(custom_endpoint_run_parameters_num))
+        if custom_endpoint_run_parameters_num == 0:
+                return []
+
+        custom_endpoints_nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_endpoint_num_from_run_parameter(rp)
+                                     for rp in custom_endpoint_run_parameters])
+        do_log('Run parameter groups with ids: {} related to custom endpoints were found.'.format(", ".join(str(num) for num in custom_endpoints_nums)))
+
+        custom_endpoint_param_groups = {
+                id : {
+                        rp["name"] : rp["value"]
+                        for rp in custom_endpoint_run_parameters if rp["name"].startswith(id)
+                } for id in custom_endpoints_nums
+        }
+
+        return [
+                {
+                        "name" : e_id,
+                        "endpoint": e.get(e_id + "_PORT"),
+                        "friendly_name": e.get(e_id + "_NAME", "pipeline-" + str(run_details['id']) + "-" + e.get(e_id + "_PORT")),
+                        "endpoint_additional": e.get(e_id + "_ADDITIONAL", ""),
+                        "ssl_backend": e.get(e_id + "_SSL_BACKEND", "false"),
+                        "endpoint_same_tab": e.get(e_id + "_SAME_TAB", "false")
+                } for e_id, e in custom_endpoint_param_groups.items()
+        ]
+
+def append_additional_endpoints(tool_endpoints, run_details):
         if not tool_endpoints:
                 tool_endpoints = []
         system_endpoints_params = SYSTEM_ENDPOINTS.keys()
         overridden_endpoints_count = 0
         if run_details and "pipelineRunParameters" in run_details:
                 # Get a list of endpoints from SYSTEM_ENDPOINTS which match the run's parameters (param name and a value)
-                system_endpoints_matched = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
-                                                if x["name"] in system_endpoints_params
-                                                   and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
-                                                   and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
-                                                   and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
+                additional_endpoints_to_configure = [SYSTEM_ENDPOINTS[x["name"]] for x in run_details["pipelineRunParameters"]
+                                                     if x["name"] in system_endpoints_params
+                                                        and x["value"] == SYSTEM_ENDPOINTS[x["name"]]["value"]
+                                                        and "endpoint" in SYSTEM_ENDPOINTS[x["name"]]
+                                                        and SYSTEM_ENDPOINTS[x["name"]]["endpoint"]]
+                additional_endpoint_ports_to_configure = set([e["endpoint"] for e in additional_endpoints_to_configure])
+
+                # Filter out any endpoint if it matches with system ones
+                for custom_endpoint in construct_additional_endpoints_from_run_parameters(run_details):
+                        if custom_endpoint["endpoint"] in additional_endpoint_ports_to_configure:
+                                do_log('Endpoint {} with port: {} conflict with already configured ones, it will be filtered out.'
+                                       .format(custom_endpoint["name"], custom_endpoint["endpoint"]))
+                                continue
+                        # Append additional custom endpoint that are configured with run parameters
+                        additional_endpoints_to_configure.append(custom_endpoint)
+                        additional_endpoint_ports_to_configure.add(custom_endpoint["endpoint"])
 
                 # If only a single endpoint is defined for the tool - we shall make sure it is set to default. Otherwise "system endpoint" may become a default one
                 # If more then one endpoint is defined - we shall not make the changes, as it is up to the owner of the tool
-                if len(system_endpoints_matched) > 0 and len(tool_endpoints) == 1:
+                if len(additional_endpoints_to_configure) > 0 and len(tool_endpoints) == 1:
                         current_tool_endpoint = json.loads(tool_endpoints[0])
                         current_tool_endpoint["isDefault"] = "true"
                         tool_endpoints[0] = json.dumps(current_tool_endpoint)
-                # Append system endpoints to the existing list
-                for system_endpoint in system_endpoints_matched:
-                        tool_endpoint = { "nginx": { "port": system_endpoint["endpoint"] }}
-                        system_endpoint_port = system_endpoint["endpoint"]
+
+                # Append additional endpoints to the existing list
+                for additional_endpoint in additional_endpoints_to_configure:
+                        tool_endpoint = { "nginx": { "port": additional_endpoint["endpoint"], "additional": additional_endpoint["endpoint_additional"] }}
+                        system_endpoint_port = additional_endpoint["endpoint"]
+                        system_endpoint_ssl_backend = additional_endpoint["ssl_backend"]
+                        system_endpoint_same_tab = additional_endpoint["endpoint_same_tab"]
                         system_endpoint_name = None
-                        if "friendly_name" in system_endpoint:
-                                tool_endpoint["name"] = system_endpoint["friendly_name"]
-                                system_endpoint_name = system_endpoint["friendly_name"]
-                        if "endpoint_num" in system_endpoint and system_endpoint["endpoint_num"]:
-                                tool_endpoint["endpoint_num"] = system_endpoint["endpoint_num"]
-                        non_matching_with_system_tool_endpoints, is_default_endpoint, is_ssl_backend = \
+                        if "friendly_name" in additional_endpoint:
+                                tool_endpoint["name"] = additional_endpoint["friendly_name"]
+                                system_endpoint_name = additional_endpoint["friendly_name"]
+                        if "endpoint_num" in additional_endpoint and additional_endpoint["endpoint_num"]:
+                                tool_endpoint["endpoint_num"] = additional_endpoint["endpoint_num"]
+                        non_matching_with_system_tool_endpoints, \
+                                is_default_endpoint, \
+                                is_ssl_backend, \
+                                is_same_tab = \
                                 remove_from_tool_endpoints_if_fully_matches(system_endpoint_name,
                                                                             system_endpoint_port, tool_endpoints)
                         removed_endpoints_count = len(tool_endpoints) - len(non_matching_with_system_tool_endpoints)
                         tool_endpoint["isDefault"] = str(is_default_endpoint).lower()
-                        tool_endpoint["sslBackend"] = is_ssl_backend
+                        tool_endpoint["sslBackend"] = system_endpoint_ssl_backend if system_endpoint_ssl_backend else is_ssl_backend
+                        tool_endpoint["sameTab"] = system_endpoint_same_tab if system_endpoint_same_tab else is_same_tab
                         if removed_endpoints_count != 0:
                                 tool_endpoints = non_matching_with_system_tool_endpoints
                                 overridden_endpoints_count += removed_endpoints_count
                         tool_endpoints.append(json.dumps(tool_endpoint))
         return tool_endpoints, overridden_endpoints_count
 
-
 def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, tool_endpoints):
         non_matching_tool_endpoints = []
         is_default_endpoint = False
         is_ssl_backend = False
+        is_same_tab = False
         for endpoint in tool_endpoints:
                 tool_endpoint_obj = json.loads(endpoint)
                 if tool_endpoint_obj \
@@ -374,9 +463,11 @@ def remove_from_tool_endpoints_if_fully_matches(endpoint_name, endpoint_port, to
                                 is_default_endpoint = is_default_endpoint | tool_endpoint_obj['isDefault']
                         if 'sslBackend' in tool_endpoint_obj and tool_endpoint_obj['sslBackend']:
                                 is_ssl_backend = is_ssl_backend | tool_endpoint_obj['sslBackend']
+                        if 'sameTab' in tool_endpoint_obj and tool_endpoint_obj['sameTab']:
+                                is_same_tab = is_same_tab | tool_endpoint_obj['sameTab']
                 else:
                         non_matching_tool_endpoints.append(endpoint)
-        return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend
+        return non_matching_tool_endpoints, is_default_endpoint, is_ssl_backend, is_same_tab
 
 def get_active_runs(pods):
         pod_run_ids = [x['metadata']['labels']['runid'] for x in pods]
@@ -415,6 +506,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                 sensitive = run_info.get("sensitive") or False
 
                 cloud_region_id = run_info.get("instance", {}).get("cloudRegionId") or None
+                instance_ip = run_info.get("instance", {}).get("nodeIP") or None
 
 
                 do_log('User {} is determined as an owner of PodID ({}) - RunID ({})'.format(pod_owner, pod_id, pod_run_id))
@@ -435,7 +527,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                         endpoints_data = []
                 tool_endpoints_count = len(endpoints_data)
                 do_log('{} endpoints are set for the tool {} via settings'.format(tool_endpoints_count, docker_image))
-                endpoints_data, overridden_endpoints_count = append_system_endpoints(endpoints_data, run_info)
+                endpoints_data, overridden_endpoints_count = append_additional_endpoints(endpoints_data, run_info)
                 additional_system_endpoints_count = len(endpoints_data) - tool_endpoints_count
                 do_log('{} additional system endpoints are set for the tool {} via run parameters'
                       .format(additional_system_endpoints_count, docker_image))
@@ -453,6 +545,7 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         service_name = '"' + endpoint["name"] + '"' if "name" in endpoint.keys() else "null"
                                         is_default_endpoint = '"' + str(endpoint["isDefault"]).lower() + '"' if "isDefault" in endpoint.keys() else '"false"'
                                         is_ssl_backend = str(endpoint["sslBackend"]).lower() == 'true' if "sslBackend" in endpoint.keys() else False
+                                        is_same_tab = '"' + str(endpoint["sameTab"]).lower() + '"' if "sameTab" in endpoint.keys() else '"false"'
                                         additional = endpoint["nginx"].get("additional", "")
                                         has_explicit_endpoint_num = "endpoint_num" in endpoint.keys()
                                         custom_endpoint_num = int(endpoint["endpoint_num"]) if has_explicit_endpoint_num else i
@@ -476,10 +569,18 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
                                         else:
                                                 edge_location_id = '{}.loc'.format(edge_location)
 
+                                        if EDGE_INSTANCE_IP in additional:
+                                                additional = additional.replace(EDGE_INSTANCE_IP, "") \
+                                                             + 'proxy_set_header Upgrade $http_upgrade;' \
+                                                               'proxy_set_header Connection "upgrade";'
+                                                target_ip = instance_ip
+                                        else:
+                                                target_ip = pod_ip
+
                                         edge_target = \
-                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=pod_ip, endpoint_port=port, endpoint_path=path) \
+                                                EDGE_ROUTE_TARGET_PATH_TMPL.format(pod_ip=target_ip, endpoint_port=port, endpoint_path=path) \
                                                         if path \
-                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=pod_ip, endpoint_port=port)
+                                                        else EDGE_ROUTE_TARGET_TMPL.format(pod_ip=target_ip, endpoint_port=port)
 
                                         # If CP_EDGE_NO_PATH_CROP is present (any place) in the "additional" section of the route config
                                         # then trailing "/" is not added to the proxy pass target. This will allow to forward original requests trailing path
@@ -495,13 +596,14 @@ def get_service_list(active_runs_list, pod_id, pod_run_id, pod_ip):
 
 
                                         service_list[edge_location_id] = {"pod_id": pod_id,
-                                                                        "pod_ip": pod_ip,
+                                                                        "pod_ip": target_ip,
                                                                         "pod_owner": pod_owner,
                                                                         "shared_users_sids": shared_users_sids,
                                                                         "shared_groups_sids": shared_groups_sids,
                                                                         "service_name": service_name,
                                                                         "is_default_endpoint": is_default_endpoint,
                                                                         "is_ssl_backend": is_ssl_backend,
+                                                                        "is_same_tab": is_same_tab,
                                                                         "edge_num": i,
                                                                         "edge_location": edge_location,
                                                                         "custom_domain": pretty_url['domain'] if pretty_url and 'domain' in pretty_url and pretty_url['domain'] else None,
@@ -647,6 +749,7 @@ def create_service_location(service_spec, added_route, service_url_dict):
                                           edge_port=str(edge_service_port),
                                           service_name=service_spec["service_name"],
                                           is_default_endpoint=service_spec["is_default_endpoint"],
+                                          is_same_tab=service_spec["is_same_tab"],
                                           external_schema=edge_service_external_schema)
         run_id = service_spec["run_id"]
         if run_id in service_url_dict:
@@ -683,6 +786,11 @@ def find_preference(api_preference_query, preference_name):
 
 
 do_log('============ Started iteration ============')
+
+if api_domain_name:
+        do_log('API domain name is determined as {}. It will be used to detect friendly URLs'.format(api_domain_name))
+else:
+        do_log('[WARN] Cannot get API domain name from the environment')
 
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False

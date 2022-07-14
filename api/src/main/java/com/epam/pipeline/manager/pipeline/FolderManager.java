@@ -19,7 +19,6 @@ package com.epam.pipeline.manager.pipeline;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +49,12 @@ import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.utils.SystemPreferenceUtils;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.MetadataEntryMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,13 +63,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 @Service
 public class FolderManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FolderManager.class);
-    private static final String PROJECT_INDICATOR_DELIMITER = "=";
 
     @Autowired
     private FolderCrudManager crudManager;
@@ -178,7 +175,8 @@ public class FolderManager {
 
     public Folder loadAllProjects() {
         Folder root = new Folder();
-        Set<Pair<String, String>> indicator = parseProjectIndicator();
+        Set<Pair<String, String>> indicator = SystemPreferenceUtils.parseProjectIndicator(
+                preferenceManager.getPreference(SystemPreferences.UI_PROJECT_INDICATOR));
         Map<String, PipeConfValue> projectAttributes = indicator.stream()
                 .collect(Collectors.toMap(Pair::getLeft, pair -> new PipeConfValue(null, pair.getRight())));
         if (MapUtils.isEmpty(projectAttributes)) {
@@ -222,7 +220,8 @@ public class FolderManager {
 
     public FolderWithMetadata getProject(Long entityId, AclClass entityClass) {
         validateAclClass(entityClass);
-        Set<Pair<String, String>> projectIndicators = parseProjectIndicator();
+        Set<Pair<String, String>> projectIndicators = SystemPreferenceUtils.parseProjectIndicator(
+                preferenceManager.getPreference(SystemPreferences.UI_PROJECT_INDICATOR));
         if (CollectionUtils.isEmpty(projectIndicators)) {
             throw new IllegalArgumentException("Can not detect project: project indicator not found.");
         }
@@ -344,26 +343,6 @@ public class FolderManager {
             throw new IllegalArgumentException(
                     "Invalid ACL class: supports only classes with Folder parents.");
         }
-    }
-
-    private Set<Pair<String, String>> parseProjectIndicator() {
-        List<String> projectIndicator = Arrays.asList(preferenceManager.getPreference(
-                SystemPreferences.UI_PROJECT_INDICATOR).split(","));
-        if (CollectionUtils.isEmpty(projectIndicator)) {
-            return Collections.emptySet();
-        }
-        return projectIndicator
-                .stream()
-                .filter(indicator -> indicator.contains(PROJECT_INDICATOR_DELIMITER))
-                .map(indicator -> {
-                    String[] splittedProjectIndicator = indicator.split(PROJECT_INDICATOR_DELIMITER);
-                    String key = splittedProjectIndicator[0];
-                    String value = splittedProjectIndicator[1];
-                    if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
-                        throw new IllegalArgumentException("Invalid project indicator pair.");
-                    }
-                    return new ImmutablePair<>(key, value);
-                }).collect(Collectors.toSet());
     }
 
     private Folder createCloneFolder(Folder folderToClone, Long parentId) {

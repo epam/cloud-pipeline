@@ -69,11 +69,10 @@ export default class CloneForm extends React.Component {
     } else {
       const tree = generateTreeData(
         this.props.pipelinesLibrary.value,
-        false,
-        null,
-        [],
-        [ItemTypes.folder],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          types: [ItemTypes.folder],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       const foundFolder = getTreeItemByKey(folder.key, tree);
       this.setState({
@@ -159,11 +158,10 @@ export default class CloneForm extends React.Component {
     if (props.parentId && this.props.pipelinesLibrary.loaded) {
       const tree = generateTreeData(
         this.props.pipelinesLibrary.value,
-        false,
-        null,
-        [],
-        [ItemTypes.folder],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          types: [ItemTypes.folder],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       const folder = getTreeItemByKey(`${ItemTypes.folder}_${props.parentId}`, tree);
       this.setState({

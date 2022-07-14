@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,6 +189,7 @@ public enum Primitive {
     USER_MANAGEMENT_TAB,
     PREFERENCES_TAB,
     SYSTEM_LOGS_TAB,
+    NAT_GATEWAY_TAB,
     USERS_TAB,
     ROLE_TAB,
     GROUPS_TAB,
@@ -287,5 +288,37 @@ public enum Primitive {
     DO_NOT_MOUNT_STORAGES,
     LAUNCH_COMMANDS,
     CONFIGURE,
-    GENERATE_URL
+    GENERATE_URL,
+    IMPERSONATE,
+    MY_PROFILE,
+    FILE_SYSTEM_ACCESS,
+    CONFIGURE_NOTIFICATION,
+    RECIPIENTS,
+    ADD_NOTIFICATION,
+    CLEAR_ALL_RECIPIENTS,
+    CLEAR_ALL_NOTIFICATIONS,
+    ACTIONS,
+    DISABLE,
+    ALLOW_COMMIT,
+    CONTENT_PREVIEW,
+    ADD_ROUTE,
+    ROUTE_TABLE,
+    ADD_PORT,
+    SERVER_NAME,
+    COMMENT,
+    SPECIFY_IP,
+    RESOLVE,
+    DISABLE_MOUNT,
+    ALLOW_MOUNT,
+    SERVICE_NAME,
+    CONFIGURE_DNS,
+    SHOW_USERS,
+    POOL_NAME,
+    STARTS_ON,
+    STARTS_ON_TIME,
+    ENDS_ON,
+    ENDS_ON_TIME,
+    AUTOSCALED,
+    PROTOCOL,
+    REINDEX
 }

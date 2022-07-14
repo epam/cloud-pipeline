@@ -62,6 +62,24 @@ fi
 mkdir -p "$CP_DAV_SERVE_DIR" "$CP_DAV_MOUNT_POINT" "$APACHE_LOG_DIR" "$SYNC_LOG_DIR"
 mkdir -p $(dirname $APACHE_DAV_LOCK_DB)
 
+# Unpack and configure NFS observer script
+if [ -z "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" ]; then
+  export PIPE_COMMON_DISTRIBUTION_URL="${PIPE_COMMON_DISTRIBUTION_URL:-https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/pipe-common.tar.gz}"
+  download_file "${PIPE_COMMON_DISTRIBUTION_URL}"
+  if [ $? -eq 0 ]; then
+        echo "'pipe-common' package was downloaded successfully."
+        inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_DAV_WATCHERS:-131071}
+        tar -xf pipe-common.tar.gz scripts/watch_mount_shares.py --strip-components=1 &&\
+        mv watch_mount_shares.py $SYNC_HOME/ && \
+        rm -rf pipe-common.tar.gz && \
+        sysctl -w fs.inotify.max_user_watches=$inotify_watchers && \
+        sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2)) && \
+        echo "* * * * * root flock -w 1 /var/run/nfs-watcher.lock bash \${SYNC_HOME}/nfs-watcher.sh" >> /tmp/sync
+  else
+    echo "Unable to retrieve 'pipe-common' package"
+  fi
+fi
+
 # Persist environment for a cron job
 env > $SYNC_HOME/env.sh
 envsubst < /tmp/sync > /etc/cron.d/sync

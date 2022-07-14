@@ -47,6 +47,7 @@ class PipelineRunModel(object):
         self.endpoints = []
         self.run_sids = []
         self.sensitive = None
+        self.platform = None
 
     @property
     def is_initialized(self):
@@ -108,6 +109,8 @@ class PipelineRunModel(object):
 
         if 'sensitive' in result:
             instance.sensitive = result['sensitive']
+
+        instance.platform = result.get('platform')
 
         return instance
 

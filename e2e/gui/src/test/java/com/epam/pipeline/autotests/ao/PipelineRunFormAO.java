@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,12 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.AbstractSeveralPipelineRunningTest;
 import com.epam.pipeline.autotests.AbstractSinglePipelineRunningTest;
+import com.epam.pipeline.autotests.ao.popups.ConfigureInternalDNSPopupAO;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.SelenideElements;
@@ -32,9 +34,11 @@ import org.openqa.selenium.NoSuchWindowException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selectors.*;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selenide.*;
 import static com.epam.pipeline.autotests.ao.Primitive.*;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
+import static com.epam.pipeline.autotests.utils.PipelineSelectors.visible;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.openqa.selenium.By.className;
@@ -66,15 +70,19 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             entry(PRICE_TYPE, context().find(byText("Price type")).closest(".launch-pipeline-form__form-item-row").find(byClassName("ant-select"))),
             entry(INSTANCE_TYPE, context().find(byXpath("//*[contains(text(), 'Node type')]")).closest(".ant-row").find(by("role", "combobox"))),
             entry(AUTO_PAUSE, context().find(byText("Auto pause:")).closest(".ant-row-flex").find(cssSelector(".ant-checkbox-wrapper"))),
-            entry(DOCKER_IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
+            entry(IMAGE, context().find(byText("Docker image")).closest(".ant-row").find(tagName("input"))),
             entry(DEFAULT_COMMAND, context().find(byText("Cmd template")).parent().parent().find(byClassName("CodeMirror-line"))),
             entry(SAVE, $(byId("save-pipeline-configuration-button"))),
             entry(ADD_SYSTEM_PARAMETER, $(byId("add-system-parameter-button"))),
-            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]")).closest(".ant-row").find(by("role", "combobox"))),
+            entry(RUN_CAPABILITIES, context().find(byXpath("//*[contains(text(), 'Run capabilities')]"))
+                    .closest(".ant-row").find(className("cp-run-capabilities-input"))),
             entry(LIMIT_MOUNTS, context().find(byClassName("limit-mounts-input__limit-mounts-input"))),
             entry(FRIENDLY_URL, context().find(byId("advanced.prettyUrl"))),
             entry(DO_NOT_MOUNT_STORAGES, $(byXpath(".//span[.='Do not mount storages']/preceding-sibling::span"))),
-            entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button")))
+            entry(LAUNCH_COMMANDS, context().find(byId("launch-command-button"))),
+            entry(CONFIGURE_DNS, context().find(byTitle("Internal DNS name")).parent()
+                    .closest(".launch-pipeline-form__form-item-row")
+                    .find(byClassName("hosted-app-configuration__configure")))
     );
     private final String pipelineName;
     private int parameterIndex = 0;
@@ -101,6 +109,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setLaunchOptions(String disk, String type, String timeOut) {
         return setDisk(disk)
+                .sleep(1, SECONDS)
                 .setTypeValue(type)
                 .setTimeOut(timeOut);
     }
@@ -111,8 +120,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .find(className("ant-select-selection"))
                 .shouldBe(visible)
                 .click();
-
+        $(byClassName("ant-select-dropdown-hidden")).shouldNotBe(exist);
         $(byClassName("ant-select-dropdown-menu"))
+                .shouldBe(enabled)
                 .findAll(byClassName("ant-select-dropdown-menu-item"))
                 .find(text(type))
                 .click();
@@ -149,9 +159,26 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
     public PipelineRunFormAO setPriceType(final String priceType) {
         click(PRICE_TYPE);
-        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+        context().find(visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
                 .shouldBe(visible)
                 .click();
+        return this;
+    }
+
+    public PipelineRunFormAO selectRunCapability(final String optionQualifier) {
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
+        $(visible(byClassName("rc-dropdown"))).find(byText(optionQualifier))
+                .shouldBe(visible).click();
+        return this;
+    }
+
+    public PipelineRunFormAO openRunCapabilityDropDown() {
+        SelenideElement tag = get(RUN_CAPABILITIES).$$(byClassName("cp-run-capabilities-input-tag")).first();
+        if(tag.exists()) {
+            tag.find(byXpath(".//div")).click();
+            return this;
+        }
+        get(RUN_CAPABILITIES).shouldBe(visible).click();
         return this;
     }
 
@@ -165,9 +192,15 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
     }
 
     private void checkPriceTypeInList(String priceType) {
-        context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown")))
+        context().find(visible(byClassName("ant-select-dropdown")))
                 .find(byText(priceType))
                 .shouldBe(visible);
+    }
+
+    public PipelineRunFormAO checkTooltipText(String capability, String tooltip) {
+        $(byXpath(format("(//span[text()='%s'])", capability)))
+                .shouldHave(attribute("title", tooltip));
+        return this;
     }
 
     public ConfigureClusterPopupAO enableClusterLaunch() {
@@ -277,6 +310,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                 .map(SelenideElement::getText)
                 .filter(e -> e.contains(message))
                 .count() == 1;
+        if (messageExist) {
+            screenshot("check_launch_message" + Utils.randomSuffix());
+        }
         $$(byClassName("ant-modal-body")).findBy(text("Cancel"))
                 .find(button("Cancel"))
                 .shouldBe(enabled)
@@ -359,9 +395,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return new RunParameterAO(this, parameterIndex);
     }
 
-    public SystemParameterPopupAO clickAddSystemParameter() {
+    public SystemParameterPopupAO<PipelineRunFormAO> clickAddSystemParameter() {
         click(ADD_SYSTEM_PARAMETER);
-        return new SystemParameterPopupAO(this);
+        return new SystemParameterPopupAO<>(this);
     }
 
     public PipelineRunFormAO chooseConfiguration(final String profileName) {
@@ -391,9 +427,9 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return cpu.substring(0, cpu.indexOf(" "));
     }
 
-    public SelectLimitMountsPopupAO selectDataStoragesToLimitMounts() {
+    public SelectLimitMountsPopupAO<PipelineRunFormAO> selectDataStoragesToLimitMounts() {
         click(LIMIT_MOUNTS);
-        return new SelectLimitMountsPopupAO(this).sleep(2, SECONDS);
+        return new SelectLimitMountsPopupAO<>(this).sleep(2, SECONDS);
     }
 
     public int minNodeTypeRAM() {
@@ -419,7 +455,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
                         "No such node type with RAM {%s}.", minRAM)));
     }
 
-    public PipelineRunFormAO doNotMountStoragesSelect (boolean isSelected) {
+    public PipelineRunFormAO doNotMountStoragesSelect(boolean isSelected) {
         if ((!get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && isSelected) ||
                 (get(DO_NOT_MOUNT_STORAGES).has(cssClass("ant-checkbox-checked")) && !isSelected)) {
             click(DO_NOT_MOUNT_STORAGES);
@@ -432,20 +468,72 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
         return this;
     }
 
+    public PipelineRunFormAO validateDisabledParameter(final String parameter) {
+        ensure(byValue(parameter), cssClass("ant-input-disabled"));
+        $(byValue(parameter)).closest(".ant-row-flex").find(byId("remove-parameter-button"))
+                .shouldHave(Condition.not(visible));
+        return this;
+    }
+
+    public PipelineRunFormAO checkCustomCapability(final String capability, final boolean disable) {
+        final SelenideElement capabilityElement = $(visible(byClassName("rc-dropdown")))
+                .find(withText(capability));
+        capabilityElement
+                .shouldBe(visible, enabled);
+        if (disable) {
+            capabilityElement
+                    .closest("li")
+                    .shouldHave(Condition.attribute("aria-disabled", "true"))
+                    .find("i")
+                    .shouldHave(Condition.cssClass("anticon-question-circle-o"));
+        }
+        return this;
+    }
+
+    public PipelineRunFormAO checkCapabilityTooltip(final String capability, final String text) {
+        $(visible(byClassName("rc-dropdown")))
+                .find(withText(capability))
+                .shouldBe(visible).hover();
+        $(visible(byClassName("ant-tooltip")))
+                .find(byClassName("ant-tooltip-content"))
+                .shouldHave(Condition.text(text));
+        return this;
+    }
+
+    public PipelineRunFormAO waitUntilSaveEnding(final String name) {
+        int attempt = 0;
+        int maxAttempts = 3;
+        while ($(withText(String.format("Updating '%s' configuration ...", name))).exists()
+                && attempt < maxAttempts) {
+            sleep(3, SECONDS);
+            attempt++;
+        }
+        sleep(1, SECONDS);
+        return this;
+    }
+
+    public PipelineRunFormAO configureInternalDNSName(final String dnsName, final String port) {
+        click(CONFIGURE_DNS);
+        return new ConfigureInternalDNSPopupAO(this)
+                .setServiceName(dnsName)
+                .setPort(port)
+                .save();
+    }
+
     @Override
     public Map<Primitive, SelenideElement> elements() {
         return elements;
     }
 
-    public static class SystemParameterPopupAO  extends PopupAO<SystemParameterPopupAO, PipelineRunFormAO> {
+    public static class SystemParameterPopupAO<PARENT_AO>  extends PopupAO<SystemParameterPopupAO<PARENT_AO>, PARENT_AO> {
 
         private final Map<Primitive, SelenideElement> elements = initialiseElements(
                 entry(PARAMETER_NAME, context().$(byXpath("//*[@placeholder='Parameter']"))),
                 entry(ADD, context().find(byId("system-parameters-browser-ok-button"))),
-                entry(CANCEL, context().find(byClassName("system-parameters-browser-cancel-button")))
+                entry(CANCEL, context().find(byId("system-parameters-browser-cancel-button")))
         );
 
-        public SystemParameterPopupAO(PipelineRunFormAO parentAO) {
+        public SystemParameterPopupAO(PARENT_AO parentAO) {
             super(parentAO);
         }
 
@@ -454,24 +542,34 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return elements;
         }
         @Override
-        public PipelineRunFormAO cancel() {
+        public PARENT_AO cancel() {
             return click(CANCEL).parent();
         }
 
         @Override
-        public PipelineRunFormAO ok() {
+        public PARENT_AO ok() {
             return click(ADD).parent();
         }
 
-        private SystemParameterPopupAO selectSystemParameter(String parameter) {
-            clear(PARAMETER_NAME);
-            setValue(PARAMETER_NAME, parameter);
+        private SystemParameterPopupAO<PARENT_AO> selectSystemParameter(String parameter) {
+            searchSystemParameter(parameter);
             $(byText(parameter)).shouldBe(visible).click();
             return this;
         }
 
-        public SystemParameterPopupAO selectSystemParameters(String ... parameters) {
+        public SystemParameterPopupAO<PARENT_AO> selectSystemParameters(String ... parameters) {
             Arrays.stream(parameters).forEach(this::selectSystemParameter);
+            return this;
+        }
+
+        public SystemParameterPopupAO<PARENT_AO> searchSystemParameter(String parameter) {
+            clear(PARAMETER_NAME);
+            setValue(PARAMETER_NAME, parameter);
+            return this;
+        }
+
+        public SystemParameterPopupAO<PARENT_AO> validateNotFoundParameters() {
+            ensure(byText("No system parameters"), visible);
             return this;
         }
     }
@@ -521,7 +619,7 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
 
         public ConfigureClusterPopupAO setWorkersPriceType(final String priceType) {
             click(WORKERS_PRICE_TYPE);
-            context().find(PipelineSelectors.visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
+            context().find(visible(byClassName("ant-select-dropdown"))).find(byText(priceType))
                     .shouldBe(visible)
                     .click();
             return this;
@@ -547,4 +645,4 @@ public class PipelineRunFormAO implements AccessObject<PipelineRunFormAO> {
             return this;
         }
     }
-    }
+}

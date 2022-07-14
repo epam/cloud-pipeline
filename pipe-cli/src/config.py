@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 from functools import update_wrapper
 import base64
 import click
@@ -32,19 +33,17 @@ from .utilities.access_token_validation import check_token
 OWNER_ONLY_PERMISSION = 0o600
 PROXY_TYPE_PAC = "pac"
 PROXY_PAC_DEFAULT_URL = "https://google.com"
-ALL_ERRORS = Exception
 
 
 def is_frozen():
     return getattr(sys, 'frozen', False)
 
 
-def silent_print_config_info():
+def silent_print_creds_info():
     config = Config.instance(raise_config_not_found_exception=False)
     if config is not None and config.initialized:
         click.echo()
         config.validate(print_info=True)
-
 
 class ConfigNotFoundError(Exception):
     def __init__(self):
@@ -129,6 +128,7 @@ class Config(object):
                 if not skip_validation:
                     config = Config.instance(raise_config_not_found_exception=False)
                     if config is not None and config.initialized:
+                        logging.debug('Validating access token...')
                         config.validate()
                 return ctx.invoke(f, *args, **kwargs)
             return update_wrapper(validate_access_token_wrapper, f)
@@ -245,6 +245,10 @@ class Config(object):
                 sys.setdefaultencoding(codec)
             except NameError:
                 pass
+
+    @classmethod
+    def get_encoding(cls):
+        return sys.getdefaultencoding()
 
     @classmethod
     def config_path(cls):

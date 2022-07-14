@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 import com.epam.pipeline.autotests.utils.C;
+import com.epam.pipeline.autotests.utils.Conditions;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
@@ -141,8 +142,25 @@ public class LogAO implements AccessObject<LogAO> {
                 .messageShouldAppear("COMMIT SUCCEEDED", COMMITTING_TIMEOUT);
     }
 
+    public LogAO assertCommitButtonIsNotVisible() {
+        get(COMMIT).shouldNotBe(visible);
+        return this;
+    }
+
+    public LogAO checkButtonTooltip(Primitive button, String message) {
+        context().find(byXpath(format(".//span[.='%s']", button.name()))).hover();
+        $(visible(byClassName("ant-popover-inner-content"))).shouldHave(text(message));
+        return this;
+    }
+
     public LogAO waitForPauseButton() {
         get(PAUSE).waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
+        return this;
+    }
+
+    public LogAO waitForDisabledButton(Primitive button) {
+        context().find(byXpath(format(".//span[.='%s']", button.name())))
+                .waitUntil(visible, SSH_LINK_APPEARING_TIMEOUT);
         return this;
     }
 
@@ -163,6 +181,13 @@ public class LogAO implements AccessObject<LogAO> {
 
     public LogAO clickOnStopButton() {
         get(STOP).shouldBe(visible).click();
+        return this;
+    }
+
+    public LogAO ensureButtonDisabled(Primitive button) {
+        context().find(byXpath(format(".//span[.='%s']", button.name())))
+                .shouldBe(visible)
+                .shouldBe(Conditions.disabled);
         return this;
     }
 
@@ -290,10 +315,11 @@ public class LogAO implements AccessObject<LogAO> {
     public LogAO waitForLog(final String message) {
         for (int i = 0; i < 70; i++) {
             refresh();
+            sleep(10, SECONDS);
             if ($(log()).shouldBe(visible).is(matchText(message))) {
                 break;
             }
-            sleep(20, SECONDS);
+            sleep(10, SECONDS);
         }
         return this;
     }
@@ -308,6 +334,13 @@ public class LogAO implements AccessObject<LogAO> {
         action.accept(new InstanceParameters());
         return this;
     }
+
+    public LogAO waitForIP() {
+        expandTab(INSTANCE);
+        new InstanceParameters().get(IP).waitUntil(exist, COMPLETION_TIMEOUT);
+        return this;
+    }
+
 
     public LogAO clickMountBuckets() {
         waitForMountBuckets().closest("a").click();
@@ -339,6 +372,16 @@ public class LogAO implements AccessObject<LogAO> {
         throw new AssertionError("Valid parameter value is absent.");
     }
 
+    public LogAO ensureParameterIsNotPresent(String name) {
+        if (!get(PARAMETERS).exists()) {
+            return this;
+        }
+        $(byXpath(format(
+                "//tr[.//td[contains(@class, 'log__task-parameter-name') " +
+                        "and contains(.//text(), '%s')]", name))).shouldNotBe(visible);
+        return this;
+    }
+
     /**
      * Selects entry of a parameters panel on a run page.
      *
@@ -355,11 +398,11 @@ public class LogAO implements AccessObject<LogAO> {
 
     public SelenideElement waitForMountBuckets() {
         return $(byXpath("//*[contains(@class, 'ant-menu-item') and .//*[contains(., 'MountDataStorages')]]//*[contains(@class, 'anticon')]"))
-                .waitUntil(cssClass("status-icon__icon-green"), BUCKETS_MOUNTING_TIMEOUT);
+                .waitUntil(cssClass("cp-runs-table-icon-green"), BUCKETS_MOUNTING_TIMEOUT);
     }
 
     public static By runId() {
-        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(text(), 'Run #')]");
+        return byXpath(".//h1[contains(@class, 'log__run-title')]//*[contains(@class, 'cp-run-name editable')]");
     }
 
     public static By pipelineLink() {
@@ -537,10 +580,10 @@ public class LogAO implements AccessObject<LogAO> {
     }
 
     public enum Status {
-        SUCCESS("status-icon__icon-green"),
-        FAILURE("status-icon__icon-red"),
-        STOPPED("status-icon__icon-yellow"),
-        WORKING("status-icon__icon-blue"),
+        SUCCESS("cp-runs-table-icon-green"),
+        FAILURE("cp-runs-table-icon-red"),
+        STOPPED("cp-runs-table-icon-yellow"),
+        WORKING("cp-runs-table-icon-blue"),
         LOADING("anticon-loading"),
         PAUSED("anticon-pause-circle-o");
 
@@ -550,7 +593,8 @@ public class LogAO implements AccessObject<LogAO> {
             this.reached = new Condition("status " + this.name()) {
                 @Override
                 public boolean apply(final WebElement element) {
-                    return $(element).find(byXpath(".//i[contains(@class, 'status-icon')]")).has(cssClass(iconClass));
+                    return $(element).find(byXpath(".//i[contains(@class, 'anticon')]"))
+                            .has(cssClass(iconClass));
                 }
 
                 @Override

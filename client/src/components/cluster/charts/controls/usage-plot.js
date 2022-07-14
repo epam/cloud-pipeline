@@ -16,18 +16,42 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
-import {PlotColors} from './utilities';
+import {inject, observer} from 'mobx-react';
+import {computed} from 'mobx';
+import {getThemedPlotColors} from './utilities';
 
 const maxHeight = 40;
 
+@inject('themes')
 @observer
 class UsagePlot extends React.PureComponent {
+  @computed
+  get plotColors () {
+    return getThemedPlotColors(this);
+  }
+
+  @computed
+  get backgroundColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@card-header-background'] || '#ccc';
+    }
+    return '#ccc';
+  }
+
+  @computed
+  get fontColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@application-color'] || 'rgba(0, 0, 0, 0.65)';
+    }
+    return 'rgba(0, 0, 0, 0.65)';
+  }
+
   renderSingleUsageBar = (config, index, barHeight, totalCount) => {
     const {
       chartArea,
       data,
-      fontColor,
       fontSize,
       height,
       margin,
@@ -53,7 +77,7 @@ class UsagePlot extends React.PureComponent {
     const y = chartArea.top +
       (height - chartArea.top - chartArea.bottom) / 2.0 - (totalCount / 2.0 - index) * barHeight;
     const h = Math.min(maxHeight, barHeight) - 2 * margin;
-    const color = PlotColors[index % PlotColors.length];
+    const color = this.plotColors[index % this.plotColors.length];
     let {formatter} = config;
     if (!formatter) {
       formatter = o => o.toFixed(2);
@@ -66,7 +90,7 @@ class UsagePlot extends React.PureComponent {
           width={(1.0 - value / total) * barWidth}
           height={h}
           stroke={'none'}
-          fill={'#ccc'}
+          fill={this.backgroundColor}
           opacity={0.2}
         />
         <rect
@@ -74,7 +98,7 @@ class UsagePlot extends React.PureComponent {
           y={y + barHeight / 2.0 - h / 2.0 + margin}
           width={(1.0 - value / total) * barWidth}
           height={h}
-          stroke={'#ccc'}
+          stroke={this.backgroundColor}
           strokeWidth={1}
           fill={'none'}
         />
@@ -100,7 +124,7 @@ class UsagePlot extends React.PureComponent {
           config.title && (
             <text
               stroke={'none'}
-              fill={fontColor}
+              fill={this.fontColor}
               x={chartArea.left + fontSize}
               y={y + barHeight / 2.0 + 3.0 * fontSize / 4.0}
               textAnchor={'start'}
@@ -112,7 +136,7 @@ class UsagePlot extends React.PureComponent {
         }
         <text
           stroke={'none'}
-          fill={fontColor}
+          fill={this.fontColor}
           x={chartArea.left + barWidth - fontSize}
           y={y + barHeight / 2.0 + 3.0 * fontSize / 4.0}
           textAnchor={'end'}
@@ -164,8 +188,7 @@ UsagePlot.propTypes = {
   height: PropTypes.number,
   width: PropTypes.number,
   margin: PropTypes.number,
-  fontSize: PropTypes.number,
-  fontColor: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
+  fontSize: PropTypes.number
 };
 
 UsagePlot.defaultProps = {
@@ -176,8 +199,7 @@ UsagePlot.defaultProps = {
     right: 10,
     bottom: 5
   },
-  fontSize: 12,
-  fontColor: '#333'
+  fontSize: 12
 };
 
 export default UsagePlot;

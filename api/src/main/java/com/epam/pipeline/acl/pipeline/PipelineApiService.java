@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.pipeline;
 
 import com.epam.pipeline.controller.vo.CheckRepositoryVO;
 import com.epam.pipeline.controller.vo.GenerateFileVO;
+import com.epam.pipeline.controller.vo.PipelineSourceItemRevertVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemVO;
 import com.epam.pipeline.controller.vo.PipelineSourceItemsVO;
 import com.epam.pipeline.controller.vo.PipelineVO;
@@ -48,6 +49,7 @@ import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.pipeline.DocumentGenerationPropertyManager;
 import com.epam.pipeline.manager.pipeline.PipelineFileGenerationManager;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
@@ -95,6 +97,9 @@ public class PipelineApiService {
 
     @Autowired
     private GrantPermissionManager permissionManager;
+
+    @Autowired
+    private PipelineRepositoryService pipelineRepositoryService;
 
     @PreAuthorize("hasRole('ADMIN') OR "
             + "(#pipeline.parentFolderId != null AND hasRole('PIPELINE_MANAGER') AND "
@@ -167,7 +172,7 @@ public class PipelineApiService {
 
     @PreAuthorize(PIPELINE_ID_READ)
     public GitTagEntry loadRevision(Long id, String version) throws GitClientException {
-        return gitManager.loadRevision(pipelineManager.load(id), version);
+        return pipelineRepositoryService.loadRevision(pipelineManager.load(id), version);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
@@ -215,13 +220,14 @@ public class PipelineApiService {
     @PreAuthorize(PIPELINE_ID_READ)
     public byte[] getPipelineFileContents(Long id, String version, String path)
             throws GitClientException {
-        return gitManager.getPipelineFileContents(pipelineManager.load(id), version, path);
+        return pipelineRepositoryService.getFileContents(pipelineManager.load(id), version, path);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)
     public byte[] getTruncatedPipelineFileContent(final Long id, final String version, final String path,
                                                   final Integer byteLimit) throws GitClientException {
-        return gitManager.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path, byteLimit);
+        return pipelineRepositoryService.getTruncatedPipelineFileContent(pipelineManager.load(id), version, path,
+                byteLimit);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
@@ -230,22 +236,28 @@ public class PipelineApiService {
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
+    public GitCommitEntry revertFile(final Long id, final PipelineSourceItemRevertVO sourceItemRevertVO) {
+        return gitManager.revertFile(pipelineManager.load(id, true), sourceItemRevertVO);
+    }
+
+    @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry modifyFiles(Long id, PipelineSourceItemsVO sourceItemsVO) throws GitClientException {
-        return gitManager.updateFiles(pipelineManager.load(id, true), sourceItemsVO);
+        return pipelineRepositoryService.updateFiles(pipelineManager.load(id, true), sourceItemsVO);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry uploadFiles(Long id, String folder, List<UploadFileMetadata> files)
             throws GitClientException {
         Pipeline pipeline = pipelineManager.load(id, true);
-        return gitManager.uploadFiles(pipeline, folder, files,
+        return pipelineRepositoryService.uploadFiles(pipeline, folder, files,
                 pipeline.getCurrentVersion().getCommitId(), null);
     }
 
     @PreAuthorize(PIPELINE_ID_WRITE)
     public GitCommitEntry deleteFile(Long id, String filePath, String lastCommitId, String commitMessage)
             throws GitClientException {
-        return gitManager.deleteFile(pipelineManager.load(id, true), filePath, lastCommitId, commitMessage);
+        return pipelineRepositoryService
+                .deleteFile(pipelineManager.load(id, true), filePath, lastCommitId, commitMessage);
     }
 
     @PreAuthorize(PIPELINE_ID_READ)

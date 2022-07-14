@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import connect from '../../../utils/connect';
+import classNames from 'classnames';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 import pipelines from '../../../models/pipelines/Pipelines';
@@ -36,7 +37,7 @@ import {
   Tooltip
 } from 'antd';
 import dataStorages from '../../../models/dataStorage/DataStorages';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import highlightText from '../../special/highlightText';
 import styles from './Browser.css';
 import UserName from '../../special/UserName';
@@ -51,6 +52,7 @@ const MAX_INLINE_METADATA_KEYS = 10;
 })
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
+@inject('preferences')
 @inject(({pipelines, dataStorages}, params) => {
   let {browserLocation, onReloadTree} = params;
   browserLocation = browserLocation || 'pipelines';
@@ -96,11 +98,11 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       return generateTreeData(
         payload,
-        true,
-        undefined,
-        undefined,
-        [ItemTypes.pipeline, ItemTypes.storage],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          ignoreChildren: true,
+          types: [ItemTypes.pipeline, ItemTypes.storage],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
     }
     return [];
@@ -109,17 +111,16 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="inbox" style={{color: '#2696dd'}} />;
+      case ItemTypes.versionedStorage:
+        return <Icon type="inbox" className="cp-versioned-storage" />;
       case ItemTypes.storage:
-        const style = {};
-        if (item.sensitive) {
-          style.color = '#ff5c33';
-        }
-        if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          return <Icon type="inbox" style={style} />;
-        } else {
-          return <Icon type="hdd" style={style} />;
-        }
+        const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
+        return (
+          <Icon
+            type={objectStorage ? 'inbox' : 'hdd'}
+            className={classNames({'cp-sensitive': item.sensitive})}
+          />
+        );
       default: return <div />;
     }
   };
@@ -183,10 +184,16 @@ export default class Folder extends localization.LocalizedReactComponent {
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
-          <Row className={styles.metadataItemKey}>
+          <Row className={classNames(
+            styles.metadataItemKey,
+            'cp-library-metadata-item-key'
+          )}>
             {key}
           </Row>
-          <Row className={styles.metadataItemValue}>
+          <Row className={classNames(
+            styles.metadataItemValue,
+            'cp-library-metadata-item-value'
+          )}>
             {value}
           </Row>
         </div>
@@ -337,7 +344,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     return (
       <Table
         className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-        dataSource={items}
+        dataSource={formatTreeItems(items, {preferences: this.props.preferences})}
         columns={columns}
         rowKey={(item) => item.key}
         title={null}

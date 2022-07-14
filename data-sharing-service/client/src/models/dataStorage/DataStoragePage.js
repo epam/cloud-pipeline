@@ -29,7 +29,7 @@ class DataStoragePage extends Remote {
     this.pageSize = pageSize;
     this.showVersion = showVersion;
     if (this.path) {
-      this.url = `/datastorage/${this.id}/list/page?path=${this.path}&showVersion=${!!showVersion}&pageSize=${pageSize}${marker ? `&marker=${marker}` : ''}`;
+      this.url = `/datastorage/${this.id}/list/page?path=${encodeURIComponent(this.path)}&showVersion=${!!showVersion}&pageSize=${pageSize}${marker ? `&marker=${marker}` : ''}`;
     } else {
       this.url = `/datastorage/${this.id}/list/page?showVersion=${!!showVersion}&pageSize=${pageSize}${marker ? `&marker=${marker}` : ''}`;
     }
@@ -37,7 +37,7 @@ class DataStoragePage extends Remote {
 
   async fetchPage (marker) {
     if (this.path) {
-      this.url = `/datastorage/${this.id}/list/page?path=${this.path}&showVersion=${!!this.showVersion}&pageSize=${this.pageSize}${marker ? `&marker=${marker}` : ''}`;
+      this.url = `/datastorage/${this.id}/list/page?path=${encodeURIComponent(this.path)}&showVersion=${!!this.showVersion}&pageSize=${this.pageSize}${marker ? `&marker=${marker}` : ''}`;
     } else {
       this.url = `/datastorage/${this.id}/list/page?showVersion=${!!this.showVersion}&pageSize=${this.pageSize}${marker ? `&marker=${marker}` : ''}`;
     }

@@ -70,6 +70,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID;
+import static com.epam.pipeline.test.creator.CommonCreatorConstants.ID_2;
 import static com.epam.pipeline.utils.PasswordGenerator.generateRandomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
@@ -130,6 +132,11 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String NODE_NAME = "node-12323";
     private static final String TEST_PLATFORM = "linux";
     private static final String TEST_REGION = "region";
+
+    private static final BigDecimal INITIAL_CLUSTER_PRICE_1 = BigDecimal.valueOf(1.9511111);
+    private static final BigDecimal INITIAL_CLUSTER_PRICE_2 = BigDecimal.valueOf(123456.5666);
+    private static final BigDecimal EXPECTED_CLUSTER_PRICE_1 = BigDecimal.valueOf(1.95);
+    private static final BigDecimal EXPECTED_CLUSTER_PRICE_2 = BigDecimal.valueOf(123456.57);
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -935,7 +942,7 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     }
 
     @Test
-    public void shoudlFindRunByNodeName() {
+    public void shouldFindRunByNodeName() {
         final PipelineRun run = buildPipelineRun(null);
         run.getInstance().setNodeName(NODE_NAME);
         pipelineRunDao.createPipelineRun(run);
@@ -955,6 +962,72 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         assertThat(loadedServiceUrls.size(), equalTo(1));
         assertTrue(loadedRun.getServiceUrl().containsKey(TEST_REGION));
         assertTrue(loadedRun.getServiceUrl().containsValue(TEST_SERVICE_URL));
+    }
+
+    @Test
+    public void shouldUpdateClusterPrices() {
+        final PipelineRun run1 =  runningRun();
+        final PipelineRun run2 =  runningRun();
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+
+        run1.setWorkersPrice(INITIAL_CLUSTER_PRICE_1);
+        run2.setWorkersPrice(INITIAL_CLUSTER_PRICE_2);
+
+        pipelineRunDao.batchUpdateClusterPrices(Arrays.asList(run1, run2));
+
+        assertThat(pipelineRunDao.loadPipelineRun(run1.getId()).getWorkersPrice(), equalTo(EXPECTED_CLUSTER_PRICE_1));
+        assertThat(pipelineRunDao.loadPipelineRun(run2.getId()).getWorkersPrice(), equalTo(EXPECTED_CLUSTER_PRICE_2));
+    }
+
+    @Test
+    public void shouldLoadWorkers() {
+        final PipelineRun masterRun = runningRun();
+        pipelineRunDao.createPipelineRun(masterRun);
+        final PipelineRun anotherMaster = runningRun();
+        pipelineRunDao.createPipelineRun(anotherMaster);
+
+        final PipelineRun worker1 = runningRun();
+        worker1.setParentRunId(masterRun.getId());
+        final PipelineRun worker2 = pausedRun();
+        worker2.setParentRunId(masterRun.getId());
+        final PipelineRun anotherWorker = runningRun();
+        anotherWorker.setParentRunId(anotherMaster.getId());
+        pipelineRunDao.createPipelineRun(worker1);
+        pipelineRunDao.createPipelineRun(worker2);
+        pipelineRunDao.createPipelineRun(anotherWorker);
+
+        List<PipelineRun> actualRuns = pipelineRunDao.loadRunsByParentRuns(
+                Collections.singletonList(masterRun.getId()));
+        assertThat(actualRuns.size(), equalTo(2));
+        assertThat(actualRuns.stream().map(PipelineRun::getId).collect(Collectors.toSet()),
+                hasItems(worker1.getId(), worker2.getId()));
+
+        actualRuns = pipelineRunDao.loadRunsByParentRuns(Arrays.asList(masterRun.getId(), anotherMaster.getId()));
+        assertThat(actualRuns.size(), equalTo(3));
+        assertThat(actualRuns.stream().map(PipelineRun::getId).collect(Collectors.toSet()),
+                hasItems(worker1.getId(), worker2.getId(), anotherWorker.getId()));
+    }
+
+    @Test
+    public void shouldLoadRunsByPoolId() {
+        final PipelineRun run1 = runningRun();
+        final PipelineRun run2 = runningRun();
+        final PipelineRun run3 = successfulRun();
+        pipelineRunDao.createPipelineRun(run1);
+        pipelineRunDao.createPipelineRun(run2);
+        pipelineRunDao.createPipelineRun(run3);
+
+        run1.getInstance().setPoolId(ID);
+        run3.getInstance().setPoolId(ID);
+        run2.getInstance().setPoolId(ID_2);
+        pipelineRunDao.updateRunInstance(run1);
+        pipelineRunDao.updateRunInstance(run2);
+        pipelineRunDao.updateRunInstance(run3);
+
+        final List<PipelineRun> loaded = pipelineRunDao.loadRunsByPoolId(ID);
+        assertThat(loaded.size(), is(1));
+        assertThat(loaded.get(0).getId(), is(run1.getId()));
     }
 
     private PipelineRun createTestPipelineRun() {
@@ -1172,5 +1245,23 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunServiceUrl.setPipelineRunId(runId);
         pipelineRunServiceUrlRepository.save(pipelineRunServiceUrl);
         return pipelineRunServiceUrl;
+    }
+
+    private PipelineRun runningRun() {
+        return TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING,
+                USER, null, null, true, null, null, TEST_POD_ID,
+                cloudRegion.getId());
+    }
+
+    private PipelineRun pausedRun() {
+        return TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.PAUSED,
+                USER, null, null, true, null, null, TEST_POD_ID,
+                cloudRegion.getId());
+    }
+
+    private PipelineRun successfulRun() {
+        return TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.SUCCESS,
+                USER, null, null, true, null, null, TEST_POD_ID,
+                cloudRegion.getId());
     }
 }

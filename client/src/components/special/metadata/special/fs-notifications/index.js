@@ -22,9 +22,12 @@ import {
   Modal,
   Icon,
   Input,
-  Select
+  Select,
+  Tooltip
 } from 'antd';
+import {observer} from 'mobx-react';
 import UsersRolesSelect from '../../../users-roles-select';
+import roleModel from '../../../../../utils/roleModel';
 import styles from './fs-notifications.css';
 
 const VALUE_TITLE = 'Volume threshold';
@@ -98,7 +101,7 @@ function recipientsEqual (a, b) {
 }
 
 function getNotificationValidationError (notification) {
-  const {value, type} = notification;
+  const {actions, type, value} = notification;
   const error = {};
   if (value === undefined) {
     error.value = 'Threshold is required';
@@ -112,6 +115,16 @@ function getNotificationValidationError (notification) {
     }
   } else if (Number.isNaN(Number(value)) || Number(value) <= 0 || Number(value) > 100) {
     error.value = 'Threshold must be a positive number (0..100)';
+  }
+  if (!actions || actions.length === 0) {
+    error.actions = 'You must specify an action';
+  } else if (
+    actions.includes(NotificationActions.disableMount) &&
+    actions.includes(NotificationActions.readOnly)
+  ) {
+    const readOnlyAction = NotificationActionNames[NotificationActions.readOnly];
+    const disableMountAction = NotificationActionNames[NotificationActions.disableMount];
+    error.actions = `You must specify either "${readOnlyAction}" or "${disableMountAction}" action`;
   }
   if (Object.values(error).length === 0) {
     return undefined;
@@ -139,6 +152,31 @@ class FSNotificationsDialog extends React.Component {
     } = this.state;
     return (notifications.length === 0 || recipients.length > 0) &&
       !(notifications.map(u => u.error).find(o => !!o));
+  }
+
+  get availableNotificationTypes () {
+    const {
+      info = {}
+    } = this.props;
+    const {storageType} = info;
+    return Object
+      .values(NotificationTypes)
+      .filter(o => /^lustre$/i.test(storageType) || o === NotificationTypes.gb);
+  }
+
+  get notificationTypesDisabledWarning () {
+    const {
+      info = {}
+    } = this.props;
+    const {storageType} = info;
+    if (!/^lustre$/i.test(storageType)) {
+      const message = 'Only GB quota type is available';
+      if (storageType) {
+        return `${message} for ${storageType} mounts `;
+      }
+      return message;
+    }
+    return undefined;
   }
 
   componentDidMount () {
@@ -223,7 +261,7 @@ class FSNotificationsDialog extends React.Component {
         ...notifications,
         {
           id: uid(),
-          type: NotificationTypes.gb,
+          type: this.availableNotificationTypes[0],
           actions: [NotificationActions.email]
         }
       ]
@@ -272,6 +310,23 @@ class FSNotificationsDialog extends React.Component {
       recipients = []
     } = this.state;
     const emptyRecipients = recipients.length === 0 && notifications.length > 0;
+    let NotificationTypesWrapper = ({children}) => children;
+    if (this.notificationTypesDisabledWarning) {
+      NotificationTypesWrapper = ({children}) => (
+        <Tooltip
+          title={this.notificationTypesDisabledWarning}
+          trigger="hover"
+        >
+          {children}
+          <Icon
+            type="exclamation-circle-o"
+            style={{
+              marginRight: 5
+            }}
+          />
+        </Tooltip>
+      );
+    }
     return (
       <Modal
         title="Configure FS mount notifications"
@@ -301,7 +356,12 @@ class FSNotificationsDialog extends React.Component {
           className={
             classNames(
               styles.usersRolesSelect,
-              {[styles.error]: emptyRecipients}
+              'cp-divider',
+              'bottom',
+              {
+                [styles.error]: emptyRecipients,
+                'cp-error': emptyRecipients
+              }
             )
           }
         >
@@ -311,9 +371,8 @@ class FSNotificationsDialog extends React.Component {
           <UsersRolesSelect
             className={
               classNames(
-                styles.selector,
                 {
-                  [styles.error]: emptyRecipients
+                  'cp-error': emptyRecipients
                 }
               )
             }
@@ -335,6 +394,7 @@ class FSNotificationsDialog extends React.Component {
           className={
             classNames(
               styles.usersRolesSelectError,
+              'cp-error',
               {
                 [styles.visible]: emptyRecipients
               }
@@ -352,8 +412,9 @@ class FSNotificationsDialog extends React.Component {
                   className={
                     classNames(
                       styles.notification,
+                      'cp-metadata-fs-notification',
                       {
-                        [styles.error]: !!notification.error
+                        'cp-error': !!notification.error
                       }
                     )
                   }
@@ -363,7 +424,7 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.label,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.value
+                          'cp-error': !!notification.error && !!notification.error.value
                         }
                       )
                     }
@@ -376,45 +437,46 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.input,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.value
+                          'cp-error': !!notification.error && !!notification.error.value
                         }
                       )
                     }
                     value={notification.value || ''}
                     onChange={this.onChangeNotificationValue(notification.id)}
                   />
-                  <Select
-                    disabled={readOnly}
-                    className={
-                      classNames(
-                        styles.select,
-                        {
-                          [styles.error]: !!notification.error && !!notification.error.type
-                        }
-                      )
-                    }
-                    value={notification.type}
-                    onChange={this.onChangeNotificationType(notification.id)}
-                  >
-                    {
-                      Object
-                        .values(NotificationTypes || {})
-                        .map((notificationType) => (
-                          <Select.Option
-                            key={notificationType}
-                            value={notificationType}
-                          >
-                            {NotificationTypeNames[notificationType]}
-                          </Select.Option>
-                        ))
-                    }
-                  </Select>
+                  <NotificationTypesWrapper>
+                    <Select
+                      disabled={readOnly || this.availableNotificationTypes.length === 1}
+                      className={
+                        classNames(
+                          styles.select,
+                          {
+                            'cp-error': !!notification.error && !!notification.error.type
+                          }
+                        )
+                      }
+                      value={notification.type}
+                      onChange={this.onChangeNotificationType(notification.id)}
+                    >
+                      {
+                        this.availableNotificationTypes
+                          .map((notificationType) => (
+                            <Select.Option
+                              key={notificationType}
+                              value={notificationType}
+                            >
+                              {NotificationTypeNames[notificationType]}
+                            </Select.Option>
+                          ))
+                      }
+                    </Select>
+                  </NotificationTypesWrapper>
                   <span
                     className={
                       classNames(
                         styles.label,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.actions
+                          'cp-error': !!notification.error && !!notification.error.actions
                         }
                       )
                     }
@@ -427,7 +489,7 @@ class FSNotificationsDialog extends React.Component {
                       classNames(
                         styles.select,
                         {
-                          [styles.error]: !!notification.error && !!notification.error.actions
+                          'cp-error': !!notification.error && !!notification.error.actions
                         }
                       )
                     }
@@ -466,6 +528,7 @@ class FSNotificationsDialog extends React.Component {
                     classNames(
                       styles.notification,
                       styles.notificationError,
+                      'cp-error',
                       {
                         [styles.visible]: !!notification.error
                       }
@@ -473,20 +536,16 @@ class FSNotificationsDialog extends React.Component {
                   }
                   key={`${notification.id}-error`}
                 >
-                  <span
-                    className={styles.label}
-                    style={{visibility: 'hidden'}}
-                  >
-                    {VALUE_TITLE}:
-                  </span>
-                  {
-                    Object.values(notification.error || {})
-                      .map((error, index) => (
-                        <span className={styles.errorDescription} key={index}>
-                          {error}
-                        </span>
-                      ))
-                  }
+                  <ul>
+                    {
+                      Object.values(notification.error || {})
+                        .map((error, index) => (
+                          <li className={styles.errorDescription} key={index}>
+                            {error}
+                          </li>
+                        ))
+                    }
+                  </ul>
                 </div>
               )
             ])
@@ -523,9 +582,12 @@ FSNotificationsDialog.propTypes = {
   visible: PropTypes.bool,
   onChange: PropTypes.func,
   onClose: PropTypes.func,
-  readOnly: PropTypes.bool
+  readOnly: PropTypes.bool,
+  info: PropTypes.object
 };
 
+@roleModel.authenticationInfo
+@observer
 class FSNotifications extends React.Component {
   state = {
     visible: false
@@ -562,8 +624,17 @@ class FSNotifications extends React.Component {
 
   render () {
     const {
-      readOnly
+      authenticatedUserInfo,
+      readOnly: readOnlyRaw,
+      info = {},
+      showOnlySummary
     } = this.props;
+    const readOnly = showOnlySummary ||
+      readOnlyRaw ||
+      !authenticatedUserInfo ||
+      !authenticatedUserInfo.loaded ||
+      !authenticatedUserInfo.value ||
+      !authenticatedUserInfo.value.admin;
     const {
       visible
     } = this.state;
@@ -583,8 +654,14 @@ class FSNotifications extends React.Component {
     }
     return (
       <div
-        className={styles.container}
-        onClick={readOnly && notifications.length === 0 ? undefined : this.onOpenEditDialog}
+        className={classNames(
+          styles.container,
+          {[styles.disabled]: showOnlySummary || (readOnly && notifications.length === 0)}
+        )}
+        onClick={showOnlySummary || (readOnly && notifications.length === 0)
+          ? undefined
+          : this.onOpenEditDialog
+        }
       >
         {
           empty && !readOnly
@@ -599,6 +676,7 @@ class FSNotifications extends React.Component {
           recipients={recipients}
           onClose={this.onCloseEditDialog}
           onChange={this.onChange}
+          info={info}
         />
       </div>
     );
@@ -608,7 +686,9 @@ class FSNotifications extends React.Component {
 FSNotifications.propTypes = {
   metadata: PropTypes.object,
   readOnly: PropTypes.bool,
-  onChange: PropTypes.func
+  showOnlySummary: PropTypes.bool,
+  onChange: PropTypes.func,
+  info: PropTypes.object
 };
 
 const METADATA_KEY = 'fs_notifications';

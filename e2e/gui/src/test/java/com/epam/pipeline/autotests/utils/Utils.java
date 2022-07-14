@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -46,6 +47,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,7 +69,10 @@ import static org.testng.Assert.assertTrue;
 public class Utils {
 
     public static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
+    public static final String DATE_PATTERN = "yyyy-MM-dd";
     public static final String ON_DEMAND = "On-demand";
+    public static final String SPOT = "Spot";
+    public static final String LATEST_VERSION = "latest";
 
     public static void assertTimePassed(String dateAndTimeString, int maxSeconds) {
         LocalDateTime runDateTime = validateDateTimeString(dateAndTimeString);
@@ -101,7 +106,7 @@ public class Utils {
 
     public static BufferedReader getResourcesReader(String resourceName) {
         return new BufferedReader(new InputStreamReader(
-                RunPipelineTest.class.getResourceAsStream(resourceName)));
+                Objects.requireNonNull(RunPipelineTest.class.getResourceAsStream(resourceName))));
     }
 
     public static void scrollElementToPosition(String elementCssSelector, int scrollPosition) {
@@ -117,9 +122,17 @@ public class Utils {
         sleep(500, MILLISECONDS);
         final Actions action = actions().moveToElement(field).click();
         for (int i = 0; i < 1000; i++) {
-            action.sendKeys("\b").sendKeys(Keys.DELETE);
+            action.sendKeys("\b").sendKeys(Keys.DELETE).perform();
         }
-        action.perform();
+    }
+
+    public static void selectAllAndClearTextField(final SelenideElement field) {
+        sleep(500, MILLISECONDS);
+        String selectAll = Keys.chord(Keys.CONTROL, "a");
+        actions().moveToElement(field).click()
+                .sendKeys(selectAll)
+                .sendKeys(Keys.DELETE)
+                .perform();
     }
 
     public static void sendKeysWithSlashes(final String text) {
@@ -251,6 +264,14 @@ public class Utils {
         return createTempFile("");
     }
 
+    public static File createTempFileWithSpecificSize(final long sizeInBytes) throws IOException {
+        final File tempFile = createTempFile();
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(tempFile, "rw");
+        randomAccessFile.setLength(sizeInBytes);
+        randomAccessFile.close();
+        return tempFile;
+    }
+
     public static File createTempFile(String suffix) throws RuntimeException {
         return createTempFile("new-file-%s-%d.file", suffix);
     }
@@ -379,11 +400,6 @@ public class Utils {
      */
     public static String resourceName(final String testCase) {
         return format("ui-tests-%s-%d", testCase, Utils.randomSuffix());
-    }
-
-    public static void restartBrowser(final String address) {
-        Selenide.close();
-        Selenide.open(address);
     }
 
     public static void assertStringContainsList(final String str, final String... subStrings) {

@@ -18,6 +18,7 @@ package com.epam.pipeline.security.saml;
 
 import com.coveo.saml.SamlException;
 import com.coveo.saml.SamlResponse;
+import com.epam.pipeline.utils.URLUtils;
 import com.sun.org.apache.xerces.internal.parsers.DOMParser;
 import org.joda.time.DateTime;
 import org.opensaml.common.SAMLException;
@@ -198,7 +199,8 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
 
     private void validateDestination(Response response) throws SAMLException {
         String destination = response.getDestination();
-        if (destination != null && !uriComparator.compare(destination, relyingPartyIdentifier + SSO_ENDPOINT)) {
+        if (destination != null && !uriComparator.compare(destination,
+                URLUtils.getUrlWithoutTrailingSlash(relyingPartyIdentifier) + SSO_ENDPOINT)) {
             throw new SAMLException("Intended destination " + destination
                                     + " doesn't match any of the endpoint URLs on endpoint ");
         }
@@ -313,7 +315,7 @@ public class CustomSamlClient extends WebSSOProfileConsumerImpl {
         context.setLocalEntityEndpoint(new EndpointImpl(null, "", "") {
             @Override
             public String getLocation() {
-                return relyingPartyIdentifier + SSO_ENDPOINT;
+                return URLUtils.getUrlWithoutTrailingSlash(relyingPartyIdentifier) + SSO_ENDPOINT;
             }
         });
 

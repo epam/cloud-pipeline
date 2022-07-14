@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,13 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.BasicSessionCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.GetObjectTaggingResult;
 import com.amazonaws.services.s3.model.ListObjectsV2Request;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.ListVersionsRequest;
+import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.amazonaws.services.s3.model.S3VersionSummary;
 import com.amazonaws.services.s3.model.Tag;
@@ -38,9 +40,11 @@ import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.InputStream;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -87,6 +91,23 @@ public class S3FileManager implements ObjectStorageFileManager {
                 .flatMap(List::stream)
                 .filter(file -> !file.getDeleteMarker())
                 .peek(file -> file.setTags(getNativeTags(client, storage, file)));
+    }
+
+    @Override
+    public InputStream readFileContent(final String storage,
+                                       final String path,
+                                       final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        final S3Object object = client.getObject(new GetObjectRequest(storage, path));
+        return object.getObjectContent();
+    }
+
+    @Override
+    public void deleteFile(final String storage,
+                           final String path,
+                           final Supplier<TemporaryCredentials> credentialsSupplier) {
+        final AmazonS3 client = getS3Client(credentialsSupplier);
+        client.deleteObject(storage, path);
     }
 
     private AmazonS3 getS3Client(final Supplier<TemporaryCredentials> credentialsSupplier) {
@@ -186,7 +207,7 @@ public class S3FileManager implements ObjectStorageFileManager {
 
         private DataStorageFile convertToStorageFile(final S3ObjectSummary s3ObjectSummary) {
             final DataStorageFile file = new DataStorageFile();
-            file.setName(s3ObjectSummary.getKey());
+            file.setName(FilenameUtils.getName(s3ObjectSummary.getKey()));
             file.setPath(s3ObjectSummary.getKey());
             file.setSize(s3ObjectSummary.getSize());
             file.setVersion(null);
@@ -243,7 +264,7 @@ public class S3FileManager implements ObjectStorageFileManager {
 
         private DataStorageFile convertToStorageFile(final S3VersionSummary summary) {
             final DataStorageFile file = new DataStorageFile();
-            file.setName(summary.getKey());
+            file.setName(FilenameUtils.getName(summary.getKey()));
             file.setPath(summary.getKey());
             file.setSize(summary.getSize());
             if (summary.getVersionId() != null && !summary.getVersionId().equals("null")) {

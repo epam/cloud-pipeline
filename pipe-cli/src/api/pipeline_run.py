@@ -92,3 +92,13 @@ class PipelineRun(API):
         if response_data and 'payload' in response_data:
             return response_data['payload']
         return None
+
+    @classmethod
+    def count_user_runs(cls, target_statuses=None, owner=None):
+        if target_statuses is None:
+            target_statuses = ['RUNNING', 'PAUSED', 'PAUSING', 'RESUMING']
+        api = cls.instance()
+        filter_data = {'statuses': target_statuses, 'owners': [owner], 'userModified': False}
+        response_data = api.call('run/count', json.dumps(filter_data))
+        if 'payload' in response_data:
+            return response_data['payload']

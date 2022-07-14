@@ -19,9 +19,11 @@ from ..model.pipeline_model import PipelineModel
 from ..model.version_model import VersionModel
 from ..model.pipeline_run_parameters_model import PipelineRunParametersModel
 from ..model.pipeline_run_model import PipelineRunModel, PriceType
+from ..model.pipeline_run_parameter_model import PipelineRunParameterModel
 from ..model.datastorage_rule_model import DataStorageRuleModel
 from ..model.instance_price import InstancePrice
 from ..api.pipeline_run import PipelineRun
+from ..utilities.hidden_object_manager import HiddenObjectManager
 
 TYPE_VALUE_DELIMITER = '?'
 TYPE_DEFAULT = 'string'
@@ -70,9 +72,12 @@ class Pipeline(API):
     @classmethod
     def load_versions(cls, identifier):
         api = cls.instance()
+        hidden_object_manager = HiddenObjectManager()
         response_data = api.call('pipeline/{}/versions'.format(identifier), None)
         for version_json in response_data['payload']:
-            yield VersionModel.load(version_json)
+            version = VersionModel.load(version_json)
+            if not hidden_object_manager.is_object_hidden('pipeline_version', str(identifier) + "/" + version.name):
+                yield version
 
     def get_by_id(self, identifier):
         response_data = self.call('pipeline/{}/load'.format(identifier), None)
@@ -254,6 +259,15 @@ class Pipeline(API):
             api_url += '&config={}'.format(config_name)
         response_data = api.call(api_url, json.dumps(data))
         return InstancePrice.load(response_data['payload'])
+
+    @classmethod
+    def get_default_run_parameters(cls):
+        api = cls.instance()
+        response_data = api.call('/run/defaultParameters', None)
+        result = []
+        for parameter_json in response_data.get('payload', []):
+            result.append(PipelineRunParameterModel.load_from_default_system_parameter(parameter_json))
+        return result
 
     @classmethod
     def __add_parent_node_params(cls, params, parent_node):

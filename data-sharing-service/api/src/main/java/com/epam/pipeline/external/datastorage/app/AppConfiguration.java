@@ -16,12 +16,18 @@
 
 package com.epam.pipeline.external.datastorage.app;
 
+import com.epam.pipeline.client.pipeline.CloudPipelineApiExecutor;
+import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
+import com.epam.pipeline.external.datastorage.manager.CloudPipelineApiBuilder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ResourceBundleMessageSource;
 
 import com.epam.pipeline.external.datastorage.message.MessageHelper;
+
+import java.time.Duration;
 
 @Configuration
 @ComponentScan(basePackages = { "com.epam.pipeline.external.datastorage.manager" })
@@ -37,5 +43,20 @@ public class AppConfiguration {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         return messageSource;
+    }
+
+    @Bean
+    public CloudPipelineApiBuilder cloudPipelineApiBuilder(
+        @Value("${pipeline.api.base.url}") final String pipelineBaseUrl,
+        @Value("${pipeline.client.connect.timeout}") final long connectTimeout,
+        @Value("${pipeline.client.read.timeout}") final long readTimeout) {
+        return new CloudPipelineApiBuilder(connectTimeout, readTimeout, pipelineBaseUrl);
+    }
+
+    @Bean
+    public CloudPipelineApiExecutor cloudPipelineApiExecutor(
+            @Value("${cloud.pipeline.retry.attempts:3}") int retryAttempts,
+            @Value("${cloud.pipeline.retry.delay:5000}") int retryDelay) {
+        return new RetryingCloudPipelineApiExecutor(retryAttempts, Duration.ofMillis(retryDelay));
     }
 }

@@ -15,8 +15,6 @@
  */
 
 .container {
-  border-bottom: 1px solid #ccc;
-  background-color: #fafafa;
   padding: 5px;
 }
 
@@ -25,7 +23,6 @@
 }
 
 .error {
-  color: red;
   font-size: smaller;
 }
 

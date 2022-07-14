@@ -80,8 +80,6 @@ class ExportStore {
         .then((canvases) => {
           const filtered = canvases.filter(Boolean);
           const canvasElement = document.createElement('canvas');
-          document.body.style.overflowY = 'hidden';
-          document.body.appendChild(canvasElement);
           const titleHeight = 50;
           const width = Math.max(...filtered.map(({width}) => width), 0);
           const height = filtered.reduce((r, c) => r + c.height, titleHeight);
@@ -106,8 +104,6 @@ class ExportStore {
           });
           canvasElement.toBlob((blob) => {
             FileSaver.saveAs(blob, `${title}.png`);
-            document.body.removeChild(canvasElement);
-            document.body.style.overflowY = 'unset';
             hide();
           });
         })

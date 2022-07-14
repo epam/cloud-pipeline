@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.EnumUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -41,6 +42,8 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.support.CronSequenceGenerator;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -65,6 +68,7 @@ public class DtsSynchronizationService {
     private final PreferenceService preferenceService;
     private final ShutdownService shutdownService;
     private final PipelineCredentials pipeCredentials;
+    private final DtsRuleExpanderService dtsRuleExpander;
     private final Map<AutonomousSyncRule, AutonomousSyncCronDetails> activeSyncRules;
     private final Map<AutonomousSyncRule, TransferTask> activeTransferTasks;
     private final String defaultCronExpression;
@@ -76,7 +80,8 @@ public class DtsSynchronizationService {
                                      final TransferService autonomousTransferService,
                                      final TaskRepository taskRepository,
                                      final PreferenceService preferenceService,
-                                     final ShutdownService shutdownService) {
+                                     final ShutdownService shutdownService,
+                                     final DtsRuleExpanderService dtsRuleExpander) {
         this.pipeCredentials = new PipelineCredentials(pipeApiUrl, pipeApiToken);
         this.taskRepository = taskRepository;
         this.transferService = autonomousTransferService;
@@ -84,6 +89,7 @@ public class DtsSynchronizationService {
         this.preferenceService = preferenceService;
         this.activeSyncRules = new ConcurrentHashMap<>();
         this.activeTransferTasks = new ConcurrentHashMap<>();
+        this.dtsRuleExpander = dtsRuleExpander;
         this.defaultCronExpression = Optional.of(defaultCronExpression)
             .filter(CronSequenceGenerator::isValidExpression)
             .orElseThrow(() -> new IllegalStateException("Default FS sync cron is invalid!"));
@@ -120,7 +126,8 @@ public class DtsSynchronizationService {
     }
 
     private AutonomousSyncRule mapToRuleWithoutCron(final AutonomousSyncRule rule) {
-        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null);
+        return new AutonomousSyncRule(rule.getSource(), rule.getDestination(), null,
+                                      rule.getDeleteSource(), ListUtils.emptyIfNull(rule.getTransferTriggers()));
     }
 
     private AutonomousSyncCronDetails mapRuleToCronDetails(final AutonomousSyncRule newRule) {
@@ -157,6 +164,8 @@ public class DtsSynchronizationService {
     private void submitTasksForAwaitingRules() {
         final Date now = getCurrentDate();
         final Map<AutonomousSyncRule, TransferTask> newSubmittedTasks = activeSyncRules.entrySet().stream()
+            .filter(this::syncSourceExists)
+            .flatMap(dtsRuleExpander::expandSyncEntry)
             .filter(entry -> shouldBeTriggered(now, entry))
             .filter(entry -> noMatchingActiveTransferTask(entry.getKey()))
             .map(Map.Entry::getKey)
@@ -164,10 +173,21 @@ public class DtsSynchronizationService {
             .filter(entry -> Objects.nonNull(entry.getValue()))
             .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         newSubmittedTasks.keySet().stream()
-            .map(activeSyncRules::get)
+            .map(task -> {
+                final AutonomousSyncRule keyRule = Optional.ofNullable(task.getParentRule()).orElse(task);
+                return activeSyncRules.get(keyRule);
+            })
             .map(AutonomousSyncCronDetails::getLastExecution)
             .forEach(execution -> execution.setTime(now.getTime()));
         activeTransferTasks.putAll(newSubmittedTasks);
+    }
+
+    private boolean syncSourceExists(final Map.Entry<AutonomousSyncRule, ?> entry) {
+        return Optional.of(entry.getKey())
+            .map(AutonomousSyncRule::getSource)
+            .map(Paths::get)
+            .filter(Files::exists)
+            .isPresent();
     }
 
     private boolean shouldBeTriggered(final Date now,
@@ -203,7 +223,8 @@ public class DtsSynchronizationService {
 
     private TransferTask runTransferTask(final AutonomousSyncRule rule) {
         return buildTransferDestination(rule)
-            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination))
+            .map(transferDestination -> trySubmitTransferTask(buildTransferSource(rule), transferDestination,
+                    rule.getDeleteSource()))
             .map(submittedTask -> {
                 log.info("Transfer task from `{}` to `{}` submitted successfully [id=`{}`]!",
                          rule.getSource(), rule.getDestination(), submittedTask.getId());
@@ -214,10 +235,13 @@ public class DtsSynchronizationService {
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private TransferTask trySubmitTransferTask(final StorageItem transferSource,
-                                               final StorageItem transferDestination) {
+                                               final StorageItem transferDestination,
+                                               final Boolean deleteTransferSource) {
         try {
             transferDestination.setCredentials(getPipeCredentialsAsString());
-            return transferService.runTransferTask(transferSource, transferDestination, Collections.emptyList());
+            return transferService.runTransferTask(transferSource, transferDestination,
+                    Collections.emptyList(),
+                    Optional.ofNullable(deleteTransferSource).orElse(preferenceService.isSourceDeletionEnabled()));
         } catch (JsonProcessingException e) {
             log.warn("Error parsing PIPE credentials!");
         } catch (Exception e) {
@@ -233,7 +257,6 @@ public class DtsSynchronizationService {
             .map(path -> path.split(SCHEMA_DELIMITER, 2)[0])
             .map(StringUtils::upperCase)
             .map(schema -> EnumUtils.getEnum(StorageType.class, schema))
-            .filter(Objects::nonNull)
             .map(type -> {
                 final StorageItem destinationItem = new StorageItem();
                 destinationItem.setType(type);

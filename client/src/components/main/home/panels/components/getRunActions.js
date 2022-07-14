@@ -20,8 +20,17 @@ import {canPauseRun} from '../../../../runs/actions';
 import VSActions from '../../../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../../../utils/multizone';
+import {MAINTENANCE_MODE_DISCLAIMER} from '../../../../../models/preferences/PreferencesLoad';
 
-export default function ({multiZoneManager, vsActions}, callbacks) {
+export default function (
+  {multiZoneManager, vsActions, preferences},
+  callbacks,
+  disabled = false
+) {
+  let maintenanceMode = false;
+  if (preferences && preferences.loaded) {
+    maintenanceMode = preferences.systemMaintenanceMode;
+  }
   return function (run) {
     const actions = [];
     switch (run.status.toUpperCase()) {
@@ -44,19 +53,27 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
             actions.push({
               title: 'OPEN',
               icon: 'export',
+              target: regionedUrl.sameTab ? '_top' : '_blank',
               multiZoneUrl: regionedUrl.url,
               action: url && callbacks && callbacks.openUrl
-                ? () => callbacks.openUrl(url)
+                ? () => callbacks.openUrl(url, regionedUrl.sameTab ? '_top' : '_blank')
                 : undefined
             });
           } else {
+            const defaultUrl = regionedUrls.find(o => o.isDefault);
+            const defaultUrlRegion = defaultUrl
+              ? multiZoneManager.getDefaultURLRegion(defaultUrl.url)
+              : undefined;
             const overlay = (
               <div>
                 <ul>
                   {
-                    regionedUrls.map(({name, url}, index) =>
+                    regionedUrls.map(({name, url, sameTab}, index) =>
                       <li key={index} style={{margin: 4}}>
-                        <MultizoneUrl configuration={url}>
+                        <MultizoneUrl
+                          target={sameTab ? '_top' : '_blank'}
+                          configuration={url}
+                        >
                           {name}
                         </MultizoneUrl>
                       </li>
@@ -68,7 +85,13 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
             actions.push({
               title: 'OPEN',
               icon: 'export',
-              overlay
+              overlay,
+              action: defaultUrl && defaultUrlRegion && callbacks && callbacks.openUrl
+                ? () => callbacks.openUrl(
+                  defaultUrl.url[defaultUrlRegion],
+                  defaultUrlRegion.sameTab ? '_top' : '_blank'
+                )
+                : undefined
             });
           }
         }
@@ -81,7 +104,6 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           });
           if (
             !run.sensitive &&
-            run.platform !== 'windows' &&
             vsActions &&
             vsActions.available
           ) {
@@ -107,6 +129,8 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           actions.push({
             title: 'PAUSE',
             icon: 'pause-circle-o',
+            disabled: disabled || maintenanceMode,
+            overlay: maintenanceMode ? MAINTENANCE_MODE_DISCLAIMER : undefined,
             action: callbacks ? callbacks.pause : undefined
           });
         }
@@ -114,7 +138,7 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
           actions.push({
             title: 'STOP',
             icon: 'close-circle-o',
-            style: {color: 'red'},
+            className: 'cp-danger',
             action: callbacks ? callbacks.stop : undefined
           });
         }
@@ -126,19 +150,22 @@ export default function ({multiZoneManager, vsActions}, callbacks) {
         ) {
           actions.push({
             title: 'RESUME',
+            disabled: disabled || maintenanceMode,
             icon: run.resumeFailureReason ? 'exclamation-circle-o' : 'play-circle-o',
             action: callbacks ? callbacks.resume : undefined,
-            overlay: run.resumeFailureReason ? (
-              <div style={{maxWidth: '40vw'}}>
-                {run.resumeFailureReason}
-              </div>
-            ) : undefined
+            overlay: maintenanceMode
+              ? MAINTENANCE_MODE_DISCLAIMER
+              : run.resumeFailureReason ? (
+                <div style={{maxWidth: '40vw'}}>
+                  {run.resumeFailureReason}
+                </div>
+              ) : undefined
           });
         }
         actions.push({
           title: 'TERMINATE',
           icon: 'close-circle-o',
-          style: {color: 'red'},
+          className: 'cp-danger',
           action: callbacks ? callbacks.terminate : undefined
         });
         break;

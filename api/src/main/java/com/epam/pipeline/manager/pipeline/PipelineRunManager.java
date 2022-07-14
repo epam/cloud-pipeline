@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.pipeline;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.PagedResult;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
@@ -37,6 +38,10 @@ import com.epam.pipeline.entity.contextual.ContextualPreferenceExternalResource;
 import com.epam.pipeline.entity.contextual.ContextualPreferenceLevel;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
+import com.epam.pipeline.entity.metadata.MetadataEntity;
+import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.metadata.PipeConfValueType;
+import com.epam.pipeline.entity.metadata.RunStatusMetadata;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.DiskAttachRequest;
 import com.epam.pipeline.entity.pipeline.DockerRegistry;
@@ -63,21 +68,25 @@ import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.KubernetesConstants;
 import com.epam.pipeline.manager.cluster.NodesManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.docker.scan.ToolSecurityPolicyCheck;
 import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.PipeRunCmdBuilder;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.utils.PasswordGenerator;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.collections4.MapUtils;
@@ -100,6 +109,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +143,8 @@ public class PipelineRunManager {
     private static final int BILLING_PRICE_SCALE = 5;
     public static final String CP_CAP_LIMIT_MOUNTS = "CP_CAP_LIMIT_MOUNTS";
     private static final String LIMIT_MOUNTS_NONE = "none";
+    private static final String CP_REPORT_RUN_STATUS = "CP_REPORT_RUN_STATUS";
+    private static final String CP_REPORT_RUN_PROCESSED_DATE = "CP_REPORT_RUN_PROCESSED_DATE";
 
     @Autowired
     private PipelineRunDao pipelineRunDao;
@@ -209,6 +221,15 @@ public class PipelineRunManager {
     @Autowired
     private ContextualNotificationRegistrationManager contextualNotificationRegistrationManager;
 
+    @Autowired
+    private NodePoolManager nodePoolManager;
+
+    @Autowired
+    private RunLimitsService runLimitsService;
+
+    @Autowired
+    private MetadataEntityManager metadataEntityManager;
+
     /**
      * Launches cmd command execution, uses Tool as ACL identity
      * @param runVO
@@ -228,7 +249,7 @@ public class PipelineRunManager {
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
-
+        checkRunLaunchLimits(runVO);
         final Tool tool = toolManager.loadByNameOrId(runVO.getDockerImage());
         final PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO, tool);
         runVO.setRunSids(mergeRunSids(runVO.getRunSids(), configuration.getSharedWithUsers(),
@@ -237,7 +258,8 @@ public class PipelineRunManager {
 
         final PipelineRun run = launchPipeline(configuration, null, null,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(),
+                configuration.getNotifications());
         run.setParent(tool);
         run.setAclClass(AclClass.TOOL);
 
@@ -261,6 +283,7 @@ public class PipelineRunManager {
         PipelineRun parentRun = loadPipelineRun(runVO.getUseRunId());
         Assert.state(parentRun.getStatus() == TaskStatus.RUNNING,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_RUNNING, runVO.getUseRunId()));
+        checkRunLaunchLimits(runVO);
         PipelineConfiguration configuration = configurationManager.getPipelineConfiguration(runVO);
         Tool tool = getToolForRun(configuration);
         configuration.setSecretName(tool.getSecretName());
@@ -302,7 +325,7 @@ public class PipelineRunManager {
         LOGGER.debug("Allowed runs count - {}, actual - {}", maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1));
         Assert.isTrue(getNodeCount(runVO.getNodeCount(), 1) <= maxRunsNumber, messageHelper.getMessage(
                 MessageConstants.ERROR_EXCEED_MAX_RUNS_COUNT, maxRunsNumber, getNodeCount(runVO.getNodeCount(), 1)));
-
+        checkRunLaunchLimits(runVO);
         final Pipeline pipeline = pipelineManager.load(pipelineId);
         final PipelineConfiguration configuration = configurationManager
                 .getPipelineConfigurationForPipeline(pipeline, runVO);
@@ -313,7 +336,8 @@ public class PipelineRunManager {
         permissionManager.checkToolRunPermission(configuration.getDockerImage());
         final PipelineRun run = launchPipeline(configuration, pipeline, version,
                 runVO.getInstanceType(), runVO.getParentNodeId(), runVO.getConfigurationName(), null,
-                runVO.getParentRunId(), null, null, runVO.getRunSids(), runVO.getNotifications());
+                runVO.getParentRunId(), null, null, runVO.getRunSids(),
+                configuration.getNotifications());
         run.setParent(pipeline);
 
         if (isClusterRun) {
@@ -384,6 +408,12 @@ public class PipelineRunManager {
         save(run);
         dataStorageManager.analyzePipelineRunsParameters(Collections.singletonList(run));
         contextualNotificationRegistrationManager.register(notificationRequests, run);
+        if (MapUtils.isNotEmpty(configuration.getTags())) {
+            run.setTags(configuration.getTags());
+            pipelineRunDao.updateRunTags(run);
+        }
+        run.parseParameters();
+        updateMetadataEntities(run);
         return run;
     }
 
@@ -563,8 +593,14 @@ public class PipelineRunManager {
         return updatePipelineStatus(runId, status, pipelineRun);
     }
 
+    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun updatePipelineStatus(final PipelineRun run) {
+        try {
+            updateMetadataEntities(run);
+        } catch (Exception e) {
+            LOGGER.error("An error occurred during metadata run status processing", e);
+        }
         return runCRUDService.updateRunStatus(run);
     }
 
@@ -762,6 +798,8 @@ public class PipelineRunManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun updateCommitRunStatus(Long id, CommitStatus commitStatus) {
         PipelineRun pipelineRun = pipelineRunDao.loadPipelineRun(id);
+        toolManager.validateCommitOperationAllowed(pipelineRun.getActualDockerImage());
+
         Assert.notNull(pipelineRun,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, id));
         pipelineRun.setCommitStatus(commitStatus);
@@ -902,14 +940,21 @@ public class PipelineRunManager {
      * Updates run's tags
      * @param runId is ID of pipeline run which tags should be updated
      * @param newTags object, containing a map with tags to set for a pipeline
+     * @param overwrite
      * @return
      */
     @Transactional(propagation = Propagation.REQUIRED)
-    public PipelineRun updateTags(final Long runId, final TagsVO newTags) {
+    public PipelineRun updateTags(final Long runId, final TagsVO newTags, final boolean overwrite) {
         final PipelineRun run = pipelineRunDao.loadPipelineRun(runId);
         Assert.notNull(run,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_NOT_FOUND, runId));
-        run.setTags(newTags.getTags());
+        if (overwrite) {
+            run.setTags(newTags.getTags());
+        } else {
+            final Map<String, String> currentTags = new HashMap<>(MapUtils.emptyIfNull(run.getTags()));
+            currentTags.putAll(MapUtils.emptyIfNull(newTags.getTags()));
+            run.setTags(currentTags);
+        }
         pipelineRunDao.updateRunTags(run);
         return run;
     }
@@ -1128,6 +1173,11 @@ public class PipelineRunManager {
                 .collect(Collectors.toList());
     }
 
+    public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
+        nodePoolManager.load(poolId);
+        return runCRUDService.loadRunsByPoolId(poolId);
+    }
+
     private int getTotalSize(final List<InstanceDisk> disks) {
         return (int) disks.stream().mapToLong(InstanceDisk::getSize).sum();
     }
@@ -1163,8 +1213,8 @@ public class PipelineRunManager {
         for (int i = 0; i < nodeCount; i++) {
             launchPipeline(configuration, pipeline, version,
                     runVO.getInstanceType(), runVO.getParentNodeId(),
-                    runVO.getConfigurationName(), parentId, run.getId(), null, null, runVO.getRunSids(),
-                    runVO.getNotifications());
+                    runVO.getConfigurationName(), parentId, run.getId(), null, null,
+                    runVO.getRunSids(), configuration.getNotifications());
         }
     }
 
@@ -1178,7 +1228,6 @@ public class PipelineRunManager {
             return configuration.getCmdTemplate();
         }
     }
-
 
     private void validateRunParameters(PipelineConfiguration configuration, Pipeline pipeline) {
         for (Map.Entry<String, PipeConfValueVO> param : configuration.getParameters().entrySet()) {
@@ -1496,5 +1545,88 @@ public class PipelineRunManager {
         return runsSids.stream()
                 .peek(runSid -> runSid.setIsPrincipal(principal))
                 .collect(Collectors.toList());
+    }
+
+    private void checkRunLaunchLimits(final PipelineStart runVO) {
+        final int totalStaticNodesCount = Optional.of(runVO)
+                                              .map(PipelineStart::getNodeCount)
+                                              .orElse(0) + 1;
+        runLimitsService.checkRunLaunchLimits(totalStaticNodesCount);
+    }
+
+    private void updateMetadataEntities(final PipelineRun run) {
+        final List<Long> entitiesIds = run.getEntitiesIds();
+        if (CollectionUtils.isEmpty(entitiesIds)) {
+            return;
+        }
+        final Optional<PipelineRunParameter> runStatusParameter = ListUtils
+                .emptyIfNull(run.getPipelineRunParameters()).stream()
+                .filter(runParameter -> CP_REPORT_RUN_STATUS.equals(runParameter.getName()))
+                .findFirst();
+        if (!runStatusParameter.isPresent()) {
+            return;
+        }
+        final String dataKey = runStatusParameter.get().getValue();
+        if (!StringUtils.hasText(dataKey)) {
+            LOGGER.error("Parameter {} was specified for pipeline run {} but empty", CP_REPORT_RUN_STATUS, run.getId());
+            return;
+        }
+        final RunStatusMetadata runStatusMetadata = RunStatusMetadata.builder()
+                .runId(run.getId())
+                .status(run.getStatus().name())
+                .message(run.getStateReasonMessage())
+                .startDate(run.getStartDate())
+                .endDate(run.getEndDate())
+                .build();
+
+        final Optional<String> reportEndDateParameter = run.getParameterValue(CP_REPORT_RUN_PROCESSED_DATE);
+
+        final List<MetadataEntity> metadataEntities = metadataEntityManager
+                .loadEntitiesByIds(new HashSet<>(entitiesIds)).stream()
+                .peek(metadataEntity -> {
+                    if (Objects.isNull(metadataEntity.getData())) {
+                        metadataEntity.setData(new HashMap<>());
+                    }
+                    addRunStatusMetadata(metadataEntity.getData(), dataKey, runStatusMetadata);
+                    if (run.getStatus().isFinal() && Objects.nonNull(run.getEndDate()) &&
+                            reportEndDateParameter.isPresent()) {
+                        addProcessedDate(metadataEntity.getData(), reportEndDateParameter.get(),
+                                run.getEndDate());
+                    }
+                })
+                .collect(Collectors.toList());
+        metadataEntityManager.updateMetadataEntities(metadataEntities);
+    }
+
+    private void addProcessedDate(final Map<String, PipeConfValue> data,
+                                  final String key,
+                                  final Date endDate) {
+        final PipeConfValue value = new PipeConfValue(PipeConfValueType.DATE.toString(),
+                DateUtils.formatDate(endDate));
+        data.put(key, value);
+    }
+
+    private void addRunStatusMetadata(final Map<String, PipeConfValue> currentData,
+                                      final String dataKey,
+                                      final RunStatusMetadata runStatusMetadata) {
+        final List<RunStatusMetadata> runStatuses = currentData.containsKey(dataKey)
+                ? prepareExistingRunStatusMetadata(currentData.get(dataKey), runStatusMetadata)
+                : Collections.singletonList(runStatusMetadata);
+        final PipeConfValue value = new PipeConfValue(PipeConfValueType.JSON.toString(),
+                JsonMapper.convertDataToJsonStringForQuery(runStatuses));
+        currentData.put(dataKey, value);
+    }
+
+    private List<RunStatusMetadata> prepareExistingRunStatusMetadata(final PipeConfValue currentMetadata,
+                                                                     final RunStatusMetadata runStatusMetadata) {
+        if (Objects.isNull(currentMetadata)) {
+            return Collections.emptyList();
+        }
+        final List<RunStatusMetadata> runStatuses = JsonMapper.parseData(currentMetadata.getValue(),
+                new TypeReference<List<RunStatusMetadata>>() {});
+        final Map<Long, RunStatusMetadata> statusesByRunId = ListUtils.emptyIfNull(runStatuses).stream()
+                .collect(Collectors.toMap(RunStatusMetadata::getRunId, Function.identity()));
+        statusesByRunId.put(runStatusMetadata.getRunId(), runStatusMetadata);
+        return new ArrayList<>(statusesByRunId.values());
     }
 }

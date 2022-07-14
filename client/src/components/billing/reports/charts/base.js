@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
+import {inject, observer} from 'mobx-react';
 import Export from '../export';
 import {DataLabelPlugin, GenerateImagePlugin} from './extensions';
 import 'chart.js/dist/Chart.css';
@@ -66,12 +67,15 @@ class ChartWrapper extends React.Component {
         options = {},
         type,
         plugins,
-        onImageDataReceived
+        onImageDataReceived,
+        reportThemes
       } = props || this.props;
       const {plugins: optPlugins = {}, ...rest} = options;
       optPlugins[DataLabelPlugin.id] = {
         error,
-        label: loading ? 'Loading...' : undefined
+        label: loading ? 'Loading...' : undefined,
+        color: reportThemes.textColor,
+        errorColor: reportThemes.errorColor
       };
       optPlugins[GenerateImagePlugin.id] = {
         onImageReady: (data) => {
@@ -132,4 +136,4 @@ class ChartWrapper extends React.Component {
   }
 }
 
-export default Export.ImageConsumer.Generator(ChartWrapper);
+export default Export.ImageConsumer.Generator(inject('reportThemes')(observer(ChartWrapper)));

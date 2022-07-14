@@ -26,13 +26,16 @@ import {Button, Icon, message, Row, Table, Alert} from 'antd';
 import Issue from './Issue';
 import EditIssueForm from './controls/EditIssueForm';
 import {processUnusedAttachments} from './utilities/UnusedAttachmentsProcessor';
+import {
+  renderHtml,
+  injectCloudPipelineLinksHelpers
+} from '../markdown';
 import styles from './Issues.css';
 import roleModel from '../../../utils/roleModel';
 import localization from '../../../utils/localization';
 
 @roleModel.authenticationInfo
 @localization.localizedComponent
-@inject('issuesRenderer')
 @inject((stores, params) => {
   return {
     issues: params.entityId && params.entityClass
@@ -40,9 +43,9 @@ import localization from '../../../utils/localization';
       : null
   };
 })
+@injectCloudPipelineLinksHelpers
 @observer
 export default class Issues extends localization.LocalizedReactComponent {
-
   static propTypes = {
     readOnly: PropTypes.bool,
     entityId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -83,7 +86,7 @@ export default class Issues extends localization.LocalizedReactComponent {
   renderLabels = (labels) => {
     return (labels || []).map((label, index) => {
       return (
-        <span key={`label_${index}`} className={styles.label}>
+        <span key={`label_${index}`} className="cp-tag">
           {label}
         </span>
       );
@@ -145,7 +148,7 @@ export default class Issues extends localization.LocalizedReactComponent {
   createIssue = async (values) => {
     const hide = message.loading(`Creating ${this.localizedString('issue')}...`, 0);
     const request = new IssueCreate();
-    const htmlText = await this.props.issuesRenderer.renderAsync(values.comment.text, false);
+    const htmlText = await renderHtml(values.comment.text, this.props);
     const attachments = await processUnusedAttachments(values.comment.text, values.comment.attachments);
     await request.send({
       name: values.name,

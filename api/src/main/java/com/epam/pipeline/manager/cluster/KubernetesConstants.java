@@ -56,6 +56,12 @@ public final class KubernetesConstants {
 
     public static final String WINDOWS = "windows";
 
+    public static final String CP_LABEL_PREFIX = "cloud-pipeline/";
+    public static final String TRUE_LABEL_VALUE = "true";
+    public static final String KUBERNETES_APP_LABEL = "k8s-app";
+    public static final String KUBE_DNS_APP = "kube-dns";
+    public static final String HYPHEN = "-";
+
     protected static final String SYSTEM_NAMESPACE = "kube-system";
     protected static final String POD_NODE_SELECTOR = "spec.nodeName";
 
@@ -77,6 +83,8 @@ public final class KubernetesConstants {
             Stream.of(OUT_OF_DISK, READY, MEMORY_PRESSURE, DISK_PRESSURE,
                     NETWORK_UNAVAILABLE, CONFIG_OK, PID_PRESSURE)
                     .collect(Collectors.toSet());
+
+    protected static final String TCP = "TCP";
 
     public static final Set<String> NODE_OUT_OF_ORDER_REASONS = new HashSet<>();
 
@@ -101,6 +109,8 @@ public final class KubernetesConstants {
     }
 
     public static final DateTimeFormatter KUBE_DATE_FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
+    public static final DateTimeFormatter KUBE_LABEL_DATE_FORMATTER =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd_HH.mm.ss.SSSSSS");
 
     private KubernetesConstants() {
         //no op

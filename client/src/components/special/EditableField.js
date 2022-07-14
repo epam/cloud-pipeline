@@ -17,6 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Icon, Input, message, Tooltip} from 'antd';
+import classNames from 'classnames';
+import styles from './EditableField.css';
 
 export default class EditableField extends React.Component {
 
@@ -36,7 +38,6 @@ export default class EditableField extends React.Component {
 
   state = {
     edit: false,
-    hovered: false,
     text: null,
     saving: false
   };
@@ -108,10 +109,6 @@ export default class EditableField extends React.Component {
       border: '1px solid transparent',
       height: 31
     };
-    if (!this.props.readOnly) {
-      options.onMouseOver = () => !this.state.hovered && this.setState({hovered: true});
-      options.onMouseOut = () => this.state.hovered && this.setState({hovered: false});
-    }
     if (this.props.editClassName) {
       options.className = this.props.editClassName;
     }
@@ -148,57 +145,43 @@ export default class EditableField extends React.Component {
 
   renderDisplayMode = () => {
     const options = {};
-    const style = {
-      paddingLeft: 5,
-      paddingRight: 0,
-      height: 31,
-      border: '1px solid transparent',
-      cursor: 'default',
-      display: 'inline'
-    };
+    const style = {};
     if (!this.props.readOnly) {
-      options.onMouseOver = () => !this.state.hovered && this.setState({hovered: true});
-      options.onMouseOut = () => this.state.hovered && this.setState({hovered: false});
       options.onClick = this.onEnterEditMode;
     } else {
       style.cursor = 'default';
-    }
-    if (this.state.hovered) {
-      style.border = '1px solid #ccc';
-      style.borderRadius = 2;
-      style.cursor = 'text';
-      style.backgroundColor = '#f9f9f9';
-    } else {
-      style.border = '1px solid transparent';
-    }
-    if (this.props.className) {
-      options.className = this.props.className;
     }
     if (this.props.style) {
       options.style = Object.assign(style, this.props.style);
     } else {
       options.style = style;
     }
+    options.className = classNames(
+      this.props.className,
+      styles.editableMode,
+      {[styles.editableModeHovered]: !this.props.readOnly},
+      {'cp-library-breadcrumbs-editable-field': !this.props.readOnly}
+    );
     return (
       <Tooltip
         mouseEnterDelay={1.5}
         overlay={this.props.displayText || this.props.text}>
-        <div {...options}>
-          <span id={this.props.displayId} style={{
-            flex: 1,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap'
-          }}>{this.props.displayText || this.props.text}</span>
-          <span style={{
-            paddingLeft: 5,
-            display: this.props.readOnly
-              ? 'none'
-              : 'initial',
-            color: this.state.hovered ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.5)'
-          }}>
-          <Icon type="edit" style={{marginRight: 10}} />
-        </span>
+        <div {...options} >
+          <span
+            id={this.props.displayId}
+            className={styles.editableModeOptions}
+          >
+            {this.props.displayText || this.props.text}
+          </span>
+          <span
+            className={classNames(
+              styles.editableFieldIcon,
+              {'cp-library-breadcrumbs-editable-field-icon': !this.props.readOnly},
+              {[styles.notDisplayed]: this.props.readOnly}
+            )}
+          >
+            <Icon type="edit" style={{marginRight: 10}} />
+          </span>
         </div>
       </Tooltip>
     );

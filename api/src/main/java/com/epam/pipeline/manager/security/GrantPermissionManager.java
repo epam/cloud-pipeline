@@ -24,6 +24,9 @@ import com.epam.pipeline.controller.vo.PermissionVO;
 import com.epam.pipeline.controller.vo.PipelinesWithPermissionsVO;
 import com.epam.pipeline.controller.vo.configuration.RunConfigurationVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.dto.quota.AppliedQuota;
+import com.epam.pipeline.dto.quota.QuotaActionType;
+import com.epam.pipeline.dto.quota.QuotaGroup;
 import com.epam.pipeline.entity.AbstractHierarchicalEntity;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.BaseEntity;
@@ -32,7 +35,9 @@ import com.epam.pipeline.entity.configuration.AbstractRunConfigurationEntry;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.PathDescription;
+import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
@@ -64,6 +69,7 @@ import com.epam.pipeline.manager.pipeline.FolderManager;
 import com.epam.pipeline.manager.pipeline.ToolGroupManager;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.metadata.MetadataPermissionManager;
 import com.epam.pipeline.manager.security.run.RunPermissionManager;
 import com.epam.pipeline.manager.user.UserManager;
@@ -138,6 +144,8 @@ public class GrantPermissionManager {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GrantPermissionManager.class);
     private static final String OWNER = "OWNER";
+    private static final String WRITE = "WRITE";
+    private static final String READ = "READ";
 
     @Autowired private PermissionEvaluator permissionEvaluator;
 
@@ -190,6 +198,8 @@ public class GrantPermissionManager {
     @Autowired private CloudProfileCredentialsManagerProvider cloudProfileCredentialsManagerProvider;
 
     @Autowired private MetadataPermissionManager metadataPermissionManager;
+
+    @Autowired private QuotaService quotaService;
 
     public boolean isActionAllowedForUser(AbstractSecuredEntity entity, String user, Permission permission) {
         return isActionAllowedForUser(entity, user, Collections.singletonList(permission));
@@ -381,12 +391,18 @@ public class GrantPermissionManager {
 
     public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,
             boolean includeInherited, List<Sid> sids) {
+        return getPermissionsMask(entity, merge, includeInherited, sids, findStorageQuota(entity));
+    }
+
+    public Integer getPermissionsMask(AbstractSecuredEntity entity, boolean merge,
+                                      boolean includeInherited, List<Sid> sids,
+                                      Optional<AppliedQuota> activeQuota) {
         if (isAdmin(sids)) {
             return merge ?
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK :
                     AbstractSecuredEntity.ALL_PERMISSIONS_MASK_FULL;
         }
-        return retrieveMaskForSid(entity, merge, includeInherited, sids);
+        return retrieveMaskForSid(entity, merge, includeInherited, sids, activeQuota);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -402,29 +418,31 @@ public class GrantPermissionManager {
     }
 
     public void filterTree(AbstractHierarchicalEntity entity, Permission permission) {
-        filterTree(getSids(), entity, permission);
+        filterTree(getSids(), entity, permission, authManager.getAuthorizedUser());
     }
 
     public void filterTree(AclSid aclSid, AbstractHierarchicalEntity entity, Permission permission) {
         if (aclSid.isPrincipal()) {
             filterTree(aclSid.getName(), entity, permission);
         } else {
-            filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission);
+            filterTree(Collections.singletonList(new GrantedAuthoritySid(aclSid.getName())), entity, permission, null);
         }
     }
 
     public void filterTree(String userName, AbstractHierarchicalEntity entity, Permission permission) {
-        filterTree(convertUserToSids(userName), entity, permission);
+        filterTree(convertUserToSids(userName), entity, permission, userName);
     }
 
-    private void filterTree(List<Sid> sids, AbstractHierarchicalEntity entity, Permission permission) {
+    private void filterTree(List<Sid> sids, AbstractHierarchicalEntity entity, Permission permission,
+                            String userName) {
         if (entity == null) {
             return;
         }
         if (isAdmin(sids)) {
             return;
         }
-        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true, sids);
+        processHierarchicalEntity(0, entity, new HashMap<>(), permission, true,
+                sids, findStorageQuota(userName));
     }
 
     public boolean ownerPermission(Long id, AclClass aclClass) {
@@ -440,25 +458,10 @@ public class GrantPermissionManager {
         return user.equalsIgnoreCase(owner) || isAdmin(getSids());
     }
 
-    public boolean storagePermission(Long storageId, String permissionName) {
-        AbstractSecuredEntity storage = entityManager.load(AclClass.DATA_STORAGE, storageId);
-        if (permissionName.equals(OWNER)) {
-            return isOwnerOrAdmin(storage.getOwner());
-        } else {
-            return permissionsHelper.isAllowed(permissionName, storage);
+    public boolean storagePermission(final AbstractSecuredEntity storage, final String permissionName) {
+        if (forbiddenByStorageStatus(storage, permissionName)) {
+            return false;
         }
-    }
-
-    public boolean storagePermissions(Long storageId, List<String> permissionNames) {
-        return Optional.ofNullable(permissionNames)
-                .filter(CollectionUtils::isNotEmpty)
-                .orElseGet(() -> Collections.singletonList("READ"))
-                .stream()
-                .allMatch(permissionName -> storagePermission(storageId, permissionName));
-    }
-
-    public boolean storagePermissionByName(final String identifier, final String permissionName) {
-        final AbstractSecuredEntity storage = entityManager.loadByNameOrId(AclClass.DATA_STORAGE, identifier);
         if (permissionName.equals(OWNER)) {
             return isOwnerOrAdmin(storage.getOwner());
         } else {
@@ -472,10 +475,12 @@ public class GrantPermissionManager {
             if ((action.isReadVersion() || action.isWriteVersion()) && !isOwnerOrAdmin(storage.getOwner())) {
                 return false;
             }
-            if (action.isRead() && !permissionsHelper.isAllowed("READ", storage)) {
+            if (action.isRead() && (!permissionsHelper.isAllowed(READ, storage)
+                || forbiddenByStorageStatus(storage, READ))) {
                 return false;
             }
-            if (action.isWrite() && !permissionsHelper.isAllowed("WRITE", storage)) {
+            if (action.isWrite() && (!permissionsHelper.isAllowed(WRITE, storage)
+                || forbiddenByStorageStatus(storage, WRITE))) {
                 return false;
             }
         }
@@ -918,7 +923,21 @@ public class GrantPermissionManager {
     }
 
     private Integer retrieveMaskForSid(AbstractSecuredEntity entity, boolean merge,
-            boolean includeInherited, List<Sid> sids) {
+                                       boolean includeInherited, List<Sid> sids,
+                                       Optional<AppliedQuota> activeQuota) {
+        if (entity instanceof  AbstractDataStorage) {
+            boolean readAllowed = permissionsHelper.isAllowed(AclPermission.READ_NAME, entity);
+            if (entity instanceof NFSDataStorage) {
+                final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+                if (NFSStorageMountStatus.READ_ONLY.equals(mountStatus) && readAllowed) {
+                    return AclPermission.READ.getMask();
+                }
+            }
+            if (activeQuota.isPresent() && readAllowed) {
+                return AclPermission.READ.getMask();
+            }
+        }
+
         Acl child = aclService.getAcl(entity);
         //case for Runs and Nodes, that are not registered as ACL entities
         //check ownership
@@ -945,15 +964,15 @@ public class GrantPermissionManager {
 
     private void processHierarchicalEntity(int parentMask, AbstractHierarchicalEntity entity,
             Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, boolean root,
-            List<Sid> sids) {
+            List<Sid> sids, Optional<AppliedQuota> activeQuota) {
         int defaultMask = 0;
         int currentMask = entity.getId() != null ?
-                permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids),
+                permissionsService.mergeParentMask(retrieveMaskForSid(entity, false, root, sids, activeQuota),
                         parentMask) : defaultMask;
         entity.getChildren().forEach(
             leaf -> processHierarchicalEntity(currentMask, leaf, entitiesToRemove, permission,
-                        false, sids));
-        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids);
+                        false, sids, activeQuota));
+        filterChildren(currentMask, entity.getLeaves(), entitiesToRemove, permission, sids, activeQuota);
         entity.filterLeaves(entitiesToRemove);
         entity.filterChildren(entitiesToRemove);
         boolean permissionGranted = permissionsService.isPermissionGranted(currentMask, permission);
@@ -962,8 +981,7 @@ public class GrantPermissionManager {
         }
         if (CollectionUtils.isEmpty(entity.getLeaves()) && CollectionUtils
                 .isEmpty(entity.getChildren()) && !permissionGranted) {
-            entitiesToRemove.putIfAbsent(entity.getAclClass(), new HashSet<>());
-            entitiesToRemove.get(entity.getAclClass()).add(entity.getId());
+            addToEntitiesToBeRemoved(entitiesToRemove, entity);
         }
         entity.setMask(permissionsService.mergeMask(currentMask));
         if (entity instanceof DockerRegistry) {
@@ -972,16 +990,28 @@ public class GrantPermissionManager {
     }
 
     private void filterChildren(int parentMask, List<? extends AbstractSecuredEntity> children,
-            Map<AclClass, Set<Long>> entitiesToRemove, Permission permission, List<Sid> sids) {
+                                Map<AclClass, Set<Long>> entitiesToRemove,
+                                Permission permission, List<Sid> sids,
+                                Optional<AppliedQuota> activeQuota) {
         ListUtils.emptyIfNull(children).forEach(child -> {
             int mask = permissionsService
-                    .mergeParentMask(getPermissionsMask(child, false, false, sids), parentMask);
+                    .mergeParentMask(getPermissionsMask(child, false, false, sids, activeQuota),
+                            parentMask);
             if (!permissionsService.isPermissionGranted(mask, permission)) {
-                entitiesToRemove.putIfAbsent(child.getAclClass(), new HashSet<>());
-                entitiesToRemove.get(child.getAclClass()).add(child.getId());
+                addToEntitiesToBeRemoved(entitiesToRemove, child);
+            }
+            if (isStorageReadOnly(child, activeQuota)) {
+                child.setMask(AclPermission.READ.getMask());
+                return;
             }
             child.setMask(permissionsService.mergeMask(mask));
         });
+    }
+
+    private void addToEntitiesToBeRemoved(final Map<AclClass, Set<Long>> entitiesToRemove,
+                                          final AbstractSecuredEntity entity) {
+        entitiesToRemove.putIfAbsent(entity.getAclClass(), new HashSet<>());
+        entitiesToRemove.get(entity.getAclClass()).add(entity.getId());
     }
 
     private void clearWriteExecutePermissions(AbstractSecuredEntity entity) {
@@ -1148,6 +1178,57 @@ public class GrantPermissionManager {
             LOGGER.error(String.format("An error occurred during event update for entity %s with ID %d",
                     entity.getAclClass(), entity.getId()), e);
         }
+    }
+
+    private boolean forbiddenByStorageStatus(final AbstractSecuredEntity storage, final String permissionName) {
+        return isStorageReadOnly(storage) && !permissionName.equals(READ);
+    }
+
+    private boolean isStorageReadOnly(final AbstractSecuredEntity entity,
+                                      final Optional<AppliedQuota> activeQuota) {
+        if (entity instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+            if (NFSStorageMountStatus.READ_ONLY.equals(mountStatus)) {
+                return true;
+            }
+        }
+        if (entity instanceof AbstractDataStorage) {
+            return activeQuota.isPresent();
+        }
+        return false;
+    }
+
+    private boolean isStorageReadOnly(final AbstractSecuredEntity entity) {
+        if (entity instanceof NFSDataStorage) {
+            final NFSStorageMountStatus mountStatus = ((NFSDataStorage) entity).getMountStatus();
+            if (NFSStorageMountStatus.READ_ONLY.equals(mountStatus)) {
+                return true;
+            }
+        }
+        if (entity instanceof AbstractDataStorage) {
+            return findStorageQuota(entity).isPresent();
+        }
+        return false;
+    }
+
+    private Optional<AppliedQuota> findStorageQuota(final AbstractSecuredEntity entity) {
+        if (entity instanceof AbstractDataStorage) {
+            return quotaService.findActiveActionForUser(authManager.getCurrentUser(),
+                    QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
+        }
+        return Optional.empty();
+    }
+
+    private Optional<AppliedQuota> findStorageQuota(final String userName) {
+        if (StringUtils.isBlank(userName)) {
+            return Optional.empty();
+        }
+        final PipelineUser pipelineUser = userManager.loadUserByName(userName);
+        if (Objects.isNull(pipelineUser)) {
+            return Optional.empty();
+        }
+        return quotaService.findActiveActionForUser(pipelineUser,
+                    QuotaActionType.READ_MODE, QuotaGroup.STORAGE);
     }
 
     @Data

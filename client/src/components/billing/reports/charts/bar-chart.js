@@ -15,9 +15,8 @@
  */
 
 import React from 'react';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import Chart from './base';
-import {colors} from './colors';
 import {
   BarchartDataLabelPlugin,
   ChartClickPlugin
@@ -25,6 +24,7 @@ import {
 import Export from '../export';
 import {discounts} from '../discounts';
 import {costTickFormatter} from '../utilities';
+import QuotaSummaryChartsTitle from './quota-summary-chart';
 
 function toValueFormat (value) {
   return Math.round((+value || 0) * 100.0) / 100.0;
@@ -66,11 +66,15 @@ function BarChart (
     title,
     style,
     subChart,
+    subChartTitleStyle,
     top = 10,
     valueFormatter = costTickFormatter,
     useImageConsumer = true,
     onImageDataReceived,
-    itemNameFn = o => o
+    itemNameFn = o => o,
+    reportThemes,
+    displayQuotasSummary,
+    quotaGroup
   }
 ) {
   if (!request) {
@@ -92,6 +96,8 @@ function BarChart (
     value,
     discountsFn
   );
+  const requests = Array.isArray(request) ? request : [request];
+  const discountsArray = Array.isArray(discountsFn) ? discountsFn : [discountsFn];
   const [error] = Array.isArray(request)
     ? request.filter(r => r.error).map(r => r.error)
     : [request.error];
@@ -110,14 +116,15 @@ function BarChart (
     datasets: [
       {
         label: 'Previous',
-        type: 'quota-bar',
+        type: 'previous-line-bar',
         data: previousData,
         borderWidth: 2,
         borderDash: [4, 4],
-        borderColor: colors.blue,
-        backgroundColor: colors.blue,
+        borderColor: reportThemes.blue,
+        backgroundColor: reportThemes.blue,
         borderSkipped: '',
-        textColor: colors.blue,
+        textColor: reportThemes.textColor,
+        flagColor: reportThemes.blue,
         textBold: false,
         showDataLabels: false,
         maxBarThickness: 70
@@ -126,10 +133,11 @@ function BarChart (
         label: 'Current',
         data: currentData,
         borderWidth: 2,
-        borderColor: colors.current,
-        backgroundColor: colors.lightCurrent,
+        borderColor: reportThemes.current,
+        backgroundColor: reportThemes.lightCurrent,
         borderSkipped: '',
-        textColor: colors.darkCurrent,
+        textColor: reportThemes.textColor,
+        flagColor: reportThemes.current,
         textBold: false,
         maxBarThickness: 70
       }
@@ -140,18 +148,23 @@ function BarChart (
     scales: {
       xAxes: [{
         id: 'x-axis',
+        stacked: true,
         gridLines: {
-          drawOnChartArea: false
+          drawOnChartArea: false,
+          color: reportThemes.lineColor,
+          zeroLineColor: reportThemes.lineColor
         },
-        scaleLabel: {
-          display: !disabled && subChart,
-          labelString: title
+        ticks: {
+          fontColor: reportThemes.subTextColor
         }
       }],
       yAxes: [{
+        stacked: true,
         position: axisPosition,
         gridLines: {
-          display: !disabled
+          display: !disabled,
+          color: reportThemes.lineColor,
+          zeroLineColor: reportThemes.lineColor
         },
         ticks: {
           display: !disabled,
@@ -162,13 +175,15 @@ function BarChart (
             }
             return valueFormatter(value);
           },
-          max: !disabled ? maximum : undefined
+          max: !disabled ? maximum : undefined,
+          fontColor: reportThemes.subTextColor
         }
       }]
     },
     title: {
       display: !subChart && !!title,
-      text: top ? `${title} (TOP ${top})` : title
+      text: top ? `${title} (TOP ${top})` : title,
+      fontColor: reportThemes.textColor
     },
     legend: {
       display: false
@@ -233,26 +248,48 @@ function BarChart (
     <Container
       style={
         Object.assign(
-          {height: '100%', position: 'relative', display: 'block'},
+          {
+            height: '100%',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
+          },
           style
         )
       }
     >
-      <Chart
-        data={chartData}
-        error={error}
-        loading={loading}
-        type="bar"
-        options={options}
-        plugins={[
-          BarchartDataLabelPlugin.plugin,
-          ChartClickPlugin.plugin
-        ]}
-        useChartImageGenerator={useImageConsumer}
-        onImageDataReceived={onImageDataReceived}
-      />
+      <div style={{flex: 1, overflow: 'hidden'}}>
+        <Chart
+          data={chartData}
+          error={error}
+          loading={loading}
+          type="bar"
+          options={options}
+          plugins={[
+            BarchartDataLabelPlugin.plugin,
+            ChartClickPlugin.plugin
+          ]}
+          useChartImageGenerator={useImageConsumer}
+          onImageDataReceived={onImageDataReceived}
+        />
+      </div>
+      {
+        subChart && (
+          <QuotaSummaryChartsTitle
+            onClick={onScaleSelect}
+            style={subChartTitleStyle}
+            displayQuotasSummary={displayQuotasSummary}
+            data={rawData}
+            requests={requests}
+            discounts={discountsArray}
+            quotaGroup={quotaGroup}
+          >
+            {title}
+          </QuotaSummaryChartsTitle>
+        )
+      }
     </Container>
   );
 }
 
-export default observer(BarChart);
+export default inject('reportThemes')(observer(BarChart));

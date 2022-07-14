@@ -40,10 +40,12 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.EdgeServiceManager;
 import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
+import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodeDiskManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
 import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
 import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.configuration.ServerlessConfigurationManager;
@@ -76,6 +78,7 @@ import com.epam.pipeline.manager.execution.PipelineLauncher;
 import com.epam.pipeline.manager.filter.FilterManager;
 import com.epam.pipeline.manager.firecloud.FirecloudManager;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.git.TemplatesScanner;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.IssueManager;
@@ -116,11 +119,17 @@ import com.epam.pipeline.manager.pipeline.ToolScanInfoManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationProviderManager;
 import com.epam.pipeline.manager.pipeline.runner.ConfigurationRunner;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.preprocessing.NgsPreprocessingManager;
+import com.epam.pipeline.manager.quota.QuotaService;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.manager.report.NodePoolReportService;
+import com.epam.pipeline.manager.report.UsersUsageReportService;
 import com.epam.pipeline.manager.search.SearchManager;
 import com.epam.pipeline.manager.security.AuthManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.PermissionsService;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.RoleManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
@@ -525,6 +534,33 @@ public class AclTestBeans {
 
     @MockBean
     protected EdgeServiceManager mockEdgeServiceManager;
+
+    @MockBean
+    protected NatGatewayManager natGatewayManager;
+
+    @MockBean
+    protected QuotaService mockQuotaService;
+
+    @MockBean
+    protected UsersUsageReportService usersUsageReportService;
+
+    @MockBean
+    protected OnlineUsersService onlineUsersService;
+
+    @MockBean
+    protected NgsPreprocessingManager preprocessingManager;
+
+    @MockBean
+    protected NodePoolUsageService nodePoolUsageService;
+
+    @MockBean
+    protected NodePoolReportService nodePoolReportService;
+
+    @MockBean
+    protected PipelineRepositoryService pipelineRepositoryService;
+
+    @MockBean
+    protected RunLimitsService runLimitsService;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

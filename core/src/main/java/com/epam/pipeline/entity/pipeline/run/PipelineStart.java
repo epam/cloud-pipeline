@@ -53,7 +53,9 @@ public class PipelineStart {
     private boolean nonPause;
     private String runAs;
     private List<PipelineStartNotificationRequest> notifications;
+    private Map<String, String> kubeLabels;
 
     @JsonDeserialize(using = PipelineConfValuesMapDeserializer.class)
     private Map<String, PipeConfValueVO> params;
+    private Map<String, String> tags;
 }

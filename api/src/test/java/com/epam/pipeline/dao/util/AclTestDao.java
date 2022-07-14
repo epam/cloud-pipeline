@@ -79,11 +79,12 @@ public class AclTestDao extends NamedParameterJdbcDaoSupport {
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    public void grantPermissions(AbstractSecuredEntity entity, String userName, List<AclPermission> permissions) {
+    public void grantPermissions(AbstractSecuredEntity entity, String userName, boolean isPrincipal,
+                                 List<AclPermission> permissions) {
         Optional<AclSid> existingSid = loadAclSid(userName);
 
         AclSid sid = existingSid.orElseGet(() -> {
-            AclSid newSid = new AclSid(true, entity.getOwner());
+            AclSid newSid = new AclSid(isPrincipal, entity.getOwner());
             createAclSid(newSid);
             return newSid;
         });

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,16 @@
 package com.epam.pipeline.vmmonitor.service;
 
 import com.epam.pipeline.vmmonitor.service.certificate.CertificateMonitor;
+import com.epam.pipeline.vmmonitor.service.filesystem.FileSystemMonitor;
 import com.epam.pipeline.vmmonitor.service.k8s.KubernetesDeploymentMonitor;
+import com.epam.pipeline.vmmonitor.service.k8s.TinyproxyMonitor;
 import com.epam.pipeline.vmmonitor.service.vm.VMMonitor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.Nullable;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +38,9 @@ public class MonitorScheduleService {
     private final VMMonitor vmMonitor;
     private final CertificateMonitor certificateMonitor;
     private final KubernetesDeploymentMonitor deploymentMonitor;
+    private final FileSystemMonitor fileSystemMonitor;
+    @Nullable
+    private final TinyproxyMonitor tinyproxyMonitor;
 
     @Scheduled(cron = "${monitor.schedule.cron}")
     public void monitor() {
@@ -68,4 +75,29 @@ public class MonitorScheduleService {
         }
     }
 
+    @Scheduled(cron = "${monitor.filesystem.cron}")
+    public void monitorFileSystem() {
+        try {
+            log.debug("Starting filesystem check.");
+            fileSystemMonitor.checkFileSystemConsumption();
+            log.debug("Finished filesystem check.");
+        } catch (Exception e) {
+            log.error("An error occurred during filesystem check.", e);
+        }
+    }
+
+    @Scheduled(cron = "${monitor.tinyproxy.cron}")
+    public void monitorTinyproxy() {
+        if (tinyproxyMonitor == null) {
+            log.debug("Tinyproxy monitoring is disabled.");
+            return;
+        }
+        try {
+            log.debug("Starting tinyproxy check.");
+            tinyproxyMonitor.monitor();
+            log.debug("Finished tinyproxy check.");
+        } catch (Exception e) {
+            log.error("An error occurred during tinyproxy check.", e);
+        }
+    }
 }

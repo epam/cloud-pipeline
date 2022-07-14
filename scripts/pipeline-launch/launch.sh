@@ -288,11 +288,6 @@ function cp_cap_init {
                   source "$CP_ENV_FILE_TO_SOURCE"
                   echo "--> Done $_CAP_INIT_SCRIPT"
             fi
-
-            if [ "$cluster_role" = "master" ] && check_cp_cap "CP_CAP_AUTOSCALE" && check_cp_cap "CP_CAP_SGE"
-            then
-                  nohup $CP_PYTHON2_PATH $COMMON_REPO_DIR/scripts/autoscale_sge.py 1>/dev/null 2>$LOG_DIR/.nohup.sge.autoscale.log &
-            fi
       fi
 }
 
@@ -389,11 +384,26 @@ function configure_package_manager {
             if [ "$CP_OS" == "centos" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
-                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q > /dev/null 2>&1
-                        
+                        yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
+
                         if [ $? -ne 0 ]; then
                               echo "[ERROR] (attempt: $_CP_REPO_RETRY_ITER) Failed to configure $CP_REPO_BASE_URL for the yum, removing the repo"
                               rm -f /etc/yum.repos.d/cloud-pipeline.repo
+                        else
+                              # If the CP repo was configured correctly - allow others fail
+                              if ! check_installed "yum-config-manager"; then
+                                    yum --disablerepo=* --enablerepo=cloud-pipeline install yum-utils -y -q >> /var/log/yum.cp.log 2>&1
+                              fi
+                              yum-config-manager --save --setopt=\*.skip_if_unavailable=true >> /var/log/yum.cp.log 2>&1
+                              # Disable "fastermirror" as it slows down the installtion and is not needed during the CP repo usage
+                              if [ -f "/etc/yum/pluginconf.d/fastestmirror.conf" ]; then
+                                    sed -i 's/enabled=1/enabled=0/g' /etc/yum/pluginconf.d/fastestmirror.conf
+                              fi
+                              # Use the "base" url for the other repos, as the mirrors may cause issues
+                              sed -i 's/^#baseurl=/baseurl=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/^metalink=/#metalink=/g' /etc/yum.repos.d/*.repo
+                              sed -i 's/^mirrorlist=/#mirrorlist=/g' /etc/yum.repos.d/*.repo
+                              break
                         fi
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
@@ -433,6 +443,11 @@ function get_install_command_by_current_distr {
             check_installed "yum" && _ltdl_lib_name="libtool-ltdl"
             _TOOLS_TO_INSTALL="$(sed "s/\( \|^\)ltdl\( \|$\)/ ${_ltdl_lib_name} /g" <<< "$_TOOLS_TO_INSTALL")"
       fi
+      if [[ "$_TOOLS_TO_INSTALL" == *"python"* ]] && \
+         [ "$CP_OS" == "centos" ] && \
+         [ "$CP_VER" == "8" ]; then
+            _TOOLS_TO_INSTALL="$(sed -e "s/python/python2/g" <<< "$_TOOLS_TO_INSTALL")"
+      fi
 
       local _TOOL_TO_CHECK=
       local _TOOLS_TO_INSTALL_VERIFIED=
@@ -447,9 +462,12 @@ function get_install_command_by_current_distr {
             _INSTALL_COMMAND_TEXT=
       else
             check_installed "apt-get" && { _INSTALL_COMMAND_TEXT="rm -rf /var/lib/apt/lists/; apt-get update -y -qq --allow-insecure-repositories; DEBIAN_FRONTEND=noninteractive apt-get -y -qq --allow-unauthenticated -o Dpkg::Options::=\"--force-confold\" install $_TOOLS_TO_INSTALL_VERIFIED";  };
+            check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
             if check_installed "yum"; then
-                  check_installed "apk" && { _INSTALL_COMMAND_TEXT="apk update -q 1>/dev/null; apk -q add $_TOOLS_TO_INSTALL_VERIFIED";  };
-                  if [ "$CP_REPO_ENABLED" == "true" ] && [ -f /etc/yum.repos.d/cloud-pipeline.repo ]; then
+                  # Centos 8 throws "No available modular metadata for modular package" if all the other repos are disabled
+                  if [ "$CP_REPO_ENABLED" == "true" ] && \
+                     [ -f /etc/yum.repos.d/cloud-pipeline.repo ] && \
+                     [ "$CP_VER" != "8" ]; then
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum --disablerepo=* --enablerepo=cloud-pipeline -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
                   else
                         _INSTALL_COMMAND_TEXT="yum clean all -q && yum -y -q install $_TOOLS_TO_INSTALL_VERIFIED"
@@ -585,6 +603,12 @@ root hard nofile $_MAX_NOPEN_LIMIT
 root soft nproc $_MAX_PROCS_LIMIT
 root hard nproc $_MAX_PROCS_LIMIT
 EOT
+    if [[ -f "/etc/security/limits.d/20-nproc.conf" ]]; then
+        # On centos this configuration file contains some default nproc limits
+        # which overrides the ones we set in /etc/security/limits.conf.
+        # To prevent this from happening we remove the limits beforehand.
+        sed -i "\|nproc|d" "/etc/security/limits.d/20-nproc.conf"
+    fi
 }
 
 function add_self_to_no_proxy() {
@@ -974,6 +998,11 @@ add_self_to_no_proxy
 # We need to make sure that the DIND and SYSTEMD are available if the Kubernetes is requested
 if check_cp_cap "CP_CAP_KUBE"; then
       export CP_CAP_DIND_CONTAINER="true"
+      export CP_CAP_SYSTEMD_CONTAINER="true"
+fi
+
+# We need to make sure that the Systemd is enabled if we use DCV
+if check_cp_cap "CP_CAP_DCV"; then
       export CP_CAP_SYSTEMD_CONTAINER="true"
 fi
 
@@ -1380,6 +1409,46 @@ echo "------"
 echo
 ######################################################
 
+
+
+######################################################
+# Setup cluster users sharing if required
+######################################################
+
+echo "Setup cluster users sharing"
+echo "-"
+
+if check_cp_cap CP_CAP_SHARE_USERS; then
+    "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/configure_shared_users.py"
+else
+    echo "Cluster users sharing is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
+######################################################
+# Setup users synchronization if required
+######################################################
+
+echo "Setup users synchronization"
+echo "-"
+
+if check_cp_cap CP_CAP_SYNC_USERS; then
+    nohup "$CP_PYTHON2_PATH" "$COMMON_REPO_DIR/scripts/sync_users.py" &
+else
+    echo "Users synchronization is not requested"
+fi
+
+echo "------"
+echo
+######################################################
+
+
+
 CP_DATA_LOCALIZATION_ENABLED=${CP_DATA_LOCALIZATION_ENABLED:-"true"}
 if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
       if [ "$RESUMED_RUN" == true ]; then
@@ -1401,6 +1470,21 @@ if [ "$CP_DATA_LOCALIZATION_ENABLED" == "true" ]; then
             echo
 
             [ -f "${INPUT_ENV_FILE}" ] && source "${INPUT_ENV_FILE}"
+
+            ######################################################
+            echo "Checking if any data is defined by the config files and shall be localized"
+            echo "-"
+            ######################################################
+            localize_inputs_from_files "${LOCALIZATION_TASK_NAME}"
+            if [ $? -ne 0 ]; then
+                  echo "Failed to localize data from the config files"
+                  if [ "$CP_LOCALIZE_FROM_FILES_KEEP_JOB_ON_FAILURE" == "true" ]; then
+                        echo "--> It is requested to continue running on config files based localization failure"
+                  else
+                        exit 1
+                  fi
+            fi
+            echo
       fi
 fi
 echo "------"
@@ -1408,8 +1492,10 @@ echo
 ######################################################
 
 
+######################################################
 echo "Setting up Gitlab credentials"
-
+echo "-"
+######################################################
 set_git_credentials
 
 _GIT_CREDS_RESULT=$?
@@ -1419,21 +1505,6 @@ then
     echo "Failed to get user's Gitlab credentials"
 fi
 echo "------"
-
-######################################################
-echo Checking if remote data storages shall be mounted
-echo "------"
-######################################################
-MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
-DATA_STORAGE_MOUNT_ROOT="/cloud-data"
-
-echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
-rm -Rf $DATA_STORAGE_MOUNT_ROOT
-create_sys_dir $DATA_STORAGE_MOUNT_ROOT
-mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
-
-echo "------"
-echo
 ######################################################
 
 MOUNT_GIT_TASK_NAME="MountRepository"
@@ -1470,8 +1541,8 @@ echo "Store allowed environment variables to /etc/profile for further reuse when
 echo "-"
 ######################################################
 
-export CP_ENV_FILE_TO_SOURCE="/etc/cp_env.sh"
-export CP_USER_ENV_FILE_TO_SOURCE="/etc/cp_env_user.sh"
+export CP_ENV_FILE_TO_SOURCE="${CP_ENV_FILE_TO_SOURCE:-/etc/cp_env.sh}"
+export CP_USER_ENV_FILE_TO_SOURCE="${CP_USER_ENV_FILE_TO_SOURCE:-/etc/cp_env_user.sh}"
 
 # Clean all previous saved envs, e.g. if container was committed
 rm -f $CP_ENV_FILE_TO_SOURCE $CP_USER_ENV_FILE_TO_SOURCE
@@ -1514,8 +1585,8 @@ echo "$_CP_ENV_SOURCE_COMMAND" >> /etc/profile
 sed -i "\|$_CP_ENV_SUDO_ALIAS|d" /etc/profile
 echo "$_CP_ENV_SUDO_ALIAS" >> /etc/profile
 
+# All ulimits are configured in update_user_limits procedure
 sed -i "\|ulimit|d" /etc/profile
-echo "$_CP_ENV_ULIMIT" >> /etc/profile
 
 # umask may be present in the existing file, so we are replacing it the updated value
 sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" /etc/profile
@@ -1541,10 +1612,10 @@ for _GLOBAL_BASHRC_PATH in "${_GLOBAL_BASHRC_PATHS[@]}"
 do
     sed -i "s/umask [[:digit:]]\+/$_CP_ENV_UMASK/" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_UMASK" "$_GLOBAL_BASHRC_PATH"
-    
+
+    # All ulimits are configured in update_user_limits procedure
     sed -i "\|ulimit|d" "$_GLOBAL_BASHRC_PATH"
-    sed -i "1i$_CP_ENV_ULIMIT" "$_GLOBAL_BASHRC_PATH"
-    
+
     sed -i "\|$_CP_ENV_SOURCE_COMMAND|d" "$_GLOBAL_BASHRC_PATH"
     sed -i "1i$_CP_ENV_SOURCE_COMMAND\n" "$_GLOBAL_BASHRC_PATH"
     
@@ -1553,6 +1624,23 @@ do
 done
 
 echo "Finished setting environment variables to /etc/profile"
+
+echo "------"
+echo
+######################################################
+
+
+######################################################
+echo "Checking if remote data storages shall be mounted"
+echo "------"
+######################################################
+MOUNT_DATA_STORAGES_TASK_NAME="MountDataStorages"
+DATA_STORAGE_MOUNT_ROOT="${CP_STORAGE_MOUNT_ROOT_DIR:-/cloud-data}"
+
+echo "Cleaning any data in common storage mount point directory: ${DATA_STORAGE_MOUNT_ROOT}"
+rm -Rf $DATA_STORAGE_MOUNT_ROOT
+create_sys_dir $DATA_STORAGE_MOUNT_ROOT
+mount_storages $DATA_STORAGE_MOUNT_ROOT $TMP_DIR $MOUNT_DATA_STORAGES_TASK_NAME
 
 echo "------"
 echo
@@ -1721,6 +1809,21 @@ fi
 ######################################################
 
 ######################################################
+# Setup Nice DCV
+######################################################
+
+echo "Setup NICE DCV environment"
+echo "-"
+
+if [ "$CP_CAP_DCV" == "true" ]; then
+      nice_dcv_setup
+else
+    echo "Nice DCV support is not requested"
+fi
+
+######################################################
+
+######################################################
 # Setup "Singularity" support
 ######################################################
 
@@ -1730,7 +1833,77 @@ echo "-"
 if [ "$CP_CAP_SINGULARITY" == "true" ]; then
       singularity_setup
 else
-    echo "Singularity support is not requested"
+      echo "Singularity support is not requested"
+fi
+
+######################################################
+
+
+######################################################
+# Install additional packages
+######################################################
+
+echo "Install additional packages"
+echo "-"
+
+if [ "$CP_PIPE_COMMON_ENABLED" != "false" ]; then
+      EXTRA_PKG_INSTALL_COMMAND=
+      EXTRA_PKG_DISTRO_INSTALL_COMMAND=
+      if [ "$CP_CAP_EXTRA_PKG" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG"
+      fi
+      if [ "$CP_OS" == "centos" ] && [ "$CP_CAP_EXTRA_PKG_RHEL" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_RHEL"
+      elif ([ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]) && [ "$CP_CAP_EXTRA_PKG_DEB" ]; then
+            get_install_command_by_current_distr EXTRA_PKG_DISTRO_INSTALL_COMMAND "$CP_CAP_EXTRA_PKG_DEB"
+      fi
+
+      if [ "$EXTRA_PKG_INSTALL_COMMAND" ]; then
+            echo "Installing COMMON extra packages: $CP_CAP_EXTRA_PKG"
+            eval "$EXTRA_PKG_INSTALL_COMMAND"
+      fi
+
+      if [ "$EXTRA_PKG_DISTRO_INSTALL_COMMAND" ]; then
+            echo "Installing extra packages for ${CP_OS}: ${CP_CAP_EXTRA_PKG_RHEL}${CP_CAP_EXTRA_PKG_DEB}"
+            eval "$EXTRA_PKG_DISTRO_INSTALL_COMMAND"
+      fi
+else
+      echo "CP_PIPE_COMMON_ENABLED is set to false, no extra packages will be installed to speed up the init process"
+fi
+
+######################################################
+
+######################################################
+# Enable NFS observer
+######################################################
+
+echo "Setup NFS events observer"
+echo "-"
+
+if [ "$CP_CAP_NFS_MNT_OBSERVER_DISABLED" == "true" ]; then
+    echo "NFS events observer is not requested"
+elif [ "$CP_SENSITIVE_RUN" == "true" ]; then
+    echo "NFS event watching is disabled for sensitive runs"
+else
+    inotify_watchers=${CP_CAP_NFS_MNT_OBSERVER_RUN_WATCHERS:-65535}
+    sysctl -w fs.inotify.max_user_watches=$inotify_watchers
+    sysctl -w fs.inotify.max_queued_events=$((inotify_watchers*2))
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/watch_mount_shares.py 1>/dev/null 2> $LOG_DIR/.nohup.nfswatcher.log &
+fi
+
+######################################################
+
+######################################################
+# Enable API_TOKEN refresher
+######################################################
+
+echo "Setup API_TOKEN refresher"
+echo "-"
+
+if [ "$CP_API_TOKEN_REFRESHER_DISABLED" == "true" ]; then
+    echo "API_TOKEN refresh is not requested"
+else
+    nohup $CP_PYTHON2_PATH -u $COMMON_REPO_DIR/scripts/token_expiration_refresher.py &> $LOG_DIR/.nohup.token.refresher.log &
 fi
 
 ######################################################
@@ -1740,6 +1913,9 @@ fi
 echo Executing task
 echo "-"
 ######################################################
+
+# If any of those exist - it may prevent users to connect via SSH
+rm -f /{var/run,etc,run}/nologin
 
 # Check whether there are any capabilities init scripts available and execute them before main SCRIPT
 if [ "$CP_CAP_DELAY_SETUP" != "true" ]; then
@@ -1775,6 +1951,9 @@ echo "CWD is now at $ANALYSIS_DIR"
 # Apply the "custom fixes" script, which contains very specific modifications to fix the docker images
 # This is used, when we don't want to fix some issue on a docker-per-docker basis
 custom_fixes
+
+# Setup custom capabilities, defined by the user (see https://github.com/epam/cloud-pipeline/issues/2234)
+custom_cap_setup
 
 # Tell the environment that initilization phase is finished and a source script is going to be executed
 pipe_log SUCCESS "Environment initialization finished" "InitializeEnvironment"

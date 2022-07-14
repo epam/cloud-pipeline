@@ -3,6 +3,24 @@ const path = require('path');
 const https = require('https');
 const URL = require('url');
 const {log, error} = require('./application/models/log');
+const localSettingsPath = require('./local-settings-path');
+const getUserName = require('./read-os-user-name');
+
+const DEFAULT_APP_NAME = 'Cloud Data';
+
+function readCustomConfiguration () {
+  const config = localSettingsPath();
+  if (fs.existsSync(config)) {
+    try {
+      const buffer = fs.readFileSync(config);
+      return Object.assign(
+        {name: DEFAULT_APP_NAME},
+        JSON.parse(buffer.toString())
+      );
+    } catch (e) {}
+  }
+  return undefined;
+}
 
 function getAppVersion() {
   try {
@@ -130,7 +148,8 @@ async function readGlobalConfiguration() {
               ignoreCertificateErrors: true,
               username: userName,
               password: config.access_key,
-              server: webdavAuthSSO
+              server: webdavAuthSSO,
+              api: config.api
             };
           } else {
             log(`Global configuration: NO base.dav.auth.url preference`);
@@ -139,7 +158,8 @@ async function readGlobalConfiguration() {
       }
       return {
         password: config.access_key,
-        username: 'pipe cli user'
+        username: 'pipe cli user',
+        api: config ? config.api : undefined
       };
     } catch (e) {
       log(`Error reading global configuration at path ${pipeCliConfig}`);
@@ -157,7 +177,33 @@ module.exports = async function () {
   const localConfiguration = readLocalConfiguration(path.join(require('os').homedir(), '.pipe-webdav-client'));
   const predefinedConfiguration = readLocalConfiguration(__dirname);
   const globalConfig = await readGlobalConfiguration();
-  const config =  localConfiguration || predefinedConfiguration || globalConfig || {};
+  const custom = readCustomConfiguration();
+  log(`Global configuration:\n${JSON.stringify(globalConfig, undefined, ' ')}`);
+  log(`webdav.config configuration (legacy):\n${JSON.stringify(globalConfig, undefined, ' ')}`);
+  log(`Settings.json configuration:\n${JSON.stringify(custom, undefined, ' ')}`);
+  const config = {
+    ...(predefinedConfiguration || {}),
+    ...(globalConfig || {}),
+    ...(localConfiguration || {}),
+    ...(custom || {}),
+    version: getAppVersion()
+  };
+  const osUserName = await getUserName();
+  const serverCorrected = osUserName && config.server
+    ? (config.server || '').replace(/<USER_ID>/ig, osUserName)
+    : config.server;
+  const userNameCorrected = osUserName && (!config.username || /^<USER_ID>$/i.test(config.username))
+    ? osUserName
+    : config.username;
+  if (serverCorrected !== config.server) {
+    log(`WEBDAV Server corrected: ${serverCorrected}`);
+  }
+  if (userNameCorrected !== config.username) {
+    log(`WEBDAV username corrected: ${userNameCorrected}`);
+  }
+  config.server = serverCorrected;
+  config.username = userNameCorrected;
+  config.name = (custom ? custom.name : undefined) || DEFAULT_APP_NAME;
   config.version = getAppVersion();
   log(`Parsed configuration:\n${JSON.stringify(config, undefined, ' ')}`);
   return config;

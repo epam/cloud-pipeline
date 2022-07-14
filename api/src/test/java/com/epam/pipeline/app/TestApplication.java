@@ -24,13 +24,18 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
+import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationSettingsManager;
 import com.epam.pipeline.manager.ontology.OntologyManager;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
 import com.epam.pipeline.security.jwt.JwtTokenVerifier;
 import org.springframework.boot.SpringApplication;
@@ -138,6 +143,21 @@ public class TestApplication {
 
     @MockBean
     public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
+    public LdapManager ldapManager;
+
+    @MockBean
+    public QuotaService mockQuotaService;
+
+    @MockBean
+    public PipelineUserRepository pipelineUserRepository;
+
+    @MockBean
+    public OnlineUsersService onlineUsersService;
+
+    @MockBean
+    public NodePoolUsageService nodePoolUsageService;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

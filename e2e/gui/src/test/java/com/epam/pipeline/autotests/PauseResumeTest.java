@@ -22,7 +22,6 @@ import com.epam.pipeline.autotests.mixins.Authorization;
 import com.epam.pipeline.autotests.mixins.Tools;
 import com.epam.pipeline.autotests.utils.C;
 import com.epam.pipeline.autotests.utils.TestCase;
-import com.epam.pipeline.autotests.utils.Utils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -156,6 +155,9 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
     @Test
     @TestCase({"EPMCMBIBPC-2627"})
     public void dockerExtraMultiValidation() {
+        if (impersonateMode() && "true".equalsIgnoreCase(C.AUTH_TOKEN)) {
+            return;
+        }
         try {
             tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
@@ -270,8 +272,7 @@ public class PauseResumeTest extends AbstractSeveralPipelineRunningTest implemen
                 .waitForInitializeNode(getLastRunId())
                 .clickEndpoint()
                 .getEndpoint();
-        Utils.restartBrowser(C.ROOT_ADDRESS);
-        loginAs(admin);
+        restartBrowser(C.ROOT_ADDRESS);
 
         runsMenu()
                 .log(getLastRunId(), log -> log

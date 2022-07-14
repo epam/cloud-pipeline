@@ -17,6 +17,7 @@
 import React from 'react';
 import {observer} from 'mobx-react';
 import {Row, Menu} from 'antd';
+import classNames from 'classnames';
 import AdaptedLink from '../special/AdaptedLink';
 import styles from './Cluster.css';
 import roleModel from '../../utils/roleModel';
@@ -33,6 +34,12 @@ const Tabs = [
     key: 'hot',
     path: '/cluster/hot',
     title: 'Hot Node Pools',
+    available: (user) => user ? user.admin : false
+  },
+  {
+    key: 'usage',
+    path: '/cluster/usage',
+    title: 'Pools Usage',
     available: (user) => user ? user.admin : false
   }
 ];
@@ -87,7 +94,16 @@ export default class extends React.Component {
   render () {
     const {children} = this.props;
     return (
-      <div className={styles.container}>
+      <div
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+      >
         {this.renderClusterNavigation()}
         {children}
       </div>

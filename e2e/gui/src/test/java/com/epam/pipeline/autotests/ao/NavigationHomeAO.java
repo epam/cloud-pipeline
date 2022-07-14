@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,10 @@
  */
 package com.epam.pipeline.autotests.ao;
 
+import com.codeborne.selenide.Condition;
 import com.codeborne.selenide.SelenideElement;
+import com.epam.pipeline.autotests.utils.Conditions;
+import com.epam.pipeline.autotests.utils.PipelineSelectors;
 import com.epam.pipeline.autotests.utils.Utils;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -28,12 +31,14 @@ import java.util.Map;
 import static com.codeborne.selenide.Condition.cssClass;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Condition.visible;
+import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byText;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selenide.$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static com.epam.pipeline.autotests.ao.Primitive.CONFIGURATION;
+import static com.epam.pipeline.autotests.ao.Primitive.RUNS;
 import static com.epam.pipeline.autotests.ao.Primitive.SERVICES;
 import static com.epam.pipeline.autotests.utils.PipelineSelectors.button;
 import static java.lang.String.format;
@@ -55,7 +60,8 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
     private final Map<Primitive, SelenideElement> elements = initialiseElements(
             entry(CONFIGURATION, $(button("Configure"))),
-            entry(SERVICES, $(byText("Services")).closest("div[@class='home-page__panel']"))
+            entry(SERVICES, $(byText("Services")).closest(".cp-panel")),
+            entry(RUNS, $(byText("Active runs")).closest(".cp-panel"))
     );
 
     public GlobalSearchAO globalSearch() {
@@ -85,7 +91,7 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
     }
 
     private SelenideElement serviceCardByRunId(String runId) {
-        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@type='card-content']");
+        return get(SERVICES).find(byText(format("pipeline-%s", runId))).closest("div[@class='ant-card-body']");
     }
 
     public ToolPageAO openEndpointLink(String endpoint, String runId) {
@@ -113,6 +119,27 @@ public class NavigationHomeAO implements AccessObject<NavigationHomeAO> {
 
     private SelenideElement serviceSshLink(String runId) {
         return serviceCardByRunId(runId).hover().parent().find(byText("SSH"));
+    }
+
+    private SelenideElement activeRunCardByRunId(String runId) {
+        return get(RUNS).find(byXpath(format("//*[contains(text(), 'pipeline-%s')]", runId)))
+                .closest("div[@class='ant-card-body']");
+    }
+
+    public NavigationHomeAO checkPauseLinkIsDisabledOnActiveRunsPanel(String runId) {
+        activeRunPauseLink(runId).parent().parent().shouldHave(Conditions.disabled);
+        return this;
+    }
+
+    private SelenideElement activeRunPauseLink(String runId) {
+        return activeRunCardByRunId(runId).hover().parent().find(byText("PAUSE"));
+    }
+
+    public NavigationHomeAO checkActiveRunPauseLinkTooltip(String runId, String message) {
+        activeRunCardByRunId(runId).hover().parent().find(byText("PAUSE")).hover();
+        $(PipelineSelectors.visible(byClassName("ant-popover-inner-content")))
+                .shouldHave(Condition.text(message));
+        return this;
     }
 
     @Override

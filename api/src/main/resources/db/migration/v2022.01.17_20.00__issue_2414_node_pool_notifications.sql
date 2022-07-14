@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.notification_timestamp DROP CONSTRAINT IF EXISTS run_id_fk;

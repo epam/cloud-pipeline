@@ -17,7 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {Button, Modal, Form, Input, Row, Col, Spin, Select, Icon, Checkbox, Tabs} from 'antd';
-import NotificationView from '../../special/notifications/controls/NotificationView';
+import Markdown from '../../special/markdown';
 import styles from './EditSystemNotificationForm.css';
 
 @Form.create()
@@ -101,7 +101,10 @@ export default class EditSystemNotificationForm extends React.Component {
         key="notification body"
         className="edit-notification-form-body-container"
         {...this.formItemLayout} label="Body">
-        <Tabs type="card" className={styles.notificationBodyTabs}>
+        <Tabs
+          type="card"
+          className="cp-tabs-no-padding"
+        >
           <Tabs.TabPane tab="Write" key="write">
             {getFieldDecorator('body',
               {
@@ -118,11 +121,10 @@ export default class EditSystemNotificationForm extends React.Component {
             )}
           </Tabs.TabPane>
           <Tabs.TabPane tab="Preview" key="preview">
-            <div className={styles.notificationPreviewContainer}>
-              <NotificationView
-                text={getFieldValue('body')}
-              />
-            </div>
+            <Markdown
+              className={styles.notificationPreviewContainer}
+              md={getFieldValue('body')}
+            />
           </Tabs.TabPane>
         </Tabs>
       </Form.Item>
@@ -140,13 +142,31 @@ export default class EditSystemNotificationForm extends React.Component {
           })(
           <Select>
             <Select.Option key="INFO" value="INFO" title="Info">
-              <Icon type="info-circle-o" className={styles.info} /> Info
+              <div className={styles.select}>
+                <Icon
+                  type="info-circle-o"
+                  className="cp-setting-info cp-icon-large"
+                />
+                Info
+              </div>
             </Select.Option>
             <Select.Option key="WARNING" value="WARNING" title="Warning">
-              <Icon type="exclamation-circle-o" className={styles.warning} /> Warning
+              <div className={styles.select}>
+                <Icon
+                  type="exclamation-circle-o"
+                  className="cp-setting-warning cp-icon-large"
+                />
+                Warning
+              </div>
             </Select.Option>
             <Select.Option key="CRITICAL" value="CRITICAL" title="Critical">
-              <Icon type="close-circle-o" className={styles.critical} /> Critical
+              <div className={styles.select}>
+                <Icon
+                  type="close-circle-o"
+                  className="cp-setting-critical cp-icon-large"
+                />
+                Critical
+              </div>
             </Select.Option>
           </Select>
         )}

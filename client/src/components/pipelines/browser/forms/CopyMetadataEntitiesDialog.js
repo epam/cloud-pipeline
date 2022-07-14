@@ -28,7 +28,9 @@ import {
   Table,
   Tree
 } from 'antd';
+import classNames from 'classnames';
 import {
+  formatTreeItems,
   generateTreeData,
   getExpandedKeys,
   getTreeItemByKey,
@@ -85,11 +87,10 @@ class CopyMetadataEntitiesDialog extends React.Component {
       pipelinesLibrary.fetchIfNeededOrWait();
       const tree = generateTreeData(
         pipelinesLibrary.value || {},
-        false,
-        null,
-        [],
-        [ItemTypes.folder],
-        this.props.hiddenObjectsTreeFilter()
+        {
+          types: [ItemTypes.folder],
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
       );
       this.setState({
         pending: false,
@@ -283,7 +284,7 @@ class CopyMetadataEntitiesDialog extends React.Component {
         name = (
           <span>
             <span>{item.name.substring(0, item.searchResult.index)}</span>
-            <span className={styles.searchResult}>
+            <span className={classNames(styles.searchResult, 'cp-search-highlight-text')}>
               {
                 item.name.substring(
                   item.searchResult.index,
@@ -303,7 +304,10 @@ class CopyMetadataEntitiesDialog extends React.Component {
         </span>
       );
     };
-    const generateTreeItems = (items) => items
+    const generateTreeItems = (items) => formatTreeItems(
+      items,
+      {preferences: this.props.preferences}
+    )
       .filter(item => item.searchHit)
       .map(item => {
         if (item.isLeaf) {
@@ -600,7 +604,7 @@ CopyMetadataEntitiesDialog.propTypes = {
   visible: PropTypes.bool
 };
 
-export default inject('pipelinesLibrary')(
+export default inject('pipelinesLibrary', 'preferences')(
   HiddenObjects.injectTreeFilter(
     observer(CopyMetadataEntitiesDialog)
   )

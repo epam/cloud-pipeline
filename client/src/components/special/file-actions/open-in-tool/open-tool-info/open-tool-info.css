@@ -1,0 +1,89 @@
+/*
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+.list {
+  list-style: disc outside none;
+  padding-right: 1em;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  margin-left: 5px;
+}
+
+.list p {
+  margin: 2px 0;
+}
+
+.list ul p {
+  display: inline;
+}
+
+.list ol p {
+  display: inline;
+}
+
+.list li {
+  margin: 5px 0;
+}
+
+.list ul,
+.list ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  display: block;
+  list-style: disc inside;
+}
+
+.list li {
+  display: list-item;
+  margin: 5px;
+}
+
+.list .code {
+  background-color: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 5px;
+  width: 100%;
+  max-width: 50vw;
+  display: flex;
+  align-items: center;
+}
+
+.list .code .part {
+  max-height: 40px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.list .code .part:not(:first-child) {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.list .code pre {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 10px;
+}
+
+.list .code .button {
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  min-width: 40px;
+  justify-content: center;
+  cursor: pointer;
+}

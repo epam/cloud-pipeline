@@ -48,10 +48,9 @@ export const ServiceTypes = {
 };
 
 @roleModel.authenticationInfo
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @Form.create()
 export class DataStorageEditDialog extends React.Component {
-
   static propTypes = {
     pending: PropTypes.bool,
     onCancel: PropTypes.func,
@@ -68,6 +67,7 @@ export class DataStorageEditDialog extends React.Component {
     deleteDialogVisible: false,
     toolsToMount: undefined,
     activeTab: 'info',
+    mountDisabled: false,
     versioningEnabled: false,
     sharingEnabled: false,
     sensitive: false
@@ -83,6 +83,27 @@ export class DataStorageEditDialog extends React.Component {
       sm: {span: 18}
     }
   };
+
+  @computed
+  get storageVersioningAllowed () {
+    const {
+      dataStorage,
+      preferences,
+      authenticatedUserInfo
+    } = this.props;
+    if (!dataStorage) {
+      return true;
+    }
+    const loaded = preferences &&
+      preferences.loaded &&
+      authenticatedUserInfo &&
+      authenticatedUserInfo.loaded;
+    if (loaded) {
+      const isAdmin = authenticatedUserInfo.value.admin;
+      return isAdmin || preferences.storagePolicyBackupVisibleNonAdmins;
+    }
+    return false;
+  }
 
   openDeleteDialog = () => {
     this.setState({deleteDialogVisible: true});
@@ -105,6 +126,7 @@ export class DataStorageEditDialog extends React.Component {
         values.serviceType = this.isNfsMount
           ? ServiceTypes.fileShare
           : ServiceTypes.objectStorage;
+        values.mountDisabled = this.state.mountDisabled;
         if (!this.isNfsMount && this.props.policySupported && this.state.versioningEnabled) {
           values.versioningEnabled = true;
         } else {
@@ -246,6 +268,7 @@ export class DataStorageEditDialog extends React.Component {
   };
 
   getDeleteModalFooter = () => {
+    const isMirrorStorage = !!this.props.dataStorage && !!this.props.dataStorage.sourceStorageId;
     return (
       <Row type="flex" justify="space-between">
         <Col span={12}>
@@ -261,10 +284,17 @@ export class DataStorageEditDialog extends React.Component {
               id="edit-storage-delete-dialog-unregister-button"
               type="danger"
               onClick={() => this.onDeleteClicked(false)}>Unregister</Button>
-            <Button
-              id="edit-storage-delete-dialog-delete-button"
-              type="danger"
-              onClick={() => this.onDeleteClicked(true)}>Delete</Button>
+            {
+              !isMirrorStorage && (
+                <Button
+                  id="edit-storage-delete-dialog-delete-button"
+                  type="danger"
+                  onClick={() => this.onDeleteClicked(true)}
+                >
+                  Delete
+                </Button>
+              )
+            }
           </Row>
         </Col>
       </Row>
@@ -396,18 +426,35 @@ export class DataStorageEditDialog extends React.Component {
                     <Input type="textarea" disabled={this.props.pending || isReadOnly} />
                   )}
                 </Form.Item>
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Allow mount to">
-                  {getFieldDecorator('toolsToMount', {
-                    initialValue: this.props.dataStorage
-                      ? this.props.dataStorage.toolsToMount
-                      : undefined
-                  })(
-                    <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
+                <Row>
+                  <Col xs={24} sm={6} />
+                  <Col xs={24} sm={18}>
+                    <Form.Item className={styles.dataStorageFormItem}>
+                      <Checkbox
+                        disabled={this.props.pending || isReadOnly}
+                        onChange={(e) => this.setState({mountDisabled: e.target.checked})}
+                        checked={this.state.mountDisabled}>
+                        Disable mount
+                      </Checkbox>
+                    </Form.Item>
+                  </Col>
+                </Row>
+                {
+                  !this.state.mountDisabled && (
+                    <Form.Item
+                      className={styles.dataStorageFormItem}
+                      {...this.formItemLayout}
+                      label="Allow mount to">
+                      {getFieldDecorator('toolsToMount', {
+                        initialValue: this.props.dataStorage
+                          ? this.props.dataStorage.toolsToMount
+                          : undefined
+                      })(
+                        <RestrictDockerImages disabled={this.props.pending || isReadOnly} />
+                      )}
+                    </Form.Item>
+                  )
+                }
                 {
                   !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
                   <Form.Item
@@ -456,8 +503,10 @@ export class DataStorageEditDialog extends React.Component {
                     </Col>
                   </Row>
                 }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
+                {!this.isNfsMount &&
+                this.props.policySupported &&
+                this.currentRegionSupportsPolicy &&
+                this.storageVersioningAllowed && (
                   <Row>
                     <Col xs={24} sm={6} />
                     <Col xs={24} sm={18}>
@@ -471,50 +520,60 @@ export class DataStorageEditDialog extends React.Component {
                       </Form.Item>
                     </Col>
                   </Row>
-                }
+                )}
+                {!this.isNfsMount &&
+                this.props.policySupported &&
+                this.state.versioningEnabled &&
+                this.currentRegionSupportsPolicy &&
+                this.storageVersioningAllowed && (
+                  <Form.Item
+                    className={styles.dataStorageFormItem}
+                    {...this.formItemLayout}
+                    label="Backup duration">
+                    {getFieldDecorator('backupDuration', {
+                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
+                        ? this.props.dataStorage.storagePolicy.backupDuration : undefined
+                    })(
+                      <InputNumber
+                        style={{width: '100%'}}
+                        disabled={this.props.pending || isReadOnly} />
+                    )}
+                  </Form.Item>
+                )}
                 {
-                  !this.isNfsMount && this.props.policySupported &&
-                  this.state.versioningEnabled && this.currentRegionSupportsPolicy &&
+                  !this.state.mountDisabled && (
                     <Form.Item
                       className={styles.dataStorageFormItem}
                       {...this.formItemLayout}
-                      label="Backup duration">
-                      {getFieldDecorator('backupDuration', {
-                        initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                          ? this.props.dataStorage.storagePolicy.backupDuration : undefined
+                      label="Mount-point">
+                      {getFieldDecorator('mountPoint', {
+                        initialValue: this.props.dataStorage && this.props.dataStorage.mountPoint
+                          ? this.props.dataStorage.mountPoint : undefined
                       })(
-                        <InputNumber
+                        <Input
                           style={{width: '100%'}}
                           disabled={this.props.pending || isReadOnly} />
                       )}
                     </Form.Item>
+                  )
                 }
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Mount-point">
-                  {getFieldDecorator('mountPoint', {
-                    initialValue: this.props.dataStorage && this.props.dataStorage.mountPoint
-                      ? this.props.dataStorage.mountPoint: undefined
-                  })(
-                    <Input
-                      style={{width: '100%'}}
-                      disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
-                <Form.Item
-                  className={styles.dataStorageFormItem}
-                  {...this.formItemLayout}
-                  label="Mount options">
-                  {getFieldDecorator('mountOptions', {
-                    initialValue: this.props.dataStorage && this.props.dataStorage.mountOptions
-                      ? this.props.dataStorage.mountOptions: undefined
-                  })(
-                    <Input
-                      style={{width: '100%'}}
-                      disabled={this.props.pending || isReadOnly} />
-                  )}
-                </Form.Item>
+                {
+                  !this.state.mountDisabled && (
+                    <Form.Item
+                      className={styles.dataStorageFormItem}
+                      {...this.formItemLayout}
+                      label="Mount options">
+                      {getFieldDecorator('mountOptions', {
+                        initialValue: this.props.dataStorage && this.props.dataStorage.mountOptions
+                          ? this.props.dataStorage.mountOptions : undefined
+                      })(
+                        <Input
+                          style={{width: '100%'}}
+                          disabled={this.props.pending || isReadOnly} />
+                      )}
+                    </Form.Item>
+                  )
+                }
                 {
                   !this.isNfsMount &&
                   (
@@ -561,15 +620,16 @@ export class DataStorageEditDialog extends React.Component {
 
   checkStorageChanged = (prevProps) => {
     if (!prevProps || prevProps.dataStorage !== this.props.dataStorage) {
-      const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy ?
-        this.props.dataStorage.storagePolicy.versioningEnabled: true;
+      const mountDisabled = this.props.dataStorage ? this.props.dataStorage.mountDisabled : false;
+      const versioningEnabled = this.props.dataStorage && this.props.dataStorage.storagePolicy
+        ? this.props.dataStorage.storagePolicy.versioningEnabled : true;
       const sensitive = this.props.dataStorage
         ? this.props.dataStorage.sensitive
         : false;
       const sharingEnabled = !this.isNfsMount && this.props.dataStorage
         ? this.props.dataStorage.shared
         : false;
-      this.setState({versioningEnabled, sharingEnabled, sensitive});
+      this.setState({mountDisabled, versioningEnabled, sharingEnabled, sensitive});
     }
   };
 

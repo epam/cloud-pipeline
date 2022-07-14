@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import threading
-import sys
 import collections
-from future.utils import iteritems
+import threading
 from builtins import int
 
+import sys
 from click import progressbar
+from future.utils import iteritems
+
+from src.utilities.encoding_utilities import to_ascii
 
 
 class ProgressPercentage(object):
@@ -33,7 +35,7 @@ class ProgressPercentage(object):
     max_file_length = 30
 
     def __init__(self, filename, size):
-        self._filename = filename
+        self._filename = to_ascii(filename, replacing=True, replacing_with='-')
         self._seen_so_far = 0.0
         self._seen_so_far_in_bytes = 0
         self._lock = threading.Lock()

@@ -33,7 +33,13 @@ public interface TaskService {
         return createTask(source, destination, included, null);
     }
 
-    TransferTask createTask(StorageItem source, StorageItem destination, List<String> included, String user);
+    default TransferTask createTask(StorageItem source, StorageItem destination, List<String> included, String user) {
+        return createTask(source, destination, included, user, false);
+    }
+
+    TransferTask createTask(StorageItem source, StorageItem destination, List<String> included, String user,
+                            boolean deleteSource);
+
     TransferTask updateStatus(Long id, TaskStatus status);
     TransferTask updateStatus(Long id, TaskStatus status, String reason);
     TransferTask updateTask(TransferTask transferTask);

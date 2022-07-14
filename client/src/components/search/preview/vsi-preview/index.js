@@ -17,14 +17,19 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import {computed, observable} from 'mobx';
 import {
   Button,
   Tabs,
-  Icon
+  Icon,
+  Input,
+  Popover,
+  message
 } from 'antd';
 import classNames from 'classnames';
 import html2canvas from 'html2canvas';
 import FileSaver from 'file-saver';
+import S3Storage from '../../../../models/s3-upload/s3-storage';
 import DataStorageRequest from '../../../../models/dataStorage/DataStoragePage';
 import DataStorageItemContent from '../../../../models/dataStorage/DataStorageItemContent';
 import {API_PATH, SERVER, PUBLIC_URL} from '../../../../config';
@@ -32,15 +37,19 @@ import styles from '../preview.css';
 import './girder-mock/index';
 import '../../../../staticStyles/sa-styles.css';
 import LoadingView from '../../../special/LoadingView';
+import roleModel from '../../../../utils/roleModel';
+import Panel from '../../../special/panel';
 
 const {SA, SAM, $} = window;
 
 const SA_CAMERA_CALLBACK_TIMEOUT = 1000;
 const SA_CAMERA_CALLBACK_START_TIMEOUT = 2500;
 
+const magnificationTagName = 'Magnification';
+
 function generateTileSource (storageId, tilesFolder, x, y, z) {
   // eslint-disable-next-line
-  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${tilesFolder}/${z}/${y}/${x}.jpg`;
+  return `${SERVER + API_PATH}/datastorage/${storageId}/download?path=${encodeURIComponent(tilesFolder)}/${z}/${y}/${x}.jpg`;
 }
 
 function getFolderContents (storageId, folder) {
@@ -97,7 +106,7 @@ function readStorageFileJson (storage, path) {
   });
 }
 
-function getTiles (storageId, folder) {
+function getTilesFromFolder (storageId, folder) {
   return new Promise((resolve) => {
     getFolderContents(storageId, folder)
       .then(tiles => {
@@ -119,7 +128,40 @@ function getTiles (storageId, folder) {
   });
 }
 
-@inject('dataStorageCache')
+function getTiles (storageId, folders) {
+  if (!folders || !folders.length) {
+    return Promise.resolve(undefined);
+  }
+  const [folder, ...restFolders] = folders;
+  return new Promise((resolve) => {
+    getTilesFromFolder(storageId, folder)
+      .then((tiles) => {
+        if (tiles) {
+          return Promise.resolve(tiles);
+        } else {
+          return getTiles(storageId, restFolders);
+        }
+      })
+      .then(resolve);
+  });
+}
+
+function getTilesInfo (file) {
+  const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
+  if (e && e.length === 4) {
+    const filePathWithoutExtension = `${e[1] || ''}${e[2]}`;
+    return {
+      tilesFolders: [
+        `${e[1] || ''}.wsiparser/${e[2] || ''}/tiles`,
+        `${filePathWithoutExtension}.tiles`
+      ],
+      folder: filePathWithoutExtension
+    };
+  }
+  return undefined;
+}
+
+@inject('dataStorageCache', 'dataStorages', 'preferences')
 @observer
 class VSIPreview extends React.Component {
   state = {
@@ -128,13 +170,29 @@ class VSIPreview extends React.Component {
     preview: undefined,
     active: undefined,
     pending: false,
-    fullscreen: false
+    s3storageWrapperPending: true,
+    s3storageWrapperError: undefined,
+    shareUrl: undefined,
+    showShareUrlModal: false,
+    showAttributes: false
   };
 
+  @observable s3Storage;
   map;
+  pathElement;
 
   componentDidMount () {
+    this.createS3Storage();
     this.fetchPreviewItems();
+    const {onPreviewLoaded, onHideInfo} = this.props;
+    if (onPreviewLoaded) {
+      onPreviewLoaded({
+        requireMaximumSpace: true
+      });
+    }
+    if (onHideInfo) {
+      onHideInfo(true);
+    }
   }
 
   componentWillUnmount () {
@@ -143,9 +201,77 @@ class VSIPreview extends React.Component {
 
   componentDidUpdate (prevProps, prevState, snapshot) {
     if (prevProps.storageId !== this.props.storageId || prevProps.file !== this.props.file) {
+      this.createS3Storage();
       this.fetchPreviewItems();
     }
   }
+
+  @computed
+  get storage () {
+    const {storageId, dataStorages} = this.props;
+    if (storageId && dataStorages.loaded) {
+      return (dataStorages.value || []).find(s => +(s.id) === +storageId);
+    }
+    return undefined;
+  }
+
+  getTileUrl = (storageId, tilesFolder, x, y, z) => {
+    if (this.storage?.type === 'S3' && this.s3Storage) {
+      this.s3Storage.prefix = tilesFolder;
+      const url = this.s3Storage.getSignedUrl(`${z}/${y}/${x}.jpg`);
+      if (url) {
+        return url;
+      }
+    }
+    return generateTileSource(storageId, tilesFolder, x, y, z);
+  };
+
+  createS3Storage = () => {
+    const wrapCreateStorageCredentials = storage => new Promise((resolve, reject) => {
+      storage.updateCredentials()
+        .then(() => {
+          resolve(storage);
+        })
+        .catch(reject);
+    });
+    this.setState({
+      s3storageWrapperError: undefined,
+      s3storageWrapperPending: true
+    }, () => {
+      const {dataStorages, storageId} = this.props;
+      dataStorages.fetchIfNeededOrWait()
+        .then(() => {
+          if (!this.s3Storage && this.storage?.type === 'S3') {
+            const {delimiter, path} = this.storage;
+            const storage = {
+              id: storageId,
+              path,
+              delimiter,
+              write: roleModel.writeAllowed(this.storage)
+            };
+            return wrapCreateStorageCredentials(new S3Storage(storage));
+          } else {
+            return Promise.resolve(this.s3Storage);
+          }
+        })
+        .then((storage) => {
+          if (storage) {
+            this.s3Storage = storage;
+          }
+          this.setState({
+            s3storageWrapperError: undefined,
+            s3storageWrapperPending: false
+          });
+        })
+        .catch(e => {
+          message.error(e.message, 5);
+          this.setState({
+            s3storageWrapperError: e.message,
+            s3storageWrapperPending: false
+          });
+        });
+    });
+  };
 
   onChangePreview = (path) => {
     if (!path) {
@@ -197,8 +323,29 @@ class VSIPreview extends React.Component {
     });
   };
 
+  reportPreviewLoaded = () => {
+    const {onPreviewLoaded, onHideInfo} = this.props;
+    const {
+      tiles
+    } = this.state;
+    if (onPreviewLoaded) {
+      onPreviewLoaded({
+        maximizedAvailable: !!tiles,
+        requireMaximumSpace: true
+      });
+    }
+    if (onHideInfo) {
+      onHideInfo(!!tiles);
+    }
+  };
+
   fetchPreviewItems = () => {
-    const {file, storageId, dataStorageCache} = this.props;
+    const {
+      file,
+      storageId,
+      dataStorageCache,
+      preferences
+    } = this.props;
     if (this.saViewer) {
       this.saViewer = undefined;
       this.resetSAViewerCameraUpdate();
@@ -210,8 +357,8 @@ class VSIPreview extends React.Component {
         active: undefined,
         preview: undefined,
         pending: false,
-        fullscreen: false
-      });
+        showAttributes: false
+      }, this.reportPreviewLoaded);
     } else {
       this.setState({
         items: [],
@@ -219,22 +366,48 @@ class VSIPreview extends React.Component {
         active: undefined,
         preview: undefined,
         pending: true,
-        fullscreen: false
+        showAttributes: false
       }, () => {
-        const e = /^(.*\/)?([^\\/]+)\.(vsi|mrxs)$/i.exec(file);
-        if (e && e.length === 4) {
-          const tilesFolder = `${e[1] || ''}${e[2]}.tiles`;
-          const folder = `${e[1] || ''}${e[2]}`;
-          getTiles(storageId, tilesFolder)
+        const tilesInfo = getTilesInfo(file);
+        if (tilesInfo) {
+          getTiles(storageId, tilesInfo.tilesFolders)
             .then(tiles => {
               if (tiles) {
-                this.setState({
-                  items: [],
-                  tiles,
-                  pending: false
-                });
+                const tagsRequest = dataStorageCache.getTags(storageId, file);
+                tagsRequest
+                  .fetch()
+                  .then(() => preferences.fetchIfNeededOrWait())
+                  .then(() => {
+                    let magnification;
+                    if (
+                      tagsRequest.loaded &&
+                      tagsRequest.value &&
+                      tagsRequest.value.hasOwnProperty(magnificationTagName)
+                    ) {
+                      let [, value = ''] = /([\d\\.\\,]+)/
+                        .exec(tagsRequest.value[magnificationTagName]) || [];
+                      if (value) {
+                        magnification = Number(value.replace(/,/g, '.'));
+                        if (Number.isNaN(magnification)) {
+                          magnification = undefined;
+                        }
+                      }
+                    }
+                    if (!tiles.info) {
+                      tiles.info = {};
+                    }
+                    tiles.info.scannedAt = magnification;
+                    tiles.info.maxZoomLevel = magnification
+                      ? preferences.vsiPreviewMagnificationMultiplier * magnification
+                      : undefined;
+                    this.setState({
+                      items: [],
+                      tiles,
+                      pending: false
+                    }, this.reportPreviewLoaded);
+                  });
               } else {
-                getFolderContents(storageId, folder)
+                getFolderContents(storageId, tilesInfo.folder)
                   .then(items => {
                     const files = items
                       .filter(item => /^file$/i.test(item.type))
@@ -254,14 +427,17 @@ class VSIPreview extends React.Component {
                       items: files,
                       tiles: false,
                       pending: false
-                    }, () => this.onChangePreview(items.length > 0 ? items[0].path : undefined));
+                    }, () => {
+                      this.onChangePreview(items.length > 0 ? items[0].path : undefined);
+                      this.reportPreviewLoaded();
+                    });
                   });
               }
             });
         } else {
           this.setState({
             pending: false
-          });
+          }, this.reportPreviewLoaded);
         }
       });
     }
@@ -417,7 +593,7 @@ class VSIPreview extends React.Component {
     );
   };
 
-  shareButtonClicked = () => {
+  generateShareUrl = () => {
     if (!this.saViewer) {
       return;
     }
@@ -438,23 +614,134 @@ class VSIPreview extends React.Component {
       `x=${x}`,
       `y=${y}`
     ];
-    const url = `${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`;
-    window.open(url, '_blank');
+    return new URL(`${PUBLIC_URL || ''}/#/wsi?${query.join('&')}`, document.location.origin).href;
+  };
+
+  openShareUrlModal = (e) => {
+    e && e.stopPropagation();
+    const url = this.generateShareUrl();
+    if (url) {
+      this.setState({shareUrl: url});
+    }
+  };
+
+  closeShareUrlModal = () => {
+    this.setState({shareUrl: undefined});
+  };
+
+  shareUrlVisibilityChanged = (visible) => {
+    if (visible) {
+      this.openShareUrlModal();
+    } else {
+      this.closeShareUrlModal();
+    }
+  };
+
+  onChangeShareUrl = (e) => {
+    this.setState({shareUrl: e.target.value});
+  };
+
+  renderShareUrl = () => {
+    const {shareUrl} = this.state;
+    const initializePathElement = element => {
+      this.pathElement = element;
+    };
+    const copy = (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      if (
+        this.pathElement &&
+        this.pathElement.refs &&
+        this.pathElement.refs.input &&
+        this.pathElement.refs.input.select
+      ) {
+        this.pathElement.refs.input.select();
+        if (document.execCommand('copy')) {
+          message.info('Copied to clipboard', 3);
+          window.getSelection().removeAllRanges();
+        }
+      }
+    };
+    const open = () => {
+      if (shareUrl) {
+        window.open(shareUrl, '_blank');
+      }
+    };
+    return (
+      <div className={styles.shareUrlContainer}>
+        <Input
+          ref={initializePathElement}
+          value={shareUrl}
+          style={{width: '100%'}}
+          readOnly
+          addonAfter={(
+            <div>
+              <Icon
+                title="Copy to clipboard"
+                className={styles.shareUrlAction}
+                type="copy"
+                onClick={copy}
+              />
+              <Icon
+                title="Open in separate tab"
+                className={styles.shareUrlAction}
+                type="export"
+                onClick={open}
+              />
+            </div>
+          )}
+        />
+      </div>
+    );
+  };
+
+  showAttributesPanel = () => {
+    this.setState({
+      showAttributes: true
+    });
+  };
+
+  hideAttributesPanel = () => {
+    this.setState({
+      showAttributes: false
+    });
+  };
+
+  renderAttributesPanel = () => {
+    const {
+      children
+    } = this.props;
+    const {
+      showAttributes
+    } = this.state;
+    return (
+      <Panel
+        visible={showAttributes}
+        className={styles.vsiPreviewAttributesPanel}
+        title="Attributes"
+        onClose={this.hideAttributesPanel}
+      >
+        {children}
+      </Panel>
+    );
   };
 
   renderTiles = () => {
     const {
       storageId,
       fullScreenAvailable,
+      onFullScreenChange,
       shareAvailable,
       x,
       y,
       zoom,
-      roll
+      roll,
+      fullscreen,
+      children
     } = this.props;
     const {
       tiles,
-      fullscreen
+      shareUrl
     } = this.state;
     if (!tiles || !storageId) {
       return null;
@@ -467,6 +754,8 @@ class VSIPreview extends React.Component {
           minLevel = 0,
           maxLevel = 5,
           bounds = [0, width - 1, 0, height - 1],
+          scannedAt,
+          maxZoomLevel,
           ...rest
         } = tiles.info || {};
         const viewers = SA.SAViewer($(element),
@@ -480,10 +769,10 @@ class VSIPreview extends React.Component {
               bounds,
               minLevel,
               maxLevel,
+              scannedAt,
+              maxZoomLevel,
               ...rest,
-              getTileUrl: function (level, x, y) {
-                return generateTileSource(storageId, tiles.folder, x, y, level);
-              }
+              getTileUrl: (level, x, y) => this.getTileUrl(storageId, tiles.folder, x, y, level)
             }
           });
         this.saViewer = viewers[0].saViewer;
@@ -509,9 +798,9 @@ class VSIPreview extends React.Component {
       }
     };
     const goFullScreen = () => {
-      this.setState({
-        fullscreen: !fullscreen
-      });
+      if (fullScreenAvailable && onFullScreenChange) {
+        onFullScreenChange(!fullscreen);
+      }
     };
     const capture = () => {
       const [x, y] = this.saViewer.MainView.Camera.GetWorldFocalPoint();
@@ -522,7 +811,10 @@ class VSIPreview extends React.Component {
         .each(function () {
           $(this).addClass(styles.vsiSaViewHidden);
         });
-      html2canvas(this.saViewer.GetDiv()[0])
+      html2canvas(this.saViewer.GetDiv()[0], {
+        allowTaint: true,
+        useCORS: true
+      })
         .then((canvas) => {
           const ctx = canvas.getContext('2d');
           const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -540,6 +832,11 @@ class VSIPreview extends React.Component {
     };
     return (
       <div
+        onClick={() => {
+          if (shareUrl !== null || shareUrl !== undefined) {
+            this.closeShareUrlModal();
+          }
+        }}
         className={
           classNames(
             styles.vsiContentPreview,
@@ -550,6 +847,10 @@ class VSIPreview extends React.Component {
       >
         {/* eslint-disable-next-line */}
         <div
+          className={classNames(
+            styles.vsiSaView,
+            {[styles.readOnly]: !roleModel.writeAllowed(this.storage)}
+          )}
           ref={initializeTiles}
           style={{
             width: '100%',
@@ -557,20 +858,18 @@ class VSIPreview extends React.Component {
           }}
         >
         </div>
+        {
+          fullScreenAvailable && (
+            <Icon
+              type={fullscreen ? 'shrink' : 'arrows-alt'}
+              onClick={goFullScreen}
+              className={styles.vsiPreviewFullscreenButton}
+            />
+          )
+        }
         <div
           className={styles.vsiPreviewButtonContainer}
         >
-          {
-            fullScreenAvailable && (
-              <Button
-                id="vsi-preview-fullscreen-button"
-                className={styles.vsiPreviewButton}
-                onClick={goFullScreen}
-              >
-                <Icon type={fullscreen ? 'shrink' : 'arrows-alt'} />
-              </Button>
-            )
-          }
           <Button
             id="vsi-preview-capture-button"
             className={styles.vsiPreviewButton}
@@ -580,16 +879,42 @@ class VSIPreview extends React.Component {
           </Button>
           {
             shareAvailable && (
-              <Button
-                id="vsi-preview-share-button"
-                className={styles.vsiPreviewButton}
-                onClick={this.shareButtonClicked}
+              <Popover
+                visible={shareUrl !== undefined && shareUrl !== null}
+                trigger={['click']}
+                title={false}
+                content={this.renderShareUrl()}
+                onVisibleChange={this.shareUrlVisibilityChanged}
+                overlayClassName={styles.shareUrlPopover}
+                align={fullscreen ? {
+                  points: ['tl', 'bl'],
+                  offset: ['-10px']
+                } : {}}
+                placement="bottom"
               >
-                <Icon type="export" />
+                <Button
+                  id="vsi-preview-share-button"
+                  className={styles.vsiPreviewButton}
+                  onClick={this.openShareUrlModal}
+                >
+                  <Icon type="export" />
+                </Button>
+              </Popover>
+            )
+          }
+          {
+            children && (
+              <Button
+                id="vsi-preview-show-attributes-button"
+                className={styles.vsiPreviewButton}
+                onClick={this.showAttributesPanel}
+              >
+                Show attributes
               </Button>
             )
           }
         </div>
+        {this.renderAttributesPanel()}
       </div>
     );
   };
@@ -598,7 +923,11 @@ class VSIPreview extends React.Component {
     const {
       className
     } = this.props;
-    const {pending} = this.state;
+    const {
+      pending: loading,
+      s3storageWrapperPending
+    } = this.state;
+    const pending = loading || s3storageWrapperPending;
     return (
       <div
         className={className}
@@ -614,6 +943,7 @@ class VSIPreview extends React.Component {
 
 VSIPreview.propTypes = {
   className: PropTypes.string,
+  children: PropTypes.node,
   file: PropTypes.string,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   fullScreenAvailable: PropTypes.bool,
@@ -622,7 +952,11 @@ VSIPreview.propTypes = {
   y: PropTypes.number,
   zoom: PropTypes.number,
   roll: PropTypes.number,
-  onCameraChanged: PropTypes.func
+  onCameraChanged: PropTypes.func,
+  onPreviewLoaded: PropTypes.func,
+  onHideInfo: PropTypes.func,
+  fullscreen: PropTypes.bool,
+  onFullScreenChange: PropTypes.func
 };
 
 VSIPreview.defaultProps = {
@@ -631,3 +965,4 @@ VSIPreview.defaultProps = {
 };
 
 export default VSIPreview;
+export {getTiles, getTilesInfo};

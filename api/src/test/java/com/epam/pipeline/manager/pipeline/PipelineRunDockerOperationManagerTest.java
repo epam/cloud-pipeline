@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.epam.pipeline.manager.cluster.performancemonitoring.UsageMonitoringMa
 import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Test;
 
@@ -68,6 +69,7 @@ public class PipelineRunDockerOperationManagerTest {
     private final PreferenceManager preferenceManager = mock(PreferenceManager.class);
     private final RunLogManager runLogManager = mock(RunLogManager.class);
     private final RunStatusManager runStatusManager = mock(RunStatusManager.class);
+    private final RunLimitsService runLimitsService = mock(RunLimitsService.class);
     private final PipelineRunDockerOperationManager pipelineRunDockerOperationManager =
             new PipelineRunDockerOperationManager(
                     dockerContainerOperationManager,
@@ -80,7 +82,8 @@ public class PipelineRunDockerOperationManagerTest {
                     runLogManager,
                     runStatusManager,
                     messageHelper,
-                    preferenceManager);
+                    preferenceManager,
+                    runLimitsService);
 
     @Test
     public void pauseRunShouldBeRelaunched() {

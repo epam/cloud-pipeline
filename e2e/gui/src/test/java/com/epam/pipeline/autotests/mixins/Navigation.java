@@ -28,6 +28,8 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
 import static com.epam.pipeline.autotests.utils.Conditions.selectedMenuItem;
+import static com.epam.pipeline.autotests.utils.Utils.sleep;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public interface Navigation {
 
@@ -68,5 +70,32 @@ public interface Navigation {
         $(runsPageSelector).shouldBe(visible).click();
         $(runsPageSelector).shouldBe(selectedMenuItem);
         return new RunsMenuAO();
+    }
+
+    default NavigationHomeAO stopImpersonation() {
+        final By stopImpersonateSelector = byId("navigation-button-stop-impersonation");
+        $(stopImpersonateSelector).shouldBe(visible).click();
+        $(stopImpersonateSelector).shouldNotBe(visible);
+        return new NavigationHomeAO();
+    }
+
+    default NavigationHomeAO impersonateAs(String user) {
+        return navigationMenu()
+                .settings()
+                .switchToUserManagement()
+                .switchToUsers()
+                .searchUserEntry(user.toUpperCase())
+                .edit()
+                .impersonate();
+    }
+
+    default boolean checkImpersonation() {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (!$(byId("navigation-button-stop-impersonation")).isDisplayed() && attempt < maxAttempts) {
+            sleep(1, SECONDS);
+            attempt += 1;
+        }
+        return $(byId("navigation-button-stop-impersonation")).isDisplayed();
     }
 }

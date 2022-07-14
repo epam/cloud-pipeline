@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import static com.codeborne.selenide.Condition.visible;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
+import static com.codeborne.selenide.Selenide.$$;
 import static com.codeborne.selenide.Selenide.actions;
 import static com.codeborne.selenide.Selenide.switchTo;
 import static java.lang.String.format;
@@ -111,7 +112,7 @@ public class ShellAO implements AccessObject<ShellAO> {
     public ShellAO assertResultsCount(String command, String runID, int expectedCount) {
         String results = lastCommandResult(command)
                 .replace(format("root@pipeline-%s:/runs/pipeline-%s#", runID, runID), "");
-        assertEquals(expectedCount, results.split("\\s+").length);
+        assertEquals(results.split("\\s+").length, expectedCount);
         return this;
     }
 
@@ -123,7 +124,7 @@ public class ShellAO implements AccessObject<ShellAO> {
         return this;
     }
 
-    private String lastCommandResult(String command) {
+    public String lastCommandResult(String command) {
         return context().text().substring(context().text().indexOf(command))
                 .replace("\n", "").replace(command, "");
     }
@@ -179,6 +180,17 @@ public class ShellAO implements AccessObject<ShellAO> {
             sleep(1, MINUTES);
             refresh();
             sleep(5, SECONDS);
+        }
+        return this;
+    }
+
+    public ShellAO waitUntilTextAppearsSeveralTimes(final String runId, final int textNumberTimes) {
+        for (int i = 0; i < 3; i++) {
+            sleep(10, SECONDS);
+            if ($$(withText(format("root@pipeline-%s", runId))).size() >= textNumberTimes) {
+                break;
+            }
+            sleep(1, MINUTES);
         }
         return this;
     }

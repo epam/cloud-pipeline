@@ -24,6 +24,7 @@ import com.amazonaws.services.kms.AWSKMS;
 import com.amazonaws.services.kms.AWSKMSClientBuilder;
 import com.amazonaws.services.kms.model.KeyListEntry;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.entity.datastorage.StorageQuotaAction;
 import com.epam.pipeline.entity.monitoring.IdleRunAction;
 import com.epam.pipeline.entity.monitoring.LongPausedRunAction;
 import com.epam.pipeline.entity.preference.Preference;
@@ -267,6 +268,20 @@ public final class PreferenceValidators {
 
     public static final BiPredicate<String, Map<String, Preference>> isValidLongPauseRunAction =
             (pref, ignored) -> LongPausedRunAction.contains(pref);
+
+    public static final BiPredicate<String, Map<String, Preference>> isValidGraceConfiguration =
+        isNullOrValidJson(new TypeReference<Map<StorageQuotaAction, Integer>>() {})
+            .and((pref, dependencies) -> {
+                final Map<StorageQuotaAction, Integer> configuration =
+                    JsonMapper.parseData(pref, new TypeReference<Map<StorageQuotaAction, Integer>>() {});
+                if (configuration.containsKey(StorageQuotaAction.UNKNOWN)) {
+                    throw new IllegalArgumentException("Unknown action type found in grace period configuration!");
+                }
+                if (configuration.containsKey(StorageQuotaAction.EMAIL)) {
+                    throw new IllegalArgumentException("Grace period is configurable for restrictive actions only!");
+                }
+                return true;
+            });
 
     private PreferenceValidators() {
         // No-op

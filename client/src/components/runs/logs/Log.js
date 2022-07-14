@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 
 import React from 'react';
+import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Link} from 'react-router';
@@ -57,7 +58,8 @@ import {
   runPipelineActions,
   terminateRun,
   openReRunForm,
-  runIsCommittable
+  runIsCommittable,
+  checkCommitAllowedForTool
 } from '../actions';
 import connect from '../../../utils/connect';
 import evaluateRunDuration from '../../../utils/evaluateRunDuration';
@@ -91,9 +93,11 @@ import RunSchedulingList from '../run-scheduling/run-sheduling-list';
 import LaunchCommand from '../../pipelines/launch/form/utilities/launch-command';
 import JobEstimatedPriceInfo from '../../special/job-estimated-price-info';
 import {CP_CAP_LIMIT_MOUNTS} from '../../pipelines/launch/form/utilities/parameters';
+import RunName from '../run-name';
 import VSActions from '../../versioned-storages/vs-actions';
 import MultizoneUrl from '../../special/multizone-url';
 import {parseRunServiceUrlConfiguration} from '../../../utils/multizone';
+import getMaintenanceDisabledButton from '../controls/get-maintenance-mode-disabled-button';
 
 const FIRE_CLOUD_ENVIRONMENT = 'FIRECLOUD';
 const DTS_ENVIRONMENT = 'DTS';
@@ -107,7 +111,7 @@ const MAX_KUBE_SERVICES_TO_DISPLAY = 3;
 })
 @localization.localizedComponent
 @runPipelineActions
-@inject('preferences', 'dtsList', 'multiZoneManager')
+@inject('preferences', 'dtsList', 'multiZoneManager', 'dockerRegistries', 'preferences')
 @VSActions.check
 @inject(({pipelineRun, routing, pipelines, multiZoneManager}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
@@ -149,7 +153,9 @@ class Logs extends localization.LocalizedReactComponent {
     openedPanels: [],
     shareDialogOpened: false,
     scheduleSaveInProgress: false,
-    showLaunchCommands: false
+    showLaunchCommands: false,
+    commitAllowed: false,
+    commitAllowedCheckedForDockerImage: undefined
   };
 
   componentDidMount () {
@@ -157,6 +163,7 @@ class Logs extends localization.LocalizedReactComponent {
     runTasks.fetch();
     runSchedule.fetch();
     this.updateShowOnlyActiveRuns();
+    this.checkCommitAllowed();
   }
 
   componentWillUnmount () {
@@ -175,6 +182,15 @@ class Logs extends localization.LocalizedReactComponent {
     }
 
     return (runSchedule.value || []).map(i => i);
+  }
+
+  @computed
+  get run () {
+    const {run} = this.props;
+    if (!run.loaded) {
+      return {};
+    }
+    return run.value;
   }
 
   @computed
@@ -224,6 +240,15 @@ class Logs extends localization.LocalizedReactComponent {
     return null;
   }
 
+  @computed
+  get maintenanceMode () {
+    const {preferences} = this.props;
+    if (preferences && preferences.loaded) {
+      return preferences.systemMaintenanceMode;
+    }
+    return false;
+  }
+
   get showActiveWorkersOnly () {
     const {run} = this.props;
     if (run.loaded) {
@@ -251,6 +276,25 @@ class Logs extends localization.LocalizedReactComponent {
     } catch (e) {
       message.error('Error exporting log', 5);
     }
+  };
+
+  checkCommitAllowed = () => {
+    const {
+      run,
+      dockerRegistries
+    } = this.props;
+    const {dockerImage} = run && run.loaded && run.value
+      ? run.value
+      : {};
+    this.setState({
+      commitAllowed: false,
+      commitAllowedCheckedForDockerImage: dockerImage
+    }, () => {
+      checkCommitAllowedForTool(dockerImage, dockerRegistries)
+        .then(allowed => this.setState({
+          commitAllowed: allowed
+        }));
+    });
   };
 
   stopPipeline = () => {
@@ -588,7 +632,13 @@ class Logs extends localization.LocalizedReactComponent {
                 <span
                   key={d.key}
                   style={d.additionalStyle}
-                  className={styles.instanceHeaderItem}>
+                  className={
+                    classNames(
+                      styles.instanceHeaderItem,
+                      'cp-run-instance-tag'
+                    )
+                  }
+                >
                   {d.value}
                 </span>
               );
@@ -899,11 +949,11 @@ class Logs extends localization.LocalizedReactComponent {
             onChange={resizeGraph}
             pane1Style={{display: 'flex', flexDirection: 'column'}}
             pane2Style={{display: 'flex', flexDirection: 'column'}}
+            resizerClassName="cp-split-panel-resizer"
             resizerStyle={{
-              width: 10,
-              margin: '0 -4px',
+              width: 8,
+              margin: 0,
               cursor: 'col-resize',
-              backgroundColor: 'transparent',
               boxSizing: 'border-box',
               backgroundClip: 'padding',
               zIndex: 1
@@ -981,11 +1031,11 @@ class Logs extends localization.LocalizedReactComponent {
           defaultSize={300}
           pane1Style={{display: 'flex', flexDirection: 'column'}}
           pane2Style={{display: 'flex', flexDirection: 'column'}}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
-            width: 10,
-            margin: '0 -4px',
+            width: 8,
+            margin: 0,
             cursor: 'col-resize',
-            backgroundColor: 'transparent',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1
@@ -1262,7 +1312,12 @@ class Logs extends localization.LocalizedReactComponent {
       return (
         <Link
           key={index}
-          className={styles.nestedRun}
+          className={
+            classNames(
+              styles.nestedRun,
+              'cp-run-nested-run-link'
+            )
+          }
           to={`/run/${run.id}`}
         >
           <StatusIcon run={run} small />
@@ -1300,6 +1355,13 @@ class Logs extends localization.LocalizedReactComponent {
         </td>
       </tr>
     );
+  };
+
+  refreshRun = () => {
+    if (this.props.run) {
+      return this.props.run.fetch();
+    }
+    return Promise.resolve();
   };
 
   render () {
@@ -1379,9 +1441,10 @@ class Logs extends localization.LocalizedReactComponent {
             <td>
               <ul>
                 {
-                  regionedUrls.map(({name, url}, index) =>
+                  regionedUrls.map(({name, url, sameTab}, index) =>
                     <li key={index}>
                       <MultizoneUrl
+                        target={sameTab ? '_top' : '_blank'}
                         configuration={url}
                         style={{display: 'inline-flex'}}
                         dropDownIconStyle={{marginTop: 5}}
@@ -1490,7 +1553,14 @@ class Logs extends localization.LocalizedReactComponent {
           );
         } else {
           pipelineLink = (
-            <span className={styles.deletedPipeline}>
+            <span
+              className={
+                classNames(
+                  styles.deletedPipeline,
+                  'cp-danger'
+                )
+              }
+            >
               {pipeline.name} ({pipeline.version})
               <Popover
                 content={(
@@ -1515,7 +1585,19 @@ class Logs extends localization.LocalizedReactComponent {
 
       Title = (
         <h1 className={styles.runTitle}>
-          <StatusIcon run={this.props.run.value} /><span>Run #{runId}{failureReason} - </span>
+          <StatusIcon
+            run={this.props.run.value}
+          />
+          <span>
+            <span>Run</span>
+            <RunName.AutoUpdate
+              run={this.props.run.value}
+              editable
+              onRefresh={this.refreshRun}
+            >
+              #{runId}
+            </RunName.AutoUpdate>
+            {failureReason} - </span>
           {pipelineLink}
           <span>{pipelineLink && ' -'} Logs</span>
         </h1>
@@ -1573,7 +1655,12 @@ class Logs extends localization.LocalizedReactComponent {
             <th>Estimated price:</th>
             <td>
               <JobEstimatedPriceInfo>
-                {adjustPrice(evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour).toFixed(2)}
+                {
+                  adjustPrice(
+                    evaluateRunDuration(this.props.run.value) * this.props.run.value.pricePerHour +
+                    (this.props.run.value.workersPrice || 0)
+                  ).toFixed(2)
+                }
                 $
               </JobEstimatedPriceInfo>
             </td>
@@ -1588,7 +1675,12 @@ class Logs extends localization.LocalizedReactComponent {
               {
                 sensitive ? (
                   <tr>
-                    <th colSpan={2} style={{color: '#ff5c33'}}>SENSITIVE</th>
+                    <th
+                      className="cp-sensitive"
+                      colSpan={2}
+                    >
+                      SENSITIVE
+                    </th>
                   </tr>
                 ) : undefined
               }
@@ -1702,7 +1794,7 @@ class Logs extends localization.LocalizedReactComponent {
           ) {
             ActionButton = (
               <a
-                style={{color: 'red'}}
+                className="cp-danger"
                 onClick={() => this.terminatePipeline()}
               >
                 TERMINATE
@@ -1724,7 +1816,7 @@ class Logs extends localization.LocalizedReactComponent {
             ) &&
             canStopRun(this.props.run.value)
           ) {
-            ActionButton = <a style={{color: 'red'}} onClick={() => this.stopPipeline()}>STOP</a>;
+            ActionButton = <a className="cp-danger" onClick={() => this.stopPipeline()}>STOP</a>;
           }
           break;
         case 'stopped':
@@ -1747,11 +1839,15 @@ class Logs extends localization.LocalizedReactComponent {
         switch (status.toLowerCase()) {
           case 'running':
             if (canPauseRun(this.props.run.value)) {
-              PauseResumeButton = <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
+              PauseResumeButton = this.maintenanceMode
+                ? getMaintenanceDisabledButton('PAUSE')
+                : <a onClick={this.showPauseConfirmDialog}>PAUSE</a>;
             }
             break;
           case 'paused':
-            PauseResumeButton = <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
+            PauseResumeButton = this.maintenanceMode
+              ? getMaintenanceDisabledButton('RESUME')
+              : <a onClick={this.showResumeConfirmDialog}>RESUME</a>;
             break;
           case 'pausing':
             PauseResumeButton = <span>PAUSING</span>;
@@ -1789,7 +1885,7 @@ class Logs extends localization.LocalizedReactComponent {
         );
       }
 
-      if (runIsCommittable(this.props.run.value)) {
+      if (this.state.commitAllowed && runIsCommittable(this.props.run.value)) {
         if (canCommitRun(this.props.run.value) && roleModel.executeAllowed(this.props.run.value)) {
           let previousStatus;
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
@@ -1809,11 +1905,17 @@ class Logs extends localization.LocalizedReactComponent {
           if (previousStatus) {
             CommitStatusButton = (
               <Row>
-                {previousStatus}. <a onClick={this.openCommitRunForm}>COMMIT</a>
+                {previousStatus}. {
+                  this.maintenanceMode
+                    ? getMaintenanceDisabledButton('COMMIT')
+                    : <a onClick={this.openCommitRunForm}>COMMIT</a>
+                }
               </Row>
             );
           } else {
-            CommitStatusButton = (<a onClick={this.openCommitRunForm}>COMMIT</a>);
+            CommitStatusButton = this.maintenanceMode
+              ? getMaintenanceDisabledButton('COMMIT')
+              : (<a onClick={this.openCommitRunForm}>COMMIT</a>);
           }
         } else {
           const commitDate = displayDate(this.props.run.value.lastChangeCommitTime);
@@ -1863,7 +1965,14 @@ class Logs extends localization.LocalizedReactComponent {
 
     return (
       <Card
-        className={styles.logCard}
+        className={
+          classNames(
+            styles.logCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{
           padding: 10,
           display: 'flex',
@@ -1913,7 +2022,6 @@ class Logs extends localization.LocalizedReactComponent {
             <br />
             {
               !this.props.run.value.sensitive &&
-              this.props.run.value.platform !== 'windows' &&
               this.props.vsActions.available && (
                 <Row type="flex" justify="end" className={styles.actionButtonsContainer}>
                   <VSActions
@@ -1961,7 +2069,8 @@ class Logs extends localization.LocalizedReactComponent {
           visible={this.state.showLaunchCommands}
           onClose={this.hideLaunchCommands}
         />
-      </Card>);
+      </Card>
+    );
   }
 
   componentWillReceiveProps (nextProps) {
@@ -1975,6 +2084,20 @@ class Logs extends localization.LocalizedReactComponent {
   }
 
   componentDidUpdate () {
+    const {
+      commitAllowedCheckedForDockerImage
+    } = this.state;
+    const {
+      run
+    } = this.props;
+    if (
+      run &&
+      run.loaded &&
+      run.value &&
+      run.value.dockerImage !== commitAllowedCheckedForDockerImage
+    ) {
+      this.checkCommitAllowed();
+    }
     if (this.language === null && this.props.run.loaded) {
       if (this.props.run.value.pipelineId && this.props.run.value.version) {
         this.language = pipelines.getLanguage(

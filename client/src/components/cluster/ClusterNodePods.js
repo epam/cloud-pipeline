@@ -17,6 +17,7 @@
 import React, {Component} from 'react';
 import {Alert, Badge, Table, Row, Spin} from 'antd';
 import {observer} from 'mobx-react';
+import classNames from 'classnames';
 import styles from './ClusterNode.css';
 
 @observer
@@ -136,7 +137,9 @@ export default class ClusterNodePods extends Component {
         dataIndex: 'name',
         key: 'name',
         title: 'Name',
-        render: (text, record) => record.isContainer ? <span><span className={styles.podContainerIndicator}>CONTAINER</span>{text}</span> : text
+        render: (text, record) => record.isContainer
+          ? (<span><span className={classNames(styles.podContainerIndicator, 'cp-tag')}>CONTAINER</span>{text}</span>)
+          : text
       },
       {
         dataIndex: 'namespace',
@@ -249,7 +252,7 @@ export default class ClusterNodePods extends Component {
         loading={isLoading}
         pagination={{pageSize: 20}}
         bordered
-        rowClassName={(row, index) => index % 2 === 0 ? styles.tableRowEven : styles.tableRowOdd}
+        rowClassName={(row, index) => index % 2 === 0 ? '' : 'cp-cluster-node-even-row'}
         size="small"
       />
     );

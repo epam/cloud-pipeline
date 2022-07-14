@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ import static com.codeborne.selenide.Selectors.byClassName;
 import static com.codeborne.selenide.Selectors.byCssSelector;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selectors.byText;
+import static com.codeborne.selenide.Selectors.byValue;
 import static com.codeborne.selenide.Selectors.byXpath;
 import static com.codeborne.selenide.Selectors.withText;
 import static com.codeborne.selenide.Selenide.$;
@@ -55,6 +56,7 @@ import static java.util.stream.Collectors.toList;
 import static org.openqa.selenium.By.className;
 import static org.openqa.selenium.By.tagName;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -78,7 +80,8 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
             entry(SHOW_METADATA, context().find(byId("show-metadata-button"))),
             entry(PREV_PAGE, context().find(byId("prev-page-button"))),
             entry(NEXT_PAGE, context().find(byId("next-page-button"))),
-            entry(GENERATE_URL, context().find(byId("bulk-url-button")))
+            entry(GENERATE_URL, context().find(byId("bulk-url-button"))),
+            entry(HIDE_METADATA, context().find(byId("hide-metadata-button")))
     );
 
     public static By browserItem(final String name) {
@@ -217,7 +220,12 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
-    private SelenideElement elementRow(String elementName) {
+    public StorageContentAO validateElementByPatternIsPresent(String elementNamePattern) {
+        $$(className("ant-table-row")).findBy(matchText(elementNamePattern)).shouldBe(visible);
+        return this;
+    }
+
+    public SelenideElement elementRow(String elementName) {
         return $$(className("ant-table-row")).findBy(textCaseSensitive(elementName));
     }
 
@@ -274,6 +282,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public EditStoragePopUpAO clickEditStorageButton() {
+        get(REFRESH).shouldBe(enabled);
         click(EDIT_STORAGE);
         return new EditStoragePopUpAO();
     }
@@ -424,6 +433,15 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
     }
 
     public MetadataSectionAO showMetadata() {
+        int attempt = 0;
+        int maxAttempts = 3;
+        while (get(SHOW_METADATA).is(not(visible)) && attempt < maxAttempts) {
+            if (get(HIDE_METADATA).isDisplayed()) {
+                return new MetadataSectionAO(this);
+            }
+            sleep(1, SECONDS);
+            attempt++;
+        }
         click(SHOW_METADATA);
         return new MetadataSectionAO(this);
     }
@@ -493,6 +511,18 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         return this;
     }
 
+    public String findFileSizeByPattern(String filename) {
+        return Optional.ofNullable(filename)
+                .map(fileName -> $(byClassName("ant-table-body"))
+                        .findAll(byClassName("browser__file"))
+                        .findBy(matchText(filename))
+                        .find(byCssSelector("td:nth-child(4)"))
+                        .shouldBe(visible)
+                        .getText()
+                )
+                .orElseThrow(() -> new NoSuchElementException(format("%s file was not found.", filename)));
+    }
+
     public class FileAO extends ElementAO<FileAO> {
 
         private final String fileName;
@@ -540,6 +570,11 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
 
         public FileAO validateHasSize(long expectedSize) {
             assertEquals(size(), expectedSize);
+            return this;
+        }
+
+        public FileAO validateHasNotSize(long expectedSize) {
+            assertNotEquals(size(), expectedSize);
             return this;
         }
 
@@ -653,6 +688,7 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public StorageContentAO removeAllSelected() {
+            StorageContentAO.this.ensureVisible(CLEAR_SELECTION);
             StorageContentAO.this.click(REMOVE_ALL);
 
             $$(byClassName("ant-modal-content"))
@@ -693,7 +729,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
                 entry(ENABLE_VERSIONING, $(withText("Enable versioning"))),
                 entry(MOUNT_POINT, $(byId("mountPoint"))),
                 entry(MOUNT_OPTIONS, $(byId("mountOptions"))),
-                entry(BACKUP_DURATION, $(byId("backupDuration")))
+                entry(BACKUP_DURATION, $(byId("backupDuration"))),
+                entry(DISABLE_MOUNT, context().find(byText("Disable mount"))
+                        .parent().find(byClassName("ant-checkbox"))),
+                entry(ALLOW_MOUNT, $(byValue("All available docker images")))
         );
 
         public AbstractEditStoragePopUpAO(PARENT_AO parentAO) {
@@ -780,6 +819,10 @@ public class StorageContentAO implements AccessObject<StorageContentAO> {
         }
 
         public EditStoragePopUpAO editForNfsMount() {
+            if ($(byClassName("ant-modal-header")).isDisplayed() &&
+                    !$(byClassName("edit-storage-button")).isDisplayed()) {
+                return this;
+            }
             $(byClassName("edit-storage-button")).shouldBe(enabled).click();
             return this;
         }

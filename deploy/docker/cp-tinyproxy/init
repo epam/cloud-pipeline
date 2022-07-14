@@ -24,6 +24,8 @@ CP_TP_INTERNAL_PORT="${CP_TP_INTERNAL_PORT:-3128}"
 CP_TP_VIA_NAME="${CP_PREF_UI_PIPELINE_DEPLOYMENT_NAME:-CloudPipeline}-tinyproxy"
 CP_TP_CONFIG_PATH="${CP_TP_CONFIG_PATH:-/opt/tinyproxy/tinyproxy.conf}"
 CP_TP_FILTER_PATH="${CP_TP_FILTER_PATH:-$(dirname $CP_TP_CONFIG_PATH)/filter.conf}"
+CP_TP_TIMEOUT="${CP_TP_TIMEOUT:-60}"
+CP_TP_LOG_LEVEL="${CP_TP_LOG_LEVEL:-Error}"
 
 CP_TP_MAX_CLIENTS="${CP_TP_MAX_CLIENTS:-100}"
 CP_TP_MIN_SPARE_SERVERS="${CP_TP_MIN_SPARE_SERVERS:-5}"
@@ -38,12 +40,12 @@ Group root
 Port $CP_TP_INTERNAL_PORT
 Listen 0.0.0.0
 BindSame yes
-Timeout 600
+Timeout $CP_TP_TIMEOUT
 
 DefaultErrorFile "/opt/tinyproxy/logs/default.html"
-StatFile "/opt/tinyproxy/logs/stats.html"
+StatFile "/opt/tinyproxy/stats.json"
 Logfile "/opt/tinyproxy/logs/tinyproxy.log"
-LogLevel Info
+LogLevel $CP_TP_LOG_LEVEL
 PidFile "/var/run/tinyproxy/tinyproxy.pid"
 
 MaxClients $CP_TP_MAX_CLIENTS
@@ -74,6 +76,21 @@ if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
     done
     echo "FilterDefaultDeny Yes" >> "$CP_TP_CONFIG_PATH"
     echo "Filter \"$CP_TP_FILTER_PATH\"" >> "$CP_TP_CONFIG_PATH"
+fi
+
+if [ "$CP_TP_RESTRICTED_DESTINATION" ]; then
+    if [ "$CP_TP_ALLOWED_DESTINATION" ]; then
+        echo "CP_TP_RESTRICTED_DESTINATION cannot be mixed with CP_TP_ALLOWED_DESTINATION ('allowed' destinations take precedence)"
+    else
+        echo "Setting proxy restricted destinations"
+        IFS=',' read -ra _restricted_dests <<< "$CP_TP_RESTRICTED_DESTINATION"
+        for _d in "${_restricted_dests[@]}"; do
+            echo "$_d" >> $CP_TP_FILTER_PATH
+            echo "Entry added: $_d"
+        done
+        echo "FilterDefaultDeny No" >> "$CP_TP_CONFIG_PATH"
+        echo "Filter \"$CP_TP_FILTER_PATH\"" >> "$CP_TP_CONFIG_PATH"
+    fi
 fi
 
 tinyproxy -c "$CP_TP_CONFIG_PATH"
@@ -116,7 +133,7 @@ EOF
             _dest_host="\$backend$_source_port"
         fi
 
-        echo "server { listen $_source_port; proxy_pass ${_dest_host}:${_dest_port} ${_entry_protocol}; }" >> "$CP_TP_NGINX_CONFIG"
+        echo "server { listen ${_source_port} ${_entry_protocol}; proxy_pass ${_dest_host}:${_dest_port}; }" >> "$CP_TP_NGINX_CONFIG"
         echo "Entry added: ${_source_port}->${_dest_host}:${_dest_port}"
     done
 
@@ -134,13 +151,22 @@ if [ -z "$CP_TP_CLUSTER_RESOLVER" ]; then
     echo "Cluster resolver is NOT set by CP_TP_CLUSTER_RESOLVER and CP_PREF_CLUSTER_PROXIES_DNS_POST, defaulting to $CP_TP_CLUSTER_RESOLVER"
 fi
 
+CP_TP_NGINX_ACCESS_LOG="${CP_TP_NGINX_ACCESS_LOG:-false}"
+CP_TP_NGINX_ACCESS_LOG_DISABLED="access_log off;"
+if [ "$CP_TP_NGINX_ACCESS_LOG" == "true" ]; then
+    CP_TP_NGINX_ACCESS_LOG_DISABLED=""
+fi
+
+CP_TP_NGINX_LOG_DIR="${CP_TP_NGINX_LOG_DIR:-/opt/tinyproxy/logs/stream}"
+mkdir -p "$CP_TP_NGINX_LOG_DIR"
+
 if [ "$CP_TP_TCP_DEST" ] || [ "$CP_TP_UDP_DEST" ]; then
 
 # Add general nginx config
 cat > "$CP_TP_NGINX_CONFIG" <<EOF
 user nginx;
 worker_processes auto;
-error_log /opt/tinyproxy/nginx/logs/error.log;
+error_log $CP_TP_NGINX_LOG_DIR/error.log;
 pid /run/nginx.pid;
 
 include /usr/share/nginx/modules/*.conf;
@@ -150,6 +176,14 @@ events {
 }
 
 stream {
+    log_format basic '\$remote_addr [\$time_local] '
+                    '\$protocol \$status \$bytes_sent \$bytes_received '
+                    '\$session_time "\$upstream_addr" '
+                    '"\$upstream_bytes_sent" "\$upstream_bytes_received" "\$upstream_connect_time"';
+
+    access_log $CP_TP_NGINX_LOG_DIR/access.log basic;
+    $CP_TP_NGINX_ACCESS_LOG_DISABLED
+
     resolver $CP_TP_CLUSTER_RESOLVER;
     resolver_timeout 5s;
     include $CP_TP_NGINX_DNS_MAPS/*.conf;

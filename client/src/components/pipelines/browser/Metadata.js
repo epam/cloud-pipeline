@@ -41,12 +41,11 @@ import {
   ContentMetadataPanel,
   CONTENT_PANEL_KEY,
   METADATA_PANEL_KEY
-} from '../../special/splitPanel/SplitPanel';
+} from '../../special/splitPanel';
 import styles from './Browser.css';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
 import MetadataPanel from '../../special/metadataPanel/MetadataPanel';
 import DropdownWithMultiselect from '../../special/DropdownWithMultiselect';
-import AdaptedLink from '../../special/AdaptedLink';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
@@ -59,7 +58,7 @@ import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityU
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import MetadataEntityDeleteFromProject
-  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
 import FolderProject from '../../../models/folders/FolderProject';
@@ -67,14 +66,29 @@ import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import Breadcrumbs from '../../special/Breadcrumbs';
+import {MetadataSampleSheetValue} from '../../special/sample-sheet';
 import displayDate from '../../../utils/displayDate';
 import HiddenObjects from '../../../utils/hidden-objects';
 import RangeDatePicker from './metadata-controls/RangeDatePicker';
 import FilterControl from './metadata-controls/FilterControl';
 import parseSearchQuery from './metadata-controls/parse-search-query';
-import getDefaultColumns from './metadata-controls/get-default-columns';
+import getDefaultMetadataProperties, {
+  METADATA_KEYS
+} from './metadata-controls/get-default-metadata-properties';
+import PredefinedFilterButton from './metadata-controls/predefined-filter-button';
 import getPathParameters from './metadata-controls/get-path-parameters';
 import * as autoFillEntities from './metadata-controls/auto-fill-entities';
+import ngsProject, {ngsProjectMachineRuns, ngsProjectSamples} from '../../../utils/ngs-project';
+import * as metadataFilterUtilities from './metadata-controls/metadata-filters';
+import NGSMetadataUpdateSampleSheet from '../../../models/metadata/NGSMetadataUpdateSampleSheet';
+import NGSMetadataDeleteSampleSheet from '../../../models/metadata/NGSMetadataDeleteSampleSheet';
+import RunsAttribute, {isRunsValue} from '../../special/metadata/special/runs-attribute';
+import AttributeValue from '../../special/metadata/special/attribute-value';
+import {
+  getConditionStyles,
+  getPredefinedFilterForItem,
+  parseScheme
+} from './metadata-controls/predefined-filter-utilities';
 
 const AutoFillEntitiesMarker = autoFillEntities.AutoFillEntitiesMarker;
 const AutoFillEntitiesActions = autoFillEntities.AutoFillEntitiesActions;
@@ -113,6 +127,16 @@ function getDefaultColumnName (displayName) {
   return unmapColumnName(displayName);
 }
 
+function getDefaultSorting (sorting = [], columns = []) {
+  return sorting.map(rule => {
+    const [field, order = 'ASC'] = rule.trim().split(':');
+    return {
+      field,
+      desc: /^desc$/i.test(order)
+    };
+  }).filter(rule => columns.find(col => mapColumnName(col) === rule.field));
+}
+
 function getColumnTitle (key) {
   if (key === 'createdDate') {
     return 'Created Date';
@@ -143,10 +167,25 @@ function makeCurrentOrderSort (array) {
 @inject('preferences', 'dataStorages')
 @HiddenObjects.checkMetadataFolders(p => (p.params || p).id)
 @HiddenObjects.checkMetadataClassesWithParent(p => (p.params || p).id, p => (p.params || p).class)
-@inject(({folders, pipelinesLibrary, authenticatedUserInfo, preferences, dataStorages}, params) => {
+@inject((
+  {
+    folders,
+    pipelinesLibrary,
+    authenticatedUserInfo,
+    preferences,
+    dataStorages,
+    routing
+  },
+  params
+) => {
   let componentParameters = params;
+  let filters = [];
   if (params.params) {
+    // Router renderer
     componentParameters = params.params;
+    filters = routing && routing.location
+      ? metadataFilterUtilities.parse(routing.location.query)
+      : [];
   }
   return {
     folders,
@@ -159,9 +198,13 @@ function makeCurrentOrderSort (array) {
     authenticatedUserInfo,
     preferences,
     dataStorages,
-    pipelinesLibrary
+    pipelinesLibrary,
+    filters
   };
 })
+@ngsProject
+@ngsProjectMachineRuns
+@ngsProjectSamples
 @observer
 export default class Metadata extends React.Component {
   static propTypes = {
@@ -213,8 +256,12 @@ export default class Metadata extends React.Component {
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
     currentMetadata: [],
-    defaultColumnsFetched: false,
-    defaultColumnsFetching: false
+    currentMetadataConditions: [],
+    predefinedFilters: [],
+    predefinedConditions: [],
+    defaultOrderBy: [],
+    defaultMetadataPropertiesFetched: false,
+    defaultMetadataPropertiesFetching: false
   };
 
   uploadButton;
@@ -303,6 +350,20 @@ export default class Metadata extends React.Component {
     return null;
   }
 
+  get predefinedFilters () {
+    const {predefinedFilters = []} = this.state;
+    const {metadataClass} = this.props;
+    return predefinedFilters
+      .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
+  }
+
+  get predefinedConditions () {
+    const {predefinedConditions = []} = this.state;
+    const {metadataClass} = this.props;
+    return predefinedConditions
+      .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
+  }
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -376,10 +437,10 @@ export default class Metadata extends React.Component {
     }
   };
 
-  handleFilterApplied = (key, dataArray) => {
+  handleFilterApplied = (key, fieldFilter) => {
     const filterModel = {...this.state.filterModel};
-    if (key && dataArray && dataArray.length) {
-      const filterObj = {key: unmapColumnName(key), values: dataArray};
+    if (key && !!fieldFilter) {
+      const filterObj = {key: unmapColumnName(key), values: fieldFilter};
       const currentFilterIndex = filterModel.filters
         .findIndex(filter => filter.key === unmapColumnName(key));
       if (currentFilterIndex > -1) {
@@ -474,7 +535,13 @@ export default class Metadata extends React.Component {
         currentMetadata = this.state.selectedItems.slice(firstRow, lastRow);
       }
     }
-    this.setState({loading: false, currentMetadata});
+    const conditions = currentMetadata
+      .map(item => getPredefinedFilterForItem(item, this.predefinedConditions));
+    this.setState({
+      loading: false,
+      currentMetadata,
+      currentMetadataConditions: conditions
+    });
   };
 
   sortSelectedItems = () => {
@@ -519,7 +586,7 @@ export default class Metadata extends React.Component {
   };
 
   renderFilterButton = (key) => {
-    if (this.state.selectedItemsAreShowing) {
+    if (this.state.selectedItemsAreShowing || this.isSampleSheetColumn(key)) {
       return null;
     }
     const handleControlVisibility = (visible) => {
@@ -534,21 +601,32 @@ export default class Metadata extends React.Component {
       endDateTo
     } = filterModel;
     const filter = filters.find(filter => filter.key === unmapColumnName(key));
-    const values = filter ? (filter.values || []) : [];
+    const values = filter
+      ? filter.values
+      : undefined;
     const button = (
       <Button
         shape="circle"
         onClick={(e) => e.stopPropagation()}
+        className={classNames(
+          this.filterApplied(key)
+            ? 'cp-primary'
+            : 'cp-text-not-important',
+          'cp-transparent-background'
+        )}
         style={{
           marginLeft: 5,
-          border: 'none',
-          color: (
-            this.filterApplied(key)
-              ? '#108ee9' : 'grey'
-          )
+          border: 'none'
         }}
       >
-        <Icon type="filter" />
+        <Icon
+          type="filter"
+          className={
+            classNames(
+              {'cp-primary': !!values || (key === 'createdDate' && (startDateFrom || endDateTo))}
+            )
+          }
+        />
       </Button>);
 
     if (key === 'createdDate') {
@@ -574,37 +652,6 @@ export default class Metadata extends React.Component {
       </FilterControl>
     );
   }
-
-  renderDataStorageLinks = (data) => {
-    const urls = [];
-    let title = '';
-    if (data.dataStorageLinks) {
-      for (let i = 0; i < data.dataStorageLinks.length; i++) {
-        const link = data.dataStorageLinks[i];
-        let url = `/storage/${link.dataStorageId}`;
-        const parts = (link.absolutePath || link.path).split('/');
-        const name = parts[parts.length - 1];
-        title = `${title} ${name}`;
-        if (link.path && link.path.length) {
-          url = `/storage/${link.dataStorageId}?path=${link.path}`;
-        }
-        urls.push((
-          <AdaptedLink
-            key={i}
-            to={url}
-            location={this.props.router ? this.props.router.location : {}}>{name}</AdaptedLink>
-        ));
-      }
-      return <span title={title}>{urls.map((url, index) => {
-        return (
-          <Row key={index}>
-            {url}
-          </Row>
-        );
-      })}</span>;
-    }
-    return <span title={data.value}>{data.value}</span>;
-  };
 
   onDeleteSelectedItems = () => {
     const removeConfiguration = async () => {
@@ -767,11 +814,105 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onArrayReferencesClick = (event, key, data) => {
-    const selectedItem = {};
-    selectedItem[key] = {type: data.type, value: data.value};
-    this.setState({metadata: true, selectedItem: selectedItem});
+  onEditSampleSheet = async (machineRun, sampleSheet) => {
+    if (machineRun && machineRun.rowKey && machineRun.rowKey.value) {
+      const hide = message.loading('Updating sample sheet...', 0);
+      try {
+        const machineRunId = machineRun.rowKey.value;
+        const {folderId} = this.props;
+        const request = new NGSMetadataUpdateSampleSheet();
+        await request
+          .send({
+            folderId: Number(folderId),
+            machineRunId: Number(machineRunId),
+            content: sampleSheet ? btoa(sampleSheet) : btoa('')
+          });
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        await this.loadData();
+      } catch (e) {
+        message.error(e.message, 5);
+      } finally {
+        hide();
+      }
+    }
+  };
+
+  onRemoveSampleSheet = async (machineRun) => {
+    if (machineRun && machineRun.rowKey && machineRun.rowKey.value) {
+      const hide = message.loading('Removing sample sheet and associated samples...', 0);
+      try {
+        const machineRunId = machineRun.rowKey.value;
+        const {folderId} = this.props;
+        const request = new NGSMetadataDeleteSampleSheet(folderId, machineRunId);
+        await request.send({});
+        if (request.error) {
+          throw new Error(request.error);
+        }
+        await this.loadData();
+      } catch (e) {
+        message.error(e.message, 5);
+      } finally {
+        hide();
+      }
+    }
+  };
+
+  onArrayReferencesClick = (event, key, data, referenceType, item) => {
+    const {
+      ngsProjectInfo,
+      ngsProjectMachineRuns,
+      ngsProjectSamples
+    } = this.props;
     event.stopPropagation();
+    const defaultAction = () => {
+      const selectedItem = {};
+      selectedItem[key] = {type: data.type, value: data.value};
+      this.setState({metadata: true, selectedItem: selectedItem});
+    };
+    if (
+      ngsProjectInfo.isNGSProject &&
+      ngsProjectMachineRuns.isMachineRunsMetadataClass &&
+      item &&
+      item.ID &&
+      item.ID.value
+    ) {
+      ngsProjectInfo
+        .fetchPreferences()
+        .then(() => {
+          if (
+            ngsProjectInfo.isSampleClassName(referenceType)
+          ) {
+            return ngsProjectSamples.getMachineRunField(referenceType);
+          }
+          return Promise.reject(new Error('Not a NGS project'));
+        })
+        .then(machineRunFieldInfo => {
+          if (machineRunFieldInfo) {
+            const {
+              className,
+              fieldName
+            } = machineRunFieldInfo;
+            const {
+              router,
+              folderId
+            } = this.props;
+            const query = metadataFilterUtilities
+              .build([{key: fieldName, values: [item.ID.value]}]);
+            if (query) {
+              router.push(`/folder/${folderId}/metadata/${className}?${query}`);
+            } else {
+              router.push(`/folder/${folderId}/metadata/${className}`);
+            }
+            return Promise.resolve();
+          }
+          return Promise.reject(new Error('Machine run field is missing'));
+        })
+        .catch(() => defaultAction());
+    } else {
+      defaultAction();
+    }
   };
 
   onReferenceTypesClick = async (event, data) => {
@@ -937,7 +1078,8 @@ export default class Metadata extends React.Component {
 
   onRowClick = (item) => {
     const [selectedItem] =
-      this.state.currentMetadata.filter(column => column.rowKey === item.rowKey);
+      this.state.currentMetadata
+        .filter(column => column.rowKey === item.rowKey);
     if (this.state.selectedItem && this.state.selectedItem.rowKey === selectedItem.rowKey) {
       this.setState({selectedItem: null, metadata: false});
     } else {
@@ -954,7 +1096,7 @@ export default class Metadata extends React.Component {
     filterModel.searchQueries = [];
     this.setState(
       {
-        filterModel,
+        filterModel: {...filterModel},
         searchQuery: undefined
       },
       () => {
@@ -1201,6 +1343,11 @@ export default class Metadata extends React.Component {
       return;
     }
     const {e, rowInfo, column: columnInfo} = opts;
+    const selectable = columnInfo.selectable === undefined || columnInfo.selectable;
+    if (!selectable) {
+      // cell is not selectable, ignore it
+      return;
+    }
     if (columnInfo.index === undefined) {
       // selection cell, ignore it
       return;
@@ -1285,7 +1432,11 @@ export default class Metadata extends React.Component {
             currentMetadata.splice(index, 1, item);
           }
         });
-        this.setState({currentMetadata});
+        this.setState({
+          currentMetadata,
+          currentMetadataConditions: currentMetadata
+            .map(item => getPredefinedFilterForItem(item, this.predefinedConditions))
+        });
         return Promise.resolve();
       })
       .catch(e => message.error(e.message, 5))
@@ -1324,7 +1475,7 @@ export default class Metadata extends React.Component {
         row: index + dataItemFrom
       }));
       const columns = tableColumns
-        .filter(column => column.selected)
+        .filter(column => column.selected && !this.isSampleSheetColumn(column.key))
         .map((column, index) => ({key: mapColumnName(column), column: index}));
       const actions = autoFillEntities.buildAutoFillActions(
         elements,
@@ -1376,8 +1527,11 @@ export default class Metadata extends React.Component {
     const {cellsSelection: selection, hoveredCell} = this.state;
     const row = rowInfo.index;
     const column = columnInfo.index;
+    const selectable = columnInfo.selectable === undefined || columnInfo.selectable;
     if (!selection) {
-      if (
+      if (!selectable) {
+        this.setState({hoveredCell: undefined});
+      } else if (
         column !== undefined && (
           !hoveredCell ||
           hoveredCell.column !== column ||
@@ -1390,9 +1544,13 @@ export default class Metadata extends React.Component {
       }
       return;
     }
-    if ((!selection.selecting && !selection.spreading)) {
+    if (!selection.selecting && !selection.spreading) {
       const cellSelected = autoFillEntities.cellIsSelected(selection, column, row);
-      if (cellSelected && !!hoveredCell) {
+      if (!selectable) {
+        this.setState({
+          hoveredCell: undefined
+        });
+      } else if (cellSelected && !!hoveredCell) {
         this.setState({
           hoveredCell: undefined
         });
@@ -1500,35 +1658,34 @@ export default class Metadata extends React.Component {
       const left = hovered ||
         autoFillEntities.isLeftSideCell(selectionArea, column, row) ||
         autoFillEntities.isLeftSideCell(spreadingArea, column, row);
-
-      let backgroundColor = 'initial';
-      if (spreadSelected) {
-        backgroundColor = 'rgba(16, 142, 233, 0.2)';
-      } else if (selected || hovered) {
-        backgroundColor = 'rgba(16, 142, 233, 0.1)';
-      }
-
-      return {
-        border: '1px solid transparent',
-        position: 'relative',
-        borderTopColor: top ? '#108ee9' : 'transparent',
-        borderBottomColor: bottom ? '#108ee9' : 'transparent',
-        borderLeftColor: left ? '#108ee9' : 'transparent',
-        borderRightColor: right ? '#108ee9' : 'rgba(0, 0, 0, 0.1)',
-        backgroundColor
-      };
+      return classNames({
+        [styles.cell]: true,
+        'cp-library-metadata-spread-top-cell': top,
+        'cp-library-metadata-spread-bottom-cell': bottom,
+        'cp-library-metadata-spread-right-cell': right,
+        'cp-library-metadata-spread-left-cell': left,
+        'cp-library-metadata-spread-selected': spreadSelected,
+        'cp-library-metadata-spread-cell-hovered': hovered,
+        'cp-library-metadata-spread-cell-selected': selected
+      });
     };
+
     const renderTable = () => {
       return [
         <ReactTable
           key="table"
-          className={`${styles.metadataTable} -striped -highlight`}
+          className={`${styles.metadataTable} cp-library-metadata-table -striped -highlight`}
           sortable={false}
           minRows={0}
           columns={this.tableColumns}
           data={this.state.currentMetadata}
           getTableProps={() => ({
-            style: {overflowY: 'hidden', userSelect: 'none', borderCollapse: 'collapse'},
+            style: {
+              overflowY: 'hidden',
+              userSelect: 'none',
+              borderCollapse: 'collapse',
+              borderRadius: 5
+            },
             onMouseOut: this.clearHovering
           })}
           getTrGroupProps={() => ({style: {borderBottom: 'none'}})}
@@ -1545,12 +1702,12 @@ export default class Metadata extends React.Component {
               }
               if (column.id === 'selection') {
                 this.onItemSelect(rowInfo.row._original);
-              } else {
+              } else if (column.selectable === undefined || column.selectable) {
                 this.onRowClick(rowInfo.row._original);
               }
               this.clearSelection();
             },
-            style: getCellStyle(column.index, rowInfo.index)
+            className: getCellStyle(column.index, rowInfo.index)
           })}
           getResizerProps={() => ({style: {width: '6px', right: '-3px'}})}
           PadRowComponent={
@@ -1560,7 +1717,21 @@ export default class Metadata extends React.Component {
               </div>
           }
           showPagination={false}
-          NoDataComponent={() => <div className={`${styles.noData}`}>No rows found</div>} />,
+          NoDataComponent={
+            () => (
+              <div
+                className={
+                  classNames(
+                    styles.noData,
+                    'cp-library-metadata-panel-placeholder'
+                  )
+                }
+              >
+                No rows found
+              </div>
+            )
+          }
+        />,
         <Row key="pagination" type="flex" justify="end" style={{marginTop: 10}}>
           <Pagination
             size="small"
@@ -1640,10 +1811,12 @@ export default class Metadata extends React.Component {
 
     return (
       <ContentMetadataPanel
+        className={'cp-transparent-background'}
         style={{flex: 1, overflow: 'auto'}}
         onPanelClose={onPanelClose}>
         <div key={CONTENT_PANEL_KEY}>
           {this.renderTableActions()}
+          {this.renderPredefinedFilters()}
           {renderTable()}
           {renderConfigurationBrowser()}
           {renderCopyEntitiesDialog()}
@@ -1682,6 +1855,7 @@ export default class Metadata extends React.Component {
                 this.props.onReloadTree(true);
               }
             }}
+            pathAttributes={this.currentClassEntityPathFields.map(o => o.name)}
           />
         }
       </ContentMetadataPanel>
@@ -1705,7 +1879,7 @@ export default class Metadata extends React.Component {
           this.props.onReloadTree(!this.props.folder.value.parentId);
         }
         hide();
-        this.props.router.push(`/metadataFolder/${this.props.folderId}`);
+        this.props.router.push(`/folder/${this.props.folderId}/metadata`);
       }
     };
     Modal.confirm({
@@ -1802,8 +1976,7 @@ export default class Metadata extends React.Component {
       menuItems.push((
         <MenuItem
           key={Actions.deleteClass}
-          className={classNames(styles.menuItem, Actions.deleteClass)}
-          style={{color: 'red'}}
+          className={classNames(styles.menuItem, Actions.deleteClass, 'cp-danger')}
         >
           <Icon
             type="delete"
@@ -1867,10 +2040,24 @@ export default class Metadata extends React.Component {
     );
   };
 
+  isSampleSheetColumn = (key) => {
+    const {
+      ngsProjectInfo,
+      ngsProjectMachineRuns
+    } = this.props;
+    return ngsProjectInfo.isNGSProject &&
+      ngsProjectMachineRuns.isMachineRunsMetadataClass &&
+      ngsProjectMachineRuns.isSampleSheetValue(key);
+  };
+
   get tableColumns () {
+    const {currentMetadataConditions = []} = this.state;
     const onHeaderClicked = (e, key) => {
       if (e) {
         e.stopPropagation();
+      }
+      if (this.isSampleSheetColumn(key)) {
+        return;
       }
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       if (!orderBy) {
@@ -1884,7 +2071,7 @@ export default class Metadata extends React.Component {
     const renderTitle = (key) => {
       const [orderBy] = this.state.filterModel.orderBy.filter(f => f.field === key);
       let icon, orderNumber;
-      if (orderBy) {
+      if (orderBy && !this.isSampleSheetColumn(key)) {
         let iconStyle = {fontSize: 10, marginRight: 5};
         if (this.state.filterModel.orderBy.length > 1) {
           const number = this.state.filterModel.orderBy.indexOf(orderBy) + 1;
@@ -1936,13 +2123,27 @@ export default class Metadata extends React.Component {
     const cellWrapper = (props, reactElementFn) => {
       const {column, index} = props;
       const item = props.original;
-      const className = getCellClassName(item, styles.metadataColumnCell);
+      const cellClassName = getCellClassName(item, styles.metadataColumnCell);
+      const selected = cellClassName.search('selected') > -1;
+      const condition = currentMetadataConditions[index];
+      const {
+        style,
+        className: filterClassName
+      } = getConditionStyles(condition, selected);
+      const className = classNames(
+        cellClassName,
+        filterClassName,
+        {
+          'cp-library-metadata-table-cell-selected': selected
+        }
+      );
       return (
         <div
           className={className}
           style={{
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            ...style
           }}
         >
           <AutoFillEntitiesMarker
@@ -1970,10 +2171,9 @@ export default class Metadata extends React.Component {
         width: 30,
         style: {
           cursor: 'pointer',
-          padding: 0,
-          borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+          padding: 0
         },
-        className: styles.metadataCheckboxCell,
+        className: classNames(styles.metadataCheckboxCell, 'cp-library-metadata-table-cell'),
         Cell: (props) => cellWrapper(props, () => {
           const item = props.value;
           return (
@@ -1989,13 +2189,36 @@ export default class Metadata extends React.Component {
           accessor: key,
           index,
           style: {
-            cursor: this.props.readOnly ? 'default' : 'cell',
-            padding: 0,
-            borderRight: '1px solid rgba(0, 0, 0, 0.1)'
+            cursor: this.props.readOnly || this.isSampleSheetColumn(key)
+              ? 'default'
+              : 'cell',
+            padding: 0
           },
+          ...(
+            this.isSampleSheetColumn(key)
+              ? {width: 280, resizable: false, selectable: false}
+              : {}
+          ),
+          className: 'cp-library-metadata-table-cell',
           Header: () => renderTitle(key),
           Cell: props => cellWrapper(props, () => {
             const data = props.value;
+            const item = props.original;
+            const condition = currentMetadataConditions[props.index];
+            const icon = index === 0 && condition && condition.scheme && condition.scheme.icon
+              ? (<Icon type={condition.scheme.icon} style={{marginRight: 5}} />)
+              : undefined;
+            if (this.isSampleSheetColumn(key)) {
+              return (
+                <MetadataSampleSheetValue
+                  value={data ? data.value : undefined}
+                  onChange={content => this.onEditSampleSheet(item, content)}
+                  onRemove={() => this.onRemoveSampleSheet(item)}
+                >
+                  {icon}
+                </MetadataSampleSheetValue>
+              );
+            }
             if (data) {
               if (data.type.toLowerCase().startsWith('array')) {
                 let referenceType = key;
@@ -2009,34 +2232,61 @@ export default class Metadata extends React.Component {
                   count = JSON.parse(data.value).length;
                 } catch (___) { }
                 let value = `${count} ${referenceType}(s)`;
-                return <a
-                  title={value}
-                  className={styles.actionLink}
-                  onClick={(e) => this.onArrayReferencesClick(e, key, data)}>
-                  {value}
-                </a>;
-              } else if (data.type.toLowerCase().endsWith(':id')) {
+                return (
+                  <a
+                    title={value}
+                    className={styles.actionLink}
+                    onClick={(e) => this.onArrayReferencesClick(
+                      e,
+                      key,
+                      data,
+                      referenceType,
+                      item
+                    )}
+                  >
+                    {icon}{value}
+                  </a>
+                );
+              }
+              if (data.type.toLowerCase().endsWith(':id')) {
                 return <a
                   title={data.value}
                   className={styles.actionLink}
                   onClick={(e) => this.onReferenceTypesClick(e, data)}>
-                  {data.value}
+                  {icon}{data.value}
                 </a>;
-              } else if (data.type.toLowerCase() === 'path') {
-                return this.renderDataStorageLinks(data);
-              } else if (/^date$/i.test(data.type)) {
+              }
+              if (data.type.toLowerCase() === 'path') {
+                return (
+                  <AttributeValue
+                    value={data.value}
+                    showFileNameOnly
+                  >
+                    {icon}
+                  </AttributeValue>
+                );
+              }
+              if (/^date$/i.test(data.type)) {
                 return (
                   <span title={data.value}>
+                    {icon}
                     {displayDate(data.value)}
                   </span>
                 );
-              } else {
+              }
+              if (isRunsValue(data.value)) {
                 return (
-                  <span title={data.value}>
-                    {data.value}
-                  </span>
+                  <RunsAttribute
+                    value={data.value}
+                  />
                 );
               }
+              return (
+                <span title={data.value}>
+                  {icon}
+                  {data.value}
+                </span>
+              );
             }
           })
         };
@@ -2047,7 +2297,9 @@ export default class Metadata extends React.Component {
     const {
       filterModel = {},
       selectedItems = [],
-      selectedItemsAreShowing
+      selectedItemsAreShowing,
+      totalCount,
+      loading
     } = this.state;
     const selectedItemsString =
       `${selectedItems.length} selected item${selectedItems.length === 1 ? '' : 's'}`;
@@ -2068,7 +2320,7 @@ export default class Metadata extends React.Component {
             key="clear_filters"
             size="small"
             onClick={this.onClearFilters}
-            style={{marginLeft: 5, marginRight: 5}}
+            style={{margin: '0 5px'}}
           >
             <Icon
               type="close"
@@ -2086,7 +2338,7 @@ export default class Metadata extends React.Component {
       if (selectedItemsAreShowing && selectedItems.length > 0) {
         return (
           <span
-            style={{marginLeft: 5}}
+            style={{margin: '0 5px'}}
             key="info"
           > Currently viewing {selectedItemsString}
           </span>
@@ -2141,8 +2393,7 @@ export default class Metadata extends React.Component {
         menuItems.push((
           <MenuItem
             key={Actions.delete}
-            style={{color: 'red'}}
-            className={classNames(styles.menuItem, Actions.delete)}
+            className={classNames(styles.menuItem, Actions.delete, 'cp-danger')}
           >
             Delete
           </MenuItem>
@@ -2158,7 +2409,7 @@ export default class Metadata extends React.Component {
         </Menu>
       );
       return (
-        <Button.Group>
+        <Button.Group style={{margin: '0 5px'}}>
           <Button
             size="small"
             onClick={this.handleClickShowSelectedItems}
@@ -2186,8 +2437,7 @@ export default class Metadata extends React.Component {
       if (
         this.state.currentProjectId &&
         roleModel.writeAllowed(this.props.folder.value) &&
-        !this.props.readOnly &&
-        roleModel.isManager.entities(this)
+        !this.props.readOnly
       ) {
         return (
           <Button
@@ -2202,20 +2452,35 @@ export default class Metadata extends React.Component {
       }
       return null;
     };
+    const totalRecordsInfo = `${totalCount || 'No'} record${totalCount !== 1 ? 's' : ''} found`;
     return (
       <Row
-        className={styles.metadataAdditionalActions}
+        className={classNames(
+          styles.metadataAdditionalActions,
+          'cp-library-metadata-additional-actions'
+        )}
         type="flex"
         justify="space-between"
-        align="middle"
+        align="center"
       >
         <div
           style={{
             display: 'inline-flex',
             flexDirection: 'row',
-            alignItems: 'center'
+            alignItems: 'center',
+            flexWrap: 'wrap'
           }}
         >
+          {
+            <span
+              style={{marginRight: 5}}
+            >
+              {totalRecordsInfo}
+              {
+                loading && (<Icon type="loading" />)
+              }
+            </span>
+          }
           {renderSelectionControl()}
           {renderClearFiltersButton()}
           {renderSelectionInfo()}
@@ -2223,6 +2488,39 @@ export default class Metadata extends React.Component {
         {renderRunButton()}
       </Row>
     );
+  };
+
+  renderPredefinedFilters = () => {
+    const {selectedItemsAreShowing} = this.state;
+    if (!selectedItemsAreShowing && this.predefinedFilters.length > 0) {
+      return (
+        <div
+          className={
+            classNames(
+              styles.metadataPredefinedFilters,
+              'cp-library-metadata-additional-actions'
+            )
+          }
+        >
+          {
+            this.predefinedFilters.map((filter, index) => {
+              return (
+                <PredefinedFilterButton
+                  className={styles.metadataPredefinedFilter}
+                  key={`predefined_filter_${index}_${filter.name || filter.title || ''}`}
+                  filter={filter}
+                  onClick={this.handleClickPredefinedFilter}
+                  currentFilter={this.state.filterModel}
+                  folderId={this.props.folderId}
+                  metadataClass={this.props.metadataClass}
+                />
+              );
+            })
+          }
+        </div>
+      );
+    }
+    return null;
   };
 
   handleClickShowSelectedItems = () => {
@@ -2233,11 +2531,36 @@ export default class Metadata extends React.Component {
     }, () => this.paginationOnChange(FIRST_PAGE));
   }
 
+  handleClickPredefinedFilter = (filter) => {
+    if (!filter) {
+      this.onClearFilters();
+      return;
+    }
+    const {filterModel} = this.state;
+    this.setState(
+      {
+        filterModel: {
+          ...(filterModel || {}),
+          ...(filter || {}),
+          searchQueries: [],
+          page: 1
+        },
+        searchQuery: undefined
+      },
+      () => {
+        this.clearSelection();
+        this.loadData();
+      }
+    );
+  }
+
   paginationOnChange = async (page) => {
     const {filterModel} = this.state;
     filterModel.page = page;
     this.setState(
-      {filterModel},
+      {
+        filterModel: {...filterModel}
+      },
       () => {
         this.clearSelection();
         this.loadData();
@@ -2393,7 +2716,7 @@ export default class Metadata extends React.Component {
     this.onFolderChanged();
     authenticatedUserInfo
       .fetchIfNeededOrWait()
-      .then(() => this.fetchDefaultColumnsIfRequested());
+      .then(() => this.fetchDefaultMetadataProperties());
     document.addEventListener('keydown', this.resetSelection);
     window.addEventListener('mouseup', this.handleFinishSelection);
   };
@@ -2401,10 +2724,16 @@ export default class Metadata extends React.Component {
   componentDidUpdate (prevProps, prevState, snapshot) {
     const metadataClassChanged = prevProps.metadataClass !== this.props.metadataClass;
     const folderChanged = prevProps.folderId !== this.props.folderId;
-    if (metadataClassChanged || folderChanged) {
+    const filtersChanged = metadataFilterUtilities
+      .filtersChanged(prevProps.filters, this.props.filters);
+    if (
+      metadataClassChanged ||
+      folderChanged ||
+      filtersChanged
+    ) {
       this.onFolderChanged(folderChanged);
     } else {
-      this.fetchDefaultColumnsIfRequested();
+      (this.fetchDefaultMetadataProperties)();
     }
     if (prevProps.initialSelection !== this.props.initialSelection) {
       this.updateInitialSelection();
@@ -2421,13 +2750,14 @@ export default class Metadata extends React.Component {
     }
     const newState = {
       currentMetadata: [],
+      currentMetadataConditions: [],
       columns: [],
       searchQuery: undefined,
       selectedItem: null,
       selectedItems: [],
       selectedItemsAreShowing: false,
       filterModel: {
-        filters: [],
+        filters: (this.props.filters || []).slice(),
         folderId: parseInt(this.props.folderId),
         metadataClass: this.props.metadataClass,
         orderBy: [],
@@ -2438,40 +2768,99 @@ export default class Metadata extends React.Component {
       totalCount: 0
     };
     if (folderChanged) {
-      newState.defaultColumnsFetched = false;
-      newState.defaultColumnsFetching = false;
+      newState.defaultMetadataPropertiesFetched = false;
+      newState.defaultMetadataPropertiesFetching = false;
       newState.defaultColumnsNames = [];
     }
     this.setState(newState, () => {
       this.clearSelection();
-      return Promise.all([
+      const promises = [
         folderChanged
-          ? this.fetchDefaultColumnsIfRequested()
+          ? this.fetchDefaultMetadataProperties()
           : this.loadColumns({reset: true}),
         folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
-        this.loadData(),
         this.loadCurrentProject()
-      ]);
+      ];
+      return Promise.all(promises).then(() => {
+        const {defaultOrderBy, columns} = this.state;
+        this.setState(prevState => ({
+          filterModel: {
+            ...prevState.filterModel,
+            orderBy: getDefaultSorting(
+              defaultOrderBy,
+              columns
+            )
+          }
+        }), async () => {
+          await this.loadData();
+        });
+      });
     });
   };
 
-  fetchDefaultColumnsIfRequested = () => {
-    const {defaultColumnsFetched, defaultColumnsFetching} = this.state;
+  fetchDefaultMetadataProperties = () => {
+    const {
+      defaultMetadataPropertiesFetched,
+      defaultMetadataPropertiesFetching
+    } = this.state;
     const {authenticatedUserInfo, folderId} = this.props;
-    if (authenticatedUserInfo.loaded && !defaultColumnsFetched && !defaultColumnsFetching) {
-      this.setState({
-        defaultColumnsFetching: true
-      }, () => {
-        getDefaultColumns(folderId, authenticatedUserInfo.value)
-          .then(defaultColumns => {
-            this.setState({
-              defaultColumnsNames: (defaultColumns || []).map(getDefaultColumnName),
-              defaultColumnsFetching: false,
-              defaultColumnsFetched: true
-            }, () => this.loadColumns({reset: true}));
-          });
-      });
-    }
+    return new Promise((resolve) => {
+      if (
+        authenticatedUserInfo.loaded &&
+        !defaultMetadataPropertiesFetched &&
+        !defaultMetadataPropertiesFetching
+      ) {
+        this.setState({
+          defaultMetadataPropertiesFetching: true
+        }, () => {
+          getDefaultMetadataProperties(folderId, authenticatedUserInfo.value)
+            .then(metadata => {
+              const {columns, filters, columnsSorting} = METADATA_KEYS;
+              const defaultColumnsNames = (metadata[columns] || []).map(getDefaultColumnName);
+              const predefined = Object.entries(metadata[filters] || {})
+                .map(([key, filters]) => {
+                  const classes = key.split(/\s*,\s*/g);
+                  return classes
+                    .map(metadataClass => filters.map(filter => ({...filter, metadataClass})))
+                    .reduce((r, c) => ([...r, ...c]), []);
+                })
+                .reduce((r, c) => ([...r, ...c]), [])
+                .map(fc => ({
+                  ...fc,
+                  scheme: parseScheme(fc.scheme),
+                  isCondition: /(^|\+)(condition)($|\+)/i.test(fc.type),
+                  isFilter: !fc.type || /(^|\+)(filter)($|\+)/i.test(fc.type)
+                }));
+              this.setState({
+                defaultColumnsNames,
+                defaultMetadataPropertiesFetching: false,
+                defaultMetadataPropertiesFetched: true,
+                predefinedFilters: predefined
+                  .filter(fc => fc.isFilter),
+                predefinedConditions: predefined
+                  .filter(fc => fc.isCondition),
+                defaultOrderBy: metadata[columnsSorting]
+              }, () => {
+                this.loadColumns({reset: true})
+                  .then(() => {
+                    const {columns: metadataColumns} = this.state;
+                    this.setState(prevState => ({
+                      filterModel: {
+                        ...prevState.filterModel,
+                        orderBy: getDefaultSorting(
+                          metadata[columnsSorting],
+                          metadataColumns
+                        )
+                      }
+                    }), () => resolve());
+                  });
+              });
+            });
+        });
+      } else {
+        resolve();
+      }
+    });
   };
 
   leavePageWithSelectedItems (nextLocation) {

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import connect from '../../../../utils/connect';
 import {computed, observable} from 'mobx';
 import {Row, Tabs, Modal, Button, Alert, Icon, message} from 'antd';
@@ -66,7 +67,7 @@ export default class PipelineConfiguration extends React.Component {
     pending: false
   };
 
-  componentDidMount() {
+  componentDidMount () {
     this.navigationBlockedListener = this.props.history.listenBefore((location, callback) => {
       const locationBefore = this.props.routing.location.pathname;
       if (location.pathname === locationBefore) {
@@ -78,7 +79,12 @@ export default class PipelineConfiguration extends React.Component {
           this.navigationBlocker = null;
         }, 0);
       };
-      if (this.configurationModified && !this.navigationBlocker && location.pathname !== this.allowedNavigation) {
+      if (
+        !this.isBitBucket &&
+        this.configurationModified &&
+        !this.navigationBlocker &&
+        location.pathname !== this.allowedNavigation
+      ) {
         const cancel = () => {
           if (this.props.history.getCurrentLocation().pathname !== locationBefore) {
             this.props.history.replace(locationBefore);
@@ -100,7 +106,6 @@ export default class PipelineConfiguration extends React.Component {
           okText: 'Yes',
           cancelText: 'No'
         });
-
       } else {
         callback();
       }
@@ -176,8 +181,19 @@ export default class PipelineConfiguration extends React.Component {
     return undefined;
   }
 
+  @computed
+  get isBitBucket () {
+    const {pipeline} = this.props;
+    if (!pipeline || !pipeline.loaded) {
+      return false;
+    }
+    const {repositoryType} = pipeline.value || {};
+    return /^bitbucket$/i.test(repositoryType);
+  }
+
+  @computed
   get canModifySources () {
-    if (this.props.pipeline.pending) {
+    if (this.props.pipeline.pending || this.isBitBucket) {
       return false;
     }
     return roleModel.writeAllowed(this.props.pipeline.value) &&
@@ -427,8 +443,8 @@ export default class PipelineConfiguration extends React.Component {
     return (
       <Row>
         <Tabs
-          className={styles.tabs}
-          hideAdd={true}
+          className={classNames(styles.tabs, 'cp-tabs-no-content')}
+          hideAdd
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
@@ -441,21 +457,20 @@ export default class PipelineConfiguration extends React.Component {
                 return -1;
               }
               return 0;
-            }).map(c => {
-                return (
-                  <Tabs.TabPane
-                    closable={false}
-                    tab={c.default ? <i>{c.name}</i> : c.name}
-                    key={c.name} />
-                );
-              })
+            }).map(c => (
+              <Tabs.TabPane
+                closable={false}
+                tab={c.default ? <i>{c.name}</i> : c.name}
+                key={c.name}
+              />
+            ))
           }
         </Tabs>
       </Row>
     );
   };
 
-  componentDidUpdate() {
+  componentDidUpdate () {
     const parameters = this.getParameters();
     if (!this.allowedInstanceTypes) {
       this.allowedInstanceTypes = new AllowedInstanceTypes();
@@ -489,7 +504,10 @@ export default class PipelineConfiguration extends React.Component {
     return (
       <div style={{display: 'flex', flex: 1, flexDirection: 'column', height: '100%'}}>
         {this.renderTabs()}
-        <Row style={{flex: 1, overflowY: 'auto', height: '100%'}}>
+        <Row
+          className="cp-tabs-content"
+          style={{flex: 1, overflowY: 'auto', height: '100%'}}
+        >
           <LaunchPipelineForm
             defaultPriceTypeIsLoading={this.props.preferences.pending}
             defaultPriceTypeIsSpot={defaultPriceTypeIsSpot}

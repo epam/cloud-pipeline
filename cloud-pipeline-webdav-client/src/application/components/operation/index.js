@@ -39,7 +39,7 @@ function Operation ({operation, style}) {
       <div
         className="operation"
         style={Object.assign({
-          height: OPERATION_HEIGHT,
+          minHeight: OPERATION_HEIGHT,
         }, style)}
       >
         {parts}

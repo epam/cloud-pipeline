@@ -14,6 +14,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+function is_jq_null() {
+    _VAL="$1"
+    if [ -z "$_VAL" ] || [ "$_VAL" == "null" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 _OWNER_ATTRIBUTES_ENV_FILE="$1"
 _OWNER_ATTRIBUTES_BLACKLIST="confirmed_notifications ssh_prv ssh_pub"
 _OWNER_ATTRIBUTES_FILE_PATTERN="\"(.*)\" > \"(\\/.*)\""
@@ -66,6 +75,11 @@ for _ATTRIBUTE_NAME in $_OWNER_ATTRIBUTES_NAMES; do
 
     if [ "${!_ATTRIBUTE_ENV_NAME}" ]; then
         echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME is already set from the outside, skipping it"
+        continue
+    fi
+
+    if is_jq_null "$_ATTRIBUTE_ENV_VALUE"; then
+        echo "[WARN] Variable $_ATTRIBUTE_ENV_NAME has no value set, skipping it"
         continue
     fi
 

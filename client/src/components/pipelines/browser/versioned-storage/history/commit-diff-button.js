@@ -134,7 +134,7 @@ class CommitDiffButton extends React.Component {
       );
     }
     return (
-      <div className={styles.emptyContent}>
+      <div className={classNames(styles.emptyContent, 'cp-text-not-important')}>
         No content
       </div>
     );
@@ -154,12 +154,7 @@ class CommitDiffButton extends React.Component {
     } = this.state;
     return (
       <div
-        className={
-          classNames(
-            styles.diff,
-            className
-          )
-        }
+        className={className}
         style={style}
       >
         <Button

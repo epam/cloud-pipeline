@@ -6,9 +6,11 @@ function Operations({className, operations}) {
   return (
     <div className={className}>
       {
-        operations.map((operation) => (
-          <Operation key={operation.identifier} operation={operation} />
-        ))
+        operations
+          .reverse()
+          .map((operation) => (
+            <Operation key={operation.identifier} operation={operation} />
+          ))
       }
     </div>
   );

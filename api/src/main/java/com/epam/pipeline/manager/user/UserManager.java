@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,13 +36,18 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserWithStoragePath;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.entity.utils.ControlEntry;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.DataStorageValidator;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.security.AuthManager;
+import com.epam.pipeline.manager.security.GrantPermissionHandler;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
+import com.epam.pipeline.manager.utils.UserUtils;
+import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.UserContext;
 import lombok.extern.slf4j.Slf4j;
 import com.epam.pipeline.security.jwt.JwtAuthenticationToken;
@@ -68,8 +73,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 @Service
@@ -107,6 +114,15 @@ public class UserManager {
 
     @Autowired
     private DataStorageManager dataStorageManager;
+
+    @Autowired
+    private GrantPermissionHandler permissionHandler;
+
+    @Autowired
+    private PipelineUserRepository userRepository;
+
+    @Autowired
+    private QuotaService quotaService;
 
     @SuppressWarnings("PMD.AvoidCatchingGenericException")
     @Transactional(propagation = Propagation.REQUIRED)
@@ -175,14 +191,51 @@ public class UserManager {
         return userDao.loadUsersByNames(names);
     }
 
-    public PipelineUser loadUserById(Long id) {
-        PipelineUser user = userDao.loadUserById(id);
+    public PipelineUser loadUserById(final Long id) {
+        return loadUserById(id, false);
+    }
+
+    public PipelineUser loadUserById(final Long id, final boolean quotas) {
+        final PipelineUser user = userDao.loadUserById(id);
         Assert.notNull(user, messageHelper.getMessage(MessageConstants.ERROR_USER_ID_NOT_FOUND, id));
+        if (quotas && !user.isAdmin()) {
+            user.setActiveQuotas(quotaService.loadActiveQuotasForUser(user));
+        }
         return user;
     }
 
+    public Collection<PipelineUser> loadUsersById(final List<Long> userIds) {
+        return StreamSupport.stream(userRepository.findAll(userIds).spliterator(), false)
+                .collect(Collectors.toList());
+    }
+
+    public List<PipelineUser> loadUsersByRoles(final List<String> roleNames) {
+        return userRepository.findByRoles_NameIn(roleNames);
+    }
+
     public Collection<PipelineUser> loadAllUsers() {
-        return userDao.loadAllUsers();
+        return loadAllUsers(false);
+    }
+
+    public Collection<PipelineUser> loadAllUsers(final boolean loadQuotas) {
+        final  Collection<PipelineUser> pipelineUsers = userDao.loadAllUsers();
+        final PipelineUser currentUser = getCurrentUser();
+        if (loadQuotas && (currentUser.isAdmin() ||
+                UserUtils.hasRole(currentUser, DefaultRoles.ROLE_BILLING_MANAGER))) {
+            attachQuotaInfo(pipelineUsers);
+        }
+        return pipelineUsers;
+    }
+
+    public Collection<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
+        final PipelineUser currentUser = getCurrentUser();
+        final Collection<PipelineUser> pipelineUsers = currentUser.isAdmin()
+                ? userDao.loadUsersWithActivityStatus()
+                : loadAllUsers();
+        if (loadQuotas) {
+            attachQuotaInfo(pipelineUsers);
+        }
+        return pipelineUsers;
     }
 
     public List<UserInfo> loadUsersInfo(final List<String> userNames) {
@@ -210,6 +263,7 @@ public class UserManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineUser deleteUser(Long id) {
         PipelineUser userContext = loadUserById(id);
+        permissionHandler.deleteGrantedAuthority(userContext.getUserName(), true);
         userDao.deleteUserRoles(id);
         userDao.deleteUser(id);
         log.info(messageHelper.getMessage(MessageConstants.INFO_DELETE_USER, userContext.getUserName(), id));
@@ -246,13 +300,14 @@ public class UserManager {
     public PipelineUser updateUserBlockingStatus(final Long id, final boolean blockStatus) {
         final PipelineUser user = loadUserById(id);
         user.setBlocked(blockStatus);
+        user.setBlockDate(blockStatus ? DateUtils.nowUTC() : null);
         log.info(messageHelper.getMessage(MessageConstants.INFO_UPDATE_USER_BLOCK_STATUS, id, blockStatus));
         return userDao.updateUser(user);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
     public GroupStatus upsertGroupBlockingStatus(final String groupName, final boolean blockStatus) {
-        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus);
+        final GroupStatus groupStatus = new GroupStatus(groupName, blockStatus, DateUtils.nowUTC());
         return groupStatusDao.upsertGroupBlockingStatusQuery(groupStatus);
     }
 
@@ -372,6 +427,12 @@ public class UserManager {
         return userDao.loadUsersByGroup(group);
     }
 
+    public Collection<PipelineUser> loadUsersByGroupOrRole(final String name) {
+        Assert.isTrue(StringUtils.isNotBlank(name),
+                messageHelper.getMessage(MessageConstants.USER_GROUP_IS_REQUIRED));
+        return userDao.loadUsersByGroupOrRole(name);
+    }
+
     /**
      * Checks whether a specific user is a member of a specific group
      * @param userName a name of {@code UserContext}
@@ -414,9 +475,23 @@ public class UserManager {
     public byte[] exportUsers(final PipelineUserExportVO attr) {
         final Collection<PipelineUserWithStoragePath> users = loadAllUsersWithDataStoragePath();
         final Collection<PipelineUserWithStoragePath> filteredUsers = filterUsers(users, attr);
-        final List<String> sensitiveKeys = preferenceManager.getPreference(
-                SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
+        final List<String> sensitiveKeys = authManager.isAdmin() ? Collections.emptyList() :
+                preferenceManager.getPreference(SystemPreferences.MISC_METADATA_SENSITIVE_KEYS);
         return new UserExporter().exportUsers(attr, filteredUsers, sensitiveKeys).getBytes(Charset.defaultCharset());
+    }
+
+    @Transactional
+    public void updateLastLoginDate(final PipelineUser user) {
+        if (Objects.isNull(user) || Objects.isNull(user.getId())) {
+            return;
+        }
+        final PipelineUser loadedUser = loadUserById(user.getId());
+        loadedUser.setLastLoginDate(DateUtils.nowUTC());
+        userDao.updateUser(loadedUser);
+    }
+
+    public Collection<PipelineUser> getOnlineUsers() {
+        return userDao.loadOnlineUsers();
     }
 
     private PipelineUser initUserDefaultStorage(final PipelineUser newUser) {
@@ -508,5 +583,12 @@ public class UserManager {
             userRoles.add(roleUserId);
         }
         return userRoles;
+    }
+
+    private void attachQuotaInfo(final Collection<PipelineUser> pipelineUsers) {
+        if (CollectionUtils.isEmpty(pipelineUsers)) {
+            return;
+        }
+        quotaService.attachQuotaInfo(pipelineUsers);
     }
 }

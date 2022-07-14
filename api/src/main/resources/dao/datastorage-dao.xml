@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+  ~ Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -46,9 +46,13 @@
                         region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     ) VALUES (
                         :DATASTORAGE_ID,
                         :DATASTORAGE_NAME,
@@ -72,9 +76,13 @@
                         :REGION_ID,
                         :FILE_SHARE_MOUNT_ID,
                         :SENSITIVE,
+                        :MOUNT_DISABLED,
                         :S3_KMS_KEY_ARN,
                         :S3_USE_ASSUMED_CREDS,
-                        :S3_TEMP_CREDS_ROLE
+                        :S3_TEMP_CREDS_ROLE,
+                        :MOUNT_STATUS,
+                        :SOURCE_DATASTORAGE_ID,
+                        to_jsonb(:MASKING_RULES::jsonb)
                     )
                 ]]>
             </value>
@@ -93,7 +101,8 @@
                         enable_versioning = :ENABLE_VERSIONING,
                         backup_duration = :BACKUP_DURATION,
                         mount_point = :MOUNT_POINT,
-                        mount_options = :MOUNT_OPTIONS
+                        mount_options = :MOUNT_OPTIONS,
+                        mount_disabled = :MOUNT_DISABLED
                     WHERE
                         datastorage_id = :DATASTORAGE_ID
                 ]]>
@@ -132,9 +141,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     ORDER BY datastorage_id
@@ -167,9 +180,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -204,9 +221,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -240,9 +261,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -276,9 +301,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -312,9 +341,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -348,9 +381,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -385,9 +422,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -421,9 +462,13 @@
                         region_id as region_id,
                         file_share_mount_id,
                         sensitive,
+                        mount_disabled,
                         s3_kms_key_arn,
                         s3_use_assumed_creds,
-                        s3_temp_creds_role
+                        s3_temp_creds_role,
+                        mount_status,
+                        source_datastorage_id,
+                        masking_rules
                     FROM
                         pipeline.datastorage
                     WHERE
@@ -474,9 +519,13 @@
                             d.region_id as region_id,
                             d.file_share_mount_id,
                             d.sensitive,
+                            d.mount_disabled,
                             d.s3_kms_key_arn,
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
+                            d.mount_status,
+                            d.source_datastorage_id,
+                            d.masking_rules,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -509,9 +558,13 @@
                             null as region_id,
                             null as file_share_mount_id,
                             null as sensitive,
+                            null as mount_disabled,
                             null as s3_kms_key_arn,
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
+                            null as mount_status,
+                            null as source_datastorage_id,
+                            null as masking_rules,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -546,9 +599,13 @@
                             d.region_id as region_id,
                             d.file_share_mount_id,
                             d.sensitive,
+                            d.mount_disabled,
                             d.s3_kms_key_arn,
                             d.s3_use_assumed_creds,
                             d.s3_temp_creds_role,
+                            d.mount_status,
+                            d.source_datastorage_id,
+                            d.masking_rules,
                             c.folder_id,
                             c.parent_id AS parent_folder_id
 	                    FROM pipeline.datastorage d
@@ -577,9 +634,13 @@
                             null as region_id,
                             null as file_share_mount_id,
                             null as sensitive,
+                            null as mount_disabled,
                             null as s3_kms_key_arn,
                             null as s3_use_assumed_creds,
                             null as s3_temp_creds_role,
+                            null as mount_status,
+                            null as source_datastorage_id,
+                            null as masking_rules,
 		                    m.folder_id,
                             m.parent_id AS parent_folder_id
 	                    FROM pipeline.folder m
@@ -654,6 +715,16 @@
                     VALUES (:DATASTORAGE_ROOT_PATH)
                     ON CONFLICT (datastorage_root_path) 
                     DO NOTHING;
+                ]]>
+            </value>
+        </property>
+        <property name="updateDataStorageMountStatusQuery">
+            <value>
+                <![CDATA[
+                    UPDATE pipeline.datastorage SET
+                        mount_status = :MOUNT_STATUS
+                    WHERE
+                        datastorage_id = :DATASTORAGE_ID
                 ]]>
             </value>
         </property>

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.acl.run;
 
+import com.epam.pipeline.aspect.run.QuotaLaunchCheck;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.PagedResult;
@@ -98,6 +99,7 @@ public class RunApiService {
     private final EdgeServiceManager edgeServiceManager;
 
     @AclMask
+    @QuotaLaunchCheck
     public PipelineRun runCmd(PipelineStart runVO) {
         Assert.notNull(runVO.getDockerImage(),
                 messageHelper.getMessage(MessageConstants.SETTING_IS_NOT_PROVIDED, "docker_image"));
@@ -120,6 +122,7 @@ public class RunApiService {
             + "hasPermission(#runVO.pipelineId, 'com.epam.pipeline.entity.pipeline.Pipeline', 'EXECUTE'))"
             + " AND @grantPermissionManager.hasPipelinePermissionToRunAs(#runVO, 'EXECUTE')")
     @AclMask
+    @QuotaLaunchCheck
     public PipelineRun runPipeline(final PipelineStart runVO) {
         return pipelineRunAsManager.runAsAnotherUser(runVO)
                 ? pipelineRunAsManager.runPipeline(runVO)
@@ -129,6 +132,7 @@ public class RunApiService {
     @PreAuthorize("hasRole('ADMIN') OR "
             + "@grantPermissionManager.hasConfigurationUpdatePermission(#configuration, 'EXECUTE')")
     @AclMaskList
+    @QuotaLaunchCheck
     public List<PipelineRun> runConfiguration(String refreshToken,
                                               RunConfigurationWithEntitiesVO configuration,
                                               String expansionExpression) {
@@ -204,8 +208,8 @@ public class RunApiService {
 
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
-    public PipelineRun updateTags(final Long runId, final TagsVO tagsVO) {
-        return runManager.updateTags(runId, tagsVO);
+    public PipelineRun updateTags(final Long runId, final TagsVO tagsVO, final boolean overwrite) {
+        return runManager.updateTags(runId, tagsVO, overwrite);
     }
 
     @PreAuthorize(ADMIN_ONLY)
@@ -277,6 +281,7 @@ public class RunApiService {
         return pipelineRunDockerOperationManager.pauseRun(runId, checkSize);
     }
 
+    @QuotaLaunchCheck
     @PreAuthorize(RUN_ID_EXECUTE)
     @AclMask
     public PipelineRun resumeRun(Long runId) {
@@ -341,5 +346,10 @@ public class RunApiService {
     @PreAuthorize(ADMIN_OR_GENERAL_USER)
     public List<ServiceDescription> loadEdgeServices() {
         return edgeServiceManager.getEdgeServices();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public List<PipelineRun> loadRunsByPoolId(final Long poolId) {
+        return runManager.loadRunsByPoolId(poolId);
     }
 }

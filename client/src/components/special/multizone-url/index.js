@@ -22,6 +22,7 @@ import Dropdown from 'rc-dropdown';
 import {inject, observer} from 'mobx-react';
 import AWSRegionTag from '../AWSRegionTag';
 import styles from './multizone-url.css';
+import classNames from 'classnames';
 
 @inject('multiZoneManager')
 @observer
@@ -49,7 +50,8 @@ export default class MultizoneUrl extends React.Component {
       dropDownIconStyle,
       configuration,
       getPopupContainer,
-      multiZoneManager
+      multiZoneManager,
+      target = '_blank'
     } = this.props;
     const regions = multiZoneManager.getSortedRegionsWithUrls(configuration);
     if (regions.length === 0) {
@@ -71,7 +73,7 @@ export default class MultizoneUrl extends React.Component {
                 />
                 <a
                   className={styles.menuLink}
-                  target="_blank"
+                  target={target}
                   href={url}
                   onClick={this.onUrlClicked}
                 >
@@ -93,7 +95,7 @@ export default class MultizoneUrl extends React.Component {
         style={style}
       >
         <a
-          target="_blank"
+          target={target}
           href={defaultRegion.url}
           className={styles.link}
           onClick={this.onUrlClicked}
@@ -113,7 +115,7 @@ export default class MultizoneUrl extends React.Component {
               onClick={(e) => e.stopPropagation()}
             >
               <Icon
-                className={styles.expander}
+                className={classNames(styles.expander, 'cp-primary')}
                 type="down"
                 onClick={e => e.stopPropagation()}
                 style={dropDownIconStyle}
@@ -126,6 +128,7 @@ export default class MultizoneUrl extends React.Component {
 }
 MultizoneUrl.propTypes = {
   className: PropTypes.string,
+  target: PropTypes.string,
   style: PropTypes.object,
   dropDownIconStyle: PropTypes.object,
   configuration: PropTypes.object,

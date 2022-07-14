@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.epam.pipeline.autotests;
 
 import com.epam.pipeline.autotests.ao.AbstractPipelineTabAO;
+import com.epam.pipeline.autotests.ao.ConfirmationPopupAO;
 import com.epam.pipeline.autotests.ao.PipelineCodeTabAO;
 import com.epam.pipeline.autotests.ao.PipelineConfigurationTabAO;
 import com.epam.pipeline.autotests.ao.PipelineRunFormAO;
@@ -181,17 +182,16 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
             })
             .sleep(5, SECONDS)
             .editConfiguration(anotherProfile, profile -> {
-                profile.clickAddPathParameter().setName(secondParameter).setValue(secondParameterValue);
+                profile.refresh().clickAddPathParameter().setName(secondParameter).setValue(secondParameterValue);
                 profile.click(SAVE);
             })
             .sleep(5, SECONDS)
-            .refresh()
             .editConfiguration(defaultProfile, profile ->
-                profile.ensure(byValue(firstParameter), visible)
+                profile.refresh().ensure(byValue(firstParameter), visible)
                        .ensure(byValue(firstParameterValue), visible)
             )
             .editConfiguration(anotherProfile, profile ->
-                profile.ensure(byValue(secondParameter), visible)
+                profile.refresh().ensure(byValue(secondParameter), visible)
                        .ensure(byValue(secondParameterValue), visible)
             );
     }
@@ -259,6 +259,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
                                .clear(NAME).setValue(NAME, "conf")
                                .clear(DISK).setValue(DISK, "23")
                                .clear(TIMEOUT).setValue(TIMEOUT, "2")
+                               .selectValue(INSTANCE_TYPE, C.DEFAULT_INSTANCE)
                                .sleep(2, SECONDS)
                                .click(SAVE)
                 )
@@ -356,7 +357,7 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
         );
         onPipelinePage()
                 .onTab(PipelineConfigurationTabAO.class)
-                .deleteConfiguration(configurationName, popup -> popup.cancel())
+                .deleteConfiguration(configurationName, ConfirmationPopupAO::cancel)
                 .ensure(profileWithName(configurationName), exist.because(deletionWasCancelled))
                 .deleteConfiguration(configurationName, popup -> popup.ensureTitleIs(expectedTitle).ok())
                 .ensure(profileWithName(configurationName), not(exist).because(deletionWasConfirmed))
@@ -372,9 +373,5 @@ public class PipelineConfigurationTest extends AbstractSeveralPipelineRunningTes
 
     private static PipelineRunFormAO onLaunchPage() {
         return new PipelineRunFormAO();
-    }
-
-    private String withActualRunId(final String message) {
-        return message.replaceAll("run_id", getLastRunId());
     }
 }

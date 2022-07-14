@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 import React from 'react';
 import {IndexRoute, Redirect, Route, Router} from 'react-router';
 import {inject, observer} from 'mobx-react';
-import {computed} from 'mobx';
 import HomePageLoader from './home/HomePageLoader';
 import PipelinesLibrary from '../pipelines/PipelinesLibrary';
 import Browser from '../pipelines/browser/Browser';
@@ -41,6 +40,7 @@ import LaunchPipeline from '../pipelines/launch/LaunchPipeline';
 import ClusterRoot from '../cluster';
 import Cluster from '../cluster/Cluster';
 import HotCluster from '../cluster/hot-node-pool';
+import HotClusterUsage from '../cluster/hot-node-pool/hot-cluster-usage';
 import ClusterNode from '../cluster/ClusterNode';
 import ClusterNodeGeneralInfo from '../cluster/ClusterNodeGeneralInfo';
 import ClusterNodePods from '../cluster/ClusterNodePods';
@@ -53,16 +53,17 @@ import UserManagementForm from '../settings/UserManagementForm';
 import EmailNotificationSettings from '../settings/EmailNotificationSettings';
 import Preferences from '../settings/Preferences';
 import AWSRegionsForm from '../settings/AWSRegionsForm';
-import SystemLogs from '../settings/system-logs';
+import SystemManagement from '../settings/system-management/system-management';
 import SystemEvents from '../settings/SystemEvents';
 import SystemDictionaries from '../settings/SystemDictionaries';
-import UserProfile from '../user-profile';
+import UserProfile from '../settings/user-profile';
 import AllRuns from '../runs/AllRuns';
 import RunsFilter from '../runs/RunsFilter';
 import RunsSearch from '../runs/RunsSearch';
 import Billing, {
-  // BillingQuotas,
-  BillingReports} from '../billing';
+  BillingQuotas,
+  BillingReports
+} from '../billing';
 import MiewPage from '../applications/miew/MiewPage';
 import VSIPreviewPage from '../applications/vsi-preview';
 import Log from '../runs/logs/Log';
@@ -74,135 +75,140 @@ import ToolPackages from '../tools/tool-version/packages';
 import ToolHistory from '../tools/tool-version/history';
 import ProjectHistory from '../pipelines/browser/ProjectHistory';
 import {FacetedSearchPage} from '../search';
+import {HcsImagePage} from '../special/hcs-image';
 
-@inject('history', 'preferences', 'uiNavigation')
-@observer
-export default class AppRouter extends React.Component {
-  @computed
-  get homeEndpoint () {
-    const {
-      uiNavigation
-    } = this.props;
-    return uiNavigation.home;
+function HomePageRedirectionComponent ({router, uiNavigation}) {
+  if (uiNavigation.loaded && router) {
+    const url = uiNavigation.home || '/dashboard';
+    const absolute = /^http[s]?:\/\//i.test(url);
+    setTimeout(() => {
+      if (absolute) {
+        window.location = url;
+      } else {
+        router.push(url);
+      }
+    }, 0);
   }
+  return null;
+}
 
-  render () {
-    const {
-      uiNavigation
-    } = this.props;
-    if (!uiNavigation.loaded) {
-      return null;
-    }
-    return (
-      <Router history={this.props.history}>
-        <Route component={App}>
-          <Route
-            path="/:pipeline/refs/heads/master(/:section(/:subSection))"
-            component={PipelineLatestVersion}
-          />
-          <Route
-            path="/metadata/redirect/:folder/:entity"
-            component={MetadataClassEntityRedirection}
-          />
-          <Route path="search/advanced" component={FacetedSearchPage} />
-          <Route path="search" component={RunsSearch} />
-          <Redirect from="/settings" to="/settings/cli" />
-          <Route path="/settings" component={SettingsForm}>
-            <Route path="cli" component={CLIForm} />
-            <Route path="events" component={SystemEvents} />
-            <Route path="user" component={UserManagementForm} />
-            <Route path="email" component={EmailNotificationSettings} />
-            <Route path="preferences" component={Preferences} />
-            <Route path="regions" component={AWSRegionsForm} />
-            <Route path="logs" component={SystemLogs} />
-            <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
-            <Route path="profile" component={UserProfile} />
-          </Route>
-          <Route path="/cluster" component={ClusterRoot}>
-            <IndexRoute component={Cluster} />
-            <Route path="hot" component={HotCluster} />
-          </Route>
-          <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
-          <Route path="/cluster/:nodeName" component={ClusterNode}>
-            <Route path="info" component={ClusterNodeGeneralInfo} />
-            <Route path="jobs" component={ClusterNodePods} />
-            <Route path="monitor" component={ClusterNodeMonitor} />
-          </Route>
-          <Route path="/runs/filter" component={RunsFilter} />
-          <Redirect from="/runs" to="runs/active" />
-          <Route path="/runs/:status" component={AllRuns} />
-          <Redirect from="/run/:runId" to="/run/:runId/plain" />
-          <Route path="/run/:runId/:mode(/:taskName)" component={Log} />
-          <Redirect from="/tool/:id" to="/tool/:id/description" />
-          <Route path="/tool/:id/:section" component={Tool} />
-          <Redirect from="/tool/:id/info/:version" to="/tool/:id/info/:version/scaninfo" />
-          <Route path="/tool/:id/info/:version" component={ToolVersion}>
-            <Route path="scaninfo" component={ToolScanningInfo} tabKey="scaninfo" />
-            <Route path="settings" component={ToolSettings} tabKey="settings" />
-            <Route path="packages" component={ToolPackages} tabKey="packages" />
-            <Route path="history" component={ToolHistory} tabKey="history" />
-          </Route>
-          <Route path="/tools(/:registryId(/:groupId))" component={Tools} />
-          <Route path="/launch" component={LaunchPipeline} />
-          <Route path="/launch/tool/:image" component={LaunchPipeline} />
-          <Route path="/launch/:runId" component={LaunchPipeline} />
-          <Route path="/launch/:id/:version(/:configuration)" component={LaunchPipeline} />
-          <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
-          <Redirect from="/billing" to="/billing/reports" />
-          <Route path="/billing" component={Billing}>
-            {/* <Route path="quotas" component={BillingQuotas} /> */}
-            <Route path="reports" component={BillingReports.default}>
-              <IndexRoute component={BillingReports.GeneralReport} />
-              <Route path="instance(/:type)" component={BillingReports.InstanceReport} />
-              <Route path="storage(/:type)" component={BillingReports.StorageReport} />
-            </Route>
-          </Route>
-          <Route path="/miew" component={MiewPage} />
-          <Route path="/wsi" component={VSIPreviewPage} />
-          <Route path="/library" component={PipelinesLibrary}>
-            <IndexRoute component={FolderBrowser} />
-          </Route>
-          <Route path="/pipelines" component={PipelinesLibrary}>
-            <IndexRoute component={Browser} />
-          </Route>
-          <Route path="/storages" component={PipelinesLibrary}>
-            <IndexRoute component={Browser} />
-          </Route>
-          <Route path="/folder" component={PipelinesLibrary}>
-            <Route path=":id" component={FolderBrowser} />
-            <Route path=":id/history" component={ProjectHistory} />
-          </Route>
-          <Route path="/storage" component={PipelinesLibrary}>
-            <Route path=":id" component={StorageBrowser} />
-          </Route>
-          <Route path="/configuration" component={PipelinesLibrary}>
-            <Route path=":id(/:name)" component={DetachedConfiguration} />
-          </Route>
-          <Route path="/metadata" component={PipelinesLibrary}>
-            <Route path=":id/:class" component={MetadataBrowser} />
-          </Route>
-          <Route path="/metadataFolder" component={PipelinesLibrary}>
-            <Route path=":id" component={MetadataFolderBrowser} />
-          </Route>
-          <Route path="/vs/:id" component={PipelinesLibrary}>
-            <IndexRoute component={VersionedStorageBrowser} />
-          </Route>
-          <Route path="/dashboard" component={HomePageLoader} />
-          <Route path="/:id" component={PipelinesLibrary}>
-            <IndexRoute component={PipelineBrowser} />
-            <Redirect from=":version" to=":version/documents" />
-            <Route path=":version" component={PipelineDetails}>
-              <Route path="history" component={PipelineHistory} />
-              <Route path="code" component={PipelineCode} />
-              <Route path="configuration(/:configuration)" component={PipelineConfiguration} />
-              <Route path="graph" component={PipelineGraph} />
-              <Route path="documents" component={PipelineDocuments} />
-              <Route path="storage" component={PipelineStorageRules} />
-            </Route>
-          </Route>
-          <Redirect path="/" to={this.homeEndpoint} />
+const HomePageRedirection = inject('uiNavigation')(observer(HomePageRedirectionComponent));
+
+function AppRouterComponent ({history, uiNavigation}) {
+  if (!uiNavigation.loaded) {
+    return null;
+  }
+  return (
+    <Router history={history}>
+      <Route component={App}>
+        <Route
+          path="/:pipeline/refs/heads/master(/:section(/:subSection))"
+          component={PipelineLatestVersion}
+        />
+        <Route
+          path="/folder/:folder/metadata/:entity/redirect"
+          component={MetadataClassEntityRedirection}
+        />
+        <Route path="search/advanced" component={FacetedSearchPage} />
+        <Route path="search" component={RunsSearch} />
+        <Redirect from="/settings" to="/settings/cli" />
+        <Route path="/settings" component={SettingsForm}>
+          <Route path="cli(/:section)" component={CLIForm} />
+          <Route path="events" component={SystemEvents} />
+          <Route path="user(/:section)" component={UserManagementForm} />
+          <Route path="email(/:section)" component={EmailNotificationSettings} />
+          <Route path="preferences" component={Preferences} />
+          <Route path="regions" component={AWSRegionsForm} />
+          <Route path="system(/:section)" component={SystemManagement} />
+          <Route path="dictionaries(/:currentDictionary)" component={SystemDictionaries} />
+          <Route path="profile(/:section(/:sub))" component={UserProfile} />
         </Route>
-      </Router>
-    );
-  }
-};
+        <Route path="/cluster" component={ClusterRoot}>
+          <IndexRoute component={Cluster} />
+          <Route path="hot" component={HotCluster} />
+          <Route path="usage" component={HotClusterUsage} />
+        </Route>
+        <Redirect from="/cluster/:nodeName" to="/cluster/:nodeName/info" />
+        <Route path="/cluster/:nodeName" component={ClusterNode}>
+          <Route path="info" component={ClusterNodeGeneralInfo} />
+          <Route path="jobs" component={ClusterNodePods} />
+          <Route path="monitor" component={ClusterNodeMonitor} />
+        </Route>
+        <Route path="/runs/filter" component={RunsFilter} />
+        <Redirect from="/runs" to="runs/active" />
+        <Route path="/runs/:status" component={AllRuns} />
+        <Redirect from="/run/:runId" to="/run/:runId/plain" />
+        <Route path="/run/:runId/:mode(/:taskName)" component={Log} />
+        <Redirect from="/tool/:id" to="/tool/:id/description" />
+        <Route path="/tool/:id/:section" component={Tool} />
+        <Redirect from="/tool/:id/info/:version" to="/tool/:id/info/:version/scaninfo" />
+        <Route path="/tool/:id/info/:version" component={ToolVersion}>
+          <Route path="scaninfo" component={ToolScanningInfo} tabKey="scaninfo" />
+          <Route path="settings" component={ToolSettings} tabKey="settings" />
+          <Route path="packages" component={ToolPackages} tabKey="packages" />
+          <Route path="history" component={ToolHistory} tabKey="history" />
+        </Route>
+        <Route path="/tools(/:registryId(/:groupId))" component={Tools} />
+        <Route path="/launch" component={LaunchPipeline} />
+        <Route path="/launch/tool/:image" component={LaunchPipeline} />
+        <Route path="/launch/:runId" component={LaunchPipeline} />
+        <Route path="/launch/:id/:version(/:configuration)" component={LaunchPipeline} />
+        <Route path="/launch/:id/:version/:configuration(/:runId)" component={LaunchPipeline} />
+        <Redirect from="/billing" to="/billing/reports" />
+        <Route path="/billing" component={Billing}>
+          <Route path="quotas(/:type)" component={BillingQuotas} />
+          <Route path="reports" component={BillingReports.default}>
+            <IndexRoute component={BillingReports.GeneralReport} />
+            <Route path="instance(/:type)" component={BillingReports.InstanceReport} />
+            <Route path="storage(/:type)" component={BillingReports.StorageReport} />
+          </Route>
+        </Route>
+        <Route path="/miew" component={MiewPage} />
+        <Route path="/wsi" component={VSIPreviewPage} />
+        <Route path="/hcs" component={HcsImagePage} />
+        <Route path="/library" component={PipelinesLibrary}>
+          <IndexRoute component={FolderBrowser} />
+        </Route>
+        <Route path="/pipelines" component={PipelinesLibrary}>
+          <IndexRoute component={Browser} />
+        </Route>
+        <Route path="/storages" component={PipelinesLibrary}>
+          <IndexRoute component={Browser} />
+        </Route>
+        <Route path="/folder" component={PipelinesLibrary}>
+          <Route path=":id" component={FolderBrowser} />
+          <Route path=":id/history" component={ProjectHistory} />
+          <Route path=":id/metadata" component={MetadataFolderBrowser} />
+          <Route path=":id/metadata/:class" component={MetadataBrowser} />
+        </Route>
+        <Route path="/storage" component={PipelinesLibrary}>
+          <Route path=":id" component={StorageBrowser} />
+        </Route>
+        <Route path="/configuration" component={PipelinesLibrary}>
+          <Route path=":id(/:name)" component={DetachedConfiguration} />
+        </Route>
+        <Route path="/vs/:id" component={PipelinesLibrary}>
+          <IndexRoute component={VersionedStorageBrowser} />
+        </Route>
+        <Route path="/dashboard" component={HomePageLoader} />
+        <Route path="/:id" component={PipelinesLibrary}>
+          <IndexRoute component={PipelineBrowser} />
+          <Redirect from=":version" to=":version/documents" />
+          <Route path=":version" component={PipelineDetails}>
+            <Route path="history" component={PipelineHistory} />
+            <Route path="code" component={PipelineCode} />
+            <Route path="configuration(/:configuration)" component={PipelineConfiguration} />
+            <Route path="graph" component={PipelineGraph} />
+            <Route path="documents" component={PipelineDocuments} />
+            <Route path="storage" component={PipelineStorageRules} />
+          </Route>
+        </Route>
+        <Route path="/" component={HomePageRedirection} />
+      </Route>
+    </Router>
+  );
+}
+
+const AppRouter = inject('history', 'uiNavigation')(observer(AppRouterComponent));
+
+export default AppRouter;

@@ -1,13 +1,14 @@
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {
+  Alert,
   Button,
   Checkbox,
   Icon,
   message,
   Row,
   Modal,
-  Table, Alert
+  Table
 } from 'antd';
 import EditSystemNotificationForm from './forms/EditSystemNotificationForm';
 import Notifications from '../../models/notifications/Notifications';
@@ -99,22 +100,25 @@ export default class SystemEvents extends Component {
         return (
           <Icon
             style={{fontSize: 'larger'}}
-            className={styles[notification.severity.toLowerCase()]}
-            type="info-circle-o" />
+            className="cp-setting-info"
+            type="info-circle-o"
+          />
         );
       case 'WARNING':
         return (
           <Icon
             style={{fontSize: 'larger'}}
-            className={styles[notification.severity.toLowerCase()]}
-            type="exclamation-circle-o" />
+            className="cp-setting-warning"
+            type="exclamation-circle-o"
+          />
         );
       case 'CRITICAL':
         return (
           <Icon
             style={{fontSize: 'larger'}}
-            className={styles[notification.severity.toLowerCase()]}
-            type="close-circle-o" />
+            className="cp-setting-critical"
+            type="close-circle-o"
+          />
         );
       default: return undefined;
     }

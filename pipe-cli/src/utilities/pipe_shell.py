@@ -109,24 +109,24 @@ def resize_pty(channel):
 def posix_shell(channel, is_interactive=True):
     # get the current TTY attributes to reapply after
     # the remote shell is closed
-    oldtty_attrs = termios.tcgetattr(sys.stdin)
+    oldtty_attrs = termios.tcgetattr(sys.stdin) if is_interactive else None
     stdout_encoding = sys.stdout.encoding if sys.stdout.encoding else "UTF-8"
 
     # wrap the whole thing in a try/finally construct to ensure
     # that exiting code for TTY handling runs
     try:
-        stdin_fileno = sys.stdin.fileno()
         if is_interactive:
-            tty.setraw(stdin_fileno)
-            tty.setcbreak(stdin_fileno)
+            tty.setraw(sys.stdin.fileno())
+            tty.setcbreak(sys.stdin.fileno())
 
         channel.settimeout(0.0)
 
         is_alive = True
 
         while is_alive:
-            # resize on every iteration of the main loop
-            resize_pty(channel)
+            if is_interactive:
+                # resize on every iteration of the main loop
+                resize_pty(channel)
 
             # use a unix select call to wait until the remote shell
             # and stdin are ready for reading
@@ -154,7 +154,7 @@ def posix_shell(channel, is_interactive=True):
 
                 # use an os.read to prevent nasty buffering problem with shell
                 # history
-                char = os.read(stdin_fileno, 1)
+                char = os.read(sys.stdin.fileno(), 1)
 
                 # if this side of the connection closes, shut down gracefully
                 if len(char) == 0:
@@ -171,7 +171,8 @@ def posix_shell(channel, is_interactive=True):
     # regardless of errors, restore the TTY to working order
     # upon exit and print that connection is closed
     finally:
-        termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, oldtty_attrs)
+        if is_interactive:
+            termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, oldtty_attrs)
 
 def windows_shell(channel, is_interactive=True):
     # Map functional keys to the ansi escape sequences

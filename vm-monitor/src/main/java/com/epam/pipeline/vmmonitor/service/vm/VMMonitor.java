@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ package com.epam.pipeline.vmmonitor.service.vm;
 import com.epam.pipeline.entity.cluster.NodeInstance;
 import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.RunStatus;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.exception.PipelineResponseException;
@@ -34,7 +35,11 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -46,7 +51,11 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class VMMonitor {
+
+    private static final String POOL_RUN_ID_PREFIX = "p-";
+    private static final int SECONDS_IN_MINUTES = 60;
 
     private final CloudPipelineAPIClient apiClient;
     private final VMNotifier notifier;
@@ -54,13 +63,15 @@ public class VMMonitor {
     private final List<String> requiredLabels;
     private final String runIdLabel;
     private final String poolIdLabel;
+    private final long vmMaxLiveMinutes;
 
     public VMMonitor(final CloudPipelineAPIClient apiClient,
                      final VMNotifier notifier,
                      final List<VMMonitorService> services,
                      @Value("${monitor.required.labels:}") final String requiredLabels,
                      @Value("${monitor.runid.label:}") final String runIdLabel,
-                     @Value("${monitor.poolid.label:}") final String poolIdLabel) {
+                     @Value("${monitor.poolid.label:}") final String poolIdLabel,
+                     @Value("${monitor.vm.max.live.minutes:60}") final long vmMaxLiveMinutes) {
         this.apiClient = apiClient;
         this.notifier = notifier;
         this.services = ListUtils.emptyIfNull(services).stream()
@@ -68,23 +79,33 @@ public class VMMonitor {
         this.requiredLabels = Arrays.asList(requiredLabels.split(","));
         this.runIdLabel = runIdLabel;
         this.poolIdLabel = poolIdLabel;
+        this.vmMaxLiveMinutes = vmMaxLiveMinutes;
     }
 
     public void monitor() {
-        ListUtils.emptyIfNull(apiClient.loadRegions())
-                .forEach(this::checkVMs);
+        try {
+            ListUtils.emptyIfNull(apiClient.loadRegions())
+                    .forEach(this::checkVMs);
+        } finally {
+            notifier.sendNotifications();
+        }
     }
 
     @SuppressWarnings("unchecked")
     private void checkVMs(final AbstractCloudRegion region) {
-        log.debug("Checking VMs in region {} {}", region.getRegionCode(), region.getProvider());
-        getVmService(region)
-                .ifPresent(service -> {
-                    final List<VirtualMachine> vms = ListUtils.emptyIfNull(service.fetchRunningVms(region));
-                    log.debug("Found {} running VM(s) in {} {}", vms.size(),
-                            region.getRegionCode(), region.getProvider());
-                    vms.forEach(this::checkVmState);
-                });
+        try {
+            log.debug("Checking VMs in region {} {}", region.getRegionCode(), region.getProvider());
+            getVmService(region)
+                    .ifPresent(service -> {
+                        final List<VirtualMachine> vms = ListUtils.emptyIfNull(service.fetchRunningVms(region));
+                        log.debug("Found {} running VM(s) in {} {}", vms.size(),
+                                region.getRegionCode(), region.getProvider());
+                        vms.forEach(this::checkVmState);
+                    });
+        } catch (Exception e) {
+            log.error("An error during region {} {} check.", region.getRegionCode(), region.getProvider());
+            log.error(e.getMessage(), e);
+        }
     }
 
     private Optional<VMMonitorService> getVmService(final AbstractCloudRegion region) {
@@ -96,7 +117,6 @@ public class VMMonitor {
         return Optional.of(services.get(provider));
     }
 
-    @SuppressWarnings("PMD.AvoidCatchingGenericException")
     private void checkVmState(final VirtualMachine vm) {
         try {
             final List<NodeInstance> nodes = apiClient.findNodes(vm.getPrivateIp());
@@ -106,8 +126,14 @@ public class VMMonitor {
                 checkMatchingNodes(nodes, vm);
             } else {
                 log.debug("No matching nodes were found for VM {} {}.", vm.getInstanceId(), vm.getCloudProvider());
-                if (!matchingRunExists(vm)) {
-                    notifier.notifyMissingNode(vm);
+                if (!matchingRunExists(vm) && !checkVMPoolNode(vm)) {
+                    final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
+                    final List<PipelineRun> matchingRuns = findLongValueInMap(vmTags, runIdLabel)
+                        .map(runId -> loadPipelineRun(runId).orElseGet(() -> new PipelineRun(runId, null)))
+                        .map(Collections::singletonList)
+                        .orElseGet(() -> apiClient.searchRunsByInstanceId(vm.getInstanceId()));
+                    final Long matchingPoolId = findLongValueInMap(vmTags, poolIdLabel).orElse(null);
+                    notifier.queueMissingNodeNotification(vm, matchingRuns, matchingPoolId);
                 }
             }
         } catch (Exception e) {
@@ -128,7 +154,7 @@ public class VMMonitor {
         return false;
     }
 
-    private boolean poolIdExists(final NodeInstance node) {
+    private boolean poolIdExists(final VirtualMachine vm, final NodeInstance node) {
         log.debug("Checking whether a node pool with corresponding pool id exists.");
         final String poolIdValue = MapUtils.emptyIfNull(node.getLabels()).get(poolIdLabel);
         if (StringUtils.isNotBlank(poolIdValue) && NumberUtils.isDigits(poolIdValue)) {
@@ -136,6 +162,25 @@ public class VMMonitor {
             log.debug("NodeInstance {} {} is associated with pool id {}. Checking node pool existence.",
                     node.getUid(), node.getClusterName(), poolId);
             return isNodePoolExists(poolId);
+        }
+        return checkVMPoolNode(vm);
+    }
+
+    private boolean checkVMPoolNode(final VirtualMachine vm) {
+        log.debug("Checking whether VM {} is created for some node pool.", vm.getInstanceId());
+        final String runIdValue = MapUtils.emptyIfNull(vm.getTags()).get(runIdLabel);
+        if (StringUtils.isNotBlank(runIdValue) && runIdValue.startsWith(POOL_RUN_ID_PREFIX)) {
+            log.debug("VM {} is labeled with {} and it possibly matches a node pool.",
+                    vm.getInstanceId(), runIdValue);
+            final LocalDateTime created = vm.getCreated();
+            if (created == null) {
+                return false;
+            }
+            final long minutesAlive = Duration.between(created, LocalDateTime.now(Clock.systemUTC()))
+                    .getSeconds() / SECONDS_IN_MINUTES;
+            log.debug("VM {} was launched at {} and is alive for {} minutes",
+                    vm.getInstanceId(), created, minutesAlive);
+            return minutesAlive <= vmMaxLiveMinutes;
         }
         return false;
     }
@@ -146,16 +191,24 @@ public class VMMonitor {
     }
 
     private boolean isRunActive(final VirtualMachine vm, final long runId) {
+        return loadPipelineRun(runId)
+            .map(PipelineRun::getStatus)
+            .map(status -> {
+                if (status.isFinal()) {
+                    log.debug("Run {} is in final status, but VM {} is still up.", runId, vm.getInstanceId());
+                    return false;
+                }
+                return true;
+            })
+            .orElse(false);
+    }
+
+    private Optional<PipelineRun> loadPipelineRun(final long runId) {
         try {
-            final PipelineRun run = apiClient.loadRun(runId);
-            if (run.getStatus().isFinal()) {
-                log.debug("Run {} is in final status, but VM {} is still up.", runId, vm.getInstanceId());
-                return false;
-            }
-            return true;
+            return Optional.of(apiClient.loadRun(runId));
         } catch (PipelineResponseException e) {
             log.error("Failed to load run {}: {}", runId, e.getMessage());
-            return false;
+            return Optional.empty();
         }
     }
 
@@ -166,16 +219,38 @@ public class VMMonitor {
 
     private void checkLabels(final NodeInstance node, final VirtualMachine vm) {
         log.debug("Checking status of node {} for VM {} {}", node.getName(), vm.getInstanceId(), vm.getCloudProvider());
-        if (matchingRunExists(vm) || poolIdExists(node)) {
+        if (matchingRunExists(vm) || poolIdExists(vm, node)) {
             return;
         }
         log.debug("Checking whether node {} is labeled with required tags.", node.getName());
         final List<String> labels = getMissingLabels(node);
         if (CollectionUtils.isNotEmpty(labels)) {
-            notifier.notifyMissingLabels(vm, node, labels);
+            final Map<String, String> vmTags = MapUtils.emptyIfNull(vm.getTags());
+            final Map<String, String> nodeTags = MapUtils.emptyIfNull(node.getLabels());
+            final Optional<Long> runIdFromAttributes = findLongValueInMaps(nodeTags, vmTags, runIdLabel);
+            final RunStatus matchingRunStatus = runIdFromAttributes
+                .map(runId -> new RunStatus(runId,
+                                            loadPipelineRun(runId).map(PipelineRun::getStatus).orElse(null),
+                                            null))
+                .orElse(null);
+            final Long poolIdFromAttributes = findLongValueInMaps(nodeTags, vmTags, poolIdLabel).orElse(null);
+            notifier.queueMissingLabelsNotification(node, vm, labels, matchingRunStatus, poolIdFromAttributes);
         } else {
             log.debug("All required labels are present on node {}.", node.getName());
         }
+    }
+
+    private Optional<Long> findLongValueInMap(final Map<String, String> map, final String labelName) {
+        return Optional.ofNullable(map.get(labelName))
+            .filter(StringUtils::isNotBlank)
+            .filter(NumberUtils::isDigits)
+            .map(Long::parseLong);
+    }
+
+    private Optional<Long> findLongValueInMaps(final Map<String, String> firstMap, final Map<String, String> secondMap,
+                                               final String key) {
+        final Optional<Long> runIdFromNode = findLongValueInMap(firstMap, key);
+        return runIdFromNode.isPresent() ? runIdFromNode : findLongValueInMap(secondMap, key);
     }
 
     private List<String> getMissingLabels(final NodeInstance node) {

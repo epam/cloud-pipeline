@@ -18,16 +18,16 @@ import styles from './StatusIcon.css';
 import Statuses from './run-statuses';
 
 export default {
-  [Statuses.failure]: styles.iconRed,
-  [Statuses.paused]: styles.iconBlue,
-  [Statuses.pausing]: `${styles.iconBlue} ${styles.blink}`,
-  [Statuses.pulling]: styles.iconBlue,
-  [Statuses.queued]: styles.iconBlue,
-  [Statuses.resuming]: `${styles.iconBlue} ${styles.blink}`,
-  [Statuses.running]: styles.iconBlue,
-  [Statuses.scheduled]: styles.iconBlue,
-  [Statuses.stopped]: styles.iconYellow,
-  [Statuses.success]: styles.iconGreen,
+  [Statuses.failure]: 'cp-runs-table-icon-red',
+  [Statuses.paused]: 'cp-runs-table-icon-blue',
+  [Statuses.pausing]: `cp-runs-table-icon-blue ${styles.blink}`,
+  [Statuses.pulling]: 'cp-runs-table-icon-blue',
+  [Statuses.queued]: 'cp-runs-table-icon-blue',
+  [Statuses.resuming]: `cp-runs-table-icon-blue ${styles.blink}`,
+  [Statuses.running]: 'cp-runs-table-icon-blue',
+  [Statuses.scheduled]: 'cp-runs-table-icon-blue',
+  [Statuses.stopped]: 'cp-runs-table-icon-yellow',
+  [Statuses.success]: 'cp-runs-table-icon-green',
 
-  [Statuses.unknown]: styles.iconYellow
+  [Statuses.unknown]: 'cp-runs-table-icon-yellow'
 };

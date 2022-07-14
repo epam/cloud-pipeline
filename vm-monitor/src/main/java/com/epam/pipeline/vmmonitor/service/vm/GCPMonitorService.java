@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.GeneralSecurityException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -133,7 +136,12 @@ public class GCPMonitorService implements VMMonitorService<GCPRegion> {
                              .cloudProvider(provider())
                              .instanceId(instance.getId().toString())
                              .privateIp(getInternalIP(instance))
+                             .instanceType(instance.getMachineType())
                              .tags(instance.getLabels())
+                             .created(DateTimeFormatter.ISO_OFFSET_DATE_TIME.parse(instance.getCreationTimestamp(),
+                                             Instant::from)
+                                     .atZone(ZoneOffset.UTC)
+                                     .toLocalDateTime())
                              .build();
     }
 

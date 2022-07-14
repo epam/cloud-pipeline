@@ -16,8 +16,10 @@
 
 package com.epam.pipeline.app;
 
+import com.epam.pipeline.dao.monitoring.metricrequester.HeapsterElasticRestHighLevelClient;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -25,21 +27,32 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@ConditionalOnProperty("monitoring.elasticsearch.url")
 public class ElasticsearchConfig {
+
     @Value("${monitoring.elasticsearch.url:#{null}}")
     private String elasticsearchUrl;
     @Value("${monitoring.elasticsearch.port:9200}")
     private int elasticsearchPort;
 
     @Bean
-    @ConditionalOnProperty("monitoring.elasticsearch.url")
-    public RestHighLevelClient elasticsearchClient() {
-        return new RestHighLevelClient(lowLevelClient());
+    public RestHighLevelClient elasticsearchClient(final RestClientBuilder lowLevelClientBuilder) {
+        return new RestHighLevelClient(lowLevelClientBuilder);
     }
 
     @Bean
-    @ConditionalOnProperty("monitoring.elasticsearch.url")
-    public RestClient lowLevelClient() {
-        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, "http")).build();
+    public HeapsterElasticRestHighLevelClient heapsterElasticRestHighLevelClient(
+            final RestClientBuilder lowLevelClientBuilder) {
+        return new HeapsterElasticRestHighLevelClient(lowLevelClientBuilder);
+    }
+
+    @Bean
+    public RestClient lowLevelClient(final RestClientBuilder lowLevelClientBuilder) {
+        return lowLevelClientBuilder.build();
+    }
+
+    @Bean
+    public RestClientBuilder lowLevelClientBuilder() {
+        return RestClient.builder(new HttpHost(elasticsearchUrl, elasticsearchPort, "http"));
     }
 }

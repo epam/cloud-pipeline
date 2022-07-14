@@ -34,14 +34,11 @@ export default function compareArrays (arr1, arr2, elementComparer) {
     if (elementComparer) {
       for (let j = 0; j < array.length; j++) {
         if (elementComparer(element, array[j])) {
-          return array[j];
+          return true;
         }
       }
     } else {
-      const index = array.indexOf(element);
-      if (index >= 0) {
-        return array[index];
-      }
+      return array.includes(element);
     }
     return null;
   };

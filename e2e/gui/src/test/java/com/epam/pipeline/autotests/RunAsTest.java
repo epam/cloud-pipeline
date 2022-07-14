@@ -175,7 +175,7 @@ public class RunAsTest extends AbstractSeveralPipelineRunningTest implements Nav
                 .clickOnPipeline(pipeline1)
                 .firstVersion()
                 .runPipeline()
-//                .checkLaunchMessage("error", "Access is denied", false)
+                .checkLaunchMessage("error", "Access is denied", false)
                 .launch();
         runsMenu()
                 .activeRuns()

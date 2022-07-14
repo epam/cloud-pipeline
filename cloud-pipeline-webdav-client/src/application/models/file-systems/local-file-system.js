@@ -91,7 +91,7 @@ class LocalFileSystem extends FileSystem {
           size: +stat.size,
         });
       } catch (e) {
-        reject(e.message);
+        reject(e);
       }
     });
   }
@@ -148,6 +148,16 @@ class LocalFileSystem extends FileSystem {
         resolve();
       } catch (e) {
         reject(e.message);
+      }
+    });
+  }
+  pathExists(path) {
+    return new Promise((resolve) => {
+      try {
+        const exists = fs.existsSync(path);
+        resolve(exists);
+      } catch (e) {
+        resolve(false);
       }
     });
   }

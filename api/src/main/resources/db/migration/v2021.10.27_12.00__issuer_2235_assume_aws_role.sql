@@ -1,0 +1,1 @@
+ALTER TABLE pipeline.cloud_region ADD aws_iam_role text NULL;

@@ -18,19 +18,25 @@ import React from 'react';
 import Filters from './filters';
 import Discounts from './discounts';
 import {Container, RestoreLayoutProvider} from './layout';
+import ThemedReport from './themed-report';
 import styles from './reports.css';
+import QuotaProvider from '../quotas/quota-provider';
 
 function Reports ({children, location, router}) {
   return (
-    <Discounts>
-      <RestoreLayoutProvider>
-        <Filters location={location} router={router}>
-          <Container className={styles.chartsLayout}>
-            {children}
-          </Container>
-        </Filters>
-      </RestoreLayoutProvider>
-    </Discounts>
+    <QuotaProvider>
+      <ThemedReport>
+        <Discounts>
+          <RestoreLayoutProvider>
+            <Filters location={location} router={router}>
+              <Container className={styles.chartsLayout}>
+                {children}
+              </Container>
+            </Filters>
+          </RestoreLayoutProvider>
+        </Discounts>
+      </ThemedReport>
+    </QuotaProvider>
   );
 }
 

@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.cloud.aws;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.DefaultAWSCredentialsProviderChain;
+import com.amazonaws.auth.STSAssumeRoleSessionCredentialsProvider;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.amazonaws.services.securitytoken.model.AssumeRoleRequest;
@@ -30,13 +31,33 @@ import com.epam.pipeline.manager.cloud.TemporaryCredentialsGenerator;
 import com.epam.pipeline.utils.PasswordGenerator;
 import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 public final class AWSUtils {
+
+    public static final String AWS_ACCESS_KEY_ID_VAR = "AWS_ACCESS_KEY_ID";
+    public static final String AWS_SECRET_ACCESS_KEY_VAR = "AWS_SECRET_ACCESS_KEY";
+    public static final String AWS_SESSION_TOKEN_VAR = "AWS_SESSION_TOKEN";
+    public static final String AWS_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss z";
+    public static final DateTimeFormatter AWS_DATE_FORMATTER = DateTimeFormatter.ofPattern(AWS_DATE_FORMAT);
+    public static final String ROLE_SESSION_NAME = "CLOUD_PIPELINE_SESSION";
+    public static final int MIN_SESSION_DURATION = 900;
 
     private static final String EMPTY_KEY_ARN = "NONE";
     private static final String EMPTY_JSON = "{}";
 
     private AWSUtils() {
         //no op
+    }
+
+    public static AWSCredentialsProvider getCredentialsProvider(final AwsRegion region) {
+        if (StringUtils.isNotBlank(region.getIamRole())) {
+            return new STSAssumeRoleSessionCredentialsProvider.Builder(region.getIamRole(), ROLE_SESSION_NAME)
+                    .withRoleSessionDurationSeconds(MIN_SESSION_DURATION)
+                    .build();
+        }
+        return getCredentialsProvider(region.getProfile());
     }
 
     public static AWSCredentialsProvider getCredentialsProvider(final String profile) {
@@ -98,4 +119,10 @@ public final class AWSUtils {
                 .region(regionCode)
                 .build();
     }
+
+    public static LocalDateTime parseAwsDate(final String date) {
+        return LocalDateTime.parse(date, AWS_DATE_FORMATTER);
+    }
+
+
 }

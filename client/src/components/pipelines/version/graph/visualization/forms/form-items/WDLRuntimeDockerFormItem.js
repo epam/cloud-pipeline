@@ -149,7 +149,12 @@ export class WDLRuntimeDockerFormItem extends React.Component {
         }
         {
           !this.state.valid &&
-          <Row style={{color: 'red', fontSize: 'small'}}>Docker image is required</Row>
+          <Row
+            style={{fontSize: 'small'}}
+            className="cp-error"
+          >
+            Docker image is required
+          </Row>
         }
       </div>
     );

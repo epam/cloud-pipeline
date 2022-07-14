@@ -18,10 +18,14 @@ package com.epam.pipeline.test.web;
 
 import com.epam.pipeline.acl.billing.BillingApiService;
 import com.epam.pipeline.acl.cloud.credentials.CloudProfileCredentialsApiService;
+import com.epam.pipeline.acl.cluster.NatGatewayApiService;
 import com.epam.pipeline.acl.datastorage.lustre.LustreFSApiService;
 import com.epam.pipeline.acl.log.LogApiService;
 import com.epam.pipeline.acl.ontology.OntologyApiService;
 import com.epam.pipeline.acl.pipeline.PipelineApiService;
+import com.epam.pipeline.acl.preprocessing.NgsPreprocessingApiService;
+import com.epam.pipeline.acl.quota.QuotaApiService;
+import com.epam.pipeline.acl.report.ReportApiService;
 import com.epam.pipeline.acl.run.RunApiService;
 import com.epam.pipeline.acl.run.RunScheduleApiService;
 import com.epam.pipeline.acl.cluster.ClusterApiService;
@@ -45,6 +49,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
 import com.epam.pipeline.manager.issue.AttachmentFileManager;
@@ -54,6 +59,7 @@ import com.epam.pipeline.acl.notification.NotificationTemplateApiService;
 import com.epam.pipeline.acl.notification.SystemNotificationApiService;
 import com.epam.pipeline.acl.folder.FolderApiService;
 import com.epam.pipeline.acl.pipeline.PipelineConfigApiService;
+import com.epam.pipeline.manager.ldap.LdapApiService;
 import com.epam.pipeline.manager.pipeline.ToolManager;
 import com.epam.pipeline.acl.preference.PreferenceApiService;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -234,4 +240,22 @@ public class ControllerTestBeans {
 
     @MockBean
     protected CloudProfileCredentialsApiService cloudProfileCredentialsApiService;
+
+    @MockBean
+    protected NatGatewayApiService natGatewayApiService;
+
+    @MockBean
+    protected LdapApiService ldapApiService;
+
+    @MockBean
+    protected QuotaApiService quotaApiService;
+
+    @MockBean
+    protected ReportApiService reportApiService;
+
+    @MockBean
+    protected NgsPreprocessingApiService preprocessingApiService;
+
+    @MockBean
+    protected CloudAccessApiService cloudAccessApiService;
 }

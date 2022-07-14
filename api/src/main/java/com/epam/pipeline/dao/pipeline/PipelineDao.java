@@ -152,7 +152,9 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
         REPOSITORY_TYPE,
         PIPELINE_TYPE,
         PIPELINE_LOCKED,
-        PARENT_FOLDER_ID;
+        PARENT_FOLDER_ID,
+        BRANCH,
+        CONFIG;
 
         static MapSqlParameterSource getParameters(Pipeline pipeline) {
             MapSqlParameterSource params = new MapSqlParameterSource();
@@ -166,13 +168,17 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             params.addValue(CREATED_DATE.name(), pipeline.getCreatedDate());
             params.addValue(OWNER.name(), pipeline.getOwner());
             params.addValue(REPOSITORY_TOKEN.name(), pipeline.getRepositoryToken());
-            params.addValue(REPOSITORY_TYPE.name(), pipeline.getRepositoryType());
+            params.addValue(REPOSITORY_TYPE.name(), Optional.ofNullable(pipeline.getRepositoryType())
+                    .map(RepositoryType::getId)
+                    .orElse(null));
             params.addValue(PIPELINE_TYPE.name(),
                     Optional.ofNullable(pipeline.getPipelineType())
                             .map(PipelineType::getId)
                             .orElse(PipelineType.PIPELINE.getId())
             );
+            params.addValue(CONFIG.name(), pipeline.getConfigurationPath());
             params.addValue(PIPELINE_LOCKED.name(), pipeline.isLocked());
+            params.addValue(BRANCH.name(), pipeline.getBranch());
             return params;
         }
 
@@ -220,8 +226,10 @@ public class PipelineDao extends NamedParameterJdbcDaoSupport {
             pipeline.setRepositoryToken(rs.getString(REPOSITORY_TOKEN.name()));
             pipeline.setRepositoryType(RepositoryType.getById(rs.getLong(REPOSITORY_TYPE.name())));
             pipeline.setPipelineType(PipelineType.getById(rs.getLong(PIPELINE_TYPE.name())));
+            pipeline.setConfigurationPath(rs.getString(CONFIG.name()));
             pipeline.setLocked(rs.getBoolean(PIPELINE_LOCKED.name()));
             pipeline.setCreatedDate(new Date(rs.getTimestamp(CREATED_DATE.name()).getTime()));
+            pipeline.setBranch(rs.getString(BRANCH.name()));
             return pipeline;
         }
 

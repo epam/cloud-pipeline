@@ -18,7 +18,7 @@
   cursor: pointer;
 }
 
-.container:hover {
+.container:not(.disabled):hover {
   text-decoration: underline;
 }
 
@@ -27,11 +27,6 @@
   align-items: center;
   margin-bottom: 5px;
   padding: 2px;
-}
-
-.notification:nth-child(4n+3),
-.notification:nth-child(4n) {
-  background-color: #fafafa;
 }
 
 .notification .label,
@@ -48,17 +43,7 @@
   min-width: 80px;
 }
 
-.notification.error .label.error {
-  color: red;
-}
-
-.notification.error .input.error,
-.notification.error .select.error > div {
-  border-color: red;
-}
-
 .notification-error {
-  color: red;
   display: none;
   line-height: 1em;
   margin: -5px 0 5px;
@@ -69,13 +54,13 @@
   align-items: center;
 }
 
-.notification-error .error-description {
-  font-size: 0.85em;
+.notification-error ul {
+  margin-left: 20px;
+  list-style: disc;
 }
 
-.notification-error.visible .error-description:not(:last-child)::after {
-  content: ',';
-  margin-right: 5px;
+.notification-error .error-description {
+  font-size: 0.85em;
 }
 
 .actions,
@@ -93,7 +78,6 @@
 .users-roles-select {
   padding-bottom: 5px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #fafafa;
   line-height: 24px;
   display: flex;
   align-items: center;
@@ -103,17 +87,12 @@
   margin-right: 5px;
 }
 
-.users-roles-select .selector.error > div {
-  border-color: red;
-}
-
 .users-roles-select.error {
   padding-bottom: 15px;
   margin-bottom: 0;
 }
 
 .users-roles-select-error {
-  color: red;
   display: none;
   line-height: 1em;
   font-size: 0.85em;

@@ -17,17 +17,32 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
-import {PlotColors} from './utilities';
+import {computed} from 'mobx';
+import {getThemedPlotColors} from './utilities';
 
 const LEGEND_ICON_WIDTH = 30;
 const MARGIN = 15;
 
-@inject('plot')
+@inject('plot', 'themes')
 @observer
 class Legend extends React.Component {
   state = {
     legendSizes: {}
   };
+
+  @computed
+  get plotColors () {
+    return getThemedPlotColors(this);
+  }
+
+  @computed
+  get backgroundColor () {
+    const {themes} = this.props;
+    if (themes && themes.currentThemeConfiguration) {
+      return themes.currentThemeConfiguration['@card-background-color'] || 'white';
+    }
+    return 'white';
+  }
 
   getTotalLegendsWidth (elements) {
     const {legendSizes} = this.state;
@@ -55,7 +70,7 @@ class Legend extends React.Component {
         this.setState({legendSizes});
       }
     };
-    const color = PlotColors[index % PlotColors.length];
+    const color = this.plotColors[index % this.plotColors.length];
     const x = width / 2.0 -
       this.getTotalLegendsWidth(array.map(a => a.title || a.name)) / 2.0 +
       this.getTotalLegendsWidth(array.map(a => a.title || a.name).slice(0, index)) +
@@ -87,7 +102,7 @@ class Legend extends React.Component {
           cy={y}
           r={3}
           strokeWidth={2}
-          fill={'white'}
+          fill={this.backgroundColor}
           stroke={color}
         />
         <text

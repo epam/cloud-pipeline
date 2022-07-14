@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.user;
 
+import com.epam.pipeline.dto.quota.Quota;
 import com.epam.pipeline.entity.cloud.credentials.CloudProfileCredentialsEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -85,13 +86,10 @@ public class PipelineUser implements StorageContainer {
     @Transient
     private boolean admin;
 
-    @Transient
     private boolean blocked;
 
-    @Transient
     private LocalDateTime registrationDate;
 
-    @Transient
     private LocalDateTime firstLoginDate;
 
     private Long defaultStorageId;
@@ -113,6 +111,16 @@ public class PipelineUser implements StorageContainer {
 
     @ElementCollection
     private List<RunnerSid> allowedRunners;
+
+    private LocalDateTime lastLoginDate;
+
+    private LocalDateTime blockDate;
+
+    @Transient
+    private Boolean online;
+
+    @Transient
+    private List<Quota> activeQuotas;
 
     public PipelineUser() {
         this.admin = false;

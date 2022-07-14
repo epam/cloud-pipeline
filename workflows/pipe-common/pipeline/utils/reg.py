@@ -38,5 +38,9 @@ def set_local_machine_dword_value(path, name, value):
     set_value(winreg.HKEY_LOCAL_MACHINE, path, winreg.REG_DWORD, name, value)
 
 
+def set_user_str_value(path, name, value, sid):
+    set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_SZ, name, value)
+
+
 def set_user_dword_value(path, name, value, sid):
     set_value(winreg.HKEY_USERS, '{}\\{}'.format(sid, path), winreg.REG_DWORD, name, value)

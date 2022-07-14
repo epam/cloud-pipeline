@@ -18,6 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable, computed} from 'mobx';
 import {Alert, Card, Modal, message} from 'antd';
+import classNames from 'classnames';
 import localization from '../../../utils/localization';
 import pipelineRun from '../../../models/pipelines/PipelineRun';
 import LoadTool from '../../../models/tools/LoadTool';
@@ -37,12 +38,14 @@ import queryParameters from '../../../utils/queryParameters';
 import LaunchPipelineForm from './form/LaunchPipelineForm';
 import getToolLaunchingOptions from './utilities/get-tool-launching-options';
 import versionedStorageLaunchInfoEqual from './utilities/versioned-storage-launch-info-equal';
+import roleModel from '../../../utils/roleModel';
 
 const DTS_ENVIRONMENT = 'DTS';
 
 @localization.localizedComponent
 @submitsRun
 @runPipelineActions
+@roleModel.authenticationInfo
 @inject('awsRegions', 'pipelines', 'preferences')
 @inject(({allowedInstanceTypes, routing, pipelines, preferences}, {params}) => {
   const components = queryParameters(routing);
@@ -636,7 +639,15 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
     return (
       <Card
         bodyStyle={{padding: 0, margin: 0}}
-        className={styles.container}>
+        className={
+          classNames(
+            styles.container,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
+      >
         <LaunchPipelineForm
           defaultPriceTypeIsSpot={this.props.preferences.useSpot}
           editConfigurationMode={false}

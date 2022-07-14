@@ -16,7 +16,16 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, InputNumber, Icon, Modal, Radio, Row, Select} from 'antd';
+import {
+  Checkbox,
+  Input,
+  InputNumber,
+  Icon,
+  Modal,
+  Radio,
+  Row,
+  Select
+} from 'antd';
 import {computed} from 'mobx';
 import {inject, observer} from 'mobx-react';
 import {
@@ -25,6 +34,7 @@ import {
 } from './launch-cluster-tooltips';
 import {getSpotTypeName} from '../../../../special/spot-instance-names';
 import {booleanParameterIsSetToValue} from './parameter-utilities';
+import AllowedInstancesCountWarning from './allowed-instances-count-warning';
 import {
   CP_CAP_SGE,
   CP_CAP_SPARK,
@@ -36,6 +46,13 @@ import {
   CP_CAP_AUTOSCALE_PRICE_TYPE
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
+import {
+  getSkippedParameters as getGPUScalingSkippedParameters,
+  getGPUScalingDefaultConfiguration,
+  getScalingConfigurationForProvider,
+  gpuScalingAvailable,
+  InstanceTypeSelector
+} from './enable-gpu-scaling';
 
 const PARAMETER_TITLE_WIDTH = 110;
 const PARAMETER_TITLE_RIGHT_MARGIN = 5;
@@ -110,7 +127,8 @@ export function getSkippedSystemParametersList (controller) {
       CP_CAP_AUTOSCALE_WORKERS,
       CP_CAP_AUTOSCALE_HYBRID,
       CP_CAP_AUTOSCALE_PRICE_TYPE,
-      ...getRunCapabilitiesSkippedParameters()
+      ...getRunCapabilitiesSkippedParameters(),
+      ...getGPUScalingSkippedParameters(controller.props.preferences)
     ];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS, ...getRunCapabilitiesSkippedParameters()];
@@ -189,7 +207,8 @@ export function setSingleNodeMode (controller, callback) {
     slurmEnabled: false,
     kubeEnabled: false,
     autoScaledPriceType: undefined,
-    hybridAutoScaledClusterEnabled: false
+    hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined
   }, callback);
 }
 
@@ -204,6 +223,7 @@ export function setFixedClusterMode (controller, callback) {
     kubeEnabled: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined,
     nodesCount: Math.max(1,
       !isNaN(controller.state.maxNodesCount)
         ? controller.state.maxNodesCount
@@ -224,6 +244,7 @@ export function setAutoScaledMode (controller, callback) {
     kubeEnabled: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined,
     maxNodesCount: Math.max(1,
       !isNaN(controller.state.nodesCount)
         ? controller.state.nodesCount
@@ -255,8 +276,12 @@ const lowerCasedString = (string, lowercased) => {
 class ConfigureClusterDialog extends React.Component {
   static getClusterName = (ctrl, lowerCased) => {
     if (ctrl.state.launchCluster && ctrl.state.autoScaledCluster) {
+      const details = [
+        ctrl.state.hybridAutoScaledClusterEnabled ? 'hybrid' : false,
+        ctrl.state.gpuScalingConfiguration ? 'GPU' : false
+      ].filter(Boolean).join(' ');
       const name = lowerCasedString(
-        `Auto-scaled ${ctrl.state.hybridAutoScaledClusterEnabled ? 'hybrid ' : ''}cluster`,
+        `Auto-scaled ${details ? `${details} ` : ''}cluster`,
         lowerCased
       );
       if (!isNaN(ctrl.state.nodesCount) && !isNaN(ctrl.state.maxNodesCount)) {
@@ -307,11 +332,13 @@ class ConfigureClusterDialog extends React.Component {
     kubeEnabled: PropTypes.bool,
     autoScaledPriceType: PropTypes.string,
     hybridAutoScaledClusterEnabled: PropTypes.bool,
+    gpuScalingConfiguration: PropTypes.object,
     nodesCount: PropTypes.number,
     maxNodesCount: PropTypes.number,
     onChange: PropTypes.func,
     onClose: PropTypes.func,
-    instanceName: PropTypes.string
+    instanceName: PropTypes.string,
+    instanceTypes: PropTypes.array
   };
 
   state = {
@@ -323,6 +350,7 @@ class ConfigureClusterDialog extends React.Component {
     slurmEnabled: false,
     kubeEnabled: false,
     hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined,
     autoScaledPriceType: undefined,
     nodesCount: 0,
     maxNodesCount: 0,
@@ -378,12 +406,9 @@ class ConfigureClusterDialog extends React.Component {
 
   getInputStyle = (field) => {
     if (this.state.validation[field]) {
-      return {
-        border: '1px solid red',
-        outline: 'none'
-      };
+      return 'cp-error';
     }
-    return {};
+    return undefined;
   };
 
   getValidationRow = (field) => {
@@ -393,7 +418,8 @@ class ConfigureClusterDialog extends React.Component {
           key={`${field} validation`}
           type="flex"
           align="middle"
-          style={{paddingLeft: 115, fontSize: 'smaller', color: 'red'}}>
+          className="cp-error"
+          style={{paddingLeft: 115, fontSize: 'smaller'}}>
           {this.state.validation[field]}
         </Row>
       );
@@ -407,7 +433,8 @@ class ConfigureClusterDialog extends React.Component {
       sparkEnabled: false,
       slurmEnabled: false,
       kubeEnabled: false,
-      hybridAutoScaledClusterEnabled: false
+      hybridAutoScaledClusterEnabled: false,
+      gpuScalingConfiguration: undefined
     });
   };
 
@@ -417,7 +444,8 @@ class ConfigureClusterDialog extends React.Component {
       sparkEnabled: e.target.checked,
       slurmEnabled: false,
       kubeEnabled: false,
-      hybridAutoScaledClusterEnabled: false
+      hybridAutoScaledClusterEnabled: false,
+      gpuScalingConfiguration: undefined
     });
   };
 
@@ -427,7 +455,8 @@ class ConfigureClusterDialog extends React.Component {
       sparkEnabled: false,
       slurmEnabled: e.target.checked,
       kubeEnabled: false,
-      hybridAutoScaledClusterEnabled: false
+      hybridAutoScaledClusterEnabled: false,
+      gpuScalingConfiguration: undefined
     });
   };
 
@@ -437,17 +466,42 @@ class ConfigureClusterDialog extends React.Component {
       sparkEnabled: false,
       slurmEnabled: false,
       kubeEnabled: e.target.checked,
-      hybridAutoScaledClusterEnabled: false
+      hybridAutoScaledClusterEnabled: false,
+      gpuScalingConfiguration: undefined
     });
   };
 
   onChangeEnableHybridAutoScaledCluster = (e) => {
+    const {
+      cloudRegionProvider: provider,
+      preferences
+    } = this.props;
+    const {gpuScalingConfiguration} = this.state;
+    const gpuScalingConfigurationEnabled = !!gpuScalingConfiguration;
     this.setState({
       gridEngineEnabled: false,
       sparkEnabled: false,
       slurmEnabled: false,
       kubeEnabled: false,
-      hybridAutoScaledClusterEnabled: e.target.checked
+      hybridAutoScaledClusterEnabled: e.target.checked,
+      gpuScalingConfiguration: gpuScalingConfigurationEnabled
+        ? getGPUScalingDefaultConfiguration({provider, hybrid: e.target.checked}, preferences)
+        : undefined
+    });
+  };
+
+  onChangeEnableGPUScaling = (e) => {
+    const {
+      cloudRegionProvider,
+      preferences
+    } = this.props;
+    const {
+      hybridAutoScaledClusterEnabled: hybrid
+    } = this.state;
+    this.setState({
+      gpuScalingConfiguration: e.target.checked
+        ? getGPUScalingDefaultConfiguration({provider: cloudRegionProvider, hybrid}, preferences)
+        : undefined
     });
   };
 
@@ -459,9 +513,26 @@ class ConfigureClusterDialog extends React.Component {
           min={1}
           max={this.launchMaxScheduledNumber}
           disabled={this.props.disabled}
-          style={Object.assign({flex: 1}, this.getInputStyle('nodesCount'))}
+          className={this.getInputStyle('nodesCount')}
+          style={{flex: 1}}
           value={this.state.nodesCount}
           onChange={this.onChangeNodeCount} />
+      </Row>,
+      <Row
+        key="nodes count warning row"
+        type="flex"
+        style={{
+          marginTop: 5,
+          marginLeft: 115
+        }}
+      >
+        <AllowedInstancesCountWarning
+          key="nodes count warning"
+          payload={{
+            nodeCount: this.state.nodesCount
+          }}
+          style={{width: '100%'}}
+        />
       </Row>,
       this.getValidationRow('nodesCount'),
       <Row key="enable grid engine" type="flex" align="middle" style={{marginTop: 5}}>
@@ -503,6 +574,45 @@ class ConfigureClusterDialog extends React.Component {
     ].filter(r => !!r);
   };
 
+  renderGPUScalingParameter = (value, onChange, gpu = false) => {
+    const {hybridAutoScaledClusterEnabled: hybrid} = this.state;
+    const label = (
+      <span style={{marginLeft: LEFT_MARGIN, marginRight: 5}}>
+        {gpu ? 'GPU' : 'CPU'} {hybrid ? 'family' : 'instance'}:
+      </span>
+    );
+    return (
+      <Row
+        key={`gpu-scaling-${gpu ? 'gpu' : 'cpu'}-family`}
+        type="flex"
+        align="middle"
+        style={{marginTop: 5, paddingRight: 15}}
+      >
+        {label}
+        {
+          hybrid && (
+            <Input
+              style={{flex: 1}}
+              onChange={e => onChange(e.target.value)}
+              value={value}
+            />
+          )
+        }
+        {
+          !hybrid && (
+            <InstanceTypeSelector
+              value={value}
+              onChange={onChange}
+              instanceTypes={this.props.instanceTypes}
+              gpu={gpu}
+              style={{flex: 1}}
+            />
+          )
+        }
+      </Row>
+    );
+  };
+
   renderAutoScaledClusterConfiguration = () => {
     const onSetUpChildNodesClicked = () => {
       this.setState({
@@ -529,7 +639,8 @@ class ConfigureClusterDialog extends React.Component {
               min={1}
               max={this.launchMaxScheduledNumber}
               disabled={this.props.disabled}
-              style={Object.assign({flex: 1}, this.getInputStyle('nodesCount'))}
+              className={this.getInputStyle('nodesCount')}
+              style={{flex: 1}}
               value={this.state.nodesCount}
               onChange={this.onChangeNodeCount} />
             {
@@ -540,7 +651,9 @@ class ConfigureClusterDialog extends React.Component {
             }
             <a
               onClick={onUnsetChildNodes}
-              style={{color: '#666', textDecoration: 'underline', marginLeft: 5}}>
+              className="cp-text underline"
+              style={{marginLeft: 5}}
+            >
               <Icon type="close" /> Reset
             </a>
           </Row>
@@ -551,7 +664,8 @@ class ConfigureClusterDialog extends React.Component {
             <span style={{marginLeft: LEFT_MARGIN, flex: 1}}>
               <a
                 onClick={onSetUpChildNodesClicked}
-                style={{color: '#666', textDecoration: 'underline'}}>
+                className="cp-text underline"
+              >
                 Setup default child nodes count
               </a>
               {
@@ -597,6 +711,46 @@ class ConfigureClusterDialog extends React.Component {
         )}
       </Row>
     );
+    const renderGPUScalingConfiguration = () => {
+      const {preferences, cloudRegionProvider} = this.props;
+      const configuration = getScalingConfigurationForProvider(cloudRegionProvider, preferences);
+      if (!configuration) {
+        return [];
+      }
+      const {
+        gpuScalingConfiguration
+      } = this.state;
+      const renderers = [
+        (
+          <Row
+            key="gpu-scaling-checkbox"
+            type="flex"
+            align="middle"
+            style={{marginTop: 5}}
+          >
+            <Checkbox
+              style={{marginLeft: LEFT_MARGIN}}
+              checked={!!gpuScalingConfiguration}
+              onChange={this.onChangeEnableGPUScaling}>
+              Enable GPU scaling
+            </Checkbox>
+            {renderTooltip(LaunchClusterTooltip.autoScaledCluster.gpuScaling, {marginLeft: 5})}
+          </Row>
+        )
+      ];
+      if (gpuScalingConfiguration) {
+        const {cpu, gpu} = gpuScalingConfiguration;
+        const onChangeCPU = value => this.setState({
+          gpuScalingConfiguration: {...gpuScalingConfiguration, cpu: {...cpu, value}}
+        });
+        const onChangeGPU = value => this.setState({
+          gpuScalingConfiguration: {...gpuScalingConfiguration, gpu: {...gpu, value}}
+        });
+        renderers.push(this.renderGPUScalingParameter(cpu?.value, onChangeCPU));
+        renderers.push(this.renderGPUScalingParameter(gpu?.value, onChangeGPU, true));
+      }
+      return renderers;
+    };
     return [
       <Row key="max nodes count" type="flex" align="middle" style={{marginTop: 5}}>
         <span style={PARAMETER_TITLE_STYLE}>Auto-scaled up to:</span>
@@ -604,10 +758,32 @@ class ConfigureClusterDialog extends React.Component {
           min={this.state.setDefaultNodesCount ? 2 : 1}
           max={this.launchMaxAutoScaledNumber}
           disabled={this.props.disabled}
-          style={Object.assign({flex: 1}, this.getInputStyle('maxNodesCount'))}
+          className={this.getInputStyle('maxNodesCount')}
+          style={{flex: 1}}
           value={this.state.maxNodesCount}
           onChange={this.onChangeMaxNodeCount} />
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.autoScaledUpTo, {marginLeft: 5})}
+      </Row>,
+      <Row
+        key="nodes count warning row"
+        type="flex"
+        style={{
+          marginTop: 5,
+          marginLeft: 115,
+          marginRight: 17
+        }}
+      >
+        <AllowedInstancesCountWarning
+          payload={{
+            nodeCount: this.state.setDefaultNodesCount
+              ? this.state.nodesCount
+              : 0,
+            maxNodeCount: this.state.maxNodesCount
+          }}
+          style={{
+            width: '100%'
+          }}
+        />
       </Row>,
       this.getValidationRow('maxNodesCount'),
       <Row key="enable hybrid" type="flex" align="middle" style={{marginTop: 5}}>
@@ -619,6 +795,7 @@ class ConfigureClusterDialog extends React.Component {
         </Checkbox>
         {renderTooltip(LaunchClusterTooltip.autoScaledCluster.hybridAutoScaledCluster)}
       </Row>,
+      ...renderGPUScalingConfiguration(),
       ...renderSetDefaultNodesCount(),
       this.getValidationRow('nodesCount'),
       renderAutoScaledPriceTypeSelect()
@@ -642,6 +819,7 @@ class ConfigureClusterDialog extends React.Component {
         autoScaledCluster: this.state.autoScaledCluster,
         gridEngineEnabled: this.state.gridEngineEnabled,
         hybridAutoScaledClusterEnabled: this.state.hybridAutoScaledClusterEnabled,
+        gpuScalingConfiguration: this.state.gpuScalingConfiguration,
         sparkEnabled: this.state.sparkEnabled,
         slurmEnabled: this.state.slurmEnabled,
         kubeEnabled: this.state.kubeEnabled,
@@ -681,6 +859,17 @@ class ConfigureClusterDialog extends React.Component {
               {renderTooltip(LaunchClusterTooltip.clusterMode, {marginLeft: 10})}
             </div>
           </Row>
+          {this.selectedClusterType === CLUSTER_TYPE.singleNode && (
+            <Row
+              type="flex"
+              justify="center"
+            >
+              <AllowedInstancesCountWarning
+                singleNode
+                style={{width: '100%', marginTop: '5px'}}
+              />
+            </Row>
+          )}
           {
             this.state.launchCluster && !this.state.autoScaledCluster &&
             this.renderFixedClusterConfiguration()
@@ -782,6 +971,12 @@ class ConfigureClusterDialog extends React.Component {
         kubeEnabled: nextProps.kubeEnabled,
         autoScaledPriceType: nextProps.autoScaledPriceType,
         hybridAutoScaledClusterEnabled: nextProps.hybridAutoScaledClusterEnabled,
+        gpuScalingConfiguration: gpuScalingAvailable(
+          nextProps.cloudRegionProvider,
+          nextProps.preferences
+        )
+          ? nextProps.gpuScalingConfiguration
+          : undefined,
         setDefaultNodesCount: nextProps.nodesCount > 0,
         nodesCount: nextProps.nodesCount && !isNaN(nextProps.nodesCount) ? nextProps.nodesCount : 0,
         maxNodesCount: nextProps.maxNodesCount,

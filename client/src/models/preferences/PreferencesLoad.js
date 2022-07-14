@@ -18,6 +18,7 @@ import Remote from '../basic/Remote';
 import {computed} from 'mobx';
 
 const FETCH_ID_SYMBOL = Symbol('Fetch id');
+const MAINTENANCE_MODE_DISCLAIMER = 'Platform is in a maintenance mode, operation is temporary unavailable';
 
 class PreferencesLoad extends Remote {
   constructor () {
@@ -212,6 +213,197 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  @computed
+  get vsiPreviewMagnificationMultiplier () {
+    const value = this.getPreferenceValue('ui.wsi.magnification.factor');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 1;
+  }
+
+  @computed
+  get sharedStoragesSystemDirectory () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.directory');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return undefined;
+  }
+
+  @computed
+  get sharedStoragesDefaultPermissions () {
+    const value = this.getPreferenceValue('data.sharing.storage.folders.default.permissions');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "data.sharing.storage.folders.default.permissions" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get launchCapabilities () {
+    const value = this.getPreferenceValue('launch.capabilities');
+    if (value) {
+      try {
+        const capabilities = JSON.parse(value);
+        const parsePlatforms = o => {
+          if (!o) {
+            return [];
+          }
+          if (Array.isArray(o)) {
+            return o.slice();
+          }
+          if (typeof o === 'string') {
+            return o.split(',').map(o => o.trim());
+          }
+          return [];
+        };
+        const parseOSValue = o => {
+          if (!o) {
+            return [];
+          }
+          if (Array.isArray(o)) {
+            return o.slice();
+          }
+          if (typeof o === 'string') {
+            return o.split(',').map(o => o.trim());
+          }
+          return [];
+        };
+        const parseOS = o => parseOSValue(o)
+          .map(mask => mask.trim())
+          .filter(mask => mask.length);
+        const parseCloudProviders = o => {
+          if (o && /^all$/i.test(o.trim())) {
+            return [];
+          }
+          return (o || '')
+            .split(',')
+            .map(o => o.trim().toLowerCase())
+            .filter(o => o.length);
+        };
+        const mapCapability = ([key, entry]) => {
+          const {
+            capabilities = {}
+          } = entry;
+          return {
+            value: `CP_CAP_CUSTOM_${key}`,
+            name: entry?.name || key,
+            description: entry?.description,
+            platforms: parsePlatforms(entry?.platforms),
+            cloud: parseCloudProviders(entry?.cloud),
+            os: parseOS(entry?.os),
+            custom: true,
+            params: entry?.params || {},
+            capabilities: Object.entries(capabilities).map(mapCapability)
+          };
+        };
+        return Object
+          .entries(capabilities || {})
+          .map(mapCapability);
+      } catch (e) {
+        console.warn(
+          'Error parsing "launch.capabilities" preference:',
+          e
+        );
+      }
+    }
+    return [];
+  }
+
+  @computed
+  get webdavStorageAccessDurationSeconds () {
+    const value = this.getPreferenceValue('storage.webdav.access.duration.seconds');
+    if (value && !Number.isNaN(Number(value))) {
+      return Number(value);
+    }
+    return 86400; // 24 hours
+  }
+
+  @computed
+  get storageSizeRequestDisclaimer () {
+    return this.getPreferenceValue('ui.storage.refresh.request');
+  }
+
+  @computed
+  get systemMaintenanceMode () {
+    return `${this.getPreferenceValue('system.maintenance.mode')}` === 'true' ||
+      `${this.getPreferenceValue('system.blocking.maintenance.mode')}` === 'true';
+  }
+
+  @computed
+  get systemMaintenanceModeBanner () {
+    return this.getPreferenceValue('system.maintenance.mode.banner');
+  }
+
+  @computed
+  get storagePolicyBackupVisibleNonAdmins () {
+    const value = this.getPreferenceValue('storage.policy.backup.visible.non.admins');
+    return value === undefined || `${value}` !== 'false';
+  }
+
+  @computed
+  get autoscalingMultiQueuesTemplate () {
+    const value = this.getPreferenceValue('ge.autoscaling.scale.multi.queues.template');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ge.autoscaling.scale.multi.queues.template:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get hcsAnalysisConfiguration () {
+    const value = this.getPreferenceValue('ui.hcs.analysis.configuration');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('ui.hcs.analysis.configuration:', e);
+      }
+    }
+    return {};
+  }
+
+  @computed
+  get inlineMetadataEntities () {
+    const value = this.getPreferenceValue('ui.library.metadata.inline');
+    return `${value}`.toLowerCase() === 'true';
+  }
+
+  get dataSharingBaseApi () {
+    return this.getPreferenceValue('data.sharing.base.api');
+  }
+
+  get dataSharingEnabled () {
+    return !!this.dataSharingBaseApi;
+  }
+
+  get requestFileSystemAccessTooltip () {
+    const value = this.getPreferenceValue('ui.pipe.file.browser.request');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn(
+          'Error parsing "ui.pipe.file.browser.request" preference:',
+          e
+        );
+      }
+    }
+    return {};
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&
@@ -238,5 +430,5 @@ class PreferencesLoad extends Remote {
   };
 }
 
-export {FETCH_ID_SYMBOL};
+export {FETCH_ID_SYMBOL, MAINTENANCE_MODE_DISCLAIMER};
 export default new PreferencesLoad();

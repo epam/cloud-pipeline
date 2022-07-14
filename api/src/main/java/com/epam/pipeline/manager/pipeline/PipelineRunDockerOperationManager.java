@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import com.epam.pipeline.manager.docker.DockerContainerOperationManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -65,6 +66,7 @@ public class PipelineRunDockerOperationManager {
     private final RunStatusManager runStatusManager;
     private final MessageHelper messageHelper;
     private final PreferenceManager preferenceManager;
+    private final RunLimitsService runLimitsService;
 
     /**
      * Commits docker image and push it to a docker registry from specified run
@@ -78,6 +80,7 @@ public class PipelineRunDockerOperationManager {
     @Transactional(propagation = Propagation.REQUIRED)
     public PipelineRun commitRun(Long id, Long registryId, String newImageName, boolean deleteFiles,
                                  boolean stopPipeline, boolean checkSize) {
+        checkAbilityToPerformOperation();
         if (checkSize) {
             Assert.state(checkFreeSpaceAvailable(id),
                     messageHelper.getMessage(MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH));
@@ -93,6 +96,8 @@ public class PipelineRunDockerOperationManager {
                 messageHelper.getMessage(MessageConstants.ERROR_REGISTRY_NOT_FOUND, registryId));
         String dockerImageFromRun = retrieveImageName(pipelineRun);
         String resolvedImageName = StringUtils.isEmpty(newImageName) ? dockerImageFromRun : newImageName;
+
+        toolManager.validateCommitOperationAllowed(pipelineRun.getActualDockerImage());
 
         //check that there is no tool with this name in another registry
         toolManager.assertThatToolUniqueAcrossRegistries(resolvedImageName, dockerRegistry.getPath());
@@ -113,6 +118,7 @@ public class PipelineRunDockerOperationManager {
      * @return paused {@link PipelineRun}
      */
     public PipelineRun pauseRun(Long runId, boolean checkSize) {
+        checkAbilityToPerformOperation();
         if (checkSize) {
             Assert.state(checkFreeSpaceAvailable(runId), MessageConstants.ERROR_INSTANCE_DISK_NOT_ENOUGH);
         }
@@ -135,6 +141,7 @@ public class PipelineRunDockerOperationManager {
      * @return resumed {@link PipelineRun}
      */
     public PipelineRun resumeRun(Long runId) {
+        checkAbilityToPerformOperation();
         PipelineRun pipelineRun = loadRunForPauseResume(runId);
         Assert.state(pipelineRun.getStatus() == TaskStatus.PAUSED,
                 messageHelper.getMessage(MessageConstants.ERROR_PIPELINE_RUN_NOT_STOPPED, runId));
@@ -142,6 +149,8 @@ public class PipelineRunDockerOperationManager {
             throw new IllegalArgumentException(messageHelper.getMessage(
                     MessageConstants.ERROR_ACTUAL_CMD_NOT_FOUND, runId));
         }
+        final Integer totalRunInstances = 1 + Optional.ofNullable(pipelineRun.getNodeCount()).orElse(0);
+        runLimitsService.checkRunLaunchLimits(totalRunInstances);
         Tool tool = toolManager.loadByNameOrId(pipelineRun.getDockerImage());
         pipelineRun.setStatus(TaskStatus.RESUMING);
         // prolong the run here in order to get rid off idle notification right after resume
@@ -261,5 +270,10 @@ public class PipelineRunDockerOperationManager {
         return lastSuccessTaskDate.isPresent()
                 && DateUtils.convertDateToLocalDateTime(lastSuccessTaskDate.get())
                 .isAfter(lastStatusUpdateDate.get());
+    }
+
+    private void checkAbilityToPerformOperation() {
+        Assert.state(!preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE).orElse(false),
+                messageHelper.getMessage(MessageConstants.ERROR_RUN_OPERATION_FORBIDDEN));
     }
 }

@@ -23,7 +23,7 @@ export default function (authenticatedUserInfo, multiZone, callbacks) {
       return [];
     } else {
       const {userName} = authenticatedUserInfo.value;
-      const {run, url} = service;
+      const {run, url, sameTab} = service;
       const {id, runSids} = run || {};
       const {ssh} = callbacks || {};
       const [accessType] = (runSids || [])
@@ -33,6 +33,7 @@ export default function (authenticatedUserInfo, multiZone, callbacks) {
       if (Object.values(url || {}).length > 1) {
         actions.push({
           title: 'OPEN',
+          target: sameTab ? '_top' : '_blank',
           multiZoneUrl: url
         });
       }

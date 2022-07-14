@@ -27,13 +27,28 @@ const CloneOption = {
 
 const CLOSE_POPOVER_DELAY_MS = 200;
 
+const RepositoryTypes = {
+  GitLab: 'GITLAB',
+  GitHub: 'GITHUB',
+  BitBucket: 'BITBUCKET'
+};
+
+const RepositoryTypeNames = {
+  [RepositoryTypes.GitLab]: 'GitLab',
+  [RepositoryTypes.GitHub]: 'GitHub',
+  [RepositoryTypes.BitBucket]: 'BitBucket'
+};
+
+export {RepositoryTypes, RepositoryTypeNames};
+
 export default @observer
 class GitRepositoryControl extends React.Component {
   static propTypes = {
     cloneType: PropTypes.oneOf([CloneOption.https, CloneOption.ssh]),
     https: PropTypes.string,
     overlayClassName: PropTypes.string,
-    ssh: PropTypes.string
+    ssh: PropTypes.string,
+    repositoryType: PropTypes.string
   };
   static defaultProps = {
     cloneType: CloneOption.https
@@ -128,6 +143,9 @@ class GitRepositoryControl extends React.Component {
     if (this.availableCloneOptions.length === 0) {
       return null;
     }
+    const {
+      repositoryType
+    } = this.props;
     return (
       <Popover
         overlayClassName="git-repository-popover"
@@ -141,7 +159,14 @@ class GitRepositoryControl extends React.Component {
           id="pipeline-repository-button"
           size="small"
           style={{lineHeight: 1}}>
-          GIT REPOSITORY
+          {
+            repositoryType && (
+              <span style={{textTransform: 'uppercase', marginRight: 5}}>
+                {RepositoryTypeNames[repositoryType]}
+              </span>
+            )
+          }
+          <span>REPOSITORY</span>
         </Button>
       </Popover>
     );

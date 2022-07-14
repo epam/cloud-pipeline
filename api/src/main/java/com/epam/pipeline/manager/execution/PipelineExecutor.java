@@ -52,6 +52,7 @@ import io.fabric8.kubernetes.client.utils.HttpClientUtils;
 import okhttp3.OkHttpClient;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -109,12 +110,12 @@ public class PipelineExecutor {
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
                               String pipelineId, String nodeIdLabel, String secretName, String clusterId) {
         launchRootPod(command, run, envVars, endpoints, pipelineId, nodeIdLabel, secretName, clusterId,
-                ImagePullPolicy.ALWAYS);
+                ImagePullPolicy.ALWAYS, Collections.emptyMap());
     }
 
     public void launchRootPod(String command, PipelineRun run, List<EnvVar> envVars, List<String> endpoints,
             String pipelineId, String nodeIdLabel, String secretName, String clusterId,
-                              ImagePullPolicy imagePullPolicy) {
+                              ImagePullPolicy imagePullPolicy, Map<String, String> kubeLabels) {
         try (KubernetesClient client = kubernetesManager.getKubernetesClient()) {
             Map<String, String> labels = new HashMap<>();
             labels.put("spawned_by", "pipeline-api");
@@ -122,6 +123,9 @@ public class PipelineExecutor {
             labels.put("owner", normalizeOwner(run.getOwner()));
             if (Boolean.TRUE.equals(run.getSensitive())) {
                 labels.put("sensitive", "true");
+            }
+            if (MapUtils.isNotEmpty(kubeLabels)) {
+                labels.putAll(kubeLabels);
             }
             addWorkerLabel(clusterId, labels, run);
             LOGGER.debug("Root pipeline task ID: {}", run.getPodId());

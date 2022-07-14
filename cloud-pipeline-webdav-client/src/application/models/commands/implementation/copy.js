@@ -1,5 +1,6 @@
 import Operation from './operation';
 import {buildSources} from './utilities';
+import {error} from '../../log';
 
 class CopyOperation extends Operation {
   constructor(sourceFS, sources, destinationFS, destinationPath, progressCallback) {
@@ -78,6 +79,7 @@ class CopyOperation extends Operation {
               progressCallback,
               size
             )
+              .then(() => destinationAdapter.ensurePathExists(element.to))
               .then(() => {
                 progressCallback(100);
                 resolve();
@@ -102,17 +104,20 @@ class CopyOperation extends Operation {
       if (this.aborted) {
         return Promise.resolve();
       }
-      try {
-        await this.processElement(
+      return new Promise(resolve => {
+        this.processElement(
           sourceFileSystem,
           destinationFileSystem,
           array[index],
           p => callback(index, p),
-        );
-      } catch (e) {
-        array[index].error = e;
-      }
-      return invokeForElement(index + 1, array, callback);
+        )
+          .catch(e => {
+            error(`${array[index].name}: ${e.message}`);
+            array[index].error = e;
+          })
+          .then(() => invokeForElement(index + 1, array, callback))
+          .then(() => resolve());
+      });
     }
     return new Promise(async (resolve) => {
       if (this.aborted) {

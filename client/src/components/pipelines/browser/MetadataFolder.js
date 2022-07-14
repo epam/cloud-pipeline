@@ -18,7 +18,7 @@ import React from 'react';
 import {inject, observer} from 'mobx-react';
 import {computed} from 'mobx';
 import connect from '../../../utils/connect';
-import {Checkbox, Modal, Table, Icon, Row, Col, Button, message} from 'antd';
+import {Checkbox, Modal, Table, Icon, Row, Col, Button, message, Alert} from 'antd';
 import {ItemTypes, generateTreeData} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import roleModel from '../../../utils/roleModel';
@@ -28,13 +28,14 @@ import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityU
 import MetadataEntitySave from '../../../models/folderMetadata/MetadataEntitySave';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import MetadataEntityDeleteFromProject
-  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityFields from '../../../models/folderMetadata/MetadataEntityFields';
 import UploadButton from '../../special/UploadButton';
 import AddInstanceForm from './forms/AddInstanceForm';
 import PropTypes from 'prop-types';
 import Breadcrumbs from '../../special/Breadcrumbs';
 import HiddenObjects from '../../../utils/hidden-objects';
+import LoadingView from '../../special/LoadingView';
 
 @connect({
   folders,
@@ -57,45 +58,111 @@ import HiddenObjects from '../../../utils/hidden-objects';
 })
 @observer
 export default class MetadataFolder extends React.Component {
-
   static propTypes = {
     selectionAvailable: PropTypes.bool,
     hideUploadMetadataBtn: PropTypes.bool,
     onNavigate: PropTypes.func,
     onSelectItem: PropTypes.func,
-    initialSelection: PropTypes.array
+    selection: PropTypes.array
   };
 
-  _currentFolder = null;
-
   state = {
-    columns: [
-      {
-        key: 'type',
-        className: styles.treeItemType,
-        render: (item) => this.renderTreeItemType(item),
-        onCellClick: (item) => this.navigate(item)
-      },
-      {
-        key: 'name',
-        title: 'Name',
-        className: styles.metadataFolderItemName,
-        render: (item) => this.renderItemName(item),
-        onCellClick: (item) => this.navigate(item)
-      }
-    ],
-    selectedItems: this.props.initialSelection ? this.props.initialSelection : [],
+    selectedItems: [],
     addInstanceFormVisible: false,
     operationInProgress: false
   };
 
+  componentDidUpdate (prevProps, prevState, snapshot) {
+    if (prevProps.folderId !== this.props.folderId) {
+      this.clearSelection();
+    } else if (prevProps.selection !== this.props.selection) {
+      this.updateSelection();
+    }
+  }
+
+  clearSelection = () => {
+    this.setState({
+      selectedItems: []
+    }, () => {
+      const {onSelectItem} = this.props;
+      if (onSelectItem) {
+        onSelectItem(this.state.selectedItems);
+      }
+    });
+  };
+
+  updateSelection = () => {
+    const {selection = []} = this.props;
+    this.setState({
+      selectedItems: selection.slice()
+    });
+  };
+
+  get parentFolderLinkItem () {
+    const {folderId} = this.props;
+    if (folderId) {
+      const url = `/folder/${folderId}`;
+      return {
+        id: folderId,
+        name: '..',
+        key: `${ItemTypes.folder}_${folderId}`,
+        type: ItemTypes.folder,
+        removable: false,
+        url () {
+          return url;
+        }
+      };
+    }
+    return {
+      id: undefined,
+      name: '..',
+      key: `${ItemTypes.folder}_root`,
+      type: ItemTypes.folder,
+      removable: false,
+      url () {
+        return '/library';
+      }
+    };
+  }
+
+  @computed
+  get metadataFolderClassEntities () {
+    const {folder} = this.props;
+    if (folder && folder.loaded) {
+      const dataFolder = generateTreeData(
+        this.props.folder.value,
+        {
+          filter: this.props.hiddenObjectsTreeFilter()
+        }
+      );
+      const metadataFolder = dataFolder.find(m => m.type === ItemTypes.metadataFolder);
+      return metadataFolder ? metadataFolder.children : [];
+    }
+    return [];
+  }
+
+  get listingItems () {
+    return [
+      this.parentFolderLinkItem,
+      ...this.metadataFolderClassEntities
+    ];
+  }
+
   @computed
   get entityTypes () {
-    if (this.props.entityFields.loaded && this.props.metadataClasses.loaded) {
-      const entityFields = (this.props.entityFields.value || [])
-        .map(e => e);
+    const {
+      entityFields: entityFieldsRequest,
+      metadataClasses
+    } = this.props;
+    if (
+      entityFieldsRequest &&
+      entityFieldsRequest.loaded &&
+      metadataClasses &&
+      metadataClasses.loaded
+    ) {
+      const entityFields = (entityFieldsRequest.value || []).map(e => e);
       const ignoreClasses = new Set(entityFields.map(f => f.metadataClass.id));
-      const otherClasses = (this.props.metadataClasses.value || [])
+      const otherClasses = (metadataClasses.value || [])
         .filter(({id}) => !ignoreClasses.has(id))
         .map(metadataClass => ({
           fields: [],
@@ -133,8 +200,15 @@ export default class MetadataFolder extends React.Component {
   };
 
   addInstance = async (values) => {
+    const {
+      entityFields,
+      folder,
+      folderId,
+      onReloadTree
+    } = this.props;
     const classId = +values.entityClass;
-    const [metadataClass] = this.entityTypes.map(e => e.metadataClass).filter(m => m.id === classId);
+    const [metadataClass] = this.entityTypes
+      .map(e => e.metadataClass).filter(m => m.id === classId);
     if (metadataClass) {
       const className = metadataClass.name;
       const payload = {
@@ -142,17 +216,20 @@ export default class MetadataFolder extends React.Component {
         className,
         externalId: values.id,
         data: values.data,
-        parentId: this.props.folderId
+        parentId: folderId
       };
       const request = new MetadataEntitySave();
       await request.send(payload);
       if (request.error) {
         message.error(request.error, 5);
       } else {
-        await this.props.entityFields.fetch();
-        await this.props.folder.fetch();
-        if (this.props.onReloadTree) {
-          this.props.onReloadTree(!this.props.folder.value.parentId);
+        await entityFields.fetch();
+        await folder.fetch();
+        if (typeof onReloadTree === 'function') {
+          const {parentId} = folder.loaded
+            ? folder.value
+            : {};
+          onReloadTree(!parentId);
         }
         this.closeAddInstanceForm();
       }
@@ -160,11 +237,6 @@ export default class MetadataFolder extends React.Component {
       message.error('Unknown metadata class', 5);
     }
   };
-
-  @computed
-  get hasSelectionColumn () {
-    return this.state.columns && this.state.columns[0].key === 'selection';
-  }
 
   renderItemName = (item) => {
     return item.amount ? <span>{`${item.name} [${item.amount}]`}</span> : <span>{item.name}</span>;
@@ -185,53 +257,74 @@ export default class MetadataFolder extends React.Component {
     }
   };
 
-  fileIsSelected = (item) => {
-    return this.state.selectedItems
-      .filter(s => s.id === item.id && s.type === item.type).length === 1;
-  };
-
-  selectFile = (item) => () => {
-    const selectedItems = this.state.selectedItems;
-    const [selectedItem] = this.state.selectedItems
-      .filter(s => s.id === item.id && s.type === item.type);
-    if (selectedItem) {
-      const index = selectedItems.indexOf(selectedItem);
-      selectedItems.splice(index, 1);
+  selectMetadataClass = (metadataClass) => () => {
+    const {selectedItems = []} = this.state;
+    const newSelection = [...selectedItems];
+    const selectedItemIndex = newSelection
+      .findIndex(s => s.id === metadataClass.id && s.type === metadataClass.type);
+    if (selectedItemIndex >= 0) {
+      newSelection.splice(selectedItemIndex, 1);
     } else {
-      selectedItems.push(item);
+      newSelection.push(metadataClass);
     }
-    this.setState({selectedItems});
+    this.setState({selectedItems: newSelection});
     if (this.props.onSelectItem) {
-      this.props.onSelectItem(this.state.selectedItems);
+      this.props.onSelectItem(newSelection);
     }
   };
-
-  renderSelectionColumn = () => ({
-    key: 'selection',
-    title: '',
-    className: styles.checkboxCell,
-    render: (item) => {
-      if (item.type === ItemTypes.metadata) {
-        return (
-          <Checkbox
-            disabled={this.state.selectedItems.length > 0 && !this.fileIsSelected(item)}
-            checked={this.fileIsSelected(item)}
-            onChange={this.selectFile(item)}
-          />
-        );
-      } else {
-        return <span />;
-      }
-    }
-  });
 
   renderContent = () => {
+    const {
+      selectionAvailable
+    } = this.props;
+    const {
+      selectedItems = []
+    } = this.state;
+    const metadataClassIsSelected = (metadataClass) => {
+      return !!selectedItems.find(selected => selected.id === metadataClass.id &&
+        selected.type === metadataClass.type
+      );
+    };
+    const selectionColumn = {
+      key: 'selection',
+      title: '',
+      className: styles.checkboxCell,
+      render: (item) => {
+        if (item.type === ItemTypes.metadata) {
+          return (
+            <Checkbox
+              disabled={selectedItems.length > 0 && !metadataClassIsSelected(item)}
+              checked={metadataClassIsSelected(item)}
+              onChange={this.selectMetadataClass(item)}
+            />
+          );
+        } else {
+          return <span />;
+        }
+      }
+    };
+    const columns = [
+      selectionAvailable ? selectionColumn : undefined,
+      {
+        key: 'type',
+        className: styles.treeItemType,
+        render: (item) => this.renderTreeItemType(item),
+        onCellClick: (item) => this.navigate(item)
+      },
+      {
+        key: 'name',
+        title: 'Name',
+        className: styles.metadataFolderItemName,
+        render: (item) => this.renderItemName(item),
+        onCellClick: (item) => this.navigate(item)
+      }
+    ].filter(Boolean);
     return (
       <Row style={{padding: 5, overflowY: 'auto'}}>
         <Table
           className={styles.childrenContainer}
-          dataSource={this._currentFolder.data}
-          columns={this.state.columns}
+          dataSource={this.listingItems}
+          columns={columns}
           rowKey={(item) => item.key}
           title={null}
           showHeader={false}
@@ -320,57 +413,32 @@ export default class MetadataFolder extends React.Component {
   };
 
   render () {
-    const dataFolder = generateTreeData(
-      this.props.folder.value,
-      false,
-      undefined,
-      undefined,
-      undefined,
-      this.props.hiddenObjectsTreeFilter()
-    );
-    const [metadataFolder] = dataFolder.filter(m => m.type === ItemTypes.metadataFolder);
-    let data = metadataFolder ? metadataFolder.children : [];
-    if (this.props.folderId) {
-      const url = `/folder/${this.props.folderId}`;
-      data = [{
-        id: this.props.folderId,
-        name: '..',
-        key: `${ItemTypes.folder}_${this.props.folderId}`,
-        type: ItemTypes.folder,
-        removable: false,
-        url () {
-          return url;
-        }
-      }, ...data];
-    } else {
-      data = [{
-        id: undefined,
-        name: '..',
-        key: `${ItemTypes.folder}_root`,
-        type: ItemTypes.folder,
-        removable: false,
-        url () {
-          return '/library';
-        }
-      }, ...data];
+    const {folderId, folder} = this.props;
+    if (!folder) {
+      return null;
     }
-    this._currentFolder = {
-      data: data,
-      folder: this.props.folder.value
-    };
-
+    if (folder.error) {
+      return (<Alert message={folder.error} type="error" />);
+    }
+    if (folder.pending && !folder.loaded) {
+      return (<LoadingView />);
+    }
+    const {
+      addInstanceFormVisible,
+      operationInProgress
+    } = this.state;
     return (
       <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
         <Row type="flex" justify="space-between" align="middle" style={{minHeight: 41}}>
           <Col className={styles.itemHeader}>
             <Breadcrumbs
-              id={parseInt(this.props.folderId)}
+              id={parseInt(folderId)}
               type={ItemTypes.metadataFolder}
               textEditableField={'Metadata'}
-              readOnlyEditableField={true}
+              readOnlyEditableField
               icon="appstore-o"
               iconClassName={styles.editableControl}
-              subject={this.props.folder.value}
+              subject={folder.value}
             />
           </Col>
           <Col className={styles.currentFolderActions}>
@@ -379,45 +447,13 @@ export default class MetadataFolder extends React.Component {
         </Row>
         {this.renderContent()}
         <AddInstanceForm
-          folderId={this.props.folderId}
-          visible={this.state.addInstanceFormVisible}
-          pending={this.state.operationInProgress}
+          folderId={folderId}
+          visible={addInstanceFormVisible}
+          pending={operationInProgress}
           onCreate={this.operationWrapper(this.addInstance)}
           onCancel={this.closeAddInstanceForm}
           entityTypes={this.entityTypes} />
       </div>
     );
-  }
-
-  componentDidMount () {
-    if (this.props.selectionAvailable && !this.hasSelectionColumn) {
-      const columns = [
-        this.renderSelectionColumn(),
-        ...this.state.columns
-      ];
-      this.setState({columns});
-    }
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (nextProps.initialSelection) {
-      this.state.selectedItems = nextProps.initialSelection;
-    }
-    if (nextProps.folderId !== this.props.folderId) {
-      this.state.selectedItems = [];
-      if (nextProps.onSelectItem) {
-        nextProps.onSelectItem(this.state.selectedItems);
-      }
-    }
-    if (nextProps.selectionAvailable && !this.hasSelectionColumn) {
-      const columns = [
-        this.renderSelectionColumn(),
-        ...this.state.columns
-      ];
-      this.setState({columns});
-    } else if (!nextProps.selectionAvailable && this.hasSelectionColumn) {
-      const columns = this.state.columns.slice(1);
-      this.setState({columns});
-    }
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -218,8 +218,16 @@ public interface Conditions {
         public boolean apply(final WebElement element) {
             return Condition.or("selected navigation menu item",
                     cssClass("navigation__navigation-menu-item-selected"),
-                    cssClass("navigation__highlighted-navigation-menu-item-selected"))
+                    cssClass("navigation__highlighted-navigation-menu-item-selected"),
+                    cssClass("selected"))
                     .apply(element);
+        }
+    };
+
+    Condition disabled = new Condition("be disable type") {
+        @Override
+        public boolean apply(final WebElement element) {
+            return cssClass("cp-disabled").apply(element);
         }
     };
 }

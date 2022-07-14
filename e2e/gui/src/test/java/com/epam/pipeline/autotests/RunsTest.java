@@ -123,7 +123,7 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .validateRowsCount(size(1))
                 .assertLatestPipelineHasRunID(pipelineRunID)
                 .validateStatus(pipelineRunID, SUCCESS)
-                .validatePipelineOwner(pipelineRunID, user.login.toLowerCase());
+                .validatePipelineOwner(pipelineRunID, user.login);
     }
 
     @Test(dependsOnMethods = {"platformUsageInfo"})
@@ -136,12 +136,12 @@ public class RunsTest extends AbstractSeveralPipelineRunningTest implements Auth
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(firstToolRunID)
                 .validateStatus(firstToolRunID, STOPPED)
-                .validatePipelineOwner(firstToolRunID, user.login.toLowerCase())
+                .validatePipelineOwner(firstToolRunID, user.login)
                 .resetFiltering(DOCKER_IMAGE)
                 .filterBy(DOCKER_IMAGE, nameWithoutGroup(anotherTool))
                 .validateRowsCount(sizeGreaterThanOrEqual(1))
                 .assertLatestPipelineHasRunID(secondToolRunID)
                 .validateStatus(secondToolRunID, STOPPED)
-                .validatePipelineOwner(secondToolRunID, user.login.toLowerCase());
+                .validatePipelineOwner(secondToolRunID, user.login);
     }
 }

@@ -19,12 +19,22 @@ package com.epam.pipeline.entity.datastorage;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Comparator;
 import java.util.Map;
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.NAME,
+        property = "type",
+        defaultImpl = DataStorageFile.class)
+@JsonSubTypes({
+        @JsonSubTypes.Type(value = DataStorageFile.class, name = "File"),
+        @JsonSubTypes.Type(value = DataStorageFolder.class, name = "Folder")})
 public abstract class AbstractDataStorageItem {
     private String name;
     private String path;

@@ -29,7 +29,7 @@ import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 
 @roleModel.authenticationInfo
-@inject('pipelines', 'hiddenObjects')
+@inject('pipelines', 'hiddenObjects', 'pipelinesLibrary')
 @localization.localizedComponent
 @observer
 export default class MyPipelinesPanel extends localization.LocalizedReactComponent {
@@ -49,11 +49,14 @@ export default class MyPipelinesPanel extends localization.LocalizedReactCompone
     if (
       this.props.pipelines.loaded &&
       this.props.authenticatedUserInfo.loaded &&
-      this.props.hiddenObjects.loaded
+      this.props.hiddenObjects.loaded &&
+      this.props.pipelinesLibrary.loaded
     ) {
+      const folders = this.props.pipelinesLibrary.folders;
       const result = (this.props.pipelines.value || [])
         .map(s => s)
         .filter(s => !this.props.hiddenObjects.isPipelineHidden(s.id))
+        .filter(s => !this.props.hiddenObjects.isParentHidden(s, folders))
         .filter(s => roleModel.writeAllowed(s) || roleModel.readAllowed(s) || roleModel.isOwner(s));
       result.sort((pA, pB) => {
         const pAisOwner = pA.owner && pA.owner.toLowerCase() === this.props.authenticatedUserInfo.value.userName.toLowerCase();

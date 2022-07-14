@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.openqa.selenium.*;
+import org.openqa.selenium.interactions.Actions;
 
 import static com.codeborne.selenide.Condition.appear;
 import static com.codeborne.selenide.Condition.appears;
@@ -251,8 +252,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final By qualifier) {
         final SelenideElement selenideElement = $(qualifier);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
@@ -266,8 +271,12 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
     default ELEMENT_TYPE expandTab(final Primitive element) {
         final SelenideElement selenideElement = get(element);
         selenideElement.should(exist);
-        if (selenideElement.is(collapsedTab)) {
+        int attempt = 0;
+        int maxAttempts = 5;
+        while (selenideElement.is(collapsedTab) && attempt < maxAttempts) {
             selenideElement.click();
+            sleep(1, SECONDS);
+            attempt++;
         }
         selenideElement.shouldBe(expandedTab);
         return (ELEMENT_TYPE) this;
@@ -503,11 +512,25 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
         return (ELEMENT_TYPE) this;
     }
 
+    default ELEMENT_TYPE selectValue(final SelenideElement element, final By optionQualifier) {
+        element.shouldBe(visible).click();
+        $(comboboxDropdown()).find(optionQualifier).shouldBe(visible).click();
+        return (ELEMENT_TYPE) this;
+    }
+
     default ELEMENT_TYPE checkValueIsInDropDown(final Primitive combobox, final String option) {
         sleep(1, SECONDS);
         get(combobox).shouldBe(visible).click();
         ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
         listDropDown.forEach(row -> row.shouldHave(text(option)));
+        return (ELEMENT_TYPE) this;
+    }
+
+    default ELEMENT_TYPE checkValueIsNotInDropDown(final Primitive combobox, String...options) {
+        sleep(1, SECONDS);
+        get(combobox).shouldBe(visible).click();
+        ElementsCollection listDropDown = SelenideElements.of(byClassName("ant-select-dropdown-menu-item"));
+        Arrays.stream(options).forEach(option -> listDropDown.forEach(row -> row.shouldNotHave(text(option))));
         return (ELEMENT_TYPE) this;
     }
 
@@ -532,8 +555,21 @@ public interface AccessObject<ELEMENT_TYPE extends AccessObject> {
 
     default void closeTab() {
         List<String> tabs = new ArrayList<>(getWebDriver().getWindowHandles());
+        if (tabs.size() <= 1 ) {
+            return;
+        }
         getWebDriver().close();
         switchTo().window(tabs.get(0));
+    }
+
+    default ELEMENT_TYPE deleteExtraBrackets(SelenideElement selenideElement, int number) {
+        Actions action = actions().moveToElement(selenideElement);
+        sleep(500, MILLISECONDS);
+        for (int i = 0; i < number; i++) {
+            action.sendKeys(Keys.DELETE);
+        }
+        action.perform();
+        return (ELEMENT_TYPE) this;
     }
 
     class Entry {

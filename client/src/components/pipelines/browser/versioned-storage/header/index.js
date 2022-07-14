@@ -104,7 +104,7 @@ class VersionedStorageHeader extends localization.LocalizedReactComponent {
               onSaveEditableField={this.onRenameStorage}
               editStyleEditableField={{flex: 1}}
               icon="inbox"
-              iconClassName={styles.versionedStorageIcon}
+              iconClassName="cp-versioned-storage"
               lock={pipeline.value.locked}
               subject={pipeline.value}
             />

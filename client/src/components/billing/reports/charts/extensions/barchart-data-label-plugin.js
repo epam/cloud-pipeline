@@ -31,7 +31,8 @@ const plugin = {
     const datasetLabels = chart.data.datasets
       .map((dataset, i) => {
         const meta = chart.getDatasetMeta(i);
-        if (meta) {
+        const {showDataLabel = true} = dataset;
+        if (meta && showDataLabel) {
           return meta.data.map((element, index) => this.getInitialLabelConfig(
             dataset,
             element,
@@ -51,7 +52,9 @@ const plugin = {
           dataLabels.push([]);
         }
         const labels = dataLabels[j];
-        labels.push(data[j]);
+        if (data[j]) {
+          labels.push(data[j]);
+        }
       }
     }
     dataLabels.forEach(labels => this.arrangeLabels(labels));
@@ -131,7 +134,8 @@ const plugin = {
       const {
         borderColor = 'black',
         textBold = false,
-        textColor
+        textColor,
+        flagColor
       } = dataset;
       const color = textColor || borderColor;
       const {position, text} = config;
@@ -142,6 +146,19 @@ const plugin = {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
         ctx.fillText(text, position.x + position.width / 2.0, position.y + position.height);
+        if (flagColor) {
+          ctx.beginPath();
+          ctx.arc(
+            position.x,
+            position.y + position.height / 2.0,
+            2.5,
+            0,
+            Math.PI * 2,
+            true
+          );
+          ctx.fillStyle = flagColor;
+          ctx.fill();
+        }
       }
     }
   },

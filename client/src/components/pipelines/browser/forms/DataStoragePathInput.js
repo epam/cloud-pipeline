@@ -19,8 +19,8 @@ import PropTypes from 'prop-types';
 import {computed} from 'mobx';
 import {observer, inject} from 'mobx-react';
 import {Button, Dropdown, Input, Row, Tooltip} from 'antd';
+import classNames from 'classnames';
 import AWSRegionTag from '../../../special/AWSRegionTag';
-
 import styles from './DataStoragePathInput.css';
 import LoadingView from '../../../special/LoadingView';
 
@@ -28,7 +28,7 @@ const SERVER_PORT_MASK = /^[^:]+(:[\d]+)?$/i;
 
 export function extractFileShareMountList (regions) {
   const list = [];
-  for (let i = 0; i < regions.length; i++) {
+  for (let i = 0; i < (regions || []).length; i++) {
     const region = regions[i];
     if (region.fileShareMounts && region.fileShareMounts.length) {
       region.fileShareMounts.forEach(fileShareMount => {
@@ -241,9 +241,8 @@ export class DataStoragePathInput extends React.Component {
     return (
       <Row type="flex">
         <div
+          className={classNames(styles.pathInputContainer, 'cp-input-group-addon')}
           style={{
-            backgroundColor: '#eee',
-            border: '1px solid #ccc',
             borderRadius: '4px 0px 0px 4px',
             height: 32,
             maxWidth: '50%'
@@ -273,7 +272,9 @@ export class DataStoragePathInput extends React.Component {
               : <Dropdown
                 id="edit-storage-storage-path-nfs-mount"
                 overlay={
-                  <div className={styles.navigationDropdownContainer}>
+                  <div
+                    className={styles.navigationDropdownContainer}
+                  >
                     {
                       this.fileShareMountsList
                         .filter(

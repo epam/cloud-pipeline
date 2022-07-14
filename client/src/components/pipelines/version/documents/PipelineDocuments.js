@@ -17,44 +17,22 @@
 import React, {Component} from 'react';
 import {inject, observer} from 'mobx-react';
 import {observable} from 'mobx';
+import classNames from 'classnames';
 import {Input, Row, Button, Icon, Table, message, Modal} from 'antd';
 import FileSaver from 'file-saver';
-import PipelineFile from '../../../../models/pipelines/PipelineFile';
 import VersionFile from '../../../../models/pipelines/VersionFile';
 import PipelineGenerateFile from '../../../../models/pipelines/PipelineGenerateFile';
 import PipelineFileUpdate from '../../../../models/pipelines/PipelineFileUpdate';
 import PipelineFileDelete from '../../../../models/pipelines/PipelineFileDelete';
 import CodeFileCommitForm from '../code/forms/CodeFileCommitForm';
 import UploadButton from '../../../special/UploadButton';
-import * as styles from './PipelineDocuments.css';
 import WorkflowGraph from '../graph/WorkflowGraph';
 import LoadingView from '../../../special/LoadingView';
+import Markdown from '../../../special/markdown';
 import PipelineCodeSourceNameDialog from '../code/forms/PipelineCodeSourceNameDialog';
 import roleModel from '../../../../utils/roleModel';
-import Remarkable from 'remarkable';
-import hljs from 'highlight.js';
-
-const MarkdownRenderer = new Remarkable('full', {
-  html: true,
-  xhtmlOut: true,
-  breaks: false,
-  langPrefix: 'language-',
-  linkify: true,
-  linkTarget: '',
-  typographer: true,
-  highlight: function (str, lang) {
-    lang = lang || 'bash';
-    if (lang && hljs.getLanguage(lang)) {
-      try {
-        return hljs.highlight(lang, str).value;
-      } catch (__) {}
-    }
-    try {
-      return hljs.highlightAuto(str).value;
-    } catch (__) {}
-    return '';
-  }
-});
+import download from '../utilities/download-pipeline-file';
+import * as styles from './PipelineDocuments.css';
 
 @inject(({pipelines, routing}, {onReloadTree, params}) => ({
   onReloadTree,
@@ -221,7 +199,7 @@ export default class PipelineDocuments extends Component {
         title: 'Name',
         render: (name, file) => (
           <span
-            className={styles.documentName}>
+            className={classNames(styles.documentName, 'cp-primary')}>
             {name}
           </span>
         )
@@ -250,26 +228,10 @@ export default class PipelineDocuments extends Component {
     return {dataSource, columns};
   };
 
-  downloadPipelineFile = async (file, event) => {
+  downloadPipelineFile = (file, event) => {
     const {id, version} = this.props.params;
     event && event.stopPropagation();
-    try {
-      const pipelineFile = new PipelineFile(id, version, file.path);
-      let res;
-      await pipelineFile.fetch();
-      res = pipelineFile.response;
-      if (res.type?.includes('application/json') && res instanceof Blob) {
-        this.checkForBlobErrors(res)
-          .then(error => error
-            ? message.error('Error downloading file', 5)
-            : FileSaver.saveAs(res, file.name)
-          );
-      } else if (res) {
-        FileSaver.saveAs(res, file.name);
-      }
-    } catch (e) {
-      message.error('Failed to download file', 5);
-    }
+    return download(id, version, file.path);
   };
 
   checkForBlobErrors = (blob) => {
@@ -412,7 +374,10 @@ export default class PipelineDocuments extends Component {
     if (this.props.docs.pending) {
       return <LoadingView />;
     }
-    const tableData = this.createDocumentsTable(this.props.docs.value, this._graphReady);
+    const tableData = this.createDocumentsTable(
+      this.props.docs.loaded ? this.props.docs.value : [],
+      this._graphReady
+    );
 
     const renderMarkdownControls = () => {
       if (!this.canModifySources) {
@@ -466,20 +431,31 @@ export default class PipelineDocuments extends Component {
               }
             }}
             autosize={{minRows: 25}}
-            style={{width: '100%', resize: 'none'}} />
+            style={{width: '100%', resize: 'none'}}
+            className={styles.markdownEditor}
+          />
         );
       } else {
         if (this._mdOriginalContent && this._mdOriginalContent.trim().length) {
           return (
-            <div
-              className={styles.mdPreview}
-              dangerouslySetInnerHTML={{
-                __html: MarkdownRenderer.render(this._mdOriginalContent)
-              }}
+            <Markdown
+              className={styles.markdown}
+              md={this._mdOriginalContent}
             />
           );
         } else {
-          return <span className={styles.noMdContent}>No content</span>;
+          return (
+            <span
+              className={
+                classNames(
+                  styles.noMdContent,
+                  'cp-text-not-important'
+                )
+              }
+            >
+              No content
+            </span>
+          );
         }
       }
     };
@@ -542,11 +518,16 @@ export default class PipelineDocuments extends Component {
             align="middle"
             justify="space-between"
             style={{marginTop: 10}}
-            className={styles.mdHeader}>
+            className={classNames(styles.mdHeader, 'cp-content-panel')}
+          >
             <span className={styles.mdTitle}>{this.state.managingMdFile.name}</span>
             {renderMarkdownControls()}
           </Row>
-          <Row type="flex" className={styles.mdBody} style={{flex: 1, overflowY: 'auto'}}>
+          <Row
+            type="flex"
+            className={classNames(styles.mdBody, 'cp-content-panel')}
+            style={{flex: 1, overflowY: 'auto'}}
+          >
             {renderMarkdown()}
           </Row>
           <CodeFileCommitForm
@@ -564,7 +545,28 @@ export default class PipelineDocuments extends Component {
     }
   }
 
+  redirectBitBucketPipelineToCode () {
+    if (this.props.pipeline.loaded) {
+      const {
+        repositoryType
+      } = this.props.pipeline.value;
+      if (/^bitbucket$/i.test(repositoryType)) {
+        const {
+          router,
+          pipelineId,
+          version
+        } = this.props;
+        router.push(`/${pipelineId}/${version}/code`);
+        return true;
+      }
+    }
+    return false;
+  }
+
   componentDidUpdate (prevProps, prevState) {
+    if (this.redirectBitBucketPipelineToCode()) {
+      return;
+    }
     if (
       this.state.managingMdFile && (
         prevProps.pipelineId !== this.props.pipelineId ||
@@ -588,7 +590,7 @@ export default class PipelineDocuments extends Component {
     if (this._mdFileRequest && !this._mdFileRequest.pending && !this._mdOriginalContent) {
       this._mdOriginalContent = atob(this._mdFileRequest.response);
     }
-    if (!this.props.docs.pending && this.props.docs.value && !this.state.managingMdFile) {
+    if (this.props.docs.loaded && this.props.docs.value && !this.state.managingMdFile) {
       const [readme] = this.props.docs.value.filter(source => source.name === 'README.md');
       if (readme) {
         this.setManagingMdFile(readme);

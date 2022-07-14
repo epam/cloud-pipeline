@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -49,11 +50,15 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
 
     private final CloudPipelineAPIClient apiClient;
     private final int loadStep;
+    private final String billingOwnerParameter;
 
-    public PipelineRunLoader(final CloudPipelineAPIClient apiClient,
-                             final @Value("${sync.run.load.step:30}") int loadStep) {
+    public PipelineRunLoader(
+            final CloudPipelineAPIClient apiClient,
+            final @Value("${sync.run.load.step:30}") int loadStep,
+            final @Value("${sync.run.billing.owner.parameter:CP_BILLING_OWNER}") String billingOwnerParameter) {
         this.apiClient = apiClient;
         this.loadStep = loadStep;
+        this.billingOwnerParameter = billingOwnerParameter;
     }
 
     @Override
@@ -79,7 +84,7 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .stream()
                 .map(run -> EntityContainer.<PipelineRunWithType>builder()
                         .entity(new PipelineRunWithType(run, loadDisks(run), getRunType(run, regionOffers)))
-                        .owner(usersWithMetadata.get(run.getOwner()))
+                        .owner(getOwner(run, usersWithMetadata))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -116,6 +121,35 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .filter(instanceOffer -> instanceOffer.getGpu() > 0)
                 .map(instanceOffer -> ComputeType.GPU)
                 .orElse(ComputeType.CPU);
+    }
+
+    private EntityWithMetadata<PipelineUser> getOwner(final PipelineRun run,
+                                                      final Map<String, EntityWithMetadata<PipelineUser>> users) {
+        return getBillingOwner(run, users)
+                .orElseGet(() -> getRunOwner(run, users));
+    }
+
+    private Optional<EntityWithMetadata<PipelineUser>> getBillingOwner(
+            final PipelineRun run,
+            final Map<String, EntityWithMetadata<PipelineUser>> users) {
+        final Optional<String> billingOwner = getBillingOwner(run);
+        final Optional<EntityWithMetadata<PipelineUser>> user = billingOwner.map(users::get);
+        if (billingOwner.isPresent() && !user.isPresent()) {
+            log.warn("Run {} billing owner {} wasn't found. Falling back to run owner...", run.getId(), billingOwner);
+        }
+        return user;
+    }
+
+    private Optional<String> getBillingOwner(final PipelineRun run) {
+        return ListUtils.emptyIfNull(run.getPipelineRunParameters()).stream()
+                .filter(parameter -> billingOwnerParameter.equals(parameter.getName()))
+                .map(PipelineRunParameter::getValue)
+                .findFirst();
+    }
+
+    private EntityWithMetadata<PipelineUser> getRunOwner(final PipelineRun run,
+                                                         final Map<String, EntityWithMetadata<PipelineUser>> users) {
+        return users.get(run.getOwner());
     }
 
 }

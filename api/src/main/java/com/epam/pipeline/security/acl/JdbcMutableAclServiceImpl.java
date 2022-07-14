@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.epam.pipeline.security.acl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +28,8 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dao.DaoHelper;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
+import com.epam.pipeline.entity.security.acl.AclEntitySummary;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.acls.domain.GrantedAuthoritySid;
 import org.springframework.security.acls.domain.ObjectIdentityImpl;
@@ -37,6 +40,7 @@ import org.springframework.security.acls.model.Acl;
 import org.springframework.security.acls.model.AclCache;
 import org.springframework.security.acls.model.AlreadyExistsException;
 import org.springframework.security.acls.model.MutableAcl;
+import org.springframework.security.acls.model.NotFoundException;
 import org.springframework.security.acls.model.ObjectIdentity;
 import org.springframework.security.acls.model.Sid;
 import org.springframework.stereotype.Service;
@@ -45,14 +49,23 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 @Service
+@Slf4j
 public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     private static final String CLASS_IDENTITY_QUERY = "SELECT currval('acl_class_id_seq');";
     private static final String SID_IDENTITY_QUERY = "SELECT currval('acl_sid_id_seq');";
-
-    private String deleteSidByIdQuery = "delete from acl_sid where id=?";
-    private String deleteEntriesBySidQuery = "delete from acl_entry where sid=?";
-    private String loadEntriesBySidsCountQuery = "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
+    private static final String DELETE_SID_BY_ID_QUERY = "delete from acl_sid where id=?";
+    private static final String DELETE_ENTRIES_BY_SID_QUERY = "delete from acl_entry where sid=?";
+    private static final String LOAD_ENTRIES_BY_SIDS_COUNT_QUERY =
+        "SELECT count(*) FROM pipeline.acl_entry where sid IN (@in@)";
+    private static final String LOAD_ENTRIES_SUMMARY_BY_SID_QUERY =
+        "SELECT entries.acl_object_identity,"
+        + " identities.object_id_identity,"
+        + " classes.class"
+        + " FROM pipeline.acl_entry entries"
+        + " INNER JOIN pipeline.acl_object_identity identities on entries.acl_object_identity=identities.id"
+        + " INNER JOIN pipeline.acl_class classes on classes.id=identities.object_id_class"
+        + " WHERE sid=?";
 
     @Autowired
     private MessageHelper messageHelper;
@@ -90,7 +103,7 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public MutableAcl getOrCreateObjectIdentity(AbstractSecuredEntity securedEntity) {
-        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
+        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity.getClass(), securedEntity.getId());
         if (retrieveObjectIdentityPrimaryKey(identity) != null) {
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
@@ -116,8 +129,8 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
 
     @Transactional(propagation = Propagation.REQUIRED)
     public void deleteSidById(Long sidId) {
-        jdbcTemplate.update(deleteEntriesBySidQuery, sidId);
-        jdbcTemplate.update(deleteSidByIdQuery, sidId);
+        jdbcTemplate.update(DELETE_ENTRIES_BY_SID_QUERY, sidId);
+        jdbcTemplate.update(DELETE_SID_BY_ID_QUERY, sidId);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -138,15 +151,26 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     public MutableAcl getAcl(AbstractSecuredEntity securedEntity) {
-        ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
-        if (retrieveObjectIdentityPrimaryKey(identity) != null) {
+        try {
+            ObjectIdentity identity = new ObjectIdentityImpl(securedEntity);
             Acl acl = readAclById(identity);
             Assert.isInstanceOf(MutableAcl.class, acl, messageHelper
                     .getMessage(MessageConstants.ERROR_MUTABLE_ACL_RETURN));
             return (MutableAcl) acl;
-        } else {
+        } catch (NotFoundException e) {
+            log.debug(e.getMessage());
             return null;
         }
+    }
+
+    @Override
+    public Acl readAclById(ObjectIdentity object, List<Sid> sids)
+            throws NotFoundException {
+        Map<ObjectIdentity, Acl> map = readAclsById(Collections.singletonList(object), sids);
+        if (!map.containsKey(object)) {
+            throw new NotFoundException("There should have been an Acl entry for ObjectIdentity " + object);
+        }
+        return map.get(object);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
@@ -175,7 +199,14 @@ public class JdbcMutableAclServiceImpl extends JdbcMutableAclService {
     }
 
     public Integer loadEntriesBySidsCount(final Collection<Long> sidIds) {
-        final String query = DaoHelper.replaceInClause(loadEntriesBySidsCountQuery, sidIds.size());
+        final String query = DaoHelper.replaceInClause(LOAD_ENTRIES_BY_SIDS_COUNT_QUERY, sidIds.size());
         return jdbcTemplate.queryForObject(query, sidIds.toArray(), Integer.class);
+    }
+
+    public List<AclEntitySummary> loadEntriesWithAuthoritySummary(final Long sidId) {
+        return jdbcTemplate.query(LOAD_ENTRIES_SUMMARY_BY_SID_QUERY, new Long[]{sidId},
+            (rs, rowNum) -> new AclEntitySummary(rs.getLong(1),
+                                                 rs.getLong(2),
+                                                 rs.getString(3)));
     }
 }

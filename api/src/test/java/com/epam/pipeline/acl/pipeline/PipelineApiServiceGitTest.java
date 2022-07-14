@@ -29,6 +29,7 @@ import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.Revision;
 import com.epam.pipeline.exception.git.GitClientException;
 import com.epam.pipeline.manager.git.GitManager;
+import com.epam.pipeline.manager.git.PipelineRepositoryService;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
 import com.epam.pipeline.manager.pipeline.PipelineVersionManager;
 import com.epam.pipeline.security.acl.AclPermission;
@@ -77,12 +78,14 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     private GitManager mockGitManager;
     @Autowired
     private PipelineVersionManager mockVersionManager;
+    @Autowired
+    private PipelineRepositoryService mockPipelineRepositoryService;
 
     @Test
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldLoadRevisionForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
+        doReturn(gitTagEntry).when(mockPipelineRepositoryService).loadRevision(pipeline, TEST_STRING);
 
         assertThat(pipelineApiService.loadRevision(ID, TEST_STRING)).isEqualTo(gitTagEntry);
     }
@@ -92,7 +95,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldLoadRevisionWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.READ);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(gitTagEntry).when(mockGitManager).loadRevision(pipeline, TEST_STRING);
+        doReturn(gitTagEntry).when(mockPipelineRepositoryService).loadRevision(pipeline, TEST_STRING);
 
         assertThat(pipelineApiService.loadRevision(ID, TEST_STRING)).isEqualTo(gitTagEntry);
     }
@@ -235,7 +238,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldModifyFilesForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).updateFiles(pipeline, sourceItemsVO);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService).updateFiles(pipeline, sourceItemsVO);
 
         assertThat(pipelineApiService.modifyFiles(ID, sourceItemsVO)).isEqualTo(gitCommitEntry);
     }
@@ -245,7 +248,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldModifyFilesWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).updateFiles(pipeline, sourceItemsVO);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService).updateFiles(pipeline, sourceItemsVO);
 
         assertThat(pipelineApiService.modifyFiles(ID, sourceItemsVO)).isEqualTo(gitCommitEntry);
     }
@@ -255,7 +258,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyModifyFilesWhenPermissionIsNotGranted() throws GitClientException {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).updateFiles(pipeline, sourceItemsVO);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService).updateFiles(pipeline, sourceItemsVO);
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.modifyFiles(ID, sourceItemsVO));
     }
@@ -264,7 +267,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldUploadFilesForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService)
+                .uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
 
         assertThat(pipelineApiService.uploadFiles(ID, TEST_STRING, files)).isEqualTo(gitCommitEntry);
     }
@@ -274,7 +278,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldUploadFilesWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService)
+                .uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
 
         assertThat(pipelineApiService.uploadFiles(ID, TEST_STRING, files)).isEqualTo(gitCommitEntry);
     }
@@ -284,7 +289,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyUploadFilesWhenPermissionIsNotGranted() throws GitClientException {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService)
+                .uploadFiles(pipeline, TEST_STRING, files, TEST_STRING, null);
 
         assertThrowsChecked(AccessDeniedException.class, () -> pipelineApiService.uploadFiles(ID, TEST_STRING, files));
     }
@@ -293,7 +299,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldDeleteFileForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService)
+                .deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
 
         assertThat(pipelineApiService.deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING)).isEqualTo(gitCommitEntry);
     }
@@ -303,7 +310,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDeleteFileWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.WRITE);
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService)
+                .deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
 
         assertThat(pipelineApiService.deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING)).isEqualTo(gitCommitEntry);
     }
@@ -313,7 +321,8 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyDeleteFileWhenPermissionIsNotGranted() throws GitClientException {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID, true);
-        doReturn(gitCommitEntry).when(mockGitManager).deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
+        doReturn(gitCommitEntry).when(mockPipelineRepositoryService)
+                .deleteFile(pipeline, TEST_STRING, TEST_STRING, TEST_STRING);
 
         assertThrowsChecked(AccessDeniedException.class, () ->
                 pipelineApiService.deleteFile(ID, TEST_STRING, TEST_STRING, TEST_STRING));
@@ -418,7 +427,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetPipelineFileContentsForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager).getPipelineFileContents(pipeline, TEST_STRING, TEST_STRING);
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService).getFileContents(pipeline, TEST_STRING, TEST_STRING);
 
         assertThat(pipelineApiService.getPipelineFileContents(ID, TEST_STRING, TEST_STRING)).isEqualTo(TEST_ARRAY);
     }
@@ -428,7 +437,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldGetPipelineFileContentsWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.READ);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager).getPipelineFileContents(pipeline, TEST_STRING, TEST_STRING);
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService).getFileContents(pipeline, TEST_STRING, TEST_STRING);
 
         assertThat(pipelineApiService.getPipelineFileContents(ID, TEST_STRING, TEST_STRING)).isEqualTo(TEST_ARRAY);
     }
@@ -448,7 +457,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     @WithMockUser(roles = ADMIN_ROLE)
     public void shouldGetTruncatedPipelineFileContentForAdmin() throws GitClientException {
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager)
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
         assertThat(pipelineApiService.getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT))
@@ -460,7 +469,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldGetTruncatedPipelineFileContentWhenPermissionIsGranted() throws GitClientException {
         initAclEntity(pipeline, AclPermission.READ);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager)
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
         assertThat(pipelineApiService.getTruncatedPipelineFileContent(ID, TEST_STRING, TEST_STRING, TEST_INT))
@@ -472,7 +481,7 @@ public class PipelineApiServiceGitTest extends AbstractAclTest {
     public void shouldDenyGetTruncatedPipelineFileContentWhenPermissionIsNotGranted() throws GitClientException {
         initAclEntity(pipeline);
         doReturn(pipeline).when(mockPipelineManager).load(ID);
-        doReturn(TEST_ARRAY).when(mockGitManager)
+        doReturn(TEST_ARRAY).when(mockPipelineRepositoryService)
                 .getTruncatedPipelineFileContent(pipeline, TEST_STRING, TEST_STRING, TEST_INT);
 
         assertThrowsChecked(AccessDeniedException.class, () ->

@@ -14,19 +14,8 @@
  *  limitations under the License.
  */
 
-.rc-menu-item.rc-menu-item-disabled,
-.rc-menu-submenu-title.rc-menu-item-disabled,
-.rc-menu-item.rc-menu-submenu-disabled,
-.rc-menu-submenu-title.rc-menu-submenu-disabled {
-  color: #aaa !important;
-}
-
 .rc-menu-submenu-title {
   z-index: 1;
-}
-
-.rc-dropdown-menu {
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
 }
 
 .rc-menu-vertical .rc-menu-submenu-arrow,
@@ -39,4 +28,34 @@
 .rc-menu-submenu-arrow::before {
   content: "\E61F" !important;
   font-family: anticon;
+}
+
+.rc-menu-item:not(.rc-menu-item-disabled),
+.rc-menu-submenu .rc-menu-submenu-title,
+.rc-dropdown-menu-item:not(.rc-dropdown-menu-item-disabled) {
+  cursor: pointer;
+}
+
+.rc-menu.rc-menu-vertical > li.rc-menu-submenu,
+.rc-menu.rc-menu-vertical > li.rc-menu-item {
+  min-width: 200px;
+}
+
+.rc-menu-vertical > .rc-menu-item,
+.rc-menu-vertical-left > .rc-menu-item,
+.rc-menu-vertical-right > .rc-menu-item,
+.rc-menu-inline > .rc-menu-item,
+.rc-menu-vertical > .rc-menu-submenu > .rc-menu-submenu-title,
+.rc-menu-vertical-left > .rc-menu-submenu > .rc-menu-submenu-title,
+.rc-menu-vertical-right > .rc-menu-submenu > .rc-menu-submenu-title,
+.rc-menu-inline > .rc-menu-submenu > .rc-menu-submenu-title {
+  padding: 7px 8px;
+}
+
+.rc-menu-vertical,
+.rc-menu-vertical-left,
+.rc-menu-vertical-right,
+.rc-menu-inline {
+  padding-top: 0;
+  padding-bottom: 0;
 }

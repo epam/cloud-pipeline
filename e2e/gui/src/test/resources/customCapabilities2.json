@@ -1,0 +1,26 @@
+{
+  "testCapability1": {
+    "description": "Custom test capability 1",
+    "commands": [
+      "echo testLine1",
+      "echo 'testLine1' > ~/testFile1.txt"
+    ],
+    "params": {
+      "MY_PARAM1": "MY_VALUE1",
+      "MY_BOOLEAN_PARAM": true,
+      "MY_NUMBER_PARAM": 1
+    }
+  },
+  "testCapability2": {
+    "description": "Custom test capability 2",
+    "commands": [
+      "echo testLine2",
+      "echo 'testLine2' >> ~/testFile1.txt"
+    ],
+    "params": {
+      "MY_PARAM2": "MY_VALUE2",
+      "MY_BOOLEAN_PARAM": false,
+      "MY_NUMBER_PARAM": 2
+    }
+  }
+}

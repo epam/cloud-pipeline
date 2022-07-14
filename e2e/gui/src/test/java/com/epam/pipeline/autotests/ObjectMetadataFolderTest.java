@@ -63,6 +63,7 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
         navigationMenu()
                 .library()
                 .cd(folder)
+                .sleep(1, SECONDS)
                 .cd(subfolder)
                 .removeFolder(subfolder)
                 .removeFolder(folder);
@@ -85,7 +86,6 @@ public class ObjectMetadataFolderTest extends AbstractBfxPipelineTest implements
                 .addKeyWithValue(key1, value1)
                 .selectKey(key1)
                 .ensure(DELETE_ICON, visible)
-                .validateKeyBackgroundIsGrey()
                 .ensureVisible(REMOVE_ALL);
     }
 

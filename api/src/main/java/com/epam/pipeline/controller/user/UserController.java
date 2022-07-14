@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
 import com.epam.pipeline.controller.vo.RouteType;
+import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -38,6 +39,7 @@ import io.swagger.annotations.ApiResponses;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -56,8 +58,10 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @Api(value = "Users")
@@ -170,8 +174,9 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<PipelineUser> loadUser(@PathVariable Long id) {
-        return Result.success(userApiService.loadUser(id));
+    public Result<PipelineUser> loadUser(@PathVariable Long id,
+                                         @RequestParam(defaultValue = FALSE) final boolean quotas) {
+        return Result.success(userApiService.loadUser(id, quotas));
     }
 
     @GetMapping(value = "/user")
@@ -223,8 +228,11 @@ public class UserController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<PipelineUser>> loadUsers() {
-        return Result.success(userApiService.loadUsers());
+    public Result<List<PipelineUser>> loadUsers(@RequestParam(defaultValue = FALSE) final boolean activity,
+                                                @RequestParam(defaultValue = FALSE) final boolean quotas) {
+        return Result.success(activity
+                ? userApiService.loadUsersWithActivityStatus(quotas)
+                : userApiService.loadUsers(quotas));
     }
 
     @GetMapping(value = "/users/info")
@@ -399,8 +407,8 @@ public class UserController extends AbstractRestController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<List<PipelineUserEvent>> importUsersFromCsv(
-            @RequestParam(defaultValue = "false") final boolean createUser,
-            @RequestParam(defaultValue = "false") final boolean createGroup,
+            @RequestParam(defaultValue = FALSE) final boolean createUser,
+            @RequestParam(defaultValue = FALSE) final boolean createGroup,
             @RequestParam(required = false) final List<String> createMetadata,
             final HttpServletRequest request) throws FileUploadException {
         final MultipartFile file = consumeMultipartFile(request);
@@ -439,5 +447,40 @@ public class UserController extends AbstractRestController {
     @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
     public Result<ImpersonationStatus> getImpersonationStatus() {
         return Result.success(userApiService.getImpersonationStatus());
+    }
+
+    @PostMapping("/users/online")
+    @ResponseBody
+    @ApiOperation(
+            value = "Saves currently online users dump",
+            notes = "Saves currently online users dump",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<OnlineUsers> saveOnlineUsers() {
+        return Result.success(userApiService.saveCurrentlyOnlineUsers());
+    }
+
+    @DeleteMapping("/users/online")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes online users dumps created before specified date",
+            notes = "Deletes online users dumps created before specified date",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Boolean> deleteOnlineUsers(@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @RequestParam
+                                                 final LocalDate date) {
+        return Result.success(userApiService.deleteExpiredOnlineUsers(date));
+    }
+
+    @GetMapping("/user/launchLimits")
+    @ResponseBody
+    @ApiOperation(
+            value = "Loads launch limits for a user.",
+            notes = "Loads a map of launch limits, configured via contextual preferences.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)})
+    public Result<Map<String, Integer>> getCurrentUserLaunchLimits(
+        @RequestParam(required = false, defaultValue = "false") final boolean loadAll) {
+        return Result.success(userApiService.getCurrentUserLaunchLimits(loadAll));
     }
 }

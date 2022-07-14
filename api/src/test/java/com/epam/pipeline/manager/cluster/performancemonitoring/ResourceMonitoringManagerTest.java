@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,6 +67,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -207,7 +208,7 @@ public class ResourceMonitoringManagerTest {
         when(instanceOfferManager.getAllInstanceTypesObservable()).thenReturn(mockSubject);
 
         RunInstance spotInstance = new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "spotNode", PLATFORM, true, null, null, null);
+                null, null, "spotNode", PLATFORM, true);
         final Map <String, String> stubTagMap = new HashMap<>();
         okayRun = new PipelineRun();
         okayRun.setInstance(spotInstance);
@@ -221,7 +222,7 @@ public class ResourceMonitoringManagerTest {
 
         idleSpotRun = new PipelineRun();
         idleSpotRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "idleSpotNode", PLATFORM, true, null, null, null));
+                null, null, "idleSpotNode", PLATFORM, true));
         idleSpotRun.setPodId("idle-spot");
         idleSpotRun.setId(TEST_IDLE_SPOT_RUN_ID);
         idleSpotRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1, ChronoUnit.MINUTES)
@@ -232,7 +233,7 @@ public class ResourceMonitoringManagerTest {
 
         autoscaleMasterRun = new PipelineRun();
         autoscaleMasterRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "autoscaleMasterRun", PLATFORM, false, null, null, null));
+                null, null, "autoscaleMasterRun", PLATFORM, false));
         autoscaleMasterRun.setPodId("autoscaleMasterRun");
         autoscaleMasterRun.setId(TEST_AUTOSCALE_RUN_ID);
         autoscaleMasterRun
@@ -247,7 +248,7 @@ public class ResourceMonitoringManagerTest {
         idleOnDemandRun = new PipelineRun();
         idleOnDemandRun.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, 
-                        "idleNode", PLATFORM, false, null, null, null));
+                        "idleNode", PLATFORM, false));
         idleOnDemandRun.setPodId("idle-on-demand");
         idleOnDemandRun.setId(TEST_IDLE_ON_DEMAND_RUN_ID);
         idleOnDemandRun.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -259,7 +260,7 @@ public class ResourceMonitoringManagerTest {
         idleRunToProlong = new PipelineRun();
         idleRunToProlong.setInstance(
                 new RunInstance(testType.getName(), 0, 0, null, null, null, 
-                        "prolongedNode", PLATFORM, false, null, null, null));
+                        "prolongedNode", PLATFORM, false));
         idleRunToProlong.setPodId("idle-to-prolong");
         idleRunToProlong.setId(TEST_IDLE_RUN_TO_PROLONG_ID);
         idleRunToProlong.setStartDate(new Date(Instant.now().minus(TEST_MAX_IDLE_MONITORING_TIMEOUT + 1,
@@ -270,7 +271,7 @@ public class ResourceMonitoringManagerTest {
 
         highConsumingRun = new PipelineRun();
         highConsumingRun.setInstance(new RunInstance(testType.getName(), 0, 0, null,
-                null, null, "highConsumingNode", PLATFORM, true, null, null, null));
+                null, null, "highConsumingNode", PLATFORM, true));
         highConsumingRun.setPodId(HIGH_CONSUMING_POD_ID);
         highConsumingRun.setId(TEST_HIGH_CONSUMING_RUN_ID);
         highConsumingRun.setStartDate(new Date(Instant.now().toEpochMilli()));
@@ -447,6 +448,7 @@ public class ResourceMonitoringManagerTest {
     public void testPauseOnDemand() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
             .thenReturn(IdleRunAction.PAUSE.name());
+        when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         LocalDateTime lastNotificationDate = mockAlreadyNotifiedRuns();
 
@@ -497,6 +499,7 @@ public class ResourceMonitoringManagerTest {
     public void testPauseOrStop() throws InterruptedException {
         when(preferenceManager.getPreference(SystemPreferences.SYSTEM_IDLE_ACTION))
             .thenReturn(IdleRunAction.PAUSE_OR_STOP.name());
+        when(preferenceManager.findPreference(SystemPreferences.SYSTEM_MAINTENANCE_MODE)).thenReturn(Optional.empty());
 
         mockAlreadyNotifiedRuns();
 

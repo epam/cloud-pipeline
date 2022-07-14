@@ -245,8 +245,12 @@ class LaunchVSForm extends React.Component {
         className={
           classNames(
             styles.tool,
+            'cp-launch-vs-tool',
+            'cp-panel-card',
             {
-              [styles.selected]: isSelected
+              [styles.selected]: isSelected,
+              'cp-table-element-selected': isSelected,
+              'cp-table-element-selected-no-bold': isSelected
             }
           )
         }
@@ -371,7 +375,7 @@ class LaunchVSForm extends React.Component {
     const showAllToolsSection = (filter && filter.length) || personalTools.length === 0;
     return (
       <div
-        className={styles.tools}
+        className={classNames(styles.tools, 'cp-panel', 'cp-panel-transparent')}
       >
         {filteredPersonalTools.map(this.renderTool)}
         {
@@ -382,7 +386,7 @@ class LaunchVSForm extends React.Component {
               className={styles.divider}
             >
               <div
-                className={styles.line}
+                className={classNames('cp-divider', 'horizontal')}
               >
                 {'\u00A0'}
               </div>
@@ -392,7 +396,7 @@ class LaunchVSForm extends React.Component {
                 Global search
               </div>
               <div
-                className={styles.line}
+                className={classNames('cp-divider', 'horizontal')}
               >
                 {'\u00A0'}
               </div>

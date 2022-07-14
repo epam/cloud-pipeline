@@ -156,7 +156,7 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
         runsMenu()
             .activeRuns()
             .showLog(runId)
-            .ensure(runId(), have(text(String.format("Run #%s", runId))))
+            .ensure(runId(), have(text(String.format("#%s", runId))))
             .ensure(pipelineLink(), have(textMatches(String.format("%s \\(draft-.{8}\\)", pipeline100))))
             .ensure(detailsWithLabel("Owner"), have(text(getUserNameByAccountLogin(C.LOGIN))))
             .waitForCompletion()
@@ -261,7 +261,9 @@ public class RunPipelineTest extends AbstractSeveralPipelineRunningTest implemen
     @Test(priority = 2, dependsOnMethods = "runShouldNotAppearInActiveRuns")
     @TestCase({"EPMCMBIBPC-280", "EPMCMBIBPC-301"})
     public void nodePageShouldBeValid() {
-        final By nonMasterNode = Combiners.select(not(master()), node(), "any non-master node");
+        final By nonMasterNode = Combiners.select(
+                and("node neither master nor windows", not(master()), not(windows())),
+                node(), "any non-master node");
         clusterMenu()
             .click(nonMasterNode, NodePage::new)
             .ensure(button("Refresh"), visible, enabled)

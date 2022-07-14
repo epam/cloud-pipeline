@@ -64,6 +64,12 @@ spec:
               readOnly: true
             - mountPath: /etc/nginx/external-apps
               name: edge-external-apps
+            - mountPath: /opt/share-srv/pki
+              name: share-pki
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       volumes:
         - name: edge-logs
           hostPath:
@@ -89,5 +95,8 @@ spec:
         - name: edge-external-apps
           hostPath:
             path: /opt/edge/external-apps
+        - name: share-pki
+          hostPath:
+            path: /opt/share-srv/pki
       imagePullSecrets:
         - name: cp-distr-docker-registry-secret

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package com.epam.pipeline.autotests.utils;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 
 /**
@@ -78,12 +80,15 @@ public class C {
         ANOTHER_INSTANCE = conf.getProperty("e2e.ui.another.instance.type");
         DEFAULT_INSTANCE_FAMILY_NAME = conf.getProperty("e2e.ui.default.instance.family.name");
         ANOTHER_TESTING_TOOL_NAME = conf.getProperty("e2e.ui.another.testing.tool");
+        LDAP_SERVER_TEST_TOOL = conf.getProperty("e2e.ui.ldap.server.test.tool");
         ANOTHER_GROUP = conf.getProperty("e2e.ui.another.group");
         PLATFORM_NAME = conf.getProperty("e2e.ui.platform.name");
         ANONYMOUS_NAME = conf.getProperty("e2e.ui.anonymous.name");
         ANONYMOUS_TOKEN = conf.getProperty("e2e.ui.anonymous.token");
         ANOTHER_ADMIN_TOKEN = conf.getProperty("e2e.ui.another.admin.token");
         DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.instance.types");
+        DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER = conf.getProperty(
+                "e2e.ui.default.cluster.allowed.instance.types.docker");
         CLUSTER_ALLOWED_MASKS = conf.getProperty("e2e.ui.cluster.allowed.masks");
         DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES = conf.getProperty("e2e.ui.default.cluster.allowed.price.types");
         TEST_DOCKER_IMAGE = conf.getProperty("e2e.ui.test.docker.image");
@@ -96,9 +101,30 @@ public class C {
         SUPPORT_CONTENT = conf.getProperty("e2e.ui.help.content");
         LUSTRE_MOUNT_OPTIONS = conf.getProperty("e2e.ui.lustre.fs.mount.options");
         LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH = conf.getProperty("e2e.ui.launch.system.parameters.path");
+        LAUNCH_CONTAINER_CPU_RESOURCES_VALUE = conf.getProperty("e2e.ui.launch.container.cpu.resource");
         PIPE_OPERATION_SYSTEM = conf.getProperty("e2e.ui.pipe.operation.system");
         PIPE_INSTALLATION_CONTENT = conf.getProperty("e2e.ui.pipe.installation.content");
         PIPE_CONFIG_CONTENT_PATH = conf.getProperty("e2e.ui.pipe.config.content.path");
+        IMPERSONATE_AUTH = conf.getProperty("e2e.ui.impersonate.auth");
+        EXTENSION_PATH = conf.getProperty("e2e.ui.extension.path");
+        INVALID_EXTENSION_PATH = conf.getProperty("e2e.ui.invalid.extension.path");
+        ANONYM_EXTENSION_PATH = conf.getProperty("e2e.ui.anonym.extension.path");
+        ADMIN_TOKEN_IS_SERVICE = conf.getProperty("e2e.ui.login.isservice");
+        WEBDAV_ADDRESS = conf.getProperty("e2e.ui.webdav.address");
+        NAT_PROXY_SERVICE_PREFIX = conf.getProperty("e2e.ui.nat.proxy.service.prefix");
+        NAT_PROXY_SERVER_NAMES = Arrays.asList(conf.getProperty("e2e.ui.nat.proxy.service.names")
+                .split("\\s*,\\s*"));
+        LDAP_URLS = conf.getProperty("e2e.ui.ldap.server.urls");
+        LDAP_BASE_PATH = conf.getProperty("e2e.ui.ldap.server.base.path");
+        LDAP_USERNAME = conf.getProperty("e2e.ui.ldap.server.username");
+        LDAP_PASSWORD = conf.getProperty("e2e.ui.ldap.server.password");
+        SYSTEM_MONITOR_DELAY = conf.getProperty("e2e.ui.system.monitor.delay");
+
+        BACKUP_STORAGE_NAMES = Arrays.asList(conf.getProperty("e2e.ui.backup.storage.names")
+                .split(","));
+        BACKUP_STORAGE_PATH = conf.getProperty("e2e.ui.backup.storage.path");
+        BACKUP_STORAGE_OFFSET = Integer.parseInt(conf.getProperty("e2e.ui.backup.storage.offset"));
+        DEFAULT_CLUSTER_AWS_EBS_TYPE = conf.getProperty("e2e.ui.cluster.aws.ebs.type");
     }
 
     public static final int DEFAULT_TIMEOUT;
@@ -117,6 +143,7 @@ public class C {
     public static final String DOWNLOAD_FOLDER;
 
     public static final String ROOT_ADDRESS;
+    public static final String WEBDAV_ADDRESS;
 
     public static final String ANOTHER_LOGIN;
     public static final String ANOTHER_PASSWORD;
@@ -132,6 +159,7 @@ public class C {
     public static final String TESTING_TOOL_NAME;
     public static final String TOOL_WITHOUT_DEFAULT_SETTINGS;
     public static final String ANOTHER_TESTING_TOOL_NAME;
+    public static final String LDAP_SERVER_TEST_TOOL;
 
     public static final String REGISTRY_PATH_FOR_TOOL;
     public static final String INVALID_REGISTRY_PATH_FOR_TOOL;
@@ -154,8 +182,10 @@ public class C {
     public static final String ANOTHER_INSTANCE;
     public static final String DEFAULT_INSTANCE_FAMILY_NAME;
     public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES;
+    public static final String DEFAULT_CLUSTER_ALLOWED_INSTANCE_TYPES_DOCKER;
     public static final String CLUSTER_ALLOWED_MASKS;
     public static final String DEFAULT_CLUSTER_ALLOWED_PRICE_TYPES;
+    public static final String DEFAULT_CLUSTER_AWS_EBS_TYPE;
 
     public static final String SPOT_PRICE_NAME;
     public static final String AUTH_TOKEN;
@@ -176,7 +206,27 @@ public class C {
     public static final String SUPPORT_CONTENT;
     public static final String LUSTRE_MOUNT_OPTIONS;
     public static final String LAUNCH_SYSTEM_PARAMETERS_CONFIG_PATH;
+    public static final String LAUNCH_CONTAINER_CPU_RESOURCES_VALUE;
     public static final String PIPE_OPERATION_SYSTEM;
     public static final String PIPE_INSTALLATION_CONTENT;
     public static final String PIPE_CONFIG_CONTENT_PATH;
+
+    public static final String IMPERSONATE_AUTH;
+    public static final String EXTENSION_PATH;
+    public static final String INVALID_EXTENSION_PATH;
+    public static final String ANONYM_EXTENSION_PATH;
+    public static final String ADMIN_TOKEN_IS_SERVICE;
+
+    public static final String NAT_PROXY_SERVICE_PREFIX;
+    public static final List<String> NAT_PROXY_SERVER_NAMES;
+
+    public static final String LDAP_URLS;
+    public static final String LDAP_BASE_PATH;
+    public static final String LDAP_USERNAME;
+    public static final String LDAP_PASSWORD;
+    public static final String SYSTEM_MONITOR_DELAY;
+
+    public static final List<String> BACKUP_STORAGE_NAMES;
+    public static final String BACKUP_STORAGE_PATH;
+    public static final int BACKUP_STORAGE_OFFSET;
 }

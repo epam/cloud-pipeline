@@ -112,9 +112,9 @@ notifications:
       headers:
              Authorization: [Bearer ${CP_API_JWT_ADMIN}]
              Registry-Path: [${CP_DOCKER_INTERNAL_HOST}:${CP_DOCKER_INTERNAL_PORT}]
-      timeout: 1s
-      threshold: 5
-      backoff: 1s
+      timeout: ${CP_DOCKER_NOTIFY_TIMEOUT:-1s}
+      threshold: ${CP_DOCKER_NOTIFY_THRESHOLD:-5}
+      backoff: ${CP_DOCKER_NOTIFY_BACKOFF:-1s}
       ignoredmediatypes:
         - application/octet-stream
         - application/vnd.docker.container.image.rootfs.diff+x-gtar

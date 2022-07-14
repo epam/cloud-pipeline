@@ -65,8 +65,8 @@ local function split_str(inputstr, sep)
     return t
 end
 
--- Check if request alread contains a cookie "bearer"
-local token = ngx.var.cookie_bearer
+-- Check if request alread contains a cookie or a header named "bearer"
+local token = ngx.var.cookie_bearer or ngx.var.http_bearer
 if token then
 
     -- If cookie present - validate it
@@ -131,6 +131,9 @@ if token then
     end
     if ngx.var.auth_user_name ~= nil then
         ngx.var.auth_user_name = username
+    end
+    if ngx.var.auth_user_name_cropped ~= nil and username ~= nil then
+        ngx.var.auth_user_name_cropped = split_str(username, '@')[1]
     end
     ngx.req.set_header('X-Auth-User', username)
     return

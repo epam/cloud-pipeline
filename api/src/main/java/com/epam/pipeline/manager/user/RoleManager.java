@@ -96,7 +96,7 @@ public class RoleManager {
     public Role deleteRole(Long id) {
         Role role = loadRole(id);
         Assert.isTrue(!role.isPredefined(), "Predefined system roles cannot be deleted");
-        permissionHandler.deleteGrantedAuthority(role.getName());
+        permissionHandler.deleteGrantedAuthority(role.getName(), false);
         roleDao.deleteRoleReferences(id);
         roleDao.deleteRole(id);
         return role;

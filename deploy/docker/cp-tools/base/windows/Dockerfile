@@ -16,18 +16,19 @@ ARG BASE_IMAGE="python:3.8.9-windowsservercore"
 
 FROM $BASE_IMAGE
 
-ENV NOMACHINE_HOME="c:/opt/nomachine"
+ENV CP_DESKTOP_DIR="c:/opt/desktop"
 
-RUN New-Item -ItemType directory -Path ${env:NOMACHINE_HOME}
+RUN New-Item -ItemType directory -Path ${env:CP_DESKTOP_DIR}
 
-RUN Invoke-WebRequest "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble.exe" -OutFile ${env:NOMACHINE_HOME}/scramble.exe
+RUN Invoke-WebRequest "https://s3.amazonaws.com/cloud-pipeline-oss-builds/tools/nomachine/scramble.exe" -OutFile ${env:CP_DESKTOP_DIR}/scramble.exe
 
-COPY requirements.txt $NOMACHINE_HOME/requirements.txt
-RUN pip install -r ${env:NOMACHINE_HOME}/requirements.txt
+COPY requirements.txt $CP_DESKTOP_DIR/requirements.txt
+RUN pip install -r ${env:CP_DESKTOP_DIR}/requirements.txt
 
 COPY init.ps1 c:/init.ps1
-COPY serve_nxs.py \
+COPY serve_desktop.py \
      template.nxs \
-     $NOMACHINE_HOME/
+     template.dcv \
+     $CP_DESKTOP_DIR/
 
 CMD powershell -Command c:\init.ps1

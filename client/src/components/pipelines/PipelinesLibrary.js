@@ -17,6 +17,7 @@
 import React from 'react';
 import PipelinesLibraryContent from './PipelinesLibraryContent';
 import {Card, Icon, Input, message, Row, Tree} from 'antd';
+import classNames from 'classnames';
 import connect from '../../utils/connect';
 import localization from '../../utils/localization';
 import {observable} from 'mobx';
@@ -30,7 +31,7 @@ import {
   getExpandedKeys,
   getTreeItemByKey,
   ItemTypes,
-  search
+  search, formatTreeItems
 } from './model/treeStructureFunctions';
 import roleModel from '../../utils/roleModel';
 import styles from './PipelinesLibrary.css';
@@ -59,7 +60,7 @@ const EXPANDED_KEYS_STORAGE_KEY = 'expandedKeys';
   dataStorages
 })
 @roleModel.authenticationInfo
-@inject('displayInfo', 'preferences')
+@inject('uiNavigation', 'preferences')
 @inject(({pipelinesLibrary, pipelines, folders, configurations, dataStorages}, {location}) => {
   let path = location.pathname;
   if (path.startsWith('/')) {
@@ -82,8 +83,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   state = {
     rootItems: [],
     expandedKeys: [],
-    selectedKeys: [],
-    currentPath: null
+    selectedKeys: []
   };
 
   get dragEnabled () {
@@ -273,11 +273,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         await versionsRequest.fetchIfNeededOrWait();
         item.children = generateTreeData(
           {versions: versionsRequest.value},
-          false,
-          item,
-          getExpandedKeys(rootItems),
-          undefined,
-          this.props.hiddenObjectsTreeFilter()
+          {
+            parent: item,
+            expandedKeys: getExpandedKeys(rootItems),
+            filter: this.props.hiddenObjectsTreeFilter()
+          }
         );
         item.isLeaf = !item.children || item.children.length === 0;
       } else if (
@@ -290,11 +290,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         await childrenRequest.fetchIfNeededOrWait();
         item.children = generateTreeData(
           childrenRequest.value,
-          false,
-          item,
-          getExpandedKeys(rootItems),
-          undefined,
-          this.props.hiddenObjectsTreeFilter()
+          {
+            parent: item,
+            expandedKeys: getExpandedKeys(rootItems),
+            filter: this.props.hiddenObjectsTreeFilter()
+          }
         );
         item.isLeaf = !item.children || item.children.length === 0;
         item.childrenMetadataLoaded = true;
@@ -314,13 +314,12 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     let sensitive = false;
     let subTitle;
     let iconStyle = {};
+    let iconClassName;
     switch (item.type) {
       case ItemTypes.pipeline: icon = 'fork'; break;
       case ItemTypes.versionedStorage:
         icon = 'inbox';
-        iconStyle = {
-          color: '#2696dd'
-        };
+        iconClassName = 'cp-versioned-storage';
         break;
       case ItemTypes.folder:
         if (item.id === 'pipelines') {
@@ -359,7 +358,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       name = (
         <span>
           <span>{item.name.substring(0, item.searchResult.index)}</span>
-          <span className={styles.searchResult}>
+          <span className={classNames(styles.searchResult, 'cp-search-highlight-text')}>
             {
               item.name.substring(
                 item.searchResult.index,
@@ -383,15 +382,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           icon && (
             <Icon
               type={icon}
-              style={
-                Object.assign(
-                  {},
-                  iconStyle || {},
-                  sensitive
-                    ? {color: '#ff5c33'}
-                    : {}
-                )
-              }
+              className={classNames({'cp-sensitive': sensitive}, iconClassName)}
+              style={iconStyle}
             />
           )
         }
@@ -399,15 +391,8 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           subIcon && (
             <Icon
               type={subIcon}
-              style={
-                Object.assign(
-                  {},
-                  iconStyle || {},
-                  sensitive
-                    ? {color: '#ff5c33'}
-                    : {}
-                )
-              }
+              className={classNames({'cp-sensitive': sensitive}, iconClassName)}
+              style={iconStyle}
             />
           )
         }
@@ -418,27 +403,28 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   }
 
   generateTreeItems (items) {
-    return items.map(item => {
-      if (item.isLeaf) {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf} />
-        );
-      } else {
-        return (
-          <Tree.TreeNode
-            className={`pipelines-library-tree-node-${item.key}`}
-            title={this.renderItemTitle(item)}
-            key={item.key}
-            isLeaf={item.isLeaf}>
-            {this.generateTreeItems(item.children)}
-          </Tree.TreeNode>
-        );
-      }
-    });
+    return formatTreeItems(items, {preferences: this.props.preferences})
+      .map(item => {
+        if (item.isLeaf) {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}/>
+          );
+        } else {
+          return (
+            <Tree.TreeNode
+              className={`pipelines-library-tree-node-${item.key}`}
+              title={this.renderItemTitle(item)}
+              key={item.key}
+              isLeaf={item.isLeaf}>
+              {this.generateTreeItems(item.children)}
+            </Tree.TreeNode>
+          );
+        }
+      });
   }
 
   generateTree () {
@@ -447,7 +433,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         className={`${styles.libraryTree} pipeline-library`}
         onSelect={this.onSelect}
         onExpand={this.onExpand}
-        checkStrictly={true}
+        checkStrictly
         loadData={this.loadData}
         draggable
         onDragStart={this.onDragStart}
@@ -479,7 +465,14 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       <Card
         id="pipelines-library-tree-container"
         style={{overflowY: 'auto'}}
-        className={styles.libraryCard}
+        className={
+          classNames(
+            styles.libraryCard,
+            'cp-panel',
+            'cp-panel-no-hover',
+            'cp-panel-borderless'
+          )
+        }
         bodyStyle={{padding: 0}}>
         <Row
           type="flex"
@@ -508,7 +501,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
   }
 
   render () {
-    if (this.props.displayInfo.libraryCollapsed) {
+    if (!this.props.uiNavigation.libraryExpanded) {
       return (
         <PipelinesLibraryContent
           location={this.props.path}
@@ -537,11 +530,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           defaultSize="15%"
           pane1Style={{overflowY: 'auto', display: 'flex', flexDirection: 'column'}}
           pane2Style={{overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column'}}
+          resizerClassName="cp-split-panel-resizer"
           resizerStyle={{
-            width: 10,
-            margin: '0 -4px',
+            width: 8,
+            margin: 0,
             cursor: 'col-resize',
-            backgroundColor: 'transparent',
             boxSizing: 'border-box',
             backgroundClip: 'padding',
             zIndex: 1
@@ -589,11 +582,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           const childExpandedKeys = getExpandedKeys(item.children);
           item.children = generateTreeData(
             this.props.pipelinesLibrary.value,
-            false,
-            item,
-            childExpandedKeys,
-            undefined,
-            this.props.hiddenObjectsTreeFilter()
+            {
+              parent: item,
+              expandedKeys: childExpandedKeys,
+              filter: this.props.hiddenObjectsTreeFilter()
+            }
           );
           item.isLeaf = item.children ? item.children.length === 0 : true;
         } else if (item.id === 'pipelines') {
@@ -607,11 +600,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
           const childExpandedKeys = getExpandedKeys(item.children);
           item.children = generateTreeData(
             reloadFolderRequest.value,
-            false,
-            item,
-            childExpandedKeys,
-            undefined,
-            this.props.hiddenObjectsTreeFilter()
+            {
+              parent: item,
+              expandedKeys: childExpandedKeys,
+              filter: this.props.hiddenObjectsTreeFilter()
+            }
           );
           item.isLeaf = item.children.length === 0;
         }
@@ -625,11 +618,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
         await versionsRequest.fetchIfNeededOrWait();
         item.children = generateTreeData(
           {versions: versionsRequest.value},
-          false,
-          item,
-          undefined,
-          undefined,
-          this.props.hiddenObjectsTreeFilter()
+          {
+            parent: item,
+            filter: this.props.hiddenObjectsTreeFilter()
+          }
         );
       }
         break;
@@ -666,11 +658,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             const childExpandedKeys = getExpandedKeys(parentFolder.children);
             parentFolder.children = generateTreeData(
               this.props.pipelinesLibrary.value,
-              false,
-              parentFolder,
-              childExpandedKeys,
-              undefined,
-              this.props.hiddenObjectsTreeFilter()
+              {
+                parent: parentFolder,
+                expandedKeys: childExpandedKeys,
+                filter: this.props.hiddenObjectsTreeFilter()
+              }
             );
             parentFolder.isLeaf = parentFolder.children ? parentFolder.children.length === 0 : true;
           } else if (['pipelines', 'storages'].indexOf(parentFolder.id) === -1) {
@@ -680,11 +672,11 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
             const childExpandedKeys = getExpandedKeys(parentFolder.children);
             parentFolder.children = generateTreeData(
               reloadFolderRequest.value,
-              false,
-              parentFolder,
-              childExpandedKeys,
-              undefined,
-              this.props.hiddenObjectsTreeFilter()
+              {
+                parent: parentFolder,
+                expandedKeys: childExpandedKeys,
+                filter: this.props.hiddenObjectsTreeFilter()
+              }
             );
             parentFolder.isLeaf = parentFolder.children.length === 0;
           }
@@ -698,21 +690,21 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
 
   async reloadTree (reload, folderToReload) {
     const parts = this.props.path.split('/');
-    let currentPath, placeholderOrPipelineId, idOrVersionName, metadataClass, selectedKey, history;
-    for (let i = 0; i < parts.length; i++) {
-      if (i === 0) {
-        currentPath = parts[i];
-        placeholderOrPipelineId = parts[i];
-      } else if (i === 1) {
-        currentPath += `/${parts[i]}`;
-        idOrVersionName = parts[i];
-      } else if (i === 2) {
-        currentPath += `/${parts[i]}`;
-        if ((placeholderOrPipelineId || '').toLowerCase() === ItemTypes.metadata) {
-          metadataClass = parts[i];
-        } else if ((placeholderOrPipelineId || '').toLowerCase() === 'folder') {
-          history = (parts[i] || '').toLowerCase() === 'history';
-        }
+    let metadataClass,
+      selectedKey,
+      history,
+      metadata;
+    const [
+      placeholderOrPipelineId,
+      idOrVersionName,
+      section,
+      subSection
+    ] = parts;
+    if ((placeholderOrPipelineId || '').toLowerCase() === 'folder') {
+      history = /^history$/i.test(section);
+      metadata = /^metadata$/i.test(section);
+      if (metadata && subSection) {
+        metadataClass = subSection;
       }
     }
     let rootItems = this.state.rootItems || [];
@@ -741,11 +733,6 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       case 'configuration':
         if (idOrVersionName) {
           selectedKey = `${ItemTypes.configuration}_${idOrVersionName}`;
-        }
-        break;
-      case 'metadatafolder':
-        if (idOrVersionName) {
-          selectedKey = `${ItemTypes.metadataFolder}_${idOrVersionName}metadataFolder`;
         }
         break;
       case 'metadata':
@@ -790,12 +777,10 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
       }];
       rootItems = generateTreeData(
         {childFolders: rootElements},
-        false,
-        null,
-        [],
-        undefined,
-        this.props.hiddenObjectsTreeFilter(),
-        false
+        {
+          filter: this.props.hiddenObjectsTreeFilter(),
+          sortRoot: false
+        }
       );
       const savedExpandedKeys = this.savedExpandedKeys;
       if (savedExpandedKeys.length > 0) {
@@ -811,6 +796,13 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     if ((placeholderOrPipelineId || '').toLowerCase() === 'folder' && idOrVersionName && history) {
       selectedKey = `${ItemTypes.projectHistory}_${idOrVersionName}`;
     }
+    if ((placeholderOrPipelineId || '').toLowerCase() === 'folder' && idOrVersionName && metadata) {
+      if (metadataClass) {
+        selectedKey = `${ItemTypes.metadata}_${idOrVersionName}/metadata/${metadataClass}`;
+      } else {
+        selectedKey = `${ItemTypes.metadataFolder}_${idOrVersionName}/metadata`;
+      }
+    }
     selectedItem = getTreeItemByKey(selectedKey, rootItems);
     if (selectedItem) {
       if (selectedItem.type === ItemTypes.pipeline) {
@@ -821,8 +813,7 @@ export default class PipelinesLibrary extends localization.LocalizedReactCompone
     this.setState({
       rootItems: rootItems,
       selectedKeys: selectedKey ? [selectedKey] : [],
-      expandedKeys: getExpandedKeys(rootItems),
-      currentPath: currentPath
+      expandedKeys: getExpandedKeys(rootItems)
     });
   }
 

@@ -17,7 +17,6 @@ from time import sleep
 import click
 import json
 import sys
-import requests
 from prettytable import prettytable
 
 from src.api.pipeline_run import PipelineRun
@@ -26,10 +25,12 @@ from src.model.pipeline_run_model import PriceType
 from src.model.pipeline_run_parameter_model import PipelineRunParameterModel
 from src.utilities.api_wait import wait_for_server_enabling_if_needed
 from src.utilities.cluster_manager import ClusterManager
+from src.utilities.user_operations_manager import UserOperationsManager
+from src.utilities.user_token_operations import UserTokenOperations
 
 from src.api.pipeline import Pipeline
-from src.config import ConfigNotFoundError
 
+ROLE_ADMIN = 'ROLE_ADMIN'
 DELAY = 30
 
 
@@ -39,20 +40,10 @@ class PipelineRunOperations(object):
     def stop(cls, run_id, yes):
         if not yes:
             click.confirm('Are you sure you want to stop run {}?'.format(run_id), abort=True)
-        try:
-            pipeline_run_model = Pipeline.stop_pipeline(run_id)
-            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
-            click.echo('RunID {} of "{}" stopped'.format(
-                run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))
-
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        pipeline_run_model = Pipeline.stop_pipeline(run_id)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        click.echo('RunID {} of "{}" stopped'.format(
+            run_id, cls.build_image_name(pipeline_name, pipeline_run_model.version)))
 
     @classmethod
     def run(cls, pipeline, config, parameters, yes, run_params, instance_disk, instance_type, docker_image,
@@ -62,12 +53,21 @@ class PipelineRunOperations(object):
             status_notifications_status=None, status_notifications_recipient=None,
             status_notifications_subject=None, status_notifications_body=None,
             run_as_user=None):
+
+        all_user_roles = UserOperationsManager().get_all_user_roles()
+        # Preserving old style impersonation for admin users. Specified user token is generated and used
+        # for impersonation rather than run as capability which is used for non-admin users.
+        if run_as_user and ROLE_ADMIN in all_user_roles:
+                UserTokenOperations().set_user_token(run_as_user)
+                run_as_user = None
+
         # All pipeline run parameters can be specified as options, e.g. --read1 /path/to/reads.fastq
         # In this case - runs_params_dict will contain keys-values for each option, e.g. {'--read1': '/path/to/reads.fastq'}
         # So they can be addressed with run_params_dict['--read1']
         # This approach is used because we do not know parameters list beforehand
 
         run_params_dict = dict([(k.strip('-'), v) for k, v in zip(run_params[::2], run_params[1::2])])
+        cls._validate_run_params(run_params_dict, all_user_roles)
 
         if instance_count == 0:
             instance_count = None
@@ -279,76 +279,36 @@ class PipelineRunOperations(object):
 
         except click.exceptions.Abort:
             sys.exit(0)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-            if quiet:
-                sys.exit(2)
-        except requests.exceptions.RequestException as http_error:
-            if not quiet:
-                click.echo('Http error: {}'.format(str(http_error)), err=True)
-            else:
-                click.echo(str(http_error), err=True)
-                sys.exit(2)
-        except RuntimeError as runtime_error:
-            if not quiet:
-                click.echo('Error: {}'.format(str(runtime_error)), err=True)
-            else:
-                click.echo(str(runtime_error), err=True)
-                sys.exit(2)
-        except ValueError as value_error:
-            if not quiet:
-                click.echo('Error: {}'.format(str(value_error)), err=True)
-            else:
-                click.echo(str(value_error), err=True)
-                sys.exit(2)
 
     @classmethod
     def resume(cls, run_id, sync):
-        try:
-            pipeline_run_model = Pipeline.resume_pipeline(run_id)
-            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
-            pipeline_version = pipeline_run_model.version
-            image_name = cls.build_image_name(pipeline_name, pipeline_version)
-            click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
-            if sync:
-                status = cls.get_resuming_pipeline_status(run_id)
-                if status == 'RUNNING':
-                    click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
-                    sys.exit(1)
-                else:
-                    click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        pipeline_run_model = Pipeline.resume_pipeline(run_id)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        pipeline_version = pipeline_run_model.version
+        image_name = cls.build_image_name(pipeline_name, pipeline_version)
+        click.echo('Resuming RunID {} of "{}"'.format(run_id, image_name))
+        if sync:
+            status = cls.get_resuming_pipeline_status(run_id)
+            if status == 'RUNNING':
+                click.echo('RunID {} of "{}" is resumed'.format(run_id, image_name))
+                sys.exit(1)
+            else:
+                click.echo('Failed resuming RunID {} of "{}"'.format(run_id, image_name), err=True)
 
     @classmethod
     def pause(cls, run_id, check_size, sync):
-        try:
-            pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
-            pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
-            pipeline_version = pipeline_run_model.version
-            image_name = cls.build_image_name(pipeline_name, pipeline_version)
-            click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
-            if sync:
-                status = cls.get_pausing_pipeline_status(run_id)
-                if status == 'PAUSED':
-                    click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
-                    sys.exit(1)
-                else:
-                    click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
-        except ConfigNotFoundError as config_not_found_error:
-            click.echo(str(config_not_found_error), err=True)
-        except requests.exceptions.RequestException as http_error:
-            click.echo('Http error: {}'.format(str(http_error)), err=True)
-        except RuntimeError as runtime_error:
-            click.echo('Error: {}'.format(str(runtime_error)), err=True)
-        except ValueError as value_error:
-            click.echo('Error: {}'.format(str(value_error)), err=True)
+        pipeline_run_model = Pipeline.pause_pipeline(run_id, check_size)
+        pipeline_name = cls.extract_pipeline_name(pipeline_run_model)
+        pipeline_version = pipeline_run_model.version
+        image_name = cls.build_image_name(pipeline_name, pipeline_version)
+        click.echo('Pausing RunID {} of "{}"'.format(run_id, image_name))
+        if sync:
+            status = cls.get_pausing_pipeline_status(run_id)
+            if status == 'PAUSED':
+                click.echo('RunID {} of "{}" is paused'.format(run_id, image_name))
+                sys.exit(1)
+            else:
+                click.echo('Failed pausing RunID {} of "{}"'.format(run_id, image_name), err=True)
 
     @staticmethod
     @wait_for_server_enabling_if_needed()
@@ -469,3 +429,18 @@ class PipelineRunOperations(object):
             except RuntimeError:
                 pass
         return pipeline_name
+
+    @classmethod
+    def _validate_run_params(cls, run_params_dict, all_user_roles):
+        if ROLE_ADMIN in all_user_roles:
+            return
+        default_system_parameters_dict = {param.name: param for param in Pipeline.get_default_run_parameters()}
+        for run_param_name, run_param_value in run_params_dict.iteritems():
+            if run_param_name in default_system_parameters_dict:
+                default_system_parameter = default_system_parameters_dict[run_param_name]
+                if default_system_parameter.value != run_param_value:
+                    allowed_roles = default_system_parameter.roles
+                    if allowed_roles and len(allowed_roles.intersection(all_user_roles)) == 0:
+                        click.echo('An error has occurred while starting a job: "{}" parameter'
+                                   ' is not permitted for overriding'.format(run_param_name), err=True)
+                        sys.exit(1)

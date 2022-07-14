@@ -226,9 +226,7 @@ export class WDLItemPortFormItem extends React.Component {
       classes.push(...defaultClass);
     }
     if (this.state.validation[field]) {
-      classes.push(styles.notValid);
-    } else {
-      classes.push(styles.valid);
+      classes.push('cp-error');
     }
     return classes.join(' ');
   };
@@ -281,10 +279,12 @@ export class WDLItemPortFormItem extends React.Component {
             isRemovable && !this.props.isRequired &&
             <Button
               id="remove-variable-button"
+              type="danger"
               size="small"
               disabled={this.props.disabled}
               style={{lineHeight: 'initial'}}
-              onClick={this.onRemoveClicked}>
+              onClick={this.onRemoveClicked}
+            >
               <Icon type="close" />
             </Button>
           }

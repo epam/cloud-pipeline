@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import {
   Select,
   Tag
 } from 'antd';
+import classNames from 'classnames';
+
 import ToolEndpointsFormItem from '../elements/ToolEndpointsFormItem';
 import CodeEditor from '../../special/CodeEditor';
 import {getSpotTypeName} from '../../special/spot-instance-names';
@@ -75,8 +77,15 @@ import RunCapabilities, {
   applyCapabilities,
   checkRunCapabilitiesModified,
   addCapability,
-  hasPlatformSpecificCapabilities
+  hasPlatformSpecificCapabilities,
+  isCustomCapability
 } from '../../pipelines/launch/form/utilities/run-capabilities';
+import {
+  applyParametersArray,
+  configurationChanged,
+  getSkippedParameters as getGPUScalingSkippedParameters,
+  readGPUScalingPreference
+} from '../../pipelines/launch/form/utilities/enable-gpu-scaling';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -116,7 +125,9 @@ export default class EditToolForm extends React.Component {
     onSubmit: PropTypes.func,
     readOnly: PropTypes.bool,
     onInitialized: PropTypes.func,
-    executionEnvironmentDisabled: PropTypes.bool
+    executionEnvironmentDisabled: PropTypes.bool,
+    dockerOSVersion: PropTypes.string,
+    allowCommitVersion: PropTypes.bool
   };
 
   static defaultProps = {
@@ -149,6 +160,7 @@ export default class EditToolForm extends React.Component {
     autoScaledCluster: false,
     autoScaledPriceType: undefined,
     hybridAutoScaledClusterEnabled: false,
+    gpuScalingConfiguration: undefined,
     gridEngineEnabled: false,
     sparkEnabled: false,
     slurmEnabled: false,
@@ -254,6 +266,9 @@ export default class EditToolForm extends React.Component {
                 value: true
               });
             }
+            if (this.state.gpuScalingConfiguration) {
+              applyParametersArray(this.state.gpuScalingConfiguration, params);
+            }
           }
           if (this.state.launchCluster && this.state.gridEngineEnabled) {
             params.push({
@@ -293,7 +308,12 @@ export default class EditToolForm extends React.Component {
               value: true
             });
           }
-          applyCapabilities(this.props.platform, parameters, this.state.runCapabilities);
+          applyCapabilities(
+            parameters,
+            this.state.runCapabilities,
+            this.props.preferences,
+            this.props.platform
+          );
           for (let i = 0; i < params.length; i++) {
             parameters[params[i].name] = {
               type: params[i].type,
@@ -326,13 +346,17 @@ export default class EditToolForm extends React.Component {
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
-            await this.props.onSubmit({
-              endpoints: this.endpointControl ? values.endpoints : [],
-              labels: this.state.labels,
-              cpu: '1000mi',
-              ram: '1Gi',
-              allowSensitive: values.allowSensitive
-            }, configuration);
+            await this.props.onSubmit(
+              {
+                endpoints: this.endpointControl ? values.endpoints : [],
+                labels: this.state.labels,
+                cpu: '1000mi',
+                ram: '1Gi',
+                allowSensitive: values.allowSensitive
+              },
+              configuration,
+              values.allowCommit
+            );
           }
           this.setState({pending: false});
         });
@@ -349,6 +373,7 @@ export default class EditToolForm extends React.Component {
       case 'instance_image': return this.getInstanceImageInitialValue();
       case 'instance_disk': return this.getDiskInitialValue();
       case 'allowSensitive': return this.getAllowSensitiveInitialValue();
+      case 'allowCommit': return this.getAllowCommitInitialValue();
       default: return this.props.configuration ? this.props.configuration[field] : undefined;
     }
   };
@@ -403,6 +428,8 @@ export default class EditToolForm extends React.Component {
       : regionNotConfiguredValue;
   };
 
+  getAllowCommitInitialValue = () => this.props.allowCommitVersion;
+
   getAllowSensitiveInitialValue = () => {
     if (this.props.mode === 'version') {
       return this.props.allowSensitive;
@@ -433,6 +460,8 @@ export default class EditToolForm extends React.Component {
       (async () => {
         await this.props.runDefaultParameters.fetchIfNeededOrWait();
         await this.props.dataStorageAvailable.fetchIfNeededOrWait();
+        await this.props.preferences.fetchIfNeededOrWait();
+        await this.props.awsRegions.fetchIfNeededOrWait();
         state.maxNodesCount = props.configuration && props.configuration.parameters &&
           props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS]
             ? +props.configuration.parameters[CP_CAP_AUTOSCALE_WORKERS].value
@@ -441,6 +470,23 @@ export default class EditToolForm extends React.Component {
         state.autoScaledCluster = props.configuration && autoScaledClusterEnabled(props.configuration.parameters);
         state.hybridAutoScaledClusterEnabled = props.configuration &&
           hybridAutoScaledClusterEnabled(props.configuration.parameters);
+        const regions = this.props.awsRegions.loaded
+          ? this.props.awsRegions.value
+          : [];
+        const instanceTypeName = (props.configuration ? props.configuration.instance_size : undefined) ||
+          (props.tool ? props.tool.instanceType : undefined);
+        const instanceType = this.allowedInstanceTypes.find(i => i.name === instanceTypeName);
+        const [provider] = regions
+          .filter(a => (instanceType && a.id === instanceType.regionId) || !instanceType)
+          .map(a => a.provider);
+        state.gpuScalingConfiguration = props.configuration
+          ? readGPUScalingPreference({
+            autoScaled: state.autoScaledCluster,
+            hybrid: state.hybridAutoScaledClusterEnabled,
+            provider,
+            parameters: props.configuration.parameters
+          }, this.props.preferences)
+          : undefined;
         state.gridEngineEnabled = props.configuration && gridEngineEnabled(props.configuration.parameters);
         state.sparkEnabled = props.configuration && sparkEnabled(props.configuration.parameters);
         state.slurmEnabled = props.configuration && slurmEnabled(props.configuration.parameters);
@@ -452,10 +498,14 @@ export default class EditToolForm extends React.Component {
         this.defaultCommand = props.configuration && props.configuration.cmd_template
           ? props.configuration.cmd_template
           : this.defaultCommand;
+        const gpuScalingParameters = state.gpuScalingConfiguration
+          ? getGPUScalingSkippedParameters(this.props.preferences)
+          : [];
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
-              getSystemParameterDisabledState(this, key)) {
+              getSystemParameterDisabledState(this, key) ||
+              gpuScalingParameters.includes(key)) {
               continue;
             }
             if (key === CP_CAP_LIMIT_MOUNTS) {
@@ -748,6 +798,14 @@ export default class EditToolForm extends React.Component {
       autoScaledClusterEnabled(this.props.configuration.parameters);
     const hybridAutoScaledCluster = this.props.configuration &&
       hybridAutoScaledClusterEnabled(this.props.configuration.parameters);
+    const gpuScalingConfiguration = this.props.configuration
+      ? readGPUScalingPreference({
+        autoScaled: autoScaledCluster,
+        hybrid: hybridAutoScaledCluster,
+        provider: this.getCloudProvider(),
+        parameters: this.props.configuration.parameters
+      }, this.props.preferences)
+      : undefined;
     const gridEngineEnabledValue = this.props.configuration &&
       gridEngineEnabled(this.props.configuration.parameters);
     const sparkEnabledValue = this.props.configuration &&
@@ -762,7 +820,8 @@ export default class EditToolForm extends React.Component {
     const additionalCapabilitiesChanged = () => {
       return checkRunCapabilitiesModified(
         this.state.runCapabilities,
-        getEnabledCapabilities(this.props.configuration.parameters)
+        getEnabledCapabilities(this.props.configuration.parameters),
+        this.props.preferences
       );
     };
 
@@ -771,6 +830,7 @@ export default class EditToolForm extends React.Component {
       configurationFormFieldChanged('instance_image', 'instanceImage') ||
       configurationFormFieldChanged('instance_disk', 'disk') ||
       configurationFormFieldChanged('allowSensitive') ||
+      configurationFormFieldChanged('allowCommit') ||
       commandChanged() ||
       !compareArrays(toolEndpointArray, toolEndpointArrayFormValue) ||
       !compareArrays(toolLabelsArray, this.state.labels) ||
@@ -779,6 +839,7 @@ export default class EditToolForm extends React.Component {
       !!launchCluster !== !!this.state.launchCluster ||
       !!autoScaledCluster !== !!this.state.autoScaledCluster ||
       !!hybridAutoScaledCluster !== !!this.state.hybridAutoScaledClusterEnabled ||
+      configurationChanged(gpuScalingConfiguration, this.state.gpuScalingConfiguration) ||
       !!gridEngineEnabledValue !== !!this.state.gridEngineEnabled ||
       !!sparkEnabledValue !== !!this.state.sparkEnabled ||
       !!slurmEnabledValue !== !!this.state.slurmEnabled ||
@@ -826,6 +887,7 @@ export default class EditToolForm extends React.Component {
       launchCluster,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration,
       nodesCount,
       maxNodesCount,
       gridEngineEnabled,
@@ -847,6 +909,7 @@ export default class EditToolForm extends React.Component {
       nodesCount,
       autoScaledCluster,
       hybridAutoScaledClusterEnabled,
+      gpuScalingConfiguration,
       maxNodesCount,
       gridEngineEnabled,
       sparkEnabled,
@@ -923,10 +986,10 @@ export default class EditToolForm extends React.Component {
     if (lines.length > 0) {
       return (
         <div className={styles.summaryContainer}>
-          <div className={styles.summary}>
+          <div className={classNames(styles.summary, 'cp-exec-env-summary')}>
             {
               lines.map((l, index) => (
-                <div key={index} className={styles.summaryItem}>
+                <div key={index} className={classNames(styles.summaryItem, 'cp-exec-env-summary-item')}>
                   {l}
                 </div>
               ))
@@ -948,21 +1011,21 @@ export default class EditToolForm extends React.Component {
             <tr>
               <td style={{width: '50%'}}>
                 <div
+                  className={classNames('cp-divider', 'tool-settings')}
                   style={{
                     margin: '0 5px',
                     verticalAlign: 'middle',
-                    height: 1,
-                    backgroundColor: '#ccc'
+                    height: 1
                   }}>{'\u00A0'}</div>
               </td>
               <td style={{width: 1, whiteSpace: 'nowrap'}}><b>{text}</b></td>
               <td style={{width: '50%'}}>
                 <div
+                  className={classNames('cp-divider', 'tool-settings')}
                   style={{
                     margin: '0 5px',
                     verticalAlign: 'middle',
-                    height: 1,
-                    backgroundColor: '#ccc'
+                    height: 1
                   }}>{'\u00A0'}</div>
               </td>
             </tr>
@@ -1214,6 +1277,20 @@ export default class EditToolForm extends React.Component {
                   </Form.Item>
                 )
               }
+              <Form.Item
+                {...this.formItemLayout}
+                label="Allow commit of the tool"
+                style={{marginTop: 10, marginBottom: 10}}
+              >
+                {getFieldDecorator('allowCommit', {
+                  initialValue: this.getAllowCommitInitialValue(),
+                  valuePropName: 'checked'
+                })(
+                  <Checkbox
+                    disabled={this.state.pending || this.props.readOnly}
+                  />
+                )}
+              </Form.Item>
               {
                 !this.isWindowsPlatform && (
                   <Form.Item
@@ -1245,7 +1322,8 @@ export default class EditToolForm extends React.Component {
                       <Row type="flex" justify="end">
                         <a
                           onClick={this.openConfigureClusterDialog}
-                          style={{color: '#777', textDecoration: 'underline'}}>
+                          className={classNames('cp-text', 'underline')}
+                          style={{textDecoration: 'underline'}}>
                           <Icon type="setting" /> {ConfigureClusterDialog.getConfigureClusterButtonDescription(this)}
                         </a>
                       </Row>
@@ -1299,7 +1377,16 @@ export default class EditToolForm extends React.Component {
                         </Select.Option>
                       )
                     }
-                    <Select.Option disabled key="divider" className={styles.selectOptionDivider} />
+                    <Select.Option
+                      disabled
+                      key="divider"
+                      className={
+                        classNames(
+                          styles.selectOptionDivider,
+                          'cp-tool-select-option-divider'
+                        )
+                      }
+                    />
                     {
                       this.awsRegions
                         .map(region => {
@@ -1322,7 +1409,7 @@ export default class EditToolForm extends React.Component {
                 )}
               </Form.Item>
               {
-                hasPlatformSpecificCapabilities(this.props.platform) && (
+                hasPlatformSpecificCapabilities(this.props.platform, this.props.preferences) && (
                   <Form.Item
                     {...this.formItemLayout}
                     label="Run capabilities"
@@ -1333,6 +1420,8 @@ export default class EditToolForm extends React.Component {
                       values={this.state.runCapabilities}
                       onChange={this.onRunCapabilitiesSelect}
                       platform={this.props.platform}
+                      dockerImageOS={this.props.dockerOSVersion}
+                      provider={this.getCloudProvider()}
                     />
                   </Form.Item>
                 )
@@ -1344,6 +1433,7 @@ export default class EditToolForm extends React.Component {
                 autoScaledPriceType={this.state.autoScaledPriceType}
                 autoScaledCluster={this.state.autoScaledCluster}
                 hybridAutoScaledClusterEnabled={this.state.hybridAutoScaledClusterEnabled}
+                gpuScalingConfiguration={this.state.gpuScalingConfiguration}
                 gridEngineEnabled={this.state.gridEngineEnabled}
                 sparkEnabled={this.state.sparkEnabled}
                 slurmEnabled={this.state.slurmEnabled}
@@ -1388,12 +1478,16 @@ export default class EditToolForm extends React.Component {
             }
             skippedSystemParameters={getSkippedSystemParametersList(this)}
             value={this.defaultSystemProperties}
-            onInitialized={this.onEditToolFormSystemParametersInitialized} />
+            onInitialized={this.onEditToolFormSystemParametersInitialized}
+            testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
+          />
           {this.renderSeparator('Custom parameters')}
           <EditToolFormParameters
             readOnly={!this.props.configuration || this.props.readOnly || this.state.pending}
             value={this.defaultProperties}
-            onInitialized={this.onEditToolFormParametersInitialized} />
+            onInitialized={this.onEditToolFormParametersInitialized}
+            testSkipParameter={name => isCustomCapability(name, this.props.preferences)}
+          />
         </div>
       );
     };

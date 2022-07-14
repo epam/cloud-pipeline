@@ -210,7 +210,8 @@ class HotCluster extends React.Component {
   render () {
     const {
       pools: poolsRequest,
-      clusterNodes: nodes
+      clusterNodes: nodes,
+      router
     } = this.props;
     if (
       (poolsRequest.pending && !poolsRequest.loaded) ||
@@ -243,7 +244,9 @@ class HotCluster extends React.Component {
       pending
     } = this.state;
     return (
-      <div>
+      <div
+        className="cp-panel cp-panel-transparent"
+      >
         <div
           className={styles.header}
         >
@@ -278,6 +281,7 @@ class HotCluster extends React.Component {
                 onRemove={this.onRemovePool(pool)}
                 onClick={() => this.onPoolClick(pool)}
                 nodes={(nodes.value || []).map(node => node)}
+                router={router}
               />
             ))
           }

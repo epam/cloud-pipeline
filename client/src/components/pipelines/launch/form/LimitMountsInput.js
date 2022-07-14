@@ -17,9 +17,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {computed} from 'mobx';
 import AvailableStoragesBrowser, {filterNFSStorages}
-  from '../dialogs/AvailableStoragesBrowser';
+from '../dialogs/AvailableStoragesBrowser';
 import AWSRegionTag from '../../../special/AWSRegionTag';
 import styles from './LimitMountsInput.css';
 
@@ -30,7 +31,9 @@ export class LimitMountsInput extends React.Component {
     onChange: PropTypes.func,
     value: PropTypes.string,
     disabled: PropTypes.bool,
-    allowSensitive: PropTypes.bool
+    showOnlySummary: PropTypes.bool,
+    allowSensitive: PropTypes.bool,
+    className: PropTypes.string
   };
 
   static defaultProps = {
@@ -43,6 +46,7 @@ export class LimitMountsInput extends React.Component {
   };
 
   componentDidMount () {
+    this.props.dataStorageAvailable.fetch();
     this.updateFromProps();
   }
 
@@ -99,7 +103,7 @@ export class LimitMountsInput extends React.Component {
   get availableStorages () {
     if (this.props.dataStorageAvailable.loaded) {
       return (this.props.dataStorageAvailable.value || [])
-        .filter(s => this.props.allowSensitive || !s.sensitive)
+        .filter(s => !s.mountDisabled && (this.props.allowSensitive || !s.sensitive))
         .map(s => s);
     }
     return [];
@@ -181,6 +185,7 @@ export class LimitMountsInput extends React.Component {
   };
 
   renderContent = () => {
+    const {showOnlySummary} = this.props;
     if (this.selectedStorages.length === 0) {
       return (
         <span>No storages will be mounted</span>
@@ -200,14 +205,27 @@ export class LimitMountsInput extends React.Component {
         </span>
       );
     }
-    return this.selectedStorages
-      .filter(filterNFSStorages(this.nfsSensitivePolicy, this.hasSelectedSensitiveStorages))
-      .map(s => (
-        <span key={s.id} className={styles.storage}>
-          <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
-          {s.name}
-        </span>
+    const filteredSelectedStorages = this.selectedStorages
+      .filter(filterNFSStorages(
+        this.nfsSensitivePolicy,
+        this.hasSelectedSensitiveStorages
       ));
+    if (showOnlySummary) {
+      return (
+        <p>
+          {filteredSelectedStorages.map(s => s.id).join(',')}
+        </p>
+      );
+    }
+    return filteredSelectedStorages.map(s => (
+      <span
+        key={s.id}
+        className={classNames(styles.storage, 'cp-limit-mounts-input-tag')}
+      >
+        <AWSRegionTag regionId={s.regionId} regionUID={s.regionName} />
+        {s.name}
+      </span>
+    ));
   };
 
   render () {
@@ -217,9 +235,16 @@ export class LimitMountsInput extends React.Component {
         onFocus={this.openLimitMountsDialog}
         tabIndex={0}
         className={
-          !this.props.disabled
-            ? styles.limitMountsInput
-            : `${styles.limitMountsInput} ${styles.disabled}`
+          classNames(
+            this.props.className,
+            styles.limitMountsInput,
+            'cp-limit-mounts-input',
+            {
+              disabled: this.props.disabled,
+              [styles.disabled]: this.props.disabled,
+              [styles.summary]: this.props.showOnlySummary
+            }
+          )
         }
       >
         {this.renderContent()}

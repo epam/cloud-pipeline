@@ -25,27 +25,12 @@
   margin-right: 2px;
 }
 
-.sub {
-  color: #aaa;
-}
-
-.main {
-  color: #666;
-}
-
 .main.aligned {
   margin-left: 22px;
 }
 
-.version {
-  color: #999;
-  font-size: smaller;
-  margin-left: 3px;
-}
-
 .main::after {
   content: ':';
-  color: #999;
 }
 
 .main:last-child::after {

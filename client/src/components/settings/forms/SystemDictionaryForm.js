@@ -203,7 +203,7 @@ class SystemDictionaryForm extends React.Component {
   };
 
   onSave = () => {
-    const {id, onSave} = this.props;
+    const {onSave} = this.props;
     if (onSave && this.valid && this.modified) {
       const {name, items} = this.state;
       const itemsProcessed = (items || [])
@@ -212,7 +212,6 @@ class SystemDictionaryForm extends React.Component {
           return rest;
         });
       onSave(
-        id,
         name,
         itemsProcessed
       );
@@ -289,7 +288,7 @@ class SystemDictionaryForm extends React.Component {
             wordWrap: 'break-word'
           },
           onOk () {
-            onDelete(name);
+            onDelete();
           }
         });
       }
@@ -327,7 +326,7 @@ class SystemDictionaryForm extends React.Component {
         </div>
         {
           nameError && (
-            <div className={styles.error}>
+            <div className="cp-error">
               {nameError}
             </div>
           )
@@ -339,7 +338,7 @@ class SystemDictionaryForm extends React.Component {
         </div>
         {
           itemsValidationError && (
-            <div className={styles.error}>
+            <div className="cp-error">
               {itemsValidationError}
             </div>
           )
@@ -352,11 +351,19 @@ class SystemDictionaryForm extends React.Component {
             items.map((item, index) => (
               <div
                 key={index}
-                className={`${styles.item} ${item.filtered ? '' : styles.hidden}`}
+                className={
+                  classNames(
+                    'cp-even-odd-element',
+                    styles.item,
+                    {
+                      [styles.hidden]: !item.filtered
+                    }
+                  )
+                }
               >
                 <div className={styles.row}>
                   <Input
-                    className={`${styles.input} ${itemsError[index] ? styles.error : ''}`}
+                    className={classNames({'cp-error': itemsError[index]})}
                     disabled={disabled}
                     style={{flex: 1, marginRight: 5}}
                     value={item.value}
@@ -374,7 +381,7 @@ class SystemDictionaryForm extends React.Component {
                 </div>
                 {
                   itemsError[index] && (
-                    <div className={styles.error}>
+                    <div className="cp-error">
                       {itemsError[index]}
                     </div>
                   )
@@ -383,7 +390,7 @@ class SystemDictionaryForm extends React.Component {
                   {
                     (item.links || []).length === 0 && (
                       <span
-                        className={styles.add}
+                        className={classNames(styles.add, 'cp-link')}
                         onClick={() => this.openLinksForm(index)}
                       >
                         <Icon type="plus" />
@@ -394,7 +401,7 @@ class SystemDictionaryForm extends React.Component {
                   {
                     (item.links || []).length > 0 && (
                       <div
-                        className={styles.add}
+                        className={classNames(styles.add, 'cp-link')}
                         onClick={() => this.openLinksForm(index)}
                       >
                         {
@@ -429,7 +436,7 @@ class SystemDictionaryForm extends React.Component {
             <span>Add value</span>
           </Button>
         </div>
-        <div className={styles.actions}>
+        <div className={classNames(styles.actions, 'cp-divider', 'top')}>
           <Button
             className={styles.action}
             disabled={disabled}

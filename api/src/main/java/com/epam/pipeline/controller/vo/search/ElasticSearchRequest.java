@@ -27,7 +27,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ElasticSearchRequest {
-
     private String query;
     private Integer pageSize;
     private Integer offset;
@@ -36,4 +35,5 @@ public class ElasticSearchRequest {
     private List<SearchDocumentType> filterTypes;
     private List<String> metadataFields;
     private ScrollingParameters scrollingParameters;
+    private List<SearchRequestSort> sorts;
 }

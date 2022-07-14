@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,9 +184,11 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
         DATASTORAGE_REGION_ID,
         DATASTORAGE_FILE_SHARE_MOUNT_ID,
         DATASTORAGE_SENSITIVE,
+        DATASTORAGE_MOUNT_DISABLED,
         DATASTORAGE_S3_KMS_KEY_ARN,
         DATASTORAGE_S3_USE_ASSUMED_CREDS,
         DATASTORAGE_S3_TEMP_CREDS_ROLE,
+        DATASTORAGE_MOUNT_STATUS,
         ENABLE_VERSIONING,
         BACKUP_DURATION,
         STS_DURATION,
@@ -295,7 +297,10 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                                         fileShareMountId,
                                         rs.getString(DATASTORAGE_S3_KMS_KEY_ARN.name()),
                                         rs.getString(DATASTORAGE_S3_TEMP_CREDS_ROLE.name()),
-                                        rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()));
+                                        rs.getBoolean(DATASTORAGE_S3_USE_ASSUMED_CREDS.name()),
+                                        rs.getString(DATASTORAGE_MOUNT_STATUS.name()),
+                                        Collections.emptySet(),
+                                        null);
                         dataStorage.setDescription(rs.getString(DATASTORAGE_DESCRIPTION.name()));
                         dataStorage.setCreatedDate(
                                 new Date(rs.getTimestamp(DATASTORAGE_CREATED_DATE.name()).getTime())
@@ -306,6 +311,7 @@ public class FolderDao extends NamedParameterJdbcDaoSupport {
                         dataStorage.setLocked(rs.getBoolean(DATASTORAGE_LOCKED.name()));
                         dataStorage.setShared(rs.getBoolean(DATASTORAGE_SHARED.name()));
                         dataStorage.setSensitive(rs.getBoolean(DATASTORAGE_SENSITIVE.name()));
+                        dataStorage.setMountDisabled(rs.getBoolean(DATASTORAGE_MOUNT_DISABLED.name()));
                         dataStorage.setOwner(rs.getString(OWNER.name()));
                         folder.getStorages().add(dataStorage);
                     }

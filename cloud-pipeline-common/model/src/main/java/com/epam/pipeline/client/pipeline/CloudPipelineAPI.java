@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.entity.app.ApplicationInfo;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.cluster.NodeInstance;
@@ -24,6 +25,7 @@ import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
+import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
@@ -46,19 +48,24 @@ import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.rest.PagedResult;
 import com.epam.pipeline.rest.Result;
 import com.epam.pipeline.vo.EntityPermissionVO;
 import com.epam.pipeline.vo.EntityVO;
 import com.epam.pipeline.vo.FilterNodesVO;
+import com.epam.pipeline.vo.PagingRunFilterExpressionVO;
 import com.epam.pipeline.vo.RunStatusVO;
+import com.epam.pipeline.vo.cluster.pool.NodePoolUsage;
 import com.epam.pipeline.vo.data.storage.DataStorageTagInsertBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagLoadBatchRequest;
 import com.epam.pipeline.vo.data.storage.DataStorageTagUpsertBatchRequest;
 import com.epam.pipeline.vo.dts.DtsRegistryPreferencesRemovalVO;
 import com.epam.pipeline.vo.notification.NotificationMessageVO;
+import com.epam.pipeline.vo.user.OnlineUsers;
 import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.HTTP;
 import retrofit2.http.Multipart;
@@ -68,6 +75,7 @@ import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface CloudPipelineAPI {
@@ -107,6 +115,9 @@ public interface CloudPipelineAPI {
 
     @GET("run/{runId}/logs")
     Call<Result<List<RunLog>>> loadLogs(@Path(RUN_ID) Long runId);
+
+    @POST("run/search")
+    Call<Result<PagedResult<List<PipelineRun>>>> searchPipelineRuns(@Body PagingRunFilterExpressionVO filterVO);
 
     @POST("metadata/load")
     Call<Result<List<MetadataEntry>>> loadFolderMetadata(@Body List<EntityVO> entities);
@@ -169,6 +180,12 @@ public interface CloudPipelineAPI {
 
     @GET("users")
     Call<Result<List<PipelineUser>>> loadAllUsers();
+
+    @POST("users/online")
+    Call<Result<OnlineUsers>> saveOnlineUsers();
+
+    @DELETE("users/online")
+    Call<Result<Boolean>> deleteExpiredOnlineUsers(@Query("date") String date);
 
     @GET("user")
     Call<Result<PipelineUser>> loadUserByName(@Query("name") String name);
@@ -236,13 +253,16 @@ public interface CloudPipelineAPI {
     @GET("run/activity")
     Call<Result<List<PipelineRun>>> loadRunsActivityStats(@Query(FROM) String from, @Query(TO) String to);
 
+    @GET("run/pools/{id}")
+    Call<Result<List<PipelineRun>>> loadRunsByPool(@Path(ID) Long poolId);
+
     @GET("cluster/instance/loadAll")
     Call<Result<List<InstanceType>>> loadAllInstanceTypesForRegion(@Query(REGION_ID) Long regionId);
 
     @GET("cluster/node/{id}/disks")
     Call<Result<List<NodeDisk>>> loadNodeDisks(@Path(ID) String nodeId);
 
-    @GET("/cluster/pool")
+    @GET("cluster/pool")
     Call<Result<List<NodePool>>> loadNodePools();
 
     @GET("dts/{id}")
@@ -257,4 +277,19 @@ public interface CloudPipelineAPI {
 
     @GET("preferences/{key}")
     Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
+
+    @GET("preferences")
+    Call<Result<List<Preference>>> loadAllPreference();
+
+    @GET("filesharemount/{id}")
+    Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
+
+    @GET("app/info")
+    Call<Result<ApplicationInfo>> fetchVersion();
+
+    @POST("cluster/pool/usage")
+    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body final List<NodePoolUsage> records);
+
+    @DELETE("cluster/pool/usage")
+    Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);
 }

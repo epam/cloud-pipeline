@@ -20,17 +20,17 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {Link} from 'react-router';
 import {Icon} from 'antd';
+import classNames from 'classnames';
 import EditableField from './EditableField';
 import {findPath, generateTreeData, ItemTypes} from '../pipelines/model/treeStructureFunctions';
 import Owner from './owner';
 import styles from './Breadcrumbs.css';
 import HiddenObjects from '../../utils/hidden-objects';
 
-@inject('pipelinesLibrary')
+@inject('pipelinesLibrary', 'preferences')
 @HiddenObjects.injectTreeFilter
 @observer
 export default class Breadcrumbs extends React.Component {
-
   static propTypes = {
     id: PropTypes.number,
     type: PropTypes.string,
@@ -50,62 +50,70 @@ export default class Breadcrumbs extends React.Component {
     subject: PropTypes.object
   };
 
-  state = {
-    rootItems: undefined
-  };
+  @computed
+  get inlineMetadataEntities () {
+    const {
+      preferences
+    } = this.props;
+    return preferences.inlineMetadataEntities;
+  }
 
-  reload = () => {
-    if (!this.props.pipelinesLibrary.loaded) {
-      return;
+  @computed
+  get rootItems () {
+    const {
+      pipelinesLibrary,
+      preferences
+    } = this.props;
+    if (!pipelinesLibrary.loaded || !preferences.loaded) {
+      return [];
     }
     const rootElements = [{
       id: 'root',
       name: 'Library',
-      ...this.props.pipelinesLibrary.value
+      ...pipelinesLibrary.value
     }];
-    const rootItems = generateTreeData(
+    return generateTreeData(
       {childFolders: rootElements},
-      false,
-      null,
-      undefined,
-      undefined,
-      this.props.hiddenObjectsTreeFilter()
+      {
+        filter: this.props.hiddenObjectsTreeFilter(),
+        inlineMetadataEntities: this.inlineMetadataEntities
+      }
     );
-    this.setState({
-      rootItems
-    });
-  };
+  }
 
   @computed
   get items () {
     let items = [];
+    const rootItems = this.rootItems;
     if (this.props.type === ItemTypes.metadata) {
-      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, this.state.rootItems);
+      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, rootItems);
       if (!items) {
         return [];
       }
-      items.push({
-        name: 'Metadata',
-        id: `${ItemTypes.metadataFolder}_${this.props.id}`,
-        url: `/metadataFolder/${this.props.id}`
-      });
+      if (!this.inlineMetadataEntities) {
+        items.push({
+          name: 'Metadata',
+          id: `${ItemTypes.metadataFolder}_${this.props.id}/metadata`,
+          url: `/folder/${this.props.id}/metadata`
+        });
+      }
       items.push({
         name: this.props.displayTextEditableField,
         id: `${ItemTypes.folder}_${this.props.id}`,
         url: null
       });
     } else if (this.props.type === ItemTypes.metadataFolder) {
-      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, this.state.rootItems);
+      items = findPath(`${ItemTypes.folder}_${this.props.id || 'root'}`, rootItems);
       if (!items) {
         return [];
       }
       items.push({
         name: this.props.displayTextEditableField,
-        id: `${ItemTypes.metadataFolder}_${this.props.id}`,
+        id: `${ItemTypes.metadataFolder}_${this.props.id}/metadata`,
         url: null
       });
     } else {
-      items = findPath(`${this.props.type}_${this.props.id || 'root'}`, this.state.rootItems);
+      items = findPath(`${this.props.type}_${this.props.id || 'root'}`, rootItems);
     }
     if (items && items.length > 0) {
       items[0].icon = this.props.icon;
@@ -145,6 +153,20 @@ export default class Breadcrumbs extends React.Component {
         {
           this.items.map((item, index, array) => {
             const isLast = index === array.length - 1;
+            const icon = item.icon ? (
+              <Icon
+                type={item.icon}
+                className={classNames(item.iconClassName, {'cp-sensitive': item.sensitive})}
+                style={{marginRight: 5}}
+              />
+            ) : null;
+            const lock = item.lock ? (
+              <Icon
+                type="lock"
+                className={classNames(item.lockClassName, {'cp-sensitive': item.sensitive})}
+                style={{marginRight: 5}}
+              />
+            ) : null;
             if (isLast) {
               return [
                 <div
@@ -153,37 +175,14 @@ export default class Breadcrumbs extends React.Component {
                     display: 'inline-block',
                     marginLeft: -2
                   }}>
-                  {
-                    item.icon ? (
-                      <Icon
-                        type={item.icon}
-                        className={item.iconClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
-                  {
-                    item.lock ? (
-                      <Icon
-                        type="lock"
-                        className={item.lockClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
+                  {icon}
+                  {lock}
                   <EditableField
                     text={this.props.textEditableField}
-                    displayText={this.props.displayTextEditableField || `${this.props.textEditableField || item.name}`}
+                    displayText={
+                      this.props.displayTextEditableField ||
+                      `${this.props.textEditableField || item.name}`
+                    }
                     editClassName={styles.breadcrumbsInput}
                     style={{
                       paddingLeft: '0px',
@@ -201,97 +200,21 @@ export default class Breadcrumbs extends React.Component {
                   />
                 </div>
               ];
-            } else {
-              if (this.props.onNavigate) {
-                return [
-                  <div
-                    key={`item-${index}`}
-                    onClick={this.navigateToItem(item)}
-                    style={{
-                      color: 'inherit',
-                      cursor: 'pointer',
-                      display: 'inline-block',
-                      verticalAlign: 'baseline'
-                    }}>
-                    {
-                      item.icon ? (
-                        <Icon
-                          type={item.icon}
-                          className={item.iconClassName}
-                          style={
-                            Object.assign(
-                              {marginRight: 5},
-                              item.sensitive ? {color: '#ff5c33'} : {}
-                            )
-                          }
-                        />
-                      ) : null
-                    }
-                    {
-                      item.lock ? (
-                        <Icon
-                          type="lock"
-                          className={item.lockClassName}
-                          style={
-                            Object.assign(
-                              {marginRight: 5},
-                              item.sensitive ? {color: '#ff5c33'} : {}
-                            )
-                          }
-                        />
-                      ) : null
-                    }
-                    {item.name}
-                  </div>,
-                  <Icon
-                    key={`divider-${index}`}
-                    type="caret-right"
-                    style={{
-                      lineHeight: 2,
-                      verticalAlign: 'middle',
-                      margin: '0px 5px',
-                      fontSize: 'small'
-                    }} />
-                ];
-              }
+            } else if (this.props.onNavigate) {
               return [
-                <Link
+                <div
                   key={`item-${index}`}
-                  to={item.url}
+                  onClick={this.navigateToItem(item)}
                   style={{
-                    verticalAlign: 'baseline',
-                    color: 'inherit'
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    display: 'inline-block',
+                    verticalAlign: 'baseline'
                   }}>
-                  {
-                    item.icon ? (
-                      <Icon
-                        type={item.icon}
-                        className={item.iconClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
-                  {
-                    item.lock ? (
-                      <Icon
-                        type="lock"
-                        className={item.lockClassName}
-                        style={
-                          Object.assign(
-                            {marginRight: 5},
-                            item.sensitive ? {color: '#ff5c33'} : {}
-                          )
-                        }
-                      />
-                    ) : null
-                  }
+                  {icon}
+                  {lock}
                   {item.name}
-                </Link>,
+                </div>,
                 <Icon
                   key={`divider-${index}`}
                   type="caret-right"
@@ -300,9 +223,33 @@ export default class Breadcrumbs extends React.Component {
                     verticalAlign: 'middle',
                     margin: '0px 5px',
                     fontSize: 'small'
-                  }} />
+                  }}
+                />
               ];
             }
+            return [
+              <Link
+                key={`item-${index}`}
+                to={item.url}
+                style={{
+                  verticalAlign: 'baseline',
+                  color: 'inherit'
+                }}>
+                {icon}
+                {lock}
+                {item.name}
+              </Link>,
+              <Icon
+                key={`divider-${index}`}
+                type="caret-right"
+                style={{
+                  lineHeight: 2,
+                  verticalAlign: 'middle',
+                  margin: '0px 5px',
+                  fontSize: 'small'
+                }}
+              />
+            ];
           }).reduce((result, itemsArray) => {
             result.push(...itemsArray.filter(i => !!i));
             return result;
@@ -315,22 +262,11 @@ export default class Breadcrumbs extends React.Component {
     );
   }
 
-  componentDidMount () {
-    this.reload();
-  };
-
   componentWillReceiveProps (nextProps) {
     if (`${this.props.id}` !== `${nextProps.id}` || this.props.type !== nextProps.type) {
-      (async() => {
+      (async () => {
         await this.props.pipelinesLibrary.fetch();
-        this.reload();
       })();
-    }
-  }
-
-  componentDidUpdate () {
-    if (!this.state.rootItems && this.props.pipelinesLibrary.loaded) {
-      this.reload();
     }
   }
 }

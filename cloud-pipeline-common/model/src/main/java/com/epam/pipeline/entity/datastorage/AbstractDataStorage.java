@@ -26,6 +26,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Set;
+
 /**
  * An abstract entity, that represents a Data Storage, that is used to store and access data from different sources.
  */
@@ -33,7 +35,6 @@ import org.apache.commons.lang3.StringUtils;
 @Setter
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,
-        include = JsonTypeInfo.As.PROPERTY,
         property = "type")
 @JsonSubTypes({
         @JsonSubTypes.Type(value = S3bucketDataStorage.class, name = "S3"),
@@ -73,6 +74,9 @@ public abstract class AbstractDataStorage extends AbstractSecuredEntity {
      * Defines if 'data-leak' rules applied
      */
     private boolean sensitive;
+
+    private Long sourceStorageId;
+    private Set<String> linkingMasks;
 
     public AbstractDataStorage(final Long id, final String name,
                                final String path, final DataStorageType type) {

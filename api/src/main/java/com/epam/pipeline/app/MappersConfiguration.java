@@ -18,10 +18,13 @@ package com.epam.pipeline.app;
 
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
+import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
+import com.epam.pipeline.mapper.quota.QuotaMapper;
 import com.epam.pipeline.mapper.region.CloudRegionMapper;
 import com.epam.pipeline.mapper.AbstractDataStorageMapper;
 import com.epam.pipeline.mapper.DtsRegistryMapper;
@@ -31,6 +34,7 @@ import com.epam.pipeline.mapper.MetadataEntryMapper;
 import com.epam.pipeline.mapper.PermissionGrantVOMapper;
 import com.epam.pipeline.mapper.PipelineWithPermissionsMapper;
 import com.epam.pipeline.mapper.ToolGroupWithIssuesMapper;
+import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import org.mapstruct.factory.Mappers;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -112,5 +116,25 @@ public class MappersConfiguration {
     @Bean
     public ContextualNotificationMapper contextualNotificationMapper() {
         return Mappers.getMapper(ContextualNotificationMapper.class);
+    }
+
+    @Bean
+    public QuotaMapper quotaMapper() {
+        return Mappers.getMapper(QuotaMapper.class);
+    }
+
+    @Bean
+    public OnlineUsersMapper onlineUsersMapper() {
+        return Mappers.getMapper(OnlineUsersMapper.class);
+    }
+
+    @Bean
+    public NodePoolUsageMapper nodePoolUsageMapper() {
+        return Mappers.getMapper(NodePoolUsageMapper.class);
+    }
+
+    @Bean
+    public BitbucketMapper bitbucketRepositoryMapper() {
+        return Mappers.getMapper(BitbucketMapper.class);
     }
 }

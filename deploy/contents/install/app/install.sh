@@ -304,6 +304,11 @@ CP_POLICY_MANAGER_KUBE_NODE_NAME=${CP_POLICY_MANAGER_KUBE_NODE_NAME:-$KUBE_MASTE
 print_info "-> Assigning cloud-pipeline/cp-run-policy-manager to $CP_POLICY_MANAGER_KUBE_NODE_NAME"
 kubectl label nodes "$CP_POLICY_MANAGER_KUBE_NODE_NAME" cloud-pipeline/cp-run-policy-manager="true" --overwrite
 
+# Allow to schedule Monitoring Service to the master
+CP_MONITORING_SRV_KUBE_NODE_NAME=${CP_MONITORING_SRV_KUBE_NODE_NAME:-$KUBE_MASTER_NODE_NAME}
+print_info "-> Assigning cloud-pipeline/cp-monitoring-srv to $CP_MONITORING_SRV_KUBE_NODE_NAME"
+kubectl label nodes "$CP_MONITORING_SRV_KUBE_NODE_NAME" cloud-pipeline/cp-monitoring-srv="true" --overwrite
+
 echo
 
 ##########
@@ -543,7 +548,7 @@ if is_service_requested cp-api-srv; then
                                                                             --claim user_id=1 \
                                                                             --claim user_name=$CP_DEFAULT_ADMIN_NAME \
                                                                             --claim role=ROLE_ADMIN \
-                                                                            --claim group=ADMIN")
+                                                                            --claim group=ADMIN" "SINGLE_POD")
         if [ $? -ne 0 ]; then
             print_err "Error ocurred while generating admin JWT token, docker registry and edge services cannot be configured to integrate with the API Services"
         else
@@ -609,9 +614,11 @@ if is_service_requested cp-api-srv; then
         # Install the API assets backup service
         export CP_BKP_SERVICE_NAME="cp-api-srv"
         export CP_BKP_SERVICE_WD="/opt/api/logs/bkp"
+        export CP_BKP_SERVICE_KUBECTL_ARGS="-c cp-api-srv"
         create_kube_resource $K8S_SPECS_HOME/cp-bkp-worker/cp-bkp-worker-dpl.yaml
         unset CP_BKP_SERVICE_NAME
         unset CP_BKP_SERVICE_WD
+        unset CP_BKP_SERVICE_KUBECTL_ARGS
 
         CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-api-srv: https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/"
     fi
@@ -1269,6 +1276,25 @@ if is_service_requested cp-run-policy-manager; then
     create_kube_resource $K8S_SPECS_HOME/cp-run-policy-manager/cp-run-policy-manager-dpl.yaml
     wait_for_deployment "cp-run-policy-manager"
   fi
+fi
+
+# Monitoring Service
+if is_service_requested cp-monitoring-srv; then
+    print_ok "[Starting Monitoring service deployment]"
+
+    print_info "-> Deleting existing instance of Monitoring service"
+    delete_deployment_and_service   "cp-monitoring-srv" \
+                                    "/opt/monitoring"
+    if is_install_requested; then
+        print_info "-> Deploying Monitoring service"
+        create_kube_resource $K8S_SPECS_HOME/cp-monitoring-srv/cp-monitoring-srv-dpl.yaml
+
+        print_info "-> Waiting for Monitoring service to initialize"
+        wait_for_deployment "cp-monitoring-srv"
+
+        CP_INSTALL_SUMMARY="$CP_INSTALL_SUMMARY\ncp-monitoring-srv: deployed"
+    fi
+    echo
 fi
 
 print_ok "Installation done"

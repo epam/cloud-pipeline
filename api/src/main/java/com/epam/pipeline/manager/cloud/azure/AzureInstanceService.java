@@ -74,10 +74,6 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private final String nodeDownScript;
     private final String nodeReassignScript;
     private final String nodeTerminateScript;
-    private final String kubeMasterIP;
-    private final String kubeToken;
-    private final String kubeCertHash;
-    private final String kubeNodeToken;
 
     public AzureInstanceService(final CommonCloudInstanceService instanceService,
                                 final ClusterCommandService commandService,
@@ -88,11 +84,7 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
                                 @Value("${cluster.azure.nodeup.script:}") final String nodeUpScript,
                                 @Value("${cluster.azure.nodedown.script:}") final String nodeDownScript,
                                 @Value("${cluster.azure.reassign.script:}") final String nodeReassignScript,
-                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript,
-                                @Value("${kube.master.ip}") final String kubeMasterIP,
-                                @Value("${kube.kubeadm.token}") final String kubeToken,
-                                @Value("${kube.kubeadm.cert.hash}") final String kubeCertHash,
-                                @Value("${kube.node.token}") final String kubeNodeToken) {
+                                @Value("${cluster.azure.node.terminate.script:}") final String nodeTerminateScript) {
         this.instanceService = instanceService;
         this.commandService = commandService;
         this.cloudRegionManager = regionManager;
@@ -103,10 +95,6 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         this.nodeDownScript = nodeDownScript;
         this.nodeReassignScript = nodeReassignScript;
         this.nodeTerminateScript = nodeTerminateScript;
-        this.kubeMasterIP = kubeMasterIP;
-        this.kubeToken = kubeToken;
-        this.kubeCertHash = kubeCertHash;
-        this.kubeNodeToken = kubeNodeToken;
     }
 
     @Override
@@ -271,12 +259,14 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
         }
     }
 
-    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord getOrCreateInstanceDNSRecord(final AzureRegion region,
+                                                          final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Creation of DNS record doesn't work with Azure provider yet.");
     }
 
     @Override
-    public InstanceDNSRecord deleteInstanceDNSRecord(final InstanceDNSRecord dnsRecord) {
+    public InstanceDNSRecord deleteInstanceDNSRecord(final AzureRegion region,
+                                                     final InstanceDNSRecord dnsRecord) {
         throw new UnsupportedOperationException("Deletion of DNS record doesn't work with Azure provider yet.");
     }
 
@@ -297,21 +287,10 @@ public class AzureInstanceService implements CloudInstanceService<AzureRegion> {
     private String buildNodeUpCommand(final AzureRegion region, final String nodeLabel, final RunInstance instance,
                                       final Map<String, String> labels) {
 
-        final NodeUpCommand.NodeUpCommandBuilder commandBuilder = NodeUpCommand.builder()
-                .executable(AbstractClusterCommand.EXECUTABLE)
-                .script(nodeUpScript)
-                .runId(nodeLabel)
-                .sshKey(region.getSshPublicKeyPath())
-                .instanceImage(instance.getNodeImage())
-                .instanceType(instance.getNodeType())
-                .instanceDisk(String.valueOf(instance.getEffectiveNodeDisk()))
-                .kubeIP(kubeMasterIP)
-                .kubeToken(kubeToken)
-                .kubeCertHash(kubeCertHash)
-                .kubeNodeToken(kubeNodeToken)
-                .region(region.getRegionCode())
-                .prePulledImages(instance.getPrePulledDockerImages())
-                .additionalLabels(labels);
+        final NodeUpCommand.NodeUpCommandBuilder commandBuilder =
+                commandService.buildNodeUpCommand(nodeUpScript, region, nodeLabel, instance, getProviderName())
+                        .sshKey(region.getSshPublicKeyPath())
+                        .additionalLabels(labels);
 
         final Boolean clusterSpotStrategy = instance.getSpot() == null
                 ? preferenceManager.getPreference(SystemPreferences.CLUSTER_SPOT)

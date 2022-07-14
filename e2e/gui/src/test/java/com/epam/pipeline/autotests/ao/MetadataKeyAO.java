@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,9 @@ import org.openqa.selenium.WebElement;
 
 import java.util.Map;
 
+import static com.codeborne.selenide.Condition.cssClass;
+import static com.codeborne.selenide.Condition.have;
+import static com.codeborne.selenide.Condition.not;
 import static com.codeborne.selenide.Condition.text;
 import static com.codeborne.selenide.Selectors.byId;
 import static com.codeborne.selenide.Selenide.$;
@@ -50,18 +53,21 @@ public class MetadataKeyAO extends PopupAO<MetadataKeyAO, MetadataSectionAO>{
         this.elements = initialiseElements(
                 entry(ADD, $(byId("add-metadata-item-button"))),
                 entry(KEY_FIELD, keyFieldElement),
-                entry(KEY_FIELD_INPUT, $(By.className("metadata__key-row-edit")).find(By.tagName("input"))),
+                entry(KEY_FIELD_INPUT, $(By.className("qa-metadata-item-key-input"))),
                 entry(VALUE_FIELD, valueFieldElement),
                 entry(VALUE_FIELD_INPUT, keyFieldElement.parent().find(By.className("ant-input"))),
-                entry(DELETE_ICON, keyFieldElement.parent().find(buttonByIconClass("anticon-delete"))),
+                entry(DELETE_ICON, keyFieldElement.find(buttonByIconClass("anticon-delete"))),
                 entry(REMOVE_ALL, $(byId("remove-all-keys-button")))
         );
     }
 
     public MetadataKeyAO(int numberOfKey, MetadataSectionAO parentAO) {
-        this($$(By.className("metadata__key-row")).get(numberOfKey),
-                $$(By.className("metadata__value-row")).get(numberOfKey),
-                parentAO);
+        this($$(By.className("cp-metadata-item-row"))
+                        .filter(have(cssClass("key"))).get(numberOfKey),
+             $$(By.className("cp-metadata-item-row"))
+                        .filter(have(cssClass("key"))).get(numberOfKey)
+                        .$(By.xpath("following-sibling::*[contains(@class, 'cp-metadata-item-row')]")),
+             parentAO);
     }
 
     public MetadataKeyAO validateKeyBackgroundIsGrey() {

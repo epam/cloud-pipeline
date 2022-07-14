@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,16 +41,25 @@ import displayDate from '../../utils/displayDate';
 import roleModel from '../../utils/roleModel';
 import styles from './Browser.css';
 import {NoStorage} from '../main/App';
+import PreviewModal from './preview/preview-modal';
+import VSIPreviewPage from '../vsi-preview';
+import {fastCheckPreviewAvailable} from "../special/hcs-image/utilities/check-preview-available";
 
 const PAGE_SIZE = 40;
 
-@inject('dataStorages', 'S3Storage')
+@inject('dataStorages', 'S3Storage', 'preferences')
 @inject(({routing, dataStorages}, {params}) => {
   const queryParameters = parseQueryParameters(routing);
+  const decodedPath = queryParameters.path
+    ? decodeURIComponent(queryParameters.path)
+    : undefined;
   return {
+    wsi: queryParameters.wsi,
     storageId: queryParameters.id,
-    path: queryParameters.path,
-    storage: queryParameters.id ? new DataStorageRequest(queryParameters.id, queryParameters.path, false, PAGE_SIZE) : null,
+    path: decodedPath,
+    storage: queryParameters.id
+      ? new DataStorageRequest(queryParameters.id, decodedPath, false, PAGE_SIZE)
+      : null,
     info: queryParameters.id ? dataStorages.load(queryParameters.id) : null
   };
 })
@@ -91,7 +100,7 @@ export default class Browser extends React.Component {
       path = path.substring(0, path.length - 1);
     }
     if (path) {
-      this.props.router.push(`${process.env.PUBLIC_URL}?id=${id}&path=${path}`);
+      this.props.router.push(`${process.env.PUBLIC_URL}?id=${id}&path=${encodeURIComponent(path)}`);
     } else {
       this.props.router.push(`${process.env.PUBLIC_URL}?id=${id}`);
     }
@@ -119,7 +128,7 @@ export default class Browser extends React.Component {
             relativePath = path.substring(0, relativePath.length - 1);
           }
           if (relativePath) {
-            this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${relativePath}`);
+            this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${encodeURIComponent(relativePath)}`);
           } else {
             this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}`);
           }
@@ -229,7 +238,7 @@ export default class Browser extends React.Component {
     }
     const payload = [{
       oldPath: this.state.renameItem.path,
-      path: decodeURIComponent(`${path}${name}`),
+      path: `${path}${name}`,
       type: this.state.renameItem.type,
       action: 'Move'
     }];
@@ -259,7 +268,7 @@ export default class Browser extends React.Component {
       path += '/';
     }
     const payload = [{
-      path: decodeURIComponent(`${path}${name}`),
+      path: `${path}${name}`,
       type: 'Folder',
       action: 'Create'
     }];
@@ -440,7 +449,38 @@ export default class Browser extends React.Component {
     this.setState({selectedItems});
   };
 
+  closePreview = () => {
+    this.setState({preview: undefined});
+  };
+
+  onKeyDown = (event) => {
+    const {preview} = this.state;
+    if (preview && event.key && event.key.toLowerCase() === 'escape') {
+      this.closePreview();
+    }
+  };
+
+  setPreview = (info) => {
+    this.setState({preview: info});
+  };
+
+  renderPreview = () => {
+    const {preview} = this.state;
+    if (!preview) {
+      return null;
+    }
+    return (
+      <PreviewModal
+        lightMode
+        storageId={this.props.storageId}
+        preview={preview}
+        onClose={this.closePreview}
+      />
+    );
+  };
+
   getStorageItemsTable = () => {
+    const {preferences} = this.props;
     const getList = () => {
       const items = [];
       if (this.canGoToParent()) {
@@ -458,21 +498,27 @@ export default class Browser extends React.Component {
       if (this.props.storage.loaded) {
         results = this.props.storage.value.results || [];
       }
-      items.push(...results.map(i => {
-        return {
-          key: `${i.type}_${i.path}`,
-          ...i,
-          downloadable: i.type.toLowerCase() === 'file' && !i.deleteMarker &&
-          (
-            !i.labels ||
-            !i.labels['StorageClass'] ||
-            i.labels['StorageClass'].toLowerCase() !== 'glacier'
-          ),
-          editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
-          deletable: roleModel.writeAllowed(this.props.info.value),
-          selectable: !i.deleteMarker
-        };
-      }));
+      const masks = preferences.dataSharingHiddenMask;
+      items.push(
+        ...results
+          .filter(o => o.path &&
+            !masks.some(mask => mask.test(o.path.startsWith('/') ? o.path : '/'.concat(o.path)))
+          )
+          .map(i => ({
+            key: `${i.type}_${i.path}`,
+            ...i,
+            downloadable: preferences.dataSharingDownloadEnabled &&
+              i.type.toLowerCase() === 'file' && !i.deleteMarker &&
+              (
+                !i.labels ||
+                !i.labels['StorageClass'] ||
+                i.labels['StorageClass'].toLowerCase() !== 'glacier'
+              ),
+            editable: roleModel.writeAllowed(this.props.info.value) && !i.deleteMarker,
+            deletable: roleModel.writeAllowed(this.props.info.value),
+            selectable: !i.deleteMarker
+          }))
+      );
       return items;
     };
 
@@ -493,6 +539,15 @@ export default class Browser extends React.Component {
         }
       }
     };
+    const vsiPreviewAvailable = (item) => {
+      return item.type.toLowerCase() === 'file' && (
+        item.name.toLowerCase().endsWith('.vsi') ||
+        item.name.toLowerCase().endsWith('.mrxs')
+      );
+    };
+    const hcsPreviewAvailable = (item) => {
+      return fastCheckPreviewAvailable({storageId: this.props.storageId, path: item.name});
+    };
     const typeColumn = {
       dataIndex: 'type',
       key: 'type',
@@ -500,6 +555,44 @@ export default class Browser extends React.Component {
       className: styles.itemTypeCell,
       onCellClick: (item) => this.didSelectDataStorageItem(item),
       render: (text, item) => <Icon className={styles.itemType} type={item.type.toLowerCase()} />
+    };
+    const appsColumn = {
+      key: 'apps',
+      className: styles.itemAppsCell,
+      render: (text, item) => {
+        const apps = [];
+        if (vsiPreviewAvailable(item)) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(e) => {
+                e && e.stopPropagation();
+                e && e.preventDefault();
+                this.setPreview(item);
+              }}
+              key={item.key}
+            >
+              <img src="vsi.png" />
+            </div>
+          );
+        }
+        if (hcsPreviewAvailable(item)) {
+          apps.push(
+            <div
+              className={styles.appLink}
+              onClick={(e) => {
+                e && e.stopPropagation();
+                e && e.preventDefault();
+                this.setPreview(item);
+              }}
+              key={item.key}
+            >
+              <img src="hcs.png" />
+            </div>
+          );
+        }
+        return apps;
+      }
     };
     const nameColumn = {
       dataIndex: 'name',
@@ -547,6 +640,7 @@ export default class Browser extends React.Component {
     const columns = [];
     columns.push(selectionColumn);
     columns.push(typeColumn);
+    columns.push(appsColumn);
     columns.push(nameColumn);
     columns.push(sizeColumn);
     columns.push(changedColumn);
@@ -566,7 +660,7 @@ export default class Browser extends React.Component {
         path = path.substring(0, path.length - 1);
       }
       if (path) {
-        this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${path}`);
+        this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}&path=${encodeURIComponent(path)}`);
       } else {
         this.props.router.push(`${process.env.PUBLIC_URL}?id=${this.props.storageId}`);
       }
@@ -667,6 +761,13 @@ export default class Browser extends React.Component {
   };
 
   render () {
+    if (this.props.wsi) {
+      return (
+        <VSIPreviewPage
+          router={this.props.router}
+        />
+      );
+    }
     if (!this.props.storageId) {
       return <NoStorage />;
     }
@@ -744,7 +845,7 @@ export default class Browser extends React.Component {
               {
                 roleModel.writeAllowed(this.props.info.value) &&
                 <UploadButton
-                  multiple={true}
+                  multiple
                   onRefresh={this.refreshList}
                   title={'Upload'}
                   storageId={this.props.storageId}
@@ -819,7 +920,7 @@ export default class Browser extends React.Component {
               }
               <EditableField
                 allowEpmty={false}
-                readOnly={true}
+                readOnly
                 editStyle={{flex: 1}}
                 text={this.props.info.value.name}
                 onSave={() => {}} />
@@ -851,6 +952,7 @@ export default class Browser extends React.Component {
               navigateFull={this.navigateFull} />
           </Row>
           {contents}
+          {this.state.preview && this.renderPreview()}
         </div>
         <Modal
           title="Download file url"
@@ -963,7 +1065,18 @@ export default class Browser extends React.Component {
     });
   };
 
+  componentDidMount () {
+    window.addEventListener('keydown', this.onKeyDown);
+  }
+
+  componentWillUnmount () {
+    window.removeEventListener('keydown', this.onKeyDown);
+  }
+
   componentDidUpdate (prevProps) {
+    if (this.props.wsi) {
+      return;
+    }
     if (this.props.info.value.type === 'S3') {
       if ((prevProps.path !== this.props.path) || !this.props.S3Storage.prefix) {
         this.props.S3Storage.prefix = this.props.path ? this.props.path : '';

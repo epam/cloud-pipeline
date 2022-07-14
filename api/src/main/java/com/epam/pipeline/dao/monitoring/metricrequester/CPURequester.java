@@ -20,7 +20,6 @@ import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -40,7 +39,7 @@ import java.util.stream.Stream;
 
 public class CPURequester extends AbstractMetricRequester {
 
-    CPURequester(final RestHighLevelClient client) {
+    CPURequester(final HeapsterElasticRestHighLevelClient client) {
         super(client);
     }
 
@@ -62,7 +61,7 @@ public class CPURequester extends AbstractMetricRequester {
                                         .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                                         .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                         .size(0)
-                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
+                        .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_NODE_NAME))
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
                                 .size(resourceIds.size())
                                 .subAggregation(average(AVG_AGGREGATION + USAGE_RATE, USAGE_RATE))));

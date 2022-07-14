@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,7 +70,9 @@ import UpdateDataStorage from '../../../models/dataStorage/DataStorageUpdate';
 import DataStorageUpdateStoragePolicy
   from '../../../models/dataStorage/DataStorageUpdateStoragePolicy';
 import DataStorageDelete from '../../../models/dataStorage/DataStorageDelete';
-import Metadata from '../../special/metadata/Metadata';
+import {METADATA_KEYS} from './metadata-controls/get-default-metadata-properties';
+import Metadata, {SpecialTags} from '../../special/metadata/Metadata';
+import ItemsTable, {isJson} from '../../special/metadata/items-table';
 import Issues from '../../special/issues/Issues';
 import {
   ContentIssuesMetadataPanel,
@@ -79,7 +81,7 @@ import {
   ISSUES_PANEL_KEY
 } from '../../special/splitPanel';
 import DropDownWrapper from '../../special/dropdown-wrapper';
-import {generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
+import {formatTreeItems, generateTreeData, ItemTypes} from '../model/treeStructureFunctions';
 import styles from './Browser.css';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import UploadButton from '../../special/UploadButton';
@@ -111,7 +113,7 @@ function splitFolderPaths (foldersStructure) {
 @roleModel.authenticationInfo
 @HiddenObjects.injectTreeFilter
 @HiddenObjects.checkFolders(props => (props?.params ? props.params.id : props.id))
-@inject('awsRegions')
+@inject('awsRegions', 'preferences')
 @inject(({awsRegions, pipelines, dataStorages, folders}, params) => {
   let componentParameters = params;
   if (params.params) {
@@ -192,7 +194,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   renderTreeItemType = (item) => {
     switch (item.type) {
       case ItemTypes.pipeline: return <Icon type="fork" />;
-      case ItemTypes.versionedStorage: return <Icon type="inbox" style={{color: '#2696dd'}} />;
+      case ItemTypes.versionedStorage: return <Icon type="inbox" className="cp-versioned-storage" />;
       case ItemTypes.folder:
         let icon = 'folder';
         if (item.isProject || (item.objectMetadata && item.objectMetadata.type &&
@@ -203,15 +205,13 @@ export default class Folder extends localization.LocalizedReactComponent {
         return <Icon type={icon} />;
       case ItemTypes.version: return <Icon type="tag" />;
       case ItemTypes.storage:
-        const style = {};
-        if (item.sensitive) {
-          style.color = '#ff5c33';
-        }
-        if (item.storageType && item.storageType.toLowerCase() !== 'nfs') {
-          return <Icon type="inbox" style={style} />;
-        } else {
-          return <Icon type="hdd" style={style} />;
-        }
+        const objectStorage = item.storageType && item.storageType.toLowerCase() !== 'nfs';
+        return (
+          <Icon
+            type={objectStorage ? 'inbox' : 'hdd'}
+            className={classNames({'cp-sensitive': item.sensitive})}
+          />
+        );
       case ItemTypes.configuration: return <Icon type="setting" />;
       case ItemTypes.metadata: return <Icon type="appstore-o" />;
       case ItemTypes.metadataFolder: return <Icon type="appstore-o" />;
@@ -242,20 +242,79 @@ export default class Folder extends localization.LocalizedReactComponent {
     });
   };
 
-  renderMetadataKeyValue = (key, value) => {
+  renderMetadataKeyValue = (key, metadata) => {
+    if (!metadata) {
+      return null;
+    }
+    const {value} = metadata;
+    const ignoredKey = () => {
+      return Object.values(METADATA_KEYS).includes(key);
+    };
+    if (ignoredKey()) {
+      return null;
+    }
+    const renderSpecialMetadataComponent = () => {
+      const SpecialMetadataComponent = SpecialTags[key];
+      return (
+        <div
+          key={`${key}_value`}
+          className="cp-text"
+        >
+          <SpecialMetadataComponent
+            key={key}
+            metadata={metadata}
+            showOnlySummary
+          />
+        </div>
+      );
+    };
+    const renderJSONComponent = () => {
+      return (
+        <div
+          key={`${key}_value`}
+        >
+          <ItemsTable
+            title={key}
+            showOnlySummary
+            value={value}
+            containerStyle={{display: 'grid', padding: 0}}
+            className="cp-text"
+          />
+        </div>
+      );
+    };
+    let metadataValue;
+    let wrapValue;
+    if (SpecialTags.hasOwnProperty(key)) {
+      metadataValue = renderSpecialMetadataComponent();
+      wrapValue = true;
+    } else if (isJson(value)) {
+      metadataValue = renderJSONComponent();
+    } else {
+      metadataValue = value;
+    }
     return (
       <Tooltip key={key} overlay={
         <Row>
           <Row>{key}:</Row>
-          <Row>{value}</Row>
+          <Row style={{wordBreak: 'break-word'}}>
+            {value}
+          </Row>
         </Row>
       }>
         <div key={key} className={styles.metadataItemContainer}>
-          <Row className={styles.metadataItemKey}>
+          <Row className={classNames(
+            styles.metadataItemKey,
+            'cp-library-metadata-item-key'
+          )}>
             {key}
           </Row>
-          <Row className={styles.metadataItemValue}>
-            {value}
+          <Row className={classNames(
+            styles.metadataItemValue,
+            {[styles.wrap]: wrapValue},
+            'cp-library-metadata-item-value'
+          )}>
+            {metadataValue}
           </Row>
         </div>
       </Tooltip>
@@ -269,7 +328,9 @@ export default class Folder extends localization.LocalizedReactComponent {
     const items = [];
     for (let key in metadata) {
       if (metadata.hasOwnProperty(key)) {
-        items.push(this.renderMetadataKeyValue(key, metadata[key].value));
+        items.push(
+          this.renderMetadataKeyValue(key, metadata[key])
+        );
       }
     }
     if (items.length > MAX_INLINE_METADATA_KEYS) {
@@ -348,6 +409,7 @@ export default class Folder extends localization.LocalizedReactComponent {
     },
     {
       key: 'region',
+      className: styles.treeItemRegion,
       render: (item) => {
         if (item.type === ItemTypes.storage) {
           return <AWSRegionTag regionId={item.regionId} />;
@@ -726,14 +788,15 @@ export default class Folder extends localization.LocalizedReactComponent {
         versioningEnabled: storage.versioningEnabled
       },
       serviceType: storage.serviceType || ServiceTypes.objectStorage,
-      mountPoint: storage.mountPoint,
-      mountOptions: storage.mountOptions,
+      mountDisabled: storage.mountDisabled,
+      mountPoint: !storage.mountDisabled ? storage.mountPoint : undefined,
+      mountOptions: !storage.mountDisabled ? storage.mountOptions : undefined,
       fileShareMountId: storage.fileShareMountId,
       regionId: storage.serviceType === ServiceTypes.objectStorage && storage.regionId
         ? storage.regionId
         : undefined,
       sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      toolsToMount: !storage.mountDisabled ? storage.toolsToMount : undefined
     });
     hide();
     if (request.error) {
@@ -764,14 +827,17 @@ export default class Folder extends localization.LocalizedReactComponent {
       name: storage.name,
       description: storage.description,
       path: storage.path,
-      sensitive: storage.sensitive,
-      toolsToMount: storage.toolsToMount
+      mountDisabled: storage.mountDisabled,
+      sensitive: storage.sensitive
     };
-    if (storage.mountPoint) {
-      payload.mountPoint = storage.mountPoint;
-    }
-    if (storage.mountOptions) {
-      payload.mountOptions = storage.mountOptions;
+    if (!storage.mountDisabled) {
+      payload.toolsToMount = storage.toolsToMount;
+      if (storage.mountPoint) {
+        payload.mountPoint = storage.mountPoint;
+      }
+      if (storage.mountOptions) {
+        payload.mountOptions = storage.mountOptions;
+      }
     }
     await request.send(payload);
     if (request.error) {
@@ -851,14 +917,14 @@ export default class Folder extends localization.LocalizedReactComponent {
         .fetch()
         .then(() => {
           if (request.loaded) {
-            const {toolsToMount = []} = request.value || {};
-            return Promise.resolve(toolsToMount);
+            const {toolsToMount = [], sourceStorageId} = request.value || {};
+            return Promise.resolve({toolsToMount, sourceStorageId});
           }
-          return Promise.resolve([]);
+          return Promise.resolve({});
         })
         .catch(() => {})
-        .then((toolsToMount) => {
-          this.setState({editableStorage: {toolsToMount, ...storage}});
+        .then((extra = {}) => {
+          this.setState({editableStorage: {...storage, ...extra}});
         });
     }
   };
@@ -906,7 +972,7 @@ export default class Folder extends localization.LocalizedReactComponent {
   createPipelineRequest = new CreatePipeline();
 
   createPipeline = async (opts = {}) => {
-    const {name, description, repository, token} = opts;
+    const {name, description, repository, repositoryType, token} = opts;
     const hide = message.loading(`Creating ${this.localizedString('pipeline')} ${name}...`, 0);
     await this.createPipelineRequest.send({
       name: name,
@@ -914,6 +980,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       parentFolderId: this._currentFolder.folder.id,
       templateId: this.state.pipelineTemplate ? this.state.pipelineTemplate.id : undefined,
       repository: repository,
+      repositoryType,
       repositoryToken: token
     });
     hide();
@@ -1254,7 +1321,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         <Table
           key={CONTENT_PANEL_KEY}
           className={`${styles.childrenContainer} ${styles.childrenContainerLarger}`}
-          dataSource={this._currentFolder.data}
+          dataSource={formatTreeItems(this._currentFolder.data, {preferences: this.props.preferences})}
           columns={this.columns}
           rowKey={(item) => item.key}
           title={null}
@@ -1404,7 +1471,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           pipelineTemplatesMenu = [
             <MenuItem
               id="create-pipeline-button"
-              className={classNames(styles.menuItem, 'create-pipeline-button')}
+              className="create-pipeline-button"
               key={pipelineKey}>
               <Row>
                 DEFAULT
@@ -1418,12 +1485,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               return (
                 <MenuItem
                   id={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
-                  className={
-                    classNames(
-                      styles.menuItem,
-                      `create-pipeline-by-template-button-${t.id.toLowerCase()}`
-                    )
-                  }
+                  className={`create-pipeline-by-template-button-${t.id.toLowerCase()}`}
                   key={`${pipelineKey}_${t.id}`}>
                   <Row>
                     {t.id.toUpperCase()}
@@ -1451,7 +1513,7 @@ export default class Folder extends localization.LocalizedReactComponent {
               }}
               key={pipelineKey}
               title={<span><Icon type="fork" /> {this.localizedString('Pipeline')}</span>}
-              className={classNames(styles.actionsSubMenu, 'create-pipeline-sub-menu-button')}
+              className="create-pipeline-sub-menu-button"
             >
               {pipelineTemplatesMenu}
             </SubMenu>
@@ -1460,7 +1522,7 @@ export default class Folder extends localization.LocalizedReactComponent {
           createActions.push(
             <MenuItem
               id="create-pipeline-button"
-              className={classNames(styles.menuItem, 'create-pipeline-button')}
+              className="create-pipeline-button"
               key={pipelineKey}>
               <Icon type="fork" /> {this.localizedString('Pipeline')}
             </MenuItem>
@@ -1481,32 +1543,17 @@ export default class Folder extends localization.LocalizedReactComponent {
               });
             }}
             title={<span><Icon type="hdd" /> Storages</span>}
-            className={
-              classNames(
-                styles.actionsSubMenu,
-                'create-storage-sub-menu'
-              )
-            }
+            className="create-storage-sub-menu"
           >
             <MenuItem
               id="create-new-storage-button"
-              className={
-                classNames(
-                  styles.menuItem,
-                  'create-new-storage-button'
-                )
-              }
+              className="create-new-storage-button"
               key={`${storageKey}_new`}>
               Create new object storage
             </MenuItem>
             <MenuItem
               id="add-existing-storage-button"
-              className={
-                classNames(
-                  styles.menuItem,
-                  'add-existing-storage-button'
-                )
-              }
+              className="add-existing-storage-button"
               key={`${storageKey}_existing`}>
               Add existing object storage
             </MenuItem>
@@ -1514,12 +1561,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             {fsMountsAvailable && (
               <MenuItem
                 id="create-new-nfs-mount"
-                className={
-                  classNames(
-                    styles.menuItem,
-                    'create-new-nfs-mount'
-                  )
-                }
+                className="create-new-nfs-mount"
                 key={`${storageKey}_${nfsStorageKey}`}>
                 Create new FS mount
               </MenuItem>
@@ -1531,12 +1573,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         createActions.push(
           <MenuItem
             id="create-configuration-button"
-            className={
-              classNames(
-                styles.menuItem,
-                'create-configuration-button'
-              )
-            }
+            className="create-configuration-button"
             key={configurationKey}>
             <Icon type="setting" /> Configuration
           </MenuItem>
@@ -1554,12 +1591,7 @@ export default class Folder extends localization.LocalizedReactComponent {
             return (
               <MenuItem
                 id={`create-folder-by-template-button-${t.id.toLowerCase()}`}
-                className={
-                  classNames(
-                    styles.menuItem,
-                    `create-folder-by-template-button-${t.id.toLowerCase()}`
-                  )
-                }
+                className={`create-folder-by-template-button-${t.id.toLowerCase()}`}
                 key={`${folderKey}_${t.id}`}>
                 <Row>
                   {t.id.toUpperCase()}
@@ -1576,12 +1608,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         createActions.push(
           <MenuItem
             id="create-folder-button"
-            className={
-              classNames(
-                styles.menuItem,
-                'create-folder-button'
-              )
-            }
+            className="create-folder-button"
             key={folderKey}>
             <Icon type="folder" /> Folder
           </MenuItem>
@@ -1599,12 +1626,7 @@ export default class Folder extends localization.LocalizedReactComponent {
         createActions.push(
           <MenuItem
             id="create-versioned-storage-button"
-            className={
-              classNames(
-                styles.menuItem,
-                'create-versioned-storage-button'
-              )
-            }
+            className="create-versioned-storage-button"
             key={versionedStorageKey}
           >
             <Row style={{textTransform: 'uppercase'}}>
@@ -1630,11 +1652,8 @@ export default class Folder extends localization.LocalizedReactComponent {
             minOverlayWidthMatchTrigger={false}
             placement="bottomRight"
             overlay={
-              <div
-                style={{backgroundColor: '#ffff', width: 200, cursor: 'pointer'}}
-                className={styles.menuContainer}>
+              <div>
                 <Menu
-                  className={styles.menu}
                   mode="vertical"
                   selectedKeys={[]}
                   onClick={onCreateActionSelect}
@@ -1679,7 +1698,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (!this.props.listingMode) {
       displayOptionsMenuItems.push(
         <MenuItem
-          className={styles.menuItem}
           id="show-hide-descriptions"
           key="descriptions">
           <Row type="flex" justify="space-between" align="middle">
@@ -1699,7 +1717,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     if (this.props.folderId !== undefined && !this.props.listingMode) {
       displayOptionsMenuItems.push(
         <MenuItem
-          className={styles.menuItem}
           id={
             this.showMetadata
               ? 'hide-metadata-button'
@@ -1717,7 +1734,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     if ((this.showIssues || this.props.folderId !== undefined) && !this.props.listingMode) {
       displayOptionsMenuItems.push(
         <MenuItem
-          className={styles.menuItem}
           id={
             this.showIssues
               ? 'hide-issues-panel-button'
@@ -1737,7 +1753,6 @@ export default class Folder extends localization.LocalizedReactComponent {
         <Menu
           onClick={onSelectDisplayOption}
           style={{width: 125}}
-          className={styles.menu}
           selectedKeys={[]}
         >
           {displayOptionsMenuItems}
@@ -1774,7 +1789,6 @@ export default class Folder extends localization.LocalizedReactComponent {
           <MenuItem
             id="edit-folder-button"
             key="edit"
-            className={styles.menuItem}
           >
             <Icon type="edit" style={{marginRight: 5}} />
             {
@@ -1790,9 +1804,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           <MenuItem
             key="clone"
             id="clone-folder-button"
-            className={styles.menuItem}
           >
-            <Icon type="copy"/> Clone
+            <Icon type="copy" /> Clone
           </MenuItem>
         );
       }
@@ -1802,9 +1815,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           <MenuItem
             id="unlock-button"
             key="unlock"
-            className={styles.menuItem}
           >
-            <Icon type="unlock"/> Unlock
+            <Icon type="unlock" /> Unlock
           </MenuItem>
         );
       } else if (!folderIsReadOnly && roleModel.writeAllowed(this.props.folder.value)) {
@@ -1812,9 +1824,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           <MenuItem
             id="lock-button"
             key="lock"
-            className={styles.menuItem}
           >
-            <Icon type="lock"/> Lock
+            <Icon type="lock" /> Lock
           </MenuItem>
         );
       }
@@ -1830,11 +1841,9 @@ export default class Folder extends localization.LocalizedReactComponent {
           <MenuItem
             id="delete-folder-button"
             key="delete"
-            className={styles.menuItem}
+            className="cp-danger"
           >
-            <Icon
-              type="delete"
-              style={{color: 'red'}}/> Delete
+            <Icon type="delete" /> Delete
           </MenuItem>
         );
       }
@@ -1872,7 +1881,6 @@ export default class Folder extends localization.LocalizedReactComponent {
               trigger={['click']}
               overlay={
                 <Menu
-                  className={styles.menu}
                   selectedKeys={[]}
                   onClick={onClick}
                   style={{width: 100}}>
@@ -1903,7 +1911,7 @@ export default class Folder extends localization.LocalizedReactComponent {
       return this.lockUnLockFolder(lock);
     };
     Modal.confirm({
-      title: `Are you sure you want to ${lock ? 'lock' : 'unlock'} folder ${this.props.folder.value.name}?`,
+      title: `Are you sure you want to ${lock ? 'lock' : 'unlock'} folder '${this.props.folder.value.name}'?`,
       style: {
         wordWrap: 'break-word'
       },
@@ -1936,7 +1944,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     }
   };
 
-  @computed
   get showConfigurationPreview () {
     return !!(this.props.showConfigurationPreview &&
       this.state.showConfigurationPreview && this.highlightedItem &&
@@ -1955,7 +1962,6 @@ export default class Folder extends localization.LocalizedReactComponent {
     return !!this.state.metadata;
   }
 
-  @computed
   get showIssues () {
     if (this.props.folderId !== undefined) {
       return !!this.state.issuesItem || this.state.showIssuesPanel;
@@ -1978,11 +1984,12 @@ export default class Folder extends localization.LocalizedReactComponent {
       }
       let data = generateTreeData(
         this.props.folder.value,
-        true,
-        {id: this.props.folderId},
-        [],
-        this.props.supportedTypes,
-        this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        {
+          ignoreChildren: true,
+          parent: {id: this.props.folderId},
+          types: this.props.supportedTypes,
+          filter: this.props.hiddenObjectsTreeFilter(this.props.filterItems)
+        }
       );
       if (this.props.isRoot) {
         this._currentFolder = {
@@ -2110,7 +2117,8 @@ export default class Folder extends localization.LocalizedReactComponent {
           isNfsMount={this.state.createNFSFlag}
           policySupported={!this.state.createNFSFlag}
           addExistingStorageFlag={!this.state.createNewStorageFlag}
-          pending={this.state.operationInProgress} />
+          pending={this.state.operationInProgress}
+        />
         <VersionedStorageDialog
           onSubmit={this.folderOperationWrapper(opts =>
             this.checkRepositoryExistence(opts, this.createVersionedStorage))}
@@ -2126,7 +2134,11 @@ export default class Folder extends localization.LocalizedReactComponent {
           visible={!!this.state.editableStorage}
           pending={this.state.operationInProgress}
           dataStorage={this.state.editableStorage}
-          policySupported={this.state.editableStorage && this.state.editableStorage.policySupported} />
+          policySupported={
+            this.state.editableStorage &&
+            this.state.editableStorage.policySupported
+          }
+        />
         <EditDetachedConfigurationForm
           configuration={this.state.editableConfiguration}
           onDelete={this.folderOperationWrapper(this.deleteConfiguration)}
@@ -2159,12 +2171,15 @@ export default class Folder extends localization.LocalizedReactComponent {
           }}>
           <Row>
             <Row className={styles.configurationConfirmTitle}>
-              <Icon type="question-circle" />
+              <Icon
+                type="question-circle"
+                className="cp-warning"
+              />
               {
                 this.state.folderToDelete &&
                 (!this.deletingFolderIsEmpty
                   ? `Folder '${this.state.folderToDelete.name}' contains sub-items, do you want to delete them?`
-                  : `Are you sure you want to delete folder ${this.state.folderToDelete.name}`)
+                  : `Are you sure you want to delete folder '${this.state.folderToDelete.name}'?`)
               }
             </Row>
             {(!this._folderToDeleteInfo || this._folderToDeleteInfo.pending) && <LoadingView />}
@@ -2172,8 +2187,6 @@ export default class Folder extends localization.LocalizedReactComponent {
               !this.deletingFolderIsEmpty &&
               <Row style={{
                 marginLeft: '42px',
-                fontSize: '12px',
-                color: 'rgba(0,0,0,.65)',
                 marginTop: '8px'
               }}>
                 <Checkbox

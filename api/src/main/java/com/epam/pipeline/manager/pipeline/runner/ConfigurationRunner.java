@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,11 @@ import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
+import com.epam.pipeline.entity.pipeline.run.PipelineStartNotificationRequest;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.pipeline.FolderManager;
+import com.epam.pipeline.manager.quota.RunLimitsService;
 import com.epam.pipeline.mapper.AbstractRunConfigurationMapper;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,8 @@ import org.springframework.util.StringUtils;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -64,10 +68,13 @@ public class ConfigurationRunner {
     @Autowired
     private ConfigurationProviderManager configurationProvider;
 
+    @Autowired
+    private RunLimitsService runLimitsService;
+
     /**
      * Schedules execution of a {@link RunConfiguration} and creates a number
      * of associated {@link PipelineRun} instances. Default values of {@link RunConfiguration}
-     * may be overriden by {@code runConfiguration} parameter. If {@code entitiesIds} or {@code metadataClass}
+     * may be overridden by {@code runConfiguration} parameter. If {@code entitiesIds} or {@code metadataClass}
      * are passed method will try to resolve {@link RunConfiguration} parameters according to
      * {@link MetadataEntity} instances. For {@code metadataClass} method will try to find
      * {@link MetadataEntity} instances in the whole project with matching {@link MetadataClass}.
@@ -99,23 +106,40 @@ public class ConfigurationRunner {
         configuration.getEntries().forEach(entry -> configurationProvider.assertExecutionEnvironment(entry));
 
         List<Long> entitiesIds = getIdsToProcess(runConfiguration);
-        return configuration.getEntries().stream()
-                .collect(Collectors.groupingBy(AbstractRunConfigurationEntry::getExecutionEnvironment))
-                .entrySet()
-                .stream()
+        final List<AnalysisConfiguration<AbstractRunConfigurationEntry>> configurations = configuration.getEntries()
+            .stream()
+            .collect(Collectors.groupingBy(AbstractRunConfigurationEntry::getExecutionEnvironment))
+            .entrySet()
+            .stream()
                 .map(env -> {
-                    AnalysisConfiguration<AbstractRunConfigurationEntry> conf = AnalysisConfiguration
+                    List<PipelineStartNotificationRequest> notifications = null;
+                    if (CollectionUtils.isNotEmpty(env.getValue())) {
+                        notifications = env.getValue().get(0) instanceof RunConfigurationEntry ?
+                                ((RunConfigurationEntry) env.getValue().get(0)).getConfiguration().getNotifications() :
+                                null;
+                    }
+                    return AnalysisConfiguration
                             .builder()
                             .configurationId(configuration.getId())
                             .entries(env.getValue())
                             .entitiesIds(entitiesIds)
                             .expansionExpression(expansionExpression)
+                            .notifications(notifications)
                             .refreshToken(refreshToken)
                             .build();
-                    return configurationProvider.runAnalysis(conf);
                 })
-                .flatMap(Collection::stream)
                 .collect(Collectors.toList());
+        final int configurationsNodes = configurations.stream()
+            .map(AnalysisConfiguration::getEntries)
+            .flatMap(Collection::stream)
+            .mapToInt(entry -> Optional.ofNullable(entry.getWorkerCount()).orElse(0))
+            .filter(Objects::nonNull)
+            .reduce(0, (sum, count) -> sum + count + 1);
+        runLimitsService.checkRunLaunchLimits(configurationsNodes);
+        return configurations.stream()
+            .map(configurationProvider::runAnalysis)
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
     }
 
     private List<Long> getIdsToProcess(RunConfigurationWithEntitiesVO runConfiguration) {
@@ -143,6 +167,4 @@ public class ConfigurationRunner {
         dbConfiguration.setEntries(mergedEntries);
         return dbConfiguration;
     }
-
-
 }

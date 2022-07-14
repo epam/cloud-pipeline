@@ -34,8 +34,10 @@ class UserTokenOperations(object):
             error_message = str(error)
             if 'Access is denied' in error_message:
                 error_message = '%s. This operation available for admins only' % error_message
-            click.echo('Error: %s' % error_message, err=True)
-            sys.exit(1)
+                click.echo('Error: %s' % error_message, err=True)
+                sys.exit(1)
+            else:
+                raise
 
     def set_user_token(self, user_name):
         if user_name:

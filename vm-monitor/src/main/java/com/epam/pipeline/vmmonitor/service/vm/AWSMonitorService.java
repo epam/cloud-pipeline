@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,6 +115,8 @@ public class AWSMonitorService implements VMMonitorService<AwsRegion> {
                 .instanceName(instance.getPrivateDnsName())
                 .tags(mapTags(instance.getTags()))
                 .privateIp(mapPrivateIp(instance.getNetworkInterfaces()))
+                .instanceType(instance.getInstanceType())
+                .created(convertDateToLocalDateTime(instance.getLaunchTime()))
                 .build();
     }
 

@@ -16,6 +16,7 @@
 
 import React from 'react';
 import {inject, observer} from 'mobx-react';
+import classNames from 'classnames';
 import {computed, observable} from 'mobx';
 import {Row, Col, Modal, Button, Alert, Icon, Tabs, message} from 'antd';
 import LaunchPipelineForm from '../launch/form/LaunchPipelineForm';
@@ -29,7 +30,8 @@ import ConfigurationUpdate from '../../../models/configuration/ConfigurationUpda
 import ConfigurationDelete from '../../../models/configuration/ConfigurationDelete';
 import preferences from '../../../models/preferences/PreferencesLoad';
 import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
-import CreateConfigurationForm from '../../pipelines/version/configuration/forms/CreateConfigurationForm';
+import CreateConfigurationForm
+from '../../pipelines/version/configuration/forms/CreateConfigurationForm';
 import EditDetachedConfigurationForm from './forms/EditDetachedConfigurationForm';
 import LoadingView from '../../special/LoadingView';
 import SessionStorageWrapper from '../../special/SessionStorageWrapper';
@@ -43,6 +45,7 @@ import browserStyles from '../browser/Browser.css';
 import {ItemTypes} from '../model/treeStructureFunctions';
 import HiddenObjects from '../../../utils/hidden-objects';
 import getPathParameters from '../browser/metadata-controls/get-path-parameters';
+import {applyCustomCapabilitiesParameters} from "../launch/form/utilities/run-capabilities";
 
 const DTS_ENVIRONMENT = 'DTS';
 
@@ -614,6 +617,7 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
   runSelected = (opts, entitiesIds, metadataClass, expansionExpression, folderId) => {
     const launchFn = async () => {
       await this.props.project.fetchIfNeededOrWait();
+      await this.props.preferences.fetchIfNeededOrWait();
       let parameters = {};
       if (this.props.project.loaded && this.props.project.value) {
         parameters = await getPathParameters(
@@ -691,6 +695,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           ...parameters,
           ...(configuration.configuration.parameters || {})
         };
+        configuration.configuration.parameters = applyCustomCapabilitiesParameters(
+          configuration.configuration.parameters,
+          this.props.preferences
+        );
       }
       const hide = message.loading('Launching...', 0);
       const request = new ConfigurationRun(expansionExpression);
@@ -808,6 +816,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
           ...parameters,
           ...(configuration.configuration.parameters || {})
         };
+        configuration.configuration.parameters = applyCustomCapabilitiesParameters(
+          configuration.configuration.parameters,
+          this.props.preferences
+        );
       }
       const hide = message.loading('Launching...', 0);
       const request = new ConfigurationRun(expansionExpression);
@@ -966,8 +978,8 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
     return (
       <Row>
         <Tabs
-          className={styles.tabs}
-          hideAdd={true}
+          className={classNames(styles.tabs, 'cp-tabs-no-content')}
+          hideAdd
           onChange={this.onSelectConfiguration}
           activeKey={this.selectedConfigurationName}
           tabBarExtraContent={addButton}
@@ -1038,7 +1050,10 @@ export default class DetachedConfiguration extends localization.LocalizedReactCo
         </Row>
         <Row style={{position: 'relative', display: 'flex', flexDirection: 'column', flex: 1}}>
           {this.renderTabs()}
-          <Row style={{position: 'relative', flex: 1, overflowY: 'auto'}}>
+          <Row
+            className="cp-tabs-content"
+            style={{position: 'relative', flex: 1, overflowY: 'auto'}}
+          >
             <LaunchPipelineForm
               defaultPriceTypeIsLoading={this.props.preferences.pending}
               defaultPriceTypeIsSpot={defaultPriceTypeIsSpot}

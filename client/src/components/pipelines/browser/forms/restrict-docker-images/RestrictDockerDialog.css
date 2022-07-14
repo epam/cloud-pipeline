@@ -26,14 +26,7 @@
 .modal-radio-container {
   margin-bottom: 10px;
   width: 100%;
-  border-bottom: 1px solid #dfdfdf;
-}
-
-.search-container {
-  width: 100%;
-  border-bottom: 1px solid #dfdfdf;
-  margin-bottom: 10px;
-  padding-bottom: 10px;
+  border-bottom: 1px solid transparent;
 }
 
 .search {

@@ -886,6 +886,8 @@ function api_setup_base_preferences {
     api_set_preference "launch.task.status.update.rate" "${CP_PREF_LAUNCH_TASK_STATUS_UPDATE_RATE:-20000}" "false"
     api_set_preference "launch.cmd.template" "${CP_PREF_LAUNCH_CMD_TEMPLATE}" "true"
     api_set_preference "launch.run.visibility" "${CP_PREF_LAUNCH_RUN_VISIBILITY:-INHERIT}" "true"
+    api_set_preference "launch.kube.pod.search.path" "${CP_PREF_LAUNCH_KUBE_POD_SEARCH_PATH:-"pods.default.svc.cluster.local"}" "true"
+    api_set_preference "launch.kube.pod.domains.enabled" "${CP_PREF_LAUNCH_KUBE_POD_DOMAINS_ENABLED:-"true"}" "true"
 
     ## Docker
     api_set_preference "security.tools.jwt.token.expiration" "${CP_PREF_SECURITY_TOOLS_JWT_TOKEN_EXPIRATION:-3600}" "false"
@@ -914,7 +916,7 @@ function api_setup_base_preferences {
     ## Metadata
     api_set_preference "misc.metadata.sensitive.keys" "${CP_PREF_METADATA_SENSITIVE_KEYS:-"[]"}" "true"
     api_set_preference "misc.groups.ui.preferences" "{}" "true"
-
+    api_set_preference "ui.wsi.magnification.factor" "1" "true"
     ## Commit
     api_set_preference "commit.username" "${CP_PREF_COMMIT_USERNAME:-"pipeline"}" "false"
     if [ "$CP_PREF_COMMIT_DEPLOY_KEY" ]; then
@@ -1064,6 +1066,8 @@ function api_register_drive_mapping {
                             "$CP_DAV_EXTERNAL_AUTH_URL"
 
     api_set_preference "base.dav.auth.url" "$CP_DAV_EXTERNAL_AUTH_URL" "true"
+
+    api_set_preference"base.invalidate.edge.auth.path" "${CP_EDGE_INVALIDATE_AUTH_PATH:-/invalidate}" "true"
 }
 
 function api_register_share_service {

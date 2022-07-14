@@ -155,7 +155,11 @@ class CloudPipelineLogger:
         pass
 
     @abstractmethod
-    def warn(self, message, task=None):
+    def debug(self, message, task=None):
+        pass
+
+    @abstractmethod
+    def warning(self, message, task=None):
         pass
 
     @abstractmethod
@@ -177,10 +181,15 @@ class LocalLogger(CloudPipelineLogger):
         if self._inner:
             self._inner.info(message, task)
 
-    def warn(self, message, task=None):
-        logging.warn(message)
+    def debug(self, message, task=None):
+        logging.debug(message)
         if self._inner:
-            self._inner.warn(message, task)
+            self._inner.debug(message, task)
+
+    def warning(self, message, task=None):
+        logging.warning(message)
+        if self._inner:
+            self._inner.warning(message, task)
 
     def success(self, message, task=None):
         logging.info(message)
@@ -193,6 +202,42 @@ class LocalLogger(CloudPipelineLogger):
             self._inner.error(message, task)
 
 
+class LevelLogger(CloudPipelineLogger):
+
+    _levels = ['ERROR', 'WARNING', 'INFO', 'DEBUG']
+    _error_idx = _levels.index('ERROR')
+    _warn_idx = _levels.index('WARNING')
+    _info_idx = _levels.index('INFO')
+    _debug_idx = _levels.index('DEBUG')
+
+    def __init__(self, level, inner):
+        self._level_idx = self._levels.index(level)
+        self._inner = inner
+
+    def info(self, message, task=None):
+        if self._applies(self._info_idx):
+            self._inner.info(message, task)
+
+    def debug(self, message, task=None):
+        if self._applies(self._debug_idx):
+            self._inner.debug(message, task)
+
+    def warning(self, message, task=None):
+        if self._applies(self._warn_idx):
+            self._inner.warning(message, task)
+
+    def success(self, message, task=None):
+        if self._applies(self._info_idx):
+            self._inner.success(message, task)
+
+    def error(self, message, task=None):
+        if self._applies(self._error_idx):
+            self._inner.error(message, task)
+
+    def _applies(self, level_idx):
+        return self._level_idx >= level_idx
+
+
 class TaskLogger(CloudPipelineLogger):
 
     def __init__(self, task, inner):
@@ -202,8 +247,11 @@ class TaskLogger(CloudPipelineLogger):
     def info(self, message, task=None):
         self._inner.info(message, task or self._task)
 
-    def warn(self, message, task=None):
-        self._inner.warn(message, task or self._task)
+    def debug(self, message, task=None):
+        self._inner.debug(message, task or self._task)
+
+    def warning(self, message, task=None):
+        self._inner.warning(message, task or self._task)
 
     def success(self, message, task=None):
         self._inner.success(message, task or self._task)
@@ -217,7 +265,7 @@ class RunLogger(CloudPipelineLogger):
     _DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
     _DATE_WITH_MILLISECONDS = '%s.%03d'
 
-    def __init__(self, api, run_id, inner):
+    def __init__(self, api, run_id, inner=None):
         self._api = api
         self._run_id = run_id
         self._inner = inner
@@ -227,10 +275,15 @@ class RunLogger(CloudPipelineLogger):
         if self._inner:
             self._inner.info(message, task)
 
-    def warn(self, message, task=None):
+    def debug(self, message, task=None):
         self._log(message=message, task=task, status='RUNNING')
         if self._inner:
-            self._inner.warn(message, task)
+            self._inner.debug(message, task)
+
+    def warning(self, message, task=None):
+        self._log(message=message, task=task, status='RUNNING')
+        if self._inner:
+            self._inner.warning(message, task)
 
     def success(self, message, task=None):
         self._log(message=message, task=task, status='SUCCESS')

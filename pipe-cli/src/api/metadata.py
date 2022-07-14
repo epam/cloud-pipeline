@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,7 @@
 
 import json
 
+from future.utils import iteritems
 from src.api.base import API
 from src.model.metadata_model import MetadataModel
 
@@ -39,21 +40,43 @@ class Metadata(API):
 
     @classmethod
     def load(cls, entity_id, entity_class):
+        return cls.load_all_for_ids([entity_id], entity_class)[0]
+
+    @classmethod
+    def load_all_for_ids(cls, entity_ids, entity_class):
         api = cls.instance()
-        data = json.dumps([{
-            'entityId': entity_id,
-            'entityClass': str(entity_class).upper()
-        }])
+        data = json.dumps([cls.convert_to_entity_vo(entity_id, entity_class) for entity_id in entity_ids])
         response_data = api.call('metadata/load', data=data, http_method='POST')
         if 'payload' in response_data:
-            for response_data_item in response_data['payload']:
-                return MetadataModel.load(response_data_item)
+            return [MetadataModel.load(response_data_item) for response_data_item in response_data['payload']]
         if 'status' in response_data and response_data['status'] == "OK":
-            return MetadataModel()
+            return [MetadataModel()]
         if 'message' in response_data:
             raise RuntimeError(response_data['message'])
         else:
             raise RuntimeError("Failed to load metadata.")
+
+    @classmethod
+    def load_metadata_mapping(cls, entity_ids, entity_class):
+        metadata_list = Metadata.load_all_for_ids(entity_ids, entity_class)
+        metadata_mapping = dict()
+        for metadata_entry in metadata_list:
+            metadata_data_dict = {}
+            for key, data in iteritems(metadata_entry.data):
+                if 'value' in data:
+                    value = data['value']
+                    if not value.startswith('{'):
+                        metadata_data_dict[key] = value
+            if len(metadata_data_dict):
+                metadata_mapping[metadata_entry.entity_id] = metadata_data_dict
+        return metadata_mapping
+
+    @classmethod
+    def convert_to_entity_vo(cls, entity_id, entity_class):
+        return {
+            'entityId': entity_id,
+            'entityClass': str(entity_class).upper()
+        }
 
     @classmethod
     def update(cls, entity_id, entity_class, metadata):

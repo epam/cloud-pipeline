@@ -121,18 +121,23 @@ const plugin = {
     ctx.beginPath();
     const {datasetConfig, label} = labelConfig;
     const {borderColor: stroke} = datasetConfig || {};
-    const {text, position} = label;
+    const {
+      text,
+      position,
+      textColor = '#606060',
+      background = 'rgba(255, 255, 255, 0.85)'
+    } = label;
     if (stroke) {
       ctx.strokeStyle = stroke;
     }
     if (position) {
       ctx.lineWidth = 2;
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.fillStyle = background;
       ctx.rect(position.x, position.y, position.width, position.height);
       ctx.fill();
       ctx.stroke();
       ctx.lineWidth = 1;
-      ctx.fillStyle = '#606060';
+      ctx.fillStyle = textColor;
       ctx.font = `bold 9pt sans-serif`;
       ctx.textBaseline = 'middle';
       ctx.fillText(text, position.labelX, position.labelY);
@@ -141,7 +146,11 @@ const plugin = {
   },
   getInitialLabelConfig: function (chart, ease, configuration) {
     const {datasetIndex} = configuration;
-    let {index} = configuration;
+    let {
+      index,
+      textColor,
+      background
+    } = configuration;
     if (isNotSet(datasetIndex)) {
       return null;
     }
@@ -157,6 +166,12 @@ const plugin = {
       return null;
     }
     const {data, ...datasetConfig} = dataset.controller.getDataset();
+    if (type === SummaryChart.quota) {
+      const quotaElement = (data || [])
+        .filter(Boolean)
+        .filter(dItem => dItem.quota !== undefined).pop();
+      index = Math.max(0, (data || []).indexOf(quotaElement));
+    }
     const xAxis = chart.scales[xAxisID];
     const yAxis = chart.scales[yAxisID];
     const element = elements && elements.length > index ? elements[index] : null;
@@ -171,7 +186,17 @@ const plugin = {
       left: xAxis.left,
       right: xAxis.right
     };
-    const labelText = costTickFormatter(dataItem);
+    const value = typeof dataItem === 'number' ? dataItem : dataItem.y;
+    if (value === undefined) {
+      return null;
+    }
+    let labelText = costTickFormatter(value);
+    if (type === SummaryChart.quota && dataItem.quota) {
+      labelText = costTickFormatter(dataItem.quota);
+      if (datasetConfig.label) {
+        labelText = `${datasetConfig.label}: ${labelText}`;
+      }
+    }
     ctx.font = `bold 9pt sans-serif`;
     ctx.textBaseline = 'middle';
     const labelWidth = ctx.measureText(labelText).width;
@@ -208,7 +233,9 @@ const plugin = {
           right: rightAvailable
         },
         labelHeight: height + (margin + padding.y) * 2.0,
-        text: labelText
+        text: labelText,
+        textColor,
+        background
       }
     };
   }

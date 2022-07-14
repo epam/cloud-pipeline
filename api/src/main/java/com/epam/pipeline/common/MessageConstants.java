@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,11 +89,11 @@ public final class MessageConstants {
     public static final String ERROR_TOOL_CLOUD_REGION_NOT_ALLOWED = "error.tool.cloud.region.not.allowed";
 
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_ID_MISSING = "error.tool.symlink.source.tool.id.missing";
-    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING = 
+    public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_ID_MISSING =
             "error.tool.symlink.target.group.id.missing";
     public static final String ERROR_TOOL_SYMLINK_SOURCE_TOOL_NOT_FOUND = "error.tool.symlink.source.tool.not.found";
     public static final String ERROR_TOOL_SYMLINK_TARGET_GROUP_NOT_FOUND = "error.tool.symlink.target.group.not.found";
-    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED = 
+    public static final String ERROR_TOOL_SYMLINK_MODIFICATION_NOT_SUPPORTED =
             "error.tool.symlink.modification.not.supported";
     public static final String ERROR_TOOL_SYMLINK_TARGET_SYMLINK = "error.tool.symlink.target.symlink";
 
@@ -128,6 +128,8 @@ public final class MessageConstants {
     public static final String ERROR_PIPELINE_RUN_NOT_RUNNING = "error.pipeline.run.not.running";
     public static final String ERROR_RUN_IS_FINAL_STATUS = "error.run.is.final.status";
     public static final String ERROR_INSTANCE_IMAGE_NOT_FOUND = "error.run.instance.image.not.found";
+    public static final String ERROR_COMMIT_OPERATION_IS_FORBIDDEN = "error.run.commit.is.forbidden";
+    public static final String ERROR_RUN_OPERATION_FORBIDDEN = "error.run.operation.forbidden";
 
     //PipelineRun messages
     public static final String ERROR_WRONG_RUN_STATUS_UPDATE = "error.wrong.run.status.update";
@@ -211,6 +213,8 @@ public final class MessageConstants {
     public static final String ERROR_KUBE_SERVICE_CREATE = "error.kube.service.create";
     public static final String ERROR_KUBE_ENDPOINTS_CREATE = "error.kube.endpoints.create";
     public static final String ERROR_KUBE_POD_NOT_FOUND = "error.kube.pod.not.found";
+    public static final String ERROR_KUBE_DEPLOYMENT_REFRESH_FAILED = "error.kube.deployment.refresh.failed";
+    public static final String ERROR_KUBE_NAMESPACE_NOT_SPECIFIED = "error.kube.namespace.not.specified";
 
     // Data storage messages
     public static final String ERROR_DATASTORAGE_NOT_FOUND = "error.datastorage.not.found";
@@ -256,6 +260,21 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_CONVERT_SOURCE_TYPE_INVALID =
             "error.datastorage.convert.source.type.invalid";
     public static final String ERROR_DATASTORAGE_CONVERT_FAILED = "error.datastorage.convert.failed";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ILLEGAL_TIME = "error.datastorage.dav.mount.illegal.time";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_QUOTA_EXCEEDED =
+            "error.datastorage.dav.mount.quota.exceeded";
+    public static final String ERROR_DATASTORAGE_DAV_MOUNT_ALREADY_MOUNTED =
+            "error.datastorage.dav.mount.already.mounted";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST = "info.datastorage.dav.mount.request";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_ALLOWED =
+            "info.datastorage.dav.mount.request.allowed";
+    public static final String INFO_DATASTORAGE_DAV_MOUNT_REQUEST_CALLED_OFF =
+            "info.datastorage.dav.mount.request.called.off";
+
+    public static final String ERROR_DATASTORAGE_NEW_LINKING_MASKS_ILLEGAL_STATE =
+            "error.datastorage.new.linking.masks.illegal.state";
+    public static final String ERROR_DATASTORAGE_MIRROR_ILLEGAL_TYPE = "error.datastorage.new.mirror.type.mismatch";
+    public static final String ERROR_DATASTORAGE_MIRROR_DELETION = "error.datastorage.mirror.deletion";
 
     // NFS
     public static final String ERROR_DATASTORAGE_NFS_MOUNT = "error.datastorage.nfs.mount";
@@ -283,6 +302,9 @@ public final class MessageConstants {
             "error.repository.folder.cannot.be.removed";
     public static final String ERROR_INVALID_PIPELINE_FILE_NAME = "error.pipeline.file.name.invalid";
     public static final String ERROR_REPOSITORY_INDEXING_DISABLED = "error.repository.indexing.disabled";
+    public static final String ERROR_PARSE_BITBUCKET_REPOSITORY_PATH = "error.parse.bitbucket.repository.path";
+    public static final String ERROR_BITBUCKET_TOKEN_NOT_FOUND = "error.bitbucket.token.not.found";
+    public static final String ERROR_REPOSITORY_BRANCH_NOT_FOUND = "error.repository.branch.not.found";
 
     // Instance offers expiration check messages
     public static final String DEBUG_INSTANCE_OFFERS_EXPIRATION_CHECK_RUNNING =
@@ -388,7 +410,7 @@ public final class MessageConstants {
     //Pipeline notification
     public static final String ERROR_NOTIFICATION_SETTINGS_NOT_FOUND = "error.notification.settings.not.found";
     public static final String INFO_NOTIFICATION_TEMPLATE_NOT_CONFIGURED = "info.notification.template.not.configured";
-    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION = 
+    public static final String INFO_RUN_STATUS_NOT_CONFIGURED_FOR_NOTIFICATION =
             "info.run.status.not.configured.for.notification";
     public static final String ERROR_TEMPLATE_ID_SHOULD_BE_EQUAL_TO_TYPE = "error.template.id.should.be.equal.to.type";
     public static final String ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED = "error.notification.subject.not.specified";
@@ -501,6 +523,7 @@ public final class MessageConstants {
     public static final String ERROR_REGION_JSON_WRITING_FAILED = "error.region.json.writing.failed";
     public static final String ERROR_REGION_CORS_RULES_INVALID = "error.region.cors.rules.invalid";
     public static final String ERROR_REGION_POLICY_INVALID = "error.region.policy.invalid";
+    public static final String ERROR_MISSING_IAM_ROLE = "error.missing.iam.role";
 
     //Contextual preferences
     public static final String ERROR_CONTEXTUAL_PREFERENCE_NOT_FOUND = "error.contextual.preference.not.found";
@@ -567,6 +590,8 @@ public final class MessageConstants {
     public static final String ERROR_BILLING_DETAILS_NOT_SUPPORTED = "error.billing.details.not.supported";
     public static final String ERROR_BILLING_INTERVAL_NOT_SUPPORTED = "error.billing.interval.not.supported";
     public static final String ERROR_ILLEGAL_PAGING_PARAMETERS = "error.billing.invalid.paging";
+    public static final String ERROR_BILLING_EXPORT_TYPE_NOT_SUPPORTED = "error.billing.export.type.not.supported";
+    public static final String ERROR_BILLING_EXPORT_TYPES_MISSING = "error.billing.export.types.missing";
 
     //Disks
     public static final String ERROR_DISK_NODE_MISSING = "error.disk.node.missing";
@@ -580,6 +605,8 @@ public final class MessageConstants {
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_EXISTS_ALREADY = "categorical.attribute.exists.already";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_INVALID_LINK = "categorical.attribute.invalid.link";
     public static final String ERROR_CATEGORICAL_ATTRIBUTE_NULL_KEY_NAME = "categorical.attribute.null.name.key";
+    //LDAP
+    public static final String ERROR_LDAP_SEARCH_TYPE_MISSING = "error.ldap.search.type.missing";
 
     //Other
     public static final String ERROR_KEEP_ALIVE_POLICY_NOT_SUPPORTED = "error.keep.alive.policy.not.supported";
@@ -629,6 +656,112 @@ public final class MessageConstants {
     public static final String ERROR_PROFILE_HAS_LINKS = "error.profile.has.links";
     public static final String ERROR_PROFILE_ASSUMED_ROLE_NOT_FOUND = "error.profile.assumed.role.not.found";
     public static final String ERROR_PROFILE_NAME_NOT_FOUND = "error.profile.name.not.found";
+
+    // Storage quotas
+    public static final String STORAGE_QUOTA_NFS_PERCENTAGE_QUOTA_WARN = "storage.quota.nfs.percentage.warn";
+    public static final String STORAGE_QUOTA_UNKNOWN_RESTRICTION = "storage.quota.unknown.restriction";
+    public static final String STORAGE_QUOTA_UNKNOWN_TYPE = "storage.quota.unknown.type";
+    public static final String STORAGE_QUOTA_PERCENTS_UNKNOWN_SHARE_TYPE =
+        "storage.quota.unknown.share.type.for.percentage";
+
+    // NAT configuration
+    public static final String NAT_ADDRESS_RESOLVING_EXCEPTION = "nat.gateway.address.resolving.exception";
+    public static final String NAT_ROUTE_CONFIG_TRANSFER_ROUTES_TO_KUBE = "nat.gateway.routes.transfer.to.kube";
+    public static final String NAT_ROUTE_CONFIG_ROUTE_ON_SERVICE_PORT = "nat.gateway.route.creation.route.service.port";
+    public static final String NAT_ROUTE_CONFIG_ROUTE_TRANSFER_SUMMARY = "nat.gateway.route.transfer.summary";
+    public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE_FAILED =
+        "nat.gateway.route.creation.existing.service.add.port.failed";
+    public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION = "nat.gateway.route.creation.new.service";
+    public static final String NAT_ROUTE_CONFIG_PORT_GENERATION_FAILED =
+        "nat.gateway.route.creation.port.generation.failed";
+    public static final String NAT_ROUTE_CONFIG_NEW_SERVICE_CREATION_FAILED =
+        "nat.gateway.route.creation.new.service.failed";
+    public static final String NAT_ROUTE_CONFIG_ADD_ROUTE_TO_EXISTING_SERVICE =
+        "nat.gateway.route.creation.existing.service.add.port";
+    public static final String NAT_ROUTE_CONFIG_DNS_CREATION_FAILED = "nat.gateway.route.creation.dns.config.error";
+    public static final String NAT_ROUTE_CONFIG_ERROR_EMPTY_RULE = "nat.gateway.route.creation.empty.rule";
+    public static final String NAT_ROUTE_CONFIG_FAILURE_SUMMARY = "nat.gateway.route.creation.failure.summary";
+    public static final String NAT_ROUTE_CONFIG_INVALID_MANDATORY_FIELD = "nat.gateway.route.creation.invalid.field";
+    public static final String NAT_ROUTE_CONFIG_INVALID_DESCRIPTION = "nat.gateway.route.creation.invalid.description";
+    public static final String NAT_ROUTE_CONFIG_INVALID_PROTOCOL = "nat.gateway.route.creation.invalid.protocol";
+    public static final String NAT_ROUTE_EXISTS_ALREADY = "nat.gateway.route.registration.exists.already";
+    public static final String NAT_ROUTE_CONFIG_DEPLOYMENT_REFRESH_FAILED =
+        "nat.gateway.route.creation.deploy.refresh.error";
+    public static final String NAT_ROUTE_CONFIG_PORT_FORWARDING_FAILED =
+        "nat.gateway.route.creation.port.forwarding.error";
+    public static final String NAT_ROUTE_CONFIG_PORT_ASSIGNING_FAILED =
+        "nat.gateway.route.creation.port.assigning.error";
+    public static final String NAT_ROUTE_CONFIG_CANT_FIND_CONFIG_MAP =
+        "nat.gateway.route.creation.empty.config.map.port.forwarding";
+    public static final String NAT_ROUTE_CONFIG_UNABLE_TO_RESOLVE_ADDRESS =
+        "nat.gateway.route.creation.dns.resolving.failed";
+    public static final String NAT_ROUTE_CONFIG_CANT_FIND_PORT =
+        "nat.gateway.route.creation.port.forwarding.missing.port.error";
+    public static final String NAT_ROUTE_CONFIG_KUBE_DNS_RESTART_FAILED =
+        "nat.gateway.route.creation.kube.dns.restart.error";
+    public static final String NAT_ROUTE_EXTENDING_INVALID_EXTERNAL_IP =
+        "nat.gateway.route.extending.invalid.external.ip";
+    public static final String NAT_SERVICE_CONFIG_ERROR_NO_CLUSTER_IP = "nat.gateway.service.config.no.cluster.ip";
+    public static final String NAT_SERVICE_CONFIG_GENERAL_ERROR = "nat.gateway.service.config.general.error";
+    public static final String NAT_SERVICE_CONFIG_EMPTY_ANNOTATIONS_WITH_PORTS =
+        "nat.gateway.service.config.empty.annotations.with.ports.warn";
+    public static final String NAT_ROUTE_CONFIG_WARN_UNKNOWN_STATUS_PORT =
+        "nat.gateway.route.config.port.unknown.status";
+
+    public static final String NAT_ROUTE_REMOVAL_NO_PORT_SPECIFIED = "nat.gateway.route.removal.port.not.found";
+    public static final String NAT_ROUTE_REMOVAL_DNS_MASK_REMOVAL_FAILED = "nat.gateway.route.removal.dns.failed";
+    public static final String NAT_ROUTE_REMOVAL_PORT_REMOVAL_FAILED = "nat.gateway.route.removal.service.port.failed";
+    public static final String NAT_ROUTE_REMOVAL_KEEP_DNS_MASK = "nat.gateway.route.removal.keep.dns.entry";
+    public static final String NAT_ROUTE_REMOVAL_DEPLOYMENT_REFRESH_FAILED =
+        "nat.gateway.route.removal.deploy.refresh.failed";
+    public static final String NAT_ROUTE_REMOVAL_PORT_FORWARDING_REMOVAL_FAILED =
+        "nat.gateway.route.removal.port.forwarding.failed";
+    public static final String NAT_ROUTE_REMOVAL_NO_ACTIVE_SERVICE_PORTS = "nat.gateway.route.removal.no.service.ports";
+    public static final String NAT_ROUTE_REMOVAL_SERVICE_PORT = "nat.gateway.route.removal.service.port";
+
+    // Search
+    public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_ID_MISSING =
+            "error.search.scrolling.parameter.doc.id.missing";
+    public static final String ERROR_SEARCH_SCROLLING_PARAMETER_DOC_SORT_FIELDS_MISSING =
+            "error.search.scrolling.parameter.doc.sort.fields.missing";
+
+    // Quota
+    public static final String ERROR_QUOTA_GROUP_EMPTY = "error.quota.group.empty";
+    public static final String ERROR_QUOTA_VALUE_EMPTY = "error.quota.value.empty";
+    public static final String ERROR_QUOTA_NOT_FOUND_BY_ID = "error.quota.not.found.by.id";
+    public static final String ERROR_APPLIED_QUOTA_NOT_FOUND_BY_ID = "error.applied.quota.not.found.by.id";
+    public static final String ERROR_QUOTA_GLOBAL_ALREADY_EXISTS = "error.quota.global.already.exists";
+    public static final String ERROR_QUOTA_OVERALL_ALREADY_EXISTS = "error.quota.overall.already.exists";
+    public static final String ERROR_QUOTA_ALREADY_EXISTS = "error.quota.already.exists";
+    public static final String ERROR_QUOTA_SUBJECT_EMPTY = "error.quota.subject.empty";
+    public static final String ERROR_QUOTA_TYPE_EMPTY = "error.quota.type.empty";
+    public static final String ERROR_QUOTA_ACTION_NOT_ALLOWED = "error.quota.action.not.allowed";
+    public static final String ERROR_BILLING_QUOTA_EXCEEDED_LAUNCH = "error.billing.quota.exceeded.launch";
+
+    // Launch limits
+    public static final String ERROR_RUN_LAUNCH_USER_LIMIT_EXCEEDED = "error.run.launch.user.limit.exceeded";
+
+    // Ngs preprocessing
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_ID_NOT_PROVIDED =
+            "error.ngs.preprocessing.folder.id.is.not.provided";
+    public static final String ERROR_NGS_PREPROCESSING_MACHINE_RUN_NOT_PROVIDED =
+            "error.ngs.preprocessing.machine.run.id.is.not.provided";
+    public static final String ERROR_NGS_PREPROCESSING_SAMPLESHEET_CONTENT_NOT_PROVIDED =
+            "error.ngs.preprocessing.samplesheet.content.is.not.provided";
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_HAS_NO_METADATA =
+            "error.ngs.preprocessing.folder.has.no.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_NO_MACHINE_RUN_METADATA =
+            "error.ngs.preprocessing.folder.has.no.machine.run.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_MACHINE_RUN_WRONG_METADATA_CLASS =
+            "error.ngs.preprocessing.machine.run.metadata.wrong.class";
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_METADATA =
+            "error.ngs.preprocessing.folder.should.have.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_FOLDER_SHOULD_HAVE_DATA_PATH =
+            "error.ngs.preprocessing.folder.should.have.data.path";
+    public static final String ERROR_NGS_PREPROCESSING_NO_FOLDER_METADATA =
+            "error.ngs.preprocessing.no.folder.metadata";
+    public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
+            "error.ngs.preprocessing.sampleid.is.not.found";
 
     private MessageConstants() {
         // no-op

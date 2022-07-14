@@ -199,6 +199,8 @@ class PipelineAPI:
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_METADATA = "/metadata/load"
+    SAVE_METADATA_ENTITY = "metadataEntity/save"
+    FIND_METADATA_ENTITY = "metadataEntity/loadExternal?id=%s&folderId=%d&className=%s"
     LOAD_ENTITIES_DATA = "/metadataEntity/entities"
     LOAD_DTS = "/dts"
     LOAD_CONFIGURATION = '/configuration/%d'
@@ -217,6 +219,9 @@ class PipelineAPI:
     LOAD_PROFILE_CREDENTIALS = 'cloud/credentials/generate/%d'
     LOAD_PROFILES = 'cloud/credentials'
     LOAD_CURRENT_USER = 'whoami'
+    LOAD_ROLES = 'role/loadAll?loadUsers={}'
+    LOAD_ROLE = 'role/{}'
+    RUN_CONFIGURATION = '/runConfiguration'
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -233,7 +238,7 @@ class PipelineAPI:
         self.timeout = timeout
         self.connection_timeout = connection_timeout
 
-    def check_response(self, response):
+    def check_response(self, response, not_found_msg=None):
         if response.status_code != 200:
             sys.stderr.write("API responded with status {}\n".format(str(response.status_code)))
             return False
@@ -242,11 +247,13 @@ class PipelineAPI:
             return True
         if 'message' in data:
             sys.stderr.write("API returned error message: {}\n".format(data['message']))
-            return False
+            if not_found_msg and not_found_msg in data['message']:
+                return True
+            return True
         sys.stderr.write("API responded with not expected message: {}\n".format(str(response)))
         return False
 
-    def execute_request(self, url, method='get', data=None):
+    def execute_request(self, url, method='get', data=None, not_found_msg=None):
         count = 0
         while count < self.attempts:
             count += 1
@@ -263,7 +270,7 @@ class PipelineAPI:
                                             timeout=self.connection_timeout)
                 else:
                     raise RuntimeError('Unsupported request method: {}'.format(method))
-                if self.check_response(response):
+                if self.check_response(response, not_found_msg=not_found_msg):
                     result = response.json()
                     return result['payload'] if 'payload' in result else None
             except Exception as e:
@@ -656,6 +663,25 @@ class PipelineAPI:
             raise RuntimeError("Failed to load entities data. "
                                "Error message: {}".format(str(e.message)))
 
+    def save_metadata_entity(self, entity):
+        try:
+            result = self.execute_request(str(self.api_url) + self.SAVE_METADATA_ENTITY, method='post',
+                                          data=json.dumps(entity))
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to save metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
+    def find_metadata_entity(self, folder_id, external_id, class_name):
+        try:
+            result = self.execute_request(str(self.api_url) +
+                                          self.FIND_METADATA_ENTITY % (external_id, folder_id, class_name),
+                                          method='get', not_found_msg='not found')
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to find metadata entities. "
+                               "Error message: {}".format(str(e.message)))
+
     def load_dts_registry(self):
         try:
             result = self.execute_request(str(self.api_url) + self.LOAD_DTS, method='get')
@@ -679,6 +705,18 @@ class PipelineAPI:
         except BaseException as e:
             raise RuntimeError("Failed to get system preference %s. "
                                "Error message: %s" % (preference_name, e.message))
+
+    def get_contextual_preference(self, preference_name, preference_level, resource_id):
+        try:
+            url = self.api_url \
+                  + '/contextual/preference/load?name=' +  preference_name \
+                  + '&level=' + preference_level \
+                  + '&resourceId=' + str(resource_id)
+            result = self.execute_request(url, method='get')
+            return {} if result is None else result
+        except BaseException as e:
+            raise RuntimeError("Failed to get contextual preference %s for %s level and resource id %s. "
+                               "Error message: %s" % (preference_name, preference_level, str(resource_id), e.message))
 
     def load_tool_version_settings(self, tool_id, version):
         get_tool_version_settings_url = self.TOOL_VERSION_SETTINGS % tool_id
@@ -931,3 +969,37 @@ class PipelineAPI:
             return self.execute_request(url, method='get')
         except Exception as e:
             raise RuntimeError("Failed to load current user. Error message: {}".format(str(e.message)))
+
+    def generate_user_token(self, user_name, duration=None):
+        try:
+            if duration:
+                expiration_query = '&expiration=' + str(duration)
+            url = str(self.api_url) \
+                  + '/user/token?name=' + user_name \
+                  + (expiration_query if duration else '')
+            return self.execute_request(url, method='get')
+        except Exception as e:
+            raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
+
+
+    def load_roles(self, load_users=False):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
+        except Exception as e:
+            raise RuntimeError("Failed to load roles.", "Error message: {}".format(str(e.message)))
+
+    def load_role(self, role_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE.format(role_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
+                                                                                             str(e.message)))
+
+    def run_configuration(self, data):
+        try:
+            result = self.execute_request(str(self.api_url) + self.RUN_CONFIGURATION, method='post',
+                                          data=json.dumps(data))
+            return [] if result is None else result
+        except Exception as e:
+            raise RuntimeError("Failed to launch configuration %s. "
+                               "Error message: {}".format(str(data['id']), str(e.message)))

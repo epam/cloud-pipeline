@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -135,7 +135,6 @@ public class LaunchLimitMountsTest
                 .ensureVisible(SEARCH_INPUT)
                 .ensureAll(disabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE)
                 .ensureAll(enabled, CLEAR_SELECTION, CANCEL, OK)
-                .validateFields("", "Name", "Type")
                 .storagesCountShouldBeGreaterThan(2)
                 .clearSelection()
                 .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
@@ -230,7 +229,6 @@ public class LaunchLimitMountsTest
                 .ensureVisible(SEARCH_INPUT)
                 .ensureAll(disabled, SELECT_ALL_NON_SENSITIVE)
                 .ensureAll(enabled, SELECT_ALL, CLEAR_SELECTION, CANCEL, OK)
-                .validateFields("", "Name", "Type")
                 .storagesCountShouldBeGreaterThan(2)
                 .clearSelection()
                 .ensureAll(enabled, SELECT_ALL, SELECT_ALL_NON_SENSITIVE, OK)
@@ -323,6 +321,7 @@ public class LaunchLimitMountsTest
             countObjectStorages = tools()
                     .perform(registry, group, tool, ToolTab::runWithCustomSettings)
                     .expandTab(EXEC_ENVIRONMENT)
+                    .doNotMountStoragesSelect(false)
                     .selectDataStoragesToLimitMounts()
                     .countObjectStorages();
             minRAM = tools()

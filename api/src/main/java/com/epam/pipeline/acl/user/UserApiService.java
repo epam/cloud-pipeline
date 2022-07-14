@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package com.epam.pipeline.acl.user;
 
 import com.epam.pipeline.controller.vo.PipelineUserExportVO;
 import com.epam.pipeline.controller.vo.PipelineUserVO;
+import com.epam.pipeline.dto.user.OnlineUsers;
 import com.epam.pipeline.entity.info.UserInfo;
 import com.epam.pipeline.entity.security.JwtRawToken;
 import com.epam.pipeline.entity.user.CustomControl;
@@ -26,6 +27,8 @@ import com.epam.pipeline.entity.user.ImpersonationStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.PipelineUserEvent;
 import com.epam.pipeline.entity.user.RunnerSid;
+import com.epam.pipeline.manager.quota.RunLimitsService;
+import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
@@ -34,8 +37,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_ONLY;
 import static com.epam.pipeline.security.acl.AclExpressions.ADMIN_OR_GENERAL_USER;
@@ -52,6 +57,12 @@ public class UserApiService {
 
     @Autowired
     private UserRunnersManager userRunnersManager;
+
+    @Autowired
+    private OnlineUsersService onlineUsersService;
+
+    @Autowired
+    private RunLimitsService runLimitsService;
 
     /**
      * Registers a new user
@@ -107,8 +118,8 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public PipelineUser loadUser(Long id) {
-        return userManager.loadUserById(id);
+    public PipelineUser loadUser(Long id, final boolean quotas) {
+        return userManager.loadUserById(id, quotas);
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
@@ -127,8 +138,13 @@ public class UserApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public List<PipelineUser> loadUsers() {
-        return new ArrayList<>(userManager.loadAllUsers());
+    public List<PipelineUser> loadUsers(final boolean loadQuotas) {
+        return new ArrayList<>(userManager.loadAllUsers(loadQuotas));
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    public List<PipelineUser> loadUsersWithActivityStatus(final boolean loadQuotas) {
+        return new ArrayList<>(userManager.loadUsersWithActivityStatus(loadQuotas));
     }
 
     @PreAuthorize(ADMIN_OR_GENERAL_USER + OR_USER_READER)
@@ -233,5 +249,19 @@ public class UserApiService {
 
     public ImpersonationStatus getImpersonationStatus() {
         return userManager.getImpersonationStatus();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public OnlineUsers saveCurrentlyOnlineUsers() {
+        return onlineUsersService.saveCurrentlyOnlineUsers();
+    }
+
+    @PreAuthorize(ADMIN_ONLY)
+    public boolean deleteExpiredOnlineUsers(final LocalDate date) {
+        return onlineUsersService.deleteExpired(date);
+    }
+
+    public Map<String, Integer> getCurrentUserLaunchLimits(final boolean loadAll) {
+        return runLimitsService.getCurrentUserLaunchLimits(loadAll);
     }
 }

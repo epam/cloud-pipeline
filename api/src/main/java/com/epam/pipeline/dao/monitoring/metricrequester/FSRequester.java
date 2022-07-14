@@ -21,7 +21,6 @@ import com.epam.pipeline.entity.cluster.monitoring.MonitoringStats;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -44,7 +43,7 @@ import java.util.stream.Stream;
 
 public class FSRequester extends AbstractMetricRequester {
 
-    FSRequester(final RestHighLevelClient client) {
+    FSRequester(final HeapsterElasticRestHighLevelClient client) {
         super(client);
     }
 
@@ -66,9 +65,9 @@ public class FSRequester extends AbstractMetricRequester {
                                         .from(from.toInstant(ZoneOffset.UTC).toEpochMilli())
                                         .to(to.toInstant(ZoneOffset.UTC).toEpochMilli())))
                         .size(0)
-                        .aggregation(AggregationBuilders.terms(AGGREGATION_NODE_NAME)
+                        .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_NODE_NAME))
                                 .field(path(FIELD_METRICS_TAGS, FIELD_NODENAME_RAW))
-                                .subAggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
+                                .subAggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                         .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                                         .subAggregation(average(AVG_AGGREGATION + LIMIT, LIMIT))
                                         .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE)))));
@@ -110,7 +109,7 @@ public class FSRequester extends AbstractMetricRequester {
         return request(from, to,
                 statsQuery(nodeName, NODE, from, to)
                         .size(0)
-                        .aggregation(AggregationBuilders.terms(AGGREGATION_DISK_NAME)
+                        .aggregation(ordered(AggregationBuilders.terms(AGGREGATION_DISK_NAME))
                                 .field(path(FIELD_METRICS_TAGS, RESOURCE_ID))
                                 .subAggregation(dateHistogram(DISKS_HISTOGRAM, interval)
                                         .subAggregation(average(AVG_AGGREGATION + USAGE, USAGE))

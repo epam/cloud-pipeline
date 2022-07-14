@@ -60,14 +60,6 @@
   padding: 5px;
 }
 
-.commit:nth-child(even) {
-  background-color: #f6f6f6;
-}
-
-.commit.disabled {
-  background-color: #f6f6f6;
-}
-
 .commit .info {
   display: flex;
   flex-direction: column;
@@ -84,8 +76,12 @@
   line-height: 1;
 }
 
-.commit .diff {
+.commit .commit-controls {
   float: right;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .commit .line > * {
@@ -100,22 +96,12 @@
   display: inline-block;
 }
 
-.commit .message {
-}
-
 .commit .sha {
   font-family: monospace;
   white-space: nowrap;
 }
 
-.commit .accent {
-  color: #222;
-}
-
-.commit .date {}
-
 .diff-content .empty-content {
   font-style: italic;
-  color: #999;
   padding: 5px;
 }

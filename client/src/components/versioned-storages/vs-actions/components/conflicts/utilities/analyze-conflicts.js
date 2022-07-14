@@ -16,7 +16,7 @@
 
 import {BinaryConflictedFile, ConflictedFile} from './conflicted-file';
 import {HeadBranch, RemoteBranch, Merged} from './conflicted-file/branches';
-import readBlobContents from './read-blob-contents';
+import readBlobContents from '../../../../../../utils/read-blob-contents';
 import extractRemoteSHA from './extract-remote-sha-from-conflict';
 import prepareChanges from './changes/prepare';
 import VSFileContent from '../../../../../../models/versioned-storage/file-content';

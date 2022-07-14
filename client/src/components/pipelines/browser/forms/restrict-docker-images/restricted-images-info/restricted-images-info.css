@@ -32,11 +32,6 @@
   flex-wrap: nowrap;
 }
 
-.popover-icon {
-  font-size: larger;
-  color: #f5222d;
-}
-
 .tool-row {
   display: inline-flex;
   flex-direction: row;
@@ -49,4 +44,9 @@
 .tool-name {
   font-weight: bold;
   margin-right: 8px;
+}
+
+.title {
+  margin: 5px 0;
+  padding: 2px 0;
 }

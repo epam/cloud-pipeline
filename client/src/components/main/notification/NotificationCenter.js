@@ -21,16 +21,22 @@ import {computed} from 'mobx';
 import SystemNotification from './SystemNotification';
 import {message, Modal, Button, Row, Icon} from 'antd';
 import moment from 'moment-timezone';
-import NotificationView from '../../special/notifications/controls/NotificationView';
 import ConfirmNotification from '../../../models/notifications/ConfirmNotification';
 import styles from './SystemNotification.css';
+import Markdown from '../../special/markdown';
+
+const PredefinedNotifications = {
+  MaintenanceMode: -1
+};
+
+export {PredefinedNotifications};
 
 @inject(({notifications}) => ({
   notifications
 }))
+@inject('preferences')
 @observer
 export default class NotificationCenter extends React.Component {
-
   static propTypes = {
     delaySeconds: PropTypes.number
   };
@@ -46,7 +52,7 @@ export default class NotificationCenter extends React.Component {
     if (!this.props.notifications.loaded || !this.state.initialized) {
       return [];
     }
-    return (this.props.notifications.value || []).sort((a, b) => {
+    let sortedNotifications = (this.props.notifications.value || []).sort((a, b) => {
       const dateA = moment.utc(a.createdDate);
       const dateB = moment.utc(b.createdDate);
       if (dateA > dateB) {
@@ -56,6 +62,19 @@ export default class NotificationCenter extends React.Component {
       }
       return 0;
     });
+    const {systemMaintenanceMode, systemMaintenanceModeBanner} = this.props.preferences;
+    if (systemMaintenanceMode && systemMaintenanceModeBanner) {
+      sortedNotifications.unshift({
+        blocking: false,
+        body: systemMaintenanceModeBanner,
+        createdDate: '',
+        notificationId: PredefinedNotifications.MaintenanceMode,
+        severity: 'INFO',
+        state: 'ACTIVE',
+        title: 'Maintenance mode'
+      });
+    }
+    return sortedNotifications;
   }
 
   @computed
@@ -196,19 +215,19 @@ export default class NotificationCenter extends React.Component {
       case 'INFO':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-setting-info"
             type="info-circle-o" />
         );
       case 'WARNING':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-setting-warning"
             type="exclamation-circle-o" />
         );
       case 'CRITICAL':
         return (
           <Icon
-            className={styles[notification.severity.toLowerCase()]}
+            className="cp-setting-critical"
             type="close-circle-o" />
         );
       default: return undefined;
@@ -235,8 +254,8 @@ export default class NotificationCenter extends React.Component {
                   onHeightInitialized={this.onHeightInitialized}
                   key={notification.notificationId}
                   notification={notification} />
-            );
-          })
+              );
+            })
         }
         <Modal
           title={
@@ -246,12 +265,15 @@ export default class NotificationCenter extends React.Component {
                   {this.renderSeverityIcon(blockingNotification)}
                   {blockingNotification.title}
                 </Row>
-            )
+              )
               : null}
           closable={false}
           footer={
             <Row type="flex" justify="end">
-              <Button type="primary" onClick={() => this.onCloseBlockingNotification(blockingNotification)}>
+              <Button
+                type="primary"
+                onClick={() => this.onCloseBlockingNotification(blockingNotification)}
+              >
                 CONFIRM
               </Button>
             </Row>
@@ -259,8 +281,8 @@ export default class NotificationCenter extends React.Component {
           visible={!!blockingNotification}>
           {
             blockingNotification ? (
-              <NotificationView
-                text={blockingNotification.body}
+              <Markdown
+                md={blockingNotification.body}
               />
             ) : null
           }

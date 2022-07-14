@@ -16,9 +16,17 @@
 
 package com.epam.pipeline.manager.notification;
 
-import com.epam.pipeline.entity.notification.NotificationType;
-import static com.epam.pipeline.entity.notification.NotificationType.*;
+import static com.epam.pipeline.entity.notification.NotificationType.HIGH_CONSUMED_RESOURCES;
+import static com.epam.pipeline.entity.notification.NotificationType.IDLE_RUN;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_PAUSED_STOPPED;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_RUNNING;
+import static com.epam.pipeline.entity.notification.NotificationType.LONG_STATUS;
+import static com.epam.pipeline.entity.notification.NotificationType.NEW_ISSUE;
+import static com.epam.pipeline.entity.notification.NotificationType.NEW_ISSUE_COMMENT;
 import static com.epam.pipeline.util.CustomAssertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,20 +35,28 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.epam.pipeline.controller.vo.notification.NotificationMessageVO;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.entity.cluster.monitoring.ELKUsageMetric;
 import com.epam.pipeline.entity.configuration.PipelineConfiguration;
+import com.epam.pipeline.entity.notification.NotificationMessage;
+import com.epam.pipeline.entity.notification.filter.NotificationFilter;
+import com.epam.pipeline.entity.notification.filter.NotificationFilterOperator;
+import com.epam.pipeline.entity.notification.NotificationSettings;
+import com.epam.pipeline.entity.notification.NotificationTemplate;
+import com.epam.pipeline.entity.notification.NotificationType;
 import com.epam.pipeline.entity.pipeline.CommitStatus;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
-import com.epam.pipeline.entity.preference.Preference;
+import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
 import com.epam.pipeline.entity.region.CloudProvider;
 import com.epam.pipeline.manager.execution.EnvVarsBuilder;
 import com.epam.pipeline.manager.execution.EnvVarsBuilderTest;
@@ -60,6 +76,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,9 +92,6 @@ import com.epam.pipeline.dao.user.UserDao;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.issue.Issue;
 import com.epam.pipeline.entity.issue.IssueComment;
-import com.epam.pipeline.entity.notification.NotificationMessage;
-import com.epam.pipeline.entity.notification.NotificationSettings;
-import com.epam.pipeline.entity.notification.NotificationTemplate;
 import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -113,6 +127,11 @@ public class NotificationManagerTest extends AbstractManagerTest {
     private static final Duration LONG_RUNNING_DURATION = Duration.standardMinutes(6);
     private static final Long LONG_PAUSED_SECONDS = 10L;
     private static final String TEST_PLATFORM = "linux";
+    private static final String EXCLUDE_PARAM_VALUE = "equalPramValue";
+    private static final String EQUAL_PARAM_NAME = "equalParamName";
+    private static final String NOT_EQUAL_PARAM_NAME = "notEqualParamName";
+    private static final String INCLUDE_PARAM_VALUE = "includeParamValue";
+    private static final String INCLUDE_PARAM_NAME = "includeParamName";
 
     @Autowired
     private NotificationManager notificationManager;
@@ -147,7 +166,7 @@ public class NotificationManagerTest extends AbstractManagerTest {
     @Autowired
     private IssueDao issueDao;
 
-    @Autowired
+    @SpyBean
     private PreferenceManager preferenceManager;
 
     private PipelineRun longRunnging;
@@ -633,10 +652,8 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
     @Test
     public void shouldNotNotifyIfInstanceTypeShouldExcluded() {
-        final Preference preference = new Preference();
-        preference.setName(SystemPreferences.SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES.getKey());
-        preference.setValue("r5.*,m5.large");
-        preferenceManager.update(Collections.singletonList(preference));
+        doReturn("r5.*,m5.large")
+                .when(preferenceManager).getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXCLUDE_INSTANCE_TYPES);
 
         final LocalDateTime statusUpdateTime = DateUtils.nowUTC().minusSeconds(LONG_PAUSED_SECONDS);
         final PipelineRun pausedRunToExclude1 = buildPausedRunWithNodeType(statusUpdateTime, "m5.large");
@@ -650,6 +667,42 @@ public class NotificationManagerTest extends AbstractManagerTest {
 
         Assert.assertEquals(1, filtered.size());
         Assert.assertEquals(pausedRunToInclude.getId(), filtered.get(0).getId());
+    }
+
+    @Test
+    public void shouldNotNotifyIfRunParametersExcludeMatch() {
+        final NotificationFilter equalFilterParam = NotificationFilter.builder()
+                .operator(NotificationFilterOperator.EQUAL)
+                .value(EXCLUDE_PARAM_VALUE)
+                .build();
+        final NotificationFilter notEqualFilterParam = NotificationFilter.builder()
+                .operator(NotificationFilterOperator.NOT_EQUAL)
+                .value(INCLUDE_PARAM_VALUE)
+                .build();
+        final Map<String, NotificationFilter> filters = new HashMap<>();
+        filters.put(EQUAL_PARAM_NAME, equalFilterParam);
+        filters.put(NOT_EQUAL_PARAM_NAME, notEqualFilterParam);
+        doReturn(filters).when(preferenceManager).getPreference(SystemPreferences.SYSTEM_NOTIFICATIONS_EXCLUDE_PARAMS);
+
+        final LocalDateTime statusUpdateTime = DateUtils.nowUTC().minusSeconds(LONG_PAUSED_SECONDS);
+        final PipelineRun pausedRunToExclude1 = buildPausedRunWithParameters(
+                statusUpdateTime, EQUAL_PARAM_NAME, EXCLUDE_PARAM_VALUE);
+        final PipelineRun pausedRunToExclude2 = buildPausedRunWithParameters(
+                statusUpdateTime, NOT_EQUAL_PARAM_NAME, EXCLUDE_PARAM_VALUE);
+        final PipelineRun pausedRunToInclude1 = buildPausedRunWithParameters(
+                statusUpdateTime, NOT_EQUAL_PARAM_NAME, INCLUDE_PARAM_VALUE);
+        final PipelineRun pausedRunToInclude2 = buildPausedRunWithParameters(
+                statusUpdateTime, INCLUDE_PARAM_NAME, INCLUDE_PARAM_VALUE);
+
+        final List<PipelineRun> filtered = notificationManager.notifyLongPausedRunsBeforeStop(Arrays.asList(
+                pausedRunToExclude1,
+                pausedRunToExclude2,
+                pausedRunToInclude1,
+                pausedRunToInclude2));
+
+        assertThat(filtered).hasSize(2);
+        assertThat(filtered.stream().map(PipelineRun::getId).collect(Collectors.toList()))
+                .contains(pausedRunToInclude1.getId(), pausedRunToInclude2.getId());
     }
 
     private PipelineRun buildPausedRun(final LocalDateTime statusUpdateTime) {
@@ -668,6 +721,15 @@ public class NotificationManagerTest extends AbstractManagerTest {
         final RunInstance instance = buildRunInstance();
         instance.setNodeType(nodeType);
         pausedRun.setInstance(instance);
+        return pausedRun;
+    }
+
+    private PipelineRun buildPausedRunWithParameters(final LocalDateTime statusUpdateTime, final String parameterName,
+                                                     final String parameterValue) {
+        final PipelineRunParameter parameter = new PipelineRunParameter(parameterName, parameterValue);
+        final PipelineRunParameter anotherParameter = new PipelineRunParameter("name", "value");
+        final PipelineRun pausedRun = buildPausedRun(statusUpdateTime);
+        pausedRun.setPipelineRunParameters(Arrays.asList(parameter, anotherParameter));
         return pausedRun;
     }
 

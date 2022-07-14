@@ -22,6 +22,8 @@ ARG BASE_IMAGE="nvidia/cuda:9.0-runtime-ubuntu18.04"
 FROM ${BASE_IMAGE}
 WORKDIR /
 
+RUN rm -f /etc/apt/sources.list.d/*
+
 RUN apt-get update -y && \
     apt-get install -y wget \
                    curl \

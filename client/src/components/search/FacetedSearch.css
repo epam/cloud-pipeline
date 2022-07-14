@@ -32,6 +32,11 @@
   padding: 5px;
 }
 
+.clear-query {
+  cursor: pointer;
+  font-size: smaller;
+}
+
 .container .content {
   flex: 1;
   display: block;
@@ -76,12 +81,12 @@
 }
 
 .container .actions > * {
-  border-right: 1px solid #ccc;
   padding-right: 5px;
 }
 
 .container .actions .toggle-presentation-mode {
   height: 100%;
+  padding-top: 2px;
 }
 
 .container .actions .pagination {
@@ -100,18 +105,33 @@
   position: sticky;
   top: 0;
   left: calc(100% - 74px);
-  padding: 2px 5px;
+  padding: 0 5px;
   border-radius: 3px;
   height: 20px;
-  background: #1890ff;
-  color: white;
   z-index: 2;
   margin-bottom: -20px;
   width: 74px;
   cursor: pointer;
   transition: transform 0.2s ease;
+  line-height: 20px;
 }
 
 .container .clear-filters-btn.disabled {
   transform: translateY(-22px);
+}
+
+.sorting-controls-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 3px;
+}
+
+.sorting-btn {
+  padding: 0 5px;
+  margin: 1px;
+}
+
+.remove-sorting-btn {
+  margin-left: 5px;
 }

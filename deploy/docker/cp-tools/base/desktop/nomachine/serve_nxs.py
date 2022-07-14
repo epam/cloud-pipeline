@@ -82,12 +82,3 @@ parser.add_argument('--template-path', default='/etc/nomachine/template.nxs')
 
 args = parser.parse_args()
 start(args.local_port, args.nomachine_port, args.proxy, args.proxy_port, args.template_path)
-
-# python serve_nxs.py --local-port 5001 --nomachine-port 4000 --proxy 52.28.183.64 --proxy-port 3182
-
-#  <option key="HTTP proxy host" value="{CP_PROXY}" />
-#   <option key="HTTP proxy port" value="{CP_PROXY_PORT}" />
-#   <option key="NoMachine daemon port" value="{CP_HOST_PORT}" />
-#   <option key="Server host" value="{CP_HOST}" />
-#    <option key="Auth" value="{CP_PASSWORD}" />
-#   <option key="User" value="{CP_USERNAME}" />

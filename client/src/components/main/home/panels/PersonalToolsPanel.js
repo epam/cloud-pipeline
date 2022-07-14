@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,16 @@ import {
 } from '../../../runs/actions';
 import {autoScaledClusterEnabled} from '../../../pipelines/launch/form/utilities/launch-cluster';
 import {CP_CAP_LIMIT_MOUNTS} from '../../../pipelines/launch/form/utilities/parameters';
+import AllowedInstancesCountWarning from
+  '../../../pipelines/launch/form/utilities/allowed-instances-count-warning';
+import RunName from '../../../runs/run-name';
 import {filterNFSStorages} from '../../../pipelines/launch/dialogs/AvailableStoragesBrowser';
 import CardsPanel from './components/CardsPanel';
 import {getDisplayOnlyFavourites} from '../utils/favourites';
 import styles from './Panel.css';
 import HiddenObjects from '../../../../utils/hidden-objects';
 import PlatformIcon from '../../../tools/platform-icon';
+import {withCurrentUserAttributes} from '../../../../utils/current-user-attributes';
 
 const findGroupByNameSelector = (name) => (group) => {
   return group.name.toLowerCase() === name.toLowerCase();
@@ -70,6 +74,7 @@ const findGroupByName = (groups, name) => {
 )
 @HiddenObjects.injectToolsFilters
 @runPipelineActions
+@withCurrentUserAttributes()
 @observer
 export default class PersonalToolsPanel extends React.Component {
 
@@ -232,6 +237,9 @@ export default class PersonalToolsPanel extends React.Component {
         delete payload.params[CP_CAP_LIMIT_MOUNTS];
       }
     }
+    if (this.state.runToolInfo.runNameAlias) {
+      payload.runNameAlias = this.state.runToolInfo.runNameAlias;
+    }
     if (await run(this)(payload, false)) {
       this.setState({
         runToolInfo: null
@@ -272,6 +280,7 @@ export default class PersonalToolsPanel extends React.Component {
     const toolSettings = new LoadToolVersionSettings(tool.id);
     await toolSettings.fetch();
     await this.props.dockerRegistries.fetchIfNeededOrWait();
+    await this.props.currentUserAttributes.refresh();
     const registry = this.registries
       .find(r => r.id === tool.registryId);
     if (toolRequest.error) {
@@ -364,17 +373,22 @@ export default class PersonalToolsPanel extends React.Component {
         const version = defaultTag;
         const prepareParameters = (parameters) => {
           const result = {};
-          for (let key in parameters) {
-            if (parameters.hasOwnProperty(key)) {
-              result[key] = {
-                type: parameters[key].type,
-                value: parameters[key].value,
-                required: parameters[key].required,
-                defaultValue: parameters[key].defaultValue
-              };
+          if (parameters) {
+            for (let key in parameters) {
+              if (parameters.hasOwnProperty(key)) {
+                result[key] = {
+                  type: parameters[key].type,
+                  value: parameters[key].value,
+                  required: parameters[key].required,
+                  defaultValue: parameters[key].defaultValue
+                };
+              }
             }
           }
-          return result;
+          return this.props.currentUserAttributes.extendLaunchParameters(
+            result,
+            toolValue.allowSensitive
+          );
         };
         const cloudRegionIdValue = parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
           ? versionSettingValue('cloudRegionId')
@@ -421,9 +435,7 @@ export default class PersonalToolsPanel extends React.Component {
           dockerImage: tool.registry
             ? `${tool.registry.path}/${toolValue.image}${version ? `:${version}` : ''}`
             : `${toolValue.image}${version ? `:${version}` : ''}`,
-          params: parameterIsNotEmpty(versionSettingValue('parameters'))
-            ? prepareParameters(versionSettingValue('parameters'))
-            : {},
+          params: prepareParameters(versionSettingValue('parameters')),
           isSpot: parameterIsNotEmpty(versionSettingValue('is_spot'))
             ? versionSettingValue('is_spot')
             : this.props.preferences.useSpot,
@@ -704,6 +716,16 @@ export default class PersonalToolsPanel extends React.Component {
     }
   };
 
+  onChangeRunNameAlias = (alias) => {
+    if (this.state.runToolInfo) {
+      const runToolInfo = this.state.runToolInfo;
+      runToolInfo.runNameAlias = alias;
+      this.setState({
+        runToolInfo
+      });
+    }
+  };
+
   render () {
     if (!this.props.dockerRegistries.loaded && this.props.dockerRegistries.pending) {
       return <LoadingView />;
@@ -717,15 +739,35 @@ export default class PersonalToolsPanel extends React.Component {
     if (this.props.authenticatedUserInfo.error) {
       return (<Alert type="warning" message={this.props.authenticatedUserInfo.error} />);
     }
+    let toolImage;
+    let toolVersion;
+    if (this.state.runToolInfo) {
+      const fullImageInfo = (this.state.runToolInfo.payload.dockerImage || '')
+        .split('/')
+        .pop();
+      const [, version] = fullImageInfo.split(':');
+      toolImage = this.state.runToolInfo.image;
+      toolVersion = version;
+    }
+    const modalTitle = (
+      <div style={{display: 'flex', lineHeight: '32px'}}>
+        <span>Run</span>
+        <RunName
+          style={{fontWeight: 'bold'}}
+          alias={this.state.runToolInfo ? this.state.runToolInfo.runNameAlias : undefined}
+          onChange={this.onChangeRunNameAlias}
+          editable
+        >
+          {toolImage && toolVersion ? `${toolImage}:${toolVersion}` : false}
+        </RunName>
+        <span>with default settings?</span>
+      </div>
+    );
     return (
       <div className={styles.container} style={{display: 'flex', flexDirection: 'column'}}>
         {this.renderContent()}
         <Modal
-          title={
-            this.state.runToolInfo && this.state.runToolInfo.warning
-              ? `Run ${this.state.runToolInfo ? this.state.runToolInfo.image : undefined} with default settings?`
-              : false
-          }
+          title={modalTitle}
           visible={!!this.state.runToolInfo}
           onCancel={this.cancelRunTool}
           width="50%"
@@ -757,12 +799,10 @@ export default class PersonalToolsPanel extends React.Component {
               </Col>
             </Row>
           }>
-          {
-            this.state.runToolInfo && !this.state.runToolInfo.warning &&
-            <span style={{fontWeight: 'bold', margin: '20px 0px'}}>
-              Run {this.state.runToolInfo ? this.state.runToolInfo.image: ''} with default settings?
-            </span>
-          }
+          <AllowedInstancesCountWarning
+            payload={(this.state.runToolInfo || {}).payload}
+            style={{margin: '2px'}}
+          />
           {
             this.state.runToolInfo &&
               <RunConfirmation
