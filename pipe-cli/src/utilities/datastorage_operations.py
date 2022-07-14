@@ -27,14 +27,16 @@ from operator import itemgetter
 from src.api.data_storage import DataStorage
 from src.api.folder import Folder
 from src.api.metadata import Metadata
+from src.api.preferenceapi import PreferenceAPI
 from src.model.data_storage_wrapper import DataStorageWrapper, S3BucketWrapper
 from src.model.data_storage_wrapper_type import WrapperType
+from src.model.tags_map import TagsMap
 from src.utilities.du import DataUsageHelper
 from src.utilities.du_format_type import DuFormatType
 from src.utilities.encoding_utilities import to_string, is_safe_chars, to_ascii
 from src.utilities.hidden_object_manager import HiddenObjectManager
 from src.utilities.patterns import PatternMatcher
-from src.utilities.storage.common import TransferResult
+from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
@@ -58,8 +60,8 @@ class AllowedFailuresValues(object):
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, file_list, symlinks, threads,
-           io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, tags_map_file,
+           file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
            clean=False, skip_existing=False, verify_destination=False):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
         destination_wrapper = DataStorageWrapper.get_wrapper(destination)
@@ -118,12 +120,15 @@ class DataStorageOperations(object):
         items = cls._filter_items(items, manager, source_wrapper, destination_wrapper, permission_to_check,
                                   include, exclude, force, quiet, skip_existing, verify_destination,
                                   on_unsafe_chars, on_unsafe_chars_replacement)
+
+        tags_map = TagsMap.read_tags_map(tags_map_file, PreferenceAPI.get_preference("storage.object.tags.schema"))
+
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
-                                             clean, quiet, tags, io_threads, on_failures)
+                                             clean, quiet, tags, tags_map, io_threads, on_failures)
         else:
             cls._transfer_items(items, manager, source_wrapper, destination_wrapper,
-                                clean, quiet, tags, io_threads, on_failures)
+                                clean, quiet, tags, tags_map, io_threads, on_failures)
 
     @classmethod
     def _filter_items(cls, items, manager, source_wrapper, destination_wrapper, permission_to_check,
@@ -581,7 +586,7 @@ class DataStorageOperations(object):
 
     @classmethod
     def _multiprocess_transfer_items(cls, sorted_items, threads, manager, source_wrapper, destination_wrapper, clean,
-                                     quiet, tags, io_threads, on_failures):
+                                     quiet, tags, tags_map, io_threads, on_failures):
         size_index = 3
         sorted_items.sort(key=itemgetter(size_index), reverse=True)
         splitted_items = cls._split_items_by_process(sorted_items, threads)
@@ -597,6 +602,7 @@ class DataStorageOperations(object):
                                                     clean,
                                                     quiet,
                                                     tags,
+                                                    tags_map,
                                                     io_threads,
                                                     on_failures,
                                                     lock))
@@ -605,15 +611,27 @@ class DataStorageOperations(object):
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, io_threads,
-                        on_failures, lock=None):
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, tags_map,
+                        io_threads, on_failures, lock=None):
+
+        def __merge_tags(_tags_from_cli, _tags_from_tags_map=None):
+            result = StorageOperations.parse_tags(_tags_from_tags_map if _tags_from_tags_map else [])
+            parse_tags = StorageOperations.parse_tags(_tags_from_cli)
+            for key, value in parse_tags.items():
+                if key in result:
+                    logging.warn("Tag with key '{}' and value '{}' will be updated with value '{}', "
+                                 "as it was provided with --tags option".format(key, result[key], value))
+                    result[key] = value
+            return ["{}={}".format(key, value) for key, value in result.items()]
+
         transfer_results = []
         fail_after_exception = None
         for item in items:
+            effective_tags = __merge_tags(tags, tags_map.find_tags(item))
             transfer_results, fail_after_exception = cls._transfer_item(item, manager,
                                                                         source_wrapper, destination_wrapper,
                                                                         transfer_results,
-                                                                        clean, quiet, tags, io_threads,
+                                                                        clean, quiet, effective_tags, io_threads,
                                                                         on_failures, lock)
         if not destination_wrapper.is_local():
             cls._flush_transfer_results(source_wrapper, destination_wrapper,

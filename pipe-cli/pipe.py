@@ -1133,6 +1133,11 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be moved. This file "
                                                         "should be tab delimited and consist of two columns: "
                                                         "relative path to a file and size")
+@click.option('-tm', '--tags-map', required=False, help="Path to file that contains 'tags map' - json-like "
+                                                        "structured file describes how files should be tagged "
+                                                        "while copying. Basically it has format of an array of object "
+                                                        "with two fields: mask - file name mask to match, tags - string with tags "
+                                                        "in format 'key1=value1;key2=value2'")
 @click.option('-sl', '--symlinks', required=False, default='follow',
               type=click.Choice(['follow', 'filter', 'skip']),
               help='Describe symlinks processing strategy for local sources. '
@@ -1171,14 +1176,14 @@ def storage_remove_item(path, yes, version, hard_delete, recursive, exclude, inc
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
-def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, file_list,
-                      symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
-                      verify_destination):
+def storage_move_item(source, destination, recursive, force, exclude, include, quiet, skip_existing, tags, tags_map,
+                      file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement,
+                      on_failures, verify_destination):
     """
     Moves files/directories between data storages or between a local filesystem and a data storage.
     """
-    DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
-                             symlinks, threads, io_threads,
+    DataStorageOperations.cp(source, destination, recursive, force, exclude, include, quiet, tags, tags_map,
+                             file_list, symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
                              clean=True, skip_existing=skip_existing, verify_destination=verify_destination)
 
@@ -1197,6 +1202,11 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
                                                                   "as single KEY=VALUE pair or a list of them. "
                                                                   "If --tags option specified all existent tags will "
                                                                   "be overwritten.")
+@click.option('-tm', '--tags-map', required=False, help="Path to file that contains 'tags map' - json-like "
+                                                        "structured file describes how files should be tagged "
+                                                        "while copying. Basically it has format of an array of object "
+                                                        "with two fields: mask - file name mask to match, tags - string with tags "
+                                                        "in format 'key1=value1;key2=value2'")
 @click.option('-l', '--file-list', required=False, help="Path to the file with file paths that should be copied. This file "
                                                         "should be tab delimited and consist of two columns: "
                                                         "relative path to a file and size")
@@ -1240,14 +1250,14 @@ def storage_move_item(source, destination, recursive, force, exclude, include, q
 @click.option('-vd', '--verify-destination', is_flag=True, required=False,
               help=STORAGE_VERIFY_DESTINATION_OPTION_DESCRIPTION)
 @common_options
-def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, file_list,
+def storage_copy_item(source, destination, recursive, force, exclude, include, quiet, tags, tags_map, file_list,
                       symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
                       skip_existing, verify_destination):
     """
     Copies files/directories between data storages or between a local filesystem and a data storage.
     """
     DataStorageOperations.cp(source, destination, recursive, force,
-                             exclude, include, quiet, tags, file_list, symlinks, threads, io_threads,
+                             exclude, include, quiet, tags, tags_map, file_list, symlinks, threads, io_threads,
                              on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
                              clean=False, skip_existing=skip_existing, verify_destination=verify_destination)
 
