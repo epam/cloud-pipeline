@@ -21,6 +21,7 @@ import sys
 from abc import ABC, abstractmethod
 
 from autoscaler.cluster.provider import NodeProvider
+from autoscaler.config import AutoscalingConfiguration
 from autoscaler.model import Condition
 
 
@@ -161,7 +162,8 @@ class TargetReplicasPerTargetNodesCoefficientTrigger(CoefficientTrigger):
 
 class NodeConditionTrigger(AutoscalingTrigger):
 
-    def __init__(self, node_provider, condition, condition_name, condition_target):
+    def __init__(self, configuration, node_provider, condition, condition_name, condition_target):
+        self._configuration: AutoscalingConfiguration = configuration
         self._node_provider: NodeProvider = node_provider
         self._condition: Condition = condition
         self._condition_name: str = condition_name
@@ -196,21 +198,21 @@ class NodeConditionTrigger(AutoscalingTrigger):
 class NodeDiskPressureTrigger(NodeConditionTrigger):
 
     def __init__(self, configuration, node_provider):
-        super().__init__(node_provider, Condition.DISK_PRESSURE, 'disk pressured nodes',
+        super().__init__(configuration, node_provider, Condition.DISK_PRESSURE, 'disk pressured nodes',
                          configuration.trigger.disk_pressured_nodes)
 
 
 class NodeMemoryPressureTrigger(NodeConditionTrigger):
 
     def __init__(self, configuration, node_provider):
-        super().__init__(node_provider, Condition.MEMORY_PRESSURE, 'memory pressured nodes',
+        super().__init__(configuration, node_provider, Condition.MEMORY_PRESSURE, 'memory pressured nodes',
                          configuration.trigger.memory_pressured_nodes)
 
 
 class NodePidPressureTrigger(NodeConditionTrigger):
 
     def __init__(self, configuration, node_provider):
-        super().__init__(node_provider, Condition.PID_PRESSURE, 'pid pressured nodes',
+        super().__init__(configuration, node_provider, Condition.PID_PRESSURE, 'pid pressured nodes',
                          configuration.trigger.pid_pressured_nodes)
 
 
