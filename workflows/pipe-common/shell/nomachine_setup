@@ -19,19 +19,6 @@ CP_NM_WAIT_TIMEOUT="${CP_NM_WAIT_TIMEOUT:-10}"
 export CP_NM_NOMACHINE_PORT="${CP_NM_NOMACHINE_PORT:-4000}"
 export CP_NM_LOCAL_PORT="${CP_NM_LOCAL_PORT:-8089}"
 
-# Check if required proxy settings are correct
-export CP_NM_PROXY_HOST="${CP_NM_PROXY_HOST:-$(echo $CP_CAP_NM_PROXY_HOST)}"
-if [ -z $CP_NM_PROXY_HOST ]; then
-    pipe_log_fail "NoMachine proxy host is not set (CP_NM_PROXY_HOST). Exiting..." "$NOMACHINE_INSTALL_TASK"
-    exit 1
-fi
-
-export CP_NM_PROXY_PORT="${CP_NM_PROXY_PORT:-$(echo $CP_CAP_NM_PROXY_PORT)}"
-if [ -z $CP_NM_PROXY_PORT ]; then
-    pipe_log_fail "NoMachine proxy port is not set (CP_NM_PROXY_PORT). Exiting..." "$NOMACHINE_INSTALL_TASK"
-    exit 1
-fi
-
 function install_prerequisites {
   if [[ "$IS_RPM_BASED" = 0 ]]; then
     yum install -y -q lsof wget
@@ -159,6 +146,43 @@ function install_nm_extras {
   rm -f /tmp/create_chrome_launcher.sh
 }
 
+function run_nomachine() {
+    su -l "$OWNER" bash -c "cp -rT /etc/nomachine/xfce/ \$HOME/"
+
+    mkdir -p /home/${OWNER}/Desktop
+    chown ${OWNER} /home/${OWNER}/Desktop
+    chmod o+rwx /home/${OWNER}/Desktop
+
+    \cp /usr/NX/etc/server.cfg.template /usr/NX/etc/server.cfg
+
+    sed -i '/#CreateDisplay/c\CreateDisplay 1' /usr/NX/etc/server.cfg
+    sed -i "/#DisplayOwner/c\DisplayOwner $OWNER" /usr/NX/etc/server.cfg
+
+    sed -i '/#UserScriptAfterSessionStart/c\UserScriptAfterSessionStart "/etc/nomachine/set_xkb.sh"' /usr/NX/etc/node.cfg
+
+    cat >/etc/nomachine/set_xkb.sh <<'EOL'
+#!/bin/sh
+DISPLAY=:1001.0
+XAUTHORITY=/home/$2/.Xauthority /usr/bin/setxkbmap -model pc105 -layout us,fr,de -option grp:ctrl_shift_toggle -display $DISPLAY
+EOL
+    chmod +x /etc/nomachine/set_xkb.sh
+
+    CP_VNC_CAPS_FILE="/caps.sh"
+    if [ -f $CP_VNC_CAPS_FILE ]; then
+        chmod +x $CP_VNC_CAPS_FILE
+        bash -c $CP_VNC_CAPS_FILE
+        rm -f $CP_VNC_CAPS_FILE
+    fi
+
+    nohup "${CP_PYTHON2_PATH}" "${COMMON_REPO_DIR}/scripts/serve_desktop.py" \
+        --serving-port "${CP_NM_LOCAL_PORT}" \
+        --desktop-port "${CP_NM_NOMACHINE_PORT}" \
+        --template-path "${COMMON_REPO_DIR}/resources/linux/template.nxs" \
+        >"/var/log/nomachine_desktop.log" 2>&1 &
+    /etc/NX/nxserver --startup
+    tail -f /usr/NX/var/log/nxserver.log
+}
+
 /usr/bin/rpm -q -f /usr/bin/rpm >/dev/null 2>&1
 IS_RPM_BASED=$?
 
@@ -231,7 +255,7 @@ else
 fi
 
 NOMACHINE_EXECUTION_LOG="/var/log/nomachine_execution.log"
-bash /etc/nomachine/nomachine_launcher.sh > $NOMACHINE_EXECUTION_LOG 2>&1 &
+run_nomachine > $NOMACHINE_EXECUTION_LOG 2>&1 &
 if [ $? -ne 0 ]; then
     pipe_log_fail "Failed to start NoMachine, details are available in $NOMACHINE_EXECUTION_LOG" "$NOMACHINE_INSTALL_TASK"
     exit 1
