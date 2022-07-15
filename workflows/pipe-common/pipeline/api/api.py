@@ -1003,3 +1003,9 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to launch configuration %s. "
                                "Error message: {}".format(str(data['id']), str(e.message)))
+
+    def get_edge_external_url(self, region=None):
+        endpoint = 'cluster/edge/externalUrl'
+        if region:
+            endpoint += '?region=' + region
+        return self._request('GET', endpoint)
