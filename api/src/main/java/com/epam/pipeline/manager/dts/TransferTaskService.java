@@ -20,11 +20,14 @@ import com.epam.pipeline.controller.vo.dts.TransferTask;
 import com.epam.pipeline.controller.vo.dts.TransferTaskFilter;
 import com.epam.pipeline.entity.dts.TransferTaskEntity;
 import com.epam.pipeline.mapper.dts.TransferTaskMapper;
-import com.epam.pipeline.repository.dts.TaskRepository;
+import com.epam.pipeline.repository.dts.TransferTaskRepository;
+import com.epam.pipeline.repository.dts.TransferTaskSpecification;
 import com.epam.pipeline.utils.CommonUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -36,7 +39,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class TransferTaskService {
-    private final TaskRepository taskRepository;
+    private final TransferTaskRepository taskRepository;
     private final TransferTaskMapper taskMapper;
 
     @Transactional
@@ -52,13 +55,9 @@ public class TransferTaskService {
                 .collect(Collectors.toList());
     }
 
-    public void deleteTask(final Long id) {
-        loadTask(id);
-        taskRepository.delete(id);
-    }
-
-    public TransferTaskEntity loadTask(final Long id) {
-        return taskRepository.findOne(id);
+    @Transactional
+    public void delete(final Long registryId) {
+        taskRepository.deleteAllByRegistryId(registryId);
     }
 
     public List<TransferTask> loadAll() {
@@ -70,14 +69,7 @@ public class TransferTaskService {
 
     public Page<TransferTask> filter(final TransferTaskFilter filter) {
         final Pageable pageable = new PageRequest(filter.getPageNum(), filter.getPageSize());
-        return taskRepository.filter(filter.getRegistryId(),
-                filter.getCreatedFrom(),
-                filter.getCreatedTo(),
-                filter.getStartedFrom(),
-                filter.getStartedTo(),
-                filter.getFinishedFrom(),
-                filter.getFinishedTo(),
-                filter.getStatus(),
+        return taskRepository.findAll(TransferTaskSpecification.filteredTasks(filter),
                 pageable).map(taskMapper::transferTaskToDto);
     }
 }

@@ -44,6 +44,11 @@ public class TransferTaskApiService {
     }
 
     @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
+    public void delete(final Long registryId) {
+        taskService.delete(registryId);
+    }
+
+    @PreAuthorize(DTS_REGISTRY_PERMISSIONS)
     public Page<TransferTask> filter(final TransferTaskFilter filter) {
         return taskService.filter(filter);
     }
