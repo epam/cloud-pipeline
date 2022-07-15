@@ -139,7 +139,8 @@ const defaultSettings = {
   defaultUserStorageReadOnlyWarning: undefined,
   jobContainsSensitiveStoragesWarning: undefined,
   persistSessionStateParameterName: 'CP_CAP_PERSIST_SESSION_STATE',
-  customToolEndpointsEnabled: true // true / false / { [ports]: {[count]: number, [from]: number, [to]: number} }
+  customToolEndpointsEnabled: true, // true / false / { [ports]: {[count]: number, [from]: number, [to]: number} }
+  endpointName: undefined
 };
 
 function parseUrl(url, verbose = false) {
