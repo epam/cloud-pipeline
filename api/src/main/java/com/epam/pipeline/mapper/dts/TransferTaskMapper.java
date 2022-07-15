@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.mapper;
+package com.epam.pipeline.mapper.dts;
 
-import com.epam.pipeline.dto.dts.transfer.StorageItemDTO;
-import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.rest.dto.StorageItemWithCredentialsDTO;
+import com.epam.pipeline.controller.vo.dts.TransferTask;
+import com.epam.pipeline.entity.dts.TransferTaskEntity;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
-public interface StorageItemMapper {
-    StorageItem dtoToModel(StorageItemWithCredentialsDTO item);
-    StorageItemDTO modelToDto(StorageItem item);
+public interface TransferTaskMapper {
+    TransferTaskEntity transferTaskToEntity(TransferTask task);
+    TransferTask transferTaskToDto(TransferTaskEntity task);
 }

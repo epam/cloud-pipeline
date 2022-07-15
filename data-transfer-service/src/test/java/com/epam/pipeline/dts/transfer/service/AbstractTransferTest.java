@@ -18,8 +18,8 @@ package com.epam.pipeline.dts.transfer.service;
 
 import com.epam.pipeline.dts.AbstractTest;
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import org.apache.commons.lang3.StringUtils;
 
 public abstract class AbstractTransferTest extends AbstractTest {

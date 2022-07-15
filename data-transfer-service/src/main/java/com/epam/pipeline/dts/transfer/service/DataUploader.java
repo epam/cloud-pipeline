@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.dts.transfer.service;
 
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 
 public interface DataUploader {
 

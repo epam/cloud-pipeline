@@ -17,10 +17,10 @@
 package com.epam.pipeline.dts.transfer.service.impl;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.google.GoogleTransferInfo;
 import com.epam.pipeline.dts.transfer.model.google.GoogleCredentials;
 import com.epam.pipeline.dts.util.Utils;
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

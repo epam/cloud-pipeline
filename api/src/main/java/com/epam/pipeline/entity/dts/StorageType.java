@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,27 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.model;
+package com.epam.pipeline.entity.dts;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+public enum StorageType {
 
-@Getter
-@AllArgsConstructor
-public enum TaskStatus {
+    /**
+     * Local storage.
+     */
+    LOCAL,
 
-    CREATED(false), RUNNING(false), SUCCESS(true), FAILURE(true), STOPPED(false);
+    /**
+     * Google cloud storage.
+     */
+    GS,
 
-    private boolean finalStatus;
+    /**
+     * AWS S3 storage.
+     */
+    S3,
+
+    /**
+     * Microsoft Azure storage.
+     */
+    AZ
 }

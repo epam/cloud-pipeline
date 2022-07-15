@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,10 @@
 package com.epam.pipeline.dts.transfer.service;
 
 import com.epam.pipeline.dts.transfer.model.StorageItem;
-import com.epam.pipeline.dts.transfer.model.TaskStatus;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
+import com.epam.pipeline.entity.dts.transfer.TaskStatus;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,4 +48,5 @@ public interface TaskService {
     TransferTask loadTask(Long id);
     List<TransferTask> loadRunningTasks();
     List<TransferTask> loadAll();
+    List<TransferTask> loadUpdated(LocalDateTime updateTime);
 }

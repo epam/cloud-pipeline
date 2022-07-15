@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.rest.dto;
+package com.epam.pipeline.controller.vo.dts;
 
-import com.epam.pipeline.dts.transfer.model.StorageType;
+import com.epam.pipeline.entity.dts.StorageType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class StorageItemDTO {
-
+public class StorageItem {
     private String path;
     private StorageType type;
 }

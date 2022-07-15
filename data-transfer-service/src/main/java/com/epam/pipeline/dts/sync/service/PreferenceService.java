@@ -26,6 +26,8 @@ public interface PreferenceService {
     Optional<List<AutonomousSyncRule>> getSyncRules();
     boolean isShutdownRequired();
     boolean isHeartbeatEnabled();
+    String getDtsEventReportingSyncFile();
+    String getDtsEventReportingSyncTimestamp();
     boolean isSourceDeletionEnabled();
     void clearShutdownFlag();
 }

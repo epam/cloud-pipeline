@@ -51,6 +51,8 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     private final String dtsSyncRulesKey;
     private final String dtsHeartbeatEnabledKey;
     private final String dtsSourceDeletionEnabledKey;
+    private final String dtsEventReportingSyncFile;
+    private final String dtsEventReportingSyncTimestamp;
 
     @Autowired
     public CloudPipelineApiPreferenceService(
@@ -62,6 +64,10 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
             final String dtsHeartbeatEnabledKey,
             @Value("${dts.preference.source.deletion.enabled.key:dts.source.deletion.enabled}")
             final String dtsSourceDeletionEnabledKey,
+            @Value("${dts.event.reporting.sync.file}")
+            final String dtsEventReportingSyncFile,
+            @Value("${dts.event.reporting.sync.timestamp}")
+            final String dtsEventReportingSyncTimestamp,
             final CloudPipelineAPIClient apiClient,
             final IdentificationService identificationService) {
         this.apiClient = apiClient;
@@ -71,6 +77,8 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
         this.dtsSyncRulesKey = dtsSyncRulesKey;
         this.dtsHeartbeatEnabledKey = dtsHeartbeatEnabledKey;
         this.dtsSourceDeletionEnabledKey = dtsSourceDeletionEnabledKey;
+        this.dtsEventReportingSyncFile = dtsEventReportingSyncFile;
+        this.dtsEventReportingSyncTimestamp = dtsEventReportingSyncTimestamp;
         log.info("Synchronizing preferences for current host: `{}`", identificationService.getId());
     }
 
@@ -104,6 +112,16 @@ public class CloudPipelineApiPreferenceService implements PreferenceService {
     @Override
     public boolean isHeartbeatEnabled() {
         return getBooleanPreference(dtsHeartbeatEnabledKey);
+    }
+
+    @Override
+    public String getDtsEventReportingSyncFile() {
+        return dtsEventReportingSyncFile;
+    }
+
+    @Override
+    public String getDtsEventReportingSyncTimestamp() {
+        return dtsEventReportingSyncTimestamp;
     }
 
     @Override

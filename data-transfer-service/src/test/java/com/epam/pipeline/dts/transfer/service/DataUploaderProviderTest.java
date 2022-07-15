@@ -16,12 +16,12 @@
 
 package com.epam.pipeline.dts.transfer.service;
 
-import com.epam.pipeline.dts.transfer.model.StorageType;
 import com.epam.pipeline.dts.transfer.model.TransferTask;
 import com.epam.pipeline.dts.transfer.service.impl.DataUploaderProviderImpl;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.epam.pipeline.entity.dts.transfer.StorageType;
 import org.apache.commons.collections4.MapUtils;
 import org.junit.jupiter.api.Test;
 import static org.hamcrest.MatcherAssert.assertThat;

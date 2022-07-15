@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.client.pipeline;
 
+import com.epam.pipeline.dto.dts.transfer.TransferDTO;
 import com.epam.pipeline.entity.app.ApplicationInfo;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
@@ -274,6 +275,9 @@ public interface CloudPipelineAPI {
 
     @PUT("dts/{id}/heartbeat")
     Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) String dtsId);
+
+    @POST("dts/tasks/{id}")
+    Call<Result<List<TransferDTO>>> createTransferTasks(@Path(ID) String dtsId, @Body List<TransferDTO> tasks);
 
     @GET("preferences/{key}")
     Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);

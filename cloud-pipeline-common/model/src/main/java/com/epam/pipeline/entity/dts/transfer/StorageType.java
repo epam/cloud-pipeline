@@ -31,5 +31,10 @@ public enum StorageType {
     /**
      * AWS S3 storage.
      */
-    S3
+    S3,
+
+    /**
+     * Microsoft Azure storage.
+     */
+    AZ
 }

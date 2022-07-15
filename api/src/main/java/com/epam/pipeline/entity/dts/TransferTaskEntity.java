@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,64 +14,65 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dts.transfer.model;
+package com.epam.pipeline.entity.dts;
 
-import com.epam.pipeline.entity.dts.transfer.TaskStatus;
+import com.epam.pipeline.controller.vo.dts.StorageItem;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.experimental.Wither;
-import javax.persistence.AttributeOverride;
-import javax.persistence.AttributeOverrides;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Embedded;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import lombok.Setter;
+
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Data
-@Builder
-@Wither
-@AllArgsConstructor
+@Getter
+@Setter
+@Table(name = "dts_transfer_task", schema = "pipeline")
 @NoArgsConstructor
-public class TransferTask {
+@AllArgsConstructor
+@Builder
+public class TransferTaskEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Enumerated(EnumType.ORDINAL)
     private TaskStatus status;
+
     private LocalDateTime created;
     private LocalDateTime started;
     private LocalDateTime finished;
+
     @Column(length = Integer.MAX_VALUE)
     private String reason;
+
     @Embedded
     @AttributeOverrides({
-        @AttributeOverride(name="type", column=@Column(name = "source_type")),
-        @AttributeOverride(name="path", column=@Column(name = "source_path", length = Integer.MAX_VALUE))
-        })
+            @AttributeOverride(name="type", column=@Column(name = "source_type")),
+            @AttributeOverride(name="path", column=@Column(name = "source_path", length = Integer.MAX_VALUE))
+    })
     @NotNull
     private StorageItem source;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name="type", column=@Column(name = "destination_type")),
             @AttributeOverride(name="path", column=@Column(name = "destination_path", length = Integer.MAX_VALUE))
-        })
+    })
     @NotNull
     private StorageItem destination;
 
+    private Long registryId;
+
     @ElementCollection
+    @CollectionTable(name = "dts_included", joinColumns = @JoinColumn(name = "task_id"))
     private List<String> included;
+
+    @Column(name = "user_name")
     private String user;
 
     private boolean deleteSource;
