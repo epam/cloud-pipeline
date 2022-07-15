@@ -61,6 +61,7 @@ import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
 
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,6 +69,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -97,7 +99,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (StringUtils.isNotBlank(prefix)) {
             try {
                 s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
-                        new byte[]{}, authManager.getAuthorizedUser());
+                        new byte[]{}, authManager.getAuthorizedUser(), Collections.emptyList());
             } catch (DataStorageException e) {
                 log.debug("Failed to create file {}.", prefix);
                 log.debug(e.getMessage(), e);
@@ -216,8 +218,18 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
         validateFilePathMatchingMasks(dataStorage, path);
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
+        final List<String> objectTags = matchObjectTagsForItem(path);
         return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
-                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
+                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
+                authManager.getAuthorizedUser(), objectTags);
+    }
+
+    private List<String> matchObjectTagsForItem(final String path) {
+        final Map<String, List<String>> objectTagsSchema = preferenceManager.getPreference(
+                SystemPreferences.STORAGE_OBJECT_TAGS_SCHEMA);
+        final String filename = Paths.get(path).getFileName().toString();
+        return objectTagsSchema.entrySet().stream().filter(e -> filename.matches(e.getKey()))
+                .flatMap(e -> e.getValue().stream()).collect(Collectors.toList());
     }
 
     @Override
@@ -231,18 +243,21 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     @Override public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path,
             byte[] contents) {
         validateFilePathMatchingMasks(dataStorage, path);
+        final List<String> objectTags = matchObjectTagsForItem(path);
         return getS3Helper(dataStorage).createFile(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), contents,
-                authManager.getAuthorizedUser());
+                authManager.getAuthorizedUser(), objectTags
+        );
     }
 
     @Override
     public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path, InputStream dataStream)
         throws DataStorageException {
         validateFilePathMatchingMasks(dataStorage, path);
+        final List<String> objectTags = matchObjectTagsForItem(path);
         return getS3Helper(dataStorage).createFile(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
-                dataStream, authManager.getAuthorizedUser());
+                dataStream, authManager.getAuthorizedUser(), objectTags);
     }
 
     @Override public DataStorageFolder createFolder(S3bucketDataStorage dataStorage, String path) {
@@ -328,7 +343,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             try {
                 s3Helper.createFile(datastoragePath.getRoot(),
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
-                    new byte[]{}, authManager.getAuthorizedUser());
+                    new byte[]{}, authManager.getAuthorizedUser(), Collections.emptyList());
             } catch (DataStorageException e) {
                 log.debug("Failed to create file {}.", datastoragePath.getPath());
                 log.debug(e.getMessage(), e);
