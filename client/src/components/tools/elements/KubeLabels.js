@@ -27,43 +27,124 @@ import {
 } from 'antd';
 import styles from './KubeLabels.css';
 
+function kubeLabelsHasChanges (initialData = [], actualData = []) {
+  if (actualData.every(label => label.predefined === undefined)) {
+    return false;
+  }
+  const labels = (actualData || [])
+    .filter(label => !label.predefined || (label.predefined && label.value));
+  if (initialData.length !== labels.length) {
+    return true;
+  }
+  return labels.some(label => !initialData.find(
+    initial => initial.key === label.key && initial.value === label.value
+  ));
+}
+
+function prepareKubeLabelsPayload (labels) {
+  return (labels || [])
+    .filter(label => !label.predefined || (label.predefined && `${label.value}` === 'true'))
+    .reduce((acc, label) => {
+      acc[label.key] = label.value;
+      return acc;
+    }, {});
+}
+
 class KubeLabels extends React.Component {
+  state = {
+    errors: {}
+  }
+
+  get labels () {
+    const {labels = [], predefinedKeys} = this.props;
+    let keys = [...new Set((predefinedKeys || []).map(key => key.trim()))]
+      .filter(Boolean);
+    const predefinedLabels = keys.map(key => {
+      const existedData = labels.find(label => label.key === key);
+      return {
+        key,
+        value: existedData ? `${existedData.value}` === 'true' : false,
+        predefined: true
+      };
+    });
+    const userLabels = labels.map((label) => {
+      const predefined = keys.includes(label.key);
+      if (predefined) {
+        keys.splice(keys.indexOf(label.key), 1);
+        return undefined;
+      }
+      return {
+        ...label,
+        predefined: false
+      };
+    }).filter(Boolean);
+    return [...predefinedLabels, ...userLabels];
+  }
+
   onAddNewLabel = () => {
-    const {onAddLabel} = this.props;
-    onAddLabel && onAddLabel({
+    const blankLabel = {
       key: '',
       value: '',
       predefined: false
+    };
+    this.submitChanges([...this.labels, blankLabel]);
+  };
+
+  onRemoveLabel = (labelIndex) => {
+    const filteredLabels = [...this.labels]
+      .filter((label, index) => index !== labelIndex);
+    this.submitChanges(filteredLabels);
+  };
+
+  onLabelChange = (label, index, field) => event => {
+    const value = label.predefined
+      ? event.target.checked
+      : event.target.value;
+    const labels = [...this.labels];
+    const currentLabel = labels[index];
+    if (currentLabel) {
+      labels[index] = {
+        ...labels[index],
+        [field]: value
+      };
+      this.submitChanges(labels);
+    }
+  };
+
+  submitChanges = (labels) => {
+    const {onChange} = this.props;
+    const errors = this.validateLabels(labels);
+    this.setState({errors}, () => {
+      onChange && onChange(labels, errors);
     });
   };
 
-  onRemoveLabel = (index) => {
-    const {onRemoveKubeLabel} = this.props;
-    onRemoveKubeLabel && onRemoveKubeLabel(index);
-  };
-
-  onLabelChange = (labelData, index, field) => event => {
-    const {onChange, labels} = this.props;
-    const value = labelData.predefined
-      ? event.target.checked
-      : event.target.value;
-    const currentLabel = labels[index];
-    onChange && onChange(
-      index,
-      {...currentLabel, ...{[field]: value}},
-      field
-    );
+  validateLabels = (labels = []) => {
+    const errors = {};
+    for (let i = 0; i < labels.length; i++) {
+      const currentKey = labels[i].key;
+      const hasDuplicates = labels
+        .filter(filtered => filtered.key === currentKey).length > 1;
+      if (!currentKey) {
+        errors[currentKey] = 'Key is required';
+        continue;
+      }
+      if (hasDuplicates) {
+        errors[currentKey] = 'Key should be unique';
+      }
+    }
+    return errors;
   };
 
   renderLabelRow = (label, index) => {
-    const {errors} = this.props;
+    const {errors} = this.state;
     const hasError = errors && errors[label.key];
     return (
       <Row
         key={index}
         id={`kubeLabel_${label.key}`}
         type="flex"
-        style={{marginBottom: 5, flexWrap: 'nowrap'}}
+        style={{flexWrap: 'nowrap'}}
         align="top"
       >
         <Col
@@ -135,10 +216,9 @@ class KubeLabels extends React.Component {
   };
 
   render () {
-    const {labels} = this.props;
     return (
       <div className={styles.container}>
-        {(labels || []).map((label, index) => {
+        {this.labels.map((label, index) => {
           return label.predefined
             ? this.renderPredefinedLabelRow(label, index)
             : this.renderLabelRow(label, index);
@@ -162,10 +242,9 @@ KubeLabels.propTypes = {
     value: PropTypes.oneOfType([PropTypes.string, PropTypes.bool]),
     predefined: PropTypes.oneOfType([PropTypes.string, PropTypes.bool])
   })),
-  onChange: PropTypes.func,
-  onAddLabel: PropTypes.func,
-  onRemoveKubeLabel: PropTypes.func,
-  errors: PropTypes.shape({})
+  predefinedKeys: PropTypes.arrayOf(PropTypes.string),
+  onChange: PropTypes.func
 };
 
+export {kubeLabelsHasChanges, prepareKubeLabelsPayload};
 export default KubeLabels;

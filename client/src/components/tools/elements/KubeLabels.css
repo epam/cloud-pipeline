@@ -23,6 +23,7 @@
   display: flex;
   flex-direction: column;
   margin-right: 5px;
+  padding-bottom: 14px;
 }
 
 .label-input {
@@ -50,4 +51,5 @@
 
 span.error {
   font-size: xx-small;
+  margin-bottom: -14px;
 }
