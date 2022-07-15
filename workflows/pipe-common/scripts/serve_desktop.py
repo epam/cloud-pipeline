@@ -56,14 +56,9 @@ app = Flask(__name__)
 @app.route('/')
 def get_desktop_file():
     proxy_host, proxy_port = _resolve_edge(Config.api)
-
     template_data, template_type = _read_template_file(Config.template_path)
-
-    if Config.personal and is_windows():
-        user_name = _resolve_user_name(Config.user_name, Config.logger)
-        _create_user(user_name, Config.user_pass, Config.executor, Config.python_exec)
-    else:
-        user_name = Config.user_name
+    user_name = _resolve_and_create_user(Config.user_name, Config.user_pass, Config.personal,
+                                         Config.executor, Config.python_exec, Config.logger)
 
     if template_type == DCV:
         template_data = template_data.format(CP_PROXY=proxy_host,
@@ -107,7 +102,15 @@ def _read_template_file(template_path):
     return template_data, DCV if template_path.endswith('.dcv') else NXS
 
 
-def _resolve_user_name(default_user_name, logger):
+def _resolve_and_create_user(default_user_name, user_pass, personal, executor, python_exec, logger):
+    if not personal or not is_windows():
+        return default_user_name
+    user_name = _resolve_user(default_user_name, logger)
+    _create_user(user_name, user_pass, executor, python_exec)
+    return user_name
+
+
+def _resolve_user(default_user_name, logger):
     user_name = _extract_user_from_request(logger) or default_user_name
     return user_name.split('@')[0]
 
