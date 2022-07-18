@@ -126,9 +126,11 @@ public class StorageProviderManager {
     }
 
     @StorageWriteOperation
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(AbstractDataStorage dataStorage,
-                                                                       String path) {
-        return getStorageProvider(dataStorage).generateDataStorageItemUploadUrl(dataStorage, path);
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final AbstractDataStorage dataStorage,
+                                                                       final String path,
+                                                                       final List<String> objectTags) {
+        return getStorageProvider(dataStorage).generateDataStorageItemUploadUrl(dataStorage, path,
+                objectTags);
     }
 
     @SensitiveStorageOperation
@@ -140,15 +142,18 @@ public class StorageProviderManager {
     }
 
     @StorageWriteOperation
-    public DataStorageFile createFile(AbstractDataStorage dataStorage, String path, byte[] contents)
+    public DataStorageFile createFile(final AbstractDataStorage dataStorage, final String path,
+                                      final byte[] contents, final List<String> objectTags)
             throws DataStorageException {
-        return getStorageProvider(dataStorage).createFile(dataStorage, path, contents);
+        return getStorageProvider(dataStorage).createFile(dataStorage, path, contents, objectTags);
     }
 
     @StorageWriteOperation
-    public DataStorageFile createFile(AbstractDataStorage dataStorage, String path, InputStream contentStream)
+    public DataStorageFile createFile(final AbstractDataStorage dataStorage, final String path,
+                                      final InputStream contentStream, final List<String> objectTags)
             throws DataStorageException {
-        return getStorageProvider(dataStorage).createFile(dataStorage, path, contentStream);
+        return getStorageProvider(dataStorage).createFile(dataStorage, path, contentStream,
+                objectTags);
     }
 
     @StorageWriteOperation
