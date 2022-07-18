@@ -17,7 +17,7 @@ class TagsMap:
         ]
 
     @classmethod
-    def read_tags_map(cls, storage_tags_schema_file_path, storage_tags_schema_preference_value=None):
+    def read_tags_schema(cls, storage_tags_schema_file_path, storage_tags_schema_preference_value=None):
 
         def load_storage_tags_schema_content():
             if storage_tags_schema_file_path and os.path.exists(storage_tags_schema_file_path):

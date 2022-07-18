@@ -40,6 +40,8 @@ from src.utilities.storage.common import TransferResult, StorageOperations
 from src.utilities.storage.mount import Mount
 from src.utilities.storage.umount import Umount
 
+SYSTEM_PREF_OBJECT_TAGS_SCHEMA = "storage.object.tags.schema"
+
 FOLDER_MARKER = '.DS_Store'
 STORAGE_DETAILS_SEPARATOR = ', '
 
@@ -60,7 +62,7 @@ class AllowedFailuresValues(object):
 
 class DataStorageOperations(object):
     @classmethod
-    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, tags_map_file,
+    def cp(cls, source, destination, recursive, force, exclude, include, quiet, tags, tags_schema_file,
            file_list, symlinks, threads, io_threads, on_unsafe_chars, on_unsafe_chars_replacement, on_failures,
            clean=False, skip_existing=False, verify_destination=False):
         source_wrapper = DataStorageWrapper.get_wrapper(source, symlinks)
@@ -121,7 +123,8 @@ class DataStorageOperations(object):
                                   include, exclude, force, quiet, skip_existing, verify_destination,
                                   on_unsafe_chars, on_unsafe_chars_replacement)
 
-        tags_map = TagsMap.read_tags_map(tags_map_file, PreferenceAPI.get_preference("storage.object.tags.schema"))
+        tags_map = TagsMap.read_tags_schema(tags_schema_file,
+                                            PreferenceAPI.get_preference(SYSTEM_PREF_OBJECT_TAGS_SCHEMA))
 
         if threads:
             cls._multiprocess_transfer_items(items, threads, manager, source_wrapper, destination_wrapper,
@@ -611,7 +614,7 @@ class DataStorageOperations(object):
         cls._handle_keyboard_interrupt(workers)
 
     @classmethod
-    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, tags_map,
+    def _transfer_items(cls, items, manager, source_wrapper, destination_wrapper, clean, quiet, tags, tags_schema,
                         io_threads, on_failures, lock=None):
 
         def __merge_tags(_tags_from_cli, _tags_from_tags_map=None):
@@ -621,13 +624,13 @@ class DataStorageOperations(object):
                 if key in result:
                     logging.warn("Tag with key '{}' and value '{}' will be updated with value '{}', "
                                  "as it was provided with --tags option".format(key, result[key], value))
-                    result[key] = value
+                result[key] = value
             return ["{}={}".format(key, value) for key, value in result.items()]
 
         transfer_results = []
         fail_after_exception = None
         for item in items:
-            effective_tags = __merge_tags(tags, tags_map.find_tags(item))
+            effective_tags = __merge_tags(tags, tags_schema.find_tags(item))
             transfer_results, fail_after_exception = cls._transfer_item(item, manager,
                                                                         source_wrapper, destination_wrapper,
                                                                         transfer_results,
