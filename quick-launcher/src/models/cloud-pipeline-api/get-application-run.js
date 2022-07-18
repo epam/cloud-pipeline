@@ -1,7 +1,28 @@
 import getUserRuns from './get-user-runs';
 
-const runHasParameterWithValue = (parameter, valueRegExp) => run => (run.pipelineRunParameters || [])
-  .find(p => p.name === parameter && valueRegExp.test(`${p.value}`));
+const runHasParameterWithValue = (parameter, valueRegExp) => run => {
+  const result = (run.pipelineRunParameters || [])
+    .find(p => p.name === parameter && valueRegExp.test(`${p.value}`));
+  console.log(`Checking parameter "${parameter}" value: ${result}`);
+  return result;
+}
+
+function escapeRegExpString (string) {
+  let result = string;
+  result = result.replace(/\+/g, '\\+');
+  result = result.replace(/\./g, '\\.');
+  result = result.replace(/\^/g, '\\^');
+  result = result.replace(/\$/g, '\\$');
+  result = result.replace(/\(/g, '\\(');
+  result = result.replace(/\)/g, '\\)');
+  result = result.replace(/\[/g, '\\[');
+  result = result.replace(/\]/g, '\\]');
+  result = result.replace(/\{/g, '\\{');
+  result = result.replace(/\}/g, '\\}');
+  result = result.replace(/\?/g, '\\?');
+  result = result.replace(/\*/g, '\\*');
+  return result;
+}
 
 export default function getApplicationRun(
   application,
@@ -38,7 +59,7 @@ export default function getApplicationRun(
         .forEach(([key, value]) => {
           const parameterValue = value && value.value ? value.value : value;
           searchCriteriaDescriptions.push(`${key} parameter is "${parameterValue}"`);
-          const regExp = new RegExp(`^${parameterValue}$`, 'i');
+          const regExp = new RegExp(`^${escapeRegExpString(parameterValue)}$`, 'i');
           conditions.push(runHasParameterWithValue(key, regExp));
         });
       parametersCheck = run => conditions
@@ -50,25 +71,50 @@ export default function getApplicationRun(
     searchCriteriaDescriptions.forEach(condition => console.log(condition));
     getUserRuns(user)
       .then(runs => {
+        console.log('Current user jobs:', runs);
+        console.log('');
         const userRuns = runs
-          .filter(run => dockerImageRegExp.test(run.dockerImage)
-            && (run.pipelineRunParameters || [])
+          .filter(run => {
+            console.log(`Checking run #${run.id}:`);
+            console.log(`Docker image (${run.dockerImage}) test:`, dockerImageRegExp.test(run.dockerImage));
+            console.log(`APPLICATION parameter test:`, (run.pipelineRunParameters || [])
               .filter(p => p.name === 'APPLICATION' && `${p.value}` === `${application}`)
               .length > 0
-            && (
-              !storageUserRegExp ||
-              (run.pipelineRunParameters || [])
+            );
+            if (storageUserRegExp) {
+              console.log(`DEFAULT_STORAGE_USER test:`, (run.pipelineRunParameters || [])
                 .filter(p => p.name === 'DEFAULT_STORAGE_USER' && storageUserRegExp.test(`${p.value}`))
-                .length > 0
-            )
-            && (
-              !prettyUrlRegExp ||
-              (run.pipelineRunParameters || [])
+                .length > 0);
+            }
+            if (prettyUrlRegExp) {
+              console.log(`RUN_PRETTY_URL test:`, (run.pipelineRunParameters || [])
                 .filter(p => p.name === 'RUN_PRETTY_URL' && prettyUrlRegExp.test(`${p.value}`))
+                .length > 0);
+            }
+            console.log('Parameters test:', parametersCheck(run));
+            const result = dockerImageRegExp.test(run.dockerImage)
+              && (run.pipelineRunParameters || [])
+                .filter(p => p.name === 'APPLICATION' && `${p.value}` === `${application}`)
                 .length > 0
-            )
-            && parametersCheck(run)
-          )
+              && (
+                !storageUserRegExp ||
+                (run.pipelineRunParameters || [])
+                  .filter(p => p.name === 'DEFAULT_STORAGE_USER' && storageUserRegExp.test(`${p.value}`))
+                  .length > 0
+              )
+              && (
+                !prettyUrlRegExp ||
+                (run.pipelineRunParameters || [])
+                  .filter(p => p.name === 'RUN_PRETTY_URL' && prettyUrlRegExp.test(`${p.value}`))
+                  .length > 0
+              )
+              && parametersCheck(run);
+            console.log(`Run #${run.id} test result:`, result);
+            console.log('');
+            return result;
+          });
+        console.log('User runs (filtered):', userRuns);
+        console.log('');
         resolve(userRuns);
       })
       .catch(reject);

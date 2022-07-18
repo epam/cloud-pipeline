@@ -1,4 +1,5 @@
 import parseLimitMounts from './limit-mounts-parser';
+import { getRunPorts, parsePorts } from "./utilities/ports";
 
 class StopRunsError extends Error {
   constructor(runs = [], description, options) {
@@ -83,6 +84,26 @@ export function findUserRun (runs, appSettings, user, options) {
       throw new StopRunsError(
         runs,
         `There ${runs.length > 1 ? 'are' : 'is an'} already running job${runs.length > 1 ? 's' : ''} with different libraries`,
+        errorOptions
+      );
+    }
+    const ports = parsePorts(options?.specifyPorts || '').sort((a, b) => a - b);
+    matchedRuns = matchedRuns.filter(aRun => {
+      const runPorts = getRunPorts(aRun);
+      if (runPorts.length === ports.length) {
+        for (let i = 0; i < runPorts.length; i++) {
+          if (runPorts[i] !== ports[i]) {
+            return false;
+          }
+        }
+        return true;
+      }
+      return false;
+    });
+    if (!matchedRuns.length) {
+      throw new StopRunsError(
+        runs,
+        `There ${runs.length > 1 ? 'are' : 'is an'} already running job${runs.length > 1 ? 's' : ''} with different ports`,
         errorOptions
       );
     }

@@ -55,7 +55,7 @@ function pollRun(run, resolve, reject, initialPoll = false, appSettings) {
         .filter(Boolean);
       if (initialized && urls.length > 0) {
         const urlConfig = urls
-            .find(o => appSettings.endpointName && o === appSettings.endpointName) ||
+            .find(o => appSettings.endpointName && o.name === appSettings.endpointName) ||
           urls.find(o => o.isDefault) ||
           urls[0];
         const {url} = urlConfig;

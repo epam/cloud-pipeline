@@ -64,3 +64,14 @@ export function getPortParameters (value) {
       }
     }), {});
 }
+
+export function getRunPorts (run) {
+  const {
+    pipelineRunParameters = []
+  } = run;
+  return pipelineRunParameters
+    .filter(p => /^CP_CAP_CUSTOM_TOOL_ENDPOINT_/i.test(p.name))
+    .map(p => Number(p.value))
+    .filter(n => !Number.isNaN(n))
+    .sort((a, b) => a - b)
+}
