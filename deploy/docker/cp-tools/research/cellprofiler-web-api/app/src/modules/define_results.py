@@ -1,12 +1,13 @@
 import os
 import pandas
 from cellprofiler.modules.exporttospreadsheet import ExportToSpreadsheet
+from pandas import Index, MultiIndex
 
 
 class CalculationSpec(object):
-    _SINGLE_OBJECT_OPERATIONS = ['Number of Objects', 'Mean Intensity', 'Background Intensity', 'Corrected Intensity',
-                                 'Relative Object Intensity', 'Uncorrected Peak Intensity', 'Contrast', 'Area',
-                                 'Region Intensity']
+    _SINGLE_OBJECT_OPERATIONS = ['Number of Objects', 'Mean Intensity', 'Background Intensity',
+                                 'Corrected Intensity', 'Relative Object Intensity', 'Uncorrected Peak Intensity',
+                                 'Contrast', 'Area', 'Region Intensity']
 
     def __init__(self, primary, operation, secondary=None, stat_functions=None, column_operation_name=None):
         self.primary = primary
@@ -93,7 +94,7 @@ class DefineResults(ExportToSpreadsheet):
     def __init__(self):
         super(DefineResults, self).__init__()
         self._calculation_specs = []
-        self._grouping = None
+        self._grouping = []
         self.module_name = 'DefineResults'
 
     def update_settings(self, setting: list):
@@ -208,19 +209,22 @@ class DefineResults(ExportToSpreadsheet):
         for group_name, group_calculation_results in result_data_dict.items():
             result_index.append(group_name)
             result_data_list.append(group_calculation_results)
-        result_dataframe = pandas.DataFrame(result_data_list, index=result_index)
-        if self._grouping is None:
-            result_dataframe.index.name = 'Data'
-        else:
-            result_dataframe.index.name = self._grouping
-        return result_dataframe
+        return pandas.DataFrame(result_data_list, index=self._prepare_df_index(result_index))
+
+    def _prepare_df_index(self, result_indices):
+        if len(self._grouping) == 1:
+            index_name = self._grouping[0]
+            index = Index(result_indices)
+            index.name = index_name
+            return index
+        return MultiIndex.from_tuples(result_indices, names=self._grouping)
 
     def _process_number_of_objects(self, result_data_dict, spec):
         object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
         grouping_datasets_dictionary = self._build_groupings(object_dataframe)
+        feature_name = self._build_feature_name(spec)
         for grouping_value, grouping_dataframe in grouping_datasets_dictionary.items():
             value = int(grouping_dataframe.get('ObjectNumber').count())
-            feature_name = self._build_feature_name(spec)
             self._append_spec_value_to_results(result_data_dict, grouping_value, feature_name, value)
 
     def _process_total_area(self, result_data_dict, spec: CalculationSpec):
@@ -283,7 +287,7 @@ class DefineResults(ExportToSpreadsheet):
         return 'Children_{}_Count'.format(spec.secondary)
 
     def _group_secondary_by_primary_parent(self, grouping_dataframe, spec):
-        secondary_by_primary_grouping_result = self._build_groupings(grouping_dataframe, 'Parent_' + spec.primary)
+        secondary_by_primary_grouping_result = self._build_grouping(grouping_dataframe, 'Parent_' + spec.primary)
         if 0 in secondary_by_primary_grouping_result:
             secondary_by_primary_grouping_result.pop(0)
         return secondary_by_primary_grouping_result
@@ -314,7 +318,7 @@ class DefineResults(ExportToSpreadsheet):
         else:
             return float('nan')
 
-    def _build_groupings(self, object_dataframe, grouping_key=None):
+    def _build_grouping(self, object_dataframe, grouping_key):
         """
         Method to build a grouping from a dataset
         :param object_dataframe: input dataframe
@@ -322,12 +326,17 @@ class DefineResults(ExportToSpreadsheet):
         If nothing is specified - use general grouping metadata column name
         :return: dictionary, where keys are grouping buckets keys and values are corresponding dataframes
         """
-        if grouping_key is None and self._grouping is not None:
-            grouping_key = self._METADATA_COLUMN_PREFIX + self._grouping
-        if grouping_key is None:
-            return {self._EMPTY_GROUPING_VALUE: object_dataframe}
-        else:
-            return self._extract_grouping_entries(object_dataframe.groupby(grouping_key))
+        return self._extract_grouping_entries(object_dataframe.groupby(grouping_key))
+
+    def _build_groupings(self, object_dataframe):
+        """
+        Method to build a grouping from a dataset
+        :param object_dataframe: input dataframe
+        If nothing is specified - use general grouping metadata column name
+        :return: dictionary, where keys are grouping buckets keys and values are corresponding dataframes
+        """
+        grouping_keys = [self._METADATA_COLUMN_PREFIX + group for group in self._grouping]
+        return self._extract_grouping_entries(object_dataframe.groupby(grouping_keys))
 
     def _append_spec_value_to_results(self, result_data_dict, general_grouping_value, feature_name, value):
         group_calculation_results = result_data_dict.get(general_grouping_value)
@@ -371,9 +380,7 @@ class DefineResults(ExportToSpreadsheet):
             name = '{} - {}'.format(spec.primary, spec.operation)
         if stat_func_name is not None:
             name = name + ' - {}'.format(stat_func_name)
-        if self._grouping is not None:
-            name = name + ' per ' + self._grouping
-        return name
+        return name + ' per Well'
 
     def _process_primary_object_intensity(self, result_data_dict, spec, extract_intensity_lambda):
         primary_object_dataframe = pandas.read_csv(self._build_object_csv_path(spec.primary))
