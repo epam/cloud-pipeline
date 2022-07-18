@@ -561,12 +561,12 @@ public class DataStorageManager implements SecuredEntityManager {
         return hours > 0 ? Duration.ofHours(hours) : Duration.ZERO;
     }
 
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(Long id, String path) {
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final Long id, final String path) {
         AbstractDataStorage dataStorage = load(id);
         return storageProviderManager.generateDataStorageItemUploadUrl(dataStorage, path, matchObjectTagsForItem(path));
     }
 
-    public List<DataStorageDownloadFileUrl> generateDataStorageItemUploadUrl(Long id, List<String> paths) {
+    public List<DataStorageDownloadFileUrl> generateDataStorageItemUploadUrl(final Long id, final List<String> paths) {
         AbstractDataStorage dataStorage = load(id);
         List<DataStorageDownloadFileUrl> urls = new ArrayList<>();
         if (paths == null) {
