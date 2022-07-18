@@ -120,7 +120,9 @@ for dts_id, new_dts_status in new_dts_statuses.iteritems():
     logger.info("DTS with id {} has status {}. Last heartbeat: {}".format(
         dts_id, current_status, current_timestamp))
     prev_dts_status = previos_dts_statuses.get(str(dts_id))
-    if not prev_dts_status or prev_dts_status["status"] != current_status:
+    if not prev_dts_status:
+        logger.info("There is no previous status for DTS with id {}".format(dts_id))
+    elif prev_dts_status["status"] != current_status:
         logger.info("DTS with id {} has status: {}. Previous status: {}".format(
         dts_id, current_status, prev_dts_status["status"]))
         dts_to_inform.append(new_dts_status)
