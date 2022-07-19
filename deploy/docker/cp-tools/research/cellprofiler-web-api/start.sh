@@ -24,6 +24,7 @@ function run_pipeline() {
 if [ -z "$CELLPROFILER_API_BATCH_SPEC_FILE" ] ; then
     tail -f "$CELLPROFILER_API_LOGS_DIR/serve_cp_api.log"
 else
+    CELLPROFILER_API_TMP_DIR=$(mktemp -d)
     if [ -z "$CELLPROFILER_API_BATCH_RESULTS_DIR" ] ; then
       echo "[ERROR] No result directory provided. Parameter 'CELLPROFILER_API_BATCH_RESULTS_DIR' shall be specified."
       exit 1
@@ -35,13 +36,14 @@ else
       exit 1
     fi
     measurement_uuid=$(jq -r .measurementUUID $CELLPROFILER_API_BATCH_SPEC_FILE)
-    inputs="$(jq -r '.inputs' $CELLPROFILER_API_BATCH_SPEC_FILE)"
     pipeline_id="$(curl -k -s -H 'Content-Type: application/json' -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?measurementUUID=$measurement_uuid" | jq -r '.payload.pipelineId//""')"
     if [ -z "$pipeline_id" ]; then
         echo "[ERROR] Failed to create pipeline"
         exit 1
     fi
-    add_files_response="$(curl -k -s -H 'Content-Type: application/json' -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines/files?pipelineId=$pipeline_id" -d "$inputs" | jq -r './/""')"
+    tmp_inputs_file=$CELLPROFILER_API_TMP_DIR/.inputs.json
+    jq -r '.inputs' $CELLPROFILER_API_BATCH_SPEC_FILE > $tmp_inputs_file
+    add_files_response="$(curl -k -s -H 'Content-Type: application/json' -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines/files?pipelineId=$pipeline_id" -d @$tmp_inputs_file | jq -r './/""')"
     add_files_status="$(echo $add_files_response | jq -r .status)"
     if [ "$add_files_status" != "OK" ]; then
       add_files_error="$(echo "$add_files_response" | jq -r .message)"
@@ -52,8 +54,9 @@ else
     for i in $(seq $modules_count);
     do
       module_index=$(expr $i - 1)
-      module="$(jq -r .modules[$module_index] $CELLPROFILER_API_BATCH_SPEC_FILE)"
-      add_module_response="$(curl -k -s  -H 'Content-Type: application/json' -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/modules?pipelineId=$pipeline_id" -d "$module" | jq -r './/""')"
+      tmp_module_file=$CELLPROFILER_API_TMP_DIR/.module-$module_index.json
+      jq -r .modules[$module_index] $CELLPROFILER_API_BATCH_SPEC_FILE > $tmp_module_file
+      add_module_response="$(curl -k -s  -H 'Content-Type: application/json' -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/modules?pipelineId=$pipeline_id" -d @$tmp_module_file | jq -r './/""')"
       add_module_status="$(echo "$add_module_response" | jq -r .status)"
       if [ "$add_module_status" != "OK" ]; then
         add_module_error="$(echo "$add_module_response" | jq -r .message)"
