@@ -132,6 +132,7 @@ import {
   applyParameters as applyGPUScalingParameters,
   readGPUScalingPreference
 } from './utilities/enable-gpu-scaling';
+import {mapObservableNotification} from '../dialogs/job-notifications/job-notification';
 
 const FormItem = Form.Item;
 const RUN_SELECTED_KEY = 'run selected';
@@ -334,7 +335,6 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     userRunCapabilities: [],
     userRunCapabilitiesPending: true,
     useResolvedParameters: false,
-    notifications: [],
     runNameAlias: undefined
   };
 
@@ -1031,7 +1031,8 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       is_spot: (values[ADVANCED].is_spot || `${this.getDefaultValue('is_spot')}`) === 'true',
       cloudRegionId: values[EXEC_ENVIRONMENT].cloudRegionId
         ? +values[EXEC_ENVIRONMENT].cloudRegionId
-        : undefined
+        : undefined,
+      notifications: (values[ADVANCED].notifications || []).slice()
     };
     if (this.state.isDts && this.props.detached) {
       payload.instance_size = undefined;
@@ -1239,7 +1240,7 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
       prettyUrl: this.prettyUrlEnabled
         ? prettyUrlGenerator.build(values[ADVANCED].prettyUrl)
         : undefined,
-      notifications: (this.state.notifications || []).slice()
+      notifications: (values[ADVANCED].notifications || []).slice()
     };
     if (this.state.runNameAlias) {
       payload.runNameAlias = this.state.runNameAlias;
@@ -1420,15 +1421,20 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     }
     if (key.split('.')[0] === 'instanceType') {
       return this.getInstanceTypeParameterDefaultValue(key.split('.')[1]);
-    } if (key.split('.')[0] === 'parameters') {
+    }
+    if (key.split('.')[0] === 'parameters') {
       return this.getParameterDefaultValue(key.split('.')[1]);
-    } else if (key.toLowerCase() === 'is_spot') {
+    }
+    if (key.toLowerCase() === 'is_spot') {
       if (this.props.parameters[key] !== undefined && this.props.parameters[key] !== null) {
         return `${this.props.parameters[key]}`;
-      } else {
-        return `${this.props.defaultPriceTypeIsSpot}`;
       }
-    } else if (!this.props.parameters[key]) {
+      return `${this.props.defaultPriceTypeIsSpot}`;
+    }
+    if (key.split('.')[0] === 'notifications' && this.props.parameters) {
+      return (this.props.parameters.notifications || []).map(mapObservableNotification);
+    }
+    if (!this.props.parameters[key]) {
       return undefined;
     }
     return `${this.props.parameters[key]}`;
@@ -4270,38 +4276,34 @@ class LaunchPipelineForm extends localization.LocalizedReactComponent {
     );
   };
 
-  renderJobNotificationsItem = () => {
-    if (
-      this.props.detached ||
-      this.props.isDetachedConfiguration ||
-      this.props.editConfigurationMode
-    ) {
-      return null;
-    }
-    return (
-      <FormItem
-        className={getFormItemClassName(styles.formItemRow, 'notifications')}
-        {...this.leftFormItemLayout}
-        label="Notifications"
-      >
-        <Col span={10}>
-          <FormItem
-            className={styles.formItemRow}
-          >
+  renderJobNotificationsItem = () => (
+    <FormItem
+      className={getFormItemClassName(styles.formItemRow, 'notifications')}
+      {...this.leftFormItemLayout}
+      label="Notifications"
+    >
+      <Col span={10}>
+        <FormItem
+          className={styles.formItemRow}
+        >
+          {this.getSectionFieldDecorator(ADVANCED)('notifications',
+            {
+              initialValue: this.getDefaultValue('notifications')
+            }
+          )(
             <JobNotifications
-              notifications={this.state.notifications}
-              onChange={notifications => this.setState({
-                notifications: (notifications || []).slice()
-              })}
+              disabled={
+                (this.props.readOnly && !this.props.canExecute)
+              }
             />
-          </FormItem>
-        </Col>
-        <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
-          {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
-        </Col>
-      </FormItem>
-    );
-  };
+          )}
+        </FormItem>
+      </Col>
+      <Col span={1} style={{marginLeft: 7, marginTop: 3}}>
+        {hints.renderHint(this.localizedStringWithSpotDictionaryFn, hints.jobNotificationsHint)}
+      </Col>
+    </FormItem>
+  );
 
   renderCmdTemplateFormItem = () => {
     return (

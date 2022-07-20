@@ -223,7 +223,8 @@ class LaunchPipeline extends localization.LocalizedReactComponent {
           : undefined,
         cloudRegionId: parameterIsNotEmpty(versionSettingValue('cloudRegionId'))
           ? versionSettingValue('cloudRegionId')
-          : undefined
+          : undefined,
+        notifications: versionSettingValue('notifications') || []
       };
     } else if (this.props.run && !this.runPending && !this.props.run.error) {
       const parameters = {
