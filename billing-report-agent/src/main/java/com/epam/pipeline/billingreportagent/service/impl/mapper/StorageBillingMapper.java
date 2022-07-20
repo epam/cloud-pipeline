@@ -16,8 +16,6 @@
 
 package com.epam.pipeline.billingreportagent.service.impl.mapper;
 
-import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
-
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
@@ -29,6 +27,8 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+
+import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
 @RequiredArgsConstructor
 @Getter
@@ -42,20 +42,26 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             final StorageBillingInfo billingInfo = container.getEntity();
             final AbstractDataStorage storage = billingInfo.getEntity();
-            jsonBuilder
-                .startObject()
+
+            jsonBuilder.startObject()
                 .field(DOC_TYPE_FIELD, documentType.name())
-                .field("storage_id", storage.getId())
                 .field("resource_type", billingInfo.getResourceType())
                 .field("cloudRegionId", billingInfo.getRegionId())
-                .field("provider", storage.getType())
+
+                .field("storage_id", storage.getId())
+                .field("storage_name", storage.getName())
+                .field("storage_path", storage.getPath())
                 .field("storage_type", billingInfo.getStorageType())
+                .field("provider", storage.getType())
+
                 .field("usage_bytes", billingInfo.getUsageBytes())
+                .field("usage_bytes_avg", billingInfo.getUsageBytes())
                 .field("cost", billingInfo.getCost())
+
                 .field("created_date", billingInfo.getDate());
-            buildUserContent(container.getOwner(), jsonBuilder);
-            jsonBuilder.endObject();
-            return jsonBuilder;
+
+            return buildUserContent(container.getOwner(), jsonBuilder)
+                    .endObject();
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for data storage: ", e);
         }

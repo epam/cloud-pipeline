@@ -25,6 +25,7 @@ import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,12 +38,16 @@ import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 @Getter
 public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInfo> {
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE);
+    private static final Pattern TOOL_PATTERN = Pattern.compile("^(.*)\\/(.*)\\/(.*):(.*)$");
     private static final int PRICE_SCALE = 5;
 
     private final String billingCenterKey;
@@ -56,32 +61,50 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
         try (XContentBuilder jsonBuilder = XContentFactory.jsonBuilder()) {
             final PipelineRunBillingInfo billingInfo = container.getEntity();
             final PipelineRun run = billingInfo.getEntity().getPipelineRun();
-            jsonBuilder
-                .startObject()
+            final Optional<Matcher> tool = Optional.ofNullable(run.getDockerImage())
+                    .filter(StringUtils::isNotBlank)
+                    .map(TOOL_PATTERN::matcher)
+                    .filter(Matcher::find);
+
+            jsonBuilder.startObject()
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
-                .field("run_id", run.getId())
                 .field("resource_type", billingInfo.getResourceType())
+                .field("cloudRegionId", run.getInstance().getCloudRegionId())
+
+                .field("run_id", run.getId())
+                .field("compute_type", billingInfo.getEntity().getRunType())
+                .field("instance_type", run.getInstance().getNodeType())
+
                 .field("pipeline", run.getPipelineId())
                 .field("pipeline_name", run.getPipelineName())
+                .field("pipeline_version", run.getVersion())
+
                 .field("tool", run.getDockerImage())
-                .field("instance_type", run.getInstance().getNodeType())
-                .field("compute_type", billingInfo.getEntity().getRunType())
-                .field("cost", billingInfo.getCost())
+                .field("tool_registry", tool.map(toGroup(1)).orElse(null))
+                .field("tool_group", tool.map(toGroup(2)).orElse(null))
+                .field("tool_name", tool.map(toGroup(3)).orElse(null))
+                .field("tool_version", tool.map(toGroup(4)).orElse(null))
+
                 .field("usage_minutes", billingInfo.getUsageMinutes())
                 .field("paused_minutes", billingInfo.getPausedMinutes())
                 .field("run_price", run.getPricePerHour().unscaledValue().longValue())
                 .field("compute_price", scaled(run.getComputePricePerHour()))
                 .field("disk_price", scaled(run.getDiskPricePerHour()))
-                .field("cloudRegionId", run.getInstance().getCloudRegionId())
+                .field("cost", billingInfo.getCost())
+
                 .field("created_date", billingInfo.getDate())
                 .field("started_date", asString(run.getStartDate()))
                 .field("finished_date", asString(run.getEndDate()));
-            buildUserContent(container.getOwner(), jsonBuilder);
-            jsonBuilder.endObject();
-            return jsonBuilder;
+
+            return buildUserContent(container.getOwner(), jsonBuilder)
+                .endObject();
         } catch (IOException e) {
             throw new IllegalArgumentException("Failed to create elasticsearch document for pipeline run: ", e);
         }
+    }
+
+    private Function<Matcher, String> toGroup(final int group) {
+        return matcher -> matcher.group(group);
     }
 
     private long scaled(final BigDecimal price) {
