@@ -87,11 +87,19 @@ public final class CommonUtils {
                     HashMap::new));
     }
 
+    @SafeVarargs
     public static <T> Optional<T> first(Supplier<Optional<T>>... suppliers) {
-        return Arrays.asList(suppliers).stream()
+        return Arrays.stream(suppliers)
                 .map(Supplier::get)
                 .flatMap(o -> o.map(Stream::of).orElseGet(Stream::empty))
                 .findFirst();
+    }
+
+    @SafeVarargs
+    public static <T> Optional<T> first(final Map<T, T> defaults, final T... keys) {
+        return Arrays.stream(keys)
+                .map(value -> (Supplier<Optional<T>>) () -> Optional.ofNullable(defaults.get(value)))
+                .reduce(Optional.empty(), (prev, next) -> prev.map(Optional::of).orElseGet(next), (left, right) -> left);
     }
 
     public static <T> List<T> toList(final Iterable<T> items) {

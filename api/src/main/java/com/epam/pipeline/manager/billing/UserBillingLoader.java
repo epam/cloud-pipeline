@@ -9,6 +9,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
@@ -98,6 +99,7 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
                                 .subAggregation(billingHelper.aggregateRunCostSumBucket())
                                 .subAggregation(billingHelper.aggregateStorageCostSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
+                                .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize)))
                         .aggregation(aggregateBillingsByMonth(discount))
                         .aggregation(billingHelper.aggregateUniqueRunsCount())
@@ -126,8 +128,10 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
     }
 
     private UserGeneralBilling getBilling(final String name, final Aggregations aggregations) {
+        final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return UserGeneralBilling.builder()
                 .name(name)
+                .billingCenter(BillingUtils.asString(topHitFields.get(BillingUtils.BILLING_CENTER_FIELD)))
                 .totalMetrics(GeneralBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations))
@@ -156,9 +160,14 @@ public class UserBillingLoader implements BillingLoader<UserGeneralBilling> {
     }
 
     private UserGeneralBilling withDetails(final UserGeneralBilling billing) {
+        if (StringUtils.isNotBlank(billing.getBillingCenter())) {
+            return billing;
+        }
         final Map<String, String> details = userBillingDetailsLoader.loadDetails(billing.getName());
         return billing.toBuilder()
-                .billingCenter(details.get(BillingUtils.BILLING_CENTER_FIELD))
+                .billingCenter(StringUtils.isNotBlank(billing.getBillingCenter())
+                        ? billing.getBillingCenter()
+                        : details.get(BillingUtils.BILLING_CENTER_FIELD))
                 .build();
     }
 }
