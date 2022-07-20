@@ -21,58 +21,70 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
-import lombok.RequiredArgsConstructor;
+import com.epam.pipeline.utils.CommonUtils;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
-@RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 @Slf4j
 public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader {
 
-    @Value("${billing.empty.report.value:unknown}")
-    private String emptyValue;
+    @Getter
+    private final BillingGrouping grouping = BillingGrouping.PIPELINE;
 
-    @Autowired
     private final PipelineManager pipelineManager;
-
-    @Autowired
+    private final UserBillingDetailsLoader userBillingDetailsLoader;
     private final MessageHelper messageHelper;
+    private final String emptyValue;
 
-    @Override
-    public BillingGrouping getGrouping() {
-        return BillingGrouping.PIPELINE;
+    public PipelineBillingDetailsLoader(final PipelineManager pipelineManager,
+                                        final UserBillingDetailsLoader userBillingDetailsLoader,
+                                        final MessageHelper messageHelper,
+                                        @Value("${billing.empty.report.value:unknown}")
+                                        final String emptyValue) {
+        this.pipelineManager = pipelineManager;
+        this.userBillingDetailsLoader = userBillingDetailsLoader;
+        this.messageHelper = messageHelper;
+        this.emptyValue = emptyValue;
     }
 
     @Override
-    public Map<String, String> loadInformation(final String entityIdentifier, final boolean loadDetails) {
+    public Map<String, String> loadInformation(final String id, final boolean loadDetails,
+                                               final Map<String, String> defaults) {
+        final Optional<Pipeline> pipeline = load(id);
+
         final Map<String, String> details = new HashMap<>();
-        try {
-            final Pipeline pipeline = pipelineManager.loadByNameOrIdWithoutVersion(entityIdentifier);
-            details.put(NAME, pipeline.getName());
-            if (loadDetails) {
-                details.put(OWNER, pipeline.getOwner());
-            }
-        } catch (RuntimeException e) {
-            log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
-                                              entityIdentifier, getGrouping()));
-            details.put(NAME, entityIdentifier);
-            if (loadDetails) {
-                details.putAll(getEmptyDetails());
-            }
-        }
+        details.put(NAME, CommonUtils.first(defaults, "pipeline_name")
+                .map(Optional::of)
+                .orElseGet(() -> pipeline.map(Pipeline::getName))
+                .orElse(id));
+        details.put(OWNER, CommonUtils.first(defaults, "owner_user_name", "owner")
+                .map(Optional::of)
+                .orElseGet(() -> pipeline.map(Pipeline::getOwner))
+                .orElse(emptyValue));
+        details.put(BILLING_CENTER, CommonUtils.first(defaults, "owner_billing_center", "billing_center")
+                .map(Optional::of)
+                .orElseGet(() -> pipeline.map(Pipeline::getOwner)
+                        .flatMap(userBillingDetailsLoader::getUserBillingCenter))
+                .orElse(emptyValue));
+        details.put(IS_DELETED, Boolean.toString(!pipeline.isPresent()));
         return details;
     }
 
-    @Override
-    public Map<String, String> getEmptyDetails() {
-        return Collections.singletonMap(OWNER, emptyValue);
+    private Optional<Pipeline> load(final String id) {
+        try {
+            return Optional.of(pipelineManager.loadByNameOrIdWithoutVersion(id));
+        } catch (RuntimeException e) {
+            log.info(messageHelper.getMessage(MessageConstants.INFO_BILLING_ENTITY_FOR_DETAILS_NOT_FOUND,
+                    id, getGrouping()));
+            return Optional.empty();
+        }
     }
 }
