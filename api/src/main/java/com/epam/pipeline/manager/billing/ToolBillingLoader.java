@@ -9,6 +9,7 @@ import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
@@ -96,6 +97,7 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
                                 .subAggregation(billingHelper.aggregateUniqueRunsCount())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
+                                .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
     }
 
@@ -113,8 +115,10 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
     }
 
     private ToolBilling getBilling(final String name, final Aggregations aggregations) {
+        final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return ToolBilling.builder()
                 .name(name)
+                .owner(BillingUtils.asString(topHitFields.get(BillingUtils.OWNER_FIELD)))
                 .totalMetrics(ToolBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations))
@@ -141,9 +145,14 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
     }
 
     private ToolBilling withDetails(final ToolBilling billing) {
+        if (StringUtils.isNotBlank(billing.getOwner())) {
+            return billing;
+        }
         final Map<String, String> details = toolBillingDetailsLoader.loadDetails(billing.getName());
         return billing.toBuilder()
-                .owner(details.get(EntityBillingDetailsLoader.OWNER))
+                .owner(StringUtils.isNotBlank(billing.getOwner())
+                        ? billing.getOwner()
+                        : details.get(EntityBillingDetailsLoader.OWNER))
                 .build();
     }
 }
