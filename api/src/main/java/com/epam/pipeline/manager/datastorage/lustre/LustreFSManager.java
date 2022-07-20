@@ -30,6 +30,8 @@ import com.amazonaws.services.fsx.model.FileSystemType;
 import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.amazonaws.services.fsx.model.StorageType;
 import com.amazonaws.services.fsx.model.Tag;
+import com.amazonaws.services.fsx.model.UpdateFileSystemRequest;
+import com.amazonaws.services.fsx.model.UpdateFileSystemResult;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
@@ -82,6 +84,15 @@ public class LustreFSManager {
                 .orElseGet(() -> createLustreFs(runId, size, fsxClient));
     }
 
+    public LustreFS updateLustreFsSize(final Long runId, final Integer size) {
+        final AwsRegion region = getRegionForRun(runId);
+        final AmazonFSx fsxClient = buildFsxClient(region);
+        return findFsForRun(runId, null, fsxClient)
+                .map(fs -> convert(updateSize(fs, size, fsxClient), region))
+                .orElseThrow(() -> new LustreFSException(
+                        messageHelper.getMessage(MessageConstants.ERROR_LUSTRE_NOT_FOUND, runId)));
+    }
+
     public LustreFS getLustreFS(final Long runId) {
         final AwsRegion region = getRegionForRun(runId);
         final AmazonFSx fsxClient = buildFsxClient(region);
@@ -115,6 +126,26 @@ public class LustreFSManager {
         fsxClient.deleteFileSystem(new DeleteFileSystemRequest()
                 .withFileSystemId(fs.getFileSystemId()));
         return convert(fs, region);
+    }
+
+    private FileSystem updateSize(final FileSystem fileSystem, final Integer size, final AmazonFSx fsxClient) {
+        final int effectiveSize = getFSSize(size,
+                LustreDeploymentType.valueOf(fileSystem.getLustreConfiguration().getDeploymentType()));
+        if (fileSystem.getStorageCapacity().equals(effectiveSize)) {
+            log.debug("Lustre FS {} already has requested size {}", fileSystem.getFileSystemId(), effectiveSize);
+            return fileSystem;
+        }
+        if (fileSystem.getLifecycle().equals("UPDATING")) {
+            log.debug("Luster FS {} size is already being updated", fileSystem.getFileSystemId());
+            return fileSystem;
+        }
+        final UpdateFileSystemRequest request = new UpdateFileSystemRequest();
+        request.setFileSystemId(fileSystem.getFileSystemId());
+        request.setStorageCapacity(effectiveSize);
+        final FileSystem result = fsxClient.updateFileSystem(request).getFileSystem();
+        log.debug("Size change requested for LustreFS {} from {} to {}",
+                fileSystem.getFileSystemId(), fileSystem.getStorageCapacity(), result.getStorageCapacity());
+        return result;
     }
 
     private LustreFS createLustreFs(final Long runId, final Integer size, final AmazonFSx fsxClient) {
