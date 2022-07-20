@@ -90,6 +90,13 @@ import {
   getSkippedParameters as getGPUScalingSkippedParameters,
   readGPUScalingPreference
 } from '../../pipelines/launch/form/utilities/enable-gpu-scaling';
+import JobNotifications from '../../pipelines/launch/dialogs/job-notifications';
+import {
+  notificationArraysAreEqual
+} from '../../pipelines/launch/dialogs/job-notifications/notifications-equal';
+import {
+  mapObservableNotification
+} from '../../pipelines/launch/dialogs/job-notifications/job-notification';
 
 const Panels = {
   endpoints: 'endpoints',
@@ -154,6 +161,8 @@ export default class EditToolForm extends React.Component {
     labels: [],
     kubeLabels: [],
     initialKubeLabels: [],
+    notifications: [],
+    initialNotifications: [],
     kubeLabelsHasErrors: false,
     labelInputVisible: false,
     labelInputValue: '',
@@ -357,7 +366,8 @@ export default class EditToolForm extends React.Component {
           instance_size: values.instanceType,
           instance_image: values.instanceImage,
           is_spot: `${values.is_spot}` === 'true',
-          kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels)
+          kubeLabels: prepareKubeLabelsPayload(this.state.kubeLabels),
+          notifications: this.state.notifications
         };
         this.setState({pending: true}, async () => {
           if (this.props.onSubmit) {
@@ -521,6 +531,10 @@ export default class EditToolForm extends React.Component {
           .map(([key, value]) => ({key, value}));
         state.kubeLabels = kubeLabels;
         state.initialKubeLabels = kubeLabels;
+        state.notifications = props.configuration
+          ? (props.configuration.notifications || []).map(mapObservableNotification)
+          : [];
+        state.initialNotifications = (state.notifications || []).map(mapObservableNotification);
         if (props.configuration && props.configuration.parameters) {
           for (let key in props.configuration.parameters) {
             if (!props.configuration.parameters.hasOwnProperty(key) ||
@@ -871,7 +885,8 @@ export default class EditToolForm extends React.Component {
       kubeLabelsHasChanges(
         this.state.initialKubeLabels,
         this.state.kubeLabels
-      );
+      ) ||
+      !notificationArraysAreEqual(this.state.notifications, this.state.initialNotifications);
   };
 
   initializeEndpointsControl = (control) => {
@@ -1262,6 +1277,26 @@ export default class EditToolForm extends React.Component {
                   <Input disabled={this.state.pending || this.props.readOnly} />
                 )}
               </Form.Item>
+              <Row style={{marginBottom: 10, marginTop: 10}}>
+                <Col
+                  xs={24}
+                  sm={6}
+                  style={{paddingRight: 10}}
+                  className={classNames(
+                    'cp-accent',
+                    styles.toolSettingsTitle
+                  )}
+                >
+                  Notifications:
+                </Col>
+                <Col xs={24} sm={12}>
+                  <JobNotifications
+                    value={this.state.notifications}
+                    onChange={o => this.setState({notifications: o})}
+                    linkStyle={{margin: 0}}
+                  />
+                </Col>
+              </Row>
               {
                 !this.isWindowsPlatform && (
                   <Form.Item
