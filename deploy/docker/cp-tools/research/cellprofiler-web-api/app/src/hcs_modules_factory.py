@@ -528,8 +528,9 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         specs = module_config['specs'] if 'specs' in module_config else []
         specs = [SpecItem.from_json(spec) for spec in specs]
         grouping = module_config['grouping'] if 'grouping' in module_config else None
+        fields_by_well = module_config['fields_by_well'] if 'fields_by_well' in module_config else {}
         self._validate_configuration(specs, grouping)
-        self.module.set_calculation_spec(specs, grouping)
+        self.module.set_calculation_spec(specs, grouping, fields_by_well)
         self.set_required_data_to_module_config(module_config, specs)
         ExportToSpreadsheetModuleProcessor.configure_module(self, module_config)
         return self.module

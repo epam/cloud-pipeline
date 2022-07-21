@@ -73,7 +73,6 @@ class SpecItem(object):
 
 
 class DefineResults(ExportToSpreadsheet):
-    _EMPTY_GROUPING_VALUE = 'ALL'
     _METADATA_COLUMN_PREFIX = 'Metadata_'
     _MEAN_STAT_FUNC_KEY = 'Mean'
     _MEDIAN_STAT_FUNC_KEY = 'Median'
@@ -90,19 +89,27 @@ class DefineResults(ExportToSpreadsheet):
     _MEAN_INTENSITY = 'Intensity_MeanIntensity'
     _MEAN_EDGE_INTENSITY = 'Intensity_MeanIntensityEdge'
     _INTEGRATED_INTENSITY = 'Intensity_IntegratedIntensity'
+    _WELL_ROW = "WellRow"
+    _WELL_COLUMN = "WellColumn"
 
     def __init__(self):
         super(DefineResults, self).__init__()
         self._calculation_specs = []
         self._grouping = []
         self.module_name = 'DefineResults'
+        self._fields_by_well = {}
 
     def update_settings(self, setting: list):
         pass
 
-    def set_calculation_spec(self, specs, grouping):
+    def set_calculation_spec(self, specs, grouping, fields_by_well):
         self._calculation_specs = specs if specs is not None else []
         self._grouping = grouping
+        if self._grouping and self._WELL_ROW not in self._grouping:
+            self._grouping.append(self._WELL_ROW)
+        if self._grouping and self._WELL_COLUMN not in self._grouping:
+            self._grouping.append(self._WELL_COLUMN)
+        self._fields_by_well = self._calculate_fields_count_by_well(fields_by_well)
 
     def get_calculation_specs_as_json(self):
         return [spec.to_json() for spec in self._calculation_specs]
@@ -206,9 +213,14 @@ class DefineResults(ExportToSpreadsheet):
                 self._do_operation(spec, result_data_dict)
         result_index = list()
         result_data_list = list()
+        well_y_index = self._grouping.index(self._WELL_COLUMN)
+        well_x_index = self._grouping.index(self._WELL_ROW)
         for group_name, group_calculation_results in result_data_dict.items():
             result_index.append(group_name)
             result_data_list.append(group_calculation_results)
+            well_key = (group_name[well_y_index], group_name[well_x_index])
+            fields_count = self._fields_by_well.get(well_key)
+            group_calculation_results.update({'Number of Fields': fields_count})
         return pandas.DataFrame(result_data_list, index=self._prepare_df_index(result_index))
 
     def _prepare_df_index(self, result_indices):
@@ -453,3 +465,10 @@ class DefineResults(ExportToSpreadsheet):
             secondary_to_primary_region_intensity_dataseries = pandas.Series(data=series_list)
             self._calculate_and_add_all_stat_functions(
                 result_data_dict, secondary_to_primary_region_intensity_dataseries, grouping_value, spec)
+
+    @staticmethod
+    def _calculate_fields_count_by_well(fields_by_well: dict):
+        result = {}
+        for well_pair, fields in fields_by_well.items():
+            result.update({well_pair: len(fields)})
+        return result
