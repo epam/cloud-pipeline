@@ -19,8 +19,10 @@ package com.epam.pipeline.billingreportagent.service;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.vo.EntityVO;
@@ -82,5 +84,11 @@ public interface EntityLoader<T> {
                         map.put(entry.getKey(), value);
                     },
                     HashMap::putAll);
+    }
+
+    default Map<Long, AbstractCloudRegion> prepareRegions(final CloudPipelineAPIClient apiClient) {
+        return apiClient.loadAllCloudRegions()
+                .stream()
+                .collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
     }
 }

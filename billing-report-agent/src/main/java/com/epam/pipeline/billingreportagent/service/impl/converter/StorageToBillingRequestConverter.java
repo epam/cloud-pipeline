@@ -25,12 +25,9 @@ import com.epam.pipeline.billingreportagent.service.ElasticsearchServiceClient;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.billingreportagent.service.EntityToBillingRequestConverter;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.AzureBlobStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
-import com.epam.pipeline.entity.datastorage.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.MountType;
-import com.epam.pipeline.entity.datastorage.NFSDataStorage;
-import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -167,7 +164,7 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                 : (String) MapUtils.emptyIfNull(hits.getAt(0).getSourceAsMap()).get(REGION_FIELD);
             return createBilling(container, storageSize, regionLocation, syncStart.toLocalDate().minusDays(1));
         })
-            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), billing))
+            .map(billing -> getDocWriteRequest(fullIndex, container.getOwner(), container.getRegion(), billing))
             .map(Collections::singletonList)
             .orElse(Collections.emptyList());
     }
@@ -189,10 +186,12 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
 
     private DocWriteRequest getDocWriteRequest(final String fullIndex,
                                                final EntityWithMetadata<PipelineUser> owner,
+                                               final AbstractCloudRegion region,
                                                final StorageBillingInfo billing) {
         final EntityContainer<StorageBillingInfo> entity = EntityContainer.<StorageBillingInfo>builder()
             .owner(owner)
             .entity(billing)
+            .region(region)
             .build();
         final String docId = billing.getEntity().getId().toString();
         return new IndexRequest(fullIndex, INDEX_TYPE).id(docId).source(mapper.map(entity));
@@ -202,22 +201,31 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                              final Long byteSize,
                                              final String regionLocation,
                                              final LocalDate billingDate) {
+        final String storageKind = getStorageKind(storageContainer);
         final StorageBillingInfo.StorageBillingInfoBuilder billing =
             StorageBillingInfo.builder()
                 .storage(storageContainer.getEntity())
                 .usageBytes(byteSize)
                 .date(billingDate)
-                .storageType(storageType);
+                .storageType(storageType)
+                .storageKind(storageKind);
 
         try {
-            billing
-                .regionId(getRegionId(storageContainer))
-                .cost(calculateDailyCost(byteSize, regionLocation, billingDate));
+            billing.cost(calculateDailyCost(byteSize, regionLocation, billingDate));
         } catch (IllegalArgumentException e) {
             billing.cost(calculateDailyCost(byteSize, storagePricing.getDefaultPriceGb(), billingDate));
         }
 
         return billing.build();
+    }
+
+    private String getStorageKind(final EntityContainer<AbstractDataStorage> storageContainer) {
+        return storageContainer.getEntity().getType() != DataStorageType.NFS
+                ? storageContainer.getEntity().getType().name()
+                : fileshareMountsService
+                .map(s -> s.getMountTypeForShare(storageContainer.getEntity().getFileShareMountId()))
+                .map(MountType::name)
+                .orElse(null);
     }
 
     /**
@@ -264,24 +272,6 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                                                endRange - beginRange);
                 return calculateDailyCost(bytesForCurrentTierPrice, entity.getPriceCentsPerGb(), date);
             }).sum();
-    }
-
-    private Long getRegionId(final EntityContainer<AbstractDataStorage> storageContainer) {
-        final AbstractDataStorage storage = storageContainer.getEntity();
-        if (storage instanceof S3bucketDataStorage) {
-            return ((S3bucketDataStorage) storage).getRegionId();
-        } else if (storage instanceof AzureBlobStorage) {
-            return ((AzureBlobStorage) storage).getRegionId();
-        } else if (storage instanceof GSBucketStorage) {
-            return ((GSBucketStorage) storage).getRegionId();
-        } else if (storage instanceof NFSDataStorage) {
-            return fileshareMountsService.
-                map(fileShareMountsService -> fileShareMountsService.getRegionIdForShare(storage.getFileShareMountId()))
-                .orElseThrow(
-                    () -> new IllegalStateException("FileShareMountService is not available for NFSSynchronizer!"));
-        } else {
-            throw new IllegalArgumentException("Unknown storage type!");
-        }
     }
 
     private List<DocWriteRequest> buildRequestsForGivenPeriod(final EntityContainer<AbstractDataStorage> container,

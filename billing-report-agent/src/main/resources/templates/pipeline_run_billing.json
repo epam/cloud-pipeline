@@ -6,6 +6,7 @@
         "resource_type": { "type": "keyword" },
         "cloudRegionId": { "type": "keyword" },
         "cloud_region_id": { "type": "alias", "path": "cloudRegionId" },
+        "cloud_region_name": { "type": "keyword" },
 
         "run_id": { "type": "keyword", "store": true },
         "compute_type": { "type": "keyword" },

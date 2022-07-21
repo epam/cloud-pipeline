@@ -72,7 +72,6 @@ public class StorageBillingMapperTest {
         final StorageBillingInfo billing = StorageBillingInfo.builder()
             .storage(s3Storage)
             .storageType(StorageType.OBJECT_STORAGE)
-            .regionId(TEST_REGION_ID)
             .usageBytes(TEST_USAGE_BYTES)
             .cost(TEST_COST)
             .date(TEST_DATE)
@@ -108,7 +107,6 @@ public class StorageBillingMapperTest {
         final StorageBillingInfo billing = StorageBillingInfo.builder()
             .storage(efsStorage)
             .storageType(StorageType.FILE_STORAGE)
-            .regionId(TEST_REGION_ID)
             .usageBytes(TEST_USAGE_BYTES)
             .cost(TEST_COST)
             .build();
@@ -126,7 +124,6 @@ public class StorageBillingMapperTest {
                             mappedFields.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
         Assert.assertEquals(efsStorage.getId(), mappedFields.get("storage_id"));
         Assert.assertEquals(ResourceType.STORAGE.toString(), mappedFields.get("resource_type"));
-        Assert.assertEquals(billing.getRegionId().intValue(), mappedFields.get("cloudRegionId"));
         Assert.assertEquals(efsStorage.getType().toString(), mappedFields.get("provider"));
         Assert.assertEquals(StorageType.FILE_STORAGE.toString(), mappedFields.get("storage_type"));
         Assert.assertEquals(testUser.getUserName(), mappedFields.get("owner"));
