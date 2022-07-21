@@ -24,6 +24,8 @@ import com.epam.pipeline.entity.cluster.pool.NodePool;
 import com.epam.pipeline.entity.configuration.RunConfiguration;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
@@ -165,6 +167,17 @@ public interface CloudPipelineAPI {
 
     @GET("datastorage/{id}/load")
     Call<Result<AbstractDataStorage>> loadDataStorage(@Path(ID) Long storageId);
+
+    @GET("datastorage/findByPath")
+    Call<Result<AbstractDataStorage>> findStorageByPath(@Query(ID) String path);
+
+    @GET("datastorage/{id}/content")
+    Call<Result<DataStorageItemContent>> getStorageItemContent(@Path(ID) Long storageId,
+                                                               @Query(PATH) String path);
+    @POST("datastorage/{id}/content")
+    Call<Result<DataStorageFile>> createStorageItem(@Path(ID) Long storageId,
+                                                    @Query(PATH) String path,
+                                                    @Body String content);
 
     @PUT("datastorage/{id}/tags/batch/insert")
     Call<Result<Object>> insertDataStorageTags(@Path(ID) Long storageId,
