@@ -665,7 +665,7 @@ function configureHyperThreading() {
 }
 
 function self_terminate_on_cleanup_timeout() {
-      local _min_terminate_timeout_min=30
+      local _min_terminate_timeout_min=1
       if [ -z "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" ]; then
             return 0
       fi
