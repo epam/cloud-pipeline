@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
@@ -70,7 +71,7 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
     public List<EntityContainer<PipelineRunWithType>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
                                                                                     final LocalDateTime to) {
         final Map<String, EntityWithMetadata<PipelineUser>> usersWithMetadata = prepareUsers(apiClient);
-
+        final Map<Long, AbstractCloudRegion> regions = prepareRegions(apiClient);
         final List<PipelineRun> runs = getRuns(from, to);
 
         final Map<Long, List<InstanceType>> regionOffers = runs.stream()
@@ -85,6 +86,7 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .map(run -> EntityContainer.<PipelineRunWithType>builder()
                         .entity(new PipelineRunWithType(run, loadDisks(run), getRunType(run, regionOffers)))
                         .owner(getOwner(run, usersWithMetadata))
+                        .region(regions.get(run.getInstance().getCloudRegionId()))
                         .build())
                 .collect(Collectors.toList());
     }

@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.billingreportagent.model;
 
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,4 +31,5 @@ public class EntityContainer<T> {
 
     private T entity;
     private EntityWithMetadata<PipelineUser> owner;
+    private AbstractCloudRegion region;
 }

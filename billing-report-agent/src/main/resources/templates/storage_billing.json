@@ -6,11 +6,14 @@
         "resource_type": { "type": "keyword" },
         "cloudRegionId": { "type": "keyword" },
         "cloud_region_id": { "type": "alias", "path": "cloudRegionId" },
+        "cloud_region_name": { "type": "keyword" },
 
         "storage_id": { "type": "keyword", "store": true },
+        "storage_title": { "type": "keyword" },
         "storage_name": { "type": "keyword" },
         "storage_path": { "type": "keyword" },
         "storage_type": { "type": "keyword" },
+        "storage_kind": { "type": "keyword" },
         "provider": { "type": "keyword" },
         "storage_provider": { "type": "alias", "path": "provider" },
 

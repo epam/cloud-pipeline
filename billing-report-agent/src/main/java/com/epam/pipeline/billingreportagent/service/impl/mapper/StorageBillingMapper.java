@@ -20,6 +20,7 @@ import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -46,12 +47,17 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
             jsonBuilder.startObject()
                 .field(DOC_TYPE_FIELD, documentType.name())
                 .field("resource_type", billingInfo.getResourceType())
-                .field("cloudRegionId", billingInfo.getRegionId())
+                .field("cloudRegionId", container.getRegion().getId())
+                .field("cloud_region_name", container.getRegion().getName())
 
                 .field("storage_id", storage.getId())
+                .field("storage_title", storage.getType() != DataStorageType.NFS
+                        ? storage.getPath()
+                        : storage.getName())
                 .field("storage_name", storage.getName())
                 .field("storage_path", storage.getPath())
                 .field("storage_type", billingInfo.getStorageType())
+                .field("storage_kind", billingInfo.getStorageKind())
                 .field("provider", storage.getType())
 
                 .field("usage_bytes", billingInfo.getUsageBytes())
