@@ -95,13 +95,6 @@ public final class CommonUtils {
                 .findFirst();
     }
 
-    @SafeVarargs
-    public static <T> Optional<T> first(final Map<T, T> defaults, final T... keys) {
-        return Arrays.stream(keys)
-                .map(value -> (Supplier<Optional<T>>) () -> Optional.ofNullable(defaults.get(value)))
-                .reduce(Optional.empty(), (prev, next) -> prev.map(Optional::of).orElseGet(next), (left, right) -> left);
-    }
-
     public static <T> List<T> toList(final Iterable<T> items) {
         if (Objects.isNull(items)) {
             return Collections.emptyList();

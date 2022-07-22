@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.billing;
+package com.epam.pipeline.manager.billing.detail;
 
 import com.epam.pipeline.entity.billing.BillingGrouping;
 
@@ -26,6 +26,9 @@ public interface EntityBillingDetailsLoader {
     String OWNER = "owner";
     String NAME = "name";
     String BILLING_CENTER = "billing_center";
+    String REGION = "region";
+    String PROVIDER = "provider";
+    String CREATED = "created";
     String IS_DELETED = "is_deleted";
 
     BillingGrouping getGrouping();

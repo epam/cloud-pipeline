@@ -4,6 +4,8 @@ import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.ToolBilling;
 import com.epam.pipeline.entity.billing.ToolBillingMetrics;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
+import com.epam.pipeline.manager.billing.detail.ToolBillingDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
@@ -39,7 +41,7 @@ public class ToolBillingLoader implements BillingLoader<ToolBilling> {
 
     private final BillingHelper billingHelper;
     private final PreferenceManager preferenceManager;
-    private final ToolBillingDetailsLoader toolBillingDetailsLoader;
+    private final EntityBillingDetailsLoader toolBillingDetailsLoader;
 
     @Override
     public Stream<ToolBilling> billings(final RestHighLevelClient elasticSearchClient,
