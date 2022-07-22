@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.billing;
+package com.epam.pipeline.manager.billing.detail;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.pipeline.Pipeline;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
-import com.epam.pipeline.utils.CommonUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
+@RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
 @Slf4j
 public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader {
@@ -40,41 +40,21 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
     private final BillingGrouping grouping = BillingGrouping.PIPELINE;
 
     private final PipelineManager pipelineManager;
-    private final UserBillingDetailsLoader userBillingDetailsLoader;
     private final MessageHelper messageHelper;
     private final String emptyValue;
-
-    public PipelineBillingDetailsLoader(final PipelineManager pipelineManager,
-                                        final UserBillingDetailsLoader userBillingDetailsLoader,
-                                        final MessageHelper messageHelper,
-                                        @Value("${billing.empty.report.value:unknown}")
-                                        final String emptyValue) {
-        this.pipelineManager = pipelineManager;
-        this.userBillingDetailsLoader = userBillingDetailsLoader;
-        this.messageHelper = messageHelper;
-        this.emptyValue = emptyValue;
-    }
 
     @Override
     public Map<String, String> loadInformation(final String id, final boolean loadDetails,
                                                final Map<String, String> defaults) {
         final Optional<Pipeline> pipeline = load(id);
-
-        final Map<String, String> details = new HashMap<>();
-        details.put(NAME, CommonUtils.first(defaults, "pipeline_name")
-                .map(Optional::of)
-                .orElseGet(() -> pipeline.map(Pipeline::getName))
-                .orElse(id));
-        details.put(OWNER, CommonUtils.first(defaults, "owner_user_name", "owner")
-                .map(Optional::of)
-                .orElseGet(() -> pipeline.map(Pipeline::getOwner))
+        final Map<String, String> details = new HashMap<>(defaults);
+        details.computeIfAbsent(NAME, key -> pipeline.map(Pipeline::getName).orElse(id));
+        details.computeIfAbsent(OWNER, key -> pipeline.map(Pipeline::getOwner).orElse(emptyValue));
+        details.computeIfAbsent(CREATED, key -> pipeline.map(Pipeline::getCreatedDate)
+                .map(DateUtils::convertDateToLocalDateTime)
+                .map(DateTimeFormatter.ISO_DATE_TIME::format)
                 .orElse(emptyValue));
-        details.put(BILLING_CENTER, CommonUtils.first(defaults, "owner_billing_center", "billing_center")
-                .map(Optional::of)
-                .orElseGet(() -> pipeline.map(Pipeline::getOwner)
-                        .flatMap(userBillingDetailsLoader::getUserBillingCenter))
-                .orElse(emptyValue));
-        details.put(IS_DELETED, Boolean.toString(!pipeline.isPresent()));
+        details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!pipeline.isPresent()));
         return details;
     }
 

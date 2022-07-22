@@ -5,6 +5,8 @@ import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.StorageBilling;
 import com.epam.pipeline.entity.billing.StorageBillingMetrics;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
+import com.epam.pipeline.manager.billing.detail.StorageBillingDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
@@ -43,7 +45,7 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
 
     private final BillingHelper billingHelper;
     private final PreferenceManager preferenceManager;
-    private final StorageBillingDetailsLoader storageBillingDetailsLoader;
+    private final EntityBillingDetailsLoader storageBillingDetailsLoader;
 
     @Override
     public Stream<StorageBilling> billings(final RestHighLevelClient elasticSearchClient,
@@ -126,8 +128,8 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
                 .billingCenter(BillingUtils.asString(topHitFields.get(BillingUtils.BILLING_CENTER_FIELD)))
                 .type(DataStorageType.getByName(BillingUtils.asString(topHitFields.get(BillingUtils.PROVIDER_FIELD))))
                 .region(BillingUtils.asString(topHitFields.get(BillingUtils.CLOUD_REGION_ID_FIELD)))
-                .provider(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_PROVIDER_FIELD)))
-                .created(asDateTime(BillingUtils.asString(topHitFields.get(BillingUtils.CREATED_FIELD))))
+                .provider(BillingUtils.asString(topHitFields.get(BillingUtils.CLOUD_REGION_PROVIDER_FIELD)))
+                .created(asDateTime(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_CREATED_FIELD))))
                 .totalMetrics(StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations))
@@ -167,16 +169,16 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
         return billing.toBuilder()
                 .name(StringUtils.isNotBlank(billing.getName())
                         ? billing.getName()
-                        : details.get(StorageBillingDetailsLoader.NAME))
+                        : details.get(StorageBillingDetailsLoader.STORAGE_NAME))
                 .region(StringUtils.isNotBlank(billing.getRegion())
                         ? billing.getRegion()
-                        : details.get(StorageBillingDetailsLoader.REGION))
+                        : details.get(EntityBillingDetailsLoader.REGION))
                 .provider(StringUtils.isNotBlank(billing.getProvider())
                         ? billing.getProvider()
-                        : details.get(StorageBillingDetailsLoader.PROVIDER))
+                        : details.get(EntityBillingDetailsLoader.PROVIDER))
                 .created(Objects.nonNull(billing.getCreated())
                         ? billing.getCreated()
-                        : asDateTime(details.get(StorageBillingDetailsLoader.CREATED)))
+                        : asDateTime(details.get(EntityBillingDetailsLoader.CREATED)))
                 .build();
     }
 
