@@ -73,6 +73,8 @@ class SpecItem(object):
 
 
 class DefineResults(ExportToSpreadsheet):
+    MODULE_NAME = 'DefineResults'
+    FIELDS_BY_WELL = 'fields_by_well'
     _METADATA_COLUMN_PREFIX = 'Metadata_'
     _MEAN_STAT_FUNC_KEY = 'Mean'
     _MEDIAN_STAT_FUNC_KEY = 'Median'
@@ -97,7 +99,7 @@ class DefineResults(ExportToSpreadsheet):
         super(DefineResults, self).__init__()
         self._calculation_specs = []
         self._grouping = []
-        self.module_name = 'DefineResults'
+        self.module_name = self.MODULE_NAME
         self._fields_by_well = {}
 
     def update_settings(self, setting: list):

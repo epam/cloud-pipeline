@@ -1,6 +1,7 @@
 import cellprofiler_core.preferences
 
 from .config import Config
+from .modules.define_results import DefineResults
 
 cellprofiler_core.preferences.set_headless()
 cellprofiler_core.preferences.set_awt_headless(True)
@@ -139,8 +140,8 @@ class HcsPipeline(object):
     def configure_module(self, module_config, module=None, module_name=None):
         if module is not None:
             module_name = module.module_name
-        if module_name == 'DefineResults':
-            module_config.update({'fields_by_well': self._fields_by_well})
+        if module_name == DefineResults.MODULE_NAME:
+            module_config.update({DefineResults.FIELDS_BY_WELL: self._fields_by_well})
         processor = self._modules_factory.get_module_processor(module, module_name)
         module = processor.configure_module(module_config)
         return module
