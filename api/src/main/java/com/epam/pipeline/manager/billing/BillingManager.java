@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.utils.CommonUtils;
@@ -259,6 +260,7 @@ public class BillingManager {
             .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
             .size(Integer.MAX_VALUE);
         fieldAgg.subAggregation(billingHelper.aggregateCostSum());
+        fieldAgg.subAggregation(billingHelper.aggregateLastByDateDoc());
         if (grouping.isRunUsageDetailsRequired()) {
             fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
             fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
@@ -272,7 +274,6 @@ public class BillingManager {
         }
         searchSource.aggregation(fieldAgg);
         searchSource.aggregation(billingHelper.aggregateCostSum());
-        searchSource.aggregation(billingHelper.aggregateLastByDateDoc());
 
         final SearchRequest searchRequest = new SearchRequest()
                 .indicesOptions(IndicesOptions.strictExpandOpen())
@@ -319,7 +320,8 @@ public class BillingManager {
         final List<String> responseFilters = Stream.of(billingHelper.aggregateCostSum().getName(),
                         billingHelper.aggregateRunUsageSum().getName(),
                         billingHelper.aggregateUniqueRunsCount().getName(),
-                        billingHelper.aggregateStorageUsageTotalSumBucket().getName())
+                        billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
+                        billingHelper.aggregateLastByDateDoc().getName())
             .map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
                     BillingUtils.ES_WILDCARD + aggName))
             .collect(Collectors.toList());
