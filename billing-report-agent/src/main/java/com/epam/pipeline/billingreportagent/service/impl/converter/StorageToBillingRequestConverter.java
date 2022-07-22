@@ -201,14 +201,16 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
                                              final Long byteSize,
                                              final String regionLocation,
                                              final LocalDate billingDate) {
-        final String storageKind = getStorageKind(storageContainer);
+        final DataStorageType objectStorageType = getObjectStorageType(storageContainer);
+        final MountType fileStorageType = objectStorageType != null ? null : getFileStorageType(storageContainer);
         final StorageBillingInfo.StorageBillingInfoBuilder billing =
             StorageBillingInfo.builder()
                 .storage(storageContainer.getEntity())
                 .usageBytes(byteSize)
                 .date(billingDate)
-                .storageType(storageType)
-                .storageKind(storageKind);
+                .resourceStorageType(storageType)
+                .objectStorageType(objectStorageType)
+                .fileStorageType(fileStorageType);
 
         try {
             billing.cost(calculateDailyCost(byteSize, regionLocation, billingDate));
@@ -219,12 +221,15 @@ public class StorageToBillingRequestConverter implements EntityToBillingRequestC
         return billing.build();
     }
 
-    private String getStorageKind(final EntityContainer<AbstractDataStorage> storageContainer) {
-        return storageContainer.getEntity().getType() != DataStorageType.NFS
-                ? storageContainer.getEntity().getType().name()
-                : fileshareMountsService
-                .map(s -> s.getMountTypeForShare(storageContainer.getEntity().getFileShareMountId()))
-                .map(MountType::name)
+    private DataStorageType getObjectStorageType(final EntityContainer<AbstractDataStorage> storageContainer) {
+        return Optional.ofNullable(storageContainer.getEntity().getType())
+                .filter(type -> type != DataStorageType.NFS)
+                .orElse(null);
+    }
+
+    private MountType getFileStorageType(final EntityContainer<AbstractDataStorage> storageContainer) {
+        return Optional.ofNullable(storageContainer.getEntity().getFileShareMountId())
+                .flatMap(fileShareId -> fileshareMountsService.map(s -> s.getMountTypeForShare(fileShareId)))
                 .orElse(null);
     }
 

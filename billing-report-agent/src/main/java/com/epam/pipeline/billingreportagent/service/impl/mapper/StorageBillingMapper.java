@@ -46,25 +46,24 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
 
             jsonBuilder.startObject()
                 .field(DOC_TYPE_FIELD, documentType.name())
-                .field("resource_type", billingInfo.getResourceType())
+                .field("created_date", billingInfo.getDate()) // Document creation date: 2022-07-22
+                .field("resource_type", billingInfo.getResourceType()) // Document resource type: COMPUTE / STORAGE
                 .field("cloudRegionId", container.getRegion().getId())
                 .field("cloud_region_name", container.getRegion().getName())
+                .field("cloud_region_provider", container.getRegion().getProvider())
 
                 .field("storage_id", storage.getId())
-                .field("storage_title", storage.getType() != DataStorageType.NFS
-                        ? storage.getPath()
-                        : storage.getName())
                 .field("storage_name", storage.getName())
                 .field("storage_path", storage.getPath())
-                .field("storage_type", billingInfo.getStorageType())
-                .field("storage_kind", billingInfo.getStorageKind())
-                .field("provider", storage.getType())
+                .field("storage_type", billingInfo.getResourceStorageType()) // Storage resource type: OBJECT_STORAGE / FILE_STORAGE
+                .field("provider", storage.getType()) // Storage common type: S3 / AZ / GS / NFS
+                .field("object_storage_type", billingInfo.getObjectStorageType()) // Object storage type: S3 / AZ / GS
+                .field("file_storage_type", billingInfo.getFileStorageType()) // File storage type: NFS / SMB / LUSTRE
+                .field("storage_created_date", asString(storage.getCreatedDate()))
 
                 .field("usage_bytes", billingInfo.getUsageBytes())
                 .field("usage_bytes_avg", billingInfo.getUsageBytes())
-                .field("cost", billingInfo.getCost())
-
-                .field("created_date", billingInfo.getDate());
+                .field("cost", billingInfo.getCost());
 
             return buildUserContent(container.getOwner(), jsonBuilder)
                     .endObject();

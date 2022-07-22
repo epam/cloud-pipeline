@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageAction;
 import com.epam.pipeline.entity.datastorage.DataStorageTag;
 import com.epam.pipeline.entity.datastorage.FileShareMount;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.docker.ToolDescription;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.git.GitRepositoryEntry;
@@ -216,6 +217,9 @@ public interface CloudPipelineAPI {
 
     @GET("tool/{toolId}/attributes ")
     Call<Result<ToolDescription>> loadToolAttributes(@Path(TOOL_ID) Long toolId);
+
+    @GET("dockerRegistry/loadTree")
+    Call<Result<DockerRegistryList>> loadAllRegistries();
 
     @GET("dockerRegistry/{id}/load")
     Call<Result<DockerRegistry>> loadDockerRegistry(@Path(ID) Long dockerRegistryId);

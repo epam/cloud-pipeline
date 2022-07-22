@@ -3,33 +3,29 @@
     "_doc": {
       "properties": {
         "doc_type": { "type": "keyword", "store": true },
+        "created_date": { "type": "date" },
         "resource_type": { "type": "keyword" },
         "cloudRegionId": { "type": "keyword" },
-        "cloud_region_id": { "type": "alias", "path": "cloudRegionId" },
         "cloud_region_name": { "type": "keyword" },
+        "cloud_region_provider": { "type": "keyword" },
 
         "storage_id": { "type": "keyword", "store": true },
-        "storage_title": { "type": "keyword" },
         "storage_name": { "type": "keyword" },
         "storage_path": { "type": "keyword" },
         "storage_type": { "type": "keyword" },
-        "storage_kind": { "type": "keyword" },
         "provider": { "type": "keyword" },
-        "storage_provider": { "type": "alias", "path": "provider" },
+        "object_storage_type": { "type": "keyword" },
+        "file_storage_type": { "type": "keyword" },
+        "storage_created_date": { "type": "date", "format": "yyyy-MM-dd HH:mm:ss.SSS" },
 
         "usage_bytes": { "type": "long" },
         "usage_bytes_avg": { "type": "long" },
         "cost": { "type": "long" },
 
         "owner": { "type": "keyword" },
-        "owner_user_id": { "type": "keyword" },
-        "owner_user_name": { "type": "alias", "path": "owner" },
+        "owner_id": { "type": "keyword" },
         "groups": { "type": "keyword" },
-        "owner_groups": { "type": "alias", "path": "groups" },
-        "billing_center":  { "type": "keyword" },
-        "owner_billing_center": { "type": "alias", "path": "billing_center" },
-
-        "created_date": { "type": "date" }
+        "billing_center":  { "type": "keyword" }
       }
     }
   },
