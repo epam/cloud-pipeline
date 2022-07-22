@@ -1,6 +1,7 @@
 import cellprofiler_core.preferences
 
 from .config import Config
+from .modules.define_results import DefineResults
 
 cellprofiler_core.preferences.set_headless()
 cellprofiler_core.preferences.set_awt_headless(True)
@@ -60,6 +61,7 @@ class HcsPipeline(object):
         self._pipeline_state = PipelineState.CONFIGURING
         self._pipeline_state_message = ''
         self._input_sets = set()
+        self._fields_by_well = dict()
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
@@ -138,6 +140,8 @@ class HcsPipeline(object):
     def configure_module(self, module_config, module=None, module_name=None):
         if module is not None:
             module_name = module.module_name
+        if module_name == DefineResults.MODULE_NAME:
+            module_config.update({DefineResults.FIELDS_BY_WELL: self._fields_by_well})
         processor = self._modules_factory.get_module_processor(module, module_name)
         module = processor.configure_module(module_config)
         return module
@@ -157,6 +161,7 @@ class HcsPipeline(object):
     def set_input(self, image_coords_list: List[ImageCoords]):
         self.set_pipeline_state(PipelineState.CONFIGURING)
         self.set_pipeline_files([self._map_to_file_name(image) for image in image_coords_list])
+        self._set_fields_by_well(image_coords_list)
         self._input_sets.clear()
         self._pipeline.modules()[2].assignments.clear()
         channels_map = {image.channel_name: image.channel for image in image_coords_list}
@@ -228,3 +233,12 @@ class HcsPipeline(object):
             raise RuntimeError('Module position should be a positive number')
         module_pos = module_pos + MANDATORY_MODULES_COUNT
         return module_pos
+
+    def _set_fields_by_well(self, image_coords_list: List[ImageCoords]):
+        results = {}
+        for image_coords in image_coords_list:
+            well_key = (image_coords.well_y, image_coords.well_x)
+            if results.get(well_key) is None:
+                results.update({well_key: set()})
+            results.get(well_key).add(image_coords.field)
+        self._fields_by_well = results
