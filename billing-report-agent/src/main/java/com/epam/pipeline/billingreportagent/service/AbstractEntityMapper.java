@@ -18,15 +18,20 @@ package com.epam.pipeline.billingreportagent.service;
 
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
 public abstract class AbstractEntityMapper<T> {
+
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE);
 
     public abstract XContentBuilder map(EntityContainer<T> doc);
 
@@ -41,8 +46,12 @@ public abstract class AbstractEntityMapper<T> {
                 .orElseGet(Collections::emptyMap);
         return jsonBuilder
                 .field("owner", user.map(PipelineUser::getUserName).orElse(null))
-                .field("owner_user_id", user.map(PipelineUser::getId).orElse(null))
+                .field("owner_id", user.map(PipelineUser::getId).orElse(null))
                 .field("groups", user.map(PipelineUser::getGroups).orElse(null))
                 .field("billing_center", metadata.get(getBillingCenterKey()));
+    }
+
+    protected String asString(final Date date) {
+        return Optional.ofNullable(date).map(SIMPLE_DATE_FORMAT::format).orElse(null);
     }
 }

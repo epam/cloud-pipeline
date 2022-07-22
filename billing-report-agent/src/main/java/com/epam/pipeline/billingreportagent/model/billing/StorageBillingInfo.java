@@ -19,6 +19,8 @@ package com.epam.pipeline.billingreportagent.model.billing;
 import com.epam.pipeline.billingreportagent.model.ResourceType;
 import com.epam.pipeline.billingreportagent.model.StorageType;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.datastorage.MountType;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -30,15 +32,18 @@ import java.time.LocalDate;
 public class StorageBillingInfo extends AbstractBillingInfo<AbstractDataStorage> {
 
     private Long usageBytes;
-    private StorageType storageType;
-    private String storageKind;
+    private StorageType resourceStorageType;
+    private DataStorageType objectStorageType;
+    private MountType fileStorageType;
 
     @Builder
     public StorageBillingInfo(final LocalDate date, final AbstractDataStorage storage, final Long cost,
-                              final Long usageBytes, final StorageType storageType, final String storageKind) {
+                              final Long usageBytes, final StorageType resourceStorageType,
+                              final DataStorageType objectStorageType, final MountType fileStorageType) {
         super(date, storage, cost, ResourceType.STORAGE);
         this.usageBytes = usageBytes;
-        this.storageType = storageType;
-        this.storageKind = storageKind;
+        this.resourceStorageType = resourceStorageType;
+        this.objectStorageType = objectStorageType;
+        this.fileStorageType = fileStorageType;
     }
 }
