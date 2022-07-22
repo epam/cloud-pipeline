@@ -14,25 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.billing;
+package com.epam.pipeline.manager.billing.detail;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.user.PipelineUser;
+import com.epam.pipeline.manager.billing.BillingUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.user.UserManager;
-import com.epam.pipeline.utils.CommonUtils;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
+@RequiredArgsConstructor
 @Slf4j
 public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
 
@@ -45,31 +44,14 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
     private final String emptyValue;
     private final String billingCenterKey;
 
-    public UserBillingDetailsLoader(final UserManager userManager,
-                                    final MetadataManager metadataManager,
-                                    final MessageHelper messageHelper,
-                                    @Value("${billing.empty.report.value:unknown}")
-                                    final String emptyValue,
-                                    @Value("${billing.center.key}")
-                                    final String billingCenterKey) {
-        this.userManager = userManager;
-        this.metadataManager = metadataManager;
-        this.messageHelper = messageHelper;
-        this.emptyValue = emptyValue;
-        this.billingCenterKey = billingCenterKey;
-    }
-
     @Override
     public Map<String, String> loadInformation(final String id, final boolean loadDetails,
                                                final Map<String, String> defaults) {
         final Optional<PipelineUser> user = load(id);
-        final Map<String, String> details = new HashMap<>();
-        details.put(NAME, id);
-        details.put(BILLING_CENTER, CommonUtils.first(defaults, "owner_billing_center", "billing_center")
-                .map(Optional::of)
-                .orElseGet(() -> getUserBillingCenter(id))
-                .orElse(emptyValue));
-        details.put(IS_DELETED, Boolean.toString(!user.isPresent()));
+        final Map<String, String> details = new HashMap<>(defaults);
+        details.computeIfAbsent(NAME, key -> user.map(PipelineUser::getUserName).orElse(id));
+        details.computeIfAbsent(BILLING_CENTER, key -> user.map(this::toBillingCenter).orElse(emptyValue));
+        details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!user.isPresent()));
         return details;
     }
 
@@ -82,7 +64,7 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
         return user;
     }
 
-    public Optional<String> getUserBillingCenter(final String id) {
-        return load(id).map(user -> BillingUtils.getUserBillingCenter(user, billingCenterKey, metadataManager));
+    private String toBillingCenter(final PipelineUser user) {
+        return BillingUtils.getUserBillingCenter(user, billingCenterKey, metadataManager);
     }
 }
