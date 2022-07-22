@@ -91,6 +91,7 @@ class DefineResults(ExportToSpreadsheet):
     _INTEGRATED_INTENSITY = 'Intensity_IntegratedIntensity'
     _WELL_ROW = "WellRow"
     _WELL_COLUMN = "WellColumn"
+    _WELL = "Well"
 
     def __init__(self):
         super(DefineResults, self).__init__()
@@ -105,6 +106,8 @@ class DefineResults(ExportToSpreadsheet):
     def set_calculation_spec(self, specs, grouping, fields_by_well):
         self._calculation_specs = specs if specs is not None else []
         self._grouping = grouping
+        if self._grouping and self._WELL not in self._grouping:
+            self._grouping.append(self._WELL)
         if self._grouping and self._WELL_ROW not in self._grouping:
             self._grouping.append(self._WELL_ROW)
         if self._grouping and self._WELL_COLUMN not in self._grouping:
