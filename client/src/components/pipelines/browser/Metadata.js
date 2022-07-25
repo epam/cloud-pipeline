@@ -60,8 +60,7 @@ import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLo
 import MetadataEntityDeleteFromProject
 from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
-import ConfigurationBrowser from '../launch/dialogs/ConfigurationBrowser';
-import FolderProject from '../../../models/folders/FolderProject';
+import ConfigurationBrowser from '../launch/dialogs/configuration-browser';
 import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
 import PipelineRunner from '../../../models/pipelines/PipelineRunner';
 import {ItemTypes} from '../model/treeStructureFunctions';
@@ -219,9 +218,6 @@ export default class Metadata extends React.Component {
   metadataRequest = {};
   externalMetadataEntity = {};
 
-  selectedConfiguration = null;
-  expansionExpression = '';
-
   state = {
     loading: false,
     metadata: false,
@@ -251,8 +247,6 @@ export default class Metadata extends React.Component {
     addInstanceFormVisible: false,
     operationInProgress: false,
     configurationBrowserVisible: false,
-    currentProjectId: null,
-    currentMetadataEntityForCurrentProject: [],
     uploadToBucketVisible: false,
     copyEntitiesDialogVisible: false,
     currentMetadata: [],
@@ -1134,17 +1128,51 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onSelectConfigurationConfirm = async (selectedConfiguration, expansionExpression) => {
-    this.selectedConfiguration = selectedConfiguration;
-    this.expansionExpression = expansionExpression;
-
-    await this.runConfiguration(false);
+  onSelectConfigurationConfirm = async (selectedConfiguration, expression) => {
+    this.onCloseConfigurationBrowser();
+    if (!selectedConfiguration) {
+      return;
+    }
+    const {
+      id,
+      entries = []
+    } = selectedConfiguration || {};
+    const hide = message.loading('Launching...', 0);
+    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
+    const mapParameters = (entry) => ({
+      ...entry,
+      configuration: {
+        ...(entry.configuration || {}),
+        parameters: {
+          ...parameters,
+          ...((entry.configuration || {}).parameters || {})
+        }
+      }
+    });
+    const request = new ConfigurationRun(expression);
+    await request.send({
+      id,
+      entries: entries.map(mapParameters),
+      entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
+      metadataClass: this.props.metadataClass,
+      folderId: parseInt(this.props.folderId)
+    });
+    hide();
+    this.setState({
+      configurationBrowserVisible: false
+    });
+    if (request.error) {
+      message.error(request.error);
+    } else {
+      this.setState({
+        selectedItemsCanBeSkipped: true
+      }, () => {
+        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
+      });
+    }
   };
 
   onCloseConfigurationBrowser = () => {
-    this.selectedConfiguration = null;
-    this.expansionExpression = '';
-
     this.setState({
       configurationBrowserVisible: false
     });
@@ -1216,72 +1244,6 @@ export default class Metadata extends React.Component {
     }
   };
 
-  loadCurrentProject = async () => {
-    const folderProjectRequest =
-      new FolderProject(this.props.folderId, 'FOLDER');
-    await folderProjectRequest.fetch();
-    if (folderProjectRequest.error) {
-      message.error(folderProjectRequest.error, 5);
-    } else {
-      if (folderProjectRequest.value) {
-        const currentProjectId = folderProjectRequest.value.id;
-        const metadataEntityFieldsRequest =
-          new MetadataEntityFields(currentProjectId);
-        await metadataEntityFieldsRequest.fetch();
-        if (metadataEntityFieldsRequest.error) {
-          message.error(metadataEntityFieldsRequest.error, 5);
-        } else {
-          const currentMetadataEntityForCurrentProject = metadataEntityFieldsRequest.value || [];
-          this.setState({
-            currentMetadataEntityForCurrentProject,
-            currentProjectId
-          });
-        }
-      }
-    }
-  };
-
-  runConfiguration = async (isCluster) => {
-    const hide = message.loading('Launching...', 0);
-
-    const parameters = await getPathParameters(this.props.pipelinesLibrary, this.props.folderId);
-    const mapParameters = (entry) => ({
-      ...entry,
-      configuration: {
-        ...(entry.configuration || {}),
-        parameters: {
-          ...parameters,
-          ...((entry.configuration || {}).parameters || {})
-        }
-      }
-    });
-
-    const request = new ConfigurationRun(this.expansionExpression);
-    await request.send({
-      id: this.selectedConfiguration ? this.selectedConfiguration.id : null,
-      entries: isCluster
-        ? (this.selectedConfiguration.entries || []).map(mapParameters)
-        : (this.selectedConfiguration.entries || []).slice()
-          .filter(entry => entry.default)
-          .map(mapParameters),
-      entitiesIds: this.state.selectedItems.map(item => item.rowKey.value),
-      metadataClass: this.props.metadataClass,
-      folderId: parseInt(this.props.folderId)
-    });
-    hide();
-    this.setState({
-      configurationBrowserVisible: false
-    });
-    if (request.error) {
-      message.error(request.error);
-    } else {
-      this.setState({
-        selectedItemsCanBeSkipped: true
-      }, () => {
-        SessionStorageWrapper.navigateToActiveRuns(this.props.router);
-      });
-    }
-  };
   cellIsSpreading = (row, column) => {
     const spreadSelection = this.getSpreadSelection();
     if (spreadSelection) {
@@ -1744,19 +1706,14 @@ export default class Metadata extends React.Component {
     };
 
     const renderConfigurationBrowser = () => {
-      return this.state.currentProjectId ? (
-        <Row>
-          <ConfigurationBrowser
-            onCancel={this.onCloseConfigurationBrowser}
-            onSelect={this.onSelectConfigurationConfirm}
-            visible={this.state.configurationBrowserVisible}
-            initialFolderId={this.state.currentProjectId}
-            currentMetadataEntity={
-              this.state.currentMetadataEntityForCurrentProject.map(entity => entity)
-            }
-            metadataClassName={this.props.metadataClass}
-          />
-        </Row>
+      return this.props.folderId ? (
+        <ConfigurationBrowser
+          onCancel={this.onCloseConfigurationBrowser}
+          onSelect={this.onSelectConfigurationConfirm}
+          visible={this.state.configurationBrowserVisible}
+          folderId={Number(this.props.folderId)}
+          metadataClassName={this.props.metadataClass}
+        />
       ) : null;
     };
 
@@ -2435,7 +2392,7 @@ export default class Metadata extends React.Component {
     };
     const renderRunButton = () => {
       if (
-        this.state.currentProjectId &&
+        this.props.folderId &&
         roleModel.writeAllowed(this.props.folder.value) &&
         !this.props.readOnly
       ) {
@@ -2778,8 +2735,7 @@ export default class Metadata extends React.Component {
         folderChanged
           ? this.fetchDefaultMetadataProperties()
           : this.loadColumns({reset: true}),
-        folderChanged ? this.props.entityFields.fetch() : Promise.resolve(),
-        this.loadCurrentProject()
+        folderChanged ? this.props.entityFields.fetch() : Promise.resolve()
       ];
       return Promise.all(promises).then(() => {
         const {defaultOrderBy, columns} = this.state;

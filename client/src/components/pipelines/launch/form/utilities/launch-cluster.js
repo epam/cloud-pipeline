@@ -43,7 +43,8 @@ import {
   CP_CAP_AUTOSCALE,
   CP_CAP_AUTOSCALE_WORKERS,
   CP_CAP_AUTOSCALE_HYBRID,
-  CP_CAP_AUTOSCALE_PRICE_TYPE
+  CP_CAP_AUTOSCALE_PRICE_TYPE,
+  CP_CAP_LIMIT_MOUNTS
 } from './parameters';
 import {getRunCapabilitiesSkippedParameters} from './run-capabilities';
 import {
@@ -132,6 +133,22 @@ export function getSkippedSystemParametersList (controller) {
     ];
   }
   return [CP_CAP_AUTOSCALE, CP_CAP_AUTOSCALE_WORKERS, ...getRunCapabilitiesSkippedParameters()];
+}
+
+export function getAllSkippedSystemParametersList (preferences) {
+  return [
+    CP_CAP_LIMIT_MOUNTS,
+    CP_CAP_SGE,
+    CP_CAP_SPARK,
+    CP_CAP_SLURM,
+    CP_CAP_KUBE,
+    CP_CAP_AUTOSCALE,
+    CP_CAP_AUTOSCALE_WORKERS,
+    CP_CAP_AUTOSCALE_HYBRID,
+    CP_CAP_AUTOSCALE_PRICE_TYPE,
+    ...getRunCapabilitiesSkippedParameters(),
+    ...getGPUScalingSkippedParameters(preferences)
+  ];
 }
 
 export function getSystemParameterDisabledState (controller, parameterName) {
