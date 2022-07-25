@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.BaseEntity;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.Tool;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.Getter;
@@ -58,21 +59,27 @@ public class RunBillingMapper extends AbstractEntityMapper<PipelineRunBillingInf
             final PipelineRunBillingInfo billingInfo = container.getEntity();
             final PipelineRun run = billingInfo.getEntity().getPipelineRun();
 
-            final Optional<EntityContainer<Pipeline>> pipelineEntity = Optional.ofNullable(billingInfo.getEntity().getPipeline());
+            final Optional<AbstractCloudRegion> region = Optional.ofNullable(container.getRegion());
+
+            final Optional<EntityContainer<Pipeline>> pipelineEntity = Optional.ofNullable(
+                    billingInfo.getEntity().getPipeline());
             final Optional<Pipeline> pipeline = pipelineEntity.map(EntityContainer::getEntity);
             final Optional<PipelineUser> pipelineOwner = pipelineEntity.map(EntityContainer::getOwner)
                     .map(EntityWithMetadata::getEntity);
-            final Optional<EntityContainer<Tool>> toolEntity = Optional.ofNullable(billingInfo.getEntity().getTool());
+
+            final Optional<EntityContainer<Tool>> toolEntity = Optional.ofNullable(
+                    billingInfo.getEntity().getTool());
+            final Optional<Tool> tool = toolEntity.map(EntityContainer::getEntity);
             final Optional<PipelineUser> toolOwner = toolEntity.map(EntityContainer::getOwner)
                     .map(EntityWithMetadata::getEntity);
-            final Optional<Tool> tool = toolEntity.map(EntityContainer::getEntity);
+
             jsonBuilder.startObject()
                 .field(DOC_TYPE_FIELD, SearchDocumentType.PIPELINE_RUN.name())
                 .field("created_date", billingInfo.getDate()) // Document creation date: 2022-07-22
                 .field("resource_type", billingInfo.getResourceType()) // Document resource type: COMPUTE / STORAGE
-                .field("cloudRegionId", container.getRegion().getId())
-                .field("cloud_region_name", container.getRegion().getName())
-                .field("cloud_region_provider", container.getRegion().getProvider())
+                .field("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null))
+                .field("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null))
+                .field("cloud_region_provider", region.map(AbstractCloudRegion::getProvider).orElse(null))
 
                 .field("run_id", run.getId())
                 .field("compute_type", billingInfo.getEntity().getRunType())

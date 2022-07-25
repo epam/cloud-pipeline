@@ -31,7 +31,7 @@ import java.util.Optional;
 
 public abstract class AbstractEntityMapper<T> {
 
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE);
+    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(Constants.FMT_ISO_LOCAL_DATE);
 
     public abstract XContentBuilder map(EntityContainer<T> doc);
 

@@ -126,6 +126,10 @@ public class StorageToRequestConverterTest {
         .entity(testUser)
         .build();
 
+    private final AbstractCloudRegion testAwsRegion = TestUtils.createTestRegion(TEST_AWS_REGION_ID);
+    private final AbstractCloudRegion testAzureRegion = TestUtils.createTestRegion(TEST_AZURE_REGION_ID);
+    private final AbstractCloudRegion testGcpRegion = TestUtils.createTestRegion(TEST_GCP_REGION_ID);
+
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);
     private CloudRegionLoader regionLoader = Mockito.mock(CloudRegionLoader.class);
     private FileShareMountsService fileShareMountsService = new FileShareMountsService(regionLoader);
@@ -459,36 +463,44 @@ public class StorageToRequestConverterTest {
                                                                      final DataStorageType storageType,
                                                                      final MountType shareMountType) {
         final AbstractDataStorage storage;
+        final AbstractCloudRegion region;
         if (shareMountType == null) {
             switch (storageType) {
                 case GS:
                     final GSBucketStorage gsBucketStorage = new GSBucketStorage(id, name, path, null, null);
                     gsBucketStorage.setRegionId(TEST_GCP_REGION_ID);
                     storage = gsBucketStorage;
+                    region = testGcpRegion;
                     break;
                 case AZ:
                     final AzureBlobStorage azureBlobStorage = new AzureBlobStorage(id, name, path, null, null);
                     azureBlobStorage.setRegionId(TEST_AZURE_REGION_ID);
                     storage = azureBlobStorage;
+                    region = testAzureRegion;
                     break;
                 default:
                     final S3bucketDataStorage s3bucketDataStorage = new S3bucketDataStorage(id, name, path);
                     s3bucketDataStorage.setRegionId(TEST_AWS_REGION_ID);
                     storage = s3bucketDataStorage;
+                    region = testAwsRegion;
                     break;
             }
         } else {
-            final Long shareMountId = storageType == DataStorageType.AZ
-                                      ? shareMountType == MountType.NFS
-                                        ? TEST_AZURE_NETAPP_MOUNT_ID
-                                        : TEST_AZURE_FILES_MOUNT_ID
-                                      : TEST_NFS_MOUNT_ID;
+            final Long shareMountId;
+            if (storageType == DataStorageType.AZ) {
+                shareMountId = shareMountType == MountType.NFS ? TEST_AZURE_NETAPP_MOUNT_ID : TEST_AZURE_FILES_MOUNT_ID;
+                region = testAzureRegion;
+            } else {
+                shareMountId = TEST_NFS_MOUNT_ID;
+                region = testAwsRegion;
+            }
             storage = getNfsDataStorage(id, name, path, shareMountId);
         }
         storage.setCreatedDate(Date.from(SYNC_START.atZone(ZoneId.systemDefault()).toInstant()));
         return EntityContainer.<AbstractDataStorage>builder()
             .entity(storage)
             .owner(testUserWithMetadata)
+            .region(region)
             .build();
     }
 

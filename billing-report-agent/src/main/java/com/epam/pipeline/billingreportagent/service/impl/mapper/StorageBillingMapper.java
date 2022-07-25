@@ -20,7 +20,7 @@ import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.billing.StorageBillingInfo;
 import com.epam.pipeline.billingreportagent.service.AbstractEntityMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
-import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +28,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
@@ -44,13 +45,15 @@ public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInf
             final StorageBillingInfo billingInfo = container.getEntity();
             final AbstractDataStorage storage = billingInfo.getEntity();
 
+            final Optional<AbstractCloudRegion> region = Optional.ofNullable(container.getRegion());
+
             jsonBuilder.startObject()
                 .field(DOC_TYPE_FIELD, documentType.name())
                 .field("created_date", billingInfo.getDate()) // Document creation date: 2022-07-22
                 .field("resource_type", billingInfo.getResourceType()) // Document resource type: COMPUTE / STORAGE
-                .field("cloudRegionId", container.getRegion().getId())
-                .field("cloud_region_name", container.getRegion().getName())
-                .field("cloud_region_provider", container.getRegion().getProvider())
+                .field("cloudRegionId", region.map(AbstractCloudRegion::getId).orElse(null))
+                .field("cloud_region_name", region.map(AbstractCloudRegion::getName).orElse(null))
+                .field("cloud_region_provider", region.map(AbstractCloudRegion::getProvider).orElse(null))
 
                 .field("storage_id", storage.getId())
                 .field("storage_name", storage.getName())

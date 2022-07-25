@@ -9,7 +9,6 @@ public class ToolAddress {
 
     private static final String COMMON_DELIMITER = "/";
     private static final String VERSION_DELIMITER = ":";
-    private static final String EMPTY = "";
 
     String registry;
     String group;
@@ -21,7 +20,9 @@ public class ToolAddress {
         final String registry = imageItems.length > 0 ? imageItems[0] : null;
         final String group = imageItems.length > 1 ? imageItems[1] : null;
         final String toolAndVersion = imageItems.length > 2 ? join(imageItems, 2) : null;
-        final String[] toolAndVersionItems = toolAndVersion != null ? toolAndVersion.split(VERSION_DELIMITER) : new String[0];
+        final String[] toolAndVersionItems = toolAndVersion != null
+                ? toolAndVersion.split(VERSION_DELIMITER)
+                : new String[0];
         final String tool = toolAndVersionItems.length > 0 ? toolAndVersionItems[0] : null;
         final String version = toolAndVersionItems.length > 1 ? join(toolAndVersionItems, 1) : null;
         return new ToolAddress(registry, group, tool, version);
@@ -37,8 +38,8 @@ public class ToolAddress {
 
     public String getPathWithoutVersion() {
         return String.join(COMMON_DELIMITER,
-                StringUtils.defaultIfBlank(registry, EMPTY),
-                StringUtils.defaultIfBlank(group, EMPTY),
-                StringUtils.defaultIfBlank(tool, EMPTY));
+                StringUtils.defaultIfBlank(registry, StringUtils.EMPTY),
+                StringUtils.defaultIfBlank(group, StringUtils.EMPTY),
+                StringUtils.defaultIfBlank(tool, StringUtils.EMPTY));
     }
 }
