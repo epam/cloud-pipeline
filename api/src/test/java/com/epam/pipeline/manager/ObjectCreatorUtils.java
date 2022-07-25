@@ -47,7 +47,6 @@ import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.entity.region.AzureRegion;
 import com.epam.pipeline.entity.region.AzureRegionCredentials;
 import com.epam.pipeline.entity.region.CloudProvider;
-import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -81,9 +80,6 @@ public final class ObjectCreatorUtils {
         }
         if (ltsDuration != null) {
             policy.setLongTermStorageDuration(ltsDuration);
-        }
-        if (!StringUtils.isEmpty(lifecyclePolicy)) {
-            policy.setStorageLifecyclePolicy(lifecyclePolicy);
         }
         storageVO.setStoragePolicy(policy);
 

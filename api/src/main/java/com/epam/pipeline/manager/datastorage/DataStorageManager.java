@@ -1108,7 +1108,6 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(policy.getBackupDuration() == null || policy.getBackupDuration() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ILLEGAL_DURATION,
                         policy.getBackupDuration()));
-        storageProviderManager.verifyLifecycleStoragePolicy(dataStorage);
     }
 
     private DataStorageFolder createDataStorageFolder(final AbstractDataStorage storage, final String path)

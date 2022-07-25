@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.AbstractSpringTest;
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
@@ -26,9 +25,6 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecyclePolicy;
-import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRule;
-import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRuleTransition;
 import com.epam.pipeline.entity.datastorage.nfs.NFSDataStorage;
 import com.epam.pipeline.entity.docker.ToolVersion;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
@@ -340,68 +336,6 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
         AbstractDataStorage loaded = storageManager.load(saved.getId());
         compareDataStorage(saved, loaded);
-    }
-
-    @Test
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void saveDataStorageSucceedIfLifecyclePolicyCorrectTest() {
-        S3StorageLifecyclePolicy lifecyclePolicy = S3StorageLifecyclePolicy.builder()
-                .rules(
-                        Collections.singletonList(S3StorageLifecycleRule.builder().expirationAfterDays(25)
-                                .transitions(
-                                    Arrays.asList(
-                                            S3StorageLifecycleRuleTransition.builder()
-                                                .transitionAfterDays(1)
-                                                .storageClass("GLACIER_IR").build(),
-                                            S3StorageLifecycleRuleTransition.builder()
-                                                    .transitionAfterDays(2)
-                                                    .storageClass("GLACIER").build(),
-                                            S3StorageLifecycleRuleTransition.builder()
-                                                    .transitionAfterDays(3)
-                                                    .storageClass("DEEP_ARCHIVE").build()
-                                    )
-                                ).build())
-                ).build();
-        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION,
-                JsonMapper.convertDataToJsonStringForQuery(lifecyclePolicy),
-                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
-        );
-        AbstractDataStorage storage = storageManager.create(storageVO, false, false, false).getEntity();
-        AbstractDataStorage loaded = storageManager.load(storage.getId());
-        Assert.assertEquals(storage, loaded);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void saveDataStorageFailIfLifecyclePolicyIsntCorrectTest() {
-        S3StorageLifecyclePolicy lifecyclePolicy = S3StorageLifecyclePolicy.builder()
-                .rules(
-                        Collections.singletonList(S3StorageLifecycleRule.builder().transitions(
-                                Collections.singletonList(S3StorageLifecycleRuleTransition.builder()
-                                        .transitionAfterDays(1)
-                                        .storageClass("ABRACADABRA").build())
-                        ).build())
-                ).build();
-        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, JsonMapper.convertDataToJsonStringForQuery(lifecyclePolicy),
-                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
-        );
-        storageManager.create(storageVO, false, false, false);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
-    public void saveDataStorageFailIfLifecyclePolicyExpirationDateIsntCorrectTest() {
-        S3StorageLifecyclePolicy lifecyclePolicy = S3StorageLifecyclePolicy.builder()
-                .rules(
-                        Collections.singletonList(S3StorageLifecycleRule.builder().expirationAfterDays(-1).build())
-                ).build();
-        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
-                PATH, STS_DURATION, LTS_DURATION, JsonMapper.convertDataToJsonStringForQuery(lifecyclePolicy),
-                WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
-        );
-        storageManager.create(storageVO, false, false, false);
     }
 
     @Test

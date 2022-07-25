@@ -58,18 +58,14 @@ import com.amazonaws.services.s3.model.SetObjectTaggingRequest;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.services.s3.model.TagSet;
 import com.amazonaws.services.s3.model.VersionListing;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleAndOperator;
 import com.amazonaws.services.s3.model.lifecycle.LifecycleFilter;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleFilterPredicate;
 import com.amazonaws.services.s3.model.lifecycle.LifecyclePrefixPredicate;
-import com.amazonaws.services.s3.model.lifecycle.LifecycleTagPredicate;
 import com.amazonaws.util.IOUtils;
 import com.amazonaws.util.StringUtils;
 import com.amazonaws.waiters.Waiter;
 import com.amazonaws.waiters.WaiterParameters;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
@@ -85,12 +81,9 @@ import com.epam.pipeline.entity.datastorage.DataStorageStreamingContent;
 import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
-import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecyclePolicy;
-import com.epam.pipeline.entity.datastorage.lifecycle.s3.S3StorageLifecycleRuleFilter;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.utils.FileContentUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.primitives.SignedBytes;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
@@ -110,7 +103,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -255,12 +247,9 @@ public class S3Helper {
                 applyVersioningConfig(bucketName, s3client, conf);
             }
 
-            if (policy != null) {
-                S3LifecyclePolicyUtils.buildBucketLifecycleRulesIfAny(policy).ifPresent(rules::addAll);
-                if (policy.getIncompleteUploadCleanupDays() != null) {
-                    rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
-                            policy.getIncompleteUploadCleanupDays()));
-                }
+            if (policy != null && policy.getIncompleteUploadCleanupDays() != null) {
+                rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
+                        policy.getIncompleteUploadCleanupDays()));
             }
             if (!rules.isEmpty()) {
                 applyRules(bucketName, s3client, rules);

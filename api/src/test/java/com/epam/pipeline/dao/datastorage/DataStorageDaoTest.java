@@ -28,7 +28,6 @@ import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.region.AwsRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -96,7 +95,6 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         policy.setLongTermStorageDuration(LTS_DURATION);
         policy.setShortTermStorageDuration(STS_DURATION);
         policy.setVersioningEnabled(true);
-        policy.setStorageLifecyclePolicy(StringUtils.EMPTY);
         s3Bucket.setStoragePolicy(policy);
 
         nfsStorage = new NFSDataStorage(null, "NFS_STORAGE", "127.0.0.1@tcp1:/path");
@@ -189,7 +187,6 @@ public class DataStorageDaoTest extends AbstractJdbcTest {
         s3Bucket.getStoragePolicy().setLongTermStorageDuration(LTS_DURATION + 1);
         s3Bucket.getStoragePolicy().setLongTermStorageDuration(STS_DURATION + 1);
         s3Bucket.getStoragePolicy().setVersioningEnabled(false);
-        s3Bucket.getStoragePolicy().setStorageLifecyclePolicy(StringUtils.EMPTY);
         s3Bucket.setParentFolderId(null);
         s3Bucket.setOwner(UPDATED_VALUE);
         s3Bucket.setMountOptions(UPDATED_VALUE);

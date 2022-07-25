@@ -128,5 +128,4 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
 
-    void verifyLifecycleStoragePolicy(StoragePolicy storagePolicy);
 }
