@@ -65,7 +65,8 @@ import java.util.concurrent.Executor;
         DBConfiguration.class,
         CacheConfiguration.class,
         MappersConfiguration.class,
-        ContextualPreferenceConfiguration.class})
+        ContextualPreferenceConfiguration.class,
+        BillingConfiguration.class})
 @EnableAutoConfiguration(exclude = {
         SecurityAutoConfiguration.class,
         ManagementWebSecurityAutoConfiguration.class,

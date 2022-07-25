@@ -5,7 +5,6 @@ import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.ToolBilling;
 import com.epam.pipeline.entity.billing.ToolBillingMetrics;
 import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
-import com.epam.pipeline.manager.billing.detail.ToolBillingDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;

@@ -45,6 +45,12 @@ import java.util.Map;
 @Configuration
 public class BillingConfiguration {
 
+    @Value("${billing.empty.report.value:unknown}")
+    private String emptyValue;
+
+    @Value("${billing.center.key}")
+    private String billingCenterKey;
+
     @Bean
     public BillingExporter runBillingExporter(final RunBillingLoader runBillingLoader,
                                               final GlobalSearchElasticHelper elasticHelper) {
@@ -118,9 +124,7 @@ public class BillingConfiguration {
     @Bean
     public EntityBillingDetailsLoader pipelineBillingDetailsLoader(
             final PipelineManager pipelineManager,
-            final MessageHelper messageHelper,
-            @Value("${billing.empty.report.value:unknown}")
-            final String emptyValue) {
+            final MessageHelper messageHelper) {
         final Map<String, String> mappings = new HashMap<>();
         mappings.put(EntityBillingDetailsLoader.NAME, "pipeline_name");
         mappings.put(EntityBillingDetailsLoader.OWNER, "pipeline_owner_name");
@@ -133,9 +137,7 @@ public class BillingConfiguration {
     @Bean
     public EntityBillingDetailsLoader toolBillingDetailsLoader(
             final ToolManager toolManager,
-            final MessageHelper messageHelper,
-            @Value("${billing.empty.report.value:unknown}")
-            final String emptyValue) {
+            final MessageHelper messageHelper) {
         final Map<String, String> mappings = new HashMap<>();
         mappings.put(EntityBillingDetailsLoader.NAME, "tool");
         mappings.put(EntityBillingDetailsLoader.OWNER, "tool_owner_name");
@@ -151,9 +153,7 @@ public class BillingConfiguration {
             final CloudRegionManager regionManager,
             final FileShareMountManager fileShareMountManager,
             final EntityBillingDetailsLoader userBillingDetailsLoader,
-            final MessageHelper messageHelper,
-            @Value("${billing.empty.report.value:unknown}")
-            final String emptyValue) {
+            final MessageHelper messageHelper) {
         final Map<String, String> mappings = new HashMap<>();
         mappings.put(EntityBillingDetailsLoader.OWNER, "owner");
         mappings.put(EntityBillingDetailsLoader.CREATED, "storage_created_date");
@@ -174,11 +174,7 @@ public class BillingConfiguration {
     public EntityBillingDetailsLoader userBillingDetailsLoader(
             final UserManager userManager,
             final MetadataManager metadataManager,
-            final MessageHelper messageHelper,
-            @Value("${billing.empty.report.value:unknown}")
-            final String emptyValue,
-            @Value("${billing.center.key}")
-            final String billingCenterKey) {
+            final MessageHelper messageHelper) {
         final Map<String, String> mappings = new HashMap<>();
         mappings.put(EntityBillingDetailsLoader.NAME, "owner");
         mappings.put(EntityBillingDetailsLoader.BILLING_CENTER, "billing_center");

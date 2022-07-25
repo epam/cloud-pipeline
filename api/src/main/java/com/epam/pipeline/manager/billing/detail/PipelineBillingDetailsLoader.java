@@ -31,7 +31,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
