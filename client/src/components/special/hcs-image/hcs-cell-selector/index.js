@@ -318,12 +318,12 @@ class HcsCellSelector extends React.Component {
 
   handleMouseDown = event => {
     const {multiple} = this.props;
-    const {cell} = this.getCellUnderEvent(event);
-    if (multiple && cell) {
+    const currentCell = this.getCellUnderEvent(event);
+    if (multiple) {
       this.setState({
         regionSelection: {
-          start: cell,
-          end: cell,
+          start: currentCell,
+          end: currentCell,
           append: event && event.nativeEvent && event.nativeEvent.shiftKey
         }
       });
@@ -350,7 +350,7 @@ class HcsCellSelector extends React.Component {
           this.currentSelection
         )
       );
-      if (typeof onChange === 'function') {
+      if (selection.length > 0 && typeof onChange === 'function') {
         onChange(selection);
       }
       this.setState({
