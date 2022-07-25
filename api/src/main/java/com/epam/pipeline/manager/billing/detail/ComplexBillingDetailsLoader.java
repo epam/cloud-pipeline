@@ -19,7 +19,7 @@ public class ComplexBillingDetailsLoader implements EntityBillingDetailsLoader {
                                                final Map<String, String> defaults) {
         return loaders.stream()
                 .reduce(defaults,
-                        (details, loader) -> loader.loadInformation(entityIdentifier, loadDetails, details),
-                        (left, right) -> left);
+                    (details, loader) -> loader.loadInformation(entityIdentifier, loadDetails, details),
+                    (left, right) -> left);
     }
 }
