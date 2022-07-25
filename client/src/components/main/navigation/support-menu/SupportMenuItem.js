@@ -19,9 +19,11 @@ import PropTypes from 'prop-types';
 import {inject, observer} from 'mobx-react';
 import {Button, Icon, Popover, Tooltip} from 'antd';
 import Markdown from '../../../special/markdown';
+import {HcsImageAnalysisJobsModal} from '../../../special/hcs-image/hcs-image-analysis-jobs';
 import styles from './SupportMenu.css';
 
 const actions = {
+  hcs: 'hcs'
 };
 
 const allActions = new Set(Object.values(actions));
@@ -77,6 +79,22 @@ class SupportMenuItem extends React.Component {
     entryName: PropTypes.string
   };
 
+  state = {
+    hcsJobsModalVisible: false
+  };
+
+  openHCSJobs = () => {
+    this.setState({
+      hcsJobsModalVisible: true
+    });
+  };
+
+  closeHCSJobs = () => {
+    this.setState({
+      hcsJobsModalVisible: false
+    });
+  };
+
   renderIcon = () => {
     const {icon} = this.props;
     if (urlCheck(icon)) {
@@ -103,7 +121,14 @@ class SupportMenuItem extends React.Component {
   };
 
   doAction = () => {
-    // Perform action
+    const {
+      action
+    } = this.props;
+    switch (action) {
+      case actions.hcs:
+        this.openHCSJobs();
+        break;
+    }
   };
 
   render () {
@@ -150,6 +175,10 @@ class SupportMenuItem extends React.Component {
             onClick={this.doAction}
           >
             {this.renderIcon()}
+            <HcsImageAnalysisJobsModal
+              visible={this.state.hcsJobsModalVisible}
+              onClose={this.closeHCSJobs}
+            />
           </Button>
         </Hint>
       );

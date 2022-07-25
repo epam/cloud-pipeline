@@ -97,6 +97,9 @@ class CellProfilerJobs extends React.Component {
   refresh = () => {
     clearTimeout(this.refreshTimeoutHandle);
     const {
+      openFirst
+    } = this.props;
+    const {
       page,
       pageSize
     } = this.state;
@@ -131,7 +134,14 @@ class CellProfilerJobs extends React.Component {
       } catch (error) {
         state.error = error.message;
       } finally {
-        this.setState(state);
+        this.setState(state, () => {
+          const {
+            jobs = []
+          } = this.state;
+          if (jobs.length && openFirst && !this.selectedJobId) {
+            this.onSelectJob(jobs[0]);
+          }
+        });
         this.refreshTimeoutHandle = setTimeout(this.refresh, REFRESH_TIMEOUT_MS);
       }
     });
@@ -320,7 +330,8 @@ CellProfilerJobs.propTypes = {
   jobId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   onJobSelected: PropTypes.func,
   filters: PropTypes.object,
-  onFiltersChange: PropTypes.func
+  onFiltersChange: PropTypes.func,
+  openFirst: PropTypes.bool
 };
 
 export default CellProfilerJobs;
