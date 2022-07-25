@@ -66,7 +66,7 @@ public class LaunchParametersTest extends AbstractSeveralPipelineRunningTest
     private static final String UMOUNT_COMMAND = "echo \"#!/usr/bin/env bash\" > /usr/local/sbin/umount && " +
             "echo \"sleep infinity\" >> /usr/local/sbin/umount && chmod +x /usr/local/sbin/umount";
     private static final String TERMINATE_RUN_TIMEOUT = "CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN";
-    private static final int DEFAULT_TERMINATE_RUN_TIMEOUT = 30;
+    private static final int DEFAULT_TERMINATE_RUN_TIMEOUT = 1;
     private static final int TEST_TERMINATE_RUN_TIMEOUT = DEFAULT_TERMINATE_RUN_TIMEOUT + 2;
     private static final String UNMOUNTING_STARTED = "Unmounting all storage mounts";
     private static final String CLEANUP_WORNING = "Will wait for %smin to let the run stop normally. " +
