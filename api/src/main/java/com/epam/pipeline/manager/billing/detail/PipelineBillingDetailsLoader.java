@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.PipelineManager;
+import com.epam.pipeline.utils.Lazy;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 @RequiredArgsConstructor
 @SuppressWarnings("PMD.AvoidCatchingGenericException")
@@ -46,16 +48,16 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
     @Override
     public Map<String, String> loadInformation(final String id, final boolean loadDetails,
                                                final Map<String, String> defaults) {
-        final Optional<Pipeline> pipeline = load(id);
+        final Lazy<Optional<Pipeline>> pipeline = Lazy.of(() -> load(id));
         final Map<String, String> details = new HashMap<>(defaults);
-        details.computeIfAbsent(NAME, key -> pipeline.map(Pipeline::getName).orElse(id));
+        details.computeIfAbsent(NAME, key -> pipeline.get().map(Pipeline::getName).orElse(id));
         if (loadDetails) {
-            details.computeIfAbsent(OWNER, key -> pipeline.map(Pipeline::getOwner).orElse(emptyValue));
-            details.computeIfAbsent(CREATED, key -> pipeline.map(Pipeline::getCreatedDate)
+            details.computeIfAbsent(OWNER, key -> pipeline.get().map(Pipeline::getOwner).orElse(emptyValue));
+            details.computeIfAbsent(CREATED, key -> pipeline.get().map(Pipeline::getCreatedDate)
                     .map(DateUtils::convertDateToLocalDateTime)
                     .map(DateTimeFormatter.ISO_DATE_TIME::format)
                     .orElse(emptyValue));
-            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!pipeline.isPresent()));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!pipeline.get().isPresent()));
         }
         return details;
     }
