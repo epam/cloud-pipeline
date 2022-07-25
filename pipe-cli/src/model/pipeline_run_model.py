@@ -49,10 +49,12 @@ class PipelineRunModel(object):
 
     @property
     def is_initialized(self):
+        import os
+        init_task_name = os.getenv('CP_PIPE_SSH_INITIALIZE_TASK', 'InitializeEnvironment')
         return self.status == 'RUNNING' and \
             self.pod_ip is not None and \
                 next(( True for t in self.tasks \
-                    if t.name == 'InitializeEnvironment' and t.status == 'SUCCESS' ), False)
+                    if t.name == init_task_name and t.status == 'SUCCESS' ), False)
 
     @classmethod
     def load(cls, json):
