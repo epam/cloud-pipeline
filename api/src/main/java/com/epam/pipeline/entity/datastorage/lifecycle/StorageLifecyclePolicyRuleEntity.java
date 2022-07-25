@@ -17,20 +17,22 @@
 package com.epam.pipeline.entity.datastorage.lifecycle;
 
 import lombok.Builder;
-import lombok.Value;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.time.LocalDate;
-import java.util.List;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 
-@Value
+@Entity
+@Getter
+@Setter
 @Builder
-public class StorageLifecyclePolicyRule {
+@Table(name = "datastorage_lifecycle_rule", schema = "pipeline")
+public class StorageLifecyclePolicyRuleEntity {
     Long id;
-    Long parentRuleId;
+    Long policyId;
     Long datastorageId;
     String pathRoot;
-    String pathGlob;
-    Boolean enabled;
-    List<StorageLifecycleRuleTransition> transitions;
-    StorageLifecycleNotification notification;
+    String objectGlob;
+    String transitionsJson;
 }

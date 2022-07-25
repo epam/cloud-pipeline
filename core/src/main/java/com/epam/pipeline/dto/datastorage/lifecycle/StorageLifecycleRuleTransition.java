@@ -14,22 +14,17 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle;
 
 import lombok.Builder;
 import lombok.Value;
 
-import java.util.List;
+import java.time.LocalDate;
 
 @Value
 @Builder
-public class StorageLifecycleNotification {
-    Long notifyBeforeDays;
-    Long prolongDays;
-    List<Long> userToNotifyIds;
-    Boolean keepInformedAdmins;
-    Boolean keepInformedOwner;
-    Boolean enabled;
-    String subject;
-    String body;
+public class StorageLifecycleRuleTransition {
+    Integer transitionAfterDays;
+    LocalDate transitionDate;
+    String storageClass;
 }

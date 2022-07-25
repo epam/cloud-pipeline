@@ -21,6 +21,8 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecyclePolicy;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecyclePolicyRule;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -39,6 +41,7 @@ import com.epam.pipeline.entity.datastorage.PathDescription;
 import com.epam.pipeline.entity.datastorage.StorageMountPath;
 import com.epam.pipeline.entity.datastorage.StorageUsage;
 import com.epam.pipeline.entity.datastorage.TemporaryCredentials;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicyEntity;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.cloud.TemporaryCredentialsManager;
@@ -47,6 +50,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageEventsService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
@@ -81,6 +85,8 @@ public class DataStorageApiService {
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
     private final Optional<StorageEventsService> eventsService;
+
+    private final DataStorageLifecycleManager storageLifecycleManager;
 
     @StorageAclRead
     public List<AbstractDataStorage> getDataStorages() {
@@ -368,5 +374,43 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'WRITE')")
     public void updateStorageUsage(final String id) {
         eventsService.ifPresent(s -> s.addReindexEvent(id));
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public List<StorageLifecyclePolicy> listStorageLifecyclePolicies(final Long id) {
+        return storageLifecycleManager.listStorageLifecyclePolicies(id);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecyclePolicy createOrUpdateStorageLifecyclePolicy(final StorageLifecyclePolicy policy) {
+        return storageLifecycleManager.createOrUpdateStorageLifecyclePolicy(policy);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecyclePolicy deleteStorageLifecyclePolicy(final Long policyId) {
+        return storageLifecycleManager.deleteStorageLifecyclePolicy(policyId);
+    }
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public StorageLifecyclePolicy loadStorageLifecyclePolicy(final Long policyId) {
+        return storageLifecycleManager.loadStorageLifecyclePolicy(policyId);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public List<StorageLifecyclePolicyRule> listStorageLifecyclePolicyRules(final Long id) {
+        return storageLifecycleManager.listStorageLifecyclePolicyRules(id);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecyclePolicyRule createStorageLifecyclePolicyRule(final StorageLifecyclePolicyRule rule) {
+        return storageLifecycleManager.createOrUpdateStorageLifecyclePolicyRule(rule);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecyclePolicyRule deleteStorageLifecyclePolicyRule(final Long ruleId) {
+        return storageLifecycleManager.deleteStorageLifecyclePolicyRule(ruleId);
+    }
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public StorageLifecyclePolicyRule loadStorageLifecyclePolicyRule(final Long ruleId) {
+        return storageLifecycleManager.loadStorageLifecyclePolicyRule(ruleId);
     }
 }
