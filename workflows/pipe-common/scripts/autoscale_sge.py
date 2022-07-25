@@ -1559,7 +1559,7 @@ class CloudPipelineInstanceProvider:
     @staticmethod
     def get_family_from_type(cloud_provider, instance_type):
         if cloud_provider == CloudProvider.aws():
-            search = re.search('^([a-z]\d+)\..*', instance_type)
+            search = re.search('^(\w+)\..*', instance_type)
             return search.group(1) if search else None
         elif cloud_provider == CloudProvider.gcp():
             search = re.search('^\w\d\-(\w+)-.*', instance_type)
