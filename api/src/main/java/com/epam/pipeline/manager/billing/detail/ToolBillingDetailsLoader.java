@@ -22,6 +22,7 @@ import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.pipeline.ToolManager;
+import com.epam.pipeline.utils.Lazy;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,16 +47,16 @@ public class ToolBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Override
     public Map<String, String> loadInformation(final String id, final boolean loadDetails,
                                                final Map<String, String> defaults) {
-        final Optional<Tool> tool = load(id);
+        final Lazy<Optional<Tool>> tool = Lazy.of(() -> load(id));
         final Map<String, String> details = new HashMap<>(defaults);
-        details.computeIfAbsent(NAME, key -> tool.map(Tool::getName).orElse(id));
+        details.computeIfAbsent(NAME, key -> tool.get().map(Tool::getName).orElse(id));
         if (loadDetails) {
-            details.computeIfAbsent(OWNER, key -> tool.map(Tool::getOwner).orElse(emptyValue));
-            details.computeIfAbsent(CREATED, key -> tool.map(Tool::getCreatedDate)
+            details.computeIfAbsent(OWNER, key -> tool.get().map(Tool::getOwner).orElse(emptyValue));
+            details.computeIfAbsent(CREATED, key -> tool.get().map(Tool::getCreatedDate)
                     .map(DateUtils::convertDateToLocalDateTime)
                     .map(DateTimeFormatter.ISO_DATE_TIME::format)
                     .orElse(emptyValue));
-            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!tool.isPresent()));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!tool.get().isPresent()));
         }
         return details;
     }

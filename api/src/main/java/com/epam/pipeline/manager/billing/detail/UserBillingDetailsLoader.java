@@ -23,6 +23,7 @@ import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.billing.BillingUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.utils.Lazy;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,12 +48,12 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Override
     public Map<String, String> loadInformation(final String id, final boolean loadDetails,
                                                final Map<String, String> defaults) {
-        final Optional<PipelineUser> user = load(id);
+        final Lazy<Optional<PipelineUser>> user = Lazy.of(() -> load(id));
         final Map<String, String> details = new HashMap<>(defaults);
-        details.computeIfAbsent(NAME, key -> user.map(PipelineUser::getUserName).orElse(id));
+        details.computeIfAbsent(NAME, key -> user.get().map(PipelineUser::getUserName).orElse(id));
         if (loadDetails) {
-            details.computeIfAbsent(BILLING_CENTER, key -> user.map(this::toBillingCenter).orElse(emptyValue));
-            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!user.isPresent()));
+            details.computeIfAbsent(BILLING_CENTER, key -> user.get().map(this::toBillingCenter).orElse(emptyValue));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!user.get().isPresent()));
         }
         return details;
     }
