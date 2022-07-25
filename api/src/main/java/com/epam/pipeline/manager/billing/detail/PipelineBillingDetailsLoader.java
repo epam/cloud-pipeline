@@ -49,12 +49,14 @@ public class PipelineBillingDetailsLoader implements EntityBillingDetailsLoader 
         final Optional<Pipeline> pipeline = load(id);
         final Map<String, String> details = new HashMap<>(defaults);
         details.computeIfAbsent(NAME, key -> pipeline.map(Pipeline::getName).orElse(id));
-        details.computeIfAbsent(OWNER, key -> pipeline.map(Pipeline::getOwner).orElse(emptyValue));
-        details.computeIfAbsent(CREATED, key -> pipeline.map(Pipeline::getCreatedDate)
-                .map(DateUtils::convertDateToLocalDateTime)
-                .map(DateTimeFormatter.ISO_DATE_TIME::format)
-                .orElse(emptyValue));
-        details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!pipeline.isPresent()));
+        if (loadDetails) {
+            details.computeIfAbsent(OWNER, key -> pipeline.map(Pipeline::getOwner).orElse(emptyValue));
+            details.computeIfAbsent(CREATED, key -> pipeline.map(Pipeline::getCreatedDate)
+                    .map(DateUtils::convertDateToLocalDateTime)
+                    .map(DateTimeFormatter.ISO_DATE_TIME::format)
+                    .orElse(emptyValue));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!pipeline.isPresent()));
+        }
         return details;
     }
 
