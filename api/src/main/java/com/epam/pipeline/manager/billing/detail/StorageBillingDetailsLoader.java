@@ -69,6 +69,15 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Optional<AbstractCloudRegion> region = storage.flatMap(this::resolveRegionId)
                 .flatMap(this::loadRegion);
         final Map<String, String> details = new HashMap<>(defaults);
+        details.computeIfAbsent(NAME, key -> Optional.ofNullable(details.get(FILE_STORAGE_TYPE))
+                .filter(StringUtils::isNotBlank)
+                .map(type -> details.get(STORAGE_NAME))
+                .orElseGet(() -> details.get(STORAGE_PATH)));
+        details.computeIfAbsent(NAME, key -> storage.map(AbstractDataStorage::getType)
+                .filter(type -> type != DataStorageType.NFS)
+                .map(type -> storage.map(AbstractDataStorage::getPath))
+                .orElseGet(() -> storage.map(AbstractDataStorage::getName))
+                .orElse(id));
         if (loadDetails) {
             details.computeIfAbsent(OWNER, key -> storage.map(AbstractDataStorage::getOwner)
                     .orElse(emptyValue));
@@ -84,7 +93,7 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
             details.computeIfAbsent(STORAGE_TYPE, key -> Optional.ofNullable(details.get(FILE_STORAGE_TYPE))
                     .map(Optional::of)
                     .orElseGet(() -> Optional.ofNullable(details.get(OBJECT_STORAGE_TYPE)))
-                    .orElse(emptyValue));
+                    .orElse(null));
             details.computeIfAbsent(STORAGE_TYPE, key -> storage.map(AbstractDataStorage::getType)
                     .filter(type -> type != DataStorageType.NFS)
                     .map(DataStorageType::name)
@@ -95,17 +104,8 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
                     .map(DateUtils::convertDateToLocalDateTime)
                     .map(DateTimeFormatter.ISO_DATE_TIME::format)
                     .orElse(emptyValue));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!storage.isPresent()));
         }
-        details.computeIfAbsent(NAME, key -> Optional.ofNullable(details.get(FILE_STORAGE_TYPE))
-                .filter(StringUtils::isNotBlank)
-                .map(type -> details.get(STORAGE_NAME))
-                .orElseGet(() -> details.get(STORAGE_PATH)));
-        details.computeIfAbsent(NAME, key -> storage.map(AbstractDataStorage::getType)
-                .filter(type -> type != DataStorageType.NFS)
-                .map(type -> storage.map(AbstractDataStorage::getPath))
-                .orElseGet(() -> storage.map(AbstractDataStorage::getName))
-                .orElse(id));
-        details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!storage.isPresent()));
         return details;
     }
 
