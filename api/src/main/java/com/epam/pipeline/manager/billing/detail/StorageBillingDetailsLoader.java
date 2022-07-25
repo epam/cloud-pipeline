@@ -31,6 +31,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
+import com.epam.pipeline.utils.Lazy;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -65,46 +66,47 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
     @Override
     public Map<String, String> loadInformation(final String id, final boolean loadDetails,
                                                final Map<String, String> defaults) {
-        final Optional<AbstractDataStorage> storage = load(id);
-        final Optional<AbstractCloudRegion> region = storage.flatMap(this::resolveRegionId)
-                .flatMap(this::loadRegion);
+        final Lazy<Optional<AbstractDataStorage>> storage = Lazy.of(() -> load(id));
+        final Lazy<Optional<AbstractCloudRegion>> region = Lazy.of(() -> storage.get()
+                .flatMap(this::resolveRegionId)
+                .flatMap(this::loadRegion));
         final Map<String, String> details = new HashMap<>(defaults);
         details.computeIfAbsent(NAME, key -> Optional.ofNullable(details.get(FILE_STORAGE_TYPE))
                 .filter(StringUtils::isNotBlank)
                 .map(type -> details.get(STORAGE_NAME))
                 .orElseGet(() -> details.get(STORAGE_PATH)));
-        details.computeIfAbsent(NAME, key -> storage.map(AbstractDataStorage::getType)
+        details.computeIfAbsent(NAME, key -> storage.get().map(AbstractDataStorage::getType)
                 .filter(type -> type != DataStorageType.NFS)
-                .map(type -> storage.map(AbstractDataStorage::getPath))
-                .orElseGet(() -> storage.map(AbstractDataStorage::getName))
+                .map(type -> storage.get().map(AbstractDataStorage::getPath))
+                .orElseGet(() -> storage.get().map(AbstractDataStorage::getName))
                 .orElse(id));
         if (loadDetails) {
-            details.computeIfAbsent(OWNER, key -> storage.map(AbstractDataStorage::getOwner)
+            details.computeIfAbsent(OWNER, key -> storage.get().map(AbstractDataStorage::getOwner)
                     .orElse(emptyValue));
-            details.computeIfAbsent(BILLING_CENTER, key -> storage.map(AbstractDataStorage::getOwner)
+            details.computeIfAbsent(BILLING_CENTER, key -> storage.get().map(AbstractDataStorage::getOwner)
                     .map(owner -> userBillingDetailsLoader.loadDetails(owner).get(BILLING_CENTER))
                     .orElse(emptyValue));
-            details.computeIfAbsent(REGION, key -> region.map(AbstractCloudRegion::getName).orElse(emptyValue));
-            details.computeIfAbsent(PROVIDER, key -> region.map(AbstractCloudRegion::getProvider)
+            details.computeIfAbsent(REGION, key -> region.get().map(AbstractCloudRegion::getName).orElse(emptyValue));
+            details.computeIfAbsent(PROVIDER, key -> region.get().map(AbstractCloudRegion::getProvider)
                     .map(CloudProvider::name)
                     .map(Optional::of)
-                    .orElseGet(() -> storage.map(AbstractDataStorage::getType).map(DataStorageType::name))
+                    .orElseGet(() -> storage.get().map(AbstractDataStorage::getType).map(DataStorageType::name))
                     .orElse(emptyValue));
             details.computeIfAbsent(STORAGE_TYPE, key -> Optional.ofNullable(details.get(FILE_STORAGE_TYPE))
                     .map(Optional::of)
                     .orElseGet(() -> Optional.ofNullable(details.get(OBJECT_STORAGE_TYPE)))
                     .orElse(null));
-            details.computeIfAbsent(STORAGE_TYPE, key -> storage.map(AbstractDataStorage::getType)
+            details.computeIfAbsent(STORAGE_TYPE, key -> storage.get().map(AbstractDataStorage::getType)
                     .filter(type -> type != DataStorageType.NFS)
                     .map(DataStorageType::name)
                     .map(Optional::of)
-                    .orElseGet(() -> storage.map(this::getFileShareStorageType))
+                    .orElseGet(() -> storage.get().map(this::getFileShareStorageType))
                     .orElse(emptyValue));
-            details.computeIfAbsent(CREATED, key -> storage.map(AbstractDataStorage::getCreatedDate)
+            details.computeIfAbsent(CREATED, key -> storage.get().map(AbstractDataStorage::getCreatedDate)
                     .map(DateUtils::convertDateToLocalDateTime)
                     .map(DateTimeFormatter.ISO_DATE_TIME::format)
                     .orElse(emptyValue));
-            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!storage.isPresent()));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!storage.get().isPresent()));
         }
         return details;
     }
@@ -124,11 +126,11 @@ public class StorageBillingDetailsLoader implements EntityBillingDetailsLoader {
             case S3: return Optional.ofNullable(((S3bucketDataStorage) storage).getRegionId());
             case AZ: return Optional.ofNullable(((AzureBlobStorage) storage).getRegionId());
             case GS: return Optional.ofNullable(((GSBucketStorage) storage).getRegionId());
-            default: return tryLoadRegionIdThroughMount(storage);
+            default: return tryResolveRegionIdThroughMount(storage);
         }
     }
 
-    private Optional<Long> tryLoadRegionIdThroughMount(final AbstractDataStorage storage) {
+    private Optional<Long> tryResolveRegionIdThroughMount(final AbstractDataStorage storage) {
         return Optional.ofNullable(storage.getFileShareMountId()).flatMap(mountId -> {
             try {
                 final FileShareMount mount = fileShareMountManager.load(mountId);
