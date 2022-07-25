@@ -50,8 +50,10 @@ public class UserBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Optional<PipelineUser> user = load(id);
         final Map<String, String> details = new HashMap<>(defaults);
         details.computeIfAbsent(NAME, key -> user.map(PipelineUser::getUserName).orElse(id));
-        details.computeIfAbsent(BILLING_CENTER, key -> user.map(this::toBillingCenter).orElse(emptyValue));
-        details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!user.isPresent()));
+        if (loadDetails) {
+            details.computeIfAbsent(BILLING_CENTER, key -> user.map(this::toBillingCenter).orElse(emptyValue));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!user.isPresent()));
+        }
         return details;
     }
 

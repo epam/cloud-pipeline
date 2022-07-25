@@ -49,12 +49,14 @@ public class ToolBillingDetailsLoader implements EntityBillingDetailsLoader {
         final Optional<Tool> tool = load(id);
         final Map<String, String> details = new HashMap<>(defaults);
         details.computeIfAbsent(NAME, key -> tool.map(Tool::getName).orElse(id));
-        details.computeIfAbsent(OWNER, key -> tool.map(Tool::getOwner).orElse(emptyValue));
-        details.computeIfAbsent(CREATED, key -> tool.map(Tool::getCreatedDate)
-                .map(DateUtils::convertDateToLocalDateTime)
-                .map(DateTimeFormatter.ISO_DATE_TIME::format)
-                .orElse(emptyValue));
-        details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!tool.isPresent()));
+        if (loadDetails) {
+            details.computeIfAbsent(OWNER, key -> tool.map(Tool::getOwner).orElse(emptyValue));
+            details.computeIfAbsent(CREATED, key -> tool.map(Tool::getCreatedDate)
+                    .map(DateUtils::convertDateToLocalDateTime)
+                    .map(DateTimeFormatter.ISO_DATE_TIME::format)
+                    .orElse(emptyValue));
+            details.computeIfAbsent(IS_DELETED, key -> Boolean.toString(!tool.isPresent()));
+        }
         return details;
     }
 
