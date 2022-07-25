@@ -20,8 +20,8 @@ import classNames from 'classnames';
 import {Alert, Icon, Pagination} from 'antd';
 import {filtersAreEqual, getBatchJobs} from '../model/analysis/batch';
 import CellProfilerJob from './components/cell-profiler-job';
+import CellProfilerJobsFilters from './components/cell-profiler-jobs-filters';
 import styles from './cell-profiler.css';
-import CellProfilerJobsFilters from "./components/cell-profiler-jobs-filters";
 
 const PAGE_SIZE = 2;
 const REFRESH_TIMEOUT_MS = 1000 * 5;

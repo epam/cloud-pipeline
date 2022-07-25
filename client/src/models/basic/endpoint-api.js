@@ -194,11 +194,13 @@ class EndpointAPI {
       try {
         const json = await response.json();
         if (!/^ok$/i.test(json.status)) {
-          throw new APICallError(errorName, `${json.status} ${json.message || json.error}`);
+          throw new APICallError({
+            error: `${json.status} ${json.message || json.error}`
+          });
         }
         return json.payload;
       } catch (e) {
-        throw new APICallError(errorName, e.message);
+        throw new APICallError({title: errorName, error: e.message});
       }
     }
     return response.text();

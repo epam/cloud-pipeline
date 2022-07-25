@@ -268,7 +268,7 @@ class Analysis {
     try {
       actionResult = await action();
     } catch (error) {
-      this.error = error;
+      this.error = error.message;
       actionError = error;
       console.warn(error);
     } finally {
@@ -505,7 +505,7 @@ class Analysis {
       this.status = 'Acquiring CellProfiler job...';
       const job = await findJobWithDockerImage(this.userInfo);
       if (!job) {
-        throw new Error('CellProfiler job cannot be initialized');
+        throw new Error('CellProfiler job is not found or access denied');
       }
       this.status = 'Acquiring CellProfiler job endpoint...';
       endpoint = await waitForJobToBeInitialized(job);

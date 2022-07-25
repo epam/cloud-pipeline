@@ -16,7 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Button, Checkbox, Icon, message} from 'antd';
+import {Alert, Button, Checkbox, Icon, message} from 'antd';
 import Menu, {MenuItem} from 'rc-menu';
 import Dropdown from 'rc-dropdown';
 import {observer} from 'mobx-react';
@@ -242,7 +242,15 @@ class CellProfiler extends React.Component {
               marginRight: 5
             }}
             size="small"
-            disabled={!analysis.available || analysis.analysing}
+            disabled={
+              !analysis.available ||
+              analysis.analysing ||
+              (
+                analysis.batch &&
+                analysis.pipeline &&
+                analysis.pipeline.defineResultsAreEmpty
+              )
+            }
             onClick={this.runAnalysis}
           >
             <Icon type="caret-right" />
@@ -254,6 +262,22 @@ class CellProfiler extends React.Component {
           </Button>
           <AddModulesButton analysis={analysis} />
         </div>
+        {
+          analysis.batch &&
+          analysis.pipeline &&
+          analysis.pipeline.defineResultsAreEmpty && (
+            <Alert
+              className={styles.block}
+              message={(
+                <div>
+                  To run evaluation please specify output at the <b>Define Results</b> section
+                </div>
+              )}
+              type="warning"
+              showIcon
+            />
+          )
+        }
         <SelectionInfo
           analysis={analysis}
           showOnlyIfMultipleSelection

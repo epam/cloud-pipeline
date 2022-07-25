@@ -25,7 +25,7 @@ const DefineResultsModuleName = 'Results';
 const defineResults = {
   name: DefineResultsModuleName,
   predefined: true,
-  title: 'DefineResults',
+  title: 'Define Results',
   hidden: true,
   composed: true,
   parameters: [DefineResultsParameter],
@@ -38,7 +38,7 @@ const defineResultsInternal = {
   hidden: true,
   parameters: [
     'specs|custom|ALIAS specs',
-    'grouping|string|Well|ALIAS grouping'
+    'grouping|custom|ALIAS grouping'
   ]
 };
 

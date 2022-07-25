@@ -133,6 +133,7 @@ class SelectionInfo extends React.Component {
         className={
           classNames(
             className,
+            styles.block,
             styles.analysisSelectionInfo
           )
         }

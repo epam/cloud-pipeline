@@ -77,7 +77,7 @@ const DefineResults = (cpModule) => {
     module: 'DefineResults',
     values: {
       specs,
-      grouping: 'Well'
+      grouping: ['Well', 'Timepoint']
     }
   };
 };

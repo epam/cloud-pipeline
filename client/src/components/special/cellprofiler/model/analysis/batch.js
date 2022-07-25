@@ -64,6 +64,7 @@ const CELLPROFILER_API_BATCH_UUID = 'CELLPROFILER_API_BATCH_UUID';
 const CELLPROFILER_API_BATCH_PIPELINE = 'CELLPROFILER_API_BATCH_PIPELINE';
 const CELLPROFILER_API_BATCH_FILE_STORAGE = 'CELLPROFILER_API_BATCH_FILE_STORAGE';
 const CELLPROFILER_API_BATCH_FILE_PATH = 'CELLPROFILER_API_BATCH_FILE_PATH';
+const CELLPROFILER_API_BATCH_FILE_NAME = 'CELLPROFILER_API_BATCH_FILE_NAME';
 
 /**
  * @param {BatchAnalysisSpecification} specification
@@ -151,6 +152,10 @@ export async function submitBatchAnalysis (specification) {
   setParameterValue(CELLPROFILER_API_BATCH_UUID, specification.measurementUUID);
   setParameterValue(CELLPROFILER_API_BATCH_FILE_STORAGE, specification.storage);
   setParameterValue(CELLPROFILER_API_BATCH_FILE_PATH, specification.path);
+  setParameterValue(
+    CELLPROFILER_API_BATCH_FILE_NAME,
+    (specification.path || '').split(/[\\/]/).pop()
+  );
   setParameterValue(
     CELLPROFILER_API_BATCH_PIPELINE,
     pipeline ? (pipeline.uuid || pipeline.path) : undefined
@@ -245,6 +250,7 @@ const getJobSpec = (job) => {
 /**
  * @typedef {Object} BatchJobsFilters
  * @property {string[]} [userNames]
+ * @property {string} [source]
  * @property {string} [pipeline]
  * @property {string} [measurementUUID]
  * @property {number} [page=0] Zero-based page number
@@ -286,14 +292,16 @@ export function filtersAreEqual (a, b, ignorePagination = false) {
     measurementUUID: aImage,
     pipeline: aPipeline,
     page: aPage,
-    pageSize: aPageSize
+    pageSize: aPageSize,
+    source: aSource
   } = a || {};
   const {
     userNames: bUserNames = [],
     measurementUUID: bImage,
     pipeline: bPipeline,
     page: bPage,
-    pageSize: bPageSize
+    pageSize: bPageSize,
+    source: bSource
   } = b || {};
   const aNames = [...new Set(aUserNames)].sort();
   const bNames = [...new Set(bUserNames)].sort();
@@ -310,7 +318,8 @@ export function filtersAreEqual (a, b, ignorePagination = false) {
     (
       ignorePagination ||
       (aPage === bPage && aPageSize === bPageSize)
-    );
+    ) &&
+    aSource === bSource;
 }
 
 /**

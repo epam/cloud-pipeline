@@ -219,8 +219,12 @@
   white-space: pre;
 }
 
-.analysis-selection-info {
+.block {
   margin: 5px;
+}
+
+.block + .block {
+  margin-top: 0;
 }
 
 .analysis-selection-info .count:not(:last-child)::after {

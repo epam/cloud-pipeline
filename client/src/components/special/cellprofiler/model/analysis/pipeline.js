@@ -211,6 +211,16 @@ class AnalysisPipeline {
     return [...new Set(all)];
   }
 
+  @computed
+  get defineResultsAreEmpty () {
+    if (!this.defineResults) {
+      return true;
+    }
+    const configuration = this.defineResults.getParameterValue('configuration');
+    return !configuration ||
+      configuration.filter(o => o.object).length === 0;
+  }
+
   getObjectIsSpot = (object) => {
     return this.spots.some(aSpot => aSpot.name === object);
   }
