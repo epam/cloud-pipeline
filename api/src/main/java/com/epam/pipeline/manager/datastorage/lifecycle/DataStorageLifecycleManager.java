@@ -191,6 +191,9 @@ public class DataStorageLifecycleManager {
         Assert.notEmpty(ruleTemplate.getTransitions(),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED));
         verifyNotification(ruleTemplate.getNotification());
+        Assert.notNull(ruleTemplate.getTransitionMethod(),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED));
         storageProviderManager.verifyStorageLifecycleRuleTemplate(dataStorage, ruleTemplate);
     }
 
@@ -207,10 +210,13 @@ public class DataStorageLifecycleManager {
 
         if (rule.getTemplateId() != null) {
             final StorageLifecycleRuleTemplate ruleTemplate = loadStorageLifecycleRuleTemplate(rule.getTemplateId());
+            Assert.isTrue(rule.getPathRoot().startsWith(ruleTemplate.getPathRoot()),
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_ROOT_DOESNT_START_WITH));
             result = StorageLifecycleRule.builder()
                     .datastorageId(ruleTemplate.getDatastorageId())
                     .objectGlob(ruleTemplate.getObjectGlob())
                     .pathRoot(rule.getPathRoot())
+                    .transitionMethod(ruleTemplate.getTransitionMethod())
                     .templateId(ruleTemplate.getId())
                     .notification(ruleTemplate.getNotification())
                     .transitions(ruleTemplate.getTransitions())
@@ -218,6 +224,9 @@ public class DataStorageLifecycleManager {
         } else {
             Assert.notEmpty(rule.getTransitions(),
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED));
+            Assert.notNull(rule.getTransitionMethod(),
+                    messageHelper.getMessage(
+                            MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED));
         }
         verifyNotification(rule.getNotification());
         storageProviderManager.verifyStorageLifecycleRule(dataStorage, result);

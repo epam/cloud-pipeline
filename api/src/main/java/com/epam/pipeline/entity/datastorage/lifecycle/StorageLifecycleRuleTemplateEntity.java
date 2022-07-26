@@ -16,12 +16,15 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleTransitionMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -52,6 +55,8 @@ public class StorageLifecycleRuleTemplateEntity {
     private Long datastorageId;
     private String pathRoot;
     private String objectGlob;
+    @Enumerated(EnumType.STRING)
+    private StorageLifecycleTransitionMethod transitionMethod;
     private Boolean enabled;
     private String transitionsJson;
     private String notificationJson;

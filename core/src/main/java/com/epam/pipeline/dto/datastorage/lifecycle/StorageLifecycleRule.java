@@ -37,6 +37,7 @@ public class StorageLifecycleRule {
     private LocalDateTime prolongedDate;
     private String pathRoot;
     private String objectGlob;
+    private StorageLifecycleTransitionMethod transitionMethod;
     private List<StorageLifecycleRuleTransition> transitions;
     private StorageLifecycleNotification notification;
 }

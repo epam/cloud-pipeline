@@ -16,17 +16,19 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleTransitionMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -43,6 +45,8 @@ public class StorageLifecycleRuleEntity {
     private Long templateId;
     private Long datastorageId;
     private LocalDateTime prolongedDate;
+    @Enumerated(EnumType.STRING)
+    private StorageLifecycleTransitionMethod transitionMethod;
     private String pathRoot;
     private String objectGlob;
     private String transitionsJson;

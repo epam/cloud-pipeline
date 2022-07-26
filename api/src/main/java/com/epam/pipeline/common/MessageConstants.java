@@ -312,6 +312,10 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.notify.before.days.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS =
             "error.datastirage.lifecycle.wrong.notify.before.days";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED =
+            "error.datastirage.lifecycle.transition.method.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_ROOT_DOESNT_START_WITH =
+            "error.datastirage.lifecycle.root.path.should.start.with";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

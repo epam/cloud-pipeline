@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_rule_template(
     enabled boolean NOT NULL,
     path_root TEXT NOT NULL,
     object_glob TEXT DEFAULT NULL,
+    transition_method TEXT NOT NULL,
     transitions_json TEXT NOT NULL,
     notification_json TEXT DEFAULT NULL
 );
@@ -16,6 +17,7 @@ CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_rule(
     prolonged_date TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     path_root TEXT NOT NULL,
     object_glob TEXT DEFAULT NULL,
+    transition_method TEXT NOT NULL,
     transitions_json TEXT NOT NULL,
     notification_json TEXT DEFAULT NULL
 );

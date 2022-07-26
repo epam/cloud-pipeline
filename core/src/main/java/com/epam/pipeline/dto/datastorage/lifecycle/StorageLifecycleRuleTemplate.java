@@ -43,6 +43,7 @@ public class StorageLifecycleRuleTemplate {
     private Long datastorageId;
     private String pathRoot;
     private String objectGlob;
+    private StorageLifecycleTransitionMethod transitionMethod;
     private Boolean enabled;
     private List<StorageLifecycleRuleTransition> transitions;
     private  StorageLifecycleNotification notification;
