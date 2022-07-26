@@ -16,11 +16,11 @@
 
 package com.epam.pipeline.manager.datastorage.lifecycle;
 
+import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTransition.StorageLifecycleRuleTransitionBuilder;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleTemplateEntity;
@@ -39,14 +39,12 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-// TODO verefication for passed objects
 public class DataStorageLifecycleManager {
 
     private final MessageHelper messageHelper;
@@ -69,7 +67,8 @@ public class DataStorageLifecycleManager {
         return Optional.ofNullable(dataStorageLifecycleRuleTemplateRepository.findOne(templateId))
                 .map(lifecycleEntityMapper::toDto)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Lifecycle policy with id '%d' cannot be found!", templateId)));
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_TEMPLATE_NOT_FOUND,
+                                templateId)));
     }
 
     @Transactional
@@ -88,15 +87,15 @@ public class DataStorageLifecycleManager {
         if (loaded != null) {
             final List<StorageLifecycleRule> dependentRules = listStorageLifecyclePolicyRulesByTemplate(loaded.getId());
             if (!ListUtils.emptyIfNull(dependentRules).isEmpty()) {
-                throw new IllegalStateException(
-                        "There are lifecycle rules created from this template, before deletion of the template," +
-                                " please delete rules first.");
+                throw new IllegalStateException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_EXISTING_LIFECYCLE_RULE));
             }
             dataStorageLifecycleRuleTemplateRepository.delete(loaded.getId());
             return loaded;
         } else {
             throw new IllegalArgumentException(
-                    String.format("Can't load storage lifecycle policy by id: %s", templateId));
+                    String.format( messageHelper.getMessage(
+                            MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_TEMPLATE_NOT_FOUND, templateId)));
         }
     }
 
@@ -118,7 +117,7 @@ public class DataStorageLifecycleManager {
         return Optional.ofNullable(dataStorageLifecycleRuleRepository.findOne(ruleId))
                 .map(lifecycleEntityMapper::toDto)
                 .orElseThrow(() -> new IllegalArgumentException(
-                        String.format("Lifecycle policy rule with id '%d' cannot be found!", ruleId)));
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND, ruleId)));
     }
 
     @Transactional
@@ -137,14 +136,20 @@ public class DataStorageLifecycleManager {
                 ? daysToProlong
                 : loaded.getNotification().getProlongDays();
 
-        Assert.notNull(effectiveDaysToProlong, "Can't define days to prolong, please explicitly specify this value.");
-        Assert.isTrue(effectiveDaysToProlong > 0, "Days to prolong should be > 0.");
+        Assert.notNull(effectiveDaysToProlong,
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_DEFINE_DAYS_TO_PROLONG));
+        Assert.isTrue(effectiveDaysToProlong > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG));
 
         if (loaded.getProlongedDate() != null &&
                 DateUtils.nowUTC().minus(effectiveDaysToProlong, ChronoUnit.DAYS).isBefore(loaded.getProlongedDate())) {
             throw new IllegalStateException(
-                    String.format("This Rule was prolonged less then %d days. Will not prolonged again.",
-                            daysToProlong));
+                    String.format(
+                            messageHelper.getMessage(
+                                    MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE,
+                                    effectiveDaysToProlong
+                            ), daysToProlong));
         }
 
         loaded.setTransitions(loaded.getTransitions().stream().map(t -> {
@@ -170,30 +175,35 @@ public class DataStorageLifecycleManager {
             return loaded;
         } else {
             throw new IllegalArgumentException(
-                    String.format("Can't load storage lifecycle policy by id: %s", ruleId));
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND, ruleId));
         }
     }
 
     private void verifyStorageLifecycleRuleTemplateObject(final StorageLifecycleRuleTemplate ruleTemplate) {
         final Long datastorageId = ruleTemplate.getDatastorageId();
         final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
-        Assert.notNull(datastorageId, "datastorageId should be specified!");
-        Assert.notNull(dataStorage, String.format("Can't find datastorage with id: '%d'", datastorageId));
-        Assert.isTrue(!StringUtils.isEmpty(ruleTemplate.getPathRoot()), "Root path should be provided!");
-        Assert.isTrue(!StringUtils.isEmpty(ruleTemplate.getObjectGlob()),
-                "Path glob for objects should be provided!");
-        Assert.notEmpty(ruleTemplate.getTransitions(), "At least one transition should be specified!");
+        Assert.notNull(datastorageId,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
+        Assert.notNull(dataStorage,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, datastorageId));
+        Assert.isTrue(!StringUtils.isEmpty(ruleTemplate.getPathRoot()),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED));
+        Assert.notEmpty(ruleTemplate.getTransitions(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED));
         verifyNotification(ruleTemplate.getNotification());
         storageProviderManager.verifyStorageLifecycleRuleTemplate(dataStorage, ruleTemplate);
     }
 
     private StorageLifecycleRule checkAndRebuildStorageLifecycleRuleObject(final StorageLifecycleRule rule) {
         StorageLifecycleRule result = rule;
-        Assert.isTrue(!StringUtils.isEmpty(rule.getPathRoot()), "Root path should be provided!");
+        Assert.isTrue(!StringUtils.isEmpty(rule.getPathRoot()),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED));
         final Long datastorageId = rule.getDatastorageId();
         final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
-        Assert.notNull(datastorageId, "datastorageId should be specified!");
-        Assert.notNull(dataStorage, String.format("Can't find datastorage with id: '%d'", datastorageId));
+        Assert.notNull(datastorageId,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
+        Assert.notNull(dataStorage,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_NOT_FOUND, datastorageId));
 
         if (rule.getTemplateId() != null) {
             final StorageLifecycleRuleTemplate ruleTemplate = loadStorageLifecycleRuleTemplate(rule.getTemplateId());
@@ -206,9 +216,8 @@ public class DataStorageLifecycleManager {
                     .transitions(ruleTemplate.getTransitions())
                     .build();
         } else {
-            Assert.isTrue(!StringUtils.isEmpty(rule.getObjectGlob()),
-                    "Path glob for objects should be provided!");
-            Assert.notEmpty(rule.getTransitions(), "At least one transition should be specified!");
+            Assert.notEmpty(rule.getTransitions(),
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED));
         }
         verifyNotification(rule.getNotification());
         storageProviderManager.verifyStorageLifecycleRule(dataStorage, result);
@@ -219,13 +228,18 @@ public class DataStorageLifecycleManager {
         if (notification == null) {
             return;
         }
-        Assert.notNull(notification.getProlongDays(), "Number of days to prolong rule should be provided.");
-        Assert.isTrue(notification.getProlongDays() > 0, "prolongDays should be > 0");
+        Assert.notNull(notification.getProlongDays(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PROLONG_DAYS_NOT_SPECIFIED));
+        Assert.isTrue(notification.getProlongDays() > 0,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG));
         Assert.notNull(notification.getNotifyBeforeDays(),
-                "notifyBeforeDays - Number of days to notify user before action will take place. " +
-                        "This value should be provided.");
-        Assert.isTrue(notification.getNotifyBeforeDays() >= 0, "notifyBeforeDays should be >= 0");
-        Assert.hasLength(notification.getSubject(), "Subject for notification message should be provided.");
-        Assert.hasLength(notification.getBody(), "Body for notification message should be provided.");
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_NOTIFY_BEFORE_DAYS_NOT_SPECIFIED)
+        );
+        Assert.isTrue(notification.getNotifyBeforeDays() >= 0,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS));
+        Assert.hasLength(notification.getSubject(),
+                messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED));
+        Assert.hasLength(notification.getBody(),
+                messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_BODY_NOT_SPECIFIED));
     }
 }
