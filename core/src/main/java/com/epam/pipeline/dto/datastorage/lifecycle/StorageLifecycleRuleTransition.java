@@ -22,9 +22,9 @@ import lombok.Value;
 import java.time.LocalDate;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class StorageLifecycleRuleTransition {
-    Integer transitionAfterDays;
+    Long transitionAfterDays;
     LocalDate transitionDate;
     String storageClass;
 }

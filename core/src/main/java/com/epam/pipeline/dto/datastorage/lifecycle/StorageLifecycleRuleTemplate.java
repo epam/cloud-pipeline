@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
 import java.util.List;
 
 
@@ -34,18 +33,17 @@ import java.util.List;
  *                could be set to false we still may create rules from this policy if there is a case, this flag
  *                basically for automation routine code
  * */
-@Entity
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
-@Table(name = "datastorage_lifecycle_policy", schema = "pipeline")
-public class StorageLifecyclePolicyEntity {
-    Long id;
-    String description;
-    Long datastorageId;
-    String pathRoot;
-    String objectGlob;
-    Boolean enabled;
-    String transitionsJson;
-    String notificationJson;
+public class StorageLifecycleRuleTemplate {
+    private Long id;
+    private String description;
+    private Long datastorageId;
+    private String pathRoot;
+    private String objectGlob;
+    private Boolean enabled;
+    private List<StorageLifecycleRuleTransition> transitions;
+    private  StorageLifecycleNotification notification;
 }

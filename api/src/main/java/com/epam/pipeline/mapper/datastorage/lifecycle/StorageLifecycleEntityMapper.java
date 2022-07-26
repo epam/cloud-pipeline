@@ -18,11 +18,11 @@ package com.epam.pipeline.mapper.datastorage.lifecycle;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecyclePolicy;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecyclePolicyRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTransition;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicyEntity;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicyRuleEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleTemplateEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,35 +40,38 @@ public interface StorageLifecycleEntityMapper {
 
     @Mapping(source = "notification", target = "notificationJson", qualifiedByName = "notificationToJson")
     @Mapping(source = "transitions", target = "transitionsJson", qualifiedByName = "transitionsToJson")
-    StorageLifecyclePolicyEntity toEntity(StorageLifecyclePolicy policy);
+    StorageLifecycleRuleTemplateEntity toEntity(StorageLifecycleRuleTemplate policy);
 
     @Mapping(source = "notificationJson", target = "notification", qualifiedByName = "notificationJsonToDto")
     @Mapping(source = "transitionsJson", target = "transitions", qualifiedByName = "transitionsJsonToDto")
-    StorageLifecyclePolicy toDto(StorageLifecyclePolicyEntity policyEntity);
+    StorageLifecycleRuleTemplate toDto(StorageLifecycleRuleTemplateEntity policyEntity);
 
+    @Mapping(source = "notification", target = "notificationJson", qualifiedByName = "notificationToJson")
     @Mapping(source = "transitions", target = "transitionsJson", qualifiedByName = "transitionsToJson")
-    StorageLifecyclePolicyRuleEntity toEntity(StorageLifecyclePolicyRule rule);
+    StorageLifecycleRuleEntity toEntity(StorageLifecycleRule rule);
 
+    @Mapping(source = "notificationJson", target = "notification", qualifiedByName = "notificationJsonToDto")
     @Mapping(source = "transitionsJson", target = "transitions", qualifiedByName = "transitionsJsonToDto")
-    StorageLifecyclePolicyRule toDto(StorageLifecyclePolicyRuleEntity policyEntity);
+    StorageLifecycleRule toDto(StorageLifecycleRuleEntity policyEntity);
 
     @Named("notificationToJson")
-    static String notificationToJson(StorageLifecycleNotification notification) throws JsonProcessingException {
+    static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(notification);
     }
 
     @Named("notificationToJson")
-    static String transitionsToJson(List<StorageLifecycleRuleTransition> transitions) throws JsonProcessingException {
+    static String transitionsToJson(final List<StorageLifecycleRuleTransition> transitions)
+            throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(transitions);
     }
 
     @Named("notificationJsonToDto")
-    static StorageLifecycleNotification notificationJsonToDto(String notificationJson) throws IOException {
+    static StorageLifecycleNotification notificationJsonToDto(final String notificationJson) throws IOException {
         return OBJECT_MAPPER.readValue(notificationJson, new TypeReference<StorageLifecycleNotification>(){});
     }
 
     @Named("transitionsJsonToDto")
-    static List<StorageLifecycleRuleTransition> transitionsJsonToDto(String transitionsJson) throws IOException {
+    static List<StorageLifecycleRuleTransition> transitionsJsonToDto(final String transitionsJson) throws IOException {
         return OBJECT_MAPPER.readValue(transitionsJson, new TypeReference<List<StorageLifecycleRuleTransition>>(){});
     }
 

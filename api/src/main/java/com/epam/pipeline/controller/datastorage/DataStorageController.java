@@ -24,12 +24,11 @@ import com.epam.pipeline.controller.vo.UploadFileMetadata;
 import com.epam.pipeline.controller.vo.data.storage.DataStorageMountVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecyclePolicy;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecyclePolicyRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.*;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecyclePolicyEntity;
 import com.epam.pipeline.entity.datastorage.rules.DataStorageRule;
 import com.epam.pipeline.acl.datastorage.DataStorageApiService;
 import io.swagger.annotations.Api;
@@ -780,71 +779,72 @@ public class DataStorageController extends AbstractRestController {
         return Result.success();
     }
 
-    @GetMapping(value = "/datastorage/{id}/lifecycle")
+    @GetMapping(value = "/datastorage/{id}/lifecycle/template")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Lists all available lifecycle rule templates for specific data storage.",
+            notes = "Lists all available lifecycle rule templates for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<StorageLifecyclePolicy>> listStorageLifecyclePolicies(@PathVariable(value = ID) final Long id) {
-        return Result.success(dataStorageApiService.listStorageLifecyclePolicies(id));
+    public Result<List<StorageLifecycleRuleTemplate>> listStorageLifecycleRuleTemplates(
+            @PathVariable(value = ID) final Long id) {
+        return Result.success(dataStorageApiService.listStorageLifecycleRuleTemplates(id));
     }
 
-    @GetMapping(value = "/datastorage/lifecycle/{policyId}")
+    @GetMapping(value = "/datastorage/lifecycle/template/{templateId}")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Gets specific lifecycle rule template for specific data storage.",
+            notes = "Gets specific lifecycle rule template for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecyclePolicy> loadStorageLifecyclePolicy(
-            @PathVariable(value = "policyId") final Long policyId) {
-        return Result.success(dataStorageApiService.loadStorageLifecyclePolicy(policyId));
+    public Result<StorageLifecycleRuleTemplate> loadStorageLifecycleRuleTemplate(
+            @PathVariable(value = "templateId") final Long templateId) {
+        return Result.success(dataStorageApiService.loadStorageLifecycleRuleTemplate(templateId));
     }
 
-    @PostMapping(value = "/datastorage/lifecycle")
+    @PostMapping(value = "/datastorage/lifecycle/template")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Creates lifecycle rule template for specific data storage.",
+            notes = "Creates lifecycle rule template for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecyclePolicy> createOrUpdateStorageLifecyclePolicy(
-            @RequestBody final StorageLifecyclePolicy policy) {
-        return Result.success(dataStorageApiService.createOrUpdateStorageLifecyclePolicy(policy));
+    public Result<StorageLifecycleRuleTemplate> createOrUpdateStorageLifecyclePolicy(
+            @RequestBody final StorageLifecycleRuleTemplate ruleTemplate) {
+        return Result.success(dataStorageApiService.createOrUpdateStorageLifecycleRuleTemplate(ruleTemplate));
     }
 
-    @DeleteMapping(value = "/datastorage/lifecycle/{policyId}")
+    @DeleteMapping(value = "/datastorage/lifecycle/template/{templateId}")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Deletes specific lifecycle rule template for specific data storage.",
+            notes = "Deletes specific lifecycle rule template for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecyclePolicy> deleteStorageLifecyclePolicy(
-            @PathVariable(value = "policyId") final Long policyId) {
-        return Result.success(dataStorageApiService.deleteStorageLifecyclePolicy(policyId));
+    public Result<StorageLifecycleRuleTemplate> deleteStorageLifecycleRuleTemplate(
+            @PathVariable(value = "templateId") final Long templateId) {
+        return Result.success(dataStorageApiService.deleteStorageLifecycleRuleTemplate(templateId));
     }
 
     @GetMapping(value = "/datastorage/{id}/lifecycle/rule")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Lists all available lifecycle rules for specific data storage.",
+            notes = "Lists all available lifecycle rules for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<StorageLifecyclePolicyRule>> listStorageLifecyclePolicyRules(
+    public Result<List<StorageLifecycleRule>> listStorageLifecyclePolicyRules(
             @PathVariable(value = ID) final Long id) {
         return Result.success(dataStorageApiService.listStorageLifecyclePolicyRules(id));
     }
@@ -852,13 +852,13 @@ public class DataStorageController extends AbstractRestController {
     @GetMapping(value = "/datastorage/lifecycle/rule/{ruleId}")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Gets specific lifecycle rule for specific data storage.",
+            notes = "Gets specific lifecycle rule for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecyclePolicyRule> loadStorageLifecyclePolicyRule(
+    public Result<StorageLifecycleRule> loadStorageLifecyclePolicyRule(
             @PathVariable(value = "ruleId") final Long ruleId) {
         return Result.success(dataStorageApiService.loadStorageLifecyclePolicyRule(ruleId));
     }
@@ -866,27 +866,42 @@ public class DataStorageController extends AbstractRestController {
     @PostMapping(value = "/datastorage/lifecycle/rule")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Creates lifecycle rule for specific data storage.",
+            notes = "Creates lifecycle rule for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecyclePolicyRule> createStorageLifecyclePolicyRule(
-            @RequestBody final StorageLifecyclePolicyRule rule) {
+    public Result<StorageLifecycleRule> createStorageLifecyclePolicyRule(
+            @RequestBody final StorageLifecycleRule rule) {
         return Result.success(dataStorageApiService.createStorageLifecyclePolicyRule(rule));
+    }
+
+    @PostMapping(value = "/datastorage/lifecycle/rule/{ruleId}/prolong")
+    @ResponseBody
+    @ApiOperation(
+            value = "Shift a moment in time when action from lifecycle rule should take place.",
+            notes = "Shift a moment in time when action from lifecycle rule should take place.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageLifecycleRule> prolongStorageLifecyclePolicyRule(
+            @PathVariable(value = "ruleId") final Long ruleId,
+            @RequestParam(value = "days", required = false) final Long days) {
+        return Result.success(dataStorageApiService.prolongStorageLifecyclePolicyRule(ruleId, days));
     }
 
     @DeleteMapping(value = "/datastorage/lifecycle/rule/{ruleId}")
     @ResponseBody
     @ApiOperation(
-            value = "",
-            notes = "",
+            value = "Deletes specific lifecycle rule for specific data storage.",
+            notes = "Deletes specific lifecycle rule for specific data storage.",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecyclePolicyRule> deleteStorageLifecyclePolicyRule(
+    public Result<StorageLifecycleRule> deleteStorageLifecyclePolicyRule(
             @PathVariable(value = "ruleId") final Long ruleId) {
         return Result.success(dataStorageApiService.deleteStorageLifecyclePolicyRule(ruleId));
     }

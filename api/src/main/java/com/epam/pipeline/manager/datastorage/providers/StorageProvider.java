@@ -24,6 +24,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -127,5 +129,8 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     }
 
     PathDescription getDataSize(T dataStorage, String path, PathDescription pathDescription);
+
+    void verifyStorageLifecycleRuleTemplate(StorageLifecycleRuleTemplate ruleTemplate);
+    void verifyStorageLifecyclePolicyRule(StorageLifecycleRule rule);
 
 }

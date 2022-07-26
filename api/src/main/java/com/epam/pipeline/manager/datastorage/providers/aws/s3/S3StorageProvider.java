@@ -21,8 +21,11 @@ import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.re
 import static com.epam.pipeline.manager.datastorage.providers.aws.s3.S3Helper.validateFolderPathMatchingMasks;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -59,9 +62,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.util.Assert;
 
 import java.io.InputStream;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +80,8 @@ import java.util.stream.Stream;
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
+    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(StorageClass.Glacier.name(),
+            StorageClass.DeepArchive.name(), StorageClass.GlacierInstantRetrieval.name(), "DELETION");
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
@@ -376,6 +383,30 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).getDataSize(dataStorage,
                 ProviderUtils.buildPath(dataStorage, path), pathDescription);
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleTemplate(final StorageLifecycleRuleTemplate ruleTemplate) {
+        ruleTemplate.getTransitions().forEach(t -> {
+            Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(t.getStorageClass()),
+                    "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+            Assert.isTrue(t.getTransitionAfterDays() != null || t.getTransitionDate() != null,
+                    "transitionAfterDays or transitionDate should be provided!");
+            Assert.isTrue(!(t.getTransitionAfterDays() != null && t.getTransitionDate() != null),
+                    "Only transitionAfterDays or transitionDate could be provided, but not both!");
+        });
+    }
+
+    @Override
+    public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
+        rule.getTransitions().forEach(t -> {
+            Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(t.getStorageClass()),
+                    "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+            Assert.isTrue(t.getTransitionAfterDays() != null || t.getTransitionDate() != null,
+                    "transitionAfterDays or transitionDate should be provided!");
+            Assert.isTrue(!(t.getTransitionAfterDays() != null && t.getTransitionDate() != null),
+                    "Only transitionAfterDays or transitionDate could be provided, but not both!");
+        });
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

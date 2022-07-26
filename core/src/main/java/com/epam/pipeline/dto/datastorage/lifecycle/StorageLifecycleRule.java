@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Value;
 
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
-@Entity
-@Getter
-@Setter
-@Builder
-@Table(name = "datastorage_lifecycle_rule", schema = "pipeline")
-public class StorageLifecyclePolicyRuleEntity {
-    Long id;
-    Long policyId;
-    Long datastorageId;
-    String pathRoot;
-    String objectGlob;
-    String transitionsJson;
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
+public class StorageLifecycleRule {
+    private Long id;
+    private Long templateId;
+    private Long datastorageId;
+    private LocalDateTime prolongedDate;
+    private String pathRoot;
+    private String objectGlob;
+    private List<StorageLifecycleRuleTransition> transitions;
+    private StorageLifecycleNotification notification;
 }

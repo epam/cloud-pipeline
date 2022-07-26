@@ -18,6 +18,8 @@ package com.epam.pipeline.manager.datastorage;
 
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -227,5 +229,14 @@ public class StorageProviderManager {
     public PathDescription getDataSize(final AbstractDataStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getStorageProvider(dataStorage).getDataSize(dataStorage, path, pathDescription);
+    }
+
+    public void verifyStorageLifecycleRuleTemplate(final AbstractDataStorage dataStorage,
+                                                   final StorageLifecycleRuleTemplate ruleTemplate) {
+        getStorageProvider(dataStorage).verifyStorageLifecycleRuleTemplate(ruleTemplate);
+    }
+
+    public void verifyStorageLifecycleRule(final AbstractDataStorage dataStorage, final StorageLifecycleRule rule) {
+        getStorageProvider(dataStorage).verifyStorageLifecyclePolicyRule(rule);
     }
 }
