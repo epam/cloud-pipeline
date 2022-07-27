@@ -66,7 +66,6 @@ else
     done
     run_pipeline
     pipeline_state="$(curl -k -s -X GET "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?pipelineId=$pipeline_id" | jq -r '.payload.pipelineId.state//""')"
-    retry_count=0
     while [ "$pipeline_state" == "CONFIGURING" ] || [ "$pipeline_state" == "RUNNING" ];
     do
       echo "Non terminal pipeline state '$pipeline_state'. Wait for the end of execution."
@@ -74,15 +73,6 @@ else
       pipeline_state="$(curl -k -s -X GET "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?pipelineId=$pipeline_id" | jq -r '.payload.pipelineId.state//""')"
       if [ "$pipeline_state" == "FINISHED" ] || [ "$pipeline_state" == "FAILED" ]; then
           break
-      fi
-      if [ "$pipeline_state" == "CONFIGURING" ]; then
-          if [ "$retry_count" -gt 10 ]; then
-              echo "[ERROR] Exceeded max retries count for configuring pipeline run."
-              exit 1
-          fi
-          retry_count=$((retry_count+1))
-          echo "Stuck in 'CONFIGURING' state. Try to rerun pipeline."
-          run_pipeline
       fi
     done
     pipeline_run_message="$(curl -k -s -X GET "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?pipelineId=$pipeline_id" | jq -r '.payload.pipelineId.message//""')"
