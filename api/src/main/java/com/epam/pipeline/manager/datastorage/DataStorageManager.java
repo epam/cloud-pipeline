@@ -365,18 +365,16 @@ public class DataStorageManager implements SecuredEntityManager {
         assertDataStorageMountPoint(dataStorageVO);
         assertToolsToMount(dataStorageVO);
 
-        final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
 
+        final AbstractCloudRegion storageRegion = getDatastorageCloudRegionOrDefault(dataStorageVO);
         dataStorageVO.setRegionId(storageRegion.getId());
         checkDatastorageDoesntExist(dataStorageVO.getName(), dataStorageVO.getPath(),
                                     dataStorageVO.getSourceStorageId() != null);
+        verifyStoragePolicy(dataStorageVO.getStoragePolicy());
         validateMirroringParameters(dataStorageVO);
 
-        final AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
+        AbstractDataStorage dataStorage = dataStorageFactory.convertToDataStorage(dataStorageVO,
                 storageRegion.getProvider());
-
-        verifyStoragePolicy(dataStorage);
-
         final SecuredEntityWithAction<AbstractDataStorage> createdStorage = new SecuredEntityWithAction<>();
         createdStorage.setEntity(dataStorage);
         if (StringUtils.isBlank(dataStorage.getMountOptions())) {
@@ -1072,12 +1070,11 @@ public class DataStorageManager implements SecuredEntityManager {
         return dataStorage;
     }
 
-    private AbstractDataStorage updateStoragePolicy(final AbstractDataStorage dataStorage,
-                                                    final DataStorageVO dataStorageVO) {
+    private AbstractDataStorage updateStoragePolicy(AbstractDataStorage dataStorage, DataStorageVO dataStorageVO) {
+        verifyStoragePolicy(dataStorageVO.getStoragePolicy());
         StoragePolicy policy = dataStorageVO.getStoragePolicy() == null ? new StoragePolicy() :
                 dataStorageVO.getStoragePolicy();
         dataStorage.setStoragePolicy(policy);
-        verifyStoragePolicy(dataStorage);
         return dataStorage;
     }
 
@@ -1089,8 +1086,7 @@ public class DataStorageManager implements SecuredEntityManager {
                       messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_ALREADY_EXIST, name, path));
     }
 
-    private void verifyStoragePolicy(final AbstractDataStorage dataStorage) {
-        final StoragePolicy policy = dataStorage.getStoragePolicy();
+    private void verifyStoragePolicy(StoragePolicy policy) {
         if (policy == null) {
             return;
         }

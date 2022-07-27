@@ -55,6 +55,7 @@ import com.amazonaws.services.s3.model.ServerSideEncryptionRule;
 import com.amazonaws.services.s3.model.SetBucketEncryptionRequest;
 import com.amazonaws.services.s3.model.SetBucketVersioningConfigurationRequest;
 import com.amazonaws.services.s3.model.SetObjectTaggingRequest;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.amazonaws.services.s3.model.Tag;
 import com.amazonaws.services.s3.model.TagSet;
 import com.amazonaws.services.s3.model.VersionListing;
@@ -247,9 +248,21 @@ public class S3Helper {
                 applyVersioningConfig(bucketName, s3client, conf);
             }
 
-            if (policy != null && policy.getIncompleteUploadCleanupDays() != null) {
-                rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
-                        policy.getIncompleteUploadCleanupDays()));
+            if (policy != null) {
+                if (policy.getShortTermStorageDuration() != null) {
+                    rules.add(createStsRule(STS_RULE_ID, policy.getShortTermStorageDuration()));
+                } else {
+                    disableRule(rules, currentRules, STS_RULE_ID);
+                }
+                if (policy.getLongTermStorageDuration() != null) {
+                    rules.add(createLtsRule(LTS_RULE_ID, policy.getLongTermStorageDuration()));
+                } else {
+                    disableRule(rules, currentRules, LTS_RULE_ID);
+                }
+                if (policy.getIncompleteUploadCleanupDays() != null) {
+                    rules.add(createIncompleteUploadCleanupRule(INCOMPLETE_UPLOAD_CLEANUP_RULE_ID,
+                            policy.getIncompleteUploadCleanupDays()));
+                }
             }
             if (!rules.isEmpty()) {
                 applyRules(bucketName, s3client, rules);
@@ -683,6 +696,25 @@ public class S3Helper {
 
         pathDescription.setCompleted(true);
         return pathDescription;
+    }
+
+    private BucketLifecycleConfiguration.Rule createLtsRule(String ltsRuleId, Integer longTermStorageDuration) {
+        return new BucketLifecycleConfiguration.Rule()
+                .withId(ltsRuleId)
+                .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(EMPTY_STRING)))
+                .withExpirationInDays(longTermStorageDuration)
+                .withStatus(BucketLifecycleConfiguration.ENABLED);
+    }
+
+    private BucketLifecycleConfiguration.Rule createStsRule(String stsRuleId, Integer shortTermStorageDuration) {
+        return new BucketLifecycleConfiguration.Rule()
+                .withId(stsRuleId)
+                .withFilter(new LifecycleFilter(new LifecyclePrefixPredicate(EMPTY_STRING)))
+                .addTransition(
+                        new BucketLifecycleConfiguration.Transition()
+                                .withDays(shortTermStorageDuration)
+                                .withStorageClass(StorageClass.Glacier))
+                .withStatus(BucketLifecycleConfiguration.ENABLED);
     }
 
     private BucketLifecycleConfiguration.Rule createIncompleteUploadCleanupRule(String ruleId,

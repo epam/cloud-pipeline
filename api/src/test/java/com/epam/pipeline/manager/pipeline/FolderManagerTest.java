@@ -52,7 +52,6 @@ import com.epam.pipeline.manager.metadata.MetadataEntityManager;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -100,7 +99,6 @@ public class FolderManagerTest extends AbstractSpringTest {
     private static final String TEST_PATH = "path";
     private static final int STS_DURATION = 1;
     private static final int LTS_DURATION = 1;
-    public static final String EMPTY_STORAGE_LIFECYCLE_POLICY = StringUtils.EMPTY;
     private static final int BACKUP_DURATION = 1;
     private static final String TEST_MOUNT_POINT = "testMountPoint";
     private static final String TEST_MOUNT_OPTIONS = "testMountOptions";
@@ -118,6 +116,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     private static final String TEST_CLONE_PREFIX = "test-pref";
     private static final String PROJECT_INDICATOR_TYPE = "type";
     private static final String DEFAULT_PARAM_TYPE = "string";
+
     private Folder folder;
     private Folder subFolder;
 
@@ -211,8 +210,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         folderManager.create(folder);
         DataStorageVO storageVO = constructDataStorageVO(
                 TEST_NAME, TEST_DESCRIPTION, DataStorageType.S3, TEST_PATH,
-                STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
-                folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         dataStorageManager.create(storageVO, false, false, false);
         folderManager.delete(folder.getId());
@@ -224,8 +222,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         PipelineVO pipelineVO = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         DataStorageVO storageVO = constructDataStorageVO(
                 TEST_NAME, TEST_DESCRIPTION, DataStorageType.S3, TEST_PATH,
-                STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
-                folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         Pipeline pipeline = pipelineManager.create(pipelineVO);
         AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false).getEntity();
@@ -305,8 +302,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         PipelineVO pipelineVO = constructPipelineVO(TEST_NAME, TEST_REPO, TEST_REPO_SSH, folder.getId());
         DataStorageVO storageVO = constructDataStorageVO(
                 TEST_NAME, TEST_DESCRIPTION, DataStorageType.S3, TEST_PATH,
-                STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY, folder.getId(),
-                TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                STS_DURATION, LTS_DURATION, folder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         Pipeline pipeline = pipelineManager.create(pipelineVO);
         AbstractDataStorage storage = dataStorageManager.create(storageVO, false, false, false).getEntity();
@@ -416,8 +412,7 @@ public class FolderManagerTest extends AbstractSpringTest {
         folderManager.create(sourceFolder);
         DataStorageVO dataStorageVO = constructDataStorageVO(
                 TEST_NAME, TEST_DESCRIPTION, DataStorageType.S3, TEST_PATH,
-                STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
-                sourceFolder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                STS_DURATION, LTS_DURATION, sourceFolder.getId(), TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         StoragePolicy storagePolicy = dataStorageVO.getStoragePolicy();
         storagePolicy.setBackupDuration(BACKUP_DURATION);
@@ -649,8 +644,7 @@ public class FolderManagerTest extends AbstractSpringTest {
     private void generateDataStorage(Long parentId) {
         DataStorageVO dataStorageVO = constructDataStorageVO(
                 generateRandomString(10), TEST_DESCRIPTION, DataStorageType.S3, generateRandomString(10),
-                STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY,
-                parentId, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+                STS_DURATION, LTS_DURATION, parentId, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
         );
         dataStorageManager.create(dataStorageVO, true, true, false);
     }

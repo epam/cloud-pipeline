@@ -69,8 +69,7 @@ public final class ObjectCreatorUtils {
 
     public static DataStorageVO constructDataStorageVO(String name, String description, DataStorageType storageType,
                                                        String path, Integer stsDuration, Integer ltsDuration,
-                                                       String lifecyclePolicy, Long parentFolderId, String mountPoint,
-                                                       String mountOptions) {
+                                                       Long parentFolderId, String mountPoint, String mountOptions) {
         DataStorageVO storageVO = constructDataStorageVO(name, description, storageType, path, parentFolderId,
                 mountPoint, mountOptions);
 

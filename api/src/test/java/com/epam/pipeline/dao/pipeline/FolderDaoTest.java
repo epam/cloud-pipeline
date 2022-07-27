@@ -41,7 +41,6 @@ import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Propagation;
@@ -74,7 +73,6 @@ public class FolderDaoTest extends AbstractJdbcTest {
     private static final String DATA_TYPE_1 = "string";
     private static final String DATA_VALUE_1 = "OWNER";
     private static final String CLASS_NAME_1 = "Sample";
-    public static final String EMPTY_STORAGE_LIFECYCLE_POLICY = StringUtils.EMPTY;
 
     @Autowired
     private FolderDao folderDao;
@@ -271,8 +269,7 @@ public class FolderDaoTest extends AbstractJdbcTest {
         //add datastorage
         DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(
                 TEST_DATASTORAGE, TEST_DATASTORAGE, DataStorageType.S3,
-                S3_TEST_DATASTORAGE_PATH, 1, 1,
-                EMPTY_STORAGE_LIFECYCLE_POLICY, folder.getId(), TEST_MOUNT_POINT,
+                S3_TEST_DATASTORAGE_PATH, 1, 1, folder.getId(), TEST_MOUNT_POINT,
                 TEST_MOUNT_OPTIONS);
         AbstractDataStorage storage = storageFactory.convertToDataStorage(storageVO, CloudProvider.AWS);
         storage.setOwner(TEST_USER);

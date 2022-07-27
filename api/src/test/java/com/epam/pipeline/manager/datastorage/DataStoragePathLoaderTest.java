@@ -27,7 +27,6 @@ import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.datastorage.providers.aws.s3.S3StorageProvider;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,7 +44,6 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
 
     private static final int STS_DURATION = 1;
     private static final int LTS_DURATION = 11;
-    public static final String EMPTY_STORAGE_LIFECYCLE_POLICY = StringUtils.EMPTY;
     private static final Long WITHOUT_PARENT_ID = null;
     private static final String PATH = "bucket";
     private static final String NAME = "name";
@@ -120,7 +118,7 @@ public class DataStoragePathLoaderTest extends AbstractSpringTest {
 
     private AbstractDataStorage createStorage(final String name, final String path) {
         final DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(name, DESCRIPTION, DataStorageType.S3,
-                path, STS_DURATION, LTS_DURATION, EMPTY_STORAGE_LIFECYCLE_POLICY, WITHOUT_PARENT_ID, "", "");
+                path, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, "", "");
         return storageManager.create(storageVO, false, false, false).getEntity();
     }
 
