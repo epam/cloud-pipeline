@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,41 +36,50 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface StorageLifecycleEntityMapper {
 
+    String NOTIFICATION = "notification";
+    String TRANSITIONS = "transitions";
+    String TRANSITIONS_JSON = "transitionsJson";
+    String NOTIFICATION_JSON = "notificationJson";
+    String NOTIFICATION_JSON_TO_DTO = "notificationJsonToDto";
+    String TRANSITIONS_JSON_TO_DTO = "transitionsJsonToDto";
+    String NOTIFICATION_TO_JSON = "notificationToJson";
+    String TRANSITIONS_TO_JSON = "transitionsToJson";
+
     ObjectMapper OBJECT_MAPPER = new JsonMapper();
 
-    @Mapping(source = "notification", target = "notificationJson", qualifiedByName = "notificationToJson")
-    @Mapping(source = "transitions", target = "transitionsJson", qualifiedByName = "transitionsToJson")
+    @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = NOTIFICATION_TO_JSON)
+    @Mapping(source = TRANSITIONS, target = TRANSITIONS_JSON, qualifiedByName = TRANSITIONS_TO_JSON)
     StorageLifecycleRuleTemplateEntity toEntity(StorageLifecycleRuleTemplate policy);
 
-    @Mapping(source = "notificationJson", target = "notification", qualifiedByName = "notificationJsonToDto")
-    @Mapping(source = "transitionsJson", target = "transitions", qualifiedByName = "transitionsJsonToDto")
+    @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
+    @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
     StorageLifecycleRuleTemplate toDto(StorageLifecycleRuleTemplateEntity policyEntity);
 
-    @Mapping(source = "notification", target = "notificationJson", qualifiedByName = "notificationToJson")
-    @Mapping(source = "transitions", target = "transitionsJson", qualifiedByName = "transitionsToJson")
+    @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = NOTIFICATION_TO_JSON)
+    @Mapping(source = TRANSITIONS, target = TRANSITIONS_JSON, qualifiedByName = TRANSITIONS_TO_JSON)
     StorageLifecycleRuleEntity toEntity(StorageLifecycleRule rule);
 
-    @Mapping(source = "notificationJson", target = "notification", qualifiedByName = "notificationJsonToDto")
-    @Mapping(source = "transitionsJson", target = "transitions", qualifiedByName = "transitionsJsonToDto")
+    @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
+    @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
     StorageLifecycleRule toDto(StorageLifecycleRuleEntity policyEntity);
 
-    @Named("notificationToJson")
+    @Named(NOTIFICATION_TO_JSON)
     static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(notification);
     }
 
-    @Named("notificationToJson")
+    @Named(NOTIFICATION_TO_JSON)
     static String transitionsToJson(final List<StorageLifecycleRuleTransition> transitions)
             throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(transitions);
     }
 
-    @Named("notificationJsonToDto")
+    @Named(NOTIFICATION_JSON_TO_DTO)
     static StorageLifecycleNotification notificationJsonToDto(final String notificationJson) throws IOException {
         return OBJECT_MAPPER.readValue(notificationJson, new TypeReference<StorageLifecycleNotification>(){});
     }
 
-    @Named("transitionsJsonToDto")
+    @Named(TRANSITIONS_JSON_TO_DTO)
     static List<StorageLifecycleRuleTransition> transitionsJsonToDto(final String transitionsJson) throws IOException {
         return OBJECT_MAPPER.readValue(transitionsJson, new TypeReference<List<StorageLifecycleRuleTransition>>(){});
     }

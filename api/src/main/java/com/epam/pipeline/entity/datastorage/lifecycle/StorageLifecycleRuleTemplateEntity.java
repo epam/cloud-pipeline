@@ -31,15 +31,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 
-/**
- * Describes lifecycle rules that should be applied for the objects in datastorage.
- *   pathRoot   - root folder of the lifecycle policy, this folder contains dataset folder, for these datasets actual
- *              rules should be created based on policy object
- *   objectGlob - string in unix glob format, describes which objects match a rule
- *   enabled    - shows if this policy enabled, if so rules based on this police should be created, dispute that flag
- *                could be set to false we still may create rules from this policy if there is a case, this flag
- *                basically for automation routine code
- * */
 @Entity
 @Data
 @NoArgsConstructor
