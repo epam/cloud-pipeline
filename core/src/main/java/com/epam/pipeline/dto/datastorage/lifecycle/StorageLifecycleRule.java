@@ -27,7 +27,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Describes
+ * Describes a rule is defined lifecycle of objects in a cloud.
+ * Can be created from {@link StorageLifecycleRuleTemplate}, then templateId should be set appropriately,
+ * or can be registered independently.
  * */
 @Data
 @NoArgsConstructor
