@@ -99,19 +99,25 @@ class CellProfilerPipeline extends React.Component {
               </Collapse>
             ))
         }
-        <Collapse
-          header={(
-            <CellProfilerModuleHeader
-              cpModule={pipeline.defineResults}
-              removable={false}
-              movable={false}
-            />
-          )}
-        >
-          <CellProfilerModule
-            cpModule={pipeline.defineResults}
-          />
-        </Collapse>
+        {
+          pipeline &&
+          pipeline.objects &&
+          pipeline.objects.length > 0 && (
+            <Collapse
+              header={(
+                <CellProfilerModuleHeader
+                  cpModule={pipeline.defineResults}
+                  removable={false}
+                  movable={false}
+                />
+              )}
+            >
+              <CellProfilerModule
+                cpModule={pipeline.defineResults}
+              />
+            </Collapse>
+          )
+        }
         {
           pipeline &&
           pipeline.objectsOutlines &&
