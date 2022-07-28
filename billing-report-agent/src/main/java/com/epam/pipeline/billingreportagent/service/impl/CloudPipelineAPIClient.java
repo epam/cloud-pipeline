@@ -22,9 +22,10 @@ import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.docker.DockerRegistryList;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
-
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.entity.user.PipelineUser;
@@ -80,6 +81,14 @@ public class CloudPipelineAPIClient {
 
     public List<AbstractCloudRegion> loadAllCloudRegions() {
         return retryingApiExecutor.execute(cloudPipelineAPI.loadAllRegions());
+    }
+
+    public List<Pipeline> loadAllPipelines() {
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllPipelines());
+    }
+
+    public DockerRegistryList loadAllRegistries() {
+        return retryingApiExecutor.execute(cloudPipelineAPI.loadAllRegistries());
     }
 
     public List<EntityVO> searchEntriesByMetadata(final AclClass entityClass, final String key, final String value) {
