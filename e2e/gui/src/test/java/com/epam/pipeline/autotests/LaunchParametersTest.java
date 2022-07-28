@@ -35,8 +35,10 @@ import java.util.Arrays;
 import java.util.stream.Stream;
 
 import static com.codeborne.selenide.Selenide.open;
-import static com.epam.pipeline.autotests.ao.LogAO.*;
 import static com.epam.pipeline.autotests.ao.LogAO.Status.STOPPED;
+import static com.epam.pipeline.autotests.ao.LogAO.containsMessages;
+import static com.epam.pipeline.autotests.ao.LogAO.taskWithName;
+import static com.epam.pipeline.autotests.ao.LogAO.log;
 import static com.epam.pipeline.autotests.ao.Primitive.DISK;
 import static com.epam.pipeline.autotests.ao.Primitive.INSTANCE_TYPE;
 import static com.epam.pipeline.autotests.ao.Primitive.OK;
