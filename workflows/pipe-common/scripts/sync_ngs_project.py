@@ -76,7 +76,7 @@ class Settings(object):
 
     def __init__(self, api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                  configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
-                 deploy_name, run_id, last_processed_column):
+                 deploy_name, run_id, last_processed_column, config_prefix):
         self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')[
             'value']
         self.sample_sheet_glob = api.get_preference('ngs.preprocessing.samplesheet.pattern')['value']
@@ -96,6 +96,7 @@ class Settings(object):
         self.deploy_name = deploy_name
         self.run_id = run_id
         self.last_processed_column = last_processed_column
+        self.config_prefix = config_prefix
 
 
 class MachineRun(object):
@@ -141,8 +142,8 @@ class MachineRun(object):
     def generate_sample_sheet(self, machine_run, run_folder):
         # run Rscript
         # check results
-        command = 'cd %s && Rscript %s %s' % (run_folder, self.settings.r_script,
-                                              self.settings.db_path_prefix + machine_run)
+        command = 'cd %s && Rscript %s %s -r --config-prefix %s' % (run_folder, self.settings.r_script,
+                                              self.settings.db_path_prefix + machine_run, self.settings.config_prefix)
         Logger.info('Executing command %s.' % command, task_name=self.machine_run)
         exit_code, out, err = common.execute_cmd_command_and_get_stdout_stderr(command,
                                                                                silent=True)
@@ -183,7 +184,7 @@ class MachineRun(object):
             metadata = self.api.find_metadata_entity(self.settings.project_id, id, self.settings.machine_run_class)
             if metadata:
                 Logger.info('Machine run %s is already registered.' % machine_run, task_name=self.machine_run)
-                return
+                continue
             demultiplex_file, demultiplex_config = self.find_demultiplex_config(run_folder)
             sequence_date = self.parse_seq_date(machine_run)
             data = {
@@ -287,7 +288,10 @@ class MachineRun(object):
                 "notifications": self.build_run_notification(metadata_entity)
             }
             result = self.api.run_configuration(data)
-            msg = 'Successfully launched analysis for machine run %s. Run id: %d.' % (self.machine_run, result[0]['id'])
+            msg = 'Successfully launched analysis for machine run %s. ' \
+                  'Run id: <a href="%s/#/run/%d/plain">%d</a>.' % (self.machine_run,
+                                                                   get_api_link(self.api.api_url),
+                                                                   result[0]['id'], result[0]['id'])
             Logger.info(msg, task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_SUCCESS, message=msg))
         except BaseException as e:
@@ -367,9 +371,8 @@ class NGSSync(object):
 
     def build_notification_text(self, notifications):
         event_str = ''
-        api_link = self.api.api_url.rstrip('/').replace('/restapi', '')
+        api_link = get_api_link(self.api.api_url)
         for event in notifications:
-            # https: // genie.alnylam.com / pipeline /  # /run/9767/plain/210727_NB501391_0312_AHTJHCBGXJ
             event_str += EVENT_PATTERN.format(**{'run': event.machine_run,
                                                  'event': event.type,
                                                  'status': event.status,
@@ -381,6 +384,10 @@ class NGSSync(object):
                                         'api': api_link,
                                         'folder_id': str(self.settings.project_id),
                                         'deploy_name': self.settings.deploy_name})
+
+
+def get_api_link(url):
+    return url.rstrip('/').replace('/restapi', '')
 
 
 def get_required_env_var(name):
@@ -405,10 +412,11 @@ def main():
     processed_to_date = os.getenv('NGS_SYNC_PROCESSED_TO_DATE', None)
     deploy_name = os.getenv('NGS_SYNC_DEPLOY_NAME', 'Cloud Pipeline')
     last_processed_column = os.getenv('NGS_SYNC_LAST_PROCESSD_COLUMN', 'LastProcessed')
+    config_prefix = os.getenv('NGS_SYNC_CONFIG_PREFIX', '')
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs')
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
-                        deploy_name, run_id, last_processed_column)
+                        deploy_name, run_id, last_processed_column, config_prefix)
     NGSSync(api, settings).sync_ngs_project(folder)
 
 
