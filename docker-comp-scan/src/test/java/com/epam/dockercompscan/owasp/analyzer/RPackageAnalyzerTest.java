@@ -47,7 +47,7 @@ public class RPackageAnalyzerTest {
     public void analyzeDependencyTestNegative() throws AnalysisException {
         Dependency dependency = new Dependency();
         dependency.setActualFilePath(this.getClass().getClassLoader().getResource(
-                "owasp/analyzer/negative/DESCRIPTION").getPath());
+                "owasp/analyzer/negative/etc/DESCRIPTION").getPath());
         rPackageAnalyzer.analyzeDependency(dependency, null);
 
         Assert.assertNull(dependency.getEcosystem());
