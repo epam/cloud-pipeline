@@ -579,6 +579,9 @@ public class SystemPreferences {
     public static final ObjectPreference<Map<String, Object>> UI_HIDDEN_OBJECTS = new ObjectPreference<>(
             "ui.hidden.objects", null, new TypeReference<Map<String, Object>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, Object>>() {}));
+    public static final ObjectPreference<List<String>> UI_KUBE_LABELS = new ObjectPreference<>(
+            "ui.tool.kube.labels", null, new TypeReference<List<String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
