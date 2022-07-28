@@ -44,6 +44,8 @@ function buildParameter (parameter) {
     restricted,
     valueError,
     nameError,
+    capability,
+    limitMounts,
     ...parameterValue
   } = parameter;
   return {

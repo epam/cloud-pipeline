@@ -22,7 +22,11 @@ import preferences from '../../../../../../models/preferences/PreferencesLoad';
 import runDefaultParameters from '../../../../../../models/pipelines/PipelineRunDefaultParameters';
 import userInfo from '../../../../../../models/user/WhoAmI';
 import {getAllSkippedSystemParametersList} from '../../../form/utilities/launch-cluster';
-import {isCustomCapability} from '../../../form/utilities/run-capabilities';
+import {
+  applyCapabilities,
+  getEnabledCapabilities,
+  isCapability
+} from '../../../form/utilities/run-capabilities';
 import {
   buildParameters,
   isSystemParameter,
@@ -32,6 +36,7 @@ import {
   isSystemParameterRestrictedByRole, validateParameters
 } from './utilities';
 import * as parameterUtilities from '../../../form/utilities/parameter-utilities';
+import {CP_CAP_LIMIT_MOUNTS} from '../../../form/utilities/parameters';
 
 class ParametersStore {
   static Events = {
@@ -45,12 +50,17 @@ class ParametersStore {
   @observable parameters = [];
   @observable entityTypeFields = [];
   @observable projectFields = [];
+  @observable capabilities = [];
+  @observable limitMounts;
   eventListeners = [];
 
   @computed
   get visibleParameters () {
     return this.parameters
-      .filter(parameter => !parameter.skipped && parameterIsVisible(parameter, this.parameters));
+      .filter(parameter => !parameter.skipped &&
+        !parameter.capability &&
+        parameterIsVisible(parameter, this.parameters)
+      );
   }
 
   get systemParameters () {
@@ -102,13 +112,16 @@ class ParametersStore {
       const skipped = new Set(getAllSkippedSystemParametersList(preferences));
       const parameterIsSkipped = parameter => !parameter ||
         skipped.has(parameter.name) ||
-        isCustomCapability(parameter.name, preferences);
+        isCapability(parameter.name, preferences);
+      this.capabilities = getEnabledCapabilities(parameters);
       this.parameters = parseParameters(parameters)
         .map(o => {
           const system = isSystemParameter(o.name, runDefaultParameters);
           return {
             ...o,
             skipped: parameterIsSkipped(o),
+            capability: isCapability(o.name, preferences),
+            limitMounts: CP_CAP_LIMIT_MOUNTS === o.name,
             system: !!system,
             description: o.description || (system ? system.description : undefined),
             restricted: !!system && isSystemParameterRestrictedByRole(
@@ -118,6 +131,10 @@ class ParametersStore {
             )
           };
         });
+      const limitMountsParameter = this.parameters.find(o => o.limitMounts);
+      this.limitMounts = limitMountsParameter
+        ? limitMountsParameter.value
+        : undefined;
     } catch (e) {
       this.error = e.message;
     } finally {
@@ -163,6 +180,16 @@ class ParametersStore {
     this.onChange();
   };
 
+  onChangeCapabilities = (capabilities = []) => {
+    this.capabilities = capabilities;
+    this.onChange();
+  }
+
+  onChangeLimitMounts = (limitMounts) => {
+    this.limitMounts = limitMounts;
+    this.onChange();
+  }
+
   getParameterEnumeration = (parameter) => {
     const builtParameters = buildParameters(this.parameters);
     let enumeration = parameterUtilities.parseEnumeration(parameter);
@@ -177,7 +204,18 @@ class ParametersStore {
   getPayload = () => {
     try {
       this.validate();
-      return buildParameters(this.parameters, true);
+      const filtered = this.parameters.filter(o => !o.capability && !o.limitMounts);
+      const params = applyCapabilities(
+        buildParameters(filtered, true),
+        this.capabilities,
+        preferences
+      );
+      if (this.limitMounts) {
+        params[CP_CAP_LIMIT_MOUNTS] = {
+          value: this.limitMounts
+        };
+      }
+      return params;
     } catch (e) {
       console.warn(e.message);
       return undefined;

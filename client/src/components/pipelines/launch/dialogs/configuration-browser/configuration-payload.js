@@ -35,7 +35,12 @@ import CodeEditor from '../../../../special/CodeEditor';
 import {getProjectEntityTypes} from './utilities/project-utilities';
 import Parameters from './parameters';
 import {ParameterName, ParameterRow, ParameterValue} from './parameters/parameter';
+import ParametersRunCapabilities from './parameters/capabilities';
 import styles from './configuration-browser.css';
+import ParametersLimitMounts from './parameters/limit-mounts';
+import JobNotifications from '../job-notifications';
+import AWSRegionTag from '../../../../special/AWSRegionTag';
+import {mapObservableNotification} from '../job-notifications/job-notification';
 
 function getConfigurationPayload (entry) {
   if (!entry) {
@@ -86,6 +91,7 @@ class ConfigurationPayload extends React.Component {
     instanceTypesError: undefined,
     instanceTypes: [],
     priceTypes: [],
+    tool: undefined,
     classes: [],
     projectMetadata: {},
     payload: {},
@@ -177,10 +183,7 @@ class ConfigurationPayload extends React.Component {
   }
 
   componentDidUpdate (prevProps, prevState, snapshot) {
-    if (
-      prevProps.configurationId !== this.props.configurationId ||
-      prevProps.metadataClassId !== this.props.metadataClassId
-    ) {
+    if (prevProps.configurationId !== this.props.configurationId) {
       this.loadConfiguration();
     } else if (prevProps.entryName !== this.props.entryName) {
       this.loadConfigurationEntry();
@@ -192,8 +195,7 @@ class ConfigurationPayload extends React.Component {
 
   loadConfiguration = () => {
     const {
-      configurationId,
-      metadataClassId
+      configurationId
     } = this.props;
     if (configurationId) {
       this.setState({
@@ -217,7 +219,7 @@ class ConfigurationPayload extends React.Component {
           }
           const name = (request.value || {}).name;
           const entries = ((request.value || {}).entries || [])
-            .filter(entry => !metadataClassId || entry.rootEntityId === metadataClassId);
+            .filter(entry => !!entry.rootEntityId);
           newState.name = name;
           newState.entries = entries;
           newState.configuration = request.value;
@@ -377,6 +379,7 @@ class ConfigurationPayload extends React.Component {
         } = instanceTypesRequest.value || {};
         newState.instanceTypes = instanceTypes;
         newState.priceTypes = priceTypes;
+        newState.tool = tool;
       } catch (e) {
         newState.instanceTypesError = e.message;
       } finally {
@@ -593,6 +596,69 @@ class ConfigurationPayload extends React.Component {
                 }
               </Select.OptGroup>
             ))
+          }
+        </Select>
+      </div>
+    );
+  };
+
+  renderCloudRegion = () => {
+    const {
+      payload
+    } = this.state;
+    const {
+      disabled
+    } = this.props;
+    if (!payload) {
+      return null;
+    }
+    const {
+      cloudRegionId
+    } = payload;
+    const onChange = newCloudRegionId => this.setState({
+      payload: {
+        ...payload,
+        cloudRegionId: Number(newCloudRegionId)
+      }
+    }, this.onPayloadChanged);
+    return (
+      <div
+        className={styles.row}
+      >
+        <span className={styles.title}>
+          Cloud region:
+        </span>
+        <Select
+          className={
+            classNames({
+              'cp-error': !cloudRegionId
+            })
+          }
+          style={{flex: 1, maxWidth: 300}}
+          value={cloudRegionId ? `${cloudRegionId}` : undefined}
+          dropdownMatchSelectWidth={false}
+          disabled={disabled}
+          onChange={onChange}
+        >
+          {
+            this.cloudRegions
+              .map(region => {
+                return (
+                  <Select.Option
+                    key={`${region.id}`}
+                    name={region.name}
+                    title={region.name}
+                    value={`${region.id}`}
+                  >
+                    <AWSRegionTag
+                      provider={region.provider}
+                      regionUID={region.regionId}
+                      style={{fontSize: 'larger'}}
+                    />
+                    {region.name}
+                  </Select.Option>
+                );
+              })
           }
         </Select>
       </div>
@@ -849,6 +915,112 @@ class ConfigurationPayload extends React.Component {
     );
   };
 
+  renderCapabilities = () => {
+    const {
+      payload,
+      tool
+    } = this.state;
+    const {
+      disabled
+    } = this.props;
+    if (!payload) {
+      return null;
+    }
+    const {
+      docker_image: dockerImage
+    } = payload;
+    return (
+      <div
+        className={styles.row}
+      >
+        <span className={styles.title}>
+          Run capabilities:
+        </span>
+        <ParametersRunCapabilities
+          disabled={disabled}
+          style={{flex: 1, maxWidth: '50%'}}
+          dockerImage={dockerImage}
+          tool={tool}
+          provider={this.currentProvider}
+        />
+      </div>
+    );
+  };
+
+  renderLimitMounts = () => {
+    const {
+      payload,
+      tool
+    } = this.state;
+    const {
+      disabled
+    } = this.props;
+    if (!payload) {
+      return null;
+    }
+    return (
+      <div
+        className={styles.row}
+      >
+        <span
+          className={styles.title}
+          style={{
+            alignSelf: 'flex-start'
+          }}
+        >
+          Limit mounts:
+        </span>
+        <ParametersLimitMounts
+          disabled={disabled}
+          style={{flex: 1, maxWidth: '50%'}}
+          tool={tool}
+        />
+      </div>
+    );
+  };
+
+  renderNotifications = () => {
+    const {
+      payload
+    } = this.state;
+    const {
+      disabled
+    } = this.props;
+    if (!payload) {
+      return null;
+    }
+    const {
+      notifications = []
+    } = payload;
+    const onChange = newNotifications => this.setState({
+      payload: {
+        ...payload,
+        notifications: newNotifications
+      }
+    }, this.reportChanged);
+    return (
+      <div
+        className={styles.row}
+      >
+        <span
+          className={styles.title}
+          style={{
+            alignSelf: 'flex-start'
+          }}
+        >
+          Notifications:
+        </span>
+        <JobNotifications
+          disabled={disabled}
+          style={{flex: 1, maxWidth: '50%'}}
+          value={notifications.map(mapObservableNotification)}
+          onChange={onChange}
+          linkStyle={{margin: 0, alignSelf: 'center'}}
+        />
+      </div>
+    );
+  };
+
   render () {
     const entry = this.entry;
     if (!entry) {
@@ -905,10 +1077,14 @@ class ConfigurationPayload extends React.Component {
             {this.renderDockerImage()}
             {this.renderInstanceType()}
             {this.renderDisk()}
+            {this.renderCloudRegion()}
+            {this.renderCapabilities()}
           </Collapse.Panel>
           <Collapse.Panel key="advanced" header="Advanced">
             {this.renderPriceType()}
+            {this.renderNotifications()}
             {this.renderTimeout()}
+            {this.renderLimitMounts()}
             {this.renderCmdTemplate()}
             <Parameters
               disabled={disabled}
@@ -936,7 +1112,6 @@ ConfigurationPayload.propTypes = {
   configurationId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
   entryName: PropTypes.string,
   folderId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  metadataClassId: PropTypes.number,
   style: PropTypes.object,
   onChange: PropTypes.func,
   rootEntityDisabled: PropTypes.bool

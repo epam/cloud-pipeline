@@ -34,14 +34,14 @@ import {ParameterName, ParameterRow, ParameterValue} from './parameters/paramete
 import {AutoCompleteInput} from './parameters/auto-complete-input';
 import styles from './configuration-browser.css';
 
-function filterEntriesFn (metadataEntityId) {
+function filterEntriesFn () {
   return function filterEntries (entry) {
-    return !metadataEntityId || Number(entry.rootEntityId) === Number(metadataEntityId);
+    return !!entry.rootEntityId;
   };
 }
 
-function filterConfigurationsFn (metadataEntityId) {
-  const entriesFilter = filterEntriesFn(metadataEntityId);
+function filterConfigurationsFn () {
+  const entriesFilter = filterEntriesFn();
   return function filterConfigurations (item, type) {
     if (type === ItemTypes.configuration) {
       return item.entries.filter(entriesFilter).length > 0;
@@ -67,7 +67,7 @@ function findFirstConfiguration (items = []) {
   return undefined;
 }
 
-function getSelectionFromConfiguration (config, metadataClassId) {
+function getSelectionFromConfiguration (config) {
   if (!config) {
     return {
       selection: [],
@@ -75,7 +75,7 @@ function getSelectionFromConfiguration (config, metadataClassId) {
     };
   }
   const {entries = []} = config;
-  const filterEntries = filterEntriesFn(metadataClassId);
+  const filterEntries = filterEntriesFn();
   const filteredEntries = entries.filter(filterEntries);
   if (filteredEntries.length === 0) {
     return {
@@ -98,7 +98,6 @@ class ConfigurationBrowser extends React.Component {
     folderStructure: [],
     selection: [],
     entryName: undefined,
-    metadataClassId: undefined,
     metadataClassFields: [],
     configurationPayload: undefined,
     expression: undefined,
@@ -115,9 +114,8 @@ class ConfigurationBrowser extends React.Component {
   }
 
   get selectedConfigurationEntries () {
-    const {metadataClassId} = this.state;
     const {entries = []} = this.selectedConfiguration || {};
-    const filter = filterEntriesFn(metadataClassId);
+    const filter = filterEntriesFn();
     return entries.filter(filter);
   }
 
@@ -166,7 +164,6 @@ class ConfigurationBrowser extends React.Component {
         configurationPayload: undefined,
         expression: undefined,
         valid: true,
-        metadataClassId: undefined,
         metadataClassFields: []
       });
       return;
@@ -220,12 +217,10 @@ class ConfigurationBrowser extends React.Component {
         newState.selection = selection;
         newState.entryName = entryName;
         newState.folderStructure = folderStructure;
-        newState.metadataClassId = metadataClass ? metadataClass.id : undefined;
         newState.metadataClassFields = metadataClass ? metadataClass.fields.map(o => o.name) : [];
       } catch (e) {
         newState.error = e.message;
         newState.folderStructure = [];
-        newState.metadataClassId = undefined;
         newState.metadataClassFields = [];
       } finally {
         this.setState(newState);
@@ -252,8 +247,7 @@ class ConfigurationBrowser extends React.Component {
 
   renderConfigurationsTree = () => {
     const {
-      folderStructure,
-      metadataClassId
+      folderStructure
     } = this.state;
     const renderTreeItem = (item) => {
       let icon;
@@ -330,7 +324,7 @@ class ConfigurationBrowser extends React.Component {
       const {
         selection: newSelection = [],
         entryName
-      } = getSelectionFromConfiguration(configuration, metadataClassId);
+      } = getSelectionFromConfiguration(configuration);
       this.setState({selection: newSelection, entryName});
     };
     return (
@@ -418,11 +412,10 @@ class ConfigurationBrowser extends React.Component {
 
   renderExpression = () => {
     const {
-      metadataClassId,
       expression,
       metadataClassFields
     } = this.state;
-    const disabled = !metadataClassId;
+    const disabled = !this.selectedConfiguration;
     const onChange = newExpression => this.setState({
       expression: newExpression
     }, this.reportChanged);
@@ -470,7 +463,6 @@ class ConfigurationBrowser extends React.Component {
       folderId
     } = this.props;
     const {
-      metadataClassId,
       entryName
     } = this.state;
     const onChange = (payload, valid) => this.setState({
@@ -487,7 +479,6 @@ class ConfigurationBrowser extends React.Component {
           rootEntityDisabled
           className={styles.configuration}
           configurationId={this.selectedConfigurationID}
-          metadataClassId={metadataClassId}
           folderId={folderId}
           entryName={entryName}
           onChange={onChange}
