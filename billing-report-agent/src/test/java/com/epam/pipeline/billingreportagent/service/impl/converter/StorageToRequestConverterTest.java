@@ -33,6 +33,7 @@ import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.GSBucketStorage;
 import com.epam.pipeline.entity.datastorage.NFSDataStorage;
 import com.epam.pipeline.entity.datastorage.S3bucketDataStorage;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.search.SearchDocumentType;
 import com.epam.pipeline.entity.user.PipelineUser;
 import org.apache.commons.lang3.StringUtils;
@@ -77,7 +78,9 @@ public class StorageToRequestConverterTest {
     private static final Long STORAGE_ID = 1L;
     private static final String STORAGE_NAME = "TestStorage";
     private static final int DOC_ID = 2;
-    private static final Long TEST_REGION_ID = 1L;
+    private static final Long TEST_AWS_REGION_ID = 1L;
+    private static final Long TEST_AZURE_REGION_ID = 2L;
+    private static final Long TEST_GCP_REGION_ID = 3L;
     private static final Long TEST_FILESHARE_MOUNT_ID = 1L;
 
     private static final long BYTES_IN_1_GB = 1L << 30;
@@ -106,6 +109,10 @@ public class StorageToRequestConverterTest {
     private final EntityWithMetadata<PipelineUser> testUserWithMetadata = EntityWithMetadata.<PipelineUser>builder()
             .entity(testUser)
             .build();
+
+    private final AbstractCloudRegion testAwsRegion = TestUtils.createTestRegion(TEST_AWS_REGION_ID);
+    private final AbstractCloudRegion testAzureRegion = TestUtils.createTestRegion(TEST_AZURE_REGION_ID);
+    private final AbstractCloudRegion testGcpRegion = TestUtils.createTestRegion(TEST_GCP_REGION_ID);
 
     private ElasticsearchServiceClient elasticsearchClient = Mockito.mock(ElasticsearchServiceClient.class);
     private FileShareMountsService fileShareMountsService = Mockito.mock(FileShareMountsService.class);
@@ -220,7 +227,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.S3_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(s3Storage, requestFieldsMap, TEST_REGION_ID, StorageType.OBJECT_STORAGE,
+        assertFields(s3Storage, requestFieldsMap, TEST_AWS_REGION_ID, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -228,7 +235,8 @@ public class StorageToRequestConverterTest {
     public void testEFSStorageConverting() throws IOException {
         final AbstractDataStorage nfsStorage = nfsStorageContainer.getEntity();
         createElasticsearchSearchContext(BYTES_IN_1_GB, false, US_EAST_1);
-        Mockito.when(fileShareMountsService.getRegionIdForShare(TEST_FILESHARE_MOUNT_ID)).thenReturn(TEST_REGION_ID);
+        Mockito.when(fileShareMountsService.getRegionIdForShare(TEST_FILESHARE_MOUNT_ID))
+                .thenReturn(TEST_AWS_REGION_ID);
         final DocWriteRequest request = nfsConverter.convertEntityToRequests(nfsStorageContainer,
                                                                              TestUtils.STORAGE_BILLING_PREFIX,
                                                                              SYNC_START, SYNC_END).get(0);
@@ -238,7 +246,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.NFS_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(nfsStorage, requestFieldsMap, TEST_REGION_ID, StorageType.FILE_STORAGE,
+        assertFields(nfsStorage, requestFieldsMap, TEST_AWS_REGION_ID, StorageType.FILE_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -255,7 +263,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.GS_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(gsStorage, requestFieldsMap, TEST_REGION_ID, StorageType.OBJECT_STORAGE,
+        assertFields(gsStorage, requestFieldsMap, TEST_GCP_REGION_ID, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -272,7 +280,7 @@ public class StorageToRequestConverterTest {
         Assert.assertEquals(expectedIndex, request.index());
         Assert.assertEquals(SearchDocumentType.AZ_BLOB_STORAGE.name(),
                             requestFieldsMap.get(ElasticsearchSynchronizer.DOC_TYPE_FIELD));
-        assertFields(azureStorage, requestFieldsMap, TEST_REGION_ID, StorageType.OBJECT_STORAGE,
+        assertFields(azureStorage, requestFieldsMap, TEST_AZURE_REGION_ID, StorageType.OBJECT_STORAGE,
                      BYTES_IN_1_GB, BigDecimal.ONE.scaleByPowerOfTen(2).longValue());
     }
 
@@ -347,31 +355,37 @@ public class StorageToRequestConverterTest {
                                                                      final String path,
                                                                      final DataStorageType storageType) {
         final AbstractDataStorage storage;
+        final AbstractCloudRegion region;
         switch (storageType) {
             case GS:
                 final GSBucketStorage gsBucketStorage = new GSBucketStorage(id, name, path, null, null);
-                gsBucketStorage.setRegionId(TEST_REGION_ID);
+                gsBucketStorage.setRegionId(TEST_GCP_REGION_ID);
                 storage = gsBucketStorage;
+                region = testGcpRegion;
                 break;
             case NFS:
                 final NFSDataStorage nfsDataStorage = new NFSDataStorage(id, name, path);
                 nfsDataStorage.setFileShareMountId(TEST_FILESHARE_MOUNT_ID);
                 storage = nfsDataStorage;
+                region = testAwsRegion;
                 break;
             case AZ:
                 final AzureBlobStorage azureBlobStorage = new AzureBlobStorage(id, name, path, null, null);
-                azureBlobStorage.setRegionId(TEST_REGION_ID);
+                azureBlobStorage.setRegionId(TEST_AZURE_REGION_ID);
                 storage = azureBlobStorage;
+                region = testAzureRegion;
                 break;
             default:
                 final S3bucketDataStorage s3bucketDataStorage = new S3bucketDataStorage(id, name, path);
-                s3bucketDataStorage.setRegionId(TEST_REGION_ID);
+                s3bucketDataStorage.setRegionId(TEST_AWS_REGION_ID);
                 storage = s3bucketDataStorage;
+                region = testAwsRegion;
                 break;
         }
         return EntityContainer.<AbstractDataStorage>builder()
             .entity(storage)
             .owner(testUserWithMetadata)
+            .region(region)
             .build();
     }
 }
