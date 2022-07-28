@@ -1316,7 +1316,7 @@ export default class EditToolForm extends React.Component {
                       styles.toolSettingsTitle
                     )}
                   >
-                    Kube labels:
+                    Runtime labels:
                   </Col>
                   <Col xs={24} sm={12}>
                     <KubeLabels
