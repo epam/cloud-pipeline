@@ -20,16 +20,22 @@ import com.epam.pipeline.billingreportagent.model.ComputeType;
 import com.epam.pipeline.billingreportagent.model.EntityContainer;
 import com.epam.pipeline.billingreportagent.model.EntityWithMetadata;
 import com.epam.pipeline.billingreportagent.model.PipelineRunWithType;
+import com.epam.pipeline.billingreportagent.model.ToolAddress;
 import com.epam.pipeline.billingreportagent.service.EntityLoader;
 import com.epam.pipeline.billingreportagent.service.impl.CloudPipelineAPIClient;
+import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.cluster.InstanceType;
 import com.epam.pipeline.entity.cluster.NodeDisk;
+import com.epam.pipeline.entity.pipeline.Pipeline;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.RunInstance;
+import com.epam.pipeline.entity.pipeline.Tool;
 import com.epam.pipeline.entity.pipeline.run.parameter.PipelineRunParameter;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -70,7 +76,9 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
     public List<EntityContainer<PipelineRunWithType>> loadAllEntitiesActiveInPeriod(final LocalDateTime from,
                                                                                     final LocalDateTime to) {
         final Map<String, EntityWithMetadata<PipelineUser>> usersWithMetadata = prepareUsers(apiClient);
-
+        final Map<Long, AbstractCloudRegion> regions = prepareRegions(apiClient);
+        final Map<Long, Pipeline> pipelines = preparePipelines(apiClient);
+        final Map<String, Tool> tools = prepareTools(apiClient);
         final List<PipelineRun> runs = getRuns(from, to);
 
         final Map<Long, List<InstanceType>> regionOffers = runs.stream()
@@ -82,11 +90,40 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
 
         return runs
                 .stream()
-                .map(run -> EntityContainer.<PipelineRunWithType>builder()
-                        .entity(new PipelineRunWithType(run, loadDisks(run), getRunType(run, regionOffers)))
-                        .owner(getOwner(run, usersWithMetadata))
-                        .build())
+                .map(run -> {
+                    final ToolAddress toolAddress = Optional.ofNullable(run.getDockerImage())
+                            .map(ToolAddress::from)
+                            .orElseGet(ToolAddress::empty);
+                    return EntityContainer.<PipelineRunWithType>builder()
+                            .entity(new PipelineRunWithType(run, toolAddress,
+                                    loadEntity(toolAddress.getPathWithoutVersion(), tools, usersWithMetadata),
+                                    loadEntity(run.getPipelineId(), pipelines, usersWithMetadata),
+                                    loadDisks(run),
+                                    getRunType(run, regionOffers)))
+                            .owner(getRunOwner(run, usersWithMetadata))
+                            .region(regions.get(run.getInstance().getCloudRegionId()))
+                            .build();
+                })
                 .collect(Collectors.toList());
+    }
+
+    private <E extends AbstractSecuredEntity, I> EntityContainer<E> loadEntity(
+            final I id,
+            final Map<I, E> entities,
+            final Map<String, EntityWithMetadata<PipelineUser>> users) {
+        return Optional.ofNullable(id)
+                .map(entities::get)
+                .map(entity -> toContainer(entity, users))
+                .orElse(null);
+    }
+
+    private <E extends AbstractSecuredEntity> EntityContainer<E> toContainer(
+            final E entity,
+            final Map<String, EntityWithMetadata<PipelineUser>> user) {
+        return EntityContainer.<E>builder()
+                .entity(entity)
+                .owner(getOwner(entity, user))
+                .build();
     }
 
     private List<PipelineRun> getRuns(final LocalDateTime from, final LocalDateTime to) {
@@ -123,10 +160,10 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .orElse(ComputeType.CPU);
     }
 
-    private EntityWithMetadata<PipelineUser> getOwner(final PipelineRun run,
-                                                      final Map<String, EntityWithMetadata<PipelineUser>> users) {
+    private EntityWithMetadata<PipelineUser> getRunOwner(final PipelineRun run,
+                                                         final Map<String, EntityWithMetadata<PipelineUser>> users) {
         return getBillingOwner(run, users)
-                .orElseGet(() -> getRunOwner(run, users));
+                .orElseGet(() -> getOwner(run, users));
     }
 
     private Optional<EntityWithMetadata<PipelineUser>> getBillingOwner(
@@ -147,9 +184,9 @@ public class PipelineRunLoader implements EntityLoader<PipelineRunWithType> {
                 .findFirst();
     }
 
-    private EntityWithMetadata<PipelineUser> getRunOwner(final PipelineRun run,
-                                                         final Map<String, EntityWithMetadata<PipelineUser>> users) {
-        return users.get(run.getOwner());
+    private EntityWithMetadata<PipelineUser> getOwner(final AbstractSecuredEntity entity,
+                                                      final Map<String, EntityWithMetadata<PipelineUser>> users) {
+        return Optional.ofNullable(users.get(entity.getOwner()))
+                .orElseGet(() -> users.get(StringUtils.upperCase(entity.getOwner())));
     }
-
 }

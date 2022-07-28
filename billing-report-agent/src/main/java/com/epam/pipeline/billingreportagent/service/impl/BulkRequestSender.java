@@ -76,7 +76,8 @@ public class BulkRequestSender {
             log.error("Failed to insert {} of {} document(s) into Elasticsearch.",
                     failed.size(), documentRequests.size());
             failed.forEach(item ->
-                    log.error("Error for doc {} index {}: {}.", item.getId(), item.getIndex(), item.getFailureMessage()));
+                    log.error("Error for doc {} index {}: {}.",
+                            item.getId(), item.getIndex(), item.getFailureMessage()));
         }
         final List<BulkItemResponse> successful = indexResults.get(false);
         if (CollectionUtils.isNotEmpty(successful)) {

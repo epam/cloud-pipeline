@@ -26,6 +26,7 @@ import com.epam.pipeline.entity.cluster.NodeDisk;
 import com.epam.pipeline.entity.pipeline.PipelineRun;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.RunStatus;
+import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.utils.DateUtils;
 import lombok.Data;
@@ -69,19 +70,20 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
     /**
      * Creates billing requests for given run
      *
-     * @param runContainer Pipeline run to build request
+     * @param container Pipeline run to build request
      * @param indexPrefix common billing prefix for index to insert requests into
      * @param previousSync nullable time point, where the previous synchronization was started
      * @param syncStart time point, where the whole synchronization process was started
      * @return list of requests to be performed (deletion index request if no billing requests created)
      */
     @Override
-    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRunWithType> runContainer,
+    public List<DocWriteRequest> convertEntityToRequests(final EntityContainer<PipelineRunWithType> container,
                                                          final String indexPrefix,
                                                          final LocalDateTime previousSync,
                                                          final LocalDateTime syncStart) {
-        return convertRunToBillings(runContainer, previousSync, syncStart).stream()
-            .map(billingInfo -> getDocWriteRequest(indexPrefix, runContainer.getOwner(), billingInfo))
+        return convertRunToBillings(container, previousSync, syncStart).stream()
+            .map(billingInfo -> getDocWriteRequest(indexPrefix, container.getOwner(), container.getRegion(),
+                    billingInfo))
             .collect(Collectors.toList());
     }
 
@@ -407,10 +409,12 @@ public class RunToBillingRequestConverter implements EntityToBillingRequestConve
 
     private DocWriteRequest getDocWriteRequest(final String indexPrefix,
                                                final EntityWithMetadata<PipelineUser> owner,
+                                               final AbstractCloudRegion region,
                                                final PipelineRunBillingInfo billing) {
         final EntityContainer<PipelineRunBillingInfo> entity = EntityContainer.<PipelineRunBillingInfo>builder()
             .owner(owner)
             .entity(billing)
+            .region(region)
             .build();
         final String fullIndex = indexPrefix + parseDateToString(billing.getDate());
         final String docId = billing.getEntity().getPipelineRun().getId().toString();
