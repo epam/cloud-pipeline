@@ -87,7 +87,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row")).stream()
                         .filter(element -> text(ipAddress).apply(element.findAll(".external-column").get(2))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
-                        .filter(el -> el.find(By.className("ant-table-row-spaced")).exists())
+                        .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
+                                el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -101,7 +102,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row")).stream()
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
-                        .filter(el -> el.find(By.className("ant-table-row-spaced")).exists())
+                        .filter(el -> !el.find(By.className("ant-table-row-expand-icon")).exists() ||
+                                el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -115,7 +117,8 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
                         .findAll(byClassName("ant-table-row")).stream()
                         .filter(element -> text(serverName).apply(element.findAll(".external-column").get(1))
                                 && text(port).apply(element.findAll(".external-column").get(3)))
-                        .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists())
+                        .filter(el -> el.find(By.className("ant-table-row-expand-icon")).exists() &&
+                                !el.find(By.className("ant-table-row-spaced")).exists())
                         .collect(toList());
             }
         };
@@ -236,11 +239,7 @@ public class NATGatewayAO implements AccessObject<NATGatewayAO> {
 
     public NATGatewayAO deleteRouteIfExists(final String externalIPAddressOrServerName, final String port) {
         performIf(getRouteRecord(externalIPAddressOrServerName, port).has(visible), route -> {
-            getRouteRecord(externalIPAddressOrServerName, port)
-                    .find(".at-getaway-configuration__actions-column")
-                    .find(byClassName("ant-btn-danger"))
-                    .shouldBe(visible)
-                    .click();
+            deleteRoute(externalIPAddressOrServerName, port);
             sleep(1, SECONDS)
                     .click(SAVE)
                     .sleep(1, SECONDS)
