@@ -657,6 +657,9 @@ public class SystemPreferences {
             "ui.wsi.magnification.factor", 1.0, UI_GROUP, isGreaterThan(0));
     public static final BooleanPreference UI_LIBRARY_INLINE_METADATA = new BooleanPreference(
             "ui.library.metadata.inline", false, UI_GROUP, pass);
+    public static final ObjectPreference<List<String>> UI_KUBE_LABELS = new ObjectPreference<>(
+            "ui.tool.kube.labels", null, new TypeReference<List<String>>() {}, UI_GROUP,
+            isNullOrValidJson(new TypeReference<List<String>>() {}), true);
 
     // Facet Filters
     public static final ObjectPreference<Map<String, Object>> FACETED_FILTER_DICT = new ObjectPreference<>(
