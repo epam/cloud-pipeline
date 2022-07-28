@@ -29,18 +29,31 @@ import {
 } from 'antd';
 import styles from './KubeLabels.css';
 
+function kubeLabelArraysEqual (source = [], compare = []) {
+  for (let i = 0; i < source.length; i++) {
+    const {key, value} = source[i];
+    const compareItem = compare.find(o => o.key === key);
+    if (!compareItem || compareItem.value !== value) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function kubeLabelsHasChanges (initialData = [], actualData = []) {
-  if (actualData.every(label => label.predefined === undefined)) {
-    return false;
-  }
-  const labels = (actualData || [])
-    .filter(label => !label.predefined || (label.predefined && label.value));
-  if (initialData.length !== labels.length) {
-    return true;
-  }
-  return labels.some(label => !initialData.find(
-    initial => initial.key === label.key && initial.value === label.value
-  ));
+  const actualDataFiltered = actualData
+    .filter(o => !o.predefined || `${o.value}` === 'true')
+    .map(o => {
+      if (o.predefined) {
+        return {
+          ...o,
+          value: 'true'
+        };
+      }
+      return o;
+    });
+  return !kubeLabelArraysEqual(initialData, actualDataFiltered) ||
+    !kubeLabelArraysEqual(actualDataFiltered, initialData);
 }
 
 function prepareKubeLabelsPayload (labels) {
@@ -243,7 +256,7 @@ class KubeLabels extends React.Component {
           onClick={this.onAddNewLabel}
           className={styles.addButton}
         >
-          + New Kube Label
+          + New runtime label
         </Button>
       </div>
     );
