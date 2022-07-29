@@ -557,11 +557,7 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         return settings
 
     def generated_params(self):
-        if Config.BATCH_ENABLED and Config.RESULTS_DIR:
-            results_location = 'Elsewhere...|' + Config.RESULTS_DIR
-        else:
-            results_location = self._output_location()
-        return {'Output file location': results_location,
+        return {'Output file location': self._output_location(),
                 'Add a prefix to file names?': 'No',
                 'Overwrite existing files without warning?': 'Yes',
                 'Add image metadata columns to your object data file?': 'Yes'}

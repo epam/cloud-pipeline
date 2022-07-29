@@ -1,4 +1,6 @@
-from .hcs_pipeline import HcsPipeline
+from multiprocessing import Process
+
+from .hcs_pipeline import HcsPipeline, PipelineState
 
 
 class Status:
@@ -49,11 +51,17 @@ class HcsPipelineStatusWrapper:
     def run_pipeline(self):
         self.pipeline_task = Task()
         self.pipeline_task.running()
+        self.pipeline.set_pipeline_state(PipelineState.RUNNING)
         try:
-            self.pipeline.run_pipeline()
+            process = Process(target=self.pipeline.run_pipeline)
+            process.start()
+            process.join()
+            self.pipeline.set_pipeline_state(PipelineState.FINISHED)
             response_data = self.pipeline.get_structure()
             self.pipeline_task.success(response_data)
         except BaseException as e:
+            error_description = str(e)
+            self.pipeline.set_pipeline_state(PipelineState.FAILED, message=error_description)
             self.pipeline_task.error()
             raise e
 
