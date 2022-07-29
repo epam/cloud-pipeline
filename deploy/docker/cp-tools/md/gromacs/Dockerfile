@@ -18,10 +18,7 @@
 #
 # How to build:
 #
-# docker build --build-arg http_proxy=$http_proxy \
-#              --build-arg https_proxy=$https_proxy \
-#              --build-arg no_proxy=$no_proxy \
-#              --build-arg BASE_IMAGE=quay.io/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.16 \
+# docker build --build-arg BASE_IMAGE=quay.io/lifescience/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.17 \
 #              -t library/gromacs:2022 \
 #              .
 #
@@ -31,7 +28,7 @@
 # cd gmx_tutorial_1/results/
 # gmx mdrun -nt $(grep -c processor /proc/cpuinfo) -deffnm npt
 
-ARG BASE_IMAGE=quay.io/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.16
+ARG BASE_IMAGE=quay.io/lifescience/cloud-pipeline:tools-base-ubuntu-18.04-cuda11-0.17
 
 ##### COMPILE STAGE
 
