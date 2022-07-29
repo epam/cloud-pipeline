@@ -19,7 +19,11 @@ import { buildDefaultSelection, getBoundingCube, getMultiSelectionStats } from '
 import guessRgb from '../utilities/guess-rgb';
 import isInterleaved from '../utilities/is-interleaved';
 import COLOR_PALETTE, {
-  blue, green, red, white,
+  defaultChannelsColors,
+  blue,
+  green,
+  red,
+  white,
 } from './default-color-palette';
 
 const BYTE_RANGE = [0, 255];
@@ -46,6 +50,7 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
   let useColorMap = false;
   const isRGB = guessRgb(metadata);
   const shapeIsInterleaved = isRGB && isInterleaved(shape);
+  const channels = Channels.map(mapChannel);
   if (isRGB) {
     if (isInterleaved(shape)) {
       contrastLimits = [BYTE_RANGE.slice()];
@@ -75,13 +80,20 @@ export default async function fetchInfo(loader, metadata, selections, globalPosi
     domains = stats.domains.slice();
     contrastLimits = stats.contrastLimits.slice();
     // If there is only one channel, use white.
-    colors = stats.domains.length === 1
-      ? [white]
-      : stats.domains.map((_, i) => COLOR_PALETTE[i]);
+    colors = [];
+    for (let i = 0; i < channels.length; i += 1) {
+      const defaultColor = defaultChannelsColors.getColorForChannel(channels[i]);
+      if (defaultColor) {
+        colors.push(defaultColor);
+      } else if (channels.length === 1) {
+        colors.push(white);
+      } else {
+        colors.push(COLOR_PALETTE[colors.length % COLOR_PALETTE.length]);
+      }
+    }
     useLens = Channels.length > 1;
     useColorMap = true;
   }
-  const channels = Channels.map(mapChannel);
   const [xSlice, ySlice, zSlice] = getBoundingCube(loader);
   return {
     channels,

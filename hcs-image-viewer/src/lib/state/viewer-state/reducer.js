@@ -15,7 +15,7 @@
  */
 
 import ViewerStateActions from './actions';
-import changeChannelProperties from './change-channel-properties';
+import { changeChannelProperties, setDefaultChannelsColors } from './change-channel-properties';
 import lockChannelsState from './lock-channels-state';
 import { GlobalDimensionFields } from '../constants';
 
@@ -33,6 +33,10 @@ export default function reducer(state, action) {
     case ViewerStateActions.setChannelProperties: {
       const { channel, properties } = action;
       return changeChannelProperties(state, channel, properties);
+    }
+    case ViewerStateActions.setDefaultChannelsColors: {
+      const { defaultColors } = action;
+      return setDefaultChannelsColors(state, defaultColors);
     }
     case ViewerStateActions.setColorMap: {
       const { colorMap = '' } = action;

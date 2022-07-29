@@ -28,7 +28,7 @@ const viewer = new Viewer({
 
 window.addEventListener('message', (message) => {
   const { data } = message;
-  const { type, method, options } = data;
+  const { type, method, options = [] } = data;
   if (type === 'hcs' && viewer[method] && typeof viewer[method] === 'function') {
     viewer[method](...options);
   }

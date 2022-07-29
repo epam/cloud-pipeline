@@ -23,7 +23,36 @@ const violet = [154, 0, 255];
 const yellow = [255, 255, 0];
 const orange = [255, 60, 0];
 
-export { red, green, blue, white };
+class DefaultChannelsColors {
+  constructor(defaultColors = {}) {
+    this.update(defaultColors);
+  }
+
+  update(defaultColors = {}) {
+    this.defaultColors = { ...defaultColors };
+  }
+
+  getColorForChannel(channel) {
+    if (this.defaultColors[channel]) {
+      return this.defaultColors[channel];
+    }
+    return undefined;
+  }
+
+  updateChannelColor(channel, color) {
+    this.defaultColors[channel] = color;
+  }
+}
+
+const defaultChannelsColors = new DefaultChannelsColors();
+
+export {
+  red,
+  green,
+  blue,
+  white,
+  defaultChannelsColors,
+};
 export default [
   blue,
   green,
