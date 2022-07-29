@@ -21,7 +21,7 @@ import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
 import {Alert, Button, Icon, Radio} from 'antd';
 
-import HCSImageViewer from './hcs-image-viewer';
+import HCSImageViewer, {defaultChannelsColors} from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
 import HcsCellSelector from './hcs-cell-selector';
 import HcsSequenceSelector from './hcs-sequence-selector';
@@ -73,6 +73,7 @@ class HcsImage extends React.PureComponent {
   @observable hcsAnalysis = new Analysis();
 
   componentDidMount () {
+    // todo: defaultChannelsColors.update & subscribe to "default colors updated event"
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
     this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.prepare();
