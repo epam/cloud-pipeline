@@ -27,6 +27,7 @@ import com.epam.pipeline.entity.billing.BillingChartInfo;
 import com.epam.pipeline.entity.billing.BillingGrouping;
 import com.epam.pipeline.entity.security.acl.AclClass;
 import com.epam.pipeline.exception.search.SearchException;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.utils.GlobalSearchElasticHelper;
 import com.epam.pipeline.utils.CommonUtils;
@@ -159,10 +160,12 @@ public class BillingManager {
             final Map<String, List<String>> filters = billingHelper.getFilters(request.getFilters());
             if (interval != null) {
                 return getBillingStats(elasticsearchClient, from, to, filters, interval);
-            } else {
+            }
+            if (grouping != null) {
                 return getBillingStats(elasticsearchClient.getLowLevelClient(), from, to, filters, grouping,
                         request.isLoadDetails());
             }
+            throw new IllegalArgumentException("Either interval or grouping parameter has to be specified.");
         } catch (IOException e) {
             throw new SearchException(e.getMessage(), e);
         }
@@ -287,25 +290,24 @@ public class BillingManager {
                                                    final BillingGrouping grouping,
                                                    final boolean isLoadDetails) {
         final SearchSourceBuilder searchSource = new SearchSourceBuilder();
-        if (grouping != null) {
-            final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
-                .field(grouping.getCorrespondingField())
-                .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
-                .size(Integer.MAX_VALUE);
-            fieldAgg.subAggregation(billingHelper.aggregateCostSum());
-            if (grouping.runUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
-                fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
-            }
-            if (grouping.storageUsageDetailsRequired()) {
-                fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
-                fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
-                if (BillingGrouping.STORAGE.equals(grouping)) {
-                    fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
-                }
-            }
-            searchSource.aggregation(fieldAgg);
+        final AggregationBuilder fieldAgg = AggregationBuilders.terms(grouping.getCorrespondingField())
+            .field(grouping.getCorrespondingField())
+            .order(BucketOrder.aggregation(BillingUtils.COST_FIELD, false))
+            .size(Integer.MAX_VALUE);
+        fieldAgg.subAggregation(billingHelper.aggregateCostSum());
+        fieldAgg.subAggregation(billingHelper.aggregateLastByDateDoc());
+        if (grouping.isRunUsageDetailsRequired()) {
+            fieldAgg.subAggregation(billingHelper.aggregateRunUsageSum());
+            fieldAgg.subAggregation(billingHelper.aggregateUniqueRunsCount());
         }
+        if (grouping.isStorageUsageDetailsRequired()) {
+            fieldAgg.subAggregation(billingHelper.aggregateByStorageUsageGrouping());
+            fieldAgg.subAggregation(billingHelper.aggregateStorageUsageTotalSumBucket());
+            if (BillingGrouping.STORAGE.equals(grouping)) {
+                fieldAgg.subAggregation(billingHelper.aggregateLastByDateStorageDoc());
+            }
+        }
+        searchSource.aggregation(fieldAgg);
         searchSource.aggregation(billingHelper.aggregateCostSum());
 
         final SearchRequest searchRequest = new SearchRequest()
@@ -353,7 +355,8 @@ public class BillingManager {
         final List<String> responseFilters = Stream.of(billingHelper.aggregateCostSum().getName(),
                         billingHelper.aggregateRunUsageSum().getName(),
                         billingHelper.aggregateUniqueRunsCount().getName(),
-                        billingHelper.aggregateStorageUsageTotalSumBucket().getName())
+                        billingHelper.aggregateStorageUsageTotalSumBucket().getName(),
+                        billingHelper.aggregateLastByDateDoc().getName())
             .map(aggName -> String.join(BillingUtils.ES_DOC_FIELDS_SEPARATOR, groupingBuckets,
                     BillingUtils.ES_WILDCARD + aggName))
             .collect(Collectors.toList());
@@ -410,11 +413,11 @@ public class BillingManager {
     private List<BillingChartInfo> getEmptyGroupingResponse(final BillingGrouping grouping) {
         final Map<String, String> details = new HashMap<>();
         details.put(grouping.name(), emptyValue);
-        if (grouping.runUsageDetailsRequired()) {
+        if (grouping.isRunUsageDetailsRequired()) {
             details.put(BillingUtils.RUN_USAGE_FIELD, emptyValue);
             details.put(BillingUtils.RUN_COUNT_AGG, emptyValue);
         }
-        if (grouping.storageUsageDetailsRequired()) {
+        if (grouping.isStorageUsageDetailsRequired()) {
             details.put(BillingUtils.STORAGE_USAGE_FIELD, emptyValue);
         }
         final BillingChartInfo emptyResponse = BillingChartInfo.builder()
@@ -431,27 +434,21 @@ public class BillingManager {
         if (allAggregations == null) {
             return Collections.emptyList();
         }
-        if (grouping != null) {
-            final String groupingField = grouping.getCorrespondingField();
-            final ParsedStringTerms terms = allAggregations.get(groupingField);
-            return Optional.ofNullable(terms)
-                .map(ParsedTerms::getBuckets)
-                .map(Collection::stream)
-                .orElse(Stream.empty())
-                .map(bucket -> {
-                    final Aggregations aggregations = bucket.getAggregations();
-                    return getCostAggregation(from, to,
-                                              grouping,
-                                              (String) bucket.getKey(),
-                                              aggregations,
-                                              isLoadDetails);
-                })
-                .collect(Collectors.toList());
-        } else {
-            return CollectionUtils.isEmpty(allAggregations.asList())
-                   ? Collections.emptyList()
-                   : Collections.singletonList(getCostAggregation(from, to, null, null, allAggregations, false));
-        }
+        final String groupingField = grouping.getCorrespondingField();
+        final ParsedStringTerms terms = allAggregations.get(groupingField);
+        return Optional.ofNullable(terms)
+            .map(ParsedTerms::getBuckets)
+            .map(Collection::stream)
+            .orElse(Stream.empty())
+            .map(bucket -> {
+                final Aggregations aggregations = bucket.getAggregations();
+                return getCostAggregation(from, to,
+                                          grouping,
+                                          (String) bucket.getKey(),
+                                          aggregations,
+                                          isLoadDetails);
+            })
+            .collect(Collectors.toList());
     }
 
     private BillingChartInfo getCostAggregation(final LocalDate from, final LocalDate to,
@@ -467,25 +464,25 @@ public class BillingManager {
             .cost(costVal);
         final Map<String, String> groupingInfo = new HashMap<>();
         final EntityBillingDetailsLoader detailsLoader = billingDetailsLoaders.get(grouping);
-        final Map<String, String> entityDetails = new HashMap<>();
-        if (grouping != null) {
-            if (detailsLoader == null) {
-                groupingInfo.put(grouping.toString(), groupValue);
-            } else {
-                entityDetails.putAll(detailsLoader.loadInformation(groupValue, loadDetails));
-                groupingInfo.put(grouping.name(), entityDetails.remove(EntityBillingDetailsLoader.NAME));
-            }
-        }
+        final Map<String, String> defaultDetails = billingHelper.getLastByDateDocFields(aggregations)
+                .entrySet()
+                .stream()
+                .filter(e -> e.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().toString()));
+        final Map<String, String> details = new HashMap<>(Optional.ofNullable(detailsLoader)
+                .map(loader -> loader.loadInformation(groupValue, loadDetails, defaultDetails))
+                .orElseGet(() -> Collections.singletonMap(EntityBillingDetailsLoader.NAME, groupValue)));
+        groupingInfo.put(grouping.name(), details.get(EntityBillingDetailsLoader.NAME));
         if (loadDetails) {
-            groupingInfo.putAll(entityDetails);
-            if (grouping.runUsageDetailsRequired()) {
+            groupingInfo.putAll(details);
+            if (grouping.isRunUsageDetailsRequired()) {
                 final ParsedSum usageAggResult = aggregations.get(BillingUtils.RUN_USAGE_AGG);
                 final long usageVal = new Double(usageAggResult.getValue()).longValue();
                 groupingInfo.put(BillingUtils.RUN_USAGE_AGG, Long.toString(usageVal));
                 final ParsedValueCount uniqueRunIds = aggregations.get(BillingUtils.RUN_COUNT_AGG);
                 groupingInfo.put(BillingUtils.RUNS, Long.toString(uniqueRunIds.getValue()));
             }
-            if (grouping.storageUsageDetailsRequired()) {
+            if (grouping.isStorageUsageDetailsRequired()) {
                 final ParsedSimpleValue totalStorageUsage = aggregations.get(BillingUtils.TOTAL_STORAGE_USAGE_AGG);
                 final long storageUsageVal = new Double(totalStorageUsage.value()).longValue();
                 groupingInfo.put(BillingUtils.TOTAL_STORAGE_USAGE_AGG, Long.toString(storageUsageVal));

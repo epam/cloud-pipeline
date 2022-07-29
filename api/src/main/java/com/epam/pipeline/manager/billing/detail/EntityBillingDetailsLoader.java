@@ -14,30 +14,40 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.manager.billing;
+package com.epam.pipeline.manager.billing.detail;
 
 import com.epam.pipeline.entity.billing.BillingGrouping;
 
+import java.util.Collections;
 import java.util.Map;
 
 public interface EntityBillingDetailsLoader {
 
     String OWNER = "owner";
     String NAME = "name";
+    String BILLING_CENTER = "billing_center";
+    String REGION = "region";
+    String PROVIDER = "provider";
+    String CREATED = "created";
+    String IS_DELETED = "is_deleted";
 
     BillingGrouping getGrouping();
+
+    default Map<String, String> loadDetails(String entityIdentifier) {
+        return loadInformation(entityIdentifier, true);
+    }
 
     /**
      * Build a map of details for given entity. Always contains a value for {@linkplain #NAME} property
      * @param entityIdentifier id of entity to build information
      * @return entity's details
      */
-    Map<String, String> loadInformation(String entityIdentifier, boolean loadDetails);
-
-    default Map<String, String> loadDetails(String entityIdentifier) {
-        return loadInformation(entityIdentifier, true);
+    default Map<String, String> loadInformation(String entityIdentifier, boolean loadDetails) {
+        return loadInformation(entityIdentifier, loadDetails, Collections.emptyMap());
     }
 
-    Map<String, String> getEmptyDetails();
+    Map<String, String> loadInformation(String entityIdentifier,
+                                        boolean loadDetails,
+                                        Map<String, String> defaults);
 
 }

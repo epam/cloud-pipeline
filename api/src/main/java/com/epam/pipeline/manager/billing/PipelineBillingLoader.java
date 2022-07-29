@@ -4,11 +4,13 @@ import com.epam.pipeline.controller.vo.billing.BillingExportRequest;
 import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.PipelineBilling;
 import com.epam.pipeline.entity.billing.PipelineBillingMetrics;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
@@ -38,7 +40,7 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
 
     private final BillingHelper billingHelper;
     private final PreferenceManager preferenceManager;
-    private final PipelineBillingDetailsLoader pipelineBillingDetailsLoader;
+    private final EntityBillingDetailsLoader pipelineBillingDetailsLoader;
 
     @Override
     public Stream<PipelineBilling> billings(final RestHighLevelClient elasticSearchClient,
@@ -96,6 +98,7 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
                                 .subAggregation(billingHelper.aggregateUniqueRunsCount())
                                 .subAggregation(billingHelper.aggregateRunUsageSumBucket())
                                 .subAggregation(billingHelper.aggregateCostSumBucket())
+                                .subAggregation(billingHelper.aggregateLastByDateDoc())
                                 .subAggregation(billingHelper.aggregateCostSortBucket(pageOffset, pageSize))));
     }
 
@@ -113,8 +116,11 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
     }
 
     private PipelineBilling getBilling(final String id, final Aggregations aggregations) {
+        final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return PipelineBilling.builder()
                 .id(NumberUtils.toLong(id))
+                .name(BillingUtils.asString(topHitFields.get(BillingUtils.PIPELINE_NAME_FIELD)))
+                .owner(BillingUtils.asString(topHitFields.get(BillingUtils.OWNER_FIELD)))
                 .totalMetrics(PipelineBillingMetrics.builder()
                         .runsNumber(billingHelper.getRunCount(aggregations))
                         .runsDuration(billingHelper.getRunUsageSum(aggregations))
@@ -141,10 +147,18 @@ public class PipelineBillingLoader implements BillingLoader<PipelineBilling> {
     }
 
     private PipelineBilling withDetails(final PipelineBilling billing) {
+        if (StringUtils.isNotBlank(billing.getName())
+                && StringUtils.isNotBlank(billing.getOwner())) {
+            return billing;
+        }
         final Map<String, String> details = pipelineBillingDetailsLoader.loadDetails(billing.getId().toString());
         return billing.toBuilder()
-                .name(details.get(EntityBillingDetailsLoader.NAME))
-                .owner(details.get(EntityBillingDetailsLoader.OWNER))
+                .name(StringUtils.isNotBlank(billing.getName())
+                        ? billing.getName()
+                        : details.get(EntityBillingDetailsLoader.NAME))
+                .owner(StringUtils.isNotBlank(billing.getOwner())
+                        ? billing.getOwner()
+                        : details.get(EntityBillingDetailsLoader.OWNER))
                 .build();
     }
 }

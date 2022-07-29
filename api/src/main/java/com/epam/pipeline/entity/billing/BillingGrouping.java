@@ -16,6 +16,11 @@
 
 package com.epam.pipeline.entity.billing;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+
+@Getter
+@RequiredArgsConstructor
 public enum BillingGrouping {
     RESOURCE_TYPE("resource_type", false, false),
     RUN_INSTANCE_TYPE("instance_type", true, false),
@@ -31,22 +36,4 @@ public enum BillingGrouping {
     private final boolean runUsageDetailsRequired;
     private final boolean storageUsageDetailsRequired;
 
-    BillingGrouping(final String correspondingField, final boolean runUsageDetailsRequired,
-                    final boolean storageUsageDetailsRequired) {
-        this.correspondingField = correspondingField;
-        this.runUsageDetailsRequired = runUsageDetailsRequired;
-        this.storageUsageDetailsRequired = storageUsageDetailsRequired;
-    }
-
-    public String getCorrespondingField() {
-        return correspondingField;
-    }
-
-    public boolean runUsageDetailsRequired() {
-        return runUsageDetailsRequired;
-    }
-
-    public boolean storageUsageDetailsRequired() {
-        return storageUsageDetailsRequired;
-    }
 }

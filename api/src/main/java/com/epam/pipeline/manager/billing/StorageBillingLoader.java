@@ -5,11 +5,14 @@ import com.epam.pipeline.entity.billing.BillingDiscount;
 import com.epam.pipeline.entity.billing.StorageBilling;
 import com.epam.pipeline.entity.billing.StorageBillingMetrics;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
+import com.epam.pipeline.manager.billing.detail.StorageBillingDetailsLoader;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.elasticsearch.action.search.SearchRequest;
@@ -30,6 +33,7 @@ import java.time.temporal.Temporal;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,7 +45,7 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
 
     private final BillingHelper billingHelper;
     private final PreferenceManager preferenceManager;
-    private final StorageBillingDetailsLoader storageBillingDetailsLoader;
+    private final EntityBillingDetailsLoader storageBillingDetailsLoader;
 
     @Override
     public Stream<StorageBilling> billings(final RestHighLevelClient elasticSearchClient,
@@ -119,9 +123,13 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
         final Map<String, Object> topHitFields = billingHelper.getLastByDateDocFields(aggregations);
         return StorageBilling.builder()
                 .id(NumberUtils.toLong(id))
+                .name(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_NAME_FIELD)))
                 .owner(BillingUtils.asString(topHitFields.get(BillingUtils.OWNER_FIELD)))
                 .billingCenter(BillingUtils.asString(topHitFields.get(BillingUtils.BILLING_CENTER_FIELD)))
                 .type(DataStorageType.getByName(BillingUtils.asString(topHitFields.get(BillingUtils.PROVIDER_FIELD))))
+                .region(BillingUtils.asString(topHitFields.get(BillingUtils.CLOUD_REGION_ID_FIELD)))
+                .provider(BillingUtils.asString(topHitFields.get(BillingUtils.CLOUD_REGION_PROVIDER_FIELD)))
+                .created(asDateTime(BillingUtils.asString(topHitFields.get(BillingUtils.STORAGE_CREATED_FIELD))))
                 .totalMetrics(StorageBillingMetrics.builder()
                         .cost(billingHelper.getCostSum(aggregations))
                         .averageVolume(billingHelper.getStorageUsageAvg(aggregations))
@@ -151,12 +159,26 @@ public class StorageBillingLoader implements BillingLoader<StorageBilling> {
     }
 
     private StorageBilling withDetails(final StorageBilling billing) {
+        if (StringUtils.isNotBlank(billing.getName())
+                && StringUtils.isNotBlank(billing.getRegion())
+                && StringUtils.isNotBlank(billing.getProvider())
+                && Objects.nonNull(billing.getCreated())) {
+            return billing;
+        }
         final Map<String, String> details = storageBillingDetailsLoader.loadDetails(billing.getId().toString());
         return billing.toBuilder()
-                .name(details.get(StorageBillingDetailsLoader.NAME))
-                .region(details.get(StorageBillingDetailsLoader.REGION))
-                .provider(details.get(StorageBillingDetailsLoader.PROVIDER))
-                .created(asDateTime(details.get(StorageBillingDetailsLoader.CREATED)))
+                .name(StringUtils.isNotBlank(billing.getName())
+                        ? billing.getName()
+                        : details.get(StorageBillingDetailsLoader.STORAGE_NAME))
+                .region(StringUtils.isNotBlank(billing.getRegion())
+                        ? billing.getRegion()
+                        : details.get(EntityBillingDetailsLoader.REGION))
+                .provider(StringUtils.isNotBlank(billing.getProvider())
+                        ? billing.getProvider()
+                        : details.get(EntityBillingDetailsLoader.PROVIDER))
+                .created(Objects.nonNull(billing.getCreated())
+                        ? billing.getCreated()
+                        : asDateTime(details.get(EntityBillingDetailsLoader.CREATED)))
                 .build();
     }
 
