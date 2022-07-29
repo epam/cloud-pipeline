@@ -5,6 +5,13 @@ CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_rule(
     object_glob TEXT DEFAULT NULL,
     transition_method TEXT NOT NULL,
     transitions_json TEXT NOT NULL,
-    prolongations_json TEXT NOT NULL,
     notification_json TEXT DEFAULT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_rule_prolongation(
+    id SERIAL PRIMARY KEY,
+    rule_id BIGINT REFERENCES pipeline.datastorage_lifecycle_rule (id),
+    path TEXT DEFAULT NULL,
+    prolonged_date TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    days BIGINT NOT NULL
 );

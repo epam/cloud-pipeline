@@ -23,6 +23,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleTransitionMet
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
+import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import org.junit.Assert;
@@ -57,10 +58,8 @@ public class DataStorageLifecycleManagerTest {
             ).build();
     public static final StorageLifecycleRule RULE_WITH_ID = RULE.toBuilder().id(ID).build();
 
-    public static final String EMPTY_TRANSITIONS_JSON = "[]";
-    public static final String EMPTY_NOTIFICATION_JSON = "{}";
-
     private final DataStorageManager storageManager = Mockito.mock(DataStorageManager.class);
+    private final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
     private final DataStorageLifecycleRuleRepository lifecycleRuleRepository =
             Mockito.mock(DataStorageLifecycleRuleRepository.class);
     private final StorageLifecycleEntityMapper mapper = Mappers.getMapper(StorageLifecycleEntityMapper.class);
@@ -69,8 +68,7 @@ public class DataStorageLifecycleManagerTest {
 
 
     private final DataStorageLifecycleManager lifecycleManager = new DataStorageLifecycleManager(
-            messageHelper, mapper,
-            lifecycleRuleRepository, storageManager, providerManager
+            messageHelper, mapper, lifecycleRuleRepository, storageManager, providerManager, preferenceManager
     );
 
     @Before
@@ -89,25 +87,8 @@ public class DataStorageLifecycleManagerTest {
 
     @Test
     public void shouldSuccessfullyCreateLifecycleRule() {
-        final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(RULE);
+        final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, RULE);
         verifyRule(created, RULE_WITH_ID);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldThrowIfLifecycleRuleMalformedStorageId() {
-        final StorageLifecycleRule rule = StorageLifecycleRule.builder()
-                .pathGlob(ROOT)
-                .objectGlob(OBJECT_GLOB)
-                .transitionMethod(StorageLifecycleTransitionMethod.EARLIEST_FILE)
-                .transitions(
-                        Collections.singletonList(
-                                StorageLifecycleRuleTransition.builder()
-                                        .storageClass(STORAGE_CLASS)
-                                        .transitionAfterDays(2L)
-                                        .build()
-                        )
-                ).build();
-        lifecycleManager.createStorageLifecyclePolicyRule(rule);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -124,7 +105,7 @@ public class DataStorageLifecycleManagerTest {
                                         .build()
                         )
                 ).build();
-        lifecycleManager.createStorageLifecyclePolicyRule(rule);
+        lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -135,7 +116,7 @@ public class DataStorageLifecycleManagerTest {
                 .objectGlob(OBJECT_GLOB)
                 .transitionMethod(StorageLifecycleTransitionMethod.EARLIEST_FILE)
                 .build();
-        lifecycleManager.createStorageLifecyclePolicyRule(rule);
+        lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
     }
 
     private void verifyRule(final StorageLifecycleRule created, final StorageLifecycleRule ruleWithId) {

@@ -380,23 +380,30 @@ public class DataStorageApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StorageLifecycleRule createStorageLifecyclePolicyRule(final Long datastorageId, final StorageLifecycleRule rule) {
-        return storageLifecycleManager.createStorageLifecyclePolicyRule(rule);
+    public StorageLifecycleRule createStorageLifecyclePolicyRule(final Long datastorageId,
+                                                                 final StorageLifecycleRule rule) {
+        return storageLifecycleManager.createStorageLifecyclePolicyRule(datastorageId, rule);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecycleRule updateStorageLifecyclePolicyRule(final Long datastorageId,
+                                                                 final StorageLifecycleRule rule) {
+        return storageLifecycleManager.updateStorageLifecyclePolicyRule(datastorageId, rule);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public StorageLifecycleRule prolongStorageLifecyclePolicyRule(final Long datastorageId,
                                                                   final Long ruleId, final String path,
                                                                   final Long daysToProlong) {
-        return storageLifecycleManager.prolongStorageLifecyclePolicyRule(ruleId, path, daysToProlong);
+        return storageLifecycleManager.prolongLifecyclePolicyRule(datastorageId, ruleId, path, daysToProlong);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public StorageLifecycleRule deleteStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
-        return storageLifecycleManager.deleteStorageLifecyclePolicyRule(ruleId);
+        return storageLifecycleManager.deleteStorageLifecyclePolicyRule(datastorageId, ruleId);
     }
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
-        return storageLifecycleManager.loadStorageLifecyclePolicyRule(ruleId);
+        return storageLifecycleManager.loadStorageLifecyclePolicyRule(datastorageId, ruleId);
     }
 }

@@ -21,14 +21,20 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import java.util.List;
 
 @Entity
 @Data
@@ -46,9 +52,12 @@ public class StorageLifecycleRuleEntity {
     @Enumerated(EnumType.STRING)
     private StorageLifecycleTransitionMethod transitionMethod;
 
+    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL,
+            mappedBy = "lifecycleRule", orphanRemoval = true)
+    private List<StorageLifecycleRuleProlongationEntity> prolongations;
+
     private String pathGlob;
     private String objectGlob;
     private String transitionsJson;
-    private String prolongationsJson;
     private String notificationJson;
 }

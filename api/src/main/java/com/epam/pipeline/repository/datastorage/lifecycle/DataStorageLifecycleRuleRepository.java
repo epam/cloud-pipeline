@@ -23,6 +23,4 @@ import java.util.List;
 
 public interface DataStorageLifecycleRuleRepository extends CrudRepository<StorageLifecycleRuleEntity, Long> {
     List<StorageLifecycleRuleEntity> findByDatastorageId(Long datastorageId);
-    List<StorageLifecycleRuleEntity> findByTemplateId(Long templateId);
-
 }

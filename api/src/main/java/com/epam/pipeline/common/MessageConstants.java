@@ -293,7 +293,6 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.rule.template.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND =
             "error.datastirage.lifecycle.rule.not.found";
-    public static final String ERROR_DATASTORAGE_EXISTING_LIFECYCLE_RULE = "error.datastirage.existing.lifecycle.rule";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_DEFINE_DAYS_TO_PROLONG =
             "error.datastirage.lifecycle.rule.cant.define.days.to.prolong";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =

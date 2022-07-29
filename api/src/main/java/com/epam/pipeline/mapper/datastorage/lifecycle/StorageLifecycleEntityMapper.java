@@ -45,32 +45,15 @@ public interface StorageLifecycleEntityMapper {
     String TRANSITIONS_JSON_TO_DTO = "transitionsJsonToDto";
     String TRANSITIONS_TO_JSON = "transitionsToJson";
 
-    String PROLONGATIONS = "prolongations";
-    String PROLONGATIONS_JSON = "prolongationsJson";
-    String PROLONGATIONS_JSON_TO_DTO = "prolongationsJsonToDto";
-    String PROLONGATIONS_TO_JSON = "prolongationsToJson";
-
     ObjectMapper OBJECT_MAPPER = new JsonMapper();
 
-    @Mapping(source = PROLONGATIONS, target = PROLONGATIONS_JSON, qualifiedByName = PROLONGATIONS_TO_JSON)
     @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = NOTIFICATION_TO_JSON)
     @Mapping(source = TRANSITIONS, target = TRANSITIONS_JSON, qualifiedByName = TRANSITIONS_TO_JSON)
     StorageLifecycleRuleEntity toEntity(StorageLifecycleRule rule);
 
-    @Mapping(source = PROLONGATIONS_JSON, target = PROLONGATIONS, qualifiedByName = PROLONGATIONS_JSON_TO_DTO)
     @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
     @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
     StorageLifecycleRule toDto(StorageLifecycleRuleEntity policyEntity);
-
-    @Named(PROLONGATIONS_TO_JSON)
-    static String prolongationsToJson(final List<StorageLifecycleRuleProlongation> prolongations) throws JsonProcessingException {
-        return OBJECT_MAPPER.writeValueAsString(prolongations);
-    }
-
-    @Named(PROLONGATIONS_JSON_TO_DTO)
-    static List<StorageLifecycleRuleProlongation> prolongationsJsonToDto(final String prolongationsJson) throws IOException {
-        return OBJECT_MAPPER.readValue(prolongationsJson, new TypeReference<List<StorageLifecycleRuleProlongation>>(){});
-    }
 
     @Named(NOTIFICATION_TO_JSON)
     static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {

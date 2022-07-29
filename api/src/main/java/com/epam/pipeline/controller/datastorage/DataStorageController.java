@@ -49,6 +49,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -820,6 +821,21 @@ public class DataStorageController extends AbstractRestController {
             @PathVariable(value = "datastorageId") final Long datastorageId,
             @RequestBody final StorageLifecycleRule rule) {
         return Result.success(dataStorageApiService.createStorageLifecyclePolicyRule(datastorageId, rule));
+    }
+
+    @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/rule")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates lifecycle rule for specific data storage.",
+            notes = "Updates lifecycle rule for specific data storage.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageLifecycleRule> updateStorageLifecyclePolicyRule(
+            @PathVariable(value = "datastorageId") final Long datastorageId,
+            @RequestBody final StorageLifecycleRule rule) {
+        return Result.success(dataStorageApiService.updateStorageLifecyclePolicyRule(datastorageId, rule));
     }
 
     @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/prolong")
