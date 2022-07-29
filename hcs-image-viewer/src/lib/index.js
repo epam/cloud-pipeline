@@ -15,7 +15,13 @@
  */
 
 import Viewer from './viewer';
+import { defaultChannelsColors } from './state/viewer-state/default-color-palette';
 import * as constants from './state/constants';
 import { fetchSourceInfo } from './state/utilities/fetch-source-info';
 
-export { Viewer, constants, fetchSourceInfo };
+export {
+  Viewer,
+  constants,
+  fetchSourceInfo,
+  defaultChannelsColors,
+};
