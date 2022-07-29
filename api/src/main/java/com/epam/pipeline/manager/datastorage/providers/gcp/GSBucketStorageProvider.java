@@ -17,7 +17,6 @@
 package com.epam.pipeline.manager.datastorage.providers.gcp;
 
 import com.epam.pipeline.common.MessageHelper;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -230,11 +229,6 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     public PathDescription getDataSize(final GSBucketStorage dataStorage, final String path,
                                        final PathDescription pathDescription) {
         return getHelper(dataStorage).getDataSize(dataStorage, path, pathDescription);
-    }
-
-    @Override
-    public void verifyStorageLifecycleRuleTemplate(final StorageLifecycleRuleTemplate ruleTemplate) {
-        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
     }
 
     @Override

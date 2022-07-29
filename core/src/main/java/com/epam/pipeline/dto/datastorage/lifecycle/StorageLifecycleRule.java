@@ -20,29 +20,77 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Value;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 
+
 /**
- * Describes a rule is defined lifecycle of objects in a cloud.
- * Can be created from {@link StorageLifecycleRuleTemplate}, then templateId should be set appropriately,
- * or can be registered independently.
- * */
+ * Describes a rule defines lifecycle of objects in a cloud:
+
+ *   - Which directories to search for a files. {@code pathGlob}
+ *   - What files. {@code objectGlob}
+ *   - When files should be transferred. See {@link StorageLifecycleRuleTransition} and {@link StorageLifecycleRuleProlongation}
+ *   - Where files should be transferred. See {@link StorageLifecycleRuleTransition}
+ *   - How files should be transferred. See {@link StorageLifecycleTransitionMethod}
+
+ * Also {@code notification} could be configured to notify user that this rule is going to be applied and prolong
+ * if needed.
+
+
+ * Example 1:
+ * We have a rule:
+ *     {
+ *        "pathGlob": "/data/",
+ *        "objectGlob": "*.csv",
+ *        "transitionMethod": "LATEST_FILE",
+ *        "transitions": [
+ *             {
+ *                 "transitionAfterDays": 10,
+ *                 "storageClass": Glacier
+ *             }
+ *        ]
+ *     }
+
+ * For such rule we will move all csv files from directory /data/ only when latest file will have an age of 10 days.
+
+
+ * Example 2:
+ * If {@code glob} is provided, eligibility for transitions files matches {@link StorageLifecycleRule} should
+ * be checked based on files that match this glob, instead of objectGlob from {@link StorageLifecycleRule}
+
+ * This value will be resolved against path for which {@link StorageLifecycleRule} is applied.
+
+ * We have a rule:
+ *     {
+ *        "pathGlob": "/data/",
+ *        "objectGlob": "*.csv",
+ *        "transitionMethod": "LATEST_FILE",
+ *        "transitions": [
+ *             {
+ *                 "glob": "*.pdf",
+ *                 "transitionAfterDays": 10,
+ *                 "storageClass": Glacier
+ *             }
+ *        ]
+ *     }
+
+ * For such rule we will move all csv files from directory /data/ only when in this directory will be located
+ * pdf files and latest one will have an age of 10 days.
+
+ * This solves a case when we need to transit one file type depending on condition of another file type
+ * (f.e. when we generate one files from another and want to transit after successful generation)
+ **/
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class StorageLifecycleRule {
     private Long id;
-    private Long templateId;
     private Long datastorageId;
-    private LocalDateTime prolongedDate;
-    private String pathRoot;
+    private String pathGlob;
     private String objectGlob;
     private StorageLifecycleTransitionMethod transitionMethod;
+    private List<StorageLifecycleRuleProlongation> prolongations;
     private List<StorageLifecycleRuleTransition> transitions;
     private StorageLifecycleNotification notification;
 }

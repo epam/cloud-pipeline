@@ -21,10 +21,31 @@ import lombok.Value;
 
 import java.time.LocalDate;
 
+/**
+ * Describes eligibility criteria for transferring and destination.
+ */
 @Value
 @Builder(toBuilder = true)
 public class StorageLifecycleRuleTransition {
+
+    /**
+     * If specified, eligibility to transfer files from {@link StorageLifecycleRule} will be checked against files that match this glob
+
+     * See example in {@link StorageLifecycleRule}
+     * */
+    String glob;
+
+    /**
+     * Number of days after which a rule will be applied.
+     * NOTE: {@code transitionDate} and {@code transitionAfterDays} are exclusive
+     * */
     Long transitionAfterDays;
+
+    /**
+     * Date after which a rule will be applied.
+     * NOTE: {@code transitionDate} and {@code transitionAfterDays} are exclusive
+     * */
     LocalDate transitionDate;
+
     String storageClass;
 }

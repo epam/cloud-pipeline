@@ -21,6 +21,9 @@ import lombok.Value;
 
 import java.util.List;
 
+/**
+ * Set of properties to define how notification should be sent.
+ * */
 @Value
 @Builder
 public class StorageLifecycleNotification {

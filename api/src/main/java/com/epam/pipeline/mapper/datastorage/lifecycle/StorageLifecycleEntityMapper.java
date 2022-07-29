@@ -18,10 +18,9 @@ package com.epam.pipeline.mapper.datastorage.lifecycle;
 
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTemplate;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleProlongation;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTransition;
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleTemplateEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -37,46 +36,56 @@ import java.util.List;
 public interface StorageLifecycleEntityMapper {
 
     String NOTIFICATION = "notification";
-    String TRANSITIONS = "transitions";
-    String TRANSITIONS_JSON = "transitionsJson";
     String NOTIFICATION_JSON = "notificationJson";
     String NOTIFICATION_JSON_TO_DTO = "notificationJsonToDto";
-    String TRANSITIONS_JSON_TO_DTO = "transitionsJsonToDto";
     String NOTIFICATION_TO_JSON = "notificationToJson";
+
+    String TRANSITIONS = "transitions";
+    String TRANSITIONS_JSON = "transitionsJson";
+    String TRANSITIONS_JSON_TO_DTO = "transitionsJsonToDto";
     String TRANSITIONS_TO_JSON = "transitionsToJson";
+
+    String PROLONGATIONS = "prolongations";
+    String PROLONGATIONS_JSON = "prolongationsJson";
+    String PROLONGATIONS_JSON_TO_DTO = "prolongationsJsonToDto";
+    String PROLONGATIONS_TO_JSON = "prolongationsToJson";
 
     ObjectMapper OBJECT_MAPPER = new JsonMapper();
 
-    @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = NOTIFICATION_TO_JSON)
-    @Mapping(source = TRANSITIONS, target = TRANSITIONS_JSON, qualifiedByName = TRANSITIONS_TO_JSON)
-    StorageLifecycleRuleTemplateEntity toEntity(StorageLifecycleRuleTemplate policy);
-
-    @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
-    @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
-    StorageLifecycleRuleTemplate toDto(StorageLifecycleRuleTemplateEntity policyEntity);
-
+    @Mapping(source = PROLONGATIONS, target = PROLONGATIONS_JSON, qualifiedByName = PROLONGATIONS_TO_JSON)
     @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = NOTIFICATION_TO_JSON)
     @Mapping(source = TRANSITIONS, target = TRANSITIONS_JSON, qualifiedByName = TRANSITIONS_TO_JSON)
     StorageLifecycleRuleEntity toEntity(StorageLifecycleRule rule);
 
+    @Mapping(source = PROLONGATIONS_JSON, target = PROLONGATIONS, qualifiedByName = PROLONGATIONS_JSON_TO_DTO)
     @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
     @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
     StorageLifecycleRule toDto(StorageLifecycleRuleEntity policyEntity);
+
+    @Named(PROLONGATIONS_TO_JSON)
+    static String prolongationsToJson(final List<StorageLifecycleRuleProlongation> prolongations) throws JsonProcessingException {
+        return OBJECT_MAPPER.writeValueAsString(prolongations);
+    }
+
+    @Named(PROLONGATIONS_JSON_TO_DTO)
+    static List<StorageLifecycleRuleProlongation> prolongationsJsonToDto(final String prolongationsJson) throws IOException {
+        return OBJECT_MAPPER.readValue(prolongationsJson, new TypeReference<List<StorageLifecycleRuleProlongation>>(){});
+    }
 
     @Named(NOTIFICATION_TO_JSON)
     static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(notification);
     }
 
+    @Named(NOTIFICATION_JSON_TO_DTO)
+    static StorageLifecycleNotification notificationJsonToDto(final String notificationJson) throws IOException {
+        return OBJECT_MAPPER.readValue(notificationJson, new TypeReference<StorageLifecycleNotification>(){});
+    }
+
     @Named(NOTIFICATION_TO_JSON)
     static String transitionsToJson(final List<StorageLifecycleRuleTransition> transitions)
             throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(transitions);
-    }
-
-    @Named(NOTIFICATION_JSON_TO_DTO)
-    static StorageLifecycleNotification notificationJsonToDto(final String notificationJson) throws IOException {
-        return OBJECT_MAPPER.readValue(notificationJson, new TypeReference<StorageLifecycleNotification>(){});
     }
 
     @Named(TRANSITIONS_JSON_TO_DTO)

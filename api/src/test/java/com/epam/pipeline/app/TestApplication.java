@@ -35,7 +35,6 @@ import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
-import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleTemplateRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -157,9 +156,6 @@ public class TestApplication {
 
     @MockBean
     protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
-
-    @MockBean
-    protected DataStorageLifecycleRuleTemplateRepository ruleTemplateRepository;
 
     @MockBean
     public OnlineUsersService onlineUsersService;

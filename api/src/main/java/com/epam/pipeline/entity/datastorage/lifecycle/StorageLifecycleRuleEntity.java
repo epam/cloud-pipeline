@@ -29,7 +29,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -42,13 +41,14 @@ public class StorageLifecycleRuleEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long templateId;
     private Long datastorageId;
-    private LocalDateTime prolongedDate;
+
     @Enumerated(EnumType.STRING)
     private StorageLifecycleTransitionMethod transitionMethod;
-    private String pathRoot;
+
+    private String pathGlob;
     private String objectGlob;
     private String transitionsJson;
+    private String prolongationsJson;
     private String notificationJson;
 }
