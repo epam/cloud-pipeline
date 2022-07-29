@@ -31,7 +31,6 @@ import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.amazonaws.services.fsx.model.StorageType;
 import com.amazonaws.services.fsx.model.Tag;
 import com.amazonaws.services.fsx.model.UpdateFileSystemRequest;
-import com.amazonaws.services.fsx.model.UpdateFileSystemResult;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
