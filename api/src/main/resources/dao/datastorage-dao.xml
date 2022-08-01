@@ -695,6 +695,7 @@
             <value>
                 <![CDATA[
                     SELECT
+                        datastorage_id,
                         dtv.tool_id,
                         tool_version_id,
                         tv.version as TOOL_VERSION,
