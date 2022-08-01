@@ -22,13 +22,17 @@ const DELAY_MS = 1000;
 
 class DelayedInput extends React.Component {
   state={
-    inputValue: ''
+    value: ''
   }
 
   _delayedChange;
 
   componentDidMount () {
     this.updateInputValueFromProps();
+  }
+
+  componentWillUnmount () {
+    clearTimeout(this._delayedChange);
   }
 
   componentDidUpdate (prevProps) {
@@ -38,38 +42,46 @@ class DelayedInput extends React.Component {
   }
 
   updateInputValueFromProps = () => {
+    clearTimeout(this._delayedChange);
     const {value} = this.props;
-    this.setState({inputValue: value});
+    this.setState({value});
   };
 
   onChangeInputValue = (event) => {
-    this.setState({inputValue: event.target.value}, () => {
-      const {inputValue} = this.state;
-      this.submitDelayedChanges(inputValue);
-    });
+    this.setState(
+      {value: event.target.value},
+      this.submitDelayedChanges
+    );
   };
 
-  submitDelayedChanges = (value) => {
-    const {onChange, delay} = this.props;
-    if (this._delayedChange) {
-      clearTimeout(this._delayedChange);
+  submitChanges = () => {
+    clearTimeout(this._delayedChange);
+    const {onChange} = this.props;
+    const {value} = this.state;
+    if (typeof onChange === 'function') {
+      onChange(value);
     }
-    this._delayedChange = setTimeout(() => {
-      if (typeof onChange === 'function') {
-        onChange(value);
-      }
-    }, delay || DELAY_MS);
+  };
+
+  submitDelayedChanges = () => {
+    const {delay} = this.props;
+    clearTimeout(this._delayedChange);
+    this._delayedChange = setTimeout(
+      this.submitChanges,
+      delay || DELAY_MS
+    );
   };
 
   render () {
     const {className, style} = this.props;
-    const {inputValue} = this.state;
+    const {value} = this.state;
     return (
       <Input
         style={style}
         className={className}
-        value={inputValue}
+        value={value}
         onChange={this.onChangeInputValue}
+        onPressEnter={this.submitChanges}
       />
     );
   }
