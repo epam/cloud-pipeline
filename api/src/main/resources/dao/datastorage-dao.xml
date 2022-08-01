@@ -621,6 +621,23 @@
                 ]]>
             </value>
         </property>
+        <property name="loadToolsToMountByIdsQuery">
+            <value>
+                <![CDATA[
+                    SELECT
+                        dtv.tool_id,
+                        tool_version_id,
+                        tv.version as TOOL_VERSION,
+                        t.image AS TOOL_IMAGE,
+                        dr.path AS TOOL_REGISTRY
+                    FROM pipeline.datastorage_tool_version AS dtv
+                    INNER JOIN pipeline.tool t ON t.id = dtv.tool_id
+                    INNER JOIN pipeline.docker_registry dr ON t.registry_id = dr.id
+                    LEFT JOIN pipeline.tool_version tv ON tv.id = tool_version_id
+                    WHERE dtv.datastorage_id IN (:DATASTORAGE_IDS)
+                ]]>
+            </value>
+        </property>
         <property name="loadToolsToMountsForAllStoragesQuery">
             <value>
                 <![CDATA[
