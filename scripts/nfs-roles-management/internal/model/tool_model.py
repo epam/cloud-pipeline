@@ -15,7 +15,7 @@
 class ToolModel(object):
     def __init__(self):
         self.id = None
-        self.name = None
+        self.image = None
         self.registry = None
 
     @classmethod
@@ -24,10 +24,10 @@ class ToolModel(object):
             return None
         instance = ToolModel()
         instance.id = json['id'] if 'id' in json else None
-        instance.name = json['name'] if 'name' in json else None
+        instance.image = json['image'] if 'image' in json else None
         instance.registry = json['registry'] if 'registry' in json else None
 
-        if not instance.id or not instance.name or not instance.registry:
+        if not instance.id or not instance.image or not instance.registry:
             return None
         else:
             return instance
