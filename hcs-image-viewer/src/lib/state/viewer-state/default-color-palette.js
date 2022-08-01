@@ -25,6 +25,7 @@ const orange = [255, 60, 0];
 
 class DefaultChannelsColors {
   constructor(defaultColors = {}) {
+    this.listeners = [];
     this.update(defaultColors);
   }
 
@@ -41,6 +42,25 @@ class DefaultChannelsColors {
 
   updateChannelColor(channel, color) {
     this.defaultColors[channel] = color;
+    this.emit('defaultColorsUpdated', this.defaultColors);
+  }
+
+  addEventListener(event, listener) {
+    this.listeners.push({ event, listener });
+  }
+
+  emit(event, payload) {
+    this.listeners
+      .filter((o) => o.event === event && typeof o.listener === 'function')
+      .map((o) => o.listener)
+      .forEach((listener) => listener(this, payload));
+  }
+
+  removeEventListener(event, listener) {
+    const index = this.listeners.findIndex((o) => o.event === event && o.listener === listener);
+    if (index >= 0) {
+      this.listeners.splice(index, 1);
+    }
   }
 }
 

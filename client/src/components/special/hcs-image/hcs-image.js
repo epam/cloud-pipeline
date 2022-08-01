@@ -45,6 +45,15 @@ import {cellsAreEqual, ascSorter} from './utilities/cells-utilities';
 import CellProfilerJobResults from '../cellprofiler/components/cell-profiler-job-results';
 import styles from './hcs-image.css';
 
+const DEFAULT_CHANNELS_COLORS = {
+  'DAPI': [255, 18, 9],
+  'Alexa 488': [255, 247, 9],
+  'Alexa 568': [9, 255, 30],
+  'Alexa 647': [9, 76, 255]
+};
+
+const DEFAULT_CHANNELS_COLORS_KEY = 'defaultChannelsColors';
+
 @observer
 class HcsImage extends React.PureComponent {
   state = {
@@ -72,8 +81,18 @@ class HcsImage extends React.PureComponent {
   @observable hcsImageViewer;
   @observable hcsAnalysis = new Analysis();
 
+  updatedDefaultChannelsColors = () => {
+    const colors = JSON.parse(localStorage.getItem(DEFAULT_CHANNELS_COLORS_KEY)) || DEFAULT_CHANNELS_COLORS;
+    defaultChannelsColors.update(colors);
+  }
+
+  setDefaultChannelsColors = (event, payload) => {
+    localStorage.setItem(DEFAULT_CHANNELS_COLORS_KEY, JSON.stringify(payload));
+  }
+
   componentDidMount () {
-    // todo: defaultChannelsColors.update & subscribe to "default colors updated event"
+    this.updatedDefaultChannelsColors();
+    defaultChannelsColors.addEventListener('defaultColorsUpdated', this.setDefaultChannelsColors);
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
     this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.prepare();
@@ -90,6 +109,7 @@ class HcsImage extends React.PureComponent {
   }
 
   componentWillUnmount () {
+    defaultChannelsColors.removeEventListener('defaultColorsUpdated');
     this.container = undefined;
     this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
