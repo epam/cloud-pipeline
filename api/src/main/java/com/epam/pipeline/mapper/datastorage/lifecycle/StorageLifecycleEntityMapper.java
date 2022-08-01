@@ -19,9 +19,11 @@ package com.epam.pipeline.mapper.datastorage.lifecycle;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -63,7 +65,11 @@ public interface StorageLifecycleEntityMapper {
             qualifiedByName = TRANSITION_CRITERION_JSON_TO_DTO)
     @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
     @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
-    StorageLifecycleRule toDto(StorageLifecycleRuleEntity policyEntity);
+    StorageLifecycleRule toDto(StorageLifecycleRuleEntity ruleEntity);
+
+    StorageLifecycleRuleExecutionEntity toEntity(StorageLifecycleRuleExecution execution);
+    StorageLifecycleRuleExecution toDto(StorageLifecycleRuleExecutionEntity executionEntity);
+
 
     @Named(NOTIFICATION_TO_JSON)
     static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {

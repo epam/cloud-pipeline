@@ -20,8 +20,11 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleProlongationEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
@@ -29,11 +32,13 @@ import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -49,10 +54,12 @@ import java.util.stream.StreamSupport;
 @RequiredArgsConstructor
 public class DataStorageLifecycleManager {
 
+    private static final String EMPTY = "";
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
     private final MessageHelper messageHelper;
     private final StorageLifecycleEntityMapper lifecycleEntityMapper;
     private final DataStorageLifecycleRuleRepository dataStorageLifecycleRuleRepository;
-
+    private final DataStorageLifecycleRuleExecutionRepository dataStorageLifecycleRuleExecutionRepository;
     private final DataStorageManager storageManager;
     private final StorageProviderManager storageProviderManager;
 
@@ -70,7 +77,9 @@ public class DataStorageLifecycleManager {
     public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
         Assert.isTrue(lifecycleRuleEntity.getDatastorageId().equals(datastorageId),
-                "Lifecycle rule assign to another datastorage with id: " + datastorageId);
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE,
+                        lifecycleRuleEntity.getDatastorageId()));
         return lifecycleEntityMapper.toDto(lifecycleRuleEntity);
     }
 
@@ -87,13 +96,16 @@ public class DataStorageLifecycleManager {
     @Transactional
     public StorageLifecycleRule updateStorageLifecyclePolicyRule(final Long datastorageId,
                                                                  final StorageLifecycleRule rule) {
-        Assert.notNull(rule.getId(), "Rule id should be provided!");
+        Assert.notNull(rule.getId(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ID_IS_NOT_SPECIFIED));
         rule.setDatastorageId(datastorageId);
         final StorageLifecycleRuleEntity loadedRuleEntity = loadLifecycleRuleEntity(rule.getId());
         verifyStorageLifecycleRuleObject(rule);
         final StorageLifecycleRuleEntity updatedRuleEntity = lifecycleEntityMapper.toEntity(rule);
         Assert.isTrue(loadedRuleEntity.getDatastorageId().equals(rule.getDatastorageId()),
-                        "Lifecycle rule assign to another datastorage with id: " + datastorageId);
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE,
+                        loadedRuleEntity.getDatastorageId()));
         final StorageLifecycleRuleEntity saved = dataStorageLifecycleRuleRepository
                 .save(mergeRulesEntity(loadedRuleEntity, updatedRuleEntity));
         return lifecycleEntityMapper.toDto(saved);
@@ -103,8 +115,12 @@ public class DataStorageLifecycleManager {
     public StorageLifecycleRule prolongLifecyclePolicyRule(final Long datastorageId, final Long ruleId,
                                                            final String path, final Long daysToProlong) {
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
+        Assert.isTrue(PATH_MATCHER.match(lifecycleRuleEntity.getPathGlob(), path),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB));
         Assert.isTrue(lifecycleRuleEntity.getDatastorageId().equals(datastorageId),
-                "Lifecycle rule assign to another datastorage with id: " + datastorageId);
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE,
+                        lifecycleRuleEntity.getDatastorageId()));
         final Long effectiveDaysToProlong = getEffectiveDaysToProlong(daysToProlong, lifecycleRuleEntity);
 
         Assert.notNull(effectiveDaysToProlong,
@@ -146,11 +162,58 @@ public class DataStorageLifecycleManager {
     public StorageLifecycleRule deleteStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
         final StorageLifecycleRule loaded = loadStorageLifecyclePolicyRule(datastorageId, ruleId);
         if (loaded != null) {
+            dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(ruleId);
             dataStorageLifecycleRuleRepository.delete(loaded.getId());
             return loaded;
         } else {
             throw new IllegalArgumentException(
                     messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND, ruleId));
+        }
+    }
+
+    @Transactional
+    public StorageLifecycleRuleExecution createStorageLifecycleRuleExecution(
+            final Long ruleId, final StorageLifecycleRuleExecution execution) {
+        final StorageLifecycleRuleEntity ruleEntity = loadLifecycleRuleEntity(ruleId);
+        execution.setRuleId(ruleEntity.getId());
+        execution.setUpdated(DateUtils.nowUTC());
+        Assert.notNull(execution.getPath(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED));
+        Assert.isTrue(PATH_MATCHER.match(ruleEntity.getPathGlob(), execution.getPath()),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB));
+        final StorageLifecycleRuleExecutionEntity saved =
+                dataStorageLifecycleRuleExecutionRepository.save(lifecycleEntityMapper.toEntity(execution));
+        return lifecycleEntityMapper.toDto(saved);
+    }
+
+    @Transactional
+    public StorageLifecycleRuleExecution updateStorageLifecycleRuleExecutionStatus(
+            final Long executionId, final StorageLifecycleRuleExecutionStatus status) {
+        final StorageLifecycleRuleExecutionEntity execution =
+                dataStorageLifecycleRuleExecutionRepository.findOne(executionId);
+        Assert.notNull(execution,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND,
+                        executionId));
+        execution.setStatus(status);
+        execution.setUpdated(DateUtils.nowUTC());
+        final StorageLifecycleRuleExecutionEntity saved = dataStorageLifecycleRuleExecutionRepository.save(execution);
+        return lifecycleEntityMapper.toDto(saved);
+    }
+
+    public List<StorageLifecycleRuleExecution> listStorageLifecycleRuleExecutionsForRuleAndPath(
+            final Long ruleId, final String path) {
+        final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
+        if (path == null) {
+            return StreamSupport.stream(dataStorageLifecycleRuleExecutionRepository
+                            .findByRuleId(lifecycleRuleEntity.getId()).spliterator(), false
+                    ).map(lifecycleEntityMapper::toDto)
+                    .collect(Collectors.toList());
+        } else {
+            return StreamSupport.stream(
+                            dataStorageLifecycleRuleExecutionRepository
+                                    .findByRuleIdAndPath(lifecycleRuleEntity.getId(), path).spliterator(), false
+                    ).map(lifecycleEntityMapper::toDto)
+                    .collect(Collectors.toList());
         }
     }
 
@@ -168,7 +231,8 @@ public class DataStorageLifecycleManager {
                     return notification.getProlongDays();
                 }
             } catch (final IOException e) {
-                throw new IllegalStateException("Can't parse notification json from lifecycle rule!", e);
+                throw new IllegalStateException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION), e);
             }
         }
         return preferenceManager.getPreference(SystemPreferences.STORAGE_LIFECYCLE_PROLONG_DAYS);
@@ -221,11 +285,9 @@ public class DataStorageLifecycleManager {
                     }
 
                     final String existingRuleObjectGlob = !StringUtils.isEmpty(existingRule.getObjectGlob())
-                            ? existingRule.getObjectGlob()
-                            : "";
+                            ? existingRule.getObjectGlob() : EMPTY;
                     final String newObjectGlob = !StringUtils.isEmpty(rule.getObjectGlob())
-                            ? rule.getObjectGlob()
-                            : "";
+                            ? rule.getObjectGlob() : EMPTY;
 
                     return existingRule.getPathGlob().equals(rule.getPathGlob())
                             && existingRuleObjectGlob.equals(newObjectGlob);
@@ -255,19 +317,15 @@ public class DataStorageLifecycleManager {
             return;
         }
 
-        Assert.notNull(notification.getEnabled(), "Enabled flag should be provided!");
+        Assert.notNull(notification.getEnabled(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED));
         if (!notification.getEnabled()) {
             return;
         }
 
-        Assert.notNull(notification.getProlongDays(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PROLONG_DAYS_NOT_SPECIFIED));
-        Assert.isTrue(notification.getProlongDays() > 0,
+        Assert.isTrue(notification.getProlongDays() == null || notification.getProlongDays() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG));
-        Assert.notNull(notification.getNotifyBeforeDays(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_NOTIFY_BEFORE_DAYS_NOT_SPECIFIED)
-        );
-        Assert.isTrue(notification.getNotifyBeforeDays() >= 0,
+        Assert.isTrue(notification.getNotifyBeforeDays() == null || notification.getNotifyBeforeDays() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS));
         Assert.hasLength(notification.getSubject(),
                 messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED));

@@ -14,25 +14,14 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.datastorage.lifecycle.execution;
+package com.epam.pipeline.repository.datastorage.lifecycle;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
+import org.springframework.data.repository.CrudRepository;
 
-import java.time.LocalDateTime;
-
-
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder(toBuilder = true)
-public class StorageLifecycleRuleExecution {
-    private Long id;
-    private Long ruleId;
-    private String path;
-    private LocalDateTime updated;
-    private StorageLifecycleRuleExecutionStatus status;
-    private String storageType;
+public interface DataStorageLifecycleRuleExecutionRepository 
+        extends CrudRepository<StorageLifecycleRuleExecutionEntity, Long> {
+    Iterable<StorageLifecycleRuleExecutionEntity> findByRuleId(Long ruleId);
+    void deleteByRuleId(Long ruleId);
+    Iterable<StorageLifecycleRuleExecutionEntity> findByRuleIdAndPath(Long ruleId, String path);
 }

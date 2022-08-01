@@ -16,16 +16,20 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
@@ -40,5 +44,10 @@ public class StorageLifecycleRuleExecutionEntity {
     private Long id;
     private Long ruleId;
     private String path;
-    private String statusesJson;
+    private LocalDateTime updated;
+
+    @Enumerated(EnumType.STRING)
+    private StorageLifecycleRuleExecutionStatus status;
+
+    private String storageType;
 }

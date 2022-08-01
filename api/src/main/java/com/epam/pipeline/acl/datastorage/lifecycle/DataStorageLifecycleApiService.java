@@ -17,6 +17,8 @@
 package com.epam.pipeline.acl.datastorage.lifecycle;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
@@ -63,5 +65,22 @@ public class DataStorageLifecycleApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public StorageLifecycleRule deleteStorageLifecyclePolicyRule(final Long id, final Long ruleId) {
         return storageLifecycleManager.deleteStorageLifecyclePolicyRule(id, ruleId);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecycleRuleExecution createStorageLifecyclePolicyRuleExecution(
+            final Long id, final Long ruleId, final StorageLifecycleRuleExecution execution) {
+        return storageLifecycleManager.createStorageLifecycleRuleExecution(ruleId, execution);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecycleRuleExecution updateStorageLifecycleRuleExecutionStatus(
+            final Long id, final Long executionId, final StorageLifecycleRuleExecutionStatus status) {
+        return storageLifecycleManager.updateStorageLifecycleRuleExecutionStatus(executionId, status);
+    }
+
+    public List<StorageLifecycleRuleExecution> listStorageLifecyclePolicyRuleExecutions(final Long ruleId,
+                                                                                        final String path) {
+        return storageLifecycleManager.listStorageLifecycleRuleExecutionsForRuleAndPath(ruleId, path);
     }
 }

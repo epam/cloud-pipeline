@@ -303,16 +303,26 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.root.path.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED =
             "error.datastirage.lifecycle.transitions.not.specified";
-    public static final String ERROR_DATASTORAGE_LIFECYCLE_PROLONG_DAYS_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.days.to.prolong.not.specified";
-    public static final String ERROR_DATASTORAGE_LIFECYCLE_NOTIFY_BEFORE_DAYS_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.notify.before.days.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS =
             "error.datastirage.lifecycle.wrong.notify.before.days";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED =
             "error.datastirage.lifecycle.transition.method.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS =
             "error.datastirage.lifecycle.rule.already.exists";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE =
+            "error.datastirage.lifecycle.rule.assigned.to.another.datastorage";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ID_IS_NOT_SPECIFIED =
+            "error.datastirage.lifecycle.rule.id.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB =
+            "error.datastirage.lifecycle.rule.path.doesnt.match.glob";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED =
+            "error.datastirage.lifecycle.rule.path.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND =
+            "error.datastirage.lifecycle.rule.execution.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION =
+            "error.datastirage.lifecycle.rule.cant.parse.notofication";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED =
+            "error.datastirage.lifecycle.rule.provide.enable.flag";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

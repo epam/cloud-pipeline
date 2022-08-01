@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.google.common.collect.Iterables;
 import org.junit.Assert;
@@ -64,13 +65,16 @@ public class DataStorageLifecycleManagerTest {
     private final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
     private final DataStorageLifecycleRuleRepository lifecycleRuleRepository =
             Mockito.mock(DataStorageLifecycleRuleRepository.class);
+    private final DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository =
+            Mockito.mock(DataStorageLifecycleRuleExecutionRepository.class);
     private final StorageLifecycleEntityMapper mapper = Mappers.getMapper(StorageLifecycleEntityMapper.class);
     private final MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
     private final StorageProviderManager providerManager = Mockito.mock(StorageProviderManager.class);
 
 
     private final DataStorageLifecycleManager lifecycleManager = new DataStorageLifecycleManager(
-            messageHelper, mapper, lifecycleRuleRepository, storageManager, providerManager, preferenceManager
+            messageHelper, mapper, lifecycleRuleRepository, lifecycleRuleExecutionRepository,
+            storageManager, providerManager, preferenceManager
     );
 
     @Before
