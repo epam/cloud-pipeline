@@ -178,17 +178,20 @@ class Synchronization(object):
             print 'Error creating directory: {}'.format(error.message)
             return
         
-        command_opts = ""
+        command_opts = []
         # Do not allow to WRITE for any storage which has tools limitations
         # We fully rely on the automatic mounting to the jobs for such storages
         if len(storage.tools_to_mount) > 0:
-            command_opts = "-o ro"
+            command_opts = [ "-o", "ro" ]
         
-        command = ["mount", "-B", storage.mount_source, destination, command_opts]
+        command = ["mount", "-B", storage.mount_source, destination]
+        if len(command_opts) > 0:
+            command = command + command_opts
         print 'Mounting {} storage as {}...'.format(
             storage.name,
             mounted_storage_name
         )
+        print(command)
         code = subprocess.call(command)
         if code == 0:
             print 'Storage mounted: {}'.format(destination)
