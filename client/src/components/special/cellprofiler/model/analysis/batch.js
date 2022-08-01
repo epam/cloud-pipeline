@@ -331,7 +331,7 @@ export async function getBatchJobs (filters = {}) {
     page = 0,
     pageSize = 30,
     userNames = [],
-    measurementUUID
+    source
   } = filters;
   const payload = {
     page: page + 1,
@@ -341,8 +341,8 @@ export async function getBatchJobs (filters = {}) {
   if (userNames.length) {
     payload.owners = userNames.slice();
   }
-  if (measurementUUID) {
-    payload.partialParameters = `${CELLPROFILER_API_BATCH_UUID}=${measurementUUID}`;
+  if (source) {
+    payload.partialParameters = `${CELLPROFILER_API_BATCH_FILE_NAME}=${source}`;
   } else {
     payload.partialParameters = `${CELLPROFILER_API_BATCH}=true`;
   }
