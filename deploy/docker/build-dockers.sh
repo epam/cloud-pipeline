@@ -339,9 +339,9 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:t
 
 # Jupyter
 ## - Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-${DOCKERS_VERSION}" "library/jupyter:conda-2" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7" --build-arg ANACONDA_VERSION="2-latest"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-3-${DOCKERS_VERSION}" "library/jupyter:conda-3" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" "library/jupyter:latest" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-${DOCKERS_VERSION}" "library/jupyter:conda-2" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="2-latest"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-3-${DOCKERS_VERSION}" "library/jupyter:conda-3" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" "library/jupyter:latest" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
 
 ## - CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-cuda9-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-2-cuda9" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="2-latest"
@@ -381,8 +381,8 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST
 
 ## - Centos
 ### -- Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:7" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:latest" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:7" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:latest" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
 
 ### -- CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda9-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:7-cuda9" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7"

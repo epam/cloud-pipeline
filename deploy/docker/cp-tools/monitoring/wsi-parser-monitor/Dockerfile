@@ -1,7 +1,7 @@
 # cd to `cloud-pipeline/deploy/docker/cp-tools/monitoring`
 # docker build -t wsi-parser-monitor:latest -f wsi-parser-monitor/Dockerfile .
 
-ARG BASE_IMAGE=centos:7
+ARG BASE_IMAGE=library/centos:7.7.1908
 FROM $BASE_IMAGE
 
 RUN yum install -y wget \
