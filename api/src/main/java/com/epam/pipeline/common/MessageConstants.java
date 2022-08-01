@@ -289,8 +289,6 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_NFS_PATH_NOT_FOUND = "error.datastorage.nfs.path.not.found";
     public static final String ERROR_DATASTORAGE_CANNOT_CREATE_FILE = "error.datastorage.cannot.set.file.permission";
 
-    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_TEMPLATE_NOT_FOUND =
-            "error.datastirage.lifecycle.rule.template.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND =
             "error.datastirage.lifecycle.rule.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_DEFINE_DAYS_TO_PROLONG =
@@ -313,8 +311,8 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.wrong.notify.before.days";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED =
             "error.datastirage.lifecycle.transition.method.not.specified";
-    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_ROOT_DOESNT_START_WITH =
-            "error.datastirage.lifecycle.root.path.should.start.with";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS =
+            "error.datastirage.lifecycle.rule.already.exists";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

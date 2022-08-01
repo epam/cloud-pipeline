@@ -21,7 +21,6 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.controller.vo.data.storage.UpdateDataStorageItemVO;
 import com.epam.pipeline.controller.vo.security.EntityWithPermissionVO;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.entity.AbstractSecuredEntity;
 import com.epam.pipeline.entity.SecuredEntityWithAction;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -48,7 +47,6 @@ import com.epam.pipeline.manager.datastorage.DataStorageRuleManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageEventsService;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
-import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.security.GrantPermissionManager;
 import com.epam.pipeline.manager.security.acl.AclMask;
 import com.epam.pipeline.manager.security.acl.AclMaskDelegateList;
@@ -83,8 +81,6 @@ public class DataStorageApiService {
     private final TemporaryCredentialsManager temporaryCredentialsManager;
     private final RunMountService runMountService;
     private final Optional<StorageEventsService> eventsService;
-
-    private final DataStorageLifecycleManager storageLifecycleManager;
 
     @StorageAclRead
     public List<AbstractDataStorage> getDataStorages() {
@@ -372,38 +368,5 @@ public class DataStorageApiService {
     @PreAuthorize("hasRole('ADMIN') OR @storagePermissionManager.storagePermissionByName(#id, 'WRITE')")
     public void updateStorageUsage(final String id) {
         eventsService.ifPresent(s -> s.addReindexEvent(id));
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long id) {
-        return storageLifecycleManager.listStorageLifecyclePolicyRules(id);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StorageLifecycleRule createStorageLifecyclePolicyRule(final Long datastorageId,
-                                                                 final StorageLifecycleRule rule) {
-        return storageLifecycleManager.createStorageLifecyclePolicyRule(datastorageId, rule);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StorageLifecycleRule updateStorageLifecyclePolicyRule(final Long datastorageId,
-                                                                 final StorageLifecycleRule rule) {
-        return storageLifecycleManager.updateStorageLifecyclePolicyRule(datastorageId, rule);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StorageLifecycleRule prolongStorageLifecyclePolicyRule(final Long datastorageId,
-                                                                  final Long ruleId, final String path,
-                                                                  final Long daysToProlong) {
-        return storageLifecycleManager.prolongLifecyclePolicyRule(datastorageId, ruleId, path, daysToProlong);
-    }
-
-    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StorageLifecycleRule deleteStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
-        return storageLifecycleManager.deleteStorageLifecyclePolicyRule(datastorageId, ruleId);
-    }
-    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
-        return storageLifecycleManager.loadStorageLifecyclePolicyRule(datastorageId, ruleId);
     }
 }

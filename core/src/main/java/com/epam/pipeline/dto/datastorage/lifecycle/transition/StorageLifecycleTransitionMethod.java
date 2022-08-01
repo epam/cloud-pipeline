@@ -14,13 +14,24 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.repository.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle.transition;
 
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
-import org.springframework.data.repository.CrudRepository;
+/**
+ * Defines approach to transfer files to another Storage Class.
+ * */
+public enum StorageLifecycleTransitionMethod {
+    /**
+     * All eligible files will be transferred together only when earliest file will be eligible for transfer.
+     * */
+    EARLIEST_FILE,
 
-import java.util.List;
+    /**
+     * All eligible files will be transferred together when latest file will be eligible for transfer.
+     * */
+    LATEST_FILE,
 
-public interface DataStorageLifecycleRuleRepository extends CrudRepository<StorageLifecycleRuleEntity, Long> {
-    Iterable<StorageLifecycleRuleEntity> findByDatastorageId(Long datastorageId);
+    /**
+     * Files will be transferred one by one, when they will be eligible for transfer.
+     * */
+    ONE_BY_ONE
 }

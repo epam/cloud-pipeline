@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.repository.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle.execution;
 
-import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
-import org.springframework.data.repository.CrudRepository;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-public interface DataStorageLifecycleRuleRepository extends CrudRepository<StorageLifecycleRuleEntity, Long> {
-    Iterable<StorageLifecycleRuleEntity> findByDatastorageId(Long datastorageId);
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder(toBuilder = true)
+public class StorageLifecycleRuleExecution {
+    private Long id;
+    private Long ruleId;
+    private String path;
+    private List<StorageLifecycleRuleExecutionStatus> statuses;
 }

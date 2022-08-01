@@ -19,8 +19,8 @@ package com.epam.pipeline.mapper.datastorage.lifecycle;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleProlongation;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTransition;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -45,27 +46,42 @@ public interface StorageLifecycleEntityMapper {
     String TRANSITIONS_JSON_TO_DTO = "transitionsJsonToDto";
     String TRANSITIONS_TO_JSON = "transitionsToJson";
 
+    String TRANSITION_CRITERION = "transitionCriterion";
+    String TRANSITION_CRITERION_JSON = "transitionCriterionJson";
+    String TRANSITION_CRITERION_JSON_TO_DTO = "transitionCriterionJsonToDto";
+    String TRANSITION_CRITERION_TO_JSON = "transitionCriterionToJson";
+
     ObjectMapper OBJECT_MAPPER = new JsonMapper();
 
+    @Mapping(source = TRANSITION_CRITERION, target = TRANSITION_CRITERION_JSON,
+            qualifiedByName = TRANSITION_CRITERION_TO_JSON)
     @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = NOTIFICATION_TO_JSON)
     @Mapping(source = TRANSITIONS, target = TRANSITIONS_JSON, qualifiedByName = TRANSITIONS_TO_JSON)
     StorageLifecycleRuleEntity toEntity(StorageLifecycleRule rule);
 
+    @Mapping(source = TRANSITION_CRITERION_JSON, target = TRANSITION_CRITERION,
+            qualifiedByName = TRANSITION_CRITERION_JSON_TO_DTO)
     @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = NOTIFICATION_JSON_TO_DTO)
     @Mapping(source = TRANSITIONS_JSON, target = TRANSITIONS, qualifiedByName = TRANSITIONS_JSON_TO_DTO)
     StorageLifecycleRule toDto(StorageLifecycleRuleEntity policyEntity);
 
     @Named(NOTIFICATION_TO_JSON)
     static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {
+        if (notification == null) {
+            return null;
+        }
         return OBJECT_MAPPER.writeValueAsString(notification);
     }
 
     @Named(NOTIFICATION_JSON_TO_DTO)
     static StorageLifecycleNotification notificationJsonToDto(final String notificationJson) throws IOException {
+        if (StringUtils.isEmpty(notificationJson)) {
+            return null;
+        }
         return OBJECT_MAPPER.readValue(notificationJson, new TypeReference<StorageLifecycleNotification>(){});
     }
 
-    @Named(NOTIFICATION_TO_JSON)
+    @Named(TRANSITIONS_TO_JSON)
     static String transitionsToJson(final List<StorageLifecycleRuleTransition> transitions)
             throws JsonProcessingException {
         return OBJECT_MAPPER.writeValueAsString(transitions);
@@ -74,6 +90,27 @@ public interface StorageLifecycleEntityMapper {
     @Named(TRANSITIONS_JSON_TO_DTO)
     static List<StorageLifecycleRuleTransition> transitionsJsonToDto(final String transitionsJson) throws IOException {
         return OBJECT_MAPPER.readValue(transitionsJson, new TypeReference<List<StorageLifecycleRuleTransition>>(){});
+    }
+
+    @Named(TRANSITION_CRITERION_TO_JSON)
+    static String transitionCriterionToJson(final StorageLifecycleTransitionCriterion transitionCriterion)
+            throws JsonProcessingException {
+        if (transitionCriterion == null) {
+            return null;
+        }
+        return OBJECT_MAPPER.writeValueAsString(transitionCriterion);
+    }
+
+    @Named(TRANSITION_CRITERION_JSON_TO_DTO)
+    static StorageLifecycleTransitionCriterion transitionCriterionJsonToDto(
+            final String transitionCriterionJson) throws IOException {
+        if (StringUtils.isEmpty(transitionCriterionJson)) {
+            return null;
+        }
+        return OBJECT_MAPPER.readValue(
+                transitionCriterionJson,
+                new TypeReference<StorageLifecycleTransitionCriterion>(){}
+        );
     }
 
 }

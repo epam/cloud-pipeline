@@ -16,6 +16,9 @@
 
 package com.epam.pipeline.dto.datastorage.lifecycle;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -65,9 +68,12 @@ import java.util.List;
  *        "pathGlob": "/data/",
  *        "objectGlob": "*.csv",
  *        "transitionMethod": "LATEST_FILE",
+ *        "transitionCriterion": {
+ *            "type": "MATCHING_FILES",
+ *            "value": "*.pdf",
+ *        },
  *        "transitions": [
  *             {
- *                 "glob": "*.pdf",
  *                 "transitionAfterDays": 10,
  *                 "storageClass": Glacier
  *             }
@@ -89,6 +95,7 @@ public class StorageLifecycleRule {
     private Long datastorageId;
     private String pathGlob;
     private String objectGlob;
+    private StorageLifecycleTransitionCriterion transitionCriterion;
     private StorageLifecycleTransitionMethod transitionMethod;
     private List<StorageLifecycleRuleProlongation> prolongations;
     private List<StorageLifecycleRuleTransition> transitions;

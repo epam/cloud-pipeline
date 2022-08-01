@@ -16,48 +16,29 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle;
 
-import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
-import java.util.List;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "datastorage_lifecycle_rule", schema = "pipeline")
-public class StorageLifecycleRuleEntity {
+@Table(name = "datastorage_lifecycle_rule_execution", schema = "pipeline")
+public class StorageLifecycleRuleExecutionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long datastorageId;
-
-    @Enumerated(EnumType.STRING)
-    private StorageLifecycleTransitionMethod transitionMethod;
-
-    private String transitionCriterionJson;
-
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL,
-            mappedBy = "lifecycleRule", orphanRemoval = true)
-    private List<StorageLifecycleRuleProlongationEntity> prolongations;
-
-    private String pathGlob;
-    private String objectGlob;
-    private String transitionsJson;
-    private String notificationJson;
+    private Long ruleId;
+    private String path;
+    private String statusesJson;
 }

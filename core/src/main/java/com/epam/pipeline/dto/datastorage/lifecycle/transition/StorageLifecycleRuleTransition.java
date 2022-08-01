@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.dto.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle.transition;
 
 import lombok.Builder;
 import lombok.Value;
@@ -27,13 +27,6 @@ import java.time.LocalDate;
 @Value
 @Builder(toBuilder = true)
 public class StorageLifecycleRuleTransition {
-
-    /**
-     * If specified, eligibility to transfer files from {@link StorageLifecycleRule} will be checked against files that match this glob
-
-     * See example in {@link StorageLifecycleRule}
-     * */
-    String glob;
 
     /**
      * Number of days after which a rule will be applied.

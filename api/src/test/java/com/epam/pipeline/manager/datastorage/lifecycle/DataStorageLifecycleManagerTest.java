@@ -18,14 +18,15 @@ package com.epam.pipeline.manager.datastorage.lifecycle;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRuleTransition;
-import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleTransitionMethod;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
+import com.google.common.collect.Iterables;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,6 +37,7 @@ import java.util.Collections;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 
 public class DataStorageLifecycleManagerTest {
 
@@ -77,9 +79,14 @@ public class DataStorageLifecycleManagerTest {
                 .when(storageManager)
                 .load(Mockito.anyLong());
 
+        Mockito.doReturn(Iterables.cycle())
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+
         Mockito.doReturn(mapper.toEntity(RULE_WITH_ID))
                 .when(lifecycleRuleRepository)
                 .save(any(StorageLifecycleRuleEntity.class));
+
         Mockito.doReturn(mapper.toEntity(RULE_WITH_ID))
                 .when(lifecycleRuleRepository)
                 .findOne(RULE_WITH_ID.getId());
