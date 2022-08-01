@@ -148,10 +148,11 @@ class CellProfilerJobs extends React.Component {
   };
 
   checkSize = () => {
+    const {pending, error} = this.state;
     cancelAnimationFrame(this.containerSizeChecker);
     if (this.container) {
       const height = this.container.clientHeight;
-      if (height !== this.componentHeight) {
+      if (!pending && !error && (height !== this.componentHeight)) {
         this.componentHeight = height;
         const DEFAULT_HEIGHT_PX = 46;
         const newPageSize = Math.floor(height / DEFAULT_HEIGHT_PX);

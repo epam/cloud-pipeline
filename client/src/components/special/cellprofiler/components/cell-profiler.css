@@ -321,6 +321,7 @@
 .cell-profiler-jobs-filter-row {
   display: flex;
   align-items: center;
+  margin-bottom: 3px;
 }
 
 .cell-profiler-jobs-filter {

@@ -18,10 +18,23 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import UsersRolesSelect from '../../../users-roles-select';
 import Collapse from '../collapse';
+import DelayedInput from '../../../DelayedInput';
 import UserName from '../../../UserName';
 import styles from '../cell-profiler.css';
 
 class CellProfilerJobsFilters extends React.Component {
+  onChangeFiltersField = (field) => (value) => {
+    const {
+      filters = {},
+      onChange
+    } = this.props;
+    if (typeof onChange === 'function' && field) {
+      onChange({
+        ...filters,
+        [field]: value
+      });
+    }
+  };
   render () {
     const {
       className,
@@ -30,7 +43,8 @@ class CellProfilerJobsFilters extends React.Component {
       onChange
     } = this.props;
     const {
-      userNames = []
+      userNames = [],
+      source = ''
     } = filters;
     const onChangeUserNames = (newUserNames = []) => {
       const names = newUserNames.map(o => o.name);
@@ -87,6 +101,15 @@ class CellProfilerJobsFilters extends React.Component {
             className={styles.cellProfilerJobsFilter}
             value={userNames.map(o => ({principal: true, name: o}))}
             onChange={onChangeUserNames}
+          />
+        </div>
+        <div className={styles.cellProfilerJobsFilterRow}>
+          <b>File name:</b>
+          <DelayedInput
+            className={styles.cellProfilerJobsFilter}
+            onChange={this.onChangeFiltersField('source')}
+            value={source}
+            delay={500}
           />
         </div>
       </Collapse>
