@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -177,7 +177,14 @@ class Synchronization(object):
         except OSError as error:
             print 'Error creating directory: {}'.format(error.message)
             return
-        command = ["mount", "-B", storage.mount_source, destination]
+        
+        command_opts = ""
+        # Do not allow to WRITE for any storage which has tools limitations
+        # We fully rely on the automatic mounting to the jobs for such storages
+        if len(storage.tools_to_mount) > 0:
+            command_opts = "-o ro"
+        
+        command = ["mount", "-B", storage.mount_source, destination, command_opts]
         print 'Mounting {} storage as {}...'.format(
             storage.name,
             mounted_storage_name
