@@ -83,6 +83,7 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
     private String loadDataStoragesByIdsQuery;
     private String loadDataStoragesFileShareId;
     private String loadToolsToMountQuery;
+    private String loadToolsToMountByIdsQuery;
     private String loadToolsToMountsForAllStoragesQuery;
     private String deleteToolsToMountQuery;
     private String addToolVersionToMountQuery;
@@ -174,6 +175,14 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         return storages;
     }
 
+    public Map<Long, List<ToolFingerprint>> loadToolsToMountForStorages(final List<Long> ids) {
+        final MapSqlParameterSource params = new MapSqlParameterSource();
+        params.addValue(DataStorageParameters.DATASTORAGE_IDS.name(), ids);
+        return getNamedParameterJdbcTemplate()
+                .query(loadToolsToMountByIdsQuery, params,
+                        DataStorageParameters.getToolsToMountForAllStorageRowMapper());
+    }
+
     public List<ToolFingerprint> loadToolsToMountForStorage(Long id) {
         return getJdbcTemplate().query(loadToolsToMountQuery, DataStorageParameters.getToolsToMountRowMapper(), id);
     }
@@ -252,7 +261,12 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
         int size = pageSize == null ? 0 : pageSize;
         int offset = page == null ? 0 : (page - 1) * size;
         query = offsetPattern.matcher(query).replaceFirst(String.valueOf(offset));
-        return getJdbcTemplate().query(query, DataStorageParameters.getDataStorageWithFolderTreeExtractor());
+        final Collection<AbstractDataStorage> storages = getJdbcTemplate()
+                .query(query, DataStorageParameters.getDataStorageWithFolderTreeExtractor());
+        final Map<Long, List<ToolFingerprint>> toolsToMountForStorages = loadToolsToMountForStorages(
+                storages.stream().map(s -> s.getId()).collect(Collectors.toList()));
+        storages.forEach(storage -> storage.setToolsToMount(toolsToMountForStorages.get(storage.getId())));
+        return storages;
     }
 
     public AbstractDataStorage loadStorageWithParents(final Long id) {
@@ -381,6 +395,10 @@ public class DataStorageDao extends NamedParameterJdbcDaoSupport {
 
     public void setLoadToolsToMountsForAllStoragesQuery(String loadToolsToMountsForAllStoragesQuery) {
         this.loadToolsToMountsForAllStoragesQuery = loadToolsToMountsForAllStoragesQuery;
+    }
+
+    public void setLoadToolsToMountByIdsQuery(String loadToolsToMountByIdsQuery) {
+        this.loadToolsToMountByIdsQuery = loadToolsToMountByIdsQuery;
     }
 
     public enum DataStorageParameters {
