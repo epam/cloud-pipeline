@@ -18,6 +18,7 @@ const AnalysisTypes = {
   integer: 'integer',
   float: 'float',
   units: 'units',
+  units2: 'units2', // square units
   string: 'string',
   boolean: 'boolean',
   file: 'file',

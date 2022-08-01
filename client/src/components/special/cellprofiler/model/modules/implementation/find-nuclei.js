@@ -15,6 +15,10 @@
  */
 /* eslint-disable max-len */
 import {thresholding} from './common';
+import {
+  filterObjectsBySizeParameters,
+  wrapLastModuleWithFilterObjectsModule
+} from './object-processing/filter-objects';
 
 const {
   parameters: thresholdingParameters,
@@ -28,15 +32,16 @@ const findNuclei = {
   parameters: [
     'Select the input image|file|ALIAS input|REQUIRED',
     'Objects name|string|Nuclei|ALIAS name|REQUIRED',
+    ...filterObjectsBySizeParameters,
     'Downsample|flag|false|ADVANCED|ALIAS downsample',
     'Downsample factor, %|float(0, 100)|50|ADVANCED|IF downsample==true|ALIAS downsampleFactor',
-    'Holes size|units|10|ADVANCED|ALIAS holeSize|PARAMETER Remove holes of size, px',
+    'Fill holes of size|units|10|ADVANCED|ALIAS holeSize|PARAMETER Remove holes of size, px',
     ...thresholdingParameters
   ],
   output: 'name|object',
   sourceImageParameter: 'input',
   composed: true,
-  subModules: [
+  subModules: (cpModule) => [
     {
       alias: 'rescale',
       module: 'RescaleIntensity',
@@ -106,24 +111,27 @@ const findNuclei = {
         downsample: 2
       }
     },
-    {
-      alias: 'resizeObjects',
-      module: 'ResizeObjects',
-      values: {
-        input: '{watershed.output}|COMPUTED',
-        output: '{parent.name}|COMPUTED',
-        factor: (module, modules) => {
-          const resize = modules.resize;
-          if (resize) {
-            const value = Number(resize.getParameterValue('factor'));
-            if (!Number.isNaN(value) && value > 0) {
-              return 1.0 / value;
+    ...wrapLastModuleWithFilterObjectsModule(
+      cpModule,
+      {
+        alias: 'resizeObjects',
+        module: 'ResizeObjects',
+        values: {
+          input: '{watershed.output}|COMPUTED',
+          output: '{parent.name}|COMPUTED',
+          factor: (module, modules) => {
+            const resize = modules.resize;
+            if (resize) {
+              const value = Number(resize.getParameterValue('factor'));
+              if (!Number.isNaN(value) && value > 0) {
+                return 1.0 / value;
+              }
             }
+            return 1;
           }
-          return 1;
         }
       }
-    }
+    )
   ]
 };
 

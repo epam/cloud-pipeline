@@ -39,11 +39,27 @@ export default class PhysicalSize {
     return p / this.unitsInPixel;
   }
 
+  getSquarePixels (physicalSize) {
+    if (physicalSize === undefined || Number.isNaN(Number(physicalSize))) {
+      return physicalSize;
+    }
+    const p = Number(physicalSize);
+    return p / Math.pow(this.unitsInPixel, 2);
+  }
+
   getPhysicalSize (pixels) {
     if (pixels === undefined || Number.isNaN(Number(pixels))) {
       return pixels;
     }
     const p = Number(pixels);
     return p * this.unitsInPixel;
+  }
+
+  getSquarePhysicalSize (pixels) {
+    if (pixels === undefined || Number.isNaN(Number(pixels))) {
+      return pixels;
+    }
+    const p = Number(pixels);
+    return p * Math.pow(this.unitsInPixel, 2);
   }
 }

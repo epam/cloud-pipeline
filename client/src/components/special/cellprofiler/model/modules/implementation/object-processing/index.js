@@ -15,6 +15,9 @@
  */
 
 import ConvertObjectsToImage from './convert-objects-to-image';
+import FilterObjects, {
+  FilterObjectsBySize
+} from './filter-objects';
 import IdentifyPrimaryObjects from './identify-primary-objects';
 import IdentifySecondaryObjects from './identify-secondary-objects';
 import IdentifyTertiaryObjects from './identify-tertiary-objects';
@@ -24,6 +27,8 @@ import ResizeObjects from './resize-objects';
 
 export default [
   ConvertObjectsToImage,
+  FilterObjects,
+  FilterObjectsBySize,
   IdentifyPrimaryObjects,
   IdentifySecondaryObjects,
   IdentifyTertiaryObjects,

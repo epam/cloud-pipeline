@@ -57,9 +57,9 @@ const untangleWorms = {
   output: 'object ("Name the output non-overlapping worm objects")',
   outputs: [
     'overlapping|object|IF (overlap==Both OR overlap=="With overlap")',
-    'overlappedImage|file|IF (retain==true AND (overlap==Both OR overlap=="With overlap")',
+    'overlappedImage|file|IF (retain==true AND (overlap==Both OR overlap=="With overlap"))',
     'nonOverlapping|object|IF (overlap==Both OR overlap=="Without overlap")',
-    'nonOverlappedImage|file|IF (retainNonOverlapping==true AND (overlap==Both OR overlap=="Without overlap")'
+    'nonOverlappedImage|file|IF (retainNonOverlapping==true AND (overlap==Both OR overlap=="Without overlap"))'
   ],
   parameters: [
     'Train or untangle worms?|[Untangle,Train]|Untangle',

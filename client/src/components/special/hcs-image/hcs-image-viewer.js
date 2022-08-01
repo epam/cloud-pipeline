@@ -33,7 +33,8 @@ const DEFAULT_CHANNELS_COLORS = {
   'Alexa 647': [196, 3, 3],
   'Alexa 680': [118, 10, 3],
   'Alexa 750': [0, 228, 228],
-  'Alexa 790': [161, 1, 209]
+  'Alexa 790': [161, 1, 209],
+  'GFP': [54, 255, 0]
 };
 
 function readChannelsColorsFromStore () {

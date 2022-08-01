@@ -259,7 +259,8 @@ class CellProfilerParameter extends React.Component {
         return this.renderStringControl();
       case AnalysisTypes.integer:
       case AnalysisTypes.float:
-      case AnalysisTypes.units: {
+      case AnalysisTypes.units:
+      case AnalysisTypes.units2: {
         if (
           parameterValue.parameter.range &&
           parameterValue.parameter.range.min !== undefined &&
@@ -291,7 +292,7 @@ class CellProfilerParameter extends React.Component {
       return null;
     }
     if (
-      parameterValue.parameter.type === AnalysisTypes.units &&
+      [AnalysisTypes.units, AnalysisTypes.units2].includes(parameterValue.parameter.type) &&
       parameterValue.parameter.cpModule &&
       parameterValue.parameter.cpModule.pipeline &&
       parameterValue.parameter.cpModule.pipeline.physicalSize
@@ -299,6 +300,11 @@ class CellProfilerParameter extends React.Component {
       return (
         <span className={styles.units}>
           {parameterValue.parameter.cpModule.pipeline.physicalSize.unit}
+          {
+            parameterValue.parameter.type === AnalysisTypes.units2 && (
+              <sup>2</sup>
+            )
+          }
         </span>
       );
     }

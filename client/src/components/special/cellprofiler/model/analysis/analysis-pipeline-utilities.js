@@ -13,10 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
+/* eslint-disable no-unused-vars */
+import {isObservableArray} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import {AnalysisModule} from '../modules/base';
 import {getOutputFileAccessInfo} from './output-utilities';
+import {
+  isIntensityMeasurement,
+  isShapeMeasurement
+} from '../parameters/measurements';
 
 /**
  * @param {AnalysisApi} api
@@ -116,11 +121,125 @@ function extractModules (module) {
               cpModule.setParameterValue(parameter, value);
             }
           });
-          result.push(cpModule);
+          result.push(...extractModules(cpModule));
         }
       });
     }
   }
+  return result;
+}
+
+/**
+ * @param {string} outputType
+ * @returns {function(AnalysisModule): boolean}
+ */
+function getCriteriaByOutputType (outputType) {
+  return function filter (aModule) {
+    return aModule.outputs.some(output => outputType === output.type);
+  };
+}
+/**
+ * @param {AnalysisModule} aModule
+ * @param {string} outputType
+ * @returns {string[]}
+ */
+function getOutputNamesOfType (aModule, outputType) {
+  return aModule.outputs
+    .filter(output => outputType === output.type)
+    .map(output => output.name);
+}
+/**
+ * @param {string} moduleName
+ * @returns {function(AnalysisModule): boolean}
+ */
+function getCriteriaByModuleName (moduleName) {
+  return function filter (aModule) {
+    return aModule.name === moduleName;
+  };
+}
+
+/**
+ * @param {AnalysisModule[]} modules
+ * @param {AnalysisModule[]} result
+ * @param {function(AnalysisModule):boolean} criteria
+ * @param {function(AnalysisModule):AnalysisModule[]} generator
+ * @param {boolean} [before=false]
+ */
+const appendUsingCriteria = (modules, result, criteria, generator, before = false) => {
+  const match = modules.filter(criteria);
+  match.forEach(matched => {
+    const index = result.indexOf(matched);
+    if (index >= 0) {
+      const generated = generator(matched);
+      generated.forEach(generatedModule => {
+        generatedModule.parentModule = matched;
+      });
+      if (before) {
+        result.splice(index, 1, ...generated, matched);
+      } else {
+        result.splice(index, 1, matched, ...generated);
+      }
+    }
+  });
+};
+
+/**
+ * @param {AnalysisModule[]} modules
+ * @returns {AnalysisModule[]}
+ */
+function appendRequiredModules (modules) {
+  const result = [...modules];
+  /**
+   * @param {AnalysisModule} filterObjectsModule
+   * @returns {AnalysisModule[]}
+   */
+  function generateMeasurementModules (filterObjectsModule) {
+    const objectName = filterObjectsModule.getParameterValue('input');
+    const objectSourceImage = filterObjectsModule && filterObjectsModule.pipeline
+      ? filterObjectsModule.pipeline.getSourceImageForObjet(objectName)
+      : undefined;
+    const measurements = filterObjectsModule.getParameterValue('measurements');
+    const measurementModules = new Set();
+    if (measurements && (Array.isArray(measurements) || isObservableArray(measurements))) {
+      measurements.forEach(({measurement}) => {
+        let type;
+        if (isShapeMeasurement(measurement)) {
+          type = 'shape';
+        } else if (isIntensityMeasurement(measurement)) {
+          type = 'intensity';
+        }
+        measurementModules.add(type);
+      });
+    }
+    return [...measurementModules].map(group => {
+      const id = `${filterObjectsModule.id}_${objectName}_`;
+      switch (group) {
+        case 'shape':
+          return AnalysisModule.createModule('MeasureObjectSizeShape', {
+            objects: [objectName],
+            zernike: true,
+            advancedFeatures: true
+          }, {id: `${id}_size`});
+        case 'intensity':
+          if (objectSourceImage) {
+            return AnalysisModule.createModule('MeasureObjectIntensity', {
+              objects: [objectName],
+              images: [objectSourceImage]
+            }, {id: `${id}_intensity`});
+          }
+          return undefined;
+        default:
+          return undefined;
+      }
+    }).filter(Boolean);
+  }
+  appendUsingCriteria(
+    modules,
+    result,
+    getCriteriaByModuleName('FilterObjects'),
+    generateMeasurementModules,
+    true
+  );
   return result;
 }
 
@@ -135,42 +254,6 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
     return {modules: modules.slice()};
   }
   const result = [...modules];
-  /**
-   * @param {function(AnalysisModule):boolean} criteria
-   * @param {function(AnalysisModule):AnalysisModule[]} generator
-   */
-  const appendUsingCriteria = (criteria, generator) => {
-    const match = modules.filter(criteria);
-    match.forEach(matched => {
-      const index = result.indexOf(matched);
-      if (index >= 0) {
-        const generated = generator(matched);
-        generated.forEach(generatedModule => {
-          generatedModule.parentModule = matched;
-        });
-        result.splice(index, 1, matched, ...generated);
-      }
-    });
-  };
-  /**
-   * @param {string} outputType
-   * @returns {function(AnalysisModule): boolean}
-   */
-  function getCriteriaByOutputType (outputType) {
-    return function filter (aModule) {
-      return aModule.outputs.some(output => outputType === output.type);
-    };
-  }
-  /**
-   * @param {AnalysisModule} aModule
-   * @param {string} outputType
-   * @returns {string[]}
-   */
-  function getOutputNamesOfType (aModule, outputType) {
-    return aModule.outputs
-      .filter(output => outputType === output.type)
-      .map(output => output.name);
-  }
   const metadata = {
     objectImages: {},
     objectBackgrounds: {}
@@ -246,10 +329,14 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
     return generated;
   }
   appendUsingCriteria(
+    modules,
+    result,
     getCriteriaByOutputType(AnalysisTypes.object),
     generateObjectsModules
   );
   appendUsingCriteria(
+    modules,
+    result,
     getCriteriaByOutputType(AnalysisTypes.file),
     generateFilesModules
   );
@@ -634,7 +721,7 @@ export default async function runAnalysisPipeline (
     modules: allModules,
     metadata
   } = appendExtraOutputModules(modules, inputs[0], objectsOutput);
-  const analysis = getPipelineModules(allModules);
+  const analysis = appendRequiredModules(getPipelineModules(allModules));
   if (analysis.length === 0) {
     return {results: [], cache};
   }
@@ -655,11 +742,9 @@ export default async function runAnalysisPipeline (
       }
     }
   };
-  if (debug) {
-    await runPipelineModules(api, pipelineId, ids, runCallback);
-  } else {
-    await runPipeline(api, pipelineId);
-  }
+  // todo: submit only required modules (if "debug" mode)
+  // await runPipelineModules(api, pipelineId, ids, runCallback);
+  await runPipeline(api, pipelineId);
   const info = await fetchStatusUntilDone(api, pipelineId);
   runCallback();
   if (!info) {

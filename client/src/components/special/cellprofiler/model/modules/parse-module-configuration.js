@@ -17,7 +17,7 @@
 /* eslint-disable max-len */
 
 import {AnalysisTypes} from '../common/analysis-types';
-import { isObservableArray } from "mobx";
+import {isObservableArray} from 'mobx';
 
 const brackets = ['[]', '()', '{}', '""'];
 const splitCharacters = [',|'];
@@ -208,7 +208,7 @@ function processQuotes (parts) {
 function processCondition (conditionParts) {
   const conditionString = joinParts(conditionParts);
   const parsed = processQuotes(
-    breakLine(conditionString, /(\(|\)|[\s()]+and[\s()]+|[\s()]+or[\s()]+|===|!==|==|!=|>=|<=|>|<|")/i)
+    breakLine(conditionString, /(\(|\)|[\s]+and[\s]+|[\s]+or[\s]+|===|!==|==|!=|>=|<=|>|<|")/i)
   );
   function generateCondition (parts) {
     if (typeof parts === 'object' && parts.open === '(') {
@@ -353,6 +353,8 @@ function getParameterType (typeParts) {
         return {type: AnalysisTypes.float};
       case 'units':
         return {type: AnalysisTypes.units};
+      case 'units2':
+        return {type: AnalysisTypes.units2};
       case 'color':
         return {type: AnalysisTypes.color};
       case 'object':
@@ -383,7 +385,12 @@ function getParameterType (typeParts) {
     if (
       additionalPart &&
       ['[', '('].includes(additionalPart.open) &&
-      [AnalysisTypes.integer, AnalysisTypes.float, AnalysisTypes.units].includes(typeDefinition.type)
+      [
+        AnalysisTypes.integer,
+        AnalysisTypes.float,
+        AnalysisTypes.units,
+        AnalysisTypes.units2
+      ].includes(typeDefinition.type)
     ) {
       const [
         startStr = '-Infinity',
@@ -501,14 +508,19 @@ function processParameter (input) {
     multiple,
     emptyValue: empty
   };
-  if (type.type === AnalysisTypes.units) {
+  if (
+    type.type === AnalysisTypes.units ||
+    type.type === AnalysisTypes.units2
+  ) {
     const unitsAlias = `${alias}Units`;
     const pixelsParameter = {
       ...parameter,
       local: false,
       type: AnalysisTypes.float,
       hidden: true,
-      computed: `{${unitsAlias}:pixels}`,
+      computed: type.type === AnalysisTypes.units
+        ? `{${unitsAlias}:pixels}`
+        : `{${unitsAlias}:pixels2}`,
       exportParameter: false
     };
     parameter.local = true;
@@ -620,11 +632,23 @@ function modification (o, singleModifier, pipeline) {
     case 'pixels':
       if (
         o !== undefined &&
-        o !== '' && !Number.isNaN(o) &&
+        o !== '' &&
+        !Number.isNaN(Number(o)) &&
         pipeline &&
         pipeline.physicalSize
       ) {
         return pipeline.physicalSize.getPixels(Number(o));
+      }
+      return o;
+    case 'pixels2':
+      if (
+        o !== undefined &&
+        o !== '' &&
+        !Number.isNaN(Number(o)) &&
+        pipeline &&
+        pipeline.physicalSize
+      ) {
+        return pipeline.physicalSize.getSquarePixels(Number(o));
       }
       return o;
     default:
@@ -654,6 +678,16 @@ function reverseModification (o, singleModifier, pipeline) {
         pipeline.physicalSize
       ) {
         return pipeline.physicalSize.getPhysicalSize(Number(o));
+      }
+      return o;
+    case 'pixels2':
+      if (
+        o !== undefined &&
+        o !== '' && !Number.isNaN(o) &&
+        pipeline &&
+        pipeline.physicalSize
+      ) {
+        return pipeline.physicalSize.getSquarePhysicalSize(Number(o));
       }
       return o;
     default:

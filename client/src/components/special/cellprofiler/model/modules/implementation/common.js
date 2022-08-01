@@ -56,8 +56,8 @@ const thresholding = (options = {}) => {
       'Configure threshold|flag|false|ALIAS configureThreshold|ADVANCED',
       `Thresholding method|["Manual","Minimum Cross-Entropy","Adaptive Minimum Cross-Entropy","Otsu (two classes)","Otsu (three classes)","Adaptive Otsu (two classes)","Adaptive Otsu (three classes)",Savuola]|${method}|ADVANCED|ALIAS thresholdingMethod|IF configureThreshold==true`,
       // Thresholding - common
-      'Threshold smoothing scale|float(0,2)|1.3488|ALIAS thresholdSmoothingScale|ADVANCED|IF configureThreshold==true',
-      'Threshold correction factor|float(0,2)|1.0|IF thresholdingMethod!==Manual AND configureThreshold==true|ALIAS thresholdCorrectionFactor|ADVANCED',
+      'Threshold smoothing scale|float|1.3488|ALIAS thresholdSmoothingScale|ADVANCED|IF configureThreshold==true',
+      'Threshold correction factor|float|1.0|IF thresholdingMethod!==Manual AND configureThreshold==true|ALIAS thresholdCorrectionFactor|ADVANCED',
       `Adaptive size|units|10|IF configureThreshold==true AND ${adaptiveThresholdingIf}|ALIAS adaptive|ADVANCED`,
       `Manual threshold|${manualThresholdType}|${manualDefault}|IF ${globalThresholdingIf}|ALIAS manualThreshold|ADVANCED`
     ],

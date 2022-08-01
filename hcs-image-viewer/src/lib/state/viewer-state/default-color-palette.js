@@ -33,6 +33,9 @@ function correctWellKnownChannelName(channelName) {
       return `Alexa ${e[1]}`;
     }
   }
+  if (/^gfp$/i.test(channelName)) {
+    return 'GFP';
+  }
   return channelName;
 }
 
