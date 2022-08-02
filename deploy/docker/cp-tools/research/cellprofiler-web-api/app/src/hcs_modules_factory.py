@@ -85,7 +85,7 @@ from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, 
     HiddenCount
 from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
 
-from modules.define_results import DefineResults, SpecItem
+from .modules.define_results import DefineResults, SpecItem
 
 
 def prepare_input_path(input_path, cloud_scheme='s3'):
