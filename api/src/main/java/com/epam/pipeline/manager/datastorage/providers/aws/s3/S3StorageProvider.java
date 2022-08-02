@@ -25,6 +25,7 @@ import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -394,6 +395,12 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             Assert.isTrue(!(t.getTransitionAfterDays() != null && t.getTransitionDate() != null),
                     "Only transitionAfterDays or transitionDate could be provided, but not both!");
         });
+    }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(execution.getStorageClass()),
+                "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

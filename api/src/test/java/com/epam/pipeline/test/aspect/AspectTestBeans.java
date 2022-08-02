@@ -101,6 +101,7 @@ import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.ontology.OntologyRepository;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
@@ -379,6 +380,9 @@ public class AspectTestBeans {
 
     @MockBean
     protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+
+    @MockBean
+    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
 
     @MockBean
     protected PreferenceDao mockPreferenceDao;

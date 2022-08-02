@@ -34,5 +34,5 @@ public class StorageLifecycleRuleExecution {
     private String path;
     private LocalDateTime updated;
     private StorageLifecycleRuleExecutionStatus status;
-    private String storageType;
+    private String storageClass;
 }

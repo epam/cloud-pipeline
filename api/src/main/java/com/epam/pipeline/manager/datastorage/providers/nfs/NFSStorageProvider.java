@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.datastorage.providers.nfs;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorageItem;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -517,6 +518,12 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     public void verifyStorageLifecyclePolicyRule(final StorageLifecycleRule rule) {
         throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
     }
+
+    @Override
+    public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
+        throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
+    }
+
     private String encodeUrl(final String path) {
         try {
             return URLEncoder.encode(path, StandardCharsets.UTF_8.toString());

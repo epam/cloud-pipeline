@@ -22,6 +22,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
@@ -177,10 +178,7 @@ public class DataStorageLifecycleManager {
         final StorageLifecycleRuleEntity ruleEntity = loadLifecycleRuleEntity(ruleId);
         execution.setRuleId(ruleEntity.getId());
         execution.setUpdated(DateUtils.nowUTC());
-        Assert.notNull(execution.getPath(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED));
-        Assert.isTrue(PATH_MATCHER.match(ruleEntity.getPathGlob(), execution.getPath()),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB));
+        verifyLifecycleRuleExecutionObject(execution, ruleEntity);
         final StorageLifecycleRuleExecutionEntity saved =
                 dataStorageLifecycleRuleExecutionRepository.save(lifecycleEntityMapper.toEntity(execution));
         return lifecycleEntityMapper.toDto(saved);
@@ -203,7 +201,7 @@ public class DataStorageLifecycleManager {
     public List<StorageLifecycleRuleExecution> listStorageLifecycleRuleExecutionsForRuleAndPath(
             final Long ruleId, final String path) {
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
-        if (path == null) {
+        if (StringUtils.isEmpty(path)) {
             return StreamSupport.stream(dataStorageLifecycleRuleExecutionRepository
                             .findByRuleId(lifecycleRuleEntity.getId()).spliterator(), false
                     ).map(lifecycleEntityMapper::toDto)
@@ -308,8 +306,36 @@ public class DataStorageLifecycleManager {
         Assert.notNull(rule.getTransitionMethod(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED));
+        verifyLifecycleRuleTransitionCriterion(rule.getTransitionCriterion());
         verifyNotification(rule.getNotification());
         storageProviderManager.verifyStorageLifecycleRule(dataStorage, rule);
+    }
+
+    private void verifyLifecycleRuleTransitionCriterion(
+            final StorageLifecycleTransitionCriterion transitionCriterion) {
+        if (transitionCriterion == null) {
+            return;
+        }
+        switch (transitionCriterion.getType()) {
+            case MATCHING_FILES:
+                Assert.notNull(
+                        transitionCriterion.getValue(),
+                        messageHelper.getMessage(
+                                MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void verifyLifecycleRuleExecutionObject(
+            final StorageLifecycleRuleExecution execution, final StorageLifecycleRuleEntity ruleEntity) {
+        Assert.notNull(execution.getPath(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED));
+        Assert.isTrue(PATH_MATCHER.match(ruleEntity.getPathGlob(), execution.getPath()),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB));
+        final AbstractDataStorage dataStorage = storageManager.load(ruleEntity.getDatastorageId());
+        storageProviderManager.verifyStorageLifecycleRuleExecution(dataStorage, execution);
     }
 
     private void verifyNotification(final StorageLifecycleNotification notification) {

@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -131,4 +132,5 @@ public interface StorageProvider<T extends AbstractDataStorage> {
 
     void verifyStorageLifecyclePolicyRule(StorageLifecycleRule rule);
 
+    void verifyStorageLifecycleRuleExecution(StorageLifecycleRuleExecution execution);
 }

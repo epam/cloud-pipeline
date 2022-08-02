@@ -49,5 +49,5 @@ public class StorageLifecycleRuleExecutionEntity {
     @Enumerated(EnumType.STRING)
     private StorageLifecycleRuleExecutionStatus status;
 
-    private String storageType;
+    private String storageClass;
 }

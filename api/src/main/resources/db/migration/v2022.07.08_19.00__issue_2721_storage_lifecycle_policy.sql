@@ -23,5 +23,5 @@ CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_rule_execution(
     path TEXT NOT NULL,
     updated TIMESTAMP WITH TIME ZONE DEFAULT NULL,
     status TEXT NOT NULL,
-    storage_type TEXT NOT NULL
+    storage_class TEXT NOT NULL
 );

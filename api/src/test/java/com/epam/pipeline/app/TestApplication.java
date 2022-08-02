@@ -34,6 +34,7 @@ import com.epam.pipeline.manager.quota.QuotaService;
 import com.epam.pipeline.manager.scheduling.AutowiringSpringBeanJobFactory;
 import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
@@ -156,6 +157,9 @@ public class TestApplication {
 
     @MockBean
     protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+
+    @MockBean
+    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
 
     @MockBean
     public OnlineUsersService onlineUsersService;

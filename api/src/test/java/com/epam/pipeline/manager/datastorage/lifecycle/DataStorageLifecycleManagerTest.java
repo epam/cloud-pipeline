@@ -18,9 +18,13 @@ package com.epam.pipeline.manager.datastorage.lifecycle;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
+import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
@@ -32,8 +36,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mapstruct.factory.Mappers;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
@@ -43,7 +49,7 @@ import static org.mockito.Matchers.eq;
 public class DataStorageLifecycleManagerTest {
 
     public static final long ID = 1L;
-    public static final String ROOT = "/";
+    public static final String ROOT = "/data/**/dataset*";
     public static final String STORAGE_CLASS = "Glacier";
     public static final String OBJECT_GLOB = "*.txt";
     public static final StorageLifecycleRule RULE = StorageLifecycleRule.builder()
@@ -83,7 +89,7 @@ public class DataStorageLifecycleManagerTest {
                 .when(storageManager)
                 .load(Mockito.anyLong());
 
-        Mockito.doReturn(Iterables.cycle())
+        Mockito.doReturn(Iterables.concat())
                 .when(lifecycleRuleRepository)
                 .findByDatastorageId(eq(ID));
 
@@ -100,6 +106,64 @@ public class DataStorageLifecycleManagerTest {
     public void shouldSuccessfullyCreateLifecycleRule() {
         final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, RULE);
         verifyRule(created, RULE_WITH_ID);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailCreateLifecycleRuleIfExists() {
+        Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+        lifecycleManager.createStorageLifecyclePolicyRule(ID, RULE);
+    }
+
+    @Test
+    public void shouldSuccessfullyCreateLifecycleRuleIfRuleWithAnotherSettingsExists() {
+        Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+        final StorageLifecycleRule anotherRule = RULE.toBuilder().objectGlob(null).build();
+        final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, anotherRule);
+        verifyRule(created, RULE_WITH_ID);
+    }
+
+    @Test
+    public void shouldSuccessfullyCreateLifecycleRuleExecution() {
+        lifecycleManager.createStorageLifecycleRuleExecution(ID,
+                StorageLifecycleRuleExecution.builder()
+                        .ruleId(ID).path("/data/1/dataset1")
+                        .storageClass(STORAGE_CLASS)
+                        .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                        .build());
+        Mockito.verify(lifecycleRuleExecutionRepository).save(Mockito.any(StorageLifecycleRuleExecutionEntity.class));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailCreateLifecycleRuleExecutionIfPathNotMatch() {
+        lifecycleManager.createStorageLifecycleRuleExecution(ID,
+                StorageLifecycleRuleExecution.builder()
+                        .ruleId(ID).path("data/1/dataset2")
+                        .storageClass(STORAGE_CLASS)
+                        .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                        .build());
+    }
+
+    @Test
+    public void shouldSuccessfullyUpdateStatusForLifecycleRuleExecution() {
+        final LocalDateTime startPoint = DateUtils.nowUTC();
+        Mockito.doReturn(
+                        StorageLifecycleRuleExecutionEntity.builder()
+                                .ruleId(ID).path("/data/1/dataset1")
+                                .storageClass(STORAGE_CLASS)
+                                .status(StorageLifecycleRuleExecutionStatus.RUNNING)
+                                .build()
+                ).when(lifecycleRuleExecutionRepository)
+                .findOne(eq(ID));
+        lifecycleManager.updateStorageLifecycleRuleExecutionStatus(ID, StorageLifecycleRuleExecutionStatus.SUCCESS);
+        final ArgumentCaptor<StorageLifecycleRuleExecutionEntity> execution =
+                ArgumentCaptor.forClass(StorageLifecycleRuleExecutionEntity.class);
+        Mockito.verify(lifecycleRuleExecutionRepository).save(execution.capture());
+        Assert.assertTrue(execution.getValue().getUpdated().isAfter(startPoint));
+        Assert.assertEquals(execution.getValue().getStatus(), StorageLifecycleRuleExecutionStatus.SUCCESS);
     }
 
     @Test(expected = IllegalArgumentException.class)

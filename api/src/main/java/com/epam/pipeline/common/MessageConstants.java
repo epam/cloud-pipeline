@@ -323,6 +323,8 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.rule.cant.parse.notofication";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED =
             "error.datastirage.lifecycle.rule.provide.enable.flag";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
+            "error.datastirage.lifecycle.rule.transition.criterion.value.is.not.provided";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";
