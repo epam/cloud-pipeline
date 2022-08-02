@@ -53,11 +53,15 @@ function initialize () {
     ...DEFAULT_CHANNELS_COLORS,
     ...(readChannelsColorsFromStore())
   };
-  defaultChannelsColors.update(colors);
-  defaultChannelsColors.addEventListener(
-    defaultChannelsColors.Events.defaultColorsUpdated,
-    writeChannelsColorsToStore
-  );
+  try {
+    defaultChannelsColors.update(colors);
+    defaultChannelsColors.addEventListener(
+      defaultChannelsColors.Events.defaultColorsUpdated,
+      writeChannelsColorsToStore
+    );
+  } catch (e) {
+    console.warn(`[HCS] Error setting default channels colors: ${e.message}`);
+  }
 }
 
 initialize();
