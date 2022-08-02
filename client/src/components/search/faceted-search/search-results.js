@@ -39,7 +39,7 @@ function cellStringWithDivider (column) {
   if (!column || !column.key) {
     return '.';
   }
-  return `${column.key.replaceAll(' ', '___')} .`;
+  return `${column.key.replace(/\s/g, '___')} .`;
 }
 
 function getColumnNames (columns = []) {
