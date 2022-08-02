@@ -85,8 +85,7 @@ from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, 
     HiddenCount
 from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
 
-from .config import Config
-from .modules.define_results import DefineResults, SpecItem
+from modules.define_results import DefineResults, SpecItem
 
 
 def prepare_input_path(input_path, cloud_scheme='s3'):
@@ -961,14 +960,21 @@ class FilterObjectsMeasurementsSettings(SettingsWithListElement):
         return self._MEASUREMENTS
 
     def build_settings_group_from_list_element(self, element_dict) -> SettingsGroup:
+        settings = list()
         component = SettingsGroup()
-        component.max_limit = Float('Maximum value', value=element_dict[self._MAX_VALUE])
-        component.min_limit = Float('Minimum value', value=element_dict[self._MIN_VALUE])
         component.measurement = Measurement(self._MEASUREMENT_TEXT, None, value=element_dict[self._MEASUREMENT])
-        component.wants_maximum = Binary('Filter using a maximum measurement value?',
-                                         value=element_dict[self._WANTS_MAXIMUM])
+        component.min_limit = Float('Minimum value', value=element_dict[self._MIN_VALUE])
         component.wants_minimum = Binary('Filter using a minimum measurement value?',
                                          value=element_dict[self._WANTS_MINIMUM])
+        component.max_limit = Float('Maximum value', value=element_dict[self._MAX_VALUE])
+        component.wants_maximum = Binary('Filter using a maximum measurement value?',
+                                         value=element_dict[self._WANTS_MAXIMUM])
+        settings.append(component.measurement)
+        settings.append(component.min_limit)
+        settings.append(component.wants_minimum)
+        settings.append(component.max_limit)
+        settings.append(component.wants_maximum)
+        component.settings = settings
         return component
 
     def build_list_elements(self, settings_dict):
@@ -1024,27 +1030,19 @@ class FilterObjectsAdditionalObjectsSettings(SettingsWithListElement):
 
 class FilterObjectsModuleProcessor(ModuleProcessor):
     _RULES_DIRECTORY = 'Select the location of the rules or classifier file'
+    _MEASUREMENTS_SETTINGS = FilterObjectsMeasurementsSettings()
+    _ADDITIONAL_OBJECTS_SETTINGS = FilterObjectsAdditionalObjectsSettings()
 
     def new_module(self):
         return FilterObjects()
 
-    def get_settings_groups(self):
-        measurements_settings = FilterObjectsMeasurementsSettings()
-        measurements_settings.set_module_list_element(self.module.measurements)
-        additional_objects_settings = FilterObjectsAdditionalObjectsSettings()
-        additional_objects_settings.set_module_list_element(self.module.additional_objects)
-        return [measurements_settings, additional_objects_settings]
-
     def configure_module(self, module_config: dict) -> Module:
-        settings_groups = self.get_settings_groups()
-        for settings_group in settings_groups:
-            list_key = settings_group.get_list_key()
-            if list_key in module_config:
-                module_list_element = settings_group.get_module_list_element()
-                module_list_element.clear()
-                rules = module_config.pop(list_key)
-                for rule in rules:
-                    module_list_element.append(settings_group.build_settings_group_from_list_element(rule))
+        self._configure_group_settings(self.module.measurements,
+                                       module_config,
+                                       self._MEASUREMENTS_SETTINGS)
+        self._configure_group_settings(self.module.additional_objects,
+                                       module_config,
+                                       self._ADDITIONAL_OBJECTS_SETTINGS)
         self._configure_input_path(module_config, self._RULES_DIRECTORY)
         ModuleProcessor.configure_module(self, module_config)
         return self.module
@@ -1057,13 +1055,24 @@ class FilterObjectsModuleProcessor(ModuleProcessor):
         for setting in general_setting:
             module_settings_dictionary[setting.text] = self.map_setting_to_text_value(setting)
         group_settings = module_settings[first_args_length:]
-        measurements_group = self.get_settings_groups()[0]
-        additional_objects_group = self.get_settings_groups()[1]
-        module_settings_dictionary[measurements_group.get_list_key()] = \
-            measurements_group.build_list_elements(group_settings)
-        module_settings_dictionary[additional_objects_group.get_list_key()] = \
-            additional_objects_group.build_list_elements(group_settings)
+
+        module_settings_dictionary[self._MEASUREMENTS_SETTINGS.get_list_key()] = \
+            self._MEASUREMENTS_SETTINGS.build_list_elements(group_settings)
+
+        module_settings_dictionary[self._ADDITIONAL_OBJECTS_SETTINGS.get_list_key()] = \
+            self._ADDITIONAL_OBJECTS_SETTINGS.build_list_elements(group_settings)
+
         return module_settings_dictionary
+
+    @staticmethod
+    def _configure_group_settings(group_settings_list, module_config, list_settings):
+        group_name = list_settings.get_list_key()
+        if group_name in module_config:
+            group_settings_list.clear()
+            rules = module_config.pop(group_name)
+            for rule in rules:
+                group = list_settings.build_settings_group_from_list_element(rule)
+                group_settings_list.append(group)
 
 
 class CalculateMathModuleProcessor(ModuleProcessor):
