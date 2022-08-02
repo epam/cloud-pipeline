@@ -181,7 +181,7 @@ class Synchronization(object):
         command_opts = []
         # Do not allow to WRITE for any storage which has tools limitations
         # We fully rely on the automatic mounting to the jobs for such storages
-        if len(storage.tools_to_mount) > 0:
+        if len(storage.tools_to_mount) > 0 and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true':
             command_opts = [ "-o", "ro" ]
         
         command = ["mount", "-B", storage.mount_source, destination]
