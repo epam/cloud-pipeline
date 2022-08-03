@@ -476,6 +476,21 @@ async function fetchStatusUntilDone (api, pipelineId) {
 }
 
 /**
+ * @typedef {Object} AnalysisOutputResult
+ * @property {string} name
+ * @property {string} id
+ * @property {string} [url]
+ * @property {function: Promise<string>} [fetchUrl]
+ * @property {boolean} analysisOutput
+ * @property {boolean} table
+ * @property {boolean} xlsx
+ * @property {AnalysisModule} [module]
+ * @property {string} [object]
+ * @property {boolean} [background]
+ * @property {string} [originalModuleId]
+ */
+
+/**
  * @param {{outputs: string[], name: string, settings: *}} module
  * @param {string} output
  * @param {number} index
@@ -512,8 +527,9 @@ function mapModuleOutput (module, output, index, metadata) {
       .find(o => o.fileName === name);
   }
   const table = /\.csv$/i.test(output);
+  const xlsx = /\.xlsx?$/i.test(output);
   const analysisOutput = /^DefineResults$/i.test(module.name) &&
-    /(^|\/|\\)results\.csv$/i.test(output);
+    /(^|\/|\\)results\.(csv|xlsx|xls)$/i.test(output);
   return {
     name,
     file: output,
@@ -522,6 +538,7 @@ function mapModuleOutput (module, output, index, metadata) {
     background: !!background,
     analysisOutput,
     table,
+    xlsx,
     originalModuleId
   };
 }
@@ -676,20 +693,6 @@ function findInitialModule (initialModules = [], executionModules, index) {
   }
   return find(executionModules[index]);
 }
-
-/**
- * @typedef {Object} AnalysisOutputResult
- * @property {string} name
- * @property {string} id
- * @property {string} [url]
- * @property {function: Promise<string>} [fetchUrl]
- * @property {boolean} analysisOutput
- * @property {boolean} table
- * @property {AnalysisModule} [module]
- * @property {string} [object]
- * @property {boolean} [background]
- * @property {string} [originalModuleId]
- */
 
 /**
  * @typedef {Object} RunAnalysisOptions

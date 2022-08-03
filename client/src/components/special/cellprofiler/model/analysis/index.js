@@ -81,11 +81,11 @@ class Analysis {
   }
 
   /**
-   * @returns {AnalysisOutputResult}
+   * @returns {AnalysisOutputResult[]}
    */
   @computed
-  get analysisOutput () {
-    return this.analysisResults.find(o => o.analysisOutput);
+  get defineResultsOutputs () {
+    return this.analysisResults.filter(o => o.analysisOutput);
   }
 
   /**
@@ -93,7 +93,7 @@ class Analysis {
    */
   @computed
   get analysisOutputImages () {
-    return this.analysisResults.filter(o => !o.table && !o.analysisOutput);
+    return this.analysisResults.filter(o => !o.table && !o.xlxs && !o.analysisOutput);
   }
 
   @computed

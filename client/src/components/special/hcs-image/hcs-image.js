@@ -416,7 +416,9 @@ class HcsImage extends React.PureComponent {
   };
 
   onAnalysisDone = () => {
-    const resultsAvailable = !!this.hcsAnalysis && !!this.hcsAnalysis.analysisOutput;
+    const resultsAvailable = !!this.hcsAnalysis &&
+      !!this.hcsAnalysis.defineResultsOutputs &&
+      this.hcsAnalysis.defineResultsOutputs.length > 0;
     this.setState({
       showAnalysisResults: resultsAvailable
     });
@@ -733,7 +735,8 @@ class HcsImage extends React.PureComponent {
       showAnalysisResults &&
       this.hcsAnalysis &&
       this.hcsAnalysis.available &&
-      this.hcsAnalysis.analysisOutput
+      this.hcsAnalysis.defineResultsOutputs &&
+      this.hcsAnalysis.defineResultsOutputs.length > 0
     ) {
       return (
         <div

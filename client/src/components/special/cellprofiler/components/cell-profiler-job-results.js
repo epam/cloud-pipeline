@@ -278,6 +278,7 @@ class CellProfilerJobResults extends React.PureComponent {
         className={styles.cellProfilerJobResultsOutput}
         storageId={output.storageId}
         path={(output.path || '').concat('/Results.csv')}
+        downloadPath={(output.path || '').concat('/Results.xlsx')}
       />
     );
   };
