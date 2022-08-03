@@ -275,7 +275,8 @@ class StorageReports extends React.Component {
       user,
       group,
       filters = {},
-      storageType
+      storageType,
+      reportThemes
     } = this.props;
     const {period, range, region: cloudRegionId} = filters;
     const costsUsageSelectorHeight = 30;
@@ -368,6 +369,12 @@ class StorageReports extends React.Component {
                                   ? costTickFormatter
                                   : numberFormatter
                               }
+                              highlightTickFn={
+                                (storage) => `${(storage.groupingInfo || {}).is_deleted}` === 'true'
+                              }
+                              highlightTickStyle={{
+                                fontColor: reportThemes.errorColor
+                              }}
                             />
                           </div>
                         )
