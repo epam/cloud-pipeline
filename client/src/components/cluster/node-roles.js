@@ -86,3 +86,16 @@ export function getRoles (labels) {
   }
   return roles;
 }
+
+export function matchesPlatformCoreNodes (node) {
+  if (node.labels) {
+    return Object.keys(node.labels).some(key => {
+      const result = parseLabel(key, node.labels[key]);
+      return (
+        testRole(result.role, nodeRoles.cloudPipelineRole) ||
+        testRole(result.role, nodeRoles.master)
+      );
+    });
+  }
+  return false;
+}

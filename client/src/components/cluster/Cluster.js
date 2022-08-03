@@ -45,7 +45,8 @@ import parseQueryParameters from '../../utils/queryParameters';
 import {
   getRoles,
   nodeRoles,
-  testRole
+  testRole,
+  matchesPlatformCoreNodes
 } from './node-roles';
 
 @connect({
@@ -67,27 +68,27 @@ import {
 export default class Cluster extends localization.LocalizedReactComponent {
   state = {
     appliedFilter: {
-      haveRunId: null,
-      noRunId: null,
       runId: null,
+      haveRunId: null,
+      platformCoreNodes: null,
       address: null
     },
     filter: {
-      runId: {
-        noRunId: null,
+      label: {
+        value: null,
+        finalValue: null,
         haveRunId: null,
-        finalNoRunId: null,
         finalHaveRunId: null,
+        platformCoreNodes: null,
+        finalPlatformCoreNodes: null,
         visible: false,
         filtered () {
           return (
             this.finalValue !== null ||
-            this.finalNoRunId ||
-            this.finalHaveRunId
+            this.finalHaveRunId ||
+            this.finalPlatformCoreNodes
           );
-        },
-        value: null,
-        finalValue: null
+        }
       },
       address: {
         visible: false,
@@ -132,11 +133,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
   get filteredNodes () {
     const {filter} = this.props;
     const {appliedFilter} = this.state;
-    const {runId, address, haveRunId, noRunId} = appliedFilter;
-    if ((filter && Object.keys(filter).length > 0) || haveRunId || noRunId) {
+    const {runId, address, haveRunId, platformCoreNodes} = appliedFilter;
+    if ((filter && Object.keys(filter).length > 0) || haveRunId || platformCoreNodes) {
       const hasRunIdProp = (node) => node.labels && node.labels.hasOwnProperty('runid');
       const matchesRunId = node => hasRunIdProp(node) && `${node.labels.runid}` === `${runId}`;
-      const matchesNoRunId = node => !hasRunIdProp(node) || isNaN(Number(node.labels.runid));
       const matchesHaveRunId = node => hasRunIdProp(node) && !isNaN(Number(node.labels.runid));
 
       const matchesAddress = node => node.addresses &&
@@ -145,7 +145,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         (!runId || matchesRunId(node)) &&
         (!address || matchesAddress(node)) &&
         (!haveRunId || matchesHaveRunId(node)) &&
-        (!noRunId || matchesNoRunId(node))
+        (!platformCoreNodes || matchesPlatformCoreNodes(node))
         ;
       return this.nodes.filter(matches);
     }
@@ -166,18 +166,17 @@ export default class Cluster extends localization.LocalizedReactComponent {
   };
 
   isFilterChanged = () => {
-    return this.state.filter.runId.finalValue !== this.state.appliedFilter.runId ||
+    return this.state.filter.label.finalValue !== this.state.appliedFilter.runId ||
       this.state.filter.address.finalValue !== this.state.appliedFilter.address ||
-      this.state.filter.runId.finalNoRunId !== this.state.appliedFilter.noRunId ||
-      this.state.filter.runId.finalHaveRunId !== this.state.appliedFilter.haveRunId
-    ;
+      this.state.filter.label.finalHaveRunId !== this.state.appliedFilter.haveRunId ||
+      this.state.filter.label.finalPlatformCoreNodes !== this.state.appliedFilter.platformCoreNodes;
   };
 
   applyFilter = () => {
     const filter = this.state.appliedFilter;
-    filter.runId = this.state.filter.runId.finalValue;
-    filter.noRunId = this.state.filter.runId.finalNoRunId;
-    filter.haveRunId = this.state.filter.runId.finalHaveRunId;
+    filter.runId = this.state.filter.label.finalValue;
+    filter.haveRunId = this.state.filter.label.finalHaveRunId;
+    filter.platformCoreNodes = this.state.filter.label.finalPlatformCoreNodes;
     filter.address = this.state.filter.address.finalValue;
     this.setState({appliedFilter: filter}, () => {
       this.refreshCluster();
@@ -302,7 +301,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   renderJobsAssociationFilter = () => {
     const options = [
       {title: 'Has run id', prop: 'haveRunId'},
-      {title: 'No run id', prop: 'noRunId'}
+      {title: 'Platform core nodes', prop: 'platformCoreNodes'}
     ];
     return (
       <div
@@ -321,7 +320,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             >
               <li className={styles.popoverListItem}>
                 <Checkbox
-                  checked={this.state.filter.runId[prop]}
+                  checked={this.state.filter.label[prop]}
                   onChange={(e) => this.onJobsAssociationFilterChanged(e.target.checked, prop)}
                 >
                   {title}
@@ -392,9 +391,9 @@ export default class Cluster extends localization.LocalizedReactComponent {
       filter[filterParameterName].validationError = undefined;
       filter[filterParameterName].value = filter[filterParameterName].finalValue
         ? filter[filterParameterName].finalValue : null;
-      if (filterParameterName === 'runId') {
-        filter[filterParameterName].noRunId = filter[filterParameterName].finalNoRunId
-          ? filter[filterParameterName].finalNoRunId : null;
+      if (filterParameterName === 'label') {
+        filter[filterParameterName].platformCoreNodes = filter[filterParameterName].finalPlatformCoreNodes
+          ? filter[filterParameterName].finalPlatformCoreNodes : null;
         filter[filterParameterName].haveRunId = filter[filterParameterName].finalHaveRunId
           ? filter[filterParameterName].finalHaveRunId : null;
       }
@@ -405,8 +404,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
   onFilterChanged = (filterParameterName) => () => {
     const filter = this.state.filter;
     filter[filterParameterName].finalValue = filter[filterParameterName].value;
-    if (filterParameterName === 'runId') {
-      filter[filterParameterName].finalNoRunId = filter[filterParameterName].noRunId;
+    if (filterParameterName === 'label') {
+      filter[filterParameterName].finalPlatformCoreNodes = filter[filterParameterName].platformCoreNodes;
       filter[filterParameterName].finalHaveRunId = filter[filterParameterName].haveRunId;
     }
     this.onFilterDropdownVisibleChange(filterParameterName)(false);
@@ -415,8 +414,8 @@ export default class Cluster extends localization.LocalizedReactComponent {
   onFilterValueChange = (filterParameterName) => (value) => {
     const filter = this.state.filter;
     filter[filterParameterName].value = value && value.length > 0 ? value : null;
-    if (value && filterParameterName === 'runId') {
-      filter[filterParameterName].noRunId = null;
+    if (value && filterParameterName === 'label') {
+      filter[filterParameterName].platformCoreNodes = null;
       filter[filterParameterName].haveRunId = null;
     }
     this.setState({filter});
@@ -428,22 +427,21 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   onJobsAssociationFilterChanged = (value, param) => {
     const params = {
-      noRunId: 'noRunId',
-      haveRunId: 'haveRunId'
+      haveRunId: 'haveRunId',
+      platformCoreNodes: 'platformCoreNodes'
     };
-    let oppositeParam;
-    oppositeParam = (param === params.noRunId)
-      ? params.haveRunId
-      : params.noRunId;
+    const oppositeParam = (param === params.haveRunId)
+      ? params.platformCoreNodes
+      : params.haveRunId;
 
     const filter = {...this.state.filter};
-    filter.runId[param] = value;
-    filter.runId[oppositeParam] = value ? !value : value;
+    filter.label[param] = value;
+    filter.label[oppositeParam] = value ? !value : value;
     this.setState({filter});
   }
 
   getInputFilter = (parameter, placeholder) => {
-    const isRunId = parameter === 'runId';
+    const isRunId = parameter === 'label';
     const clear = () => {
       const filter = this.state.filter;
       filter[parameter].value = null;
@@ -451,7 +449,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
       filter[parameter].visible = false;
       filter[parameter].validationError = false;
       if (isRunId) {
-        filter[parameter].noRunId = null;
+        filter[parameter].platformCoreNodes = null;
         filter[parameter].haveRunId = null;
       }
       this.setState({filter}, () => {
@@ -629,7 +627,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         key: 'labels',
         title: 'Labels',
         render: (labels, item) => this.renderLabels(labels, item, pools),
-        ...this.getInputFilter('runId', 'Run Id'),
+        ...this.getInputFilter('label', 'Label value'),
         sorter: this.runSorter,
         className: styles.clusterNodeRowLabels,
         onCellClick: this.onNodeInstanceSelect
