@@ -106,11 +106,23 @@ export function matchesPlatformCoreNodes (node) {
   return false;
 }
 
-export function matchesLabelValue (node, label) {
+export function matchesLabelValue (node, inputValue) {
   if (node.labels) {
     return Object.keys(node.labels).some(key => {
-      const {value} = parseLabel(key, node.labels[key]);
-      return value.includes(label.toLowerCase());
+      const labelValue = node.labels[key];
+      // if string includes only number, find equal runId
+      if (/^\d+$/.test(inputValue)) {
+        return labelValue === inputValue;
+      }
+      let value;
+      // if label's value equal true, get label's key and replace 'cloud-pipeline/'
+      if (labelValue === 'true') {
+        value = parseLabel(key, labelValue).value;
+      // rest cases, filter by substring
+      } else {
+        value = labelValue;
+      }
+      return value.includes(inputValue.toLowerCase());
     });
   }
 };
