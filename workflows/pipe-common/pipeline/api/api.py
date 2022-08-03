@@ -197,6 +197,11 @@ class PipelineAPI:
     CLONE_PIPELINE_URL = "/pipeline/{}/clone"
     LOAD_WRITABLE_STORAGES = "/datastorage/mount"
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
+    LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{ruleId}"
+    LOAD_LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
+    LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{ruleId}/execution"
+    LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_AND_PATH_URL = "/datastorage/{id}/lifecycle/rule/{ruleId}/execution?path={path}"
+    UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{datastorageId}/lifecycle/rule/execution/{executionId}/status?status={status}"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_METADATA = "/metadata/load"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
@@ -981,7 +986,6 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load user token. Error message: {}".format(str(e.message)))
 
-
     def load_roles(self, load_users=False):
         try:
             return self.execute_request(str(self.api_url) + self.LOAD_ROLES.format(load_users)) or []
@@ -1003,3 +1007,55 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to launch configuration %s. "
                                "Error message: {}".format(str(data['id']), str(e.message)))
+
+    def load_lifecycle_rules_for_storage(self, datastorage_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LOAD_LIFECYCLE_RULES_FOR_STORAGE_URL.format(datastorage_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rules by datastorage ID '{}'.",
+                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+
+    def load_lifecycle_rule(self, datastorage_id, rule_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL.format(datastorage_id, rule_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rule by ID '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            datastorage_id, rule_id, data=json.dumps(execution)))
+        except Exception as e:
+            raise RuntimeError("Failed to create lifecycle rule execution for rule ID '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def load_lifecycle_rule_executions(self, datastorage_id, rule_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            datastorage_id, rule_id))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def load_lifecycle_rule_executions_by_path(self, datastorage_id, rule_id, path):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_AND_PATH_URL.format(
+                                            datastorage_id, rule_id, path))
+        except Exception as e:
+            raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}' and path {}.",
+                               "Error message: {}".format(str(rule_id), path, str(e.message)))
+
+    def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            datastorage_id, execution_id, status))
+        except Exception as e:
+            raise RuntimeError("Failed to update lifecycle rule execution status by ID '{}' status to update: {}.",
+                               "Error message: {}".format(str(execution_id), status, str(e.message)))
