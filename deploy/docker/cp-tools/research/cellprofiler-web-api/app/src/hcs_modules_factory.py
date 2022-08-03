@@ -984,10 +984,10 @@ class FilterObjectsMeasurementsSettings(SettingsWithListElement):
                 continue
             measurements.append({
                 self._MEASUREMENT: settings_dict[i].value,
-                self._WANTS_MINIMUM: settings_dict[i + 1].value,
-                self._MIN_VALUE: settings_dict[i + 2].value,
-                self._WANTS_MAXIMUM: settings_dict[i + 3].value,
-                self._MAX_VALUE: settings_dict[i + 4].value
+                self._MIN_VALUE: settings_dict[i + 1].value,
+                self._WANTS_MINIMUM: settings_dict[i + 2].value,
+                self._MAX_VALUE: settings_dict[i + 3].value,
+                self._WANTS_MAXIMUM: settings_dict[i + 4].value
             })
         return measurements
 
