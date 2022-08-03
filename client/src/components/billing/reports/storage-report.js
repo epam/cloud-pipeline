@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,6 +208,12 @@ function renderTable ({storages, discounts: discountsFn, height}) {
   const paginationEnabled = storages && storages.loaded
     ? storages.totalPages > 1
     : false;
+  const getRowClassName = (storage = {}) => {
+    if (`${(storage.groupingInfo || {}).is_deleted}` === 'true') {
+      return 'cp-warning-row';
+    }
+    return '';
+  };
   return (
     <div>
       <div
@@ -219,6 +225,8 @@ function renderTable ({storages, discounts: discountsFn, height}) {
         }}
       >
         <Table
+          className="cp-report-table"
+          rowClassName={getRowClassName}
           rowKey={({info, name}) => {
             return info && info.id ? `storage_${info.id}` : `storage_${name}`;
           }}
@@ -299,7 +307,8 @@ class StorageReports extends React.Component {
       user,
       group,
       filters = {},
-      storageType
+      storageType,
+      reportThemes
     } = this.props;
     const {period, range, region: cloudRegionId} = filters;
     const composers = [
@@ -456,6 +465,12 @@ class StorageReports extends React.Component {
                                   ? costTickFormatter
                                   : numberFormatter
                               }
+                              highlightTickFn={
+                                (storage) => `${(storage.groupingInfo || {}).is_deleted}` === 'true'
+                              }
+                              highlightTickStyle={{
+                                fontColor: reportThemes.errorColor
+                              }}
                             />
                           </div>
                         )

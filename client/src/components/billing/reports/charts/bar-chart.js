@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@ import {inject, observer} from 'mobx-react';
 import Chart from './base';
 import {
   BarchartDataLabelPlugin,
-  ChartClickPlugin
+  ChartClickPlugin,
+  HighlightTicksPlugin
 } from './extensions';
 import Export from '../export';
 import {discounts} from '../discounts';
@@ -70,7 +71,9 @@ function BarChart (
     useImageConsumer = true,
     onImageDataReceived,
     itemNameFn = o => o,
-    reportThemes
+    reportThemes,
+    highlightTickFn,
+    highlightTickStyle = {}
   }
 ) {
   if (!request) {
@@ -151,7 +154,12 @@ function BarChart (
           fontColor: reportThemes.subTextColor
         },
         ticks: {
-          fontColor: reportThemes.subTextColor
+          fontColor: reportThemes.subTextColor,
+          major: Object.assign({
+            enabled: !!highlightTickFn,
+            fontStyle: 'normal',
+            fontColor: reportThemes.subTextColor
+          }, highlightTickStyle)
         }
       }],
       yAxes: [{
@@ -210,6 +218,11 @@ function BarChart (
       }
     },
     plugins: {
+      [HighlightTicksPlugin.id]: {
+        highlightTickFn,
+        request,
+        axis: 'x-axis'
+      },
       [BarchartDataLabelPlugin.id]: {
         valueFormatter
       },
@@ -256,7 +269,8 @@ function BarChart (
         options={options}
         plugins={[
           BarchartDataLabelPlugin.plugin,
-          ChartClickPlugin.plugin
+          ChartClickPlugin.plugin,
+          HighlightTicksPlugin.plugin
         ]}
         useChartImageGenerator={useImageConsumer}
         onImageDataReceived={onImageDataReceived}

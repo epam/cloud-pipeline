@@ -23,6 +23,7 @@ import * as GenerateImagePlugin from './generate-image-plugin';
 import * as PieChartDataLabelPlugin from './pie-chart-data-label-plugin';
 import * as PointDataLabelPlugin from './point-data-label-plugin';
 import * as VerticalLinePlugin from './vertical-line-plugin';
+import * as HighlightTicksPlugin from './highlight-ticks-plugin';
 
 export {
   BarchartDataLabelPlugin,
@@ -32,5 +33,6 @@ export {
   PieChartDataLabelPlugin,
   PointDataLabelPlugin,
   VerticalLinePlugin,
-  SummaryChart
+  SummaryChart,
+  HighlightTicksPlugin
 };

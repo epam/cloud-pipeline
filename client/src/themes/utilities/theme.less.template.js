@@ -2063,6 +2063,9 @@ export default `
   border-right-color: @application-color;
   border-bottom-color: @application-color;
 }
+@THEME .cp-report-table tr.cp-warning-row {
+  background-color: fade(@color-error, 20%);
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
