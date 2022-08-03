@@ -64,6 +64,7 @@ public class LaunchParametersRestrictionRunsTest
             "number of running jobs. There %s running out of %s.";
     private String launchErrorMessage = "Launch of new jobs is restricted as [%s] user " +
             "will exceed [%s] runs limit [%s]";
+    private final String run_tool_command = format("pipe run -di %s:latest -y", tool);
     private String[] runID3 = new String[2];
     private List<String> runID5 = new ArrayList<>();
 
@@ -197,9 +198,9 @@ public class LaunchParametersRestrictionRunsTest
                 .waitForSshLink()
                 .ssh(shell -> shell
                         .waitUntilTextAppears(runID3[0])
-                        .execute(format("pipe run -di %s:latest -y", tool))
-                        .assertPageContainsString(format(launchErrorMessage, user.login,
-                                    USER_GROUP2, GROUP_MAX_RUNS1))
+                        .execute(run_tool_command)
+                        .assertPageAfterCommandContainsStrings(run_tool_command,
+                                format(launchErrorMessage, user.login, USER_GROUP2, GROUP_MAX_RUNS1))
                         .execute("pipe users instances")
                         .assertPageContains(format("Active runs detected for a user: [%s: %s]", user.login, GROUP_MAX_RUNS1))
                         .assertPageContains(format("The following restriction applied on runs launching: [%s: %s]", USER_GROUP2, GROUP_MAX_RUNS1))
@@ -238,9 +239,9 @@ public class LaunchParametersRestrictionRunsTest
                     .waitForSshLink()
                     .ssh(shell -> shell
                             .waitUntilTextAppears(runIDs.get(0))
-                            .execute(format("pipe run -di %s:latest -y", tool))
-                            .assertPageContainsString(format(launchErrorMessage, user.login,
-                                    USER_LIMIT, USER_MAX_RUNS))
+                            .execute(run_tool_command)
+                            .assertPageAfterCommandContainsStrings(run_tool_command,
+                                    format(launchErrorMessage, user.login, USER_LIMIT, USER_MAX_RUNS))
                             .execute("pipe users instances --verbose")
                             .assertPageContainsString("The following restrictions applied on runs launching:")
                             .assertPageContains(USER_GROUP, GROUP_MAX_RUNS2)
