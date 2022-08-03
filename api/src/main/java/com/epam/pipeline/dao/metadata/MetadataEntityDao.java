@@ -67,6 +67,8 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private Pattern searchPattern = Pattern.compile("@QUERY@");
     private static final String AND = " AND ";
     private static final String OR = " OR ";
+    private static final String FROM = "From";
+    private static final String TO = "To";
     private static final int BATCH_SIZE = 1000;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -370,7 +372,7 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                     ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
                     : (CollectionUtils.isEmpty(filter.getValues())
                         ? getEmptyFieldClause(filter.getKey())
-                        : addFilterClause(filter, "e.data #>> '{%s,value}' ILIKE '%%%s%%'", filter.getKey()));
+                        : addFilterClause(filter, getTemplate(filter), getDbName(filter.getKey())));
             clause.append(filterClause);
         });
     }
@@ -381,6 +383,21 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 format(" OR trim(e.data #>> '{%s,value}') = ''", key) +
                 format(" OR (e.data #>> '{%s,value}') IN ('{}', '[]')", key) +
                 ")";
+    }
+
+    private String getTemplate(final MetadataFilter.FilterQuery filter) {
+        final String key = filter.getKey();
+        if (key.endsWith(FROM)) {
+            return "e.data #>> '{%s,value}' >= '%s'";
+        }
+        if (key.endsWith(TO)) {
+            return "e.data #>> '{%s,value}' <= '%s'";
+        }
+        return "e.data #>> '{%s,value}' ILIKE '%%%s%%'";
+    }
+
+    private String getDbName(final String key) {
+        return key.replace(FROM, "").replace(TO, "");
     }
 
     private String getDBName(final String filterKey) {
