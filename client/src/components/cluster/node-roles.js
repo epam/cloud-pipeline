@@ -90,12 +90,27 @@ export function getRoles (labels) {
 export function matchesPlatformCoreNodes (node) {
   if (node.labels) {
     return Object.keys(node.labels).some(key => {
-      const result = parseLabel(key, node.labels[key]);
-      return (
-        testRole(result.role, nodeRoles.cloudPipelineRole) ||
-        testRole(result.role, nodeRoles.master)
-      );
+      const {role, value} = parseLabel(key, node.labels[key]);
+      const exec = /^CLOUD-PIPELINE\/(.+)$/i.exec(key);
+      const cloudPipelineRole = testRole(role, nodeRoles.cloudPipelineRole);
+      const master = testRole(role, nodeRoles.master);
+      const cpLabel = (() => {
+        if (exec && exec[1]) {
+          return exec[1].toLowerCase().search(value.trim().toLowerCase()) > -1;
+        }
+        return null;
+      })();
+      return (cloudPipelineRole || master || cpLabel);
     });
   }
   return false;
 }
+
+export function matchesLabelValue (node, label) {
+  if (node.labels) {
+    return Object.keys(node.labels).some(key => {
+      const {value} = parseLabel(key, node.labels[key]);
+      return value.includes(label.toLowerCase());
+    });
+  }
+};
