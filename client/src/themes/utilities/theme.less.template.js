@@ -2099,6 +2099,9 @@ export default `
 @THEME .cp-billing-action-tag .ant-tag-text {
   background-color: @color-warning;
 }
+@THEME .cp-report-table tr.cp-warning-row {
+  background-color: fade(@color-error, 20%);
+}
 
 @THEME .cp-search-clear-filters-button {
   background: @primary-color;
