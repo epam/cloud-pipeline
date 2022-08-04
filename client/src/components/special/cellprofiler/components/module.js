@@ -57,6 +57,12 @@ function CellProfilerModuleHeaderRenderer (props) {
   if (!cpModule) {
     return null;
   }
+  /**
+   * @type {Analysis}
+   */
+  const analysis = cpModule.analysis;
+  // eslint-disable-next-line
+  const hasOutputImage = analysis && analysis.hasOutputImageForModule(cpModule);
   const renderIcon = () => {
     if (!cpModule.statusReporting) {
       return null;

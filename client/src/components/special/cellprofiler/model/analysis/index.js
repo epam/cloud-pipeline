@@ -88,6 +88,14 @@ class Analysis {
     return this.analysisResults.find(o => o.analysisOutput);
   }
 
+  /**
+   * @returns {AnalysisOutputResult[]}
+   */
+  @computed
+  get analysisOutputImages () {
+    return this.analysisResults.filter(o => !o.table && !o.analysisOutput);
+  }
+
   @computed
   get modules () {
     if (!this.pipeline) {
@@ -562,6 +570,26 @@ class Analysis {
       this.analysisRequested = true;
     }
     return newModule;
+  };
+
+  /**
+   * @param {AnalysisModule} aModule
+   * @returns {boolean}
+   */
+  hasOutputImageForModule = (aModule) => {
+    return !!this.getOutputImageForModule(aModule);
+  };
+
+  /**
+   * @param {AnalysisModule} aModule
+   * @returns {AnalysisOutputResult}
+   */
+  getOutputImageForModule = (aModule) => {
+    if (!aModule) {
+      return undefined;
+    }
+    return this.analysisOutputImages
+      .find(o => o.originalModuleId === aModule.id);
   };
 }
 

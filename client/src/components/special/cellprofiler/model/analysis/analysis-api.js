@@ -58,7 +58,8 @@ class AnalysisApi extends EndpointAPI {
   runPipeline = (pipelineId) => this.apiCall({
     uri: 'hcs/run/pipelines',
     query: {pipelineId},
-    httpMethod: 'POST'
+    httpMethod: 'POST',
+    ignoreResponse: true
   });
 
   runPipelineModule = (pipelineId, moduleId) => this.apiCall({

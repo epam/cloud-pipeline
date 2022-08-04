@@ -183,15 +183,15 @@ const enhanceOrSuppressFeatures = {
     'Select the input image|file|ALIAS input',
     'Name the output image|string|EnhanceOrSuppressFeatures|ALIAS output',
     'Select the operation|[Enhance,Suppress]|Enhance|ALIAS=operation',
-    'Feature type|[Speckles,Neurits,Dark holes,Circles,Texture,DIC]|Speckles|IF operation==Enhance|ALIAS=feature',
-    'Enhancement method|[Tubeness,Line structures]|Tubeness|IF feature==Neurits|ALIAS=method',
+    'Feature type|[Speckles,Neurites,Dark holes,Circles,Texture,DIC]|Speckles|IF operation==Enhance|ALIAS=feature',
+    'Enhancement method|[Tubeness,Line structures]|Tubeness|IF feature==Neurites|ALIAS=method',
     'Smoothing scale|float|2.0|IF (method==Tubeness OR feature==Texture OR feature==DIC)',
     'Feature size|integer|10|IF (operation==Suppress OR method=="Line structures" OR feature==Circles OR feature==Speckles)|ALIAS featureSize',
     'Range of hole sizes|integer[0,Infinity]|[1,10]|IF feature==Dark holes',
     'Shear angle|float|0.0|IF feature==DIC',
     'Decay|float|0.95|IF feature==DIC',
     'Speed and accuracy|[Fast,Slow]|Fast|IF feature==Speckles',
-    'Rescale result image|boolean|false|IF feature==Neurits'
+    'Rescale result image|boolean|false|IF feature==Neurites'
   ]
 };
 
