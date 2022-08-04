@@ -29,7 +29,7 @@ import java.util.List;
 public class StorageLifecycleNotification {
     Long notifyBeforeDays;
     Long prolongDays;
-    List<Long> userToNotifyIds;
+    List<Long> informedUserIds;
     Boolean keepInformedAdmins;
     Boolean keepInformedOwner;
     Boolean enabled;

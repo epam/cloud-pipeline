@@ -227,6 +227,9 @@ class PipelineAPI:
     LOAD_ROLES = 'role/loadAll?loadUsers={}'
     LOAD_ROLE = 'role/{}'
     RUN_CONFIGURATION = '/runConfiguration'
+    NOTIFICATION_SETTING_URL = 'notification/settings'
+    NOTIFICATION_TEMPLATE_URL = 'notification/template'
+
     # Pipeline API default header
 
     RESPONSE_STATUS_OK = 'OK'
@@ -1059,3 +1062,15 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to update lifecycle rule execution status by ID '{}' status to update: {}.",
                                "Error message: {}".format(str(execution_id), status, str(e.message)))
+
+    def load_notification_templates(self):
+        try:
+            return self.execute_request(str(self.api_url) + self.NOTIFICATION_TEMPLATE_URL)
+        except Exception as e:
+            raise RuntimeError("Failed to load notification templates. Error message {}", str(e.message))
+
+    def load_notification_settings(self):
+        try:
+            return self.execute_request(str(self.api_url) + self.NOTIFICATION_SETTING_URL)
+        except Exception as e:
+            raise RuntimeError("Failed to load notification settings. Error message {}", str(e.message))

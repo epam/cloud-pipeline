@@ -6,12 +6,22 @@ import datetime
 from slm.src.logger import AppLogger
 import boto3
 
+from slm.src.model.storage_lifecycle_rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
 from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActionItems
-
-ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 DESTINATION_STORAGE_CLASS_TAG = 'DESTINATION_STORAGE_CLASS'
 CP_SLC_RULE_NAME_PREFIX = 'CP Storage Lifecycle Rule:'
+
+
+def _is_timestamp_within_date(date, timestamp):
+    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = date.replace(hour=23, minute=59, second=59, microsecond=999)
+    return day_start <= timestamp <= day_end
+
+
+def _rule_is_not_valid(rule):
+    # TODO check that rule is valid
+    pass
 
 
 class S3StorageLifecycleSynchronizer:
@@ -22,7 +32,7 @@ class S3StorageLifecycleSynchronizer:
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     DELETION = "DELETION"
 
-    EMPTY_ACTION_ITEMS = StorageLifecycleRuleActionItems([GLACIER, GLACIER_IR, DEEP_ARCHIVE, DELETION])
+    EMPTY_ACTION_ITEMS = StorageLifecycleRuleActionItems(None, [GLACIER, GLACIER_IR, DEEP_ARCHIVE, DELETION])
 
     @staticmethod
     def construct_s3_slc_rule(storage_class):
@@ -74,31 +84,34 @@ class S3StorageLifecycleSynchronizer:
         }
     }
 
-    def __init__(self, api, logger=AppLogger()):
+    def __init__(self, cp_data_source, logger=AppLogger()):
         self.logger = logger
-        self.api = api
+        self.cp_data_source = cp_data_source
         self.aws_client = boto3.client("s3")
 
     def sync_storage(self, storage):
-        rules = self.api.load_lifecycle_rules_for_storage(storage.id)
+        rules = self.cp_data_source.load_lifecycle_rules_for_storage(storage.id)
 
         # No rules for storage exist - just skip it
         if not rules:
+            self.logger.log("No rules for storage {} is defined, skipping".format(storage.path))
             return
 
         self._create_s3_lifecycle_policy_for_bucket_if_needed(storage)
 
         for rule in rules:
-            # TODO check that rule is valid and perform mapping to object
-            files = self._list_objects_by_prefix_from_glob(storage, rule["pathGlob"])
+            if _rule_is_not_valid(rule):
+                continue
 
-            for folder in self._identify_subject_folders(files, rule["pathGlob"]):
+            files = self._list_objects_by_prefix_from_glob(storage, rule.path_glob)
+
+            for folder in self._identify_subject_folders(files, rule.path_glob):
 
                 # to match object keys with glob we need to combine it with folder path
                 # and get 'effective' glob like '{folder-path}/{glob}'
                 # so with glob = '*.txt' we can match files like:
                 # {folder-path}/{filename}.txt
-                effective_glob = os.path.join(folder, rule["objectGlob"]) if rule["objectGlob"] else None
+                effective_glob = os.path.join(folder, rule.object_glob) if rule.object_glob else None
 
                 subject_files = [
                     file for file in files
@@ -113,11 +126,14 @@ class S3StorageLifecycleSynchronizer:
         cp_lsc_rules = [rule for rule in existing_slc['Rules'] if rule['ID'].startswith(CP_SLC_RULE_NAME_PREFIX)]
 
         if not cp_lsc_rules:
+            self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(storage.path))
             slc_rules = existing_slc['Rules']
             for rule in self.S3_STORAGE_CLASS_TO_RULE.values():
                 slc_rules.append(rule)
             slc_rules.append(self.DELETION_RULE)
             self.aws_client.put_bucket_lifecycle_configuration(existing_slc)
+        else:
+            self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(storage.path))
 
     def _list_objects_by_prefix_from_glob(self, storage, glob_str):
         def determinate_prefix(glob_str):
@@ -136,8 +152,8 @@ class S3StorageLifecycleSynchronizer:
         return result
 
     def _process_files(self, folder, file_listing, subject_files, rule):
-        transition_method = rule["transitionMethod"]
-        resulted_action_items = self.EMPTY_ACTION_ITEMS.copy()
+        transition_method = rule.transition_method
+        resulted_action_items = self.EMPTY_ACTION_ITEMS.copy().with_rule_id(rule.rule_id)
 
         if transition_method == "ONE_BY_ONE":
             for file in subject_files:
@@ -149,105 +165,108 @@ class S3StorageLifecycleSynchronizer:
         self._apply_action_items(resulted_action_items)
 
     def _build_action_items(self, path, subject_files, criterion_file, rule):
-        result = self.EMPTY_ACTION_ITEMS.copy()
+        result = self.EMPTY_ACTION_ITEMS.copy().with_rule_id(rule.rule_id)
 
-        lifecycle_executions = self.api.load_lifecycle_rule_executions_by_path(
-            rule["datastorageId"], rule["id"], path)
+        lifecycle_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
+            rule.datastorage_id, rule.rule_id, path)
         for execution in lifecycle_executions:
-            result.with_execution(self._check_rule_execution_progress(rule["storageId"], subject_files, execution))
+            result.with_execution(self._check_rule_execution_progress(rule.datastorage_id, subject_files, execution))
 
         effective_transitions = self._define_effective_transitions(
             self._fetch_prolongation_for_path_or_default(path, rule), rule)
 
-        # TODO should be rewritten with just rule.notification, when rule will be validated
-        #      and object will be constructed ahead
-        notification = self._define_notification(rule)
+        notification = rule.notification
 
         if criterion_file:
             for transition in effective_transitions:
-                transition_class = transition["storageClass"]
+                transition_class = transition.storage_class
                 timestamp_of_action = self.define_transition_effective_timepoint(criterion_file, transition)
 
                 now = datetime.datetime.now()
 
                 # Check if notification is needed
-                date_to_check = now + datetime.timedelta(days=notification["notifyBeforeDays"])
-                if notification["enabled"] and self._is_timestamp_within_date(date_to_check, timestamp_of_action):
+                date_to_check = now + datetime.timedelta(days=notification.notify_before_days)
+                if notification.enabled and _is_timestamp_within_date(date_to_check, timestamp_of_action):
                     notification_execution = next(
-                        filter(lambda e: e["status"] == "NOTIFICATION_SENT" and e["storageClass"] == transition_class, lifecycle_executions), None
+                        filter(lambda e: e.status == "NOTIFICATION_SENT" and e.storage_class == transition_class, lifecycle_executions), None
                     )
-                    if not notification_execution or not self._is_timestamp_within_date(now, notification_execution["updated"]):
-                        result.with_notification(path, transition_class, transition["transitionDate"])
+                    if not notification_execution or not _is_timestamp_within_date(now, notification_execution.updated):
+                        result.with_notification(
+                            path, transition_class, transition.transition_date, notification.prolong_days
+                        )
 
                 # Check if action is needed
                 date_to_check = now
-                if self._is_timestamp_within_date(date_to_check, timestamp_of_action):
+                if _is_timestamp_within_date(date_to_check, timestamp_of_action):
                     action_execution = next(
-                        filter(lambda e: e["status"] == "RUNNING" and e["storageClass"] == transition_class, lifecycle_executions), None
+                        filter(lambda e: e.status == "RUNNING" and e.storage_class == transition_class, lifecycle_executions), None
                     )
-                    if not action_execution or not self._is_timestamp_within_date(now, action_execution["updated"]):
+                    if not action_execution or not _is_timestamp_within_date(now, action_execution.updated):
                         for file in subject_files:
                             result.with_transition(transition_class, file)
 
         return result
 
+    def _apply_action_items(self, action_items):
+        for notification in action_items.notification_queue:
+            self._send_notification(notification)
+
+        for execution in action_items.executions:
+            if execution.status == "FAILED":
+                self.logger.log("Execution failed: {}".format(json.dumps(execution)))
+
+        for storage_class, files in action_items.destination_transitions_queues.items():
+            if files:
+                self.logger.log(
+                    "Starting to tagging files for Storage Class: {}, number of files: {}".format(
+                        storage_class, len(files)
+                    )
+                )
+                self._tag_files(action_items.rule_id, storage_class, files)
+
+    def _check_rule_execution_progress(self, storage_id, subject_files, execution):
+        if not execution.status:
+            raise RuntimeError("Malformed rule execution found: " + json.dumps(execution))
+
+        if execution.status == "RUNNING":
+            # Check that all files were moved to destination storage class and if not and 2 days are passed since
+            # process was started - fail this execution
+            all_files_moved = next(
+                filter(lambda file: file["StorageClass"] != execution.storage_class, subject_files),
+                None
+            ) is not None
+            if all_files_moved:
+                return self.cp_data_source.update_status_lifecycle_rule_execution(
+                    storage_id, execution.execution_id, "SUCCESS")
+            elif execution.updated + datetime.timedelta(days=2) > datetime.datetime.now():
+                return self.cp_data_source.update_status_lifecycle_rule_execution(
+                    storage_id, execution.execution_id, "FAILED")
+        return None
+
+    def _send_notification(self, notification):
+        pass
+
+    def _tag_files(self, rule_id, storage_class, files):
+        pass
+
     @staticmethod
     def define_transition_effective_timepoint(criterion_file, transition):
-        if transition["transitionDate"]:
-            timestamp_of_action = transition["transitionDate"]
-        elif transition["transitionAfterDays"]:
+        if transition.transition_date:
+            timestamp_of_action = transition.transition_date
+        elif transition.transition_after_days:
             timestamp_of_action = criterion_file["LastModified"] \
-                                  + datetime.timedelta(days=transition["transitionAfterDays"])
+                                  + datetime.timedelta(days=transition.transition_after_days)
         else:
             raise RuntimeError(
                 "Malformed transition: date or days should be present. " + json.dumps(transition))
         return timestamp_of_action
 
     @staticmethod
-    def _is_timestamp_within_date(date, timestamp):
-        day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-        day_end = date.replace(hour=23, minute=59, second=59, microsecond=999)
-        return day_start <= timestamp <= day_end
-
-    def _apply_action_items(self, action_items):
-        pass
-
-    def _check_rule_execution_progress(self, storage_id, subject_files, execution):
-        if not execution["status"]:
-            raise RuntimeError("Malformed rule execution found: " + json.dumps(execution))
-
-        timestamp = datetime.datetime.strptime(execution["updated"], ISO_DATE_FORMAT)
-        if execution["status"] == "RUNNING":
-            # Check that all files were moved to destination storage class and if not and 2 days are passed since
-            # process was started - fail this execution
-            all_files_moved = next(
-                filter(lambda file: file["StorageClass"] != execution["storageClass"], subject_files),
-                None
-            ) is not None
-            if all_files_moved:
-                return self._update_execution(storage_id, execution, "SUCCESS")
-            elif timestamp + datetime.timedelta(days=2) > datetime.datetime.now():
-                return self._update_execution(storage_id, execution, "FAILED")
-        return None
-
-    def _update_execution(self, storage_id, execution, status):
-        self.api.update_status_lifecycle_rule_execution(storage_id, execution["id"], status)
-        execution["status"] = status
-        execution["updated"] = datetime.datetime.now()
-        return execution
-
-    def _define_notification(self, rule):
-        if rule["notification"]:
-            return rule["notification"]
-        else:
-            raise NotImplemented("TODO: Do not forget to implement this part!")
-
-    @staticmethod
     def define_criterion_file(rule, file_listing, folder, subject_files):
-        transition_method = rule["transitionMethod"]
+        transition_method = rule.transition_method
         criterion_files = subject_files
-        if rule["transitionCriterion"] and rule["transitionCriterion"] == "MATCHING_FILES":
-            transition_criterion_files_glob = os.path.join(folder, rule["transitionCriterion"]["value"])
+        if rule.transition_criterion.type == "MATCHING_FILES":
+            transition_criterion_files_glob = os.path.join(folder, rule.transition_criterion.value)
             criterion_files = [
                 file for file in file_listing
                 if file["Key"].startswith(folder) and fnmatch.fnmatch(file["Key"], transition_criterion_files_glob)
@@ -260,25 +279,24 @@ class S3StorageLifecycleSynchronizer:
         )
 
     @staticmethod
-    def _define_effective_transitions(file_prolongation, rule):
+    def _define_effective_transitions(prolongation, rule):
         def _define_transition(transition):
-            resulted_transition = {"storageClass": transition["storageClass"]}
-            if transition["transitionAfterDays"]:
-                resulted_transition["transitionAfterDays"] = transition["transitionAfterDays"] + file_prolongation["days"]
-            if transition["transitionDate"]:
-                resulted_transition["transitionDate"] = \
-                    datetime.datetime.strptime(transition["transitionDate"], ISO_DATE_FORMAT) \
-                    + datetime.timedelta(days=file_prolongation["days"])
+            resulted_transition = StorageLifecycleRuleTransition(transition.storage_class)
+            if transition.transition_after_days:
+                resulted_transition.transition_after_days = transition.transition_after_days + prolongation.days
+            if transition.transition_date:
+                resulted_transition.transition_date = \
+                    transition.transition_date + datetime.timedelta(days=prolongation.days)
             return resulted_transition
 
-        return [_define_transition(transition) for transition in rule["transitions"]]
+        return [_define_transition(transition) for transition in rule.transitions]
 
     @staticmethod
     def _fetch_prolongation_for_path_or_default(path, rule):
-        file_prolongation = {"days": 0}
-        if rule["prolongations"]:
+        file_prolongation = StorageLifecycleRuleProlongation(prolongation_id=-1, prolonged_date=None, days=0, path=path)
+        if rule.prolongations:
             file_prolongation = next(
-                filter(lambda prolongation: prolongation["path"] == path, rule["prolongations"]),
+                filter(lambda prolongation: prolongation.path == path, rule.prolongations),
                 file_prolongation
             )
         return file_prolongation

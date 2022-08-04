@@ -16,17 +16,25 @@ from pipeline.api import PipelineAPI
 import argparse
 from slm.src.application_mode import ApplicationModeRunner
 from slm.src.storage_lifecycle_manager import StorageLifecycleManager
+from src.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", default="single", choices=['single', 'demon'])
-    parser.add_argument("--api")
+    parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'], required=True)
+    parser.add_argument("--cp-api-url")
     parser.add_argument("--log-dir", default="/var/log/")
 
     args = parser.parse_args()
-    api = PipelineAPI(args.api, args.log_dir)
-    ApplicationModeRunner.get_application_runner(StorageLifecycleManager(api), args.mode).run()
+    data_source = None
+    if args.data_source is "RESTApi":
+        if not args.cp_api_url:
+            raise RuntimeError("Cloud Pipeline data source cannot be configured! Please specify --cp-api-url ")
+        api = PipelineAPI(args.cp_api_url, args.log_dir)
+        data_source = RESTApiCloudPipelineDataSource(api)
+
+    ApplicationModeRunner.get_application_runner(StorageLifecycleManager(data_source), args.mode).run()
 
 
 if __name__ == '__main__':
