@@ -55,7 +55,7 @@ class HCSManager:
 
     def run_pipeline(self, pipeline_id):
         pipeline = self._get_pipeline(pipeline_id)
-        self.pool.apply_async(pipeline.run_pipeline)
+        self.pool.apply(pipeline.run_pipeline)
 
     def run_module(self, pipeline_id, module_id):
         pipeline = self._get_pipeline(pipeline_id)

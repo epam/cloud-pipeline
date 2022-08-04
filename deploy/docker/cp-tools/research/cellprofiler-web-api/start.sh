@@ -13,13 +13,7 @@ nohup python3.8 $CELLPROFILER_API_HOME/hcs.py --host=${CELLPROFILER_API_HOST:-0.
 
 function run_pipeline() {
     id=$1
-    run_pipeline_response="$(curl -k -s -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/run/pipelines?pipelineId=$id" | jq -r './/""')"
-    run_pipeline_status="$(echo "$run_pipeline_response" | jq -r .status)"
-    if [ "$run_pipeline_status" != "OK" ]; then
-      run_pipeline_error="$(echo "$run_pipeline_response" | jq -r .message)"
-      echo "[ERROR] Failed to run pipeline '$id'. $run_pipeline_error"
-      exit 1
-    fi
+    curl -k -s -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/run/pipelines?pipelineId=$id" > /dev/null 2>&1 &
 }
 
 function add_input_files() {
