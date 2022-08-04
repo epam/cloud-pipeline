@@ -21,6 +21,8 @@ import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.manager.billing.BillingManager;
 import com.epam.pipeline.manager.EntityManager;
 import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManagerProvider;
+import com.epam.pipeline.manager.cluster.EdgeServiceManager;
+import com.epam.pipeline.manager.cluster.InfrastructureManager;
 import com.epam.pipeline.manager.cluster.InstanceOfferManager;
 import com.epam.pipeline.manager.cluster.NatGatewayManager;
 import com.epam.pipeline.manager.cluster.NodesManager;
@@ -62,6 +64,7 @@ import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.manager.user.UsersFileImportManager;
 import com.epam.pipeline.manager.utils.UtilsManager;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.acl.AclPermissionFactory;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -237,6 +240,15 @@ public class AclTestConfiguration {
 
     @MockBean
     protected QuotaService quotaService;
+
+    @MockBean
+    protected InfrastructureManager infrastructureManager;
+
+    @MockBean
+    protected EdgeServiceManager edgeServiceManager;
+
+    @MockBean
+    protected PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
 
     @Bean
     public PermissionFactory permissionFactory() {

@@ -25,7 +25,7 @@ import com.epam.pipeline.entity.pipeline.TaskStatus;
 import com.epam.pipeline.entity.pipeline.run.PipelineRunServiceUrl;
 import com.epam.pipeline.entity.region.AbstractCloudRegion;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
-import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
+import com.epam.pipeline.test.repository.AbstractJpaTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,7 +40,7 @@ import java.util.stream.StreamSupport;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
-public class PipelineRunServiceUrlRepositoryTest extends AbstractJdbcTest {
+public class PipelineRunServiceUrlRepositoryTest extends AbstractJpaTest {
     private static final String TEST_REGION_1 = "region1";
     private static final String TEST_REGION_2 = "region2";
     private static final String TEST_SERVICE_URL = "service_url";
@@ -74,8 +74,7 @@ public class PipelineRunServiceUrlRepositoryTest extends AbstractJdbcTest {
         testPipeline.setOwner(TEST_USER);
         pipelineDao.createPipeline(testPipeline);
 
-        final AbstractCloudRegion cloudRegion = ObjectCreatorUtils.getDefaultAwsRegion();
-        cloudRegionDao.create(cloudRegion);
+        final AbstractCloudRegion cloudRegion = cloudRegionDao.create(ObjectCreatorUtils.getDefaultAwsRegion());
 
         pipelineRun = TestUtils.createPipelineRun(testPipeline.getId(), null, TaskStatus.RUNNING, USER,
                 null, null, true, null, null,
