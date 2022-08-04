@@ -30,7 +30,6 @@ import {
   Tooltip
 } from 'antd';
 import clusterNodes from '../../models/cluster/ClusterNodes';
-import nodesFilter from '../../models/cluster/FilterClusterNodes';
 import pools from '../../models/cluster/HotNodePools';
 import TerminateNodeRequest from '../../models/cluster/TerminateNode';
 import displayDate from '../../utils/displayDate';
@@ -51,11 +50,10 @@ import {
 } from './node-roles';
 
 @connect({
-  clusterNodes,
-  nodesFilter
+  clusterNodes
 })
 @localization.localizedComponent
-@inject('clusterNodes', 'nodesFilter')
+@inject('clusterNodes')
 @inject((stores) => {
   const {routing} = stores;
   const query = parseQueryParameters(routing);
@@ -113,7 +111,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
   }
 
   get nodes () {
-    const {clusterNodes, nodesFilter, filter} = this.props;
+    const {clusterNodes, filter} = this.props;
     if (filter && Object.keys(filter).length > 0) {
       if (clusterNodes.loaded) {
         const nodes = this.props.clusterNodes.value || [];
@@ -125,8 +123,10 @@ export default class Cluster extends localization.LocalizedReactComponent {
         return (nodes || [])
           .filter(nodeMatchesLabels);
       }
-    } else if (nodesFilter.loaded) {
-      return nodesFilter.value || [];
+    } else {
+      if (clusterNodes.loaded) {
+        return clusterNodes.value || [];
+      }
     }
     return [];
   }
@@ -136,9 +136,11 @@ export default class Cluster extends localization.LocalizedReactComponent {
     const isFilter = filter && Object.keys(filter).length > 0;
     const {label, address, haveRunId, platformCoreNodes} = this.state.appliedFilter;
     const isLabel = label && label.length > 0;
-    if (isFilter || haveRunId || platformCoreNodes || isLabel) {
+    if (isFilter || haveRunId || platformCoreNodes || isLabel || address) {
       const matchesAddress = node => node.addresses &&
-        node.addresses.map(a => a.address).find(a => a === address);
+          node.addresses
+            .map(a => a.address)
+            .some(a => a.toLowerCase().includes(address.toLowerCase()));
       const matchesHaveRunId = node => node.labels &&
         node.labels.hasOwnProperty('runid') &&
         !isNaN(Number(node.labels.runid));
@@ -158,12 +160,6 @@ export default class Cluster extends localization.LocalizedReactComponent {
   refreshCluster = () => {
     if (!this.props.clusterNodes.pending) {
       this.props.clusterNodes.fetch();
-    }
-    if (!this.props.nodesFilter.pending) {
-      let {address} = this.state.appliedFilter;
-      this.props.nodesFilter.send({
-        address
-      });
     }
     this.props.pools.fetch();
   };
@@ -721,7 +717,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
 
   render () {
     let description = this.getDescription();
-    const error = this.props.nodesFilter.error || this.props.clusterNodes.error;
+    const error = this.props.clusterNodes.error;
     const selectionLength = (this.state.selection || []).length;
     return (
       <div>
@@ -742,7 +738,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
                 <Button
                   id="cluster-batch-terminate-button"
                   type="danger"
-                  disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}
+                  disabled={this.props.clusterNodes.pending}
                   style={{marginRight: 5}}
                   onClick={this.nodesTerminationConfirm}
                 >
@@ -753,7 +749,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
             <Button
               id="cluster-refresh-button"
               onClick={this.refreshCluster}
-              disabled={this.props.nodesFilter.pending || this.props.clusterNodes.pending}>
+              disabled={this.props.clusterNodes.pending}>
               Refresh
             </Button>
           </Col>
@@ -772,7 +768,7 @@ export default class Cluster extends localization.LocalizedReactComponent {
         {
           this.generateNodeInstancesTable(
             this.filteredNodes,
-            this.props.nodesFilter.pending || this.props.clusterNodes.pending,
+            this.props.clusterNodes.pending,
             this.props.pools.loaded ? (this.props.pools.value || []) : []
           )
         }
