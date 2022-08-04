@@ -325,6 +325,9 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.rule.provide.enable.flag";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
             "error.datastirage.lifecycle.rule.transition.criterion.value.is.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_METHOD_VALIDATION =
+            "error.datastirage.lifecycle.rule.one.by.one.method.validation";
+
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";
@@ -799,7 +802,6 @@ public final class MessageConstants {
             "error.ngs.preprocessing.no.folder.metadata";
     public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
             "error.ngs.preprocessing.sampleid.is.not.found";
-
     private MessageConstants() {
         // no-op
     }

@@ -23,6 +23,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
@@ -291,6 +292,14 @@ public class DataStorageLifecycleManager {
                             && existingRuleObjectGlob.equals(newObjectGlob);
                 }), messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS));
 
+        final boolean ifTransitionMethodIsOneByOneThenCriterionIsDefault =
+                !rule.getTransitionMethod().equals(StorageLifecycleTransitionMethod.ONE_BY_ONE)
+                        || Optional.ofNullable(rule.getTransitionCriterion())
+                        .map(StorageLifecycleTransitionCriterion::getType)
+                        .orElse(StorageLifecycleTransitionCriterion.StorageLifecycleTransitionCriterionType.DEFAULT)
+                        .equals(StorageLifecycleTransitionCriterion.StorageLifecycleTransitionCriterionType.DEFAULT);
+        Assert.isTrue(ifTransitionMethodIsOneByOneThenCriterionIsDefault,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_METHOD_VALIDATION));
         Assert.isTrue(!StringUtils.isEmpty(rule.getDatastorageId()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
         Assert.isTrue(!StringUtils.isEmpty(rule.getPathGlob()),
