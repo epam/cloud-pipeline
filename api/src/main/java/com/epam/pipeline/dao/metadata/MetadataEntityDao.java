@@ -25,6 +25,7 @@ import com.epam.pipeline.entity.metadata.MetadataClassDescription;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataField;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
+import com.epam.pipeline.entity.metadata.MetadataFilterOperator;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.entity.utils.DateUtils;
@@ -67,8 +68,6 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
     private Pattern searchPattern = Pattern.compile("@QUERY@");
     private static final String AND = " AND ";
     private static final String OR = " OR ";
-    private static final String FROM = "From";
-    private static final String TO = "To";
     private static final int BATCH_SIZE = 1000;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -368,11 +367,14 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         }
         filters.forEach(filter -> {
             clause.append(AND);
+            final MetadataFilterOperator operator = filter.getOperator() != null ?
+                    filter.getOperator() :
+                    MetadataFilterOperator.DEFAULT;
             final String filterClause = filter.isPredefined()
-                    ? addFilterClause(filter, "%s::text ILIKE '%%%s%%'", getDBName(filter.getKey()))
+                    ? addFilterClause(filter, getTemplate(operator, true), filter.getKey(), operator)
                     : (CollectionUtils.isEmpty(filter.getValues())
                         ? getEmptyFieldClause(filter.getKey())
-                        : addFilterClause(filter, getTemplate(filter), getDbName(filter.getKey())));
+                        : addFilterClause(filter, getTemplate(operator, false), filter.getKey(), operator));
             clause.append(filterClause);
         });
     }
@@ -385,19 +387,10 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                 ")";
     }
 
-    private String getTemplate(final MetadataFilter.FilterQuery filter) {
-        final String key = filter.getKey();
-        if (key.endsWith(FROM)) {
-            return "e.data #>> '{%s,value}' >= '%s'";
-        }
-        if (key.endsWith(TO)) {
-            return "e.data #>> '{%s,value}' <= '%s'";
-        }
-        return "e.data #>> '{%s,value}' ILIKE '%%%s%%'";
-    }
-
-    private String getDbName(final String key) {
-        return key.replace(FROM, "").replace(TO, "");
+    private String getTemplate(final MetadataFilterOperator operator, final boolean isPredefined) {
+        return (isPredefined ? "%s::text " : "e.data #>> '{%s,value}' ") +
+                "%s " +
+                (MetadataFilterOperator.DEFAULT.equals(operator) ? "'%%%s%%'" : "'%s'");
     }
 
     private String getDBName(final String filterKey) {
@@ -408,13 +401,16 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
         return field.getDbName();
     }
 
-    private String addFilterClause(MetadataFilter.FilterQuery filter, String template, String dbName) {
+    private String addFilterClause(final MetadataFilter.FilterQuery filter,
+                                   final String template,
+                                   final String dbName,
+                                   final MetadataFilterOperator operator) {
         if (CollectionUtils.isEmpty(filter.getValues())) {
             return StringUtils.EMPTY;
         }
         String clauses = filter.getValues()
                 .stream()
-                .map(value -> format(template, dbName, value))
+                .map(value -> format(template, dbName, operator.getValue(), value))
                 .collect(Collectors.joining(OR));
         return format("( %s )", clauses);
     }
