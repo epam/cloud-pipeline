@@ -34,6 +34,7 @@ class PipelineState(Enum):
     RUNNING = 2
     FINISHED = 3
     FAILED = 4
+    QUEUED = 5
 
 
 class ImageCoords(object):
