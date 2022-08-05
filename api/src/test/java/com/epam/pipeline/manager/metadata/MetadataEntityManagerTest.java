@@ -20,6 +20,7 @@ import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.entity.metadata.MetadataClass;
 import com.epam.pipeline.entity.metadata.MetadataEntity;
 import com.epam.pipeline.entity.metadata.MetadataFilter;
+import com.epam.pipeline.entity.metadata.MetadataFilterOperator;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
 import com.epam.pipeline.entity.pipeline.Folder;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
@@ -50,12 +51,23 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
     private static final String ENTITY_NAME = "ENTITY_NAME";
     private static final String EXTERNAL_ID1 = "EXT_1";
     private static final String EXTERNAL_ID2 = "EXT_2";
+    private static final String EXTERNAL_ID3 = "EXTERNAL_ID3";
+    private static final String EXTERNAL_ID4 = "EXTERNAL_ID4";
+    private static final String EXTERNAL_ID5 = "EXTERNAL_ID5";
+    private static final String TEST_DATE = "testDate";
     private static final String NULL_EXTERNAL_ID = null;
     private static final String BLANK_EXTERNAL_ID = "\n";
     private static final List<String> PREDEFINED_EXTERNAL_IDS = Arrays.asList(EXTERNAL_ID1, EXTERNAL_ID2);
     private static final int PAGE_SIZE = 10;
     private static final Map<String, PipeConfValue> DATA = Collections.singletonMap(TEST_STRING,
             new PipeConfValue(TEST_STRING, "TEST_VALUE"));
+    private static final Map<String, PipeConfValue> DATA_WITH_DATE_FIELD_1 = Collections.singletonMap(TEST_DATE,
+            new PipeConfValue(TEST_DATE, "20220910"));
+    private static final String DATE2 = "20221010";
+    private static final Map<String, PipeConfValue> DATA_WITH_DATE_FIELD_2 = Collections.singletonMap(TEST_DATE,
+            new PipeConfValue(TEST_DATE, DATE2));
+    private static final Map<String, PipeConfValue> DATA_WITH_DATE_FIELD_3 = Collections.singletonMap(TEST_DATE,
+            new PipeConfValue(TEST_DATE, "20221110"));
     private static final Map<String, PipeConfValue> DATA_WITH_NULL_FIELD = Collections.singletonMap(TEST_STRING,
             new PipeConfValue(TEST_STRING, null));
     private static final Map<String, PipeConfValue> DATA_WITH_EMPTY_ARRAY_FIELD = Collections.singletonMap(TEST_STRING,
@@ -132,10 +144,10 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
         entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
                 folder.getId(),
                 ENTITY_NAME,
-                "EXTERNAL_ID3",
+                EXTERNAL_ID3,
                 DATA));
 
-        final MetadataFilter filter = getMetadataFilter(TEST_STRING, Collections.singletonList("TEST_VALUE"));
+        final MetadataFilter filter = getMetadataFilter(TEST_STRING, Collections.singletonList("TEST_VALUE"), null);
         final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
         assertEquals(1, loadedSamples.size());
     }
@@ -146,10 +158,10 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
         entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
                 folder.getId(),
                 ENTITY_NAME,
-                "EXTERNAL_ID3",
+                EXTERNAL_ID3,
                 DATA));
 
-        final MetadataFilter filter = getMetadataFilter("TEST1", null);
+        final MetadataFilter filter = getMetadataFilter("TEST1", null, null);
         final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
         assertEquals(2, loadedSamples.size());
     }
@@ -158,27 +170,92 @@ public class MetadataEntityManagerTest extends AbstractSpringTest {
     @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
     public void shouldFilterMetadataEntitiesByEmptyField() {
         entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
-                folder.getId(), ENTITY_NAME, "EXTERNAL_ID4", DATA_WITH_NULL_FIELD));
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID4, DATA_WITH_NULL_FIELD));
         entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
-                folder.getId(), ENTITY_NAME, "EXTERNAL_ID5", DATA_WITH_EMPTY_ARRAY_FIELD));
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID5, DATA_WITH_EMPTY_ARRAY_FIELD));
         entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
                 folder.getId(), ENTITY_NAME, "EXTERNAL_ID6", DATA_WITH_EMPTY_OBJECT_FIELD));
         entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
                 folder.getId(), ENTITY_NAME, "EXTERNAL_ID7", DATA_WITH_BLANK_FIELD_VALUE));
 
-        final MetadataFilter filter = getMetadataFilter(TEST_STRING, null);
+        final MetadataFilter filter = getMetadataFilter(TEST_STRING, null, null);
         final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
         assertEquals(5, loadedSamples.size());
     }
 
-    private MetadataFilter getMetadataFilter(final String key, final List<String> value) {
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldFilterMetadataEntitiesGTOperator() {
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID3, DATA_WITH_DATE_FIELD_1));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID4, DATA_WITH_DATE_FIELD_2));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID5, DATA_WITH_DATE_FIELD_3));
+
+        final MetadataFilter filter = getMetadataFilter(TEST_DATE, Collections.singletonList(DATE2),
+                MetadataFilterOperator.GE);
+        final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
+        assertEquals(2, loadedSamples.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldFilterMetadataEntitiesLTOperator() {
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID3, DATA_WITH_DATE_FIELD_1));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID4, DATA_WITH_DATE_FIELD_2));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID5, DATA_WITH_DATE_FIELD_3));
+
+        final MetadataFilter filter = getMetadataFilter(TEST_DATE, Collections.singletonList(DATE2),
+                MetadataFilterOperator.LE);
+        final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
+        assertEquals(2, loadedSamples.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldFilterMetadataEntitiesEQOperator() {
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID3, DATA_WITH_DATE_FIELD_1));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID4, DATA_WITH_DATE_FIELD_2));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID5, DATA_WITH_DATE_FIELD_3));
+
+        final MetadataFilter filter = getMetadataFilter(TEST_DATE, Collections.singletonList(DATE2),
+                MetadataFilterOperator.EQ);
+        final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
+        assertEquals(1, loadedSamples.size());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void shouldFilterMetadataEntitiesNoOperator() {
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID3, DATA_WITH_DATE_FIELD_1));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID4, DATA_WITH_DATE_FIELD_2));
+        entityManager.updateMetadataEntity(ObjectCreatorUtils.createMetadataEntityVo(sampleClass.getId(),
+                folder.getId(), ENTITY_NAME, EXTERNAL_ID5, DATA_WITH_DATE_FIELD_3));
+
+        final MetadataFilter filter = getMetadataFilter(TEST_DATE, Collections.singletonList(DATE2),
+                null);
+        final List<MetadataEntity> loadedSamples = entityManager.filterMetadata(filter).getElements();
+        assertEquals(1, loadedSamples.size());
+    }
+
+    private MetadataFilter getMetadataFilter(final String key, final List<String> value,
+                                             final MetadataFilterOperator operator) {
         final MetadataFilter filter = new MetadataFilter();
         filter.setFolderId(folder.getId());
         filter.setMetadataClass(SAMPLE_CLASS);
         filter.setPage(1);
         filter.setPageSize(PAGE_SIZE);
         final List<MetadataFilter.FilterQuery> filters = new ArrayList<>();
-        final MetadataFilter.FilterQuery filterQuery = new MetadataFilter.FilterQuery(key, value, false);
+        final MetadataFilter.FilterQuery filterQuery = new MetadataFilter.FilterQuery(key, operator, value, false);
         filters.add(filterQuery);
         filter.setFilters(filters);
         return filter;
