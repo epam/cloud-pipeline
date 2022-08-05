@@ -2,6 +2,7 @@ import datetime
 
 ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
+
 class StorageLifecycleTransitionCriterion:
 
     def __init__(self, type, value):

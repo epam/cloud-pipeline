@@ -1,7 +1,9 @@
 class StorageLifecycleRuleActionItems:
 
-    def __init__(self, rule_id, transition_destination):
+    def __init__(self, rule_id, folder, transition_destination, mode="FOLDER"):
         self.rule_id = rule_id
+        self.folder = folder
+        self.mode = mode
         self.executions = []
         self.notification_queue = []
         self.destination_transitions_queues = {
@@ -12,10 +14,18 @@ class StorageLifecycleRuleActionItems:
         self.rule_id = rule_id
         return self
 
-    def with_notification(self, path, destination, date_of_action, prolong_days):
+    def with_mode(self, mode):
+        self.mode = mode
+        return self
+
+    def with_folder(self, folder):
+        self.folder = folder
+        return self
+
+    def with_notification(self, path, storage_class, date_of_action, prolong_days):
         self.notification_queue.append({
           "path": path,
-          "transition": destination,
+          "storage_class": storage_class,
           "date_of_action": date_of_action,
           "prolong_days": prolong_days
         })
@@ -32,14 +42,14 @@ class StorageLifecycleRuleActionItems:
 
     def merge(self, to_be_merged):
         if to_be_merged:
-            self.rule_id = to_be_merged.rule_id
+            self.with_mode(to_be_merged.mode)
             self.executions.extend(to_be_merged.executions)
             self.notification_queue.extend(to_be_merged.notification_queue)
             for destination, queue in to_be_merged.destination_transitions_queues.items():
                 self.destination_transitions_queues.get(destination, {}).update(queue)
 
     def copy(self):
-        result = StorageLifecycleRuleActionItems(None, [])
+        result = StorageLifecycleRuleActionItems(self.rule_id, self.folder, [])
         result.merge(self)
         return result
 

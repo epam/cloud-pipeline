@@ -6,6 +6,9 @@ class CloudPipelineDataSource:
     def __init__(self):
         pass
 
+    def load_datastorage(self, datastorage_id):
+        pass
+
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         pass
 
@@ -27,6 +30,15 @@ class CloudPipelineDataSource:
     def load_default_lifecycle_rule_notification(self):
         pass
 
+    def send_notification(self, subject, body, to_user, copy_users, parameters):
+        pass
+
+    def load_role(self, role_id):
+        pass
+
+    def load_user_by_name(self, username):
+        pass
+
 
 class RESTApiCloudPipelineDataSource:
 
@@ -35,6 +47,9 @@ class RESTApiCloudPipelineDataSource:
     def __init__(self, api):
         self.api = api
         self.parser = LifecycleRuleParser(self._load_default_lifecycle_rule_notification())
+
+    def load_datastorage(self, datastorage_id):
+        return self.api.find_datastorage(datastorage_id)
 
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         rules_json = self.api.load_lifecycle_rules_for_storage(datastorage_id)
@@ -61,6 +76,15 @@ class RESTApiCloudPipelineDataSource:
         return self.parser.parse_execution(
             self.api.update_status_lifecycle_rule_execution(datastorage_id, execution_id, status)
         )
+
+    def send_notification(self, subject, body, to_user, copy_users, parameters):
+        self.api.create_notification(subject, body, to_user, copy_users, parameters)
+
+    def load_role(self, role_id):
+        return self.api.load_role(role_id)
+
+    def load_user_by_name(self, username):
+        return self.api.load_user_by_name(username)
 
     def _load_default_lifecycle_rule_notification(self):
         default_lifecycle_notification_templates = next(

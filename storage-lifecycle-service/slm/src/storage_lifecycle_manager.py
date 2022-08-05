@@ -1,17 +1,15 @@
 from slm.src.logger import AppLogger
-from slm.src.synchronizer.lifecycle_action_applier import StorageLifecycleActionApplier
 from slm.src.synchronizer.lifecycle_syncronizer import UnsupportedStorageLifecycleSynchronizer, \
     S3StorageLifecycleSynchronizer
 
 
 class StorageLifecycleManager:
 
-    def __init__(self, cp_data_source, logger=AppLogger()):
+    def __init__(self, config, cp_data_source, logger=AppLogger()):
         self.logger = logger
         self.api = cp_data_source
-        self.action_applier = StorageLifecycleActionApplier(cp_data_source)
         self.synchronizers = {
-            "S3": S3StorageLifecycleSynchronizer(cp_data_source, logger=logger),
+            "S3": S3StorageLifecycleSynchronizer(config, cp_data_source, logger=logger),
             "GC": UnsupportedStorageLifecycleSynchronizer(cp_data_source, logger=logger),
             "AZ": UnsupportedStorageLifecycleSynchronizer(cp_data_source, logger=logger),
             "NFS": UnsupportedStorageLifecycleSynchronizer(cp_data_source, logger=logger)

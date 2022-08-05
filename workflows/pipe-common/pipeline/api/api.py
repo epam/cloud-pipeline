@@ -226,6 +226,7 @@ class PipelineAPI:
     LOAD_CURRENT_USER = 'whoami'
     LOAD_ROLES = 'role/loadAll?loadUsers={}'
     LOAD_ROLE = 'role/{}'
+    LOAD_USER_BY_NAME = 'user?name={}'
     RUN_CONFIGURATION = '/runConfiguration'
     NOTIFICATION_SETTING_URL = 'notification/settings'
     NOTIFICATION_TEMPLATE_URL = 'notification/template'
@@ -1001,6 +1002,13 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load role by ID '{}'.", "Error message: {}".format(str(role_id),
                                                                                              str(e.message)))
+
+    def load_user_by_name(self, user):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_USER_BY_NAME.format(user))
+        except Exception as e:
+            raise RuntimeError("Failed to load user by name '{}'.", "Error message: {}".format(str(user),
+                                                                                               str(e.message)))
 
     def run_configuration(self, data):
         try:
