@@ -1,99 +1,54 @@
+# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import datetime
 import fnmatch
 import json
 import os
-import datetime
-
-from slm.src.logger import AppLogger
-import boto3
 
 from slm.src.model.storage_lifecycle_rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
 from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActionItems
+from slm.src.util.date_utils import is_timestamp_within_date
 
 ROLE_ADMIN_ID = 1
 
-DESTINATION_STORAGE_CLASS_TAG = 'DESTINATION_STORAGE_CLASS'
-CP_SLC_RULE_NAME_PREFIX = 'CP Storage Lifecycle Rule:'
 
+class StorageLifecycleSynchronizer:
 
-def _is_timestamp_within_date(date, timestamp):
-    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_end = date.replace(hour=23, minute=59, second=59, microsecond=999)
-    return day_start <= timestamp <= day_end
-
-
-def _rule_is_not_valid(rule):
-    # TODO check that rule is valid
-    pass
-
-
-class S3StorageLifecycleSynchronizer:
-
-    STANDARD = "STANDARD"
-    GLACIER = "GLACIER"
-    GLACIER_IR = "GLACIER_IR"
-    DEEP_ARCHIVE = "DEEP_ARCHIVE"
-    DELETION = "DELETION"
-
-    EMPTY_ACTION_ITEMS = StorageLifecycleRuleActionItems(None, None, [GLACIER, GLACIER_IR, DEEP_ARCHIVE, DELETION])
-
-    @staticmethod
-    def construct_s3_slc_rule(storage_class):
-        return {
-            'ID': CP_SLC_RULE_NAME_PREFIX + storage_class,
-            'Filter': {
-                'Tag': {
-                    'Key': DESTINATION_STORAGE_CLASS_TAG,
-                    'Value': storage_class
-                }
-            },
-            'Status': 'Enabled',
-            'Transitions': [
-                {
-                    'Days': 0,
-                    'StorageClass': storage_class
-                },
-            ],
-            'NoncurrentVersionTransitions': [
-                {
-                    'NoncurrentDays': 0,
-                    'StorageClass': storage_class,
-                    'NewerNoncurrentVersions': 0
-                },
-            ]
-        }
-
-    S3_STORAGE_CLASS_TO_RULE = {
-        GLACIER: construct_s3_slc_rule(GLACIER),
-        DEEP_ARCHIVE: construct_s3_slc_rule(DEEP_ARCHIVE),
-        GLACIER_IR: construct_s3_slc_rule(GLACIER_IR)
-    }
-
-    DELETION_RULE = {
-        'ID': CP_SLC_RULE_NAME_PREFIX + DELETION,
-        'Filter': {
-            'Tag': {
-                'Key': DESTINATION_STORAGE_CLASS_TAG,
-                'Value': DELETION
-            }
-        },
-        'Status': 'Enabled',
-        'Expiration': {
-            'Days': 0
-        },
-        'NoncurrentVersionExpiration': {
-            'NoncurrentDays': 0,
-            'NewerNoncurrentVersions': 0
-        }
-    }
-
-    def __init__(self, config, cp_data_source, logger=AppLogger()):
+    def __init__(self, cp_data_source, cloud_operations, logger):
         self.logger = logger
+        self.cloud_operations = cloud_operations
         self.cp_data_source = cp_data_source
-        self.config = config
-        self.aws_s3_client = boto3.client("s3")
-        self.aws_s3control_client = boto3.client("s3control")
 
-    def sync_storage(self, storage):
+    def sync(self):
+        self.logger.log("Starting object lifecycle synchronization process...")
+        available_storages = self.cp_data_source.load_available_storages()
+        self.logger.log("{} storages loaded.".format(len(available_storages)))
+
+        for storage in available_storages:
+            self.logger.log(
+                "Starting object lifecycle synchronization process for {} with type {}.".format(
+                    storage.path, storage.type)
+            )
+            self._sync_storage(storage)
+            self.logger.log(
+                "Finish object lifecycle synchronization process for {} with type {}.".format(
+                    storage.path, storage.type)
+            )
+        self.logger.log("Done object lifecycle synchronization process...")
+
+    def _sync_storage(self, storage):
         rules = self.cp_data_source.load_lifecycle_rules_for_storage(storage.id)
 
         # No rules for storage exist - just skip it
@@ -101,13 +56,18 @@ class S3StorageLifecycleSynchronizer:
             self.logger.log("No rules for storage {} is defined, skipping".format(storage.path))
             return
 
-        self._create_s3_lifecycle_policy_for_bucket_if_needed(storage)
+        if storage.type not in self.cloud_operations:
+            self.logger.log(
+                "Lifecycle rules feature is not implemented for storage with type {}.".format(storage.type)
+            )
+
+        self.cloud_operations[storage.type].prepare_bucket_if_needed(storage)
 
         for rule in rules:
-            if _rule_is_not_valid(rule):
+            if self._rule_is_not_valid(rule):
                 continue
 
-            files = self._list_objects_by_prefix_from_glob(storage, rule.path_glob)
+            files = self.cloud_operations[storage.type].list_objects_by_prefix_from_glob(storage, rule.path_glob)
 
             for folder in self._identify_subject_folders(files, rule.path_glob):
 
@@ -119,50 +79,21 @@ class S3StorageLifecycleSynchronizer:
 
                 subject_files = [
                     file for file in files
-                    if file["Key"].startswith(folder)
-                    and fnmatch.fnmatch(file["Key"], effective_glob)
+                    if file.path.startswith(folder)
+                    and fnmatch.fnmatch(file.path, effective_glob)
                 ] if effective_glob else files
 
                 self._process_files(storage, folder, files, subject_files, rule)
 
-    def _create_s3_lifecycle_policy_for_bucket_if_needed(self, storage):
-        existing_slc = self.aws_s3_client.get_bucket_lifecycle_configuration(Bucket=storage.path)
-        cp_lsc_rules = [rule for rule in existing_slc['Rules'] if rule['ID'].startswith(CP_SLC_RULE_NAME_PREFIX)]
-
-        if not cp_lsc_rules:
-            self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(storage.path))
-            slc_rules = existing_slc['Rules']
-            for rule in self.S3_STORAGE_CLASS_TO_RULE.values():
-                slc_rules.append(rule)
-            slc_rules.append(self.DELETION_RULE)
-            self.aws_s3_client.put_bucket_lifecycle_configuration(existing_slc)
-        else:
-            self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(storage.path))
-
-    def _list_objects_by_prefix_from_glob(self, storage, glob_str):
-        def determinate_prefix(glob_str):
-            if "*" in glob_str:
-                return os.path.split(glob_str.split("*", 1)[0])
-            else:
-                return glob_str
-
-        result = []
-        prefix = determinate_prefix(glob_str)
-        paginator = self.aws_s3_client.get_paginator('list_objects')
-        page_iterator = paginator.paginate(Bucket=storage.path, Prefix=prefix)
-        for page in page_iterator:
-            for obj in page['Contents']:
-                result.append(obj)
-        return result
-
     def _process_files(self, storage, folder, file_listing, subject_files, rule):
         transition_method = rule.transition_method
-        resulted_action_items = self.EMPTY_ACTION_ITEMS.copy().with_folder(folder).with_rule_id(rule.rule_id)
+        resulted_action_items = StorageLifecycleRuleActionItems(
+            None, None, []).with_folder(folder).with_rule_id(rule.rule_id)
 
         if transition_method == "ONE_BY_ONE":
             resulted_action_items.with_mode("FILE")
             for file in subject_files:
-                resulted_action_items.merge(self._build_action_items(file["Key"], [file], file, rule))
+                resulted_action_items.merge(self._build_action_items(file.path, [file], file, rule))
         elif transition_method == "LATEST_FILE" or transition_method == "EARLIEST_FILE":
             criterion_file = self.define_criterion_file(rule, file_listing, folder, subject_files)
             resulted_action_items.merge(self._build_action_items(folder, subject_files, criterion_file, rule))
@@ -170,7 +101,7 @@ class S3StorageLifecycleSynchronizer:
         self._apply_action_items(storage, rule, resulted_action_items)
 
     def _build_action_items(self, path, subject_files, criterion_file, rule):
-        result = self.EMPTY_ACTION_ITEMS.copy().with_rule_id(rule.rule_id)
+        result = StorageLifecycleRuleActionItems(None, None, []).with_rule_id(rule.rule_id)
 
         lifecycle_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
             rule.datastorage_id, rule.rule_id, path)
@@ -191,22 +122,22 @@ class S3StorageLifecycleSynchronizer:
 
                 # Check if notification is needed
                 date_to_check = now + datetime.timedelta(days=notification.notify_before_days)
-                if notification.enabled and _is_timestamp_within_date(date_to_check, timestamp_of_action):
+                if notification.enabled and is_timestamp_within_date(date_to_check, timestamp_of_action):
                     notification_execution = next(
                         filter(lambda e: e.status == "NOTIFICATION_SENT" and e.storage_class == transition_class, lifecycle_executions), None
                     )
-                    if not notification_execution or not _is_timestamp_within_date(now, notification_execution.updated):
+                    if not notification_execution or not is_timestamp_within_date(now, notification_execution.updated):
                         result.with_notification(
                             path, transition_class, transition.transition_date, notification.prolong_days
                         )
 
                 # Check if action is needed
                 date_to_check = now
-                if _is_timestamp_within_date(date_to_check, timestamp_of_action):
+                if is_timestamp_within_date(date_to_check, timestamp_of_action):
                     action_execution = next(
                         filter(lambda e: e.status == "RUNNING" and e.storage_class == transition_class, lifecycle_executions), None
                     )
-                    if not action_execution or not _is_timestamp_within_date(now, action_execution.updated):
+                    if not action_execution or not is_timestamp_within_date(now, action_execution.updated):
                         for file in subject_files:
                             result.with_transition(transition_class, file)
 
@@ -227,7 +158,30 @@ class S3StorageLifecycleSynchronizer:
                         storage_class, len(files)
                     )
                 )
-                self._tag_files(storage, rule, action_items.mode, action_items.folder, storage_class, files)
+                self.cloud_operations[storage.type].process_files_on_cloud(
+                    storage, rule, action_items.folder, storage_class, files)
+
+                if action_items.mode == "FILES":
+                    for file in files:
+                        self._create_or_update_execution(storage, rule, storage_class, file.path)
+                else:
+                    self._create_or_update_execution(storage, rule, storage_class, action_items.folder)
+
+    def _create_or_update_execution(self, storage, rule, storage_class, path):
+        execution = self.cp_data_source.load_lifecycle_rule_executions_by_path(
+            storage.id, rule.rule_id, path
+        )
+        if execution:
+            self.cp_data_source.update_status_lifecycle_rule_execution(storage.id, execution["id"], "RUNNING")
+        else:
+            self.cp_data_source.create_lifecycle_rule_execution(
+                storage.id, rule.rule_id,
+                {
+                    "status": "RUNNING",
+                    "path": path,
+                    "storageClass": storage_class
+                }
+            )
 
     def _check_rule_execution_progress(self, storage_id, subject_files, execution):
         if not execution.status:
@@ -237,7 +191,7 @@ class S3StorageLifecycleSynchronizer:
             # Check that all files were moved to destination storage class and if not and 2 days are passed since
             # process was started - fail this execution
             all_files_moved = next(
-                filter(lambda file: file["StorageClass"] != execution.storage_class, subject_files),
+                filter(lambda file: file.storage_class != execution.storage_class, subject_files),
                 None
             ) is not None
             if all_files_moved:
@@ -295,108 +249,17 @@ class S3StorageLifecycleSynchronizer:
         subject, body, to_user, copy_users, parameters = _prepare_massage()
         self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
 
-    def _tag_files(self, storage, rule, mode, folder, storage_class, files):
-
-        def _create_or_update_execution(path):
-            execution = self.cp_data_source.load_lifecycle_rule_executions_by_path(
-                storage.id, rule.rule_id, path
-            )
-            if execution:
-                self.cp_data_source.update_status_lifecycle_rule_execution(storage.id, execution["id"], "RUNNING")
-            else:
-                self.cp_data_source.create_lifecycle_rule_execution(
-                    storage.id, rule.rule_id,
-                    {
-                        "status": "RUNNING",
-                        "path": path,
-                        "storageClass": storage_class
-                    }
-                )
-
-        manifest_content = "\n".join(["{},{}".format(storage.path, file["Key"]) for file in files])
-        manifest_key = "_".join([storage.path, folder, "rule", rule.rule_id, storage_class, datetime.datetime.now(), ".csv"])
-        manifest_object = self.aws_s3_client.put_object(
-            Body=manifest_content,
-            Bucket=self.config["system_bucket"],
-            Key=manifest_key
-        )
-
-        s3_tagging_job = self.aws_s3control_client.create_job(
-            AccountId=self.config["aws_account_id"],
-            ConfirmationRequired=False,
-            Operation={
-                'S3PutObjectTagging': {
-                    'TagSet': [
-                        {
-                            'Key': DESTINATION_STORAGE_CLASS_TAG,
-                            'Value': storage_class
-                        },
-                    ]
-                },
-            },
-            Report={
-                'Bucket': self.config["system_bucket"],
-                'Format': 'Report_CSV_20180820',
-                'Enabled': True,
-                'Prefix': self.config["report_prefix"],
-                'ReportScope': 'FailedTasksOnly'
-            },
-            Manifest={
-                'Spec': {
-                    'Format': 'S3BatchOperations_CSV_20180820',
-                    'Fields': ['Bucket', 'Key']
-                },
-                'Location': {
-                    'ObjectArn': "".join(["arn:aws:s3:::", self.config["system_bucket"], manifest_key]),
-                    'ETag': manifest_object["ETag"]
-                }
-            },
-            Description='Cloud-Pipeline job for tagging s3 objects for transition with respect to cp lifecycle rule',
-            Priority=1,
-            RoleArn=self.config["role_arn"],
-            Tags=[
-                {
-                    'Key': 'cp-storage-lifecycle-job',
-                    'Value': 'true'
-                },
-            ]
-        )
-
-        s3_tagging_job_description = None
-        for try_i in range(30):
-            self.logger.log("Get Job status with try: {}".format(try_i))
-            s3_tagging_job_description = self.aws_s3control_client.describe_job(
-                AccountId=self.config["aws_account_id"],
-                JobId=s3_tagging_job["JobId"]
-            )
-            if "Status" in s3_tagging_job_description and s3_tagging_job_description["Status"] == "Complete":
-                self.logger.log("Job status: {}. Proceeding.".format(s3_tagging_job_description["Status"]))
-                break
-            else:
-                self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Status"]))
-
-        delete_manifest_object = self.aws_s3_client.delete_object(
-            Bucket=self.config["system_bucket"],
-            Key=manifest_key
-        )
-
-        if not s3_tagging_job_description or "Status" not in s3_tagging_job_description \
-                or s3_tagging_job_description["Status"]:
-            self.logger.log("Can't get Job status. Will delete manifest and skip.")
-            return
-
-        if mode == "FILES":
-            for file in files:
-                _create_or_update_execution(file["Key"])
-        else:
-            _create_or_update_execution(folder)
+    @staticmethod
+    def _rule_is_not_valid(rule):
+        # TODO check that rule is valid
+        pass
 
     @staticmethod
     def define_transition_effective_timepoint(criterion_file, transition):
         if transition.transition_date:
             timestamp_of_action = transition.transition_date
         elif transition.transition_after_days:
-            timestamp_of_action = criterion_file["LastModified"] \
+            timestamp_of_action = criterion_file.creation_date \
                                   + datetime.timedelta(days=transition.transition_after_days)
         else:
             raise RuntimeError(
@@ -411,12 +274,12 @@ class S3StorageLifecycleSynchronizer:
             transition_criterion_files_glob = os.path.join(folder, rule.transition_criterion.value)
             criterion_files = [
                 file for file in file_listing
-                if file["Key"].startswith(folder) and fnmatch.fnmatch(file["Key"], transition_criterion_files_glob)
+                if file.path.startswith(folder) and fnmatch.fnmatch(file.path, transition_criterion_files_glob)
             ]
         # Sort by date (reverse or not depends on transition method) and get first element or None
         return next(
             iter(
-                sorted(criterion_files, key=lambda e: e["LastModified"], reverse=(transition_method == "LATEST_FILE"))),
+                sorted(criterion_files, key=lambda e: e.creation_date, reverse=(transition_method == "LATEST_FILE"))),
             None
         )
 
@@ -461,20 +324,6 @@ class S3StorageLifecycleSynchronizer:
 
         unique_folder_paths = set()
         for object in files:
-            parent_dir, filename = os.path.split(object["Key"])
+            parent_dir, filename = os.path.split(object.path)
             unique_folder_paths.add(parent_dir)
         return [p for p in generate_all_possible_dir_paths(unique_folder_paths) if fnmatch.fnmatch(p, glob_str)]
-
-
-class UnsupportedStorageLifecycleSynchronizer:
-
-    def __init__(self, api, logger=AppLogger()):
-        self.logger = logger
-        self.api = api
-
-    def sync_storage(self, storage):
-        self.logger.log(
-            "Lifecycle configuration for storage: {} with storage type: {} is not supported. Skipping.".format(
-                storage.path, storage.type
-            )
-        )

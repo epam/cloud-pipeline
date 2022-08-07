@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 from pipeline.api import PipelineAPI
 import argparse
 from slm.src.application_mode import ApplicationModeRunner
-from slm.src.storage_lifecycle_manager import StorageLifecycleManager
+from slm.src.cloud.cloud import S3StorageOperations
+from slm.src.logger import AppLogger
+from slm.src.storage_lifecycle_synchronizer import StorageLifecycleSynchronizer
 from src.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
+
+S3_TYPE = "S3"
 
 
 def main():
@@ -24,9 +30,13 @@ def main():
     parser.add_argument("--mode", default="single", choices=['single', 'demon'])
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'], required=True)
     parser.add_argument("--cp-api-url")
+    parser.add_argument("--aws-configuration-json")
     parser.add_argument("--log-dir", default="/var/log/")
 
     args = parser.parse_args()
+
+    logger = AppLogger()
+
     data_source = None
     if args.data_source is "RESTApi":
         if not args.cp_api_url:
@@ -34,7 +44,15 @@ def main():
         api = PipelineAPI(args.cp_api_url, args.log_dir)
         data_source = RESTApiCloudPipelineDataSource(api)
 
-    ApplicationModeRunner.get_application_runner(StorageLifecycleManager(data_source), args.mode).run()
+    cloud_operations = {}
+
+    if args.aws_configuration_json:
+        cloud_operations[S3_TYPE] = S3StorageOperations(json.loads(args.aws), data_source, logger)
+
+    ApplicationModeRunner.get_application_runner(
+        StorageLifecycleSynchronizer(cloud_operations, data_source, logger),
+        args.mode
+    ).run()
 
 
 if __name__ == '__main__':

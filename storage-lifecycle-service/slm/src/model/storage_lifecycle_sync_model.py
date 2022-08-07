@@ -32,6 +32,8 @@ class StorageLifecycleRuleActionItems:
         return self
 
     def with_transition(self, destination, file):
+        if destination not in self.destination_transitions_queues:
+            self.destination_transitions_queues[destination] = []
         self.destination_transitions_queues[destination].append(file)
         return self
 

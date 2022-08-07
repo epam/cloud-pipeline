@@ -11,3 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+def is_timestamp_within_date(date, timestamp):
+    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end = date.replace(hour=23, minute=59, second=59, microsecond=999)
+    return day_start <= timestamp <= day_end
