@@ -96,6 +96,11 @@ const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
+const FILTER_OPERATORS = {
+  greater: 'GE',
+  less: 'LE',
+  equal: 'EQ'
+};
 
 function filterColumns (column) {
   return !column.predefined || ['externalId', 'createdDate'].includes(column.name);
@@ -358,6 +363,18 @@ export default class Metadata extends React.Component {
       .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
   }
 
+  getColumnType = (key) => {
+    const entityField = this.currentClassEntityFields
+      .find(field => field.name === key);
+    if (key === 'createdDate') {
+      return 'Date';
+    }
+    if (entityField) {
+      return entityField.type;
+    }
+    return 'string';
+  };
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -375,15 +392,52 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onDateRangeChanged = (range) => {
-    let filterModel = {...this.state.filterModel};
+  onDateRangeChanged = (range, key) => {
+    const filterModel = {...this.state.filterModel};
     const {
       from,
       to
     } = range || {};
-    filterModel.startDateFrom = from;
-    filterModel.endDateTo = to;
-    this.setState(
+    if (key === 'createdDate') {
+      filterModel.startDateFrom = from;
+      filterModel.endDateTo = to;
+      return this.setState(
+        {filterModel},
+        () => {
+          this.clearSelection();
+          this.loadData();
+        }
+      );
+    }
+    const filtered = this.state.filterModel.filters
+      .filter(filter => filter.key !== key);
+    let periodFilters;
+    if (range && range.emptyValue) {
+      periodFilters = [{
+        key,
+        values: []
+      }];
+    } else if (from || to) {
+      periodFilters = [range.from, range.to]
+        .filter(Boolean)
+        .map((date, index) => {
+          let operator;
+          if (index === 0) {
+            operator = FILTER_OPERATORS.greater;
+          } else {
+            operator = FILTER_OPERATORS.less;
+          }
+          return {
+            key,
+            operator,
+            values: [date]
+          };
+        });
+    } else {
+      periodFilters = [];
+    }
+    filterModel.filters = [...filtered, ...periodFilters];
+    return this.setState(
       {filterModel},
       () => {
         this.clearSelection();
@@ -472,7 +526,8 @@ export default class Metadata extends React.Component {
         .map(o => ({
           key: unmapColumnName(o.key),
           values: o.values || [],
-          predefined: isPredefined(unmapColumnName(o.key))
+          predefined: isPredefined(unmapColumnName(o.key)),
+          ...(o.operator && {operator: o.operator})
         }));
     }
     if (!selectedItemsAreShowing) {
@@ -621,15 +676,48 @@ export default class Metadata extends React.Component {
             )
           }
         />
-      </Button>);
-
-    if (key === 'createdDate') {
+      </Button>
+    );
+    const getDateInfoFromFilters = (key) => {
+      if (key === 'createdDate') {
+        return {
+          from: startDateFrom,
+          to: endDateTo
+        };
+      }
+      const currentFilters = filters
+        .filter(filter => filter.key === unmapColumnName(key));
+      let dateFrom;
+      let dateTo;
+      let emptyValue = false;
+      if (currentFilters.length > 0) {
+        if (currentFilters.length === 1 && currentFilters[0].values.length === 0) {
+          emptyValue = true;
+        } else {
+          const filterFrom = currentFilters
+            .find(filter => filter.operator === FILTER_OPERATORS.greater);
+          const fitlerTo = currentFilters
+            .find(filter => filter.operator === FILTER_OPERATORS.less);
+          dateFrom = filterFrom ? filterFrom.values[0] : undefined;
+          dateTo = fitlerTo ? fitlerTo.values[0] : undefined;
+        }
+      }
+      return {
+        from: dateFrom,
+        to: dateTo,
+        emptyValue
+      };
+    };
+    const dateInfo = getDateInfoFromFilters(key);
+    if (/^date$/i.test(this.getColumnType(key))) {
       return (
         <RangeDatePicker
-          from={startDateFrom}
-          to={endDateTo}
+          from={dateInfo.from}
+          to={dateInfo.to}
           onChange={(e) => this.onDateRangeChanged(e, key)}
           visibilityChanged={handleControlVisibility}
+          supportEmptyValue={key !== 'createdDate'}
+          emptyValue={dateInfo.emptyValue}
         >
           {button}
         </RangeDatePicker>
