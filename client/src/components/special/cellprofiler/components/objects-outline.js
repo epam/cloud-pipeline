@@ -33,14 +33,14 @@ class ObjectsOutline extends React.Component {
     } = this.props;
     if (
       !pipeline ||
-      !pipeline.objectsOutlines
+      !pipeline.graphicsOutput
     ) {
       return;
     }
     this.setState({
       pending: true
     }, () => {
-      pipeline.objectsOutlines.renderOutlines(viewer)
+      pipeline.graphicsOutput.renderOutlines(viewer)
         .then(() => {
           this.setState({
             pending: false
@@ -54,11 +54,11 @@ class ObjectsOutline extends React.Component {
     } = this.props;
     if (
       !pipeline ||
-      !pipeline.objectsOutlines
+      !pipeline.graphicsOutput
     ) {
       return null;
     }
-    pipeline.objectsOutlines.hidden = !e.target.checked;
+    pipeline.graphicsOutput.hidden = !e.target.checked;
     this.updateOutlines();
   };
 
@@ -102,17 +102,17 @@ class ObjectsOutline extends React.Component {
     } = this.props;
     if (
       !pipeline ||
-      !pipeline.objectsOutlines ||
-      !pipeline.objectsOutlines.configurations ||
-      !pipeline.objectsOutlines.configurations.length
+      !pipeline.graphicsOutput ||
+      !pipeline.graphicsOutput.configurations ||
+      !pipeline.graphicsOutput.configurations.length
     ) {
       return null;
     }
     const {
       pending
     } = this.state;
-    const objectsOutlines = pipeline.objectsOutlines;
-    const configurations = objectsOutlines.configurations;
+    const graphicsOutput = pipeline.graphicsOutput;
+    const configurations = graphicsOutput.configurations;
     return (
       <div
         className={
@@ -129,7 +129,7 @@ class ObjectsOutline extends React.Component {
           <b>Objects</b>
           <Checkbox
             disabled={pending}
-            checked={!objectsOutlines.hidden}
+            checked={!graphicsOutput.hidden}
             style={{marginLeft: 'auto'}}
             onChange={this.toggleGlobalVisibilitySelector}
           >
@@ -143,7 +143,7 @@ class ObjectsOutline extends React.Component {
               className={styles.cpAnalysisObjectsOutlineRow}
             >
               <Checkbox
-                disabled={objectsOutlines.hidden || pending}
+                disabled={graphicsOutput.hidden || pending}
                 checked={config.visible}
                 onChange={(e) => {
                   config.visible = e.target.checked;
@@ -158,7 +158,7 @@ class ObjectsOutline extends React.Component {
               <Button
                 style={{marginRight: 5}}
                 disabled={index === 0 || pending}
-                onClick={() => objectsOutlines.moveUp(index, viewer)}
+                onClick={() => graphicsOutput.moveUp(index, viewer)}
                 size="small"
               >
                 <Icon type="up" />
@@ -166,7 +166,7 @@ class ObjectsOutline extends React.Component {
               <Button
                 style={{marginRight: 5}}
                 disabled={index === configurations.length - 1 || pending}
-                onClick={() => objectsOutlines.moveDown(index, viewer)}
+                onClick={() => graphicsOutput.moveDown(index, viewer)}
                 size="small"
               >
                 <Icon type="down" />

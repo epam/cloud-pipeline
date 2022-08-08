@@ -19,7 +19,7 @@ import moment from 'moment-timezone';
 import {AnalysisModule} from '../modules/base';
 import {AnalysisTypes} from '../common/analysis-types';
 import {DefineResultsModuleName} from '../modules/implementation/define-results';
-import OutlineObjectsConfiguration from './outline-objects-configuration';
+import GraphicsOutputConfiguration from './graphics-output-configuration';
 import generateUUID from '../common/generate-uuid';
 
 const CLOUD_PIPELINE_CELL_PROFILER_PIPELINE_TYPE = 'CloudPipeline CellProfiler pipeline';
@@ -47,7 +47,7 @@ class AnalysisPipeline {
    * @type {AnalysisModule}
    */
   @observable defineResults;
-  @observable objectsOutlines = new OutlineObjectsConfiguration();
+  @observable graphicsOutput = new GraphicsOutputConfiguration();
 
   constructor (analysis) {
     this.analysis = analysis;
@@ -296,7 +296,7 @@ class AnalysisPipeline {
         ? `Modified:${moment.utc(this.modifiedDate).format('YYYY-MM-DD HH:mm:ss')}`
         : false,
       this.channels.length > 0 ? `Channels:${JSON.stringify(this.channels)}` : false,
-      `Outlines:${this.objectsOutlines.exportConfigurations()}`
+      `Outlines:${this.graphicsOutput.exportConfigurations()}`
     ].filter(Boolean).join('\n');
     return [
       header,
@@ -347,7 +347,7 @@ class AnalysisPipeline {
           }
         } else if (/^outlines$/i.test(key)) {
           try {
-            pipeline.objectsOutlines = OutlineObjectsConfiguration.importConfigurations(value);
+            pipeline.graphicsOutput = GraphicsOutputConfiguration.importConfigurations(value);
           } catch (e) {
             console.warn(e.message);
           }

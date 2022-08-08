@@ -25,8 +25,9 @@ const {
   parameters,
   values
 } = thresholding({
-  method: 'Manual',
-  manualDefault: 0.075
+  strategy: 'Adaptive',
+  thresholdingMethod: 'Manual',
+  manualThreshold: 0.075
 });
 
 const findSpots = {

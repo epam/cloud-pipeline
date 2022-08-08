@@ -49,7 +49,7 @@ const erodeImage = {
     'Select the input image|file',
     'Name the output image|ALIAS name',
     'Shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|LOCAL|ALIAS shape',
-    'Size|integer|1|LOCAL|ALIAS size',
+    'Size|units|1|LOCAL|ALIAS size',
     'Structuring element|string|{shape},{size}|COMPUTED|HIDDEN'
   ]
 };

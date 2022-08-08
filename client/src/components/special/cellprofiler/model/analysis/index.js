@@ -117,7 +117,7 @@ class Analysis {
   set hcsImageViewer (aViewer) {
     this._hcsImageViewer = aViewer;
     if (this.pipeline && this._hcsImageViewer) {
-      (this.pipeline.objectsOutlines.renderOutlines)(this._hcsImageViewer);
+      (this.pipeline.graphicsOutput.renderOutlines)(this._hcsImageViewer);
     }
   }
 
@@ -479,7 +479,15 @@ class Analysis {
         }
       );
       this.analysisResults = results.filter(o => !o.object);
-      this.pipeline.objectsOutlines.update(results, this.hcsImageViewer);
+      const objectResults = results.filter(o => o.object);
+      const lastOverlay = objectResults.length > 0
+        ? undefined
+        : this.analysisOutputImages.slice().pop();
+      this.pipeline.graphicsOutput.update(
+        objectResults,
+        lastOverlay,
+        this.hcsImageViewer
+      );
       this.analysisCache = cache;
       this.showAnalysisResults = true;
       this.status = 'Analysis done';
@@ -535,7 +543,7 @@ class Analysis {
         aModule.pending = false;
         aModule.done = false;
       });
-      this.pipeline.objectsOutlines.detachResults(this.hcsImageViewer);
+      this.pipeline.graphicsOutput.detachResults(this.hcsImageViewer);
       this.analysisCache = [];
       this.sourceFileChanged = true;
     };

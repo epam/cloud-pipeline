@@ -184,14 +184,14 @@ const enhanceOrSuppressFeatures = {
     'Name the output image|string|EnhanceOrSuppressFeatures|ALIAS output',
     'Select the operation|[Enhance,Suppress]|Enhance|ALIAS=operation',
     'Feature type|[Speckles,Neurites,Dark holes,Circles,Texture,DIC]|Speckles|IF operation==Enhance|ALIAS=feature',
-    'Enhancement method|[Tubeness,Line structures]|Tubeness|IF feature==Neurites|ALIAS=method',
-    'Smoothing scale|float|2.0|IF (method==Tubeness OR feature==Texture OR feature==DIC)',
-    'Feature size|integer|10|IF (operation==Suppress OR method=="Line structures" OR feature==Circles OR feature==Speckles)|ALIAS featureSize',
-    'Range of hole sizes|integer[0,Infinity]|[1,10]|IF feature==Dark holes',
-    'Shear angle|float|0.0|IF feature==DIC',
-    'Decay|float|0.95|IF feature==DIC',
-    'Speed and accuracy|[Fast,Slow]|Fast|IF feature==Speckles',
-    'Rescale result image|boolean|false|IF feature==Neurites'
+    'Enhancement method|[Tubeness,Line structures]|Tubeness|IF (feature==Neurites AND operation==Enhance)|ALIAS=method',
+    'Smoothing scale|float|2.0|IF ((method==Tubeness OR feature==Texture OR feature==DIC) AND operation==Enhance)|ALIAS smoothingScale',
+    'Feature size|units|2|IF (operation==Suppress OR method=="Line structures" OR feature==Circles OR feature==Speckles)|ALIAS featureSize',
+    'Range of hole sizes|units[0,Infinity]|[1,10]|IF (feature=="Dark holes" AND operation==Enhance)',
+    'Shear angle|float|0.0|IF (feature==DIC AND operation==Enhance)',
+    'Decay|float|0.95|IF (feature==DIC AND operation==Enhance)',
+    'Speed and accuracy|[Fast,Slow]|Fast|IF (feature==Speckles AND operation==Enhance)',
+    'Rescale result image|boolean|false|IF (feature==Neurites AND operation==Enhance)|ALIAS rescaleResult'
   ]
 };
 
@@ -543,18 +543,18 @@ const threshold = {
     'Name the output image|string|Threshold|ALIAS output',
     // Thresholding
     'Threshold strategy|[Global,Adaptive]|Global|ALIAS strategy',
-    `Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|if strategy==Adaptive,Measurement|if strategy!=Adaptive,Manual|if strategy!=Adaptive]|Minimum Cross-Entropy|ALIAS thresholdingMethod`,
+    `Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|IF strategy==Adaptive,Measurement|IF strategy!=Adaptive,Manual|IF strategy!=Adaptive]|Minimum Cross-Entropy|ALIAS thresholdingMethod`,
 
     // Thresholding > Otsu
     'Two-class or three-class thresholding?|[Two classes, Three classes]|Two classes|IF thresholdingMethod==Otsu|ALIAS otsuMethodType',
     'Assign pixels in the middle intensity class to the foreground or the background?|[Background,Foreground]|Background|IF (thresholdingMethod==Otsu AND otsuMethodType=="Three classes")|ALIAS otsuThreePixels',
 
     // Thresholding > Robust Background
-    'Lower outlier fraction|float|0.05|IF thresholdingMethod=="Robust Background"',
-    'Upper outlier fraction|float|0.05|IF thresholdingMethod=="Robust Background"',
-    'Averaging method|[Mean,Median,Mode]|Mean|IF thresholdingMethod=="Robust Background"',
-    'Variance method|[Standard deviation,Median absolute deviation]|Standard deviation|IF thresholdingMethod=="Robust Background"',
-    '# of deviations|integer|2|IF thresholdingMethod=="Robust Background"',
+    'Lower outlier fraction|float|0.05|IF thresholdingMethod=="Robust Background"|ALIAS lowerOutlierFraction',
+    'Upper outlier fraction|float|0.05|IF thresholdingMethod=="Robust Background"|ALIAS upperOutlierFraction',
+    'Averaging method|[Mean,Median,Mode]|Mean|IF thresholdingMethod=="Robust Background"|ALIAS robustAveragingMethod',
+    'Variance method|[Standard deviation,Median absolute deviation]|Standard deviation|IF thresholdingMethod=="Robust Background"|ALIAS varianceMethod',
+    '# of deviations|integer|2|IF thresholdingMethod=="Robust Background"|ALIAS deviations',
 
     // Thresholding > Measurement
     {
@@ -588,7 +588,7 @@ const threshold = {
     'Threshold correction factor|float|1.0|IF thresholdingMethod!==Manual|ALIAS thresholdCorrectionFactor',
     'Lower and upper bounds on threshold|float[]|[0.0,1.0]|IF thresholdingMethod!==Manual|ALIAS bounds',
     'Size of adaptive window|integer|50|IF strategy==Adaptive|ALIAS adaptive',
-    'Log transform before thresholding?|flag|false|IF thresholdingMethod==Otsu OR thresholdingMethod=="Minimum Cross-Entropy"'
+    'Log transform before thresholding?|flag|false|IF thresholdingMethod==Otsu OR thresholdingMethod=="Minimum Cross-Entropy"|ALIAS logTransform'
 
   ]
 };

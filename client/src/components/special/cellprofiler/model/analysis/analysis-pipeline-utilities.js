@@ -105,8 +105,8 @@ function extractModules (module) {
           {},
           {id: `${module.id}_sub_${index + 1}`, pipeline: module.pipeline}
         );
-        cpModule.parentModule = module;
         if (cpModule) {
+          cpModule.parentModule = module;
           pipelineModules[alias] = cpModule;
           Object.entries(values || {}).forEach(([parameter, value]) => {
             if (typeof value === 'string' && /\|COMPUTED$/.test(value)) {
@@ -122,6 +122,8 @@ function extractModules (module) {
             }
           });
           result.push(...extractModules(cpModule));
+        } else {
+          console.error(`Unknown module: ${name}`);
         }
       });
     }

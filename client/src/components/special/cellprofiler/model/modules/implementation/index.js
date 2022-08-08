@@ -21,6 +21,7 @@ import {defineResults, defineResultsInternal} from './define-results';
 import findCells from './find-cells';
 import findCytoplasm from './find-cytoplasm';
 import findNuclei from './find-nuclei';
+import findNeurites from './find-neurites';
 import findSpots from './find-spots';
 import imageProcessing from './image-processing';
 import measurement from './measurement';
@@ -43,6 +44,7 @@ export default [
     findNuclei,
     findCells,
     findCytoplasm,
+    findNeurites,
     findSpots,
     defineResults
   ].map(o => ({group: 'Main', ...o})),

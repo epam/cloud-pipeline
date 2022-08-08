@@ -35,11 +35,11 @@ export default {
     'Assign pixels in the middle intensity class to the foreground or the background?|[Background,Foreground]|Background|IF (thresholdingMethod==Otsu AND otsuMethodType=="Three classes" AND method!=="Distance - N")|ADVANCED|ALIAS otsuThreePixels',
 
     // Thresholding > Robust Background
-    'Lower outlier fraction|float|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")',
-    'Upper outlier fraction|float|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")',
-    'Averaging method|[Mean,Median,Mode]|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")',
-    'Variance method|[Standard deviation,Median absolute deviation]|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")',
-    '# of deviations|integer|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")',
+    'Lower outlier fraction|float|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")|ALIAS lowerOutlierFraction',
+    'Upper outlier fraction|float|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")|ALIAS upperOutlierFraction',
+    'Averaging method|[Mean,Median,Mode]|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")|ALIAS robustAveragingMethod',
+    'Variance method|[Standard deviation,Median absolute deviation]|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")|ALIAS varianceMethod',
+    '# of deviations|integer|ADVANCED|IF (thresholdingMethod=="Robust Background" AND method!=="Distance - N")|ALIAS deviations',
 
     // Thresholding > Measurement
     {
@@ -73,14 +73,14 @@ export default {
     // Thresholding - common
     'Threshold smoothing scale|float|1.3488|ALIAS thresholdSmoothingScale|ADVANCED|IF method!=="Distance - N"',
     'Threshold correction factor|float|1.0|IF (thresholdingMethod!==Manual AND method!=="Distance - N")|ALIAS thresholdCorrectionFactor|ADVANCED',
-    'Lower and upper bounds on threshold|float[]|[0.0,1.0]|IF (thresholdingMethod!==Manual AND method!=="Distance - N")|ADVANCED',
+    'Lower and upper bounds on threshold|float[]|[0.0,1.0]|IF (thresholdingMethod!==Manual AND method!=="Distance - N")|ADVANCED|ALIAS bounds',
     'Size of adaptive window|integer|50|IF (strategy==Adaptive AND method!=="Distance - N")|ADVANCED|ALIAS adaptive',
-    'Log transform before thresholding?|flag|false|ADVANCED|IF (method!=="Distance - N" AND (thresholdingMethod==Otsu OR thresholdingMethod=="Minimum Cross-Entropy"))',
+    'Log transform before thresholding?|flag|false|ADVANCED|IF (method!=="Distance - N" AND (thresholdingMethod==Otsu OR thresholdingMethod=="Minimum Cross-Entropy"))|ALIAS logTransform',
 
     // ----
     'Regularization factor|float|0.05|IF method==Propagation',
     'Number of pixels by which to expand the primary objects|integer|IF method=="Distance - N"',
-    'Fill holes in identified objects?|flag|true',
+    'Fill holes in identified objects?|flag|true|ALIAS fillHoles',
     'Discard secondary objects touching the border of the image?|flag|false|ALIAS discardObjectsTouchingBorder',
     'Discard the associated primary objects?|flag|false|IF discardObjectsTouchingBorder==true|ALIAS discardPrimaryObjects',
     'Name the new primary objects|IF (discardPrimaryObjects==true AND discardObjectsTouchingBorder==true)|ALIAS newName'

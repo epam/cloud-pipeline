@@ -120,8 +120,8 @@ class CellProfilerPipeline extends React.Component {
         }
         {
           pipeline &&
-          pipeline.objectsOutlines &&
-          pipeline.objectsOutlines.configurations.length > 0 && (
+          pipeline.graphicsOutput &&
+          pipeline.graphicsOutput.configurations.length > 0 && (
             <Collapse header="Display objects">
               <ObjectsOutlineRenderer
                 pipeline={pipeline}
