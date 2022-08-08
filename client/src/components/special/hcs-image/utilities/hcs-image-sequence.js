@@ -85,6 +85,7 @@ class HCSImageSequence {
     this.omeTiff = undefined;
     this.offsetsJson = undefined;
     this.metadata = [];
+    this.listeners = [];
   }
 
   fetch () {
@@ -146,10 +147,7 @@ class HCSImageSequence {
   fetchMetadata = () => {
     if (!this.metadataPromise) {
       this.metadataPromise = new Promise((resolve) => {
-        Promise.all([
-          this.generateOMETiffURL(),
-          this.generateOffsetsJsonURL()
-        ])
+        Promise.resolve()
           .then(() => {
             if (this.omeTiff && this.offsetsJson) {
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
@@ -219,13 +217,37 @@ class HCSImageSequence {
     return promise;
   }
 
-  resignDataURLs () {
+  // the urls are expired in 15 minutes
+  setDataUrlsTimeout = () => {
+    setTimeout(() => {
+      if (this.listeners.length) {
+        this.regenerateDataURLs();
+      }
+    }, 890000);
+  }
+
+  regenerateDataURLs () {
     return Promise.all([
       this.generateOMETiffURL(),
       this.generateOffsetsJsonURL(),
       this.generateOverviewOMETiffURL(),
       this.generateOverviewOffsetsJsonURL()
     ]);
+  }
+
+  addEventListener (event, listener) {
+    this.listeners.push({event, listener});
+  }
+
+  removeEventListener (event, listener) {
+    this.listeners = this.listeners.filter((o) => o.event !== event);
+  }
+
+  emit (event, payload) {
+    this.listeners
+      .filter((o) => o.event === event && typeof o.listener === 'function')
+      .map((o) => o.listener)
+      .forEach((listener) => listener(this, payload));
   }
 }
 

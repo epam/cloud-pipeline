@@ -89,6 +89,7 @@ class HcsImage extends React.PureComponent {
   }
 
   componentWillUnmount () {
+    this.selectedSequence.removeEventListener('regenerateDataURLs');
     this.container = undefined;
     this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
@@ -316,7 +317,11 @@ class HcsImage extends React.PureComponent {
       }, () => {
         sequence
           .fetch()
-          .then(() => sequence.resignDataURLs())
+          .then(() => sequence.addEventListener(
+            'regenerateDataURLs',
+            sequence.setDataUrlsTimeout
+          ))
+          .then(() => sequence.regenerateDataURLs())
           .then(() => sequence.fetchMetadata())
           .then(() => {
             const {wells = []} = sequence;
