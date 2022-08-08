@@ -13,21 +13,19 @@
 # limitations under the License.
 
 from setuptools import setup, find_packages
-from gitreader.version import __version__
 
 setup(
     name='slm',
-    version=__version__,
+    version='0.0.1',
     py_modules=['slm'],
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
         'attrs==21.2.0',
-        'click==8.0.3',
-        'dataclasses==0.8',
+        'dataclasses==0.6',
         'schedule==1.1.0',
-        'boto3==1.6.9',
-        'botocore==1.9.9',
+        'boto3',
+        'botocore',
         'DateTime==4.3',
         'pipeline==1.0'
     ],

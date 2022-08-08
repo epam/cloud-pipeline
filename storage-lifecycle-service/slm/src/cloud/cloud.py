@@ -14,6 +14,7 @@
 
 import os
 import datetime
+from time import sleep
 
 from slm.src.logger import AppLogger
 import boto3
@@ -27,14 +28,39 @@ CP_SLC_RULE_NAME_PREFIX = 'CP Storage Lifecycle Rule:'
 
 
 class StorageOperations:
-    def prepare_bucket_if_needed(self, storage):
+    def prepare_bucket_if_needed(self, bucket):
         pass
 
-    def list_objects_by_prefix_from_glob(self, storage, glob_str):
+    def list_objects_by_prefix(self, bucket, glob_str):
         pass
 
-    def process_files_on_cloud(self, storage, rule, folder, storage_class, files):
+    def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
         pass
+
+
+def construct_s3_slc_rule(storage_class):
+    return {
+        'ID': CP_SLC_RULE_NAME_PREFIX + storage_class,
+        'Filter': {
+            'Tag': {
+                'Key': DESTINATION_STORAGE_CLASS_TAG,
+                'Value': storage_class
+            }
+        },
+        'Status': 'Enabled',
+        'Transitions': [
+            {
+                'Days': 1,
+                'StorageClass': storage_class
+            },
+        ],
+        'NoncurrentVersionTransitions': [
+            {
+                'NoncurrentDays': 0,
+                'StorageClass': storage_class
+            },
+        ]
+    }
 
 
 class S3StorageOperations(StorageOperations):
@@ -44,32 +70,6 @@ class S3StorageOperations(StorageOperations):
     GLACIER_IR = "GLACIER_IR"
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     DELETION = "DELETION"
-
-    @staticmethod
-    def construct_s3_slc_rule(storage_class):
-        return {
-            'ID': CP_SLC_RULE_NAME_PREFIX + storage_class,
-            'Filter': {
-                'Tag': {
-                    'Key': DESTINATION_STORAGE_CLASS_TAG,
-                    'Value': storage_class
-                }
-            },
-            'Status': 'Enabled',
-            'Transitions': [
-                {
-                    'Days': 0,
-                    'StorageClass': storage_class
-                },
-            ],
-            'NoncurrentVersionTransitions': [
-                {
-                    'NoncurrentDays': 0,
-                    'StorageClass': storage_class,
-                    'NewerNoncurrentVersions': 0
-                },
-            ]
-        }
 
     S3_STORAGE_CLASS_TO_RULE = {
         GLACIER: construct_s3_slc_rule(GLACIER),
@@ -87,11 +87,10 @@ class S3StorageOperations(StorageOperations):
         },
         'Status': 'Enabled',
         'Expiration': {
-            'Days': 0
+            'Days': 1
         },
         'NoncurrentVersionExpiration': {
-            'NoncurrentDays': 0,
-            'NewerNoncurrentVersions': 0
+            'NoncurrentDays': 1
         }
     }
 
@@ -101,49 +100,49 @@ class S3StorageOperations(StorageOperations):
         self._verify_config(config)
         self.config = config
         self.aws_s3_client = boto3.client("s3")
-        self.aws_s3control_client = boto3.client("s3control")
 
-    def prepare_bucket_if_needed(self, storage):
-        existing_slc = self.aws_s3_client.get_bucket_lifecycle_configuration(Bucket=storage.path)
+    def prepare_bucket_if_needed(self, bucket):
+        existing_slc = self.aws_s3_client.get_bucket_lifecycle_configuration(Bucket=bucket)
         cp_lsc_rules = [rule for rule in existing_slc['Rules'] if rule['ID'].startswith(CP_SLC_RULE_NAME_PREFIX)]
 
         if not cp_lsc_rules:
-            self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(storage.path))
+            self.logger.log("There are no S3 Lifecycle rules for storage: {}, will create it.".format(bucket))
             slc_rules = existing_slc['Rules']
             for rule in self.S3_STORAGE_CLASS_TO_RULE.values():
                 slc_rules.append(rule)
             slc_rules.append(self.DELETION_RULE)
-            self.aws_s3_client.put_bucket_lifecycle_configuration(existing_slc)
+            self.aws_s3_client.put_bucket_lifecycle_configuration(
+                Bucket=bucket,
+                LifecycleConfiguration={"Rules": slc_rules})
         else:
-            self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(storage.path))
+            self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
 
-    def list_objects_by_prefix_from_glob(self, storage, glob_str):
-        def determinate_prefix(glob_str):
-            if "*" in glob_str:
-                return os.path.split(glob_str.split("*", 1)[0])
-            else:
-                return glob_str
-
+    def list_objects_by_prefix(self, bucket, prefix):
         result = []
-        prefix = determinate_prefix(glob_str)
         paginator = self.aws_s3_client.get_paginator('list_objects')
-        page_iterator = paginator.paginate(Bucket=storage.path, Prefix=prefix)
+        page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)
         for page in page_iterator:
-            for obj in page['Contents']:
-                result.append(self._map_s3_obj_to_cloud_obj(obj))
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    result.append(self._map_s3_obj_to_cloud_obj(obj))
         return result
 
-    def process_files_on_cloud(self, storage, rule, folder, storage_class, files):
-        # TODO check that file key is url encoded
-        manifest_content = "\n".join(["{},{}".format(storage.path, file.path) for file in files])
-        manifest_key = "_".join([storage.path, folder, "rule", rule.rule_id, storage_class, datetime.datetime.now(), ".csv"])
+    def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
+        aws_s3control_client = boto3.client("s3control", region_name=region)
+        manifest_content = "\n".join(["{},{}".format(bucket, file.path) for file in files])
+        manifest_key = "_".join([
+            bucket, folder, "rule", str(rule.rule_id),
+            storage_class, str(datetime.datetime.utcnow()).replace(" ", "_").replace(":", "_"),
+            ".csv"
+        ])
         manifest_object = self.aws_s3_client.put_object(
             Body=manifest_content,
             Bucket=self.config["system_bucket"],
-            Key=manifest_key
+            Key=manifest_key,
+            ServerSideEncryption='AES256'
         )
 
-        s3_tagging_job = self.aws_s3control_client.create_job(
+        s3_tagging_job = aws_s3control_client.create_job(
             AccountId=self.config["aws_account_id"],
             ConfirmationRequired=False,
             Operation={
@@ -157,7 +156,7 @@ class S3StorageOperations(StorageOperations):
                 },
             },
             Report={
-                'Bucket': self.config["system_bucket"],
+                'Bucket': "arn:aws:s3:::" + self.config["system_bucket"],
                 'Format': 'Report_CSV_20180820',
                 'Enabled': True,
                 'Prefix': self.config["report_prefix"],
@@ -169,47 +168,68 @@ class S3StorageOperations(StorageOperations):
                     'Fields': ['Bucket', 'Key']
                 },
                 'Location': {
-                    'ObjectArn': "".join(["arn:aws:s3:::", self.config["system_bucket"], manifest_key]),
+                    'ObjectArn': "".join(["arn:aws:s3:::", self.config["system_bucket"], "/", manifest_key]),
                     'ETag': manifest_object["ETag"]
                 }
             },
-            Description='Cloud-Pipeline job for tagging s3 objects for transition with respect to cp lifecycle rule',
             Priority=1,
-            RoleArn=self.config["role_arn"],
-            Tags=[
-                {
-                    'Key': 'cp-storage-lifecycle-job',
-                    'Value': 'true'
-                },
-            ]
+            RoleArn=self.config["role_arn"]
         )
 
         s3_tagging_job_description = None
         for try_i in range(30):
-            self.logger.log("Get Job status with try: {}".format(try_i))
-            s3_tagging_job_description = self.aws_s3control_client.describe_job(
+            self.logger.log("Get Job {} status with try: {}".format(s3_tagging_job["JobId"], try_i))
+            s3_tagging_job_description = aws_s3control_client.describe_job(
                 AccountId=self.config["aws_account_id"],
                 JobId=s3_tagging_job["JobId"]
             )
-            if "Status" in s3_tagging_job_description and s3_tagging_job_description["Status"] == "Complete":
-                self.logger.log("Job status: {}. Proceeding.".format(s3_tagging_job_description["Status"]))
-                break
-            else:
-                self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Status"]))
+            if "Job" in s3_tagging_job_description and "Status" in s3_tagging_job_description["Job"]:
+                if s3_tagging_job_description["Job"]["Status"] == "Complete":
+                    self.logger.log("Job status: {}. Proceeding.".format(s3_tagging_job_description["Job"]["Status"]))
+                    break
+                else:
+                    self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Job"]["Status"]))
+            sleep(5)
 
-        delete_manifest_object = self.aws_s3_client.delete_object(
+        if not s3_tagging_job_description or "Job" not in s3_tagging_job_description or \
+                "Status" not in s3_tagging_job_description["Job"] \
+                or s3_tagging_job_description["Job"]["Status"] != "Complete" \
+                or "ProgressSummary" not in s3_tagging_job_description["Job"] \
+                or s3_tagging_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] > 0:
+            self.logger.log(
+                "Can't get Job status. Will keep manifest and report and skip. Task summary: {}".format(
+                    str(s3_tagging_job_description))
+            )
+            return False
+
+        self._clean_up_after_job(manifest_key, s3_tagging_job["JobId"])
+        return True
+
+    def _clean_up_after_job(self, manifest_key, job_id):
+        job_report_dir = os.path.join(self.config["report_prefix"], "job-" + job_id)
+        job_related_files = self.list_objects_by_prefix(self.config["system_bucket"], job_report_dir)
+        for file in job_related_files:
+            self.aws_s3_client.delete_object(
+                Bucket=self.config["system_bucket"],
+                Key=file.path
+            )
+        self.aws_s3_client.delete_object(
             Bucket=self.config["system_bucket"],
             Key=manifest_key
         )
-
-        if not s3_tagging_job_description or "Status" not in s3_tagging_job_description \
-                or s3_tagging_job_description["Status"]:
-            self.logger.log("Can't get Job status. Will delete manifest and skip.")
-            return
 
     @staticmethod
     def _map_s3_obj_to_cloud_obj(s3_object):
         return CloudObject(s3_object["Key"], s3_object["LastModified"], s3_object["StorageClass"])
 
-    def _verify_config(self, config):
-        pass
+    @staticmethod
+    def _verify_config(config):
+        if "aws_account_id" not in config:
+            raise RuntimeError("Please provide aws_account_id within --aws configuration option")
+        if "system_bucket" not in config:
+            raise RuntimeError("Please provide system_bucket within --aws configuration option")
+        if "role_arn" not in config:
+            raise RuntimeError("Please provide role_arn within --aws configuration option")
+        if "report_prefix" not in config:
+            config["report_prefix"] = "cp_storage_lifecycle_tagging_report"
+        config["report_prefix"] = config["report_prefix"].strip("/")

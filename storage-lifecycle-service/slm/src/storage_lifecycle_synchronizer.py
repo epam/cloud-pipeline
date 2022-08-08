@@ -19,7 +19,22 @@ import os
 
 from slm.src.model.storage_lifecycle_rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
 from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActionItems
-from slm.src.util.date_utils import is_timestamp_within_date
+from slm.src.util.date_utils import is_timestamp_after_date
+from slm.src.util.path_utils import determinate_prefix_from_glob
+
+CRITERION_MATCHING_FILES = "MATCHING_FILES"
+CRITERION_DEFAULT = "DEFAULT"
+
+ACTIONS_MODE_FILES = "FILES"
+
+METHOD_ONE_BY_ONE = "ONE_BY_ONE"
+METHOD_EARLIEST_FILE = "EARLIEST_FILE"
+METHOD_LATEST_FILE = "LATEST_FILE"
+
+EXECUTION_NOTIFICATION_SENT_STATUS = "NOTIFICATION_SENT"
+EXECUTION_RUNNING_STATUS = "RUNNING"
+EXECUTION_SUCCESS_STATUS = "SUCCESS"
+EXECUTION_FAILED_STATUS = "FAILED"
 
 ROLE_ADMIN_ID = 1
 
@@ -36,15 +51,18 @@ class StorageLifecycleSynchronizer:
         available_storages = self.cp_data_source.load_available_storages()
         self.logger.log("{} storages loaded.".format(len(available_storages)))
 
+        regions_by_id = {region.id: region.region_id for region in self.cp_data_source.load_regions()}
+
         for storage in available_storages:
+            storage.region_name = regions_by_id[storage.region_id]
             self.logger.log(
                 "Starting object lifecycle synchronization process for {} with type {}.".format(
-                    storage.path, storage.type)
+                    storage.path, storage.storage_type)
             )
             self._sync_storage(storage)
             self.logger.log(
                 "Finish object lifecycle synchronization process for {} with type {}.".format(
-                    storage.path, storage.type)
+                    storage.path, storage.storage_type)
             )
         self.logger.log("Done object lifecycle synchronization process...")
 
@@ -56,90 +74,120 @@ class StorageLifecycleSynchronizer:
             self.logger.log("No rules for storage {} is defined, skipping".format(storage.path))
             return
 
-        if storage.type not in self.cloud_operations:
+        if storage.storage_type not in self.cloud_operations:
             self.logger.log(
-                "Lifecycle rules feature is not implemented for storage with type {}.".format(storage.type)
+                "Lifecycle rules feature is not implemented for storage with type {}.".format(storage.storage_type)
             )
 
-        self.cloud_operations[storage.type].prepare_bucket_if_needed(storage)
+        self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(storage.path)
 
         for rule in rules:
-            if self._rule_is_not_valid(rule):
-                continue
+            self.logger.log("Storage: {}. Rule: {}. Applying ...".format(storage.id, rule.rule_id))
+            try:
+                if self._rule_is_not_valid(rule):
+                    continue
 
-            files = self.cloud_operations[storage.type].list_objects_by_prefix_from_glob(storage, rule.path_glob)
+                files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
+                    storage.path, determinate_prefix_from_glob(rule.path_glob)
+                )
 
-            for folder in self._identify_subject_folders(files, rule.path_glob):
+                # TODO fix situation when we can't say: pathGlob: root/* - and it should means any directory in root
+                subject_folders = self._identify_subject_folders(files, rule.path_glob)
+                self.logger.log(
+                    "Storage: {}. Rule: {}. Subject folders are: {}".format(storage.id, rule.rule_id, subject_folders))
 
-                # to match object keys with glob we need to combine it with folder path
-                # and get 'effective' glob like '{folder-path}/{glob}'
-                # so with glob = '*.txt' we can match files like:
-                # {folder-path}/{filename}.txt
-                effective_glob = os.path.join(folder, rule.object_glob) if rule.object_glob else None
+                for folder in subject_folders:
+                    self.logger.log(
+                        "Storage: {}. Rule: {}, Path: {}. Applying ...".format(storage.id, rule.rule_id, folder))
 
-                subject_files = [
-                    file for file in files
-                    if file.path.startswith(folder)
-                    and fnmatch.fnmatch(file.path, effective_glob)
-                ] if effective_glob else files
+                    # to match object keys with glob we need to combine it with folder path
+                    # and get 'effective' glob like '{folder-path}/{glob}'
+                    # so with glob = '*.txt' we can match files like:
+                    # {folder-path}/{filename}.txt
+                    effective_glob = os.path.join(folder, rule.object_glob) if rule.object_glob else None
 
-                self._process_files(storage, folder, files, subject_files, rule)
+                    self.logger.log(
+                        "Storage: {}. Rule: {}. Path: {}. Effective glob is '{}'".format(
+                            storage.id, rule.rule_id, folder, effective_glob)
+                    )
+
+                    subject_files = [
+                        file for file in files
+                        if file.path.startswith(folder)
+                        and fnmatch.fnmatch(file.path, effective_glob)
+                    ] if effective_glob else files
+                    self.logger.log(
+                        "Storage: {}. Rule: {}. Path: {}. Found {} subject files.".format(
+                            storage.id, rule.rule_id, folder, len(subject_files))
+                    )
+
+                    self._process_files(storage, folder, files, subject_files, rule)
+                    self.logger.log("Storage: {}. Rule: {}, Path: {}. Done ...".format(storage.id, rule.rule_id, folder))
+                self.logger.log("Storage: {}. Rule: {}. Done ...".format(storage.id, rule.rule_id))
+            except Exception as e:
+                self.logger.log(
+                    "Storage: {}. Rule: {}. Problems to apply. Cause: {}".format(storage.id, rule.rule_id, str(e)))
 
     def _process_files(self, storage, folder, file_listing, subject_files, rule):
         transition_method = rule.transition_method
         resulted_action_items = StorageLifecycleRuleActionItems(
             None, None, []).with_folder(folder).with_rule_id(rule.rule_id)
 
-        if transition_method == "ONE_BY_ONE":
-            resulted_action_items.with_mode("FILE")
+        if transition_method == METHOD_ONE_BY_ONE:
+            resulted_action_items.with_mode(ACTIONS_MODE_FILES)
             for file in subject_files:
                 resulted_action_items.merge(self._build_action_items(file.path, [file], file, rule))
-        elif transition_method == "LATEST_FILE" or transition_method == "EARLIEST_FILE":
+        elif transition_method == METHOD_LATEST_FILE or transition_method == METHOD_EARLIEST_FILE:
             criterion_file = self.define_criterion_file(rule, file_listing, folder, subject_files)
             resulted_action_items.merge(self._build_action_items(folder, subject_files, criterion_file, rule))
 
         self._apply_action_items(storage, rule, resulted_action_items)
 
     def _build_action_items(self, path, subject_files, criterion_file, rule):
-        result = StorageLifecycleRuleActionItems(None, None, []).with_rule_id(rule.rule_id)
-
-        lifecycle_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
-            rule.datastorage_id, rule.rule_id, path)
-        for execution in lifecycle_executions:
-            result.with_execution(self._check_rule_execution_progress(rule.datastorage_id, subject_files, execution))
+        result = StorageLifecycleRuleActionItems().with_rule_id(rule.rule_id)
 
         effective_transitions = self._define_effective_transitions(
-            self._fetch_prolongation_for_path_or_default(path, rule), rule)
+            self._fetch_prolongation_for_path_or_default(path, rule), rule
+        )
+
+        rule_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
+            rule.datastorage_id, rule.rule_id, path
+        )
+
+        for execution_for_transition in rule_executions:
+            updated_execution = self._check_rule_execution_progress(
+                rule.datastorage_id, subject_files, execution_for_transition
+            )
+            if updated_execution:
+                result.with_execution(updated_execution)
 
         notification = rule.notification
+        for transition in effective_transitions:
+            transition_class = transition.storage_class
+            timestamp_of_action = self.define_transition_effective_timepoint(criterion_file, transition)
+            file_to_transition = [f for f in subject_files if f.storage_class != transition_class]
 
-        if criterion_file:
-            for transition in effective_transitions:
-                transition_class = transition.storage_class
-                timestamp_of_action = self.define_transition_effective_timepoint(criterion_file, transition)
+            execution_for_transition = next(
+                filter(lambda e: e.storage_class == transition_class, rule_executions), None
+            )
 
-                now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
 
-                # Check if notification is needed
+            # Check if notification is needed
+            if notification.enabled:
                 date_to_check = now + datetime.timedelta(days=notification.notify_before_days)
-                if notification.enabled and is_timestamp_within_date(date_to_check, timestamp_of_action):
-                    notification_execution = next(
-                        filter(lambda e: e.status == "NOTIFICATION_SENT" and e.storage_class == transition_class, lifecycle_executions), None
+                if is_timestamp_after_date(timestamp_of_action, date_to_check) and not execution_for_transition:
+                    result.with_notification(
+                        path, transition_class, transition.transition_date, notification.prolong_days
                     )
-                    if not notification_execution or not is_timestamp_within_date(now, notification_execution.updated):
-                        result.with_notification(
-                            path, transition_class, transition.transition_date, notification.prolong_days
-                        )
 
-                # Check if action is needed
-                date_to_check = now
-                if is_timestamp_within_date(date_to_check, timestamp_of_action):
-                    action_execution = next(
-                        filter(lambda e: e.status == "RUNNING" and e.storage_class == transition_class, lifecycle_executions), None
-                    )
-                    if not action_execution or not is_timestamp_within_date(now, action_execution.updated):
-                        for file in subject_files:
-                            result.with_transition(transition_class, file)
+            # Check if action is needed
+            if is_timestamp_after_date(timestamp_of_action, now):
+                if not file_to_transition or execution_for_transition \
+                        and execution_for_transition.status == EXECUTION_RUNNING_STATUS:
+                    continue
+                for file in file_to_transition:
+                    result.with_transition(transition_class, file)
 
         return result
 
@@ -148,8 +196,8 @@ class StorageLifecycleSynchronizer:
             self._send_notification(storage, rule, notification_properties)
 
         for execution in action_items.executions:
-            if execution.status == "FAILED":
-                self.logger.log("Execution failed: {}".format(json.dumps(execution)))
+            if execution.status == EXECUTION_FAILED_STATUS:
+                self.logger.log("Execution failed: {}".format(str(execution)))
 
         for storage_class, files in action_items.destination_transitions_queues.items():
             if files:
@@ -158,26 +206,35 @@ class StorageLifecycleSynchronizer:
                         storage_class, len(files)
                     )
                 )
-                self.cloud_operations[storage.type].process_files_on_cloud(
-                    storage, rule, action_items.folder, storage_class, files)
 
-                if action_items.mode == "FILES":
+                if action_items.mode == ACTIONS_MODE_FILES:
                     for file in files:
-                        self._create_or_update_execution(storage, rule, storage_class, file.path)
+                        result = self.cloud_operations[storage.storage_type].process_files_on_cloud(
+                            storage.path, storage.region_name, rule, action_items.folder, storage_class, [file])
+                        self._create_or_update_execution(
+                            storage, rule, storage_class, file.path,
+                            EXECUTION_RUNNING_STATUS if result else EXECUTION_FAILED_STATUS
+                        )
                 else:
-                    self._create_or_update_execution(storage, rule, storage_class, action_items.folder)
+                    result = self.cloud_operations[storage.storage_type].process_files_on_cloud(
+                        storage.path, storage.region_name, rule, action_items.folder, storage_class, files)
+                    self._create_or_update_execution(
+                        storage, rule, storage_class, action_items.folder,
+                        EXECUTION_RUNNING_STATUS if result else EXECUTION_FAILED_STATUS
+                    )
 
-    def _create_or_update_execution(self, storage, rule, storage_class, path):
-        execution = self.cp_data_source.load_lifecycle_rule_executions_by_path(
-            storage.id, rule.rule_id, path
-        )
+    def _create_or_update_execution(self, storage, rule, storage_class, path, status):
+        executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(storage.id, rule.rule_id, path)
+        execution = next(filter(lambda e: e.storage_class == storage_class, executions), None)
+
         if execution:
-            self.cp_data_source.update_status_lifecycle_rule_execution(storage.id, execution["id"], "RUNNING")
+            self.cp_data_source.update_status_lifecycle_rule_execution(
+                storage.id, execution.execution_id, status)
         else:
             self.cp_data_source.create_lifecycle_rule_execution(
                 storage.id, rule.rule_id,
                 {
-                    "status": "RUNNING",
+                    "status": status,
                     "path": path,
                     "storageClass": storage_class
                 }
@@ -187,47 +244,50 @@ class StorageLifecycleSynchronizer:
         if not execution.status:
             raise RuntimeError("Malformed rule execution found: " + json.dumps(execution))
 
-        if execution.status == "RUNNING":
+        if execution.status == EXECUTION_RUNNING_STATUS:
             # Check that all files were moved to destination storage class and if not and 2 days are passed since
             # process was started - fail this execution
             all_files_moved = next(
                 filter(lambda file: file.storage_class != execution.storage_class, subject_files),
                 None
-            ) is not None
+            ) is None
             if all_files_moved:
                 return self.cp_data_source.update_status_lifecycle_rule_execution(
-                    storage_id, execution.execution_id, "SUCCESS")
-            elif execution.updated + datetime.timedelta(days=2) > datetime.datetime.now():
+                    storage_id, execution.execution_id, EXECUTION_SUCCESS_STATUS)
+            elif execution.updated + datetime.timedelta(days=2) < datetime.datetime.now(datetime.timezone.utc):
                 return self.cp_data_source.update_status_lifecycle_rule_execution(
-                    storage_id, execution.execution_id, "FAILED")
+                    storage_id, execution.execution_id, EXECUTION_FAILED_STATUS)
         return None
 
     def _send_notification(self, storage, rule, notification_properties):
         def _prepare_massage():
-            to_user_id = None
-            if rule.notification.keep_informed_owner:
-                loaded = self.cp_data_source.load_user_by_name(storage.owner)
-                to_user_id = loaded["id"] if loaded else None
-
-            cc_users = rule.notification.user_to_notify_ids if rule.notification.user_to_notify_ids else []
+            cc_users = [
+                self.cp_data_source.load_user(user_id)["userName"]
+                for user_id in (rule.notification.user_to_notify_ids if rule.notification.user_to_notify_ids else [])
+            ]
             if rule.notification.keep_informed_admins:
                 role_admin = self.cp_data_source.load_role(ROLE_ADMIN_ID)
                 if role_admin and "users" in role_admin:
-                    cc_users.extend([user["id"] for user in role_admin["users"]])
-                    if to_user_id is None:
-                        to_user_id = next(iter(role_admin["users"]))
+                    cc_users.extend([user["userName"] for user in role_admin["users"]])
+
+            _to_user = None
+            if rule.notification.keep_informed_owner:
+                loaded = self.cp_data_source.load_user_by_name(storage.owner)
+                _to_user = loaded["userName"]
+            if not _to_user:
+                _to_user = next(iter(cc_users), None)
 
             notification_parameters = {
                 "storageName": storage.name,
                 "storageId": storage.id,
                 "ruleId": rule.rule_id,
                 "path": notification_properties["path"],
-                "storageClass": notification_properties["storageClass"],
+                "storageClass": notification_properties["storage_class"],
                 "dateOfAction": notification_properties["date_of_action"],
                 "prolongDays": notification_properties["prolong_days"]
             }
 
-            return rule.notification.subject, rule.notification.body, to_user_id, cc_users, notification_parameters
+            return rule.notification.subject, rule.notification.body, _to_user, cc_users, notification_parameters
 
         path = notification_properties["path"]
         storage_class = notification_properties["storage_class"]
@@ -238,21 +298,32 @@ class StorageLifecycleSynchronizer:
             )
             return
 
+        subject, body, to_user, copy_users, parameters = _prepare_massage()
+        result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
+        if not result:
+            raise RuntimeError("Problem to send a notification for: {}".format(str(notification_properties)))
         self.cp_data_source.create_lifecycle_rule_execution(
             rule.datastorage_id, rule.rule_id,
             {
-                "status": "NOTIFICATION_SENT",
+                "status": EXECUTION_NOTIFICATION_SENT_STATUS,
                 "path": path,
                 "storageClass": storage_class
             }
         )
-        subject, body, to_user, copy_users, parameters = _prepare_massage()
-        self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
 
     @staticmethod
     def _rule_is_not_valid(rule):
-        # TODO check that rule is valid
-        pass
+        if not rule.notification:
+            raise RuntimeError("Rule: {}. No notification defined!".format(rule.rule_id))
+        if rule.notification.enabled:
+            if not rule.notification.body or not rule.notification.subject:
+                raise RuntimeError("Rule: {}. Enabled notification should have subject and body!".format(rule.rule_id))
+        if not rule.transitions:
+            raise RuntimeError("Rule: {}. Transitions cannot be None or empty!".format(rule.rule_id))
+        if not rule.transition_criterion:
+            raise RuntimeError("Rule: {}. Transition criterion cannot be None!".format(rule.rule_id))
+        if rule.transition_criterion.type != CRITERION_DEFAULT and not rule.transition_criterion.value:
+            raise RuntimeError("Rule: {}. Transition criterion with not DEFAULT type should have value!".format(rule.rule_id))
 
     @staticmethod
     def define_transition_effective_timepoint(criterion_file, transition):
@@ -270,7 +341,7 @@ class StorageLifecycleSynchronizer:
     def define_criterion_file(rule, file_listing, folder, subject_files):
         transition_method = rule.transition_method
         criterion_files = subject_files
-        if rule.transition_criterion.type == "MATCHING_FILES":
+        if rule.transition_criterion.type == CRITERION_MATCHING_FILES:
             transition_criterion_files_glob = os.path.join(folder, rule.transition_criterion.value)
             criterion_files = [
                 file for file in file_listing
@@ -279,7 +350,7 @@ class StorageLifecycleSynchronizer:
         # Sort by date (reverse or not depends on transition method) and get first element or None
         return next(
             iter(
-                sorted(criterion_files, key=lambda e: e.creation_date, reverse=(transition_method == "LATEST_FILE"))),
+                sorted(criterion_files, key=lambda e: e.creation_date, reverse=(transition_method == METHOD_LATEST_FILE))),
             None
         )
 
@@ -313,17 +384,17 @@ class StorageLifecycleSynchronizer:
                 result = set()
                 interim_result = ""
                 for path_part in path.split("/"):
-                    interim_result += path_part
+                    interim_result += "/" + path_part
                     result.add(interim_result)
                 return result
 
             result = set()
             for path in paths:
-                result.union(generate_hierarchy(path))
+                result = result.union(generate_hierarchy(path))
             return result
 
         unique_folder_paths = set()
         for object in files:
             parent_dir, filename = os.path.split(object.path)
             unique_folder_paths.add(parent_dir)
-        return [p for p in generate_all_possible_dir_paths(unique_folder_paths) if fnmatch.fnmatch(p, glob_str)]
+        return [p.replace("/", "", 1) if p.startswith("/") else p for p in generate_all_possible_dir_paths(unique_folder_paths) if fnmatch.fnmatch(p, glob_str)]

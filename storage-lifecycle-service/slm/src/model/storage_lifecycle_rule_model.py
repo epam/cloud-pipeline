@@ -14,7 +14,9 @@
 
 import datetime
 
-ISO_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+import pytz
+
+ISO_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 
 
 class StorageLifecycleTransitionCriterion:
@@ -141,18 +143,19 @@ class LifecycleRuleParser:
             return StorageLifecycleTransitionCriterion("DEFAULT", None)
 
         return StorageLifecycleTransitionCriterion(
-            type=transition_criterion_json["type"], value=transition_criterion_json["value"]
+            type=transition_criterion_json["type"],
+            value=transition_criterion_json["value"] if "value" in transition_criterion_json else None
         )
 
     @staticmethod
     def _parse_transitions(transitions_json):
         def _parse_transition(transition_json):
             return StorageLifecycleRuleTransition(
-                storage_class=transition_json["storageClass"] if "storageClass" in transitions_json else None,
+                storage_class=transition_json["storageClass"] if "storageClass" in transition_json else None,
                 transition_date=LifecycleRuleParser._parse_timestamp(
                     transition_json["transitionDate"]
-                ) if "transitionDate" in transitions_json else None,
-                transition_after_days=transition_json["transitionAfterDays"] if "transitionAfterDays" in transitions_json else None
+                ) if "transitionDate" in transition_json else None,
+                transition_after_days=transition_json["transitionAfterDays"] if "transitionAfterDays" in transition_json else None
             )
 
         if not transitions_json:
@@ -181,31 +184,31 @@ class LifecycleRuleParser:
     def _parse_notification(notification_json):
         return StorageLifecycleNotification(
             notify_before_days=notification_json["notifyBeforeDays"]
-            if "notifyBeforeDays" in notification_json["notifyBeforeDays"]
+            if "notifyBeforeDays" in notification_json
             else None,
             prolong_days=notification_json["prolongDays"]
-            if "prolongDays" in notification_json["prolongDays"]
+            if "prolongDays" in notification_json
             else None,
             user_to_notify_ids=notification_json["informedUserIds"]
-            if "informedUserIds" in notification_json["informedUserIds"]
+            if "informedUserIds" in notification_json
             else [],
             keep_informed_admins=notification_json["keepInformedAdmins"]
-            if "keepInformedAdmins" in notification_json["keepInformedAdmins"]
+            if "keepInformedAdmins" in notification_json
             else False,
             keep_informed_owner=notification_json["keepInformedOwner"]
-            if "keepInformedOwner" in notification_json["keepInformedOwner"]
+            if "keepInformedOwner" in notification_json
             else False,
             enabled=notification_json["enabled"]
-            if "enabled" in notification_json["enabled"]
+            if "enabled" in notification_json
             else True,
             subject=notification_json["subject"]
-            if "subject" in notification_json["subject"]
+            if "subject" in notification_json
             else None,
             body=notification_json["body"]
-            if "body" in notification_json["body"]
+            if "body" in notification_json
             else None
         )
 
     @staticmethod
     def _parse_timestamp(timestamp_string):
-        return datetime.datetime.strptime(timestamp_string, ISO_DATE_FORMAT)
+        return pytz.utc.localize(datetime.datetime.strptime(timestamp_string, ISO_DATE_FORMAT))

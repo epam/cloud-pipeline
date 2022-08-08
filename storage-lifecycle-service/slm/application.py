@@ -28,9 +28,9 @@ S3_TYPE = "S3"
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", default="single", choices=['single', 'demon'])
-    parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'], required=True)
+    parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
     parser.add_argument("--cp-api-url")
-    parser.add_argument("--aws-configuration-json")
+    parser.add_argument("--aws")
     parser.add_argument("--log-dir", default="/var/log/")
 
     args = parser.parse_args()
@@ -46,11 +46,11 @@ def main():
 
     cloud_operations = {}
 
-    if args.aws_configuration_json:
+    if args.aws:
         cloud_operations[S3_TYPE] = S3StorageOperations(json.loads(args.aws), data_source, logger)
 
     ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(cloud_operations, data_source, logger),
+        StorageLifecycleSynchronizer(data_source, cloud_operations, logger),
         args.mode
     ).run()
 

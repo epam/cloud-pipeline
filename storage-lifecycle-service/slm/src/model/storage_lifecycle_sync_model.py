@@ -1,6 +1,11 @@
+import json
+
+
 class StorageLifecycleRuleActionItems:
 
-    def __init__(self, rule_id, folder, transition_destination, mode="FOLDER"):
+    def __init__(self, rule_id=None, folder=None, transition_destination=None, mode="FOLDER"):
+        if transition_destination is None:
+            transition_destination = []
         self.rule_id = rule_id
         self.folder = folder
         self.mode = mode
@@ -48,10 +53,11 @@ class StorageLifecycleRuleActionItems:
             self.executions.extend(to_be_merged.executions)
             self.notification_queue.extend(to_be_merged.notification_queue)
             for destination, queue in to_be_merged.destination_transitions_queues.items():
-                self.destination_transitions_queues.get(destination, {}).update(queue)
+                if destination not in self.destination_transitions_queues:
+                    self.destination_transitions_queues[destination] = []
+                self.destination_transitions_queues[destination].extend(queue)
 
     def copy(self):
         result = StorageLifecycleRuleActionItems(self.rule_id, self.folder, [])
         result.merge(self)
         return result
-

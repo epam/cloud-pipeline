@@ -62,8 +62,8 @@ class RESTApiCloudPipelineDataSource:
         self.api = api
         self.parser = LifecycleRuleParser(self._load_default_lifecycle_rule_notification())
 
-    def load_datastorage(self, datastorage_id):
-        return self.api.find_datastorage(datastorage_id)
+    def load_available_storages(self):
+        return self.api.load_available_storages()
 
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         rules_json = self.api.load_lifecycle_rules_for_storage(datastorage_id)
@@ -92,16 +92,22 @@ class RESTApiCloudPipelineDataSource:
         )
 
     def send_notification(self, subject, body, to_user, copy_users, parameters):
-        self.api.create_notification(subject, body, to_user, copy_users, parameters)
+        return self.api.create_notification(subject, body, to_user, copy_users, parameters)
 
     def load_role(self, role_id):
         return self.api.load_role(role_id)
 
+    def load_regions(self):
+        return self.api.get_regions()
+
     def load_user_by_name(self, username):
         return self.api.load_user_by_name(username)
 
+    def load_user(self, user_id):
+        return self.api.load_user(user_id)
+
     def _load_default_lifecycle_rule_notification(self):
-        default_lifecycle_notification_templates = next(
+        default_lifecycle_notification_template = next(
             filter(
                 lambda t: t["name"] == self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE,
                 self.api.load_notification_templates()
@@ -116,17 +122,18 @@ class RESTApiCloudPipelineDataSource:
         )
         default_lifecycle_rule_prolong_days = self.api.get_preference("storage.lifecycle.prolong.days")
         default_lifecycle_rule_notify_before_days = self.api.get_preference("storage.lifecycle.notify.before.days")
-        if not default_lifecycle_notification_settings or not default_lifecycle_notification_templates \
+        if not default_lifecycle_notification_settings or not default_lifecycle_notification_template \
                 or not default_lifecycle_rule_prolong_days or not default_lifecycle_rule_notify_before_days:
             return None
 
         return {
-            "id": default_lifecycle_notification_templates["id"],
-            "keepInformedAdmins": default_lifecycle_notification_settings["keepInformedAdmins"],
-            "keepInformedOwners": default_lifecycle_notification_settings["keepInformedOwners"],
-            "enabled": default_lifecycle_notification_settings["enabled"],
-            "subject": default_lifecycle_notification_templates["subject"],
-            "body": default_lifecycle_notification_templates["body"],
+            "id": default_lifecycle_notification_template["id"],
+            "informedUserIds": default_lifecycle_notification_settings["informedUserIds"] if "informedUserIds" in default_lifecycle_notification_settings else [],
+            "keepInformedAdmins": default_lifecycle_notification_settings["keepInformedAdmins"] if "keepInformedAdmins" in default_lifecycle_notification_settings else False,
+            "keepInformedOwners": default_lifecycle_notification_settings["keepInformedOwner"] if "keepInformedOwner" in default_lifecycle_notification_settings else False,
+            "enabled": default_lifecycle_notification_settings["enabled"] if "enabled" in default_lifecycle_notification_settings else False,
+            "subject": default_lifecycle_notification_template["subject"] if "subject" in default_lifecycle_notification_template else "",
+            "body": default_lifecycle_notification_template["body"] if "body" in default_lifecycle_notification_template else "",
             "prolongDays": default_lifecycle_rule_prolong_days,
             "notifyBeforeDays": default_lifecycle_rule_notify_before_days
         }
