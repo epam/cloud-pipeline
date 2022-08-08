@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityU
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
 import MetadataEntityDeleteFromProject
-from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/configuration-browser';
 import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
@@ -396,7 +396,8 @@ export default class Metadata extends React.Component {
     const filterModel = {...this.state.filterModel};
     const {
       from,
-      to
+      to,
+      emptyValue
     } = range || {};
     if (key === 'createdDate') {
       filterModel.startDateFrom = from;
@@ -412,13 +413,13 @@ export default class Metadata extends React.Component {
     const filtered = this.state.filterModel.filters
       .filter(filter => filter.key !== key);
     let periodFilters;
-    if (range && range.emptyValue) {
+    if (emptyValue) {
       periodFilters = [{
         key,
         values: []
       }];
     } else if (from || to) {
-      periodFilters = [range.from, range.to]
+      periodFilters = [from, to]
         .filter(Boolean)
         .map((date, index) => {
           let operator;
