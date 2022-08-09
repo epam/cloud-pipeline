@@ -96,6 +96,13 @@ public class LdapBlockedUsersManager {
                 .map(StringUtils::upperCase)
                 .collect(Collectors.toSet());
 
+        if (userNamesFromLdap.isEmpty()) {
+            log.debug(String.format("Result from LDAP are empty, " +
+                            "will not try to determinate blocking users in this patch: %s",
+                    patch.stream().map(PipelineUser::getUserName).collect(Collectors.joining(", "))));
+            return Collections.emptyList();
+        }
+
         final Map<String, PipelineUser> usersByName = patch.stream()
                 .collect(Collectors.toMap(user -> StringUtils.upperCase(user.getUserName()),
                         Function.identity()));
@@ -105,11 +112,14 @@ public class LdapBlockedUsersManager {
                 return userNamesFromLdap.stream()
                         .filter(usersByName::containsKey)
                         .map(usersByName::get)
+                        .peek(u -> log.debug("Found blocked user: " + u.getUserName()))
                         .collect(Collectors.toList());
             case LOAD_ACTIVE_AND_INTERCEPT:
                 return usersByName.entrySet().stream()
                         .filter(pu -> !userNamesFromLdap.contains(pu.getKey()))
-                        .map(Map.Entry::getValue).collect(Collectors.toList());
+                        .map(Map.Entry::getValue)
+                        .peek(u -> log.debug("Found blocked user: " + u.getUserName()))
+                        .collect(Collectors.toList());
             default:
                 throw new IllegalArgumentException("Unsupported search method: " + searchMethod.name());
         }
@@ -168,6 +178,7 @@ public class LdapBlockedUsersManager {
 
     private LdapSearchResponse queryLdap(final LdapSearchRequest request, final String filter) {
         try {
+            log.trace(String.format("Query LDAP with query string: %s", request.getQuery()));
             return ldapManager.search(request, filter);
         } catch (Exception e) {
             log.warn("LDAP request failed.", e);
