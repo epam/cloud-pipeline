@@ -43,6 +43,7 @@ from cellprofiler.modules.measureimageareaoccupied import MeasureImageAreaOccupi
 from cellprofiler.modules.measureimageintensity import MeasureImageIntensity
 from cellprofiler.modules.measureobjectintensity import MeasureObjectIntensity
 from cellprofiler.modules.measureobjectsizeshape import MeasureObjectSizeShape
+from cellprofiler.modules.measureobjectskeleton import MeasureObjectSkeleton
 from cellprofiler.modules.medialaxis import MedialAxis
 from cellprofiler.modules.morph import Morph
 from cellprofiler.modules.morphologicalskeleton import MorphologicalSkeleton
@@ -85,7 +86,7 @@ from cellprofiler_core.setting import Color, SettingsGroup, StructuringElement, 
     HiddenCount
 from cellprofiler_core.setting.text import Float, ImageName, Text, LabelName, Directory, Filename, Integer
 
-from .modules.define_results import DefineResults, SpecItem
+from modules.define_results import DefineResults, SpecItem
 
 
 def prepare_input_path(input_path, cloud_scheme='s3'):
@@ -1308,3 +1309,12 @@ class FlagImageModuleProcessor(SettingsWithListElementModuleProcessor):
                 module_list_element.append(self.build_settings_group_from_list_element(rule))
         ModuleProcessor.configure_module(self, module_config)
         return self.module
+
+
+class MeasureObjectSkeletonModuleProcessor(OutputModuleProcessor):
+
+    def new_module(self):
+        return MeasureObjectSkeleton()
+
+    def generated_params(self):
+        return {'File output directory': self._output_location()}
