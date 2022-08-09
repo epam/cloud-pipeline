@@ -80,8 +80,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
-    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(StorageClass.Glacier.name(),
-            StorageClass.DeepArchive.name(), StorageClass.GlacierInstantRetrieval.name(), "DELETION");
+    /**
+     * See {@link StorageClass} from s3 model.
+     * */
+    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(
+            "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
