@@ -46,6 +46,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
 
     public static final String DATASTORAGE_ID = "datastorageId";
     public static final String RULE_ID = "ruleId";
+    public static final String EXECUTION_ID = "executionId";
     @Autowired
     private DataStorageLifecycleApiService dataStorageLifecycleApiService;
 
@@ -171,11 +172,28 @@ public class DataStorageLifecycleController extends AbstractRestController {
             })
     public Result<StorageLifecycleRuleExecution> updateStorageLifecycleRuleExecutionStatus(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
-            @PathVariable(value = "executionId") final Long executionId,
+            @PathVariable(value = EXECUTION_ID) final Long executionId,
             @RequestParam(value = "status") final StorageLifecycleRuleExecutionStatus status) {
         return Result.success(
                 dataStorageLifecycleApiService.updateStorageLifecycleRuleExecutionStatus(
                         datastorageId, executionId, status));
+    }
+
+    @DeleteMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/execution/{executionId}")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes lifecycle rule execution.",
+            notes = "Deletes lifecycle rule execution.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageLifecycleRuleExecution> updateStorageLifecycleRuleExecutionStatus(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @PathVariable(value = EXECUTION_ID) final Long executionId) {
+        return Result.success(
+                dataStorageLifecycleApiService.deleteStorageLifecycleRuleExecution(
+                        datastorageId, executionId));
     }
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/execution")

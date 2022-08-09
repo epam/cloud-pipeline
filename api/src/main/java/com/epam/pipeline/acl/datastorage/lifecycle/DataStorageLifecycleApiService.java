@@ -79,6 +79,12 @@ public class DataStorageLifecycleApiService {
         return storageLifecycleManager.updateStorageLifecycleRuleExecutionStatus(executionId, status);
     }
 
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StorageLifecycleRuleExecution deleteStorageLifecycleRuleExecution(
+            final Long id, final Long executionId) {
+        return storageLifecycleManager.deleteStorageLifecycleRuleExecution(executionId);
+    }
+
     public List<StorageLifecycleRuleExecution> listStorageLifecyclePolicyRuleExecutions(final Long ruleId,
                                                                                         final String path) {
         return storageLifecycleManager.listStorageLifecycleRuleExecutionsForRuleAndPath(ruleId, path);
