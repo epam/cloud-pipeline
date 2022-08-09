@@ -1,22 +1,25 @@
-from .hcs_pipeline import ImageCoords
-from .hcs_pipeline_status_wrapper import HcsPipelineStatusWrapper
+from .config import Config
+from .hcs_pipeline import ImageCoords, HcsPipeline, PipelineState
+from multiprocessing import Process
+from time import sleep
 
 
 class HCSManager:
 
-    def __init__(self, pipelines, pool):
+    def __init__(self, pipelines):
         self.pipelines = pipelines
-        self.pool = pool
+        self.running_processes = {}
+        self.queue = list()
 
     def create_pipeline(self, measurement_uuid):
-        pipeline = HcsPipelineStatusWrapper(measurement_uuid)
+        pipeline = HcsPipeline(measurement_uuid)
         pipeline_id = pipeline.get_id()
         self.pipelines.update({pipeline_id: pipeline})
         return pipeline_id
 
     def get_pipeline(self, pipeline_id):
         pipeline = self._get_pipeline(pipeline_id)
-        return pipeline.get_pipeline()
+        return pipeline.get_structure()
 
     def add_files(self, pipeline_id, files_data):
         pipeline = self._get_pipeline(pipeline_id)
@@ -55,11 +58,39 @@ class HCSManager:
 
     def run_pipeline(self, pipeline_id):
         pipeline = self._get_pipeline(pipeline_id)
-        self.pool.apply(pipeline.run_pipeline)
+        pipeline.set_pipeline_state(PipelineState.CONFIGURING)
+        delay = int(Config.RUN_DELAY)
+        pool_size = int(Config.POOL_SIZE)
+        try:
+            while True:
+                available_processors = pool_size - len(self.running_processes)
+                if available_processors > 0:
+                    if len(self.queue) == 0 or self.queue[0] == pipeline_id:
+                        if len(self.queue) != 0:
+                            self.queue.remove(pipeline_id)
+                        pipeline.set_pipeline_state(PipelineState.RUNNING)
+                        process = Process(target=pipeline.run_pipeline)
+                        process.start()
+                        print("[DEBUG] Run process '%s' started with PID %d" % (pipeline_id, process.pid))
+                        self.running_processes.update({pipeline_id: process})
+                        process.join()
+                        print("[DEBUG] Run processes '%s' finished" % pipeline_id)
+                        pipeline.set_pipeline_state(PipelineState.FINISHED)
+                        self.running_processes.pop(pipeline_id)
+                        return
+                if not self.queue.__contains__(pipeline_id):
+                    pipeline.set_pipeline_state(PipelineState.QUEUED)
+                    self.queue.append(pipeline_id)
+                    print("[DEBUG] Run '%s' queued" % pipeline_id)
+                sleep(delay)
+        except BaseException as e:
+            error_description = str(e)
+            pipeline.set_pipeline_state(PipelineState.FAILED, message=error_description)
+            raise e
 
     def run_module(self, pipeline_id, module_id):
         pipeline = self._get_pipeline(pipeline_id)
-        self.pool.apply_async(pipeline.run_module, [module_id])
+        pipeline.run_module(module_id)
 
     def get_status(self, pipeline_id, module_id):
         pipeline = self._get_pipeline(pipeline_id)

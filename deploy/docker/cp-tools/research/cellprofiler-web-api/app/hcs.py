@@ -3,7 +3,6 @@ import sys
 import os
 import traceback
 import argparse
-from multiprocessing.pool import ThreadPool
 import flask
 from flask import Flask, jsonify,  request
 
@@ -203,14 +202,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", default="5000")
-    parser.add_argument("--process_count", default=2)
 
     args = parser.parse_args()
 
-    pool = ThreadPool(processes=int(args.process_count))
     pipelines = {}
 
-    app.config['hcs'] = HCSManager(pipelines, pool)
+    app.config['hcs'] = HCSManager(pipelines)
 
     app.run(host=args.host, port=args.port)
 

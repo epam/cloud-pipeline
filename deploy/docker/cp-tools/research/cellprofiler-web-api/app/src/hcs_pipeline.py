@@ -34,6 +34,7 @@ class PipelineState(Enum):
     RUNNING = 2
     FINISHED = 3
     FAILED = 4
+    QUEUED = 5
 
 
 class ImageCoords(object):
@@ -110,8 +111,10 @@ class HcsPipeline(object):
         cellprofiler_core.utilities.java.start_java()
         self.set_pipeline_state(PipelineState.RUNNING)
         try:
+            print("[DEBUG] Run execution '%s' started" % self._pipeline_id)
             run = self._pipeline.run()
             self.set_pipeline_state(PipelineState.FINISHED)
+            print("[DEBUG] Run execution '%s' finished" % self._pipeline_id)
             return run
         except Exception as e:
             error_description = str(e)
