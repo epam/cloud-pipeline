@@ -71,14 +71,17 @@ class HCSManager:
                         pipeline.set_pipeline_state(PipelineState.RUNNING)
                         process = Process(target=pipeline.run_pipeline)
                         process.start()
+                        print("[DEBUG] Run process '%s' started with PID %d" % (pipeline_id, process.pid))
                         self.running_processes.update({pipeline_id: process})
                         process.join()
+                        print("[DEBUG] Run processes '%s' finished" % pipeline_id)
                         pipeline.set_pipeline_state(PipelineState.FINISHED)
                         self.running_processes.pop(pipeline_id)
                         return
                 if not self.queue.__contains__(pipeline_id):
                     pipeline.set_pipeline_state(PipelineState.QUEUED)
                     self.queue.append(pipeline_id)
+                    print("[DEBUG] Run '%s' queued" % pipeline_id)
                 sleep(delay)
         except BaseException as e:
             error_description = str(e)
