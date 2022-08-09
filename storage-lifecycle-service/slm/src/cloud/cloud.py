@@ -117,19 +117,19 @@ class S3StorageOperations(StorageOperations):
         else:
             self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
 
-    def list_objects_by_prefix(self, bucket, prefix):
+    def list_objects_by_prefix(self, bucket, prefix, convert_paths=True):
         result = []
         paginator = self.aws_s3_client.get_paginator('list_objects')
-        page_iterator = paginator.paginate(Bucket=bucket, Prefix=prefix)
+        page_iterator = paginator.paginate(Bucket=bucket, Prefix=self._path_to_s3_format(prefix))
         for page in page_iterator:
             if 'Contents' in page:
                 for obj in page['Contents']:
-                    result.append(self._map_s3_obj_to_cloud_obj(obj))
+                    result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
         return result
 
     def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
         aws_s3control_client = boto3.client("s3control", region_name=region)
-        manifest_content = "\n".join(["{},{}".format(bucket, file.path) for file in files])
+        manifest_content = "\n".join(["{},{}".format(bucket, self._path_to_s3_format(file.path)) for file in files])
         manifest_key = "_".join([
             bucket, folder, "rule", str(rule.rule_id),
             storage_class, str(datetime.datetime.utcnow()).replace(" ", "_").replace(":", "_"),
@@ -207,7 +207,7 @@ class S3StorageOperations(StorageOperations):
 
     def _clean_up_after_job(self, manifest_key, job_id):
         job_report_dir = os.path.join(self.config["report_prefix"], "job-" + job_id)
-        job_related_files = self.list_objects_by_prefix(self.config["system_bucket"], job_report_dir)
+        job_related_files = self.list_objects_by_prefix(self.config["system_bucket"], job_report_dir, False)
         for file in job_related_files:
             self.aws_s3_client.delete_object(
                 Bucket=self.config["system_bucket"],
@@ -219,8 +219,12 @@ class S3StorageOperations(StorageOperations):
         )
 
     @staticmethod
-    def _map_s3_obj_to_cloud_obj(s3_object):
-        return CloudObject(s3_object["Key"], s3_object["LastModified"], s3_object["StorageClass"])
+    def _map_s3_obj_to_cloud_obj(s3_object, convert_path):
+        return CloudObject(
+            S3StorageOperations._path_from_s3_format(s3_object["Key"]) if convert_path else s3_object["Key"],
+            s3_object["LastModified"],
+            s3_object["StorageClass"]
+        )
 
     @staticmethod
     def _verify_config(config):
@@ -233,3 +237,11 @@ class S3StorageOperations(StorageOperations):
         if "report_prefix" not in config:
             config["report_prefix"] = "cp_storage_lifecycle_tagging_report"
         config["report_prefix"] = config["report_prefix"].strip("/")
+
+    @staticmethod
+    def _path_from_s3_format(path):
+        return "/" + path if not path.startswith("/") else path
+
+    @staticmethod
+    def _path_to_s3_format(path):
+        return path.replace("/", "", 1) if path.startswith("/") else path

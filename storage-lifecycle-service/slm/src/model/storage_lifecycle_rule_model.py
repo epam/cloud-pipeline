@@ -81,8 +81,9 @@ class StorageLifecycleRule:
 
 class StorageLifecycleRuleExecution:
 
-    def __init__(self, execution_id, status, path, storage_class, updated):
+    def __init__(self, execution_id, rule_id, status, path, storage_class, updated):
         self.execution_id = execution_id
+        self.rule_id = rule_id
         self.path = path
         self.status = status
         self.storage_class = storage_class
@@ -129,6 +130,7 @@ class LifecycleRuleParser:
             return None
         return StorageLifecycleRuleExecution(
             execution_id=execution_json["id"],
+            rule_id=execution_json["ruleId"],
             path=execution_json["path"],
             status=execution_json["status"],
             storage_class=execution_json["storageClass"],

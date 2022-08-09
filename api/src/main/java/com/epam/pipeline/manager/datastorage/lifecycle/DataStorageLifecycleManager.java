@@ -310,7 +310,7 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_METHOD_VALIDATION));
         Assert.isTrue(!StringUtils.isEmpty(rule.getDatastorageId()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
-        Assert.isTrue(rule.getPathGlob() != null,
+        Assert.isTrue(!StringUtils.isEmpty(rule.getPathGlob()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED));
         final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
         Assert.notNull(datastorageId,

@@ -23,10 +23,13 @@ from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActio
 from slm.src.util.date_utils import is_timestamp_after_date, is_timestamp_before_date
 from slm.src.util.path_utils import determinate_prefix_from_glob
 
+MAX_EXECUTION_RUNNING_DAYS = 2
+
 CRITERION_MATCHING_FILES = "MATCHING_FILES"
 CRITERION_DEFAULT = "DEFAULT"
 
 ACTIONS_MODE_FILES = "FILES"
+ACTIONS_MODE_FOLDER = "FOLDER"
 
 METHOD_ONE_BY_ONE = "ONE_BY_ONE"
 METHOD_EARLIEST_FILE = "EARLIEST_FILE"
@@ -34,6 +37,7 @@ METHOD_LATEST_FILE = "LATEST_FILE"
 
 EXECUTION_NOTIFICATION_SENT_STATUS = "NOTIFICATION_SENT"
 EXECUTION_RUNNING_STATUS = "RUNNING"
+EXECUTION_SUCCESS_STATUS = "SUCCESS"
 EXECUTION_FAILED_STATUS = "FAILED"
 
 ROLE_ADMIN_ID = 1
@@ -150,12 +154,14 @@ class StorageLifecycleSynchronizer:
             return result
 
         effective_transitions = self._define_effective_transitions(
-            self._fetch_prolongation_for_path_or_default(path, rule), rule
-        )
+            self._fetch_prolongation_for_path_or_default(path, rule), rule)
 
         rule_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
-            rule.datastorage_id, rule.rule_id, path
-        )
+            rule.datastorage_id, rule.rule_id, path)
+
+        self.logger.log(
+            "Storage: {}. Rule: {}. Path: {}. Found {} executions.".format(
+                rule.datastorage_id, rule.rule_id, path, len(rule_executions)))
 
         for execution_for_transition in rule_executions:
             updated_execution = self._check_rule_execution_progress(
@@ -170,6 +176,10 @@ class StorageLifecycleSynchronizer:
             timestamp_of_action = self.define_transition_effective_timepoint(criterion_file, transition)
             file_to_transition = [f for f in subject_files if f.storage_class != transition_class]
 
+            self.logger.log(
+                "Storage: {}. Rule: {}. Path: {}. Transition: {}. Found {} files to transit.".format(
+                    rule.datastorage_id, rule.rule_id, path, transition_class, len(file_to_transition)))
+
             execution_for_transition = next(
                 filter(lambda e: e.storage_class == transition_class, rule_executions), None
             )
@@ -179,16 +189,25 @@ class StorageLifecycleSynchronizer:
             # Check if notification is needed
             if self._notification_should_be_sent(notification, execution_for_transition,
                                                  file_to_transition, timestamp_of_action, now):
-                result.with_notification(
-                    path, transition_class, transition.transition_date, notification.prolong_days
-                )
+                self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. Notification will be sent.".format(
+                    rule.datastorage_id, rule.rule_id, path, transition_class, len(file_to_transition)))
+                result.with_notification(path, transition_class, transition.transition_date, notification.prolong_days)
 
             # Check if action is needed
             if is_timestamp_after_date(timestamp_of_action, now):
                 if not file_to_transition:
+                    self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. No file to transit.".format(
+                            rule.datastorage_id, rule.rule_id, path, transition_class))
                     continue
                 if execution_for_transition and execution_for_transition.status == EXECUTION_RUNNING_STATUS:
+                    self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. "
+                                    "No need for action: execution is in RUNNING state.".format(
+                                        rule.datastorage_id, rule.rule_id, path, transition_class))
                     continue
+
+                self.logger.log(
+                    "Storage: {}. Rule: {}. Path: {}. Transition: {}. All criteria are met. Will transit {} files."
+                    .format(rule.datastorage_id, rule.rule_id, path, transition_class, len(file_to_transition)))
 
                 for file in file_to_transition:
                     result.with_transition(transition_class, file)
@@ -205,27 +224,23 @@ class StorageLifecycleSynchronizer:
 
         for storage_class, subject_files in action_items.destination_transitions_queues.items():
             if subject_files:
-                self.logger.log(
-                    "Starting to tagging files for Storage Class: {}, number of files: {}".format(
-                        storage_class, len(subject_files)
-                    )
-                )
+                self.logger.log("Starting to tagging files for Storage Class: {}, number of files: {}".format(
+                    storage_class, len(subject_files)))
 
                 if action_items.mode == ACTIONS_MODE_FILES:
                     for file in subject_files:
-                        result = self.cloud_operations[storage.storage_type].process_files_on_cloud(
-                            storage.path, storage.region_name, rule, action_items.folder, storage_class, [file])
-                        self._create_or_update_execution(
-                            storage.id, rule, storage_class, file.path,
-                            EXECUTION_RUNNING_STATUS if result else EXECUTION_FAILED_STATUS
-                        )
+                        self._create_or_update_execution(storage.id, rule, storage_class,
+                                                         file.path, EXECUTION_RUNNING_STATUS)
                 else:
-                    result = self.cloud_operations[storage.storage_type].process_files_on_cloud(
-                        storage.path, storage.region_name, rule, action_items.folder, storage_class, subject_files)
-                    self._create_or_update_execution(
-                        storage.id, rule, storage_class, action_items.folder,
-                        EXECUTION_RUNNING_STATUS if result else EXECUTION_FAILED_STATUS
-                    )
+                    self._create_or_update_execution(storage.id, rule, storage_class,
+                                                     action_items.folder, EXECUTION_RUNNING_STATUS)
+                is_successful = self.cloud_operations[storage.storage_type].process_files_on_cloud(
+                    storage.path, storage.region_name, rule, action_items.folder, storage_class, subject_files)
+
+                if not is_successful:
+                    if action_items.mode == ACTIONS_MODE_FOLDER:
+                        self._create_or_update_execution(storage.id, rule, storage_class,
+                                                         action_items.folder, EXECUTION_RUNNING_STATUS)
 
     def _create_or_update_execution(self, storage_id, rule, storage_class, path, status):
         executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(storage_id, rule.rule_id, path)
@@ -248,16 +263,37 @@ class StorageLifecycleSynchronizer:
         if not execution.status:
             raise RuntimeError("Malformed rule execution found: " + json.dumps(execution))
 
+        self.logger.log(
+            "Storage: {}. Rule: {}. Path: {}. Transition: {}. Execution status: {}.".format(
+                storage_id, execution.rule_id, execution.path, execution.storage_class, execution.status)
+        )
+
         if execution.status == EXECUTION_RUNNING_STATUS:
+            self.logger.log(
+                "Storage: {}. Rule: {}. Path: {}. Transition: {}. "
+                "Execution for this rule, path and transition in RUNNING state.".format(
+                    storage_id, execution.rule_id, execution.path, execution.storage_class)
+            )
             # Check that all files were moved to destination storage class and if not and 2 days are passed since
             # process was started - fail this execution
-            all_files_moved = next(
-                filter(lambda file: file.storage_class != execution.storage_class, subject_files),
-                None
-            ) is None
+            file_in_wrong_location = next(filter(lambda file: file.storage_class != execution.storage_class, subject_files), None)
+            all_files_moved = file_in_wrong_location is None
             if all_files_moved:
-                return self.cp_data_source.delete_lifecycle_rule_execution(storage_id, execution.execution_id)
-            elif execution.updated + datetime.timedelta(days=2) < datetime.datetime.now(datetime.timezone.utc):
+                self.logger.log(
+                    "Storage: {}. Rule: {}. Path: {}. Transition: {}. All files moved to destination location".format(
+                        storage_id, execution.rule_id, execution.path, execution.storage_class)
+                )
+                successful_execution = self.cp_data_source.delete_lifecycle_rule_execution(
+                    storage_id, execution.execution_id)
+                successful_execution.status = EXECUTION_SUCCESS_STATUS
+                return successful_execution
+            elif execution.updated + datetime.timedelta(days=MAX_EXECUTION_RUNNING_DAYS) < datetime.datetime.now(datetime.timezone.utc):
+                self.logger.log(
+                    "Storage: {}. Rule: {}. Path: {}. Transition: {}. "
+                    "{} days are left but files in a wrong destination: {}. Failing this execution.".format(
+                        storage_id, execution.rule_id, execution.path, execution.storage_class,
+                        str(MAX_EXECUTION_RUNNING_DAYS), file_in_wrong_location.storage_class)
+                )
                 return self.cp_data_source.update_status_lifecycle_rule_execution(
                     storage_id, execution.execution_id, EXECUTION_FAILED_STATUS)
         return None
@@ -302,15 +338,33 @@ class StorageLifecycleSynchronizer:
             return
 
         self._create_or_update_execution(
-            rule.datastorage_id, rule, storage_class, path, EXECUTION_NOTIFICATION_SENT_STATUS
-        )
+            rule.datastorage_id, rule, storage_class, path, EXECUTION_NOTIFICATION_SENT_STATUS)
         subject, body, to_user, copy_users, parameters = _prepare_massage()
         result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
         if not result:
             self._create_or_update_execution(
-                rule.datastorage_id, rule, storage_class, path, EXECUTION_FAILED_STATUS
-            )
+                rule.datastorage_id, rule, storage_class, path, EXECUTION_FAILED_STATUS)
             raise RuntimeError("Problem to send a notification for: {}".format(str(notification_properties)))
+
+    @staticmethod
+    def _notification_should_be_sent(notification, execution, file_to_transition, timestamp_of_action, now):
+        if not notification.enabled:
+            return False
+
+        date_to_check = now + datetime.timedelta(days=notification.notify_before_days)
+        if not file_to_transition or is_timestamp_before_date(timestamp_of_action, date_to_check):
+            return False
+
+        if execution:
+            was_updated_before = is_timestamp_before_date(
+                now - datetime.timedelta(days=notification.notify_before_days),
+                execution.updated
+            )
+            if execution.status == EXECUTION_RUNNING_STATUS:
+                return False
+            if execution.status == EXECUTION_NOTIFICATION_SENT_STATUS and was_updated_before:
+                return False
+        return True
 
     @staticmethod
     def _rule_is_not_valid(rule):
@@ -356,26 +410,6 @@ class StorageLifecycleSynchronizer:
         )
 
     @staticmethod
-    def _notification_should_be_sent(notification, execution, file_to_transition, timestamp_of_action, now):
-        if not notification.enabled:
-            return False
-
-        date_to_check = now + datetime.timedelta(days=notification.notify_before_days)
-        if not file_to_transition or is_timestamp_before_date(timestamp_of_action, date_to_check):
-            return False
-
-        if execution:
-            was_updated_before = is_timestamp_before_date(
-                now - datetime.timedelta(days=notification.notify_before_days),
-                execution.updated
-            )
-            if execution.status == EXECUTION_RUNNING_STATUS:
-                return False
-            if execution.status == EXECUTION_NOTIFICATION_SENT_STATUS and was_updated_before:
-                return False
-        return True
-
-    @staticmethod
     def _define_effective_transitions(prolongation, rule):
         def _define_transition(transition):
             resulted_transition = StorageLifecycleRuleTransition(transition.storage_class)
@@ -405,7 +439,7 @@ class StorageLifecycleSynchronizer:
                 result = set()
                 interim_result = ""
                 for path_part in path.split("/"):
-                    interim_result = interim_result + "/" + path_part if interim_result else path_part
+                    interim_result = interim_result + "/" + path_part if path_part else interim_result
                     result.add(interim_result)
                 return result
 
@@ -415,7 +449,7 @@ class StorageLifecycleSynchronizer:
             return result
 
         if not glob_str or glob_str == "/":
-            return [""]
+            return ["/"]
 
         unique_folder_paths = set()
         for object in files:
