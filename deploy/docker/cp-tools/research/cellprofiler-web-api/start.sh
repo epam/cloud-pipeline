@@ -122,15 +122,20 @@ else
 
     # merge results
     common_define_results_file="$CELLPROFILER_API_BATCH_RESULTS_DIR/Results.csv"
-    first_pipeline_id="${pipelines[0]}"
+    first_pipeline_processed=0
     for pipeline_id in "${pipelines[@]}"
     do
         module_id="$(curl -k -s -X GET "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?pipelineId=$pipeline_id" | jq -r '.payload.pipelineId.modules | map(select(.name=="DefineResults"))[] | .id//""')"
         define_results_pipeline_file="$CELLPROFILER_API_COMMON_RESULTS_DIR/$measurement_uuid/$pipeline_id/$module_id/Results.csv"
-        if [ "$pipeline_id" == "$first_pipeline_id" ]; then
+        if [ ! -f "$define_results_pipeline_file" ]; then
+            continue
+        fi
+        if [ "$first_pipeline_processed" == 0 ]; then
             cat "$define_results_pipeline_file" > "$common_define_results_file"
+            first_pipeline_processed=1
         else
             tail -n +2 "$define_results_pipeline_file" >> "$common_define_results_file"
         fi
     done
+    libreoffice --headless --convert-to xlsx:"Calc MS Excel 2007 XML" "$common_define_results_file"
 fi
