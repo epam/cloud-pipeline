@@ -202,6 +202,7 @@ class PipelineAPI:
     LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution"
     LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_AND_PATH_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution?path={path}"
     UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}/status?status={status}"
+    LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
     LOAD_METADATA = "/metadata/load"
     SAVE_METADATA_ENTITY = "metadataEntity/save"
@@ -1080,6 +1081,15 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to update lifecycle rule execution status by ID '{}' status to update: {}.",
                                "Error message: {}".format(str(execution_id), status, str(e.message)))
+
+    def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, execution_id=execution_id), method='delete')
+        except Exception as e:
+            raise RuntimeError("Failed to delete lifecycle rule execution by ID '{}'.",
+                               "Error message: {}".format(str(execution_id), str(e.message)))
 
     def load_notification_templates(self):
         try:

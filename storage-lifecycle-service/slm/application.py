@@ -29,9 +29,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", default="single", choices=['single', 'demon'])
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
-    parser.add_argument("--cp-api-url")
-    parser.add_argument("--aws")
     parser.add_argument("--log-dir", default="/var/log/")
+    parser.add_argument("--cp-api-url")
+    parser.add_argument("--max-running-days", default=2)
+    parser.add_argument("--aws")
 
     args = parser.parse_args()
 

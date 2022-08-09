@@ -199,6 +199,14 @@ public class DataStorageLifecycleManager {
         return lifecycleEntityMapper.toDto(saved);
     }
 
+    @Transactional
+    public StorageLifecycleRuleExecution deleteStorageLifecycleRuleExecution(final Long executionId) {
+        final StorageLifecycleRuleExecutionEntity execution =
+                dataStorageLifecycleRuleExecutionRepository.findOne(executionId);
+        dataStorageLifecycleRuleExecutionRepository.delete(execution.getId());
+        return lifecycleEntityMapper.toDto(execution);
+    }
+
     public List<StorageLifecycleRuleExecution> listStorageLifecycleRuleExecutionsForRuleAndPath(
             final Long ruleId, final String path) {
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
@@ -302,7 +310,7 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_METHOD_VALIDATION));
         Assert.isTrue(!StringUtils.isEmpty(rule.getDatastorageId()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
-        Assert.isTrue(!StringUtils.isEmpty(rule.getPathGlob()),
+        Assert.isTrue(rule.getPathGlob() != null,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED));
         final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
         Assert.notNull(datastorageId,

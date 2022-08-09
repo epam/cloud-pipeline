@@ -21,3 +21,8 @@ def is_timestamp_within_date(date, timestamp):
 def is_timestamp_after_date(date, timestamp):
     day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
     return day_start <= timestamp
+
+
+def is_timestamp_before_date(date, timestamp):
+    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
+    return day_start >= timestamp

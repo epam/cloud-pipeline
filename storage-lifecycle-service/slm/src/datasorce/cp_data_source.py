@@ -41,6 +41,9 @@ class CloudPipelineDataSource:
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
         pass
 
+    def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
+        pass
+
     def load_default_lifecycle_rule_notification(self):
         pass
 
@@ -89,6 +92,11 @@ class RESTApiCloudPipelineDataSource:
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
         return self.parser.parse_execution(
             self.api.update_status_lifecycle_rule_execution(datastorage_id, execution_id, status)
+        )
+
+    def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
+        return self.parser.parse_execution(
+            self.api.delete_lifecycle_rule_execution(datastorage_id, execution_id)
         )
 
     def send_notification(self, subject, body, to_user, copy_users, parameters):
