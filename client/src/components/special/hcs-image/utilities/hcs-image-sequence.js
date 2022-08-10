@@ -85,7 +85,7 @@ class HCSImageSequence {
     this.omeTiff = undefined;
     this.offsetsJson = undefined;
     this.metadata = [];
-    this.listeners = [];
+    this.timeouts = [];
   }
 
   fetch () {
@@ -127,6 +127,8 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.omeTiff = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OMETiffURL);
+        this.timeouts.push(setTimeout(() => this.generateOMETiffURL(), 890000));
       })
       .catch((e) => {
         this.error = e.message;
@@ -139,6 +141,8 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.offsetsJson = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OffsetsJsonURL);
+        this.timeouts.push(setTimeout(() => this.generateOffsetsJsonURL(), 890000));
       })
       .catch(() => {});
     return promise;
@@ -199,6 +203,8 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.overviewOmeTiff = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OverviewOMETiffURL);
+        this.timeouts.push(setTimeout(() => this.generateOverviewOMETiffURL(), 890000));
       })
       .catch((e) => {
         this.error = e.message;
@@ -212,18 +218,11 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.overviewOffsetsJson = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OverviewOffsetsJsonURL);
+        this.timeouts.push(setTimeout(() => this.generateOverviewOffsetsJsonURL(), 890000));
       })
       .catch(() => {});
     return promise;
-  }
-
-  // the urls are expired in 15 minutes
-  setDataUrlsTimeout = () => {
-    setTimeout(() => {
-      if (this.listeners.length) {
-        this.regenerateDataURLs();
-      }
-    }, 890000);
   }
 
   regenerateDataURLs () {
@@ -235,19 +234,12 @@ class HCSImageSequence {
     ]);
   }
 
-  addEventListener (event, listener) {
-    this.listeners.push({event, listener});
-  }
-
-  removeEventListener (event, listener) {
-    this.listeners = this.listeners.filter((o) => o.event !== event);
-  }
-
-  emit (event, payload) {
-    this.listeners
-      .filter((o) => o.event === event && typeof o.listener === 'function')
-      .map((o) => o.listener)
-      .forEach((listener) => listener(this, payload));
+  destroy = () => {
+    if (this.timeouts.length) {
+      for (let j = 0; j < this.timeouts.length; j++) {
+        clearTimeout(this.timeouts[j]);
+      }
+    }
   }
 }
 

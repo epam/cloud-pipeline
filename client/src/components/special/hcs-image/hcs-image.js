@@ -72,6 +72,12 @@ class HcsImage extends React.PureComponent {
   @observable hcsImageViewer;
   @observable hcsAnalysis = new Analysis();
 
+  constructor () {
+    super();
+    this.listeners = [];
+    this.addEventListener('dataURLsRegenerated', this.loadImage);
+  }
+
   componentDidMount () {
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
     this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
@@ -89,10 +95,30 @@ class HcsImage extends React.PureComponent {
   }
 
   componentWillUnmount () {
-    this.selectedSequence.removeEventListener('regenerateDataURLs');
     this.container = undefined;
     this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
+    this.hcsInfo.destroy();
+    this.removeEventListener('dataURLsRegenerated');
+  }
+
+  addEventListener = (event, listener) => {
+    this.listeners.push({event, listener});
+  }
+
+  removeEventListener = (event, listener) => {
+    this.listeners = this.listeners.filter((o) => o.event !== event);
+  }
+
+  emit = (event, payload) => {
+    this.listeners
+      .filter(o => o.event === event)
+      .map(o => o.listener)
+      .forEach(listener => {
+        if (typeof listener === 'function') {
+          listener(payload);
+        }
+      });
   }
 
   @computed
@@ -198,6 +224,10 @@ class HcsImage extends React.PureComponent {
     return batchAnalysis && batchJobId;
   }
 
+  emitDataURLsRegenerated = () => {
+    this.emit('dataURLsRegenerated');
+  }
+
   prepare = () => {
     const {
       storage,
@@ -220,7 +250,8 @@ class HcsImage extends React.PureComponent {
         selectedSequenceTimePoints: [],
         selectedZCoordinates: []
       }, () => {
-        HCSInfo.fetch({storageInfo: storage, storageId, path})
+        const emitDataURLsRegenerated = this.emitDataURLsRegenerated;
+        HCSInfo.fetch({storageInfo: storage, storageId, path, emitDataURLsRegenerated})
           .then(info => {
             const {
               sequences = [],
@@ -317,10 +348,6 @@ class HcsImage extends React.PureComponent {
       }, () => {
         sequence
           .fetch()
-          .then(() => sequence.addEventListener(
-            'regenerateDataURLs',
-            sequence.setDataUrlsTimeout
-          ))
           .then(() => sequence.regenerateDataURLs())
           .then(() => sequence.fetchMetadata())
           .then(() => {

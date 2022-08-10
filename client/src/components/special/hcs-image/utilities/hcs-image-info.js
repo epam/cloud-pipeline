@@ -18,6 +18,7 @@ import storages from '../../../../models/dataStorage/DataStorageAvailable';
 import HCSImageSequence from './hcs-image-sequence';
 import parseHCSFileParts from './parse-hcs-file-parts';
 import {createObjectStorageWrapper} from '../../../../utils/object-storage';
+import {DATA_URLS} from './constants';
 
 /**
  * @typedef {Object} HCSInfoOptions
@@ -42,7 +43,8 @@ class HCSInfo {
       sourceDirectory,
       width,
       height,
-      timeSeriesDetails = {}
+      timeSeriesDetails = {},
+      emitDataURLsRegenerated
     } = options;
     const sequences = Object.keys(timeSeriesDetails);
     if (sequences.length === 0) {
@@ -98,6 +100,41 @@ class HCSInfo {
           .join(objectStorage ? objectStorage.delimiter : '/'),
         timeSeries: timeSeriesDetails[sequence] || []
       }));
+    this.listeners = [];
+    this._emitedListeners = {};
+    this.emitDataURLsRegenerated = emitDataURLsRegenerated;
+    this.addEventListener(DATA_URLS.OMETiffURL, this.dataURLsRegenerated);
+    this.addEventListener(DATA_URLS.OffsetsJsonURL, this.dataURLsRegenerated);
+    this.addEventListener(DATA_URLS.OverviewOMETiffURL, this.dataURLsRegenerated);
+    this.addEventListener(DATA_URLS.OverviewOffsetsJsonURL, this.dataURLsRegenerated);
+  }
+
+  get emitedListeners () {
+    return Object.entries(this._emitedListeners)
+      .map(([key, value]) => (value ? key : null))
+      .filter(key => key)
+      .sort();
+  }
+
+  get _allURLsGenerated () {
+    const listeners = this.emitedListeners;
+    const urls = Object.values(DATA_URLS).sort();
+    if (listeners.length === urls.length) {
+      for (let i = 0; i < listeners.length; i++) {
+        if (listeners[i] !== urls[i]) {
+          return false;
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  dataURLsRegenerated = () => {
+    if (this._allURLsGenerated) {
+      this._emitedListeners = {};
+      this.emitDataURLsRegenerated();
+    }
   }
 
   /**
@@ -115,7 +152,8 @@ class HCSInfo {
     const {
       storageInfo,
       storageId,
-      path
+      path,
+      emitDataURLsRegenerated
     } = options;
     if ((!storageId && !storageInfo) || !path) {
       return Promise.reject(new Error('`storageId` and `path` must be specified for HCS image'));
@@ -152,7 +190,8 @@ class HCSInfo {
             width,
             height,
             objectStorage,
-            timeSeriesDetails
+            timeSeriesDetails,
+            emitDataURLsRegenerated
           })
         );
       } catch (e) {
@@ -160,6 +199,40 @@ class HCSInfo {
       }
     });
   }
+
+  addEventListener = (event, listener) => {
+    this.listeners.push({event, listener});
+  }
+
+  removeEventListener = (event, listener) => {
+    this.listeners = this.listeners.filter((o) => o.event !== event);
+  }
+
+  emit = (event, payload) => {
+    this._emitedListeners[event] = true;
+    this.listeners
+      .filter(o => o.event === event)
+      .map(o => o.listener)
+      .forEach(listener => {
+        if (typeof listener === 'function') {
+          listener(payload);
+        }
+      });
+  }
+
+  destroySequences () {
+    for (let i = 0; i < this.sequences.length; i++) {
+      this.sequences[i].destroy();
+    }
+  }
+
+  destroy = () => {
+    this.removeEventListener(DATA_URLS.OMETiffURL);
+    this.removeEventListener(DATA_URLS.OffsetsJsonURL);
+    this.removeEventListener(DATA_URLS.OverviewOMETiffURL);
+    this.removeEventListener(DATA_URLS.OverviewOffsetsJsonURL);
+    this.destroySequences();
+  };
 }
 
 export default HCSInfo;
