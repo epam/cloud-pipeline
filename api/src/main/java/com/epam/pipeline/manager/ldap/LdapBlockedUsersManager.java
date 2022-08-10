@@ -69,8 +69,8 @@ public class LdapBlockedUsersManager {
                 SystemPreferences.LDAP_BLOCKED_USER_NAME_ATTRIBUTE);
         final LdapBlockedUserSearchMethod ldapSearchMethod = chooseLdapSearchMethod();
 
-        log.debug(String.format("LDAP search method: %s, filterTemplate: %s, nameAttribute: %s",
-                ldapSearchMethod.name(), filterTemplate, nameAttribute));
+        log.debug("LDAP search method: {}, filterTemplate: {}, nameAttribute: {}",
+                ldapSearchMethod.name(), filterTemplate, nameAttribute);
 
         final List<List<PipelineUser>> userPatches = Lists.partition(users, pageSize);
         return userPatches.stream()
@@ -97,9 +97,9 @@ public class LdapBlockedUsersManager {
                 .collect(Collectors.toSet());
 
         if (userNamesFromLdap.isEmpty()) {
-            log.debug(String.format("Result from LDAP are empty, " +
-                            "will not try to determinate blocking users in this patch: %s",
-                    patch.stream().map(PipelineUser::getUserName).collect(Collectors.joining(", "))));
+            log.debug("Result from LDAP are empty, " +
+                            "will not try to determinate blocking users in this patch: {}",
+                    patch.stream().map(PipelineUser::getUserName).collect(Collectors.joining(", ")));
             return Collections.emptyList();
         }
 
@@ -178,8 +178,10 @@ public class LdapBlockedUsersManager {
 
     private LdapSearchResponse queryLdap(final LdapSearchRequest request, final String filter) {
         try {
-            log.trace(String.format("Query LDAP with query string: %s", request.getQuery()));
-            return ldapManager.search(request, filter);
+            log.debug("Query LDAP with query string: {}", request.getQuery());
+            final LdapSearchResponse response = ldapManager.search(request, filter);
+            log.debug("Received LDAP response {}", response);
+            return response;
         } catch (Exception e) {
             log.warn("LDAP request failed.", e);
             return null;
