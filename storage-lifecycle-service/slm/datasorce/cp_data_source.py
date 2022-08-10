@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from slm.model.storage_lifecycle_rule_model import LifecycleRuleParser
+from slm.model.rule_model import LifecycleRuleParser
 
 
 class CloudPipelineDataSource:
@@ -142,6 +142,6 @@ class RESTApiCloudPipelineDataSource:
             "enabled": default_lifecycle_notification_settings["enabled"] if "enabled" in default_lifecycle_notification_settings else False,
             "subject": default_lifecycle_notification_template["subject"] if "subject" in default_lifecycle_notification_template else "",
             "body": default_lifecycle_notification_template["body"] if "body" in default_lifecycle_notification_template else "",
-            "prolongDays": default_lifecycle_rule_prolong_days,
-            "notifyBeforeDays": default_lifecycle_rule_notify_before_days
+            "prolongDays": int(default_lifecycle_rule_prolong_days["value"]),
+            "notifyBeforeDays": int(default_lifecycle_rule_notify_before_days["value"])
         }
