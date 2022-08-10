@@ -13,12 +13,14 @@
 # limitations under the License.
 
 import json
+import os
 
 from pipeline.api import PipelineAPI
 import argparse
 from slm.src.application_mode import ApplicationModeRunner
 from slm.src.cloud.cloud import S3StorageOperations
 from slm.src.logger import AppLogger
+from slm.src.model.config_model import SynchronizerConfig
 from slm.src.storage_lifecycle_synchronizer import StorageLifecycleSynchronizer
 from src.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
 
@@ -27,10 +29,11 @@ S3_TYPE = "S3"
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--cp-api-url")
+    parser.add_argument("--cp-api-token", required=False)
     parser.add_argument("--mode", default="single", choices=['single', 'demon'])
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
     parser.add_argument("--log-dir", default="/var/log/")
-    parser.add_argument("--cp-api-url")
     parser.add_argument("--max-running-days", default=2)
     parser.add_argument("--aws")
 
@@ -41,17 +44,23 @@ def main():
     data_source = None
     if args.data_source is "RESTApi":
         if not args.cp_api_url:
-            raise RuntimeError("Cloud Pipeline data source cannot be configured! Please specify --cp-api-url ")
+            raise RuntimeError("Cloud Pipeline data source cannot be configured! Please specify --cp-api-url")
+        if args.cp_api_token:
+            os.environ["API_TOKEN"] = args.cp_api_token
+        if not os.getenv("API_TOKEN"):
+            raise RuntimeError("Cloud Pipeline data source cannot be configured! "
+                               "Please specify --cp-api-token or API_TOKEN environment variable")
         api = PipelineAPI(args.cp_api_url, args.log_dir)
         data_source = RESTApiCloudPipelineDataSource(api)
 
     cloud_operations = {}
-
     if args.aws:
         cloud_operations[S3_TYPE] = S3StorageOperations(json.loads(args.aws), data_source, logger)
 
+    synchronizer_config = SynchronizerConfig(args.max_running_days)
+
     ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(data_source, cloud_operations, logger),
+        StorageLifecycleSynchronizer(synchronizer_config, data_source, cloud_operations, logger),
         args.mode
     ).run()
 

@@ -21,8 +21,6 @@ import boto3
 
 from slm.src.model.cloud_object_model import CloudObject
 
-ROLE_ADMIN_ID = 1
-
 DESTINATION_STORAGE_CLASS_TAG = 'DESTINATION_STORAGE_CLASS'
 CP_SLC_RULE_NAME_PREFIX = 'CP Storage Lifecycle Rule:'
 
@@ -97,8 +95,7 @@ class S3StorageOperations(StorageOperations):
     def __init__(self, config, cp_data_source, logger=AppLogger()):
         self.logger = logger
         self.cp_data_source = cp_data_source
-        self._verify_config(config)
-        self.config = config
+        self.config = self._verify_config(config)
         self.aws_s3_client = boto3.client("s3")
 
     def prepare_bucket_if_needed(self, bucket):
@@ -177,7 +174,7 @@ class S3StorageOperations(StorageOperations):
         )
 
         s3_tagging_job_description = None
-        for try_i in range(30):
+        for try_i in range(self.config["tagging_job_poll_status_retry_count"]):
             self.logger.log("Get Job {} status with try: {}".format(s3_tagging_job["JobId"], try_i))
             s3_tagging_job_description = aws_s3control_client.describe_job(
                 AccountId=self.config["aws_account_id"],
@@ -189,7 +186,7 @@ class S3StorageOperations(StorageOperations):
                     break
                 else:
                     self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Job"]["Status"]))
-            sleep(5)
+            sleep(self.config["tagging_job_poll_status_sleep_sec"])
 
         if not s3_tagging_job_description or "Job" not in s3_tagging_job_description or \
                 "Status" not in s3_tagging_job_description["Job"] \
@@ -228,15 +225,33 @@ class S3StorageOperations(StorageOperations):
 
     @staticmethod
     def _verify_config(config):
-        if "aws_account_id" not in config:
+        result = dict(config)
+        if "aws_account_id" not in result:
             raise RuntimeError("Please provide aws_account_id within --aws configuration option")
-        if "system_bucket" not in config:
+
+        if "system_bucket" not in result:
             raise RuntimeError("Please provide system_bucket within --aws configuration option")
-        if "role_arn" not in config:
+
+        if "role_arn" not in result:
             raise RuntimeError("Please provide role_arn within --aws configuration option")
-        if "report_prefix" not in config:
-            config["report_prefix"] = "cp_storage_lifecycle_tagging_report"
-        config["report_prefix"] = config["report_prefix"].strip("/")
+
+        if "report_prefix" not in result:
+            result["report_prefix"] = "cp_storage_lifecycle_tagging_report"
+        result["report_prefix"] = result["report_prefix"].strip("/")
+
+        if "tagging_job_poll_status_retry_count" not in result:
+            result["tagging_job_poll_status_retry_count"] = 30
+        if result["tagging_job_poll_status_retry_count"] < 1:
+            raise RuntimeError(
+                "Value tagging_job_poll_status_retry_count within --aws configuration option should be > 1")
+
+        if "tagging_job_poll_status_sleep_sec" not in result:
+            result["tagging_job_poll_status_sleep_sec"] = 5
+        if result["tagging_job_poll_status_sleep_sec"] < 1:
+            raise RuntimeError(
+                "Value tagging_job_poll_status_sleep_sec within --aws configuration option should be > 1")
+
+        return result
 
     @staticmethod
     def _path_from_s3_format(path):

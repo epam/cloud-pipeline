@@ -8,4 +8,4 @@ def determinate_prefix_from_glob(_glob_str):
     else:
         _prefix = _glob_str
 
-    return _prefix.replace("/", "", 1) if _prefix.startswith("/") else _prefix
+    return _prefix

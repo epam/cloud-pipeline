@@ -23,8 +23,6 @@ from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActio
 from slm.src.util.date_utils import is_timestamp_after_date, is_timestamp_before_date
 from slm.src.util.path_utils import determinate_prefix_from_glob
 
-MAX_EXECUTION_RUNNING_DAYS = 2
-
 CRITERION_MATCHING_FILES = "MATCHING_FILES"
 CRITERION_DEFAULT = "DEFAULT"
 
@@ -45,10 +43,11 @@ ROLE_ADMIN_ID = 1
 
 class StorageLifecycleSynchronizer:
 
-    def __init__(self, cp_data_source, cloud_operations, logger):
-        self.logger = logger
+    def __init__(self, synchronizer_config, cp_data_source, cloud_operations, logger):
+        self.synchronizer_config = synchronizer_config
         self.cloud_operations = cloud_operations
         self.cp_data_source = cp_data_source
+        self.logger = logger
 
     def sync(self):
         self.logger.log("Starting object lifecycle synchronization process...")
@@ -85,15 +84,22 @@ class StorageLifecycleSynchronizer:
 
         self.cloud_operations[storage.storage_type].prepare_bucket_if_needed(storage.path)
 
+        files_by_prefix = {}
+
         for rule in rules:
-            self.logger.log("Storage: {}. Rule: {}. Applying ...".format(storage.id, rule.rule_id))
+            self.logger.log("Storage: {}. Rule: {}. [Applying]".format(storage.id, rule.rule_id))
             try:
                 if self._rule_is_not_valid(rule):
                     continue
 
-                files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-                    storage.path, determinate_prefix_from_glob(rule.path_glob)
-                )
+                path_prefix = determinate_prefix_from_glob(rule.path_glob)
+                existing_listing_prefix = next(filter(lambda k: path_prefix.startswith(k), files_by_prefix.keys()), None)
+                if existing_listing_prefix:
+                    files = [f for f in files_by_prefix[existing_listing_prefix] if f.path.startswith(path_prefix)]
+                else:
+                    files = self.cloud_operations[storage.storage_type]\
+                        .list_objects_by_prefix(storage.path, path_prefix)
+                    files_by_prefix[path_prefix] = files
 
                 # TODO fix situation when we can't say: pathGlob: root/* - and it should means any directory in root
                 subject_folders = self._identify_subject_folders(files, rule.path_glob)
@@ -102,7 +108,7 @@ class StorageLifecycleSynchronizer:
 
                 for folder in subject_folders:
                     self.logger.log(
-                        "Storage: {}. Rule: {}, Path: {}. Applying ...".format(storage.id, rule.rule_id, folder))
+                        "Storage: {}. Rule: {}, Path: {}. [Applying]".format(storage.id, rule.rule_id, folder))
 
                     # to match object keys with glob we need to combine it with folder path
                     # and get 'effective' glob like '{folder-path}/{glob}'
@@ -115,39 +121,39 @@ class StorageLifecycleSynchronizer:
                             storage.id, rule.rule_id, folder, effective_glob)
                     )
 
-                    subject_files = [
+                    rule_subject_files = [
                         file for file in files
                         if file.path.startswith(folder)
                         and fnmatch.fnmatch(file.path, effective_glob)
                     ] if effective_glob else files
                     self.logger.log(
                         "Storage: {}. Rule: {}. Path: {}. Found {} subject files.".format(
-                            storage.id, rule.rule_id, folder, len(subject_files))
+                            storage.id, rule.rule_id, folder, len(rule_subject_files))
                     )
 
-                    self._process_files(storage, folder, files, subject_files, rule)
-                    self.logger.log("Storage: {}. Rule: {}, Path: {}. Done ...".format(storage.id, rule.rule_id, folder))
-                self.logger.log("Storage: {}. Rule: {}. Done ...".format(storage.id, rule.rule_id))
+                    self._process_files(storage, folder, files, rule_subject_files, rule)
+                    self.logger.log("Storage: {}. Rule: {}, Path: {}. [Done]".format(storage.id, rule.rule_id, folder))
+                self.logger.log("Storage: {}. Rule: {}. [Done]".format(storage.id, rule.rule_id))
             except Exception as e:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Problems to apply. Cause: {}".format(storage.id, rule.rule_id, str(e)))
 
-    def _process_files(self, storage, folder, file_listing, subject_files, rule):
+    def _process_files(self, storage, folder, file_listing, rule_subject_files, rule):
         transition_method = rule.transition_method
         resulted_action_items = StorageLifecycleRuleActionItems(
             None, None, []).with_folder(folder).with_rule_id(rule.rule_id)
 
         if transition_method == METHOD_ONE_BY_ONE:
             resulted_action_items.with_mode(ACTIONS_MODE_FILES)
-            for file in subject_files:
+            for file in rule_subject_files:
                 resulted_action_items.merge(self._build_action_items(file.path, [file], file, rule))
         elif transition_method == METHOD_LATEST_FILE or transition_method == METHOD_EARLIEST_FILE:
-            criterion_file = self.define_criterion_file(rule, file_listing, folder, subject_files)
-            resulted_action_items.merge(self._build_action_items(folder, subject_files, criterion_file, rule))
+            criterion_file = self.define_criterion_file(rule, file_listing, folder, rule_subject_files)
+            resulted_action_items.merge(self._build_action_items(folder, rule_subject_files, criterion_file, rule))
 
         self._apply_action_items(storage, rule, resulted_action_items)
 
-    def _build_action_items(self, path, subject_files, criterion_file, rule):
+    def _build_action_items(self, path, rule_subject_files, criterion_file, rule):
         result = StorageLifecycleRuleActionItems().with_rule_id(rule.rule_id)
 
         if not criterion_file:
@@ -165,7 +171,7 @@ class StorageLifecycleSynchronizer:
 
         for execution_for_transition in rule_executions:
             updated_execution = self._check_rule_execution_progress(
-                rule.datastorage_id, subject_files, execution_for_transition
+                rule.datastorage_id, rule_subject_files, execution_for_transition
             )
             if updated_execution:
                 result.with_execution(updated_execution)
@@ -174,11 +180,13 @@ class StorageLifecycleSynchronizer:
         for transition in effective_transitions:
             transition_class = transition.storage_class
             timestamp_of_action = self.define_transition_effective_timepoint(criterion_file, transition)
-            file_to_transition = [f for f in subject_files if f.storage_class != transition_class]
+            trn_subject_file = [f for f in rule_subject_files if f.storage_class != transition_class]
 
             self.logger.log(
-                "Storage: {}. Rule: {}. Path: {}. Transition: {}. Found {} files to transit.".format(
-                    rule.datastorage_id, rule.rule_id, path, transition_class, len(file_to_transition)))
+                "Storage: {}. Rule: {}. Path: {}. Transition: {}. Found {} files to transit, "
+                "timepoint of planned action: {}.".format(
+                    rule.datastorage_id, rule.rule_id, path, transition_class,
+                    len(trn_subject_file), timestamp_of_action))
 
             execution_for_transition = next(
                 filter(lambda e: e.storage_class == transition_class, rule_executions), None
@@ -188,14 +196,14 @@ class StorageLifecycleSynchronizer:
 
             # Check if notification is needed
             if self._notification_should_be_sent(notification, execution_for_transition,
-                                                 file_to_transition, timestamp_of_action, now):
+                                                 trn_subject_file, timestamp_of_action, now):
                 self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. Notification will be sent.".format(
-                    rule.datastorage_id, rule.rule_id, path, transition_class, len(file_to_transition)))
+                    rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_file)))
                 result.with_notification(path, transition_class, transition.transition_date, notification.prolong_days)
 
             # Check if action is needed
             if is_timestamp_after_date(timestamp_of_action, now):
-                if not file_to_transition:
+                if not trn_subject_file:
                     self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. No file to transit.".format(
                             rule.datastorage_id, rule.rule_id, path, transition_class))
                     continue
@@ -207,11 +215,15 @@ class StorageLifecycleSynchronizer:
 
                 self.logger.log(
                     "Storage: {}. Rule: {}. Path: {}. Transition: {}. All criteria are met. Will transit {} files."
-                    .format(rule.datastorage_id, rule.rule_id, path, transition_class, len(file_to_transition)))
+                    .format(rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_file)))
 
-                for file in file_to_transition:
+                for file in trn_subject_file:
                     result.with_transition(transition_class, file)
-
+            else:
+                self.logger.log(
+                    "Storage: {}. Rule: {}. Path: {}. Transition: {}. "
+                    "Timepoint of action is after then now. Skip action.".format(
+                        rule.datastorage_id, rule.rule_id, path, transition_class, timestamp_of_action))
         return result
 
     def _apply_action_items(self, storage, rule, action_items):
@@ -278,6 +290,7 @@ class StorageLifecycleSynchronizer:
             # process was started - fail this execution
             file_in_wrong_location = next(filter(lambda file: file.storage_class != execution.storage_class, subject_files), None)
             all_files_moved = file_in_wrong_location is None
+            max_running_days = self.synchronizer_config.execution_max_running_days
             if all_files_moved:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Path: {}. Transition: {}. All files moved to destination location".format(
@@ -287,12 +300,12 @@ class StorageLifecycleSynchronizer:
                     storage_id, execution.execution_id)
                 successful_execution.status = EXECUTION_SUCCESS_STATUS
                 return successful_execution
-            elif execution.updated + datetime.timedelta(days=MAX_EXECUTION_RUNNING_DAYS) < datetime.datetime.now(datetime.timezone.utc):
+            elif execution.updated + datetime.timedelta(days=max_running_days) < datetime.datetime.now(datetime.timezone.utc):
                 self.logger.log(
                     "Storage: {}. Rule: {}. Path: {}. Transition: {}. "
                     "{} days are left but files in a wrong destination: {}. Failing this execution.".format(
                         storage_id, execution.rule_id, execution.path, execution.storage_class,
-                        str(MAX_EXECUTION_RUNNING_DAYS), file_in_wrong_location.storage_class)
+                        str(max_running_days), file_in_wrong_location.storage_class)
                 )
                 return self.cp_data_source.update_status_lifecycle_rule_execution(
                     storage_id, execution.execution_id, EXECUTION_FAILED_STATUS)
@@ -356,9 +369,9 @@ class StorageLifecycleSynchronizer:
             return False
 
         if execution:
-            was_updated_before = is_timestamp_before_date(
-                now - datetime.timedelta(days=notification.notify_before_days),
-                execution.updated
+            was_updated_before = is_timestamp_after_date(
+                date=now - datetime.timedelta(days=notification.notify_before_days),
+                timestamp=execution.updated
             )
             if execution.status == EXECUTION_RUNNING_STATUS:
                 return False
