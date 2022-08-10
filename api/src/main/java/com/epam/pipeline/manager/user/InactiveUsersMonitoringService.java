@@ -22,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +31,7 @@ public class InactiveUsersMonitoringService extends AbstractSchedulingManager {
 
     @PostConstruct
     public void init() {
-        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_USER_MONITOR_DELAY, TimeUnit.HOURS,
+        scheduleFixedDelaySecured(core::monitor, SystemPreferences.SYSTEM_USER_MONITOR_DELAY,
                 "InactiveUsersMonitor");
     }
 }
