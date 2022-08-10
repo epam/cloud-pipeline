@@ -100,7 +100,6 @@ class StorageLifecycleSynchronizer:
                         .list_objects_by_prefix(storage.path, path_prefix)
                     files_by_prefix[path_prefix] = files
 
-                # TODO fix situation when we can't say: pathGlob: root/* - and it should means any directory in root
                 subject_folders = self._identify_subject_folders(files, rule.path_glob)
                 self.logger.log(
                     "Storage: {}. Rule: {}. Subject folders are: {}".format(storage.id, rule.rule_id, subject_folders))
