@@ -19,6 +19,7 @@ package com.epam.pipeline.manager.preference;
 import com.amazonaws.services.fsx.model.LustreDeploymentType;
 import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
+import com.epam.pipeline.config.Constants;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.cluster.ClusterKeepAlivePolicy;
 import com.epam.pipeline.entity.cluster.DockerMount;
