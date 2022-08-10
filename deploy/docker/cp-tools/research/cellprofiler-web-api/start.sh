@@ -137,5 +137,7 @@ else
             tail -n +2 "$define_results_pipeline_file" >> "$common_define_results_file"
         fi
     done
-    libreoffice --headless --convert-to xlsx:"Calc MS Excel 2007 XML" "$common_define_results_file"
+    if [ -f "$common_define_results_file" ]; then
+        libreoffice --headless --convert-to xlsx:"Calc MS Excel 2007 XML" --outdir "$CELLPROFILER_API_BATCH_RESULTS_DIR" "$common_define_results_file" > /dev/null
+    fi
 fi
