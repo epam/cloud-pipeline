@@ -102,7 +102,12 @@ public class InactiveUsersMonitoringServiceCore {
                 .filter(pipelineUser -> !userIsAdmin(pipelineUser))
                 .collect(Collectors.toList());
 
-        return ldapBlockedUsersManager.filterBlockedUsers(activeNonAdmins).stream()
+        log.debug("Fetch from DB {} active non admin users. " +
+                "Will query LDAP with this list and sync blocking status.", activeNonAdmins.size());
+
+        final List<PipelineUser> blockedUsers = ldapBlockedUsersManager.filterBlockedUsers(activeNonAdmins);
+        log.debug("Found {} new blocked user in total.", blockedUsers.size());
+        return blockedUsers.stream()
                 .map(user -> userManager.updateUserBlockingStatus(user.getId(), true))
                 .collect(Collectors.toList());
     }
