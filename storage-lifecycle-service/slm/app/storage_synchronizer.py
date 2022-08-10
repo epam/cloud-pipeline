@@ -14,14 +14,13 @@
 
 import datetime
 import fnmatch
-import json
 import os
 import re
 
-from slm.src.model.storage_lifecycle_rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
-from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActionItems
-from slm.src.util.date_utils import is_date_after_that, is_date_before_that
-from slm.src.util.path_utils import determinate_prefix_from_glob
+from slm.model.storage_lifecycle_rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
+from slm.model.storage_lifecycle_sync_model import StorageLifecycleRuleActionItems
+from slm.util.date_utils import is_date_after_that, is_date_before_that
+from slm.util.path_utils import determinate_prefix_from_glob
 
 CRITERION_MATCHING_FILES = "MATCHING_FILES"
 CRITERION_DEFAULT = "DEFAULT"

@@ -16,10 +16,9 @@ import os
 import datetime
 from time import sleep
 
-from slm.src.logger import AppLogger
 import boto3
 
-from slm.src.model.cloud_object_model import CloudObject
+from slm.model.cloud_object_model import CloudObject
 
 DESTINATION_STORAGE_CLASS_TAG = 'DESTINATION_STORAGE_CLASS'
 CP_SLC_RULE_NAME_PREFIX = 'CP Storage Lifecycle Rule:'

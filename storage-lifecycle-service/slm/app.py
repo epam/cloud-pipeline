@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 import re
 
 from pipeline.api import PipelineAPI
 import argparse
-from slm.src.application_mode import ApplicationModeRunner
-from slm.src.cloud.cloud import S3StorageOperations
-from slm.src.logger import AppLogger
-from slm.src.model.config_model import SynchronizerConfig
-from slm.src.storage_lifecycle_synchronizer import StorageLifecycleSynchronizer
-from src.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
+from slm.app.run_mode import ApplicationModeRunner
+from slm.cloud.cloud import S3StorageOperations
+from slm.util.logger import AppLogger
+from slm.model.config_model import SynchronizerConfig
+from slm.app.storage_synchronizer import StorageLifecycleSynchronizer
+from slm.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
 
 S3_TYPE = "S3"
 
