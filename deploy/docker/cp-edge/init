@@ -130,6 +130,19 @@ else
     rm -f /etc/nginx/ingress/*
 fi
 
+# Copy the "external apps" configurations to a docker filesystem
+# Previously we were working with the "external apps" directly, i.e. /opt/edge/external-apps mounted to /etc/nginx/external-apps
+# And /etc/nginx/external-apps was modified from an edge container, e.g. adding location blocks to the custom domains
+# This was causing an issue, if:
+#   * Any "external app" had a location block defined
+#   * EDGE fails for some reason (e.g. wetty OOM) and restarts
+#   * EDGE has a location block in an "external app", but it does not exist in the container filesystem
+#   * Nginx cannot start at all as the configuration is invalid
+# So it's better to have everything local to a docker filesystem, this way the configuration would be consistent
+if [ -d /etc/nginx/ext/external-apps ]; then
+    cp -r /etc/nginx/ext/external-apps /etc/nginx/external-apps
+fi
+
 # Start wetty.js for SSH proxy
 nohup node /etc/ssh-proxy/wetty/app.js -p 32000 >> /var/log/wetty.log 2>&1 &
 WETTY_PID="$!"
