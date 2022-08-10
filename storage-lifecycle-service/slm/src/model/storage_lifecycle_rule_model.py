@@ -11,12 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import datetime
-
-import pytz
-
-ISO_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+from slm.src.util.date_utils import parse_timestamp, parse_date
 
 
 class StorageLifecycleTransitionCriterion:
@@ -134,7 +129,7 @@ class LifecycleRuleParser:
             path=execution_json["path"],
             status=execution_json["status"],
             storage_class=execution_json["storageClass"],
-            updated=LifecycleRuleParser._parse_timestamp(
+            updated=parse_timestamp(
                 execution_json["updated"]
             ) if "updated" in execution_json else None
         )
@@ -154,7 +149,7 @@ class LifecycleRuleParser:
         def _parse_transition(transition_json):
             return StorageLifecycleRuleTransition(
                 storage_class=transition_json["storageClass"] if "storageClass" in transition_json else None,
-                transition_date=LifecycleRuleParser._parse_timestamp(
+                transition_date=parse_date(
                     transition_json["transitionDate"]
                 ) if "transitionDate" in transition_json else None,
                 transition_after_days=transition_json["transitionAfterDays"] if "transitionAfterDays" in transition_json else None
@@ -169,18 +164,18 @@ class LifecycleRuleParser:
     def _parse_prolongations(prolongations_json):
         def _parse_prolongation(prolongation_json):
             return StorageLifecycleRuleProlongation(
-                prolongation_id=prolongation_json["id"] if "id" in prolongations_json else None,
-                path=prolongation_json["path"] if "path" in prolongations_json else None,
-                days=prolongation_json["days"] if "days" in prolongations_json else 0,
-                prolonged_date=LifecycleRuleParser._parse_timestamp(
+                prolongation_id=prolongation_json["id"] if "id" in prolongation_json else None,
+                path=prolongation_json["path"] if "path" in prolongation_json else None,
+                days=prolongation_json["days"] if "days" in prolongation_json else 0,
+                prolonged_date=parse_timestamp(
                     prolongation_json["prolongedDate"]
-                ) if "prolongedDate" in prolongations_json else None
+                ) if "prolongedDate" in prolongation_json else None
             )
 
         if not prolongations_json:
             return []
 
-        return [_parse_prolongation(transition) for transition in prolongations_json]
+        return [_parse_prolongation(prolongation) for prolongation in prolongations_json]
 
     @staticmethod
     def _parse_notification(notification_json):
@@ -210,7 +205,3 @@ class LifecycleRuleParser:
             if "body" in notification_json
             else None
         )
-
-    @staticmethod
-    def _parse_timestamp(timestamp_string):
-        return pytz.utc.localize(datetime.datetime.strptime(timestamp_string, ISO_DATE_FORMAT))

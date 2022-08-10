@@ -127,11 +127,14 @@ class S3StorageOperations(StorageOperations):
     def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
         aws_s3control_client = boto3.client("s3control", region_name=region)
         manifest_content = "\n".join(["{},{}".format(bucket, self._path_to_s3_format(file.path)) for file in files])
-        manifest_key = "_".join([
-            bucket, folder, "rule", str(rule.rule_id),
-            storage_class, str(datetime.datetime.utcnow()).replace(" ", "_").replace(":", "_"),
-            ".csv"
-        ])
+
+        job_location_prefix = os.path.join(self.config["system_bucket_prefix"], bucket, "rule_" + str(rule.rule_id))
+
+        manifest_key = os.path.join(
+            job_location_prefix,
+            "_".join([bucket, self._path_to_s3_format(folder), storage_class,
+                      str(datetime.datetime.utcnow()), ".csv"]).replace(" ", "_").replace(":", "_").replace("/", ".")
+        )
         manifest_object = self.aws_s3_client.put_object(
             Body=manifest_content,
             Bucket=self.config["system_bucket"],
@@ -156,7 +159,7 @@ class S3StorageOperations(StorageOperations):
                 'Bucket': "arn:aws:s3:::" + self.config["system_bucket"],
                 'Format': 'Report_CSV_20180820',
                 'Enabled': True,
-                'Prefix': self.config["report_prefix"],
+                'Prefix': job_location_prefix,
                 'ReportScope': 'FailedTasksOnly'
             },
             Manifest={
@@ -199,11 +202,11 @@ class S3StorageOperations(StorageOperations):
             )
             return False
 
-        self._clean_up_after_job(manifest_key, s3_tagging_job["JobId"])
+        self._clean_up_after_job(job_location_prefix, manifest_key, s3_tagging_job["JobId"])
         return True
 
-    def _clean_up_after_job(self, manifest_key, job_id):
-        job_report_dir = os.path.join(self.config["report_prefix"], "job-" + job_id)
+    def _clean_up_after_job(self, job_location_prefix, manifest_key, job_id):
+        job_report_dir = os.path.join(job_location_prefix, "job-" + job_id)
         job_related_files = self.list_objects_by_prefix(self.config["system_bucket"], job_report_dir, False)
         for file in job_related_files:
             self.aws_s3_client.delete_object(
@@ -235,9 +238,9 @@ class S3StorageOperations(StorageOperations):
         if "role_arn" not in result:
             raise RuntimeError("Please provide role_arn within --aws configuration option")
 
-        if "report_prefix" not in result:
-            result["report_prefix"] = "cp_storage_lifecycle_tagging_report"
-        result["report_prefix"] = result["report_prefix"].strip("/")
+        if "system_bucket_prefix" not in result:
+            result["system_bucket_prefix"] = "cp_storage_lifecycle_tagging"
+        result["system_bucket_prefix"] = result["system_bucket_prefix"].strip("/")
 
         if "tagging_job_poll_status_retry_count" not in result:
             result["tagging_job_poll_status_retry_count"] = 30

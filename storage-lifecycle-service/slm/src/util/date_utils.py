@@ -11,18 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import datetime
 
-def is_timestamp_within_date(date, timestamp):
-    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_end = date.replace(hour=23, minute=59, second=59, microsecond=999)
-    return day_start <= timestamp <= day_end
+import pytz
 
-
-def is_timestamp_after_date(date, timestamp):
-    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-    return day_start <= timestamp
+ISO_DATE_TIME_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
+ISO_DATE_FORMAT = "%Y-%m-%d"
 
 
-def is_timestamp_before_date(date, timestamp):
-    day_start = date.replace(hour=0, minute=0, second=0, microsecond=0)
-    return day_start >= timestamp
+def is_date_after_that(date, to_check):
+    return date <= to_check
+
+
+def is_date_before_that(date, to_check):
+    return date > to_check
+
+
+def parse_timestamp(timestamp_string):
+    return pytz.utc.localize(datetime.datetime.strptime(timestamp_string, ISO_DATE_TIME_FORMAT))
+
+
+def parse_date(date_string):
+    return datetime.datetime.strptime(date_string, ISO_DATE_FORMAT).date()

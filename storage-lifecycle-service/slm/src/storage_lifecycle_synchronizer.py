@@ -20,7 +20,7 @@ import re
 
 from slm.src.model.storage_lifecycle_rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
 from slm.src.model.storage_lifecycle_sync_model import StorageLifecycleRuleActionItems
-from slm.src.util.date_utils import is_timestamp_after_date, is_timestamp_before_date
+from slm.src.util.date_utils import is_date_after_that, is_date_before_that
 from slm.src.util.path_utils import determinate_prefix_from_glob
 
 CRITERION_MATCHING_FILES = "MATCHING_FILES"
@@ -136,7 +136,8 @@ class StorageLifecycleSynchronizer:
                 self.logger.log("Storage: {}. Rule: {}. [Done]".format(storage.id, rule.rule_id))
             except Exception as e:
                 self.logger.log(
-                    "Storage: {}. Rule: {}. Problems to apply. Cause: {}".format(storage.id, rule.rule_id, str(e)))
+                    "Storage: {}. Rule: {}. Problems to apply the rule. "
+                    "Cause: {}".format(storage.id, rule.rule_id, str(e)))
 
     def _process_files(self, storage, folder, file_listing, rule_subject_files, rule):
         transition_method = rule.transition_method
@@ -179,30 +180,30 @@ class StorageLifecycleSynchronizer:
         notification = rule.notification
         for transition in effective_transitions:
             transition_class = transition.storage_class
-            timestamp_of_action = self.define_transition_effective_timepoint(criterion_file, transition)
+            date_of_action = self.define_transition_effective_date(criterion_file, transition)
             trn_subject_file = [f for f in rule_subject_files if f.storage_class != transition_class]
 
             self.logger.log(
                 "Storage: {}. Rule: {}. Path: {}. Transition: {}. Found {} files to transit, "
-                "timepoint of planned action: {}.".format(
+                "date of planned action: {}.".format(
                     rule.datastorage_id, rule.rule_id, path, transition_class,
-                    len(trn_subject_file), timestamp_of_action))
+                    len(trn_subject_file), date_of_action))
 
             execution_for_transition = next(
                 filter(lambda e: e.storage_class == transition_class, rule_executions), None
             )
 
-            now = datetime.datetime.now(datetime.timezone.utc)
+            today = datetime.datetime.now(datetime.timezone.utc).date()
 
             # Check if notification is needed
             if self._notification_should_be_sent(notification, execution_for_transition,
-                                                 trn_subject_file, timestamp_of_action, now):
+                                                 trn_subject_file, date_of_action, today):
                 self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. Notification will be sent.".format(
                     rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_file)))
-                result.with_notification(path, transition_class, transition.transition_date, notification.prolong_days)
+                result.with_notification(path, transition_class, str(date_of_action), notification.prolong_days)
 
             # Check if action is needed
-            if is_timestamp_after_date(timestamp_of_action, now):
+            if is_date_after_that(date_of_action, today):
                 if not trn_subject_file:
                     self.logger.log("Storage: {}. Rule: {}. Path: {}. Transition: {}. No file to transit.".format(
                             rule.datastorage_id, rule.rule_id, path, transition_class))
@@ -223,7 +224,7 @@ class StorageLifecycleSynchronizer:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Path: {}. Transition: {}. "
                     "Timepoint of action is after then now. Skip action.".format(
-                        rule.datastorage_id, rule.rule_id, path, transition_class, timestamp_of_action))
+                        rule.datastorage_id, rule.rule_id, path, transition_class, date_of_action))
         return result
 
     def _apply_action_items(self, storage, rule, action_items):
@@ -273,7 +274,7 @@ class StorageLifecycleSynchronizer:
 
     def _check_rule_execution_progress(self, storage_id, subject_files, execution):
         if not execution.status:
-            raise RuntimeError("Malformed rule execution found: " + json.dumps(execution))
+            raise RuntimeError("Malformed rule execution found.")
 
         self.logger.log(
             "Storage: {}. Rule: {}. Path: {}. Transition: {}. Execution status: {}.".format(
@@ -360,18 +361,18 @@ class StorageLifecycleSynchronizer:
             raise RuntimeError("Problem to send a notification for: {}".format(str(notification_properties)))
 
     @staticmethod
-    def _notification_should_be_sent(notification, execution, file_to_transition, timestamp_of_action, now):
+    def _notification_should_be_sent(notification, execution, file_to_transition, date_of_action, today):
         if not notification.enabled:
             return False
 
-        date_to_check = now + datetime.timedelta(days=notification.notify_before_days)
-        if not file_to_transition or is_timestamp_before_date(timestamp_of_action, date_to_check):
+        date_to_check = today + datetime.timedelta(days=notification.notify_before_days)
+        if not file_to_transition or is_date_before_that(date_of_action, date_to_check):
             return False
 
         if execution:
-            was_updated_before = is_timestamp_after_date(
-                date=now - datetime.timedelta(days=notification.notify_before_days),
-                timestamp=execution.updated
+            was_updated_before = is_date_after_that(
+                date=today - datetime.timedelta(days=notification.notify_before_days),
+                to_check=execution.updated.date()
             )
             if execution.status == EXECUTION_RUNNING_STATUS:
                 return False
@@ -394,16 +395,15 @@ class StorageLifecycleSynchronizer:
             raise RuntimeError("Rule: {}. Transition criterion with not DEFAULT type should have value!".format(rule.rule_id))
 
     @staticmethod
-    def define_transition_effective_timepoint(criterion_file, transition):
+    def define_transition_effective_date(criterion_file, transition):
         if transition.transition_date:
-            timestamp_of_action = transition.transition_date
-        elif transition.transition_after_days:
-            timestamp_of_action = criterion_file.creation_date \
-                                  + datetime.timedelta(days=transition.transition_after_days)
+            date_of_action = transition.transition_date
+        elif transition.transition_after_days is not None:
+            date_of_action = \
+                (criterion_file.creation_date + datetime.timedelta(days=transition.transition_after_days)).date()
         else:
-            raise RuntimeError(
-                "Malformed transition: date or days should be present. " + json.dumps(transition))
-        return timestamp_of_action
+            raise RuntimeError("Malformed transition: date or days should be present.")
+        return date_of_action
 
     @staticmethod
     def define_criterion_file(rule, file_listing, folder, subject_files):
@@ -426,7 +426,7 @@ class StorageLifecycleSynchronizer:
     def _define_effective_transitions(prolongation, rule):
         def _define_transition(transition):
             resulted_transition = StorageLifecycleRuleTransition(transition.storage_class)
-            if transition.transition_after_days:
+            if transition.transition_after_days is not None:
                 resulted_transition.transition_after_days = transition.transition_after_days + prolongation.days
             if transition.transition_date:
                 resulted_transition.transition_date = \
