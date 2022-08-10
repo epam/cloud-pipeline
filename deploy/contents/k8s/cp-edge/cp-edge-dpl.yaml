@@ -57,8 +57,9 @@ spec:
             - mountPath: /opt/common/pki
               name: common-pki
               readOnly: true
-            - mountPath: /etc/nginx/external-apps
+            - mountPath: /etc/nginx/ext/external-apps
               name: edge-external-apps
+              readOnly: true
       dnsConfig:
         options:
           - name: ndots
