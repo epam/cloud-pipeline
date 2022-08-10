@@ -32,7 +32,9 @@ RUN yum install -y \
         libXtst-devel \
         libGLU-devel \
         sqlite-devel \
-        which && \
+        which \
+        libreoffice-writer \
+        libreoffice-calc && \
     wget "$PYTHON_3_DISTRIBUTION_URL" -O python3.tgz  && \
         tar xzf python3.tgz && \
         cd Python-* && \

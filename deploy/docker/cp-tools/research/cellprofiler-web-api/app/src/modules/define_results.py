@@ -126,6 +126,7 @@ class DefineResults(ExportToSpreadsheet):
         super(DefineResults, self).post_run(workspace)
         result_dataframe = self.calculate_results()
         result_dataframe.to_csv(self._build_object_csv_path('Results'))
+        result_dataframe.to_excel(self._build_object_xlsx_path('Results'))
 
     def _do_operation(self, spec: CalculationSpec, result_data_dict):
         operation = spec.operation
@@ -379,6 +380,9 @@ class DefineResults(ExportToSpreadsheet):
 
     def _build_object_csv_path(self, obj_name):
         return os.path.join(self.directory.custom_path, obj_name + '.csv')
+
+    def _build_object_xlsx_path(self, obj_name):
+        return os.path.join(self.directory.custom_path, obj_name + '.xlsx')
 
     def _build_feature_name(self, spec: CalculationSpec, stat_func_name=None):
         if spec.column_operation_name is not None:
