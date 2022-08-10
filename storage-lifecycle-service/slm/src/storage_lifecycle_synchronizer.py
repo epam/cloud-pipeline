@@ -43,8 +43,8 @@ ROLE_ADMIN_ID = 1
 
 class StorageLifecycleSynchronizer:
 
-    def __init__(self, synchronizer_config, cp_data_source, cloud_operations, logger):
-        self.synchronizer_config = synchronizer_config
+    def __init__(self, config, cp_data_source, cloud_operations, logger):
+        self.config = config
         self.cloud_operations = cloud_operations
         self.cp_data_source = cp_data_source
         self.logger = logger
@@ -253,7 +253,7 @@ class StorageLifecycleSynchronizer:
                 if not is_successful:
                     if action_items.mode == ACTIONS_MODE_FOLDER:
                         self._create_or_update_execution(storage.id, rule, storage_class,
-                                                         action_items.folder, EXECUTION_RUNNING_STATUS)
+                                                         action_items.folder, EXECUTION_FAILED_STATUS)
 
     def _create_or_update_execution(self, storage_id, rule, storage_class, path, status):
         executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(storage_id, rule.rule_id, path)
@@ -291,7 +291,7 @@ class StorageLifecycleSynchronizer:
             # process was started - fail this execution
             file_in_wrong_location = next(filter(lambda file: file.storage_class != execution.storage_class, subject_files), None)
             all_files_moved = file_in_wrong_location is None
-            max_running_days = self.synchronizer_config.execution_max_running_days
+            max_running_days = self.config.execution_max_running_days
             if all_files_moved:
                 self.logger.log(
                     "Storage: {}. Rule: {}. Path: {}. Transition: {}. All files moved to destination location".format(

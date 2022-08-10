@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from time import sleep
 
 import schedule
 
@@ -21,9 +22,9 @@ class ApplicationModeRunner:
         pass
 
     @staticmethod
-    def get_application_runner(slm, mode="single"):
-        if mode == "daemon":
-            return DaemonApplicationModeRunner(slm)
+    def get_application_runner(slm, config):
+        if config.mode == "daemon":
+            return DaemonApplicationModeRunner(slm, config.at_time)
         else:
             return SingleApplicationModeRunner(slm)
 
@@ -39,9 +40,14 @@ class SingleApplicationModeRunner(ApplicationModeRunner):
 
 class DaemonApplicationModeRunner(ApplicationModeRunner):
 
-    def __init__(self, storage_lifecycle_manager):
+    def __init__(self, storage_lifecycle_manager, at_time):
         self.storage_lifecycle_manager = storage_lifecycle_manager
 
+        self.at_time = at_time
+
     def run(self):
-        schedule.every().day.at('00:01').do(self.storage_lifecycle_manager.sync)
+        schedule.every().day.at(self.at_time).do(self.storage_lifecycle_manager.sync)
+        while True:
+            schedule.run_pending()
+            sleep(1)
 

@@ -24,8 +24,8 @@ setup(
         'attrs==21.2.0',
         'dataclasses==0.6',
         'schedule==1.1.0',
-        'boto3',
-        'botocore',
+        'boto3==1.24.46',
+        'botocore==1.27.46',
         'DateTime==4.3',
         'pipeline==1.0'
     ],

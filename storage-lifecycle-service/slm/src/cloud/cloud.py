@@ -92,7 +92,7 @@ class S3StorageOperations(StorageOperations):
         }
     }
 
-    def __init__(self, config, cp_data_source, logger=AppLogger()):
+    def __init__(self, config, cp_data_source, logger):
         self.logger = logger
         self.cp_data_source = cp_data_source
         self.config = self._verify_config(config)
