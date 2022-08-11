@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ const PERSONAL_TOOLS_KEY = 'personal tools';
 const NOTIFICATIONS_KEY = 'notifications';
 const PIPELINES_KEY = 'pipelines';
 const PROJECTS_KEY = 'projects';
+const USER_COSTS_KEY = 'my costs';
 
 const panels = {
   activities: 'activities',
@@ -33,7 +34,8 @@ const panels = {
   projects: 'projects',
   recentlyCompletedRuns: 'completed',
   runs: 'active',
-  services: 'services'
+  services: 'services',
+  userCosts: 'userCosts'
 };
 
 const keysMapper = {
@@ -45,7 +47,8 @@ const keysMapper = {
   [PROJECTS_KEY]: panels.projects,
   [RECENTLY_COMPLETED_RUNS_KEY]: panels.recentlyCompletedRuns,
   [ACTIVE_RUNS_KEY]: panels.runs,
-  [SERVICES_KEY]: panels.services
+  [SERVICES_KEY]: panels.services,
+  [USER_COSTS_KEY]: panels.userCosts
 };
 
 export function mapPanelIdentifier (identifier) {
