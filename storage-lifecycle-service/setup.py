@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from setuptools import setup, find_packages
-
+from sls.version import __version__
 setup(
-    name='slm',
-    version='0.0.1',
+    name='sls',
+    version=__version__,
     py_modules=['slm'],
     packages=find_packages(),
     include_package_data=True,
@@ -31,6 +31,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        slm=slm.storage-lifecycle-cli:main
+        sls=sls.app:main
     '''
 )

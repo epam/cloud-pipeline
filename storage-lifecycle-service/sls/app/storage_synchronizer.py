@@ -17,10 +17,10 @@ import fnmatch
 import os
 import re
 
-from slm.model.rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
-from slm.model.action_model import StorageLifecycleRuleActionItems
-from slm.util import path_utils
-from slm.util import date_utils
+from sls.model.rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
+from sls.model.action_model import StorageLifecycleRuleActionItems
+from sls.util import path_utils
+from sls.util import date_utils
 
 
 CRITERION_MATCHING_FILES = "MATCHING_FILES"

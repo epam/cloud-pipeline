@@ -12,15 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
-
-from sls.datasorce.cp_data_source import CloudPipelineDataSource
-from sls.model.rule_model import StorageLifecycleRuleExecution
-
-
-class MockCloudPipelineDataSource(CloudPipelineDataSource):
-
-    def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
-        return StorageLifecycleRuleExecution(execution_id=execution_id, rule_id=execution_id,
-                                             status=status, updated=datetime.datetime.now(),
-                                             path=None, storage_class=None)
+__version__='0.17.0'

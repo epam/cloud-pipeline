@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import datetime
+def parse_config_string(config_string):
+    result = {}
+    if not config_string:
+        return result
 
-from sls.datasorce.cp_data_source import CloudPipelineDataSource
-from sls.model.rule_model import StorageLifecycleRuleExecution
-
-
-class MockCloudPipelineDataSource(CloudPipelineDataSource):
-
-    def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
-        return StorageLifecycleRuleExecution(execution_id=execution_id, rule_id=execution_id,
-                                             status=status, updated=datetime.datetime.now(),
-                                             path=None, storage_class=None)
+    for parameter in config_string.split("|"):
+        k, v = parameter.split("=")
+        result[k.strip()] = v.strip()
+    return result

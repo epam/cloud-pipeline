@@ -17,62 +17,18 @@ import re
 
 from pipeline.api import PipelineAPI
 import argparse
-from slm.app.run_mode import ApplicationModeRunner
-from slm.cloud.cloud import S3StorageOperations
-from slm.util.logger import AppLogger
-from slm.model.config_model import SynchronizerConfig
-from slm.app.storage_synchronizer import StorageLifecycleSynchronizer
-from slm.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
+from sls.app.run_mode import ApplicationModeRunner
+from sls.cloud.cloud import S3StorageOperations
+from sls.util.logger import AppLogger
+from sls.model.config_model import SynchronizerConfig
+from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
+from sls.datasorce.cp_data_source import RESTApiCloudPipelineDataSource
+from sls.util.parse_utils import parse_config_string
 
 S3_TYPE = "S3"
 
 
-def parse_config_string(config_string):
-    result = {}
-    if not config_string:
-        return result
-
-    for parameter in config_string.split("|"):
-        k, v = parameter.split("=")
-        result[k.strip()] = v.strip()
-    return result
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--cp-api-url")
-    parser.add_argument("--cp-api-token", required=False)
-    parser.add_argument("--mode", default="single", choices=['single', 'daemon'])
-    parser.add_argument("--at", default="00:01", required=False)
-    parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
-    parser.add_argument("--log-dir", default="/var/log/")
-    parser.add_argument("--max-running-days", default=2)
-    parser.add_argument("--aws")
-
-    args = parser.parse_args()
-
-    logger = AppLogger()
-
-    data_source = configure_cp_data_soruce(args)
-
-    if not re.match("\\d\\d:\\d\\d", args.at):
-        raise RuntimeError("Wrong format of at argument, please specify it in format: 00:00")
-
-    cloud_operations = {}
-    if args.aws:
-        cloud_operations[S3_TYPE] = S3StorageOperations(parse_config_string(args.aws), data_source, logger)
-
-    config = SynchronizerConfig(args.max_running_days, args.mode, args.at)
-
-    logger.log("Running application with config: {}".format(config.to_json()))
-
-    ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(config, data_source, cloud_operations, logger),
-        config
-    ).run()
-
-
-def configure_cp_data_soruce(args):
+def configure_cp_data_source(args):
     data_source = None
     if args.data_source is "RESTApi":
         if not args.cp_api_url:
@@ -85,6 +41,40 @@ def configure_cp_data_soruce(args):
         api = PipelineAPI(args.cp_api_url, args.log_dir)
         data_source = RESTApiCloudPipelineDataSource(api)
     return data_source
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cp-api-url")
+    parser.add_argument("--cp-api-token", required=False)
+    parser.add_argument("--mode", default="single", choices=['single', 'daemon'])
+    parser.add_argument("--at", default="00:01", required=False)
+    parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
+    parser.add_argument("--log-dir", default="/var/log/")
+    parser.add_argument("--max-execution-running-days", default=2)
+    parser.add_argument("--aws")
+
+    args = parser.parse_args()
+
+    logger = AppLogger()
+
+    data_source = configure_cp_data_source(args)
+
+    if not re.match("\\d\\d:\\d\\d", args.at):
+        raise RuntimeError("Wrong format of at argument, please specify it in format: 00:00")
+
+    cloud_operations = {}
+    if args.aws:
+        cloud_operations[S3_TYPE] = S3StorageOperations(parse_config_string(args.aws), data_source, logger)
+
+    config = SynchronizerConfig(args.max_execution_running_days, args.mode, args.at)
+
+    logger.log("Running application with config: {}".format(config.to_json()))
+
+    ApplicationModeRunner.get_application_runner(
+        StorageLifecycleSynchronizer(config, data_source, cloud_operations, logger),
+        config
+    ).run()
 
 
 if __name__ == '__main__':

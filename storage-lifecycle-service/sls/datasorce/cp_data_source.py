@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from slm.model.rule_model import LifecycleRuleParser
+from sls.model.rule_model import LifecycleRuleParser
 
 
 class CloudPipelineDataSource:

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from slm.util.date_utils import parse_timestamp, parse_date
+from sls.util.date_utils import parse_timestamp, parse_date
 
 
 class StorageLifecycleTransitionCriterion:

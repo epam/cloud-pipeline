@@ -16,10 +16,10 @@ import datetime
 import os
 import unittest
 
-from slm.app import storage_synchronizer
-from slm.app.storage_synchronizer import StorageLifecycleSynchronizer
-from slm.model.cloud_object_model import CloudObject
-from slm.model.rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation, StorageLifecycleRule, \
+from sls.app import storage_synchronizer
+from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
+from sls.model.cloud_object_model import CloudObject
+from sls.model.rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation, StorageLifecycleRule, \
     StorageLifecycleTransitionCriterion
 
 

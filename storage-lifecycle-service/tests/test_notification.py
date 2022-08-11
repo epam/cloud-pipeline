@@ -15,16 +15,16 @@
 import datetime
 import unittest
 
-import slm.app.storage_synchronizer
-from slm.app.storage_synchronizer import StorageLifecycleSynchronizer
-from slm.model.rule_model import StorageLifecycleNotification, StorageLifecycleRuleExecution
+import sls.app.storage_synchronizer
+from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
+from sls.model.rule_model import StorageLifecycleNotification, StorageLifecycleRuleExecution
 
 
 class TestNotificationPositive(unittest.TestCase):
 
     enabled_notification = StorageLifecycleNotification(7, 7, [], False, False, True, "", "")
-    completed_execution = StorageLifecycleRuleExecution(1, 1, slm.app.storage_synchronizer.EXECUTION_SUCCESS_STATUS, "/", "GLACIER", datetime.datetime.now())
-    failed_execution = StorageLifecycleRuleExecution(1, 1, slm.app.storage_synchronizer.EXECUTION_FAILED_STATUS, "/", "GLACIER", datetime.datetime.now())
+    completed_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_SUCCESS_STATUS, "/", "GLACIER", datetime.datetime.now())
+    failed_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_FAILED_STATUS, "/", "GLACIER", datetime.datetime.now())
 
     today = datetime.datetime.now().date()
 
@@ -68,8 +68,8 @@ class TestNotificationNegative(unittest.TestCase):
 
     enabled_notification = StorageLifecycleNotification(7, 7, [], False, False, True, "", "")
     disabled_notification = StorageLifecycleNotification(None, None, None, False, False, False, None, None)
-    running_execution = StorageLifecycleRuleExecution(1, 1, slm.app.storage_synchronizer.EXECUTION_RUNNING_STATUS, "/", "GLACIER", datetime.datetime.now())
-    notification_execution = StorageLifecycleRuleExecution(1, 1, slm.app.storage_synchronizer.EXECUTION_NOTIFICATION_SENT_STATUS, "/", "GLACIER", datetime.datetime.now())
+    running_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_RUNNING_STATUS, "/", "GLACIER", datetime.datetime.now())
+    notification_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_NOTIFICATION_SENT_STATUS, "/", "GLACIER", datetime.datetime.now())
     today = datetime.datetime.now().date()
 
     def test_notification_wont_be_sent_if_files_are_eligible_for_today_and_no_execution_but_disabled(self):

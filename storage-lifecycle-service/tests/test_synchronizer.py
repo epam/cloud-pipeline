@@ -16,12 +16,12 @@ import datetime
 import os
 import unittest
 
-from slm.app import storage_synchronizer
-from slm.app.storage_synchronizer import StorageLifecycleSynchronizer
-from slm.model.cloud_object_model import CloudObject
-from slm.model.config_model import SynchronizerConfig
-from slm.model.rule_model import StorageLifecycleRule, StorageLifecycleRuleTransition, StorageLifecycleRuleExecution
-from slm.util.logger import AppLogger
+from sls.app import storage_synchronizer
+from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
+from sls.model.cloud_object_model import CloudObject
+from sls.model.config_model import SynchronizerConfig
+from sls.model.rule_model import StorageLifecycleRule, StorageLifecycleRuleTransition, StorageLifecycleRuleExecution
+from sls.util.logger import AppLogger
 from tests.mock.cp_data_source_mock import MockCloudPipelineDataSource
 
 
