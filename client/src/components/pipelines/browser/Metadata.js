@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,8 +57,7 @@ import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
-import MetadataEntityDeleteFromProject
-from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import DeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/configuration-browser';
 import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
@@ -96,6 +95,10 @@ const FIRST_PAGE = 1;
 const PAGE_SIZE = 20;
 const ASCEND = 'ascend';
 const DESCEND = 'descend';
+const FILTER_OPERATORS = {
+  greater: 'GE',
+  less: 'LE'
+};
 
 function filterColumns (column) {
   return !column.predefined || ['externalId', 'createdDate'].includes(column.name);
@@ -358,6 +361,18 @@ export default class Metadata extends React.Component {
       .filter(predefined => [metadataClass, '*'].includes(predefined.metadataClass));
   }
 
+  getColumnType = (key) => {
+    if (key === 'createdDate') {
+      return 'Date';
+    }
+    const entityField = this.currentClassEntityFields
+      .find(field => field.name === key);
+    if (entityField) {
+      return entityField.type;
+    }
+    return 'string';
+  };
+
   operationWrapper = (operation) => (...props) => {
     this.setState({
       operationInProgress: true
@@ -375,15 +390,52 @@ export default class Metadata extends React.Component {
     });
   };
 
-  onDateRangeChanged = (range) => {
-    let filterModel = {...this.state.filterModel};
+  onDateRangeChanged = (range, key) => {
+    const filterModel = {...this.state.filterModel};
     const {
       from,
-      to
+      to,
+      emptyValue
     } = range || {};
-    filterModel.startDateFrom = from;
-    filterModel.endDateTo = to;
-    this.setState(
+    if (key === 'createdDate') {
+      filterModel.startDateFrom = from;
+      filterModel.endDateTo = to;
+      return this.setState(
+        {filterModel},
+        () => {
+          this.clearSelection();
+          this.loadData();
+        }
+      );
+    }
+    const filtered = this.state.filterModel.filters
+      .filter(filter => filter.key !== key);
+    let periodFilters;
+    if (emptyValue) {
+      periodFilters = [{
+        key,
+        values: []
+      }];
+    } else if (from || to) {
+      const wrapFilter = (aDate, operator) => {
+        if (aDate) {
+          return {
+            key,
+            operator,
+            values: [aDate]
+          };
+        }
+        return undefined;
+      };
+      periodFilters = [
+        wrapFilter(from, FILTER_OPERATORS.greater),
+        wrapFilter(to, FILTER_OPERATORS.less)
+      ].filter(Boolean);
+    } else {
+      periodFilters = [];
+    }
+    filterModel.filters = [...filtered, ...periodFilters];
+    return this.setState(
       {filterModel},
       () => {
         this.clearSelection();
@@ -472,7 +524,8 @@ export default class Metadata extends React.Component {
         .map(o => ({
           key: unmapColumnName(o.key),
           values: o.values || [],
-          predefined: isPredefined(unmapColumnName(o.key))
+          predefined: isPredefined(unmapColumnName(o.key)),
+          ...(o.operator && {operator: o.operator})
         }));
     }
     if (!selectedItemsAreShowing) {
@@ -621,15 +674,34 @@ export default class Metadata extends React.Component {
             )
           }
         />
-      </Button>);
-
-    if (key === 'createdDate') {
+      </Button>
+    );
+    if (/^date$/i.test(this.getColumnType(key))) {
+      let dateInfo = {};
+      if (key === 'createdDate') {
+        dateInfo.from = startDateFrom;
+        dateInfo.to = endDateTo;
+      } else {
+        const currentFilters = filters
+          .filter(filter => filter.key === unmapColumnName(key));
+        dateInfo.emptyValue = currentFilters.length === 1 &&
+          currentFilters[0].values &&
+          currentFilters[0].values.length === 0;
+        const filterFrom = currentFilters
+          .find(filter => filter.operator === FILTER_OPERATORS.greater);
+        const filterTo = currentFilters
+          .find(filter => filter.operator === FILTER_OPERATORS.less);
+        dateInfo.from = filterFrom ? filterFrom.values[0] : undefined;
+        dateInfo.to = filterTo ? filterTo.values[0] : undefined;
+      }
       return (
         <RangeDatePicker
-          from={startDateFrom}
-          to={endDateTo}
+          from={dateInfo.from}
+          to={dateInfo.to}
           onChange={(e) => this.onDateRangeChanged(e, key)}
           visibilityChanged={handleControlVisibility}
+          supportEmptyValue={key !== 'createdDate'}
+          emptyValue={dateInfo.emptyValue}
         >
           {button}
         </RangeDatePicker>
@@ -1822,7 +1894,7 @@ export default class Metadata extends React.Component {
   deleteMetadataClassConfirm = () => {
     const onDeleteMetadataClass = async () => {
       const hide = message.loading(`Removing class '${this.props.metadataClass}'...`, -1);
-      const request = new MetadataEntityDeleteFromProject(
+      const request = new DeleteFromProject(
         this.props.folderId,
         this.props.metadataClass
       );
