@@ -104,25 +104,29 @@ export default class UserCostsPanel extends React.Component {
   fetchBillingInfo = (userName) => {
     this.setState({pending: true}, async () => {
       const promises = BILLING_PERIODS.map(period => {
-        const periodInfo = getPeriod(period);
-        const request = new GetBillingData(
-          {
-            user: userName,
-            ...periodInfo,
-            filterBy: [
-              GetBillingData.FILTER_BY.compute,
-              GetBillingData.FILTER_BY.storages
-            ]
-          }
-        );
-        request.fetch();
-        return request;
+        return new Promise((resolve) => {
+          const periodInfo = getPeriod(period);
+          const request = new GetBillingData(
+            {
+              user: userName,
+              ...periodInfo,
+              filterBy: [
+                GetBillingData.FILTER_BY.compute,
+                GetBillingData.FILTER_BY.storages
+              ]
+            }
+          );
+          request.fetch()
+            .then(() => resolve(request))
+            .catch(() => resolve(request));
+        });
       });
       const results = await Promise.all(promises);
-      results.filter(result => result.error)
-        .forEach(result => message.error(result.error, 5));
-      this._billingRequests = results;
-      this.setState({pending: false});
+      this.setState({pending: false}, () => {
+        results.filter(result => result.error)
+          .forEach(result => message.error(result.error, 5));
+        this._billingRequests = results;
+      });
     });
   };
 
@@ -217,7 +221,10 @@ export default class UserCostsPanel extends React.Component {
   render () {
     const {pending} = this.state;
     return (
-      <Spin spinning={pending}>
+      <Spin
+        spinning={pending}
+        wrapperClassName={styles.spinner}
+      >
         <table className={styles.table}>
           {this.billingInfo.map(billing => (
             this.renderBillingInfo(billing)

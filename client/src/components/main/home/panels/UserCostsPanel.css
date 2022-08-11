@@ -39,3 +39,7 @@
 .table .bold {
   font-weight: bold;
 }
+
+.spinner {
+  height: 100%;
+}
