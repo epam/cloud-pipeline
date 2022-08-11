@@ -45,7 +45,7 @@ class StorageLifecycleSynchronizer:
 
     def __init__(self, config, cp_data_source, cloud_providers, logger):
         self.config = config
-        self.cloud_provireds = cloud_providers
+        self.cloud_providers = cloud_providers
         self.cp_data_source = cp_data_source
         self.logger = logger
 
@@ -77,12 +77,12 @@ class StorageLifecycleSynchronizer:
             self.logger.log("No rules for storage {} is defined, skipping".format(storage.path))
             return
 
-        if storage.storage_type not in self.cloud_provireds:
+        if storage.storage_type not in self.cloud_providers:
             self.logger.log(
                 "Lifecycle rules feature is not implemented for storage with type {}.".format(storage.storage_type)
             )
 
-        self.cloud_provireds[storage.storage_type].prepare_bucket_if_needed(storage.path)
+        self.cloud_providers[storage.storage_type].prepare_bucket_if_needed(storage.path)
 
         file_listing_cache = {}
 
@@ -99,7 +99,7 @@ class StorageLifecycleSynchronizer:
                 if existing_listing_prefix:
                     files = [f for f in file_listing_cache[existing_listing_prefix] if f.path.startswith(path_prefix)]
                 else:
-                    files = self.cloud_provireds[storage.storage_type].list_objects_by_prefix(storage.path, path_prefix)
+                    files = self.cloud_providers[storage.storage_type].list_objects_by_prefix(storage.path, path_prefix)
                     file_listing_cache[path_prefix] = files
 
                 subject_folders = self._identify_subject_folders(files, rule.path_glob)
@@ -256,8 +256,12 @@ class StorageLifecycleSynchronizer:
     def _get_eligible_transition(self, criterion_file, transitions, executions, rule_subject_files, today):
 
         def _is_execution_in_active_phase(_execution):
-            return execution_for_transition.status == EXECUTION_RUNNING_STATUS \
-                   or execution_for_transition.status == EXECUTION_NOTIFICATION_SENT_STATUS
+            return _execution and \
+                   (execution_for_transition.status == EXECUTION_RUNNING_STATUS
+                    or execution_for_transition.status == EXECUTION_NOTIFICATION_SENT_STATUS)
+
+        def _is_execution_in_complete_phase(_execution):
+            return _execution and execution_for_transition.status == EXECUTION_SUCCESS_STATUS
 
         transitions_by_dates = sorted(
             [(t, self._calculate_transition_date(criterion_file, t)) for t in transitions],
@@ -271,11 +275,11 @@ class StorageLifecycleSynchronizer:
                 filter(lambda e: e.storage_class == transition.storage_class, executions), None
             )
 
-            if execution_for_transition and _is_execution_in_active_phase(execution_for_transition):
+            if _is_execution_in_active_phase(execution_for_transition):
                 return transition.storage_class, date_of_action, execution_for_transition, files_for_transition
 
             if date_utils.is_date_after_that(date=date_of_action, to_check=today):
-                should_be_transferred = \
+                should_be_transferred = not _is_execution_in_complete_phase(execution_for_transition) and \
                         (transition_date is None or date_utils.is_date_after_that(date=transition_date, to_check=date_of_action))
                 if not should_be_transferred:
                     continue
@@ -311,7 +315,7 @@ class StorageLifecycleSynchronizer:
                 if action_items.mode == ACTIONS_MODE_FOLDER:
                     self._create_or_update_execution(storage.id, rule, storage_class,
                                                      action_items.folder, EXECUTION_RUNNING_STATUS)
-                is_successful = self.cloud_provireds[storage.storage_type].process_files_on_cloud(
+                is_successful = self.cloud_providers[storage.storage_type].process_files_on_cloud(
                     storage.path, storage.region_name, rule, action_items.folder, storage_class, subject_files)
 
                 if not is_successful:

@@ -11,3 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import datetime
+
+from slm.datasorce.cp_data_source import CloudPipelineDataSource
+from slm.model.rule_model import StorageLifecycleRuleExecution
+
+
+class MockCloudPipelineDataSource(CloudPipelineDataSource):
+
+    def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
+        return StorageLifecycleRuleExecution(execution_id=execution_id, rule_id=execution_id,
+                                             status=status, updated=datetime.datetime.now(),
+                                             path=None, storage_class=None)
