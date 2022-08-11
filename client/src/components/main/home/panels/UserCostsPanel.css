@@ -14,17 +14,28 @@
  * limitations under the License.
  */
 
-import Panels from './panels';
+.table {
+  width: 100%;
+  table-layout: fixed;
+  border-top: 1px solid #8c8c8c;
+  border-right: 1px solid #8c8c8c;
+  border-spacing: 0;
+}
 
-export default {
-  [Panels.activities]: {w: 2, h: 2},
-  [Panels.data]: {w: 2, h: 1},
-  [Panels.notifications]: {w: 1, h: 2},
-  [Panels.personalTools]: {w: 1, h: 2},
-  [Panels.pipelines]: {w: 1, h: 1},
-  [Panels.projects]: {w: 1, h: 2},
-  [Panels.recentlyCompletedRuns]: {w: 1, h: 2},
-  [Panels.runs]: {w: 1, h: 1},
-  [Panels.services]: {w: 1, h: 1},
-  [Panels.myCosts]: {w: 1, h: 1}
-};
+.table td {
+  overflow: hidden;
+  padding: 2px 5px;
+  vertical-align: middle;
+  text-align: center;
+  border-left: 1px solid #8c8c8c;
+  border-bottom: 1px solid #8c8c8c;
+}
+
+.table .sub-header {
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.table .bold {
+  font-weight: bold;
+}
