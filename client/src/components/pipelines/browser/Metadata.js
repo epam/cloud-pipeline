@@ -57,8 +57,7 @@ import roleModel from '../../../utils/roleModel';
 import MetadataEntityUpload from '../../../models/folderMetadata/MetadataEntityUpload';
 import PropTypes from 'prop-types';
 import MetadataClassLoadAll from '../../../models/folderMetadata/MetadataClassLoadAll';
-import MetadataEntityDeleteFromProject
-  from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
+import DeleteFromProject from '../../../models/folderMetadata/MetadataEntityDeleteFromProject';
 import MetadataEntityDeleteList from '../../../models/folderMetadata/MetadataEntityDeleteList';
 import ConfigurationBrowser from '../launch/dialogs/configuration-browser';
 import ConfigurationRun from '../../../models/configuration/ConfigurationRun';
@@ -98,8 +97,7 @@ const ASCEND = 'ascend';
 const DESCEND = 'descend';
 const FILTER_OPERATORS = {
   greater: 'GE',
-  less: 'LE',
-  equal: 'EQ'
+  less: 'LE'
 };
 
 function filterColumns (column) {
@@ -364,11 +362,11 @@ export default class Metadata extends React.Component {
   }
 
   getColumnType = (key) => {
-    const entityField = this.currentClassEntityFields
-      .find(field => field.name === key);
     if (key === 'createdDate') {
       return 'Date';
     }
+    const entityField = this.currentClassEntityFields
+      .find(field => field.name === key);
     if (entityField) {
       return entityField.type;
     }
@@ -419,21 +417,20 @@ export default class Metadata extends React.Component {
         values: []
       }];
     } else if (from || to) {
-      periodFilters = [from, to]
-        .filter(Boolean)
-        .map((date, index) => {
-          let operator;
-          if (index === 0) {
-            operator = FILTER_OPERATORS.greater;
-          } else {
-            operator = FILTER_OPERATORS.less;
-          }
+      const wrapFilter = (aDate, operator) => {
+        if (aDate) {
           return {
             key,
             operator,
-            values: [date]
+            values: [aDate]
           };
-        });
+        }
+        return undefined;
+      };
+      periodFilters = [
+        wrapFilter(from, FILTER_OPERATORS.greater),
+        wrapFilter(to, FILTER_OPERATORS.less)
+      ].filter(Boolean);
     } else {
       periodFilters = [];
     }
@@ -679,38 +676,24 @@ export default class Metadata extends React.Component {
         />
       </Button>
     );
-    const getDateInfoFromFilters = (key) => {
-      if (key === 'createdDate') {
-        return {
-          from: startDateFrom,
-          to: endDateTo
-        };
-      }
-      const currentFilters = filters
-        .filter(filter => filter.key === unmapColumnName(key));
-      let dateFrom;
-      let dateTo;
-      let emptyValue = false;
-      if (currentFilters.length > 0) {
-        if (currentFilters.length === 1 && currentFilters[0].values.length === 0) {
-          emptyValue = true;
-        } else {
-          const filterFrom = currentFilters
-            .find(filter => filter.operator === FILTER_OPERATORS.greater);
-          const fitlerTo = currentFilters
-            .find(filter => filter.operator === FILTER_OPERATORS.less);
-          dateFrom = filterFrom ? filterFrom.values[0] : undefined;
-          dateTo = fitlerTo ? fitlerTo.values[0] : undefined;
-        }
-      }
-      return {
-        from: dateFrom,
-        to: dateTo,
-        emptyValue
-      };
-    };
-    const dateInfo = getDateInfoFromFilters(key);
     if (/^date$/i.test(this.getColumnType(key))) {
+      let dateInfo = {};
+      if (key === 'createdDate') {
+        dateInfo.from = startDateFrom;
+        dateInfo.to = endDateTo;
+      } else {
+        const currentFilters = filters
+          .filter(filter => filter.key === unmapColumnName(key));
+        dateInfo.emptyValue = currentFilters.length === 1 &&
+          currentFilters[0].values &&
+          currentFilters[0].values.length === 0;
+        const filterFrom = currentFilters
+          .find(filter => filter.operator === FILTER_OPERATORS.greater);
+        const filterTo = currentFilters
+          .find(filter => filter.operator === FILTER_OPERATORS.less);
+        dateInfo.from = filterFrom ? filterFrom.values[0] : undefined;
+        dateInfo.to = filterTo ? filterTo.values[0] : undefined;
+      }
       return (
         <RangeDatePicker
           from={dateInfo.from}
@@ -1911,7 +1894,7 @@ export default class Metadata extends React.Component {
   deleteMetadataClassConfirm = () => {
     const onDeleteMetadataClass = async () => {
       const hide = message.loading(`Removing class '${this.props.metadataClass}'...`, -1);
-      const request = new MetadataEntityDeleteFromProject(
+      const request = new DeleteFromProject(
         this.props.folderId,
         this.props.metadataClass
       );
