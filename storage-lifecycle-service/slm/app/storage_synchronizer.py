@@ -19,8 +19,9 @@ import re
 
 from slm.model.rule_model import StorageLifecycleRuleProlongation, StorageLifecycleRuleTransition
 from slm.model.action_model import StorageLifecycleRuleActionItems
-from slm.util.date_utils import is_date_after_that, is_date_before_that
-from slm.util.path_utils import determinate_prefix_from_glob
+from slm.util import path_utils
+from slm.util import date_utils
+
 
 CRITERION_MATCHING_FILES = "MATCHING_FILES"
 CRITERION_DEFAULT = "DEFAULT"
@@ -91,7 +92,7 @@ class StorageLifecycleSynchronizer:
                 if self._rule_is_not_valid(rule):
                     continue
 
-                path_prefix = determinate_prefix_from_glob(rule.path_glob)
+                path_prefix = path_utils.determinate_prefix_from_glob(rule.path_glob)
                 existing_listing_prefix = next(
                     filter(lambda k: path_prefix.startswith(k), file_listing_cache.keys()), None
                 )
@@ -163,17 +164,17 @@ class StorageLifecycleSynchronizer:
 
         for file in rule_subject_files:
             effective_transitions = self._define_effective_transitions(
-                self._fetch_prolongation_for_path_or_default(file.path, rule), rule)
+                self._fetch_prolongation_for_path_or_default(file.path, rule), rule.transitions)
 
             transition_class, transition_date = None, None
             for transition in effective_transitions:
-                date_of_action = self.calculate_transition_date(file, transition)
+                date_of_action = self._calculate_transition_date(file, transition)
                 today = datetime.datetime.now(datetime.timezone.utc).date()
 
-                if is_date_after_that(date_of_action, today):
+                if date_utils.is_date_after_that(date_of_action, today):
                     should_be_transferred = \
                         file.storage_class != transition.storage_class and \
-                        (transition_date is None or is_date_after_that(transition_date, date_of_action))
+                        (transition_date is None or date_utils.is_date_after_that(transition_date, date_of_action))
                     if not should_be_transferred:
                         continue
                     transition_class = transition.storage_class
@@ -188,7 +189,7 @@ class StorageLifecycleSynchronizer:
             return result
 
         effective_transitions = self._define_effective_transitions(
-            self._fetch_prolongation_for_path_or_default(path, rule), rule)
+            self._fetch_prolongation_for_path_or_default(path, rule), rule.transitions)
 
         rule_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
             rule.datastorage_id, rule.rule_id, path)
@@ -237,7 +238,7 @@ class StorageLifecycleSynchronizer:
             result.with_notification(path, transition_class, str(transition_date), notification.prolong_days)
 
         # Check if action is needed
-        if is_date_after_that(transition_date, today):
+        if date_utils.is_date_after_that(transition_date, today):
             self.logger.log(
                 "Storage: {}. Rule: {}. Path: '{}'. Transition: {}. All criteria are met. Will transit {} files."
                 .format(rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_file)))
@@ -259,7 +260,7 @@ class StorageLifecycleSynchronizer:
                    or execution_for_transition.status == EXECUTION_NOTIFICATION_SENT_STATUS
 
         transitions_by_dates = sorted(
-            [(t, self.calculate_transition_date(criterion_file, t)) for t in transitions],
+            [(t, self._calculate_transition_date(criterion_file, t)) for t in transitions],
             key=lambda pair: pair[1]
         )
         transition_class, transition_date, transition_execution, trn_subject_file = None, None, None, None
@@ -273,9 +274,9 @@ class StorageLifecycleSynchronizer:
             if execution_for_transition and _is_execution_in_active_phase(execution_for_transition):
                 return transition.storage_class, date_of_action, execution_for_transition, files_for_transition
 
-            if is_date_after_that(date=date_of_action, to_check=today):
+            if date_utils.is_date_after_that(date=date_of_action, to_check=today):
                 should_be_transferred = \
-                        (transition_date is None or is_date_after_that(date=transition_date, to_check=date_of_action))
+                        (transition_date is None or date_utils.is_date_after_that(date=transition_date, to_check=date_of_action))
                 if not should_be_transferred:
                     continue
                 transition_class = transition.storage_class
@@ -427,11 +428,11 @@ class StorageLifecycleSynchronizer:
             return False
 
         date_to_check = today + datetime.timedelta(days=notification.notify_before_days)
-        if is_date_before_that(date_of_action, date_to_check):
+        if date_utils.is_date_before_that(date_of_action, date_to_check):
             return False
 
         if execution:
-            was_updated_before = is_date_after_that(
+            was_updated_before = date_utils.is_date_after_that(
                 date=today - datetime.timedelta(days=notification.notify_before_days),
                 to_check=execution.updated.date()
             )
@@ -461,7 +462,7 @@ class StorageLifecycleSynchronizer:
                                .format(rule.rule_id, method_possible_values))
 
     @staticmethod
-    def calculate_transition_date(criterion_file, transition):
+    def _calculate_transition_date(criterion_file, transition):
         if transition.transition_date:
             date_of_action = transition.transition_date
         elif transition.transition_after_days is not None:
@@ -484,12 +485,14 @@ class StorageLifecycleSynchronizer:
         # Sort by date (reverse or not depends on transition method) and get first element or None
         return next(
             iter(
-                sorted(criterion_files, key=lambda e: e.creation_date, reverse=(transition_method == METHOD_LATEST_FILE))),
-            None
+                sorted(
+                    criterion_files, key=lambda e: e.creation_date, reverse=(transition_method == METHOD_LATEST_FILE)
+                )
+            ), None
         )
 
     @staticmethod
-    def _define_effective_transitions(prolongation, rule):
+    def _define_effective_transitions(prolongation, transitions):
         def _define_transition(transition):
             resulted_transition = StorageLifecycleRuleTransition(transition.storage_class)
             if transition.transition_after_days is not None:
@@ -499,7 +502,7 @@ class StorageLifecycleSynchronizer:
                     transition.transition_date + datetime.timedelta(days=prolongation.days)
             return resulted_transition
 
-        return [_define_transition(transition) for transition in rule.transitions]
+        return [_define_transition(transition) for transition in transitions]
 
     @staticmethod
     def _fetch_prolongation_for_path_or_default(path, rule):
@@ -513,28 +516,15 @@ class StorageLifecycleSynchronizer:
 
     @staticmethod
     def _identify_subject_folders(files, glob_str):
-        def generate_all_possible_dir_paths(paths):
-            def generate_hierarchy(path):
-                result = set()
-                interim_result = ""
-                for path_part in path.split("/"):
-                    interim_result = interim_result + "/" + path_part if path_part else interim_result
-                    result.add(interim_result)
-                return result
-
-            result = set()
-            for path in paths:
-                result = result.union(generate_hierarchy(path))
-            return result
-
         if not glob_str or glob_str == "/":
             return ["/"]
 
         unique_folder_paths = set()
-        for object in files:
-            parent_dir, filename = os.path.split(object.path)
+        for file in files:
+            parent_dir, filename = os.path.split(file.path)
             if parent_dir:
                 unique_folder_paths.add(parent_dir)
-        directories = generate_all_possible_dir_paths(unique_folder_paths)
-        pattern = re.compile(fnmatch.translate(glob_str).replace(".", "[^/]"))
+        directories = path_utils.generate_all_possible_dir_paths(unique_folder_paths)
+        resulted_regexp = path_utils.convert_glob_to_regexp(glob_str)
+        pattern = re.compile(resulted_regexp)
         return [p for p in directories if pattern.match(p)]
