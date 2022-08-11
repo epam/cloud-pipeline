@@ -19,7 +19,12 @@ import classNames from 'classnames';
 import {computed, observable} from 'mobx';
 import {observer} from 'mobx-react';
 import moment from 'moment-timezone';
-import {Icon, Popover, message, Spin} from 'antd';
+import {
+  Icon,
+  Tooltip,
+  message,
+  Spin
+} from 'antd';
 import roleModel from '../../../../utils/roleModel';
 import {GetBillingData} from '../../../../models/billing';
 import {Period, getPeriod} from '../../../special/periods';
@@ -166,13 +171,11 @@ export default class UserCostsPanel extends React.Component {
           </td>
         </tr>
         <tr>
-          <td>
-            <Popover
-              content={popoverContent(start, endStrict, period)}
-            >
+          <Tooltip title={popoverContent(start, endStrict, period)}>
+            <td>
               {moment(endStrict).format(format)}
-            </Popover>
-          </td>
+            </td>
+          </Tooltip>
           <td className={styles.bold}>
             {current ? (`$${current}`) : null}
           </td>
@@ -202,13 +205,13 @@ export default class UserCostsPanel extends React.Component {
           </td>
         </tr>
         <tr>
-          <td>
-            <Popover
-              content={popoverContent(previousStart, previousEndStrict, period)}
-            >
+          <Tooltip
+            title={popoverContent(previousStart, previousEndStrict, period)}
+          >
+            <td>
               {moment(previousEndStrict).format(format)}
-            </Popover>
-          </td>
+            </td>
+          </Tooltip>
           <td>
             {previous ? (`$${previous}`) : null}
           </td>
