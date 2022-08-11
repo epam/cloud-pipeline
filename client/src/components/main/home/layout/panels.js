@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ const PERSONAL_TOOLS_KEY = 'personal tools';
 const NOTIFICATIONS_KEY = 'notifications';
 const PIPELINES_KEY = 'pipelines';
 const PROJECTS_KEY = 'projects';
+const USER_COSTS_KEY = 'my costs';
 
 export default {
   activities: ACTIVITIES_KEY,
@@ -33,5 +34,6 @@ export default {
   projects: PROJECTS_KEY,
   recentlyCompletedRuns: RECENTLY_COMPLETED_RUNS_KEY,
   runs: ACTIVE_RUNS_KEY,
-  services: SERVICES_KEY
+  services: SERVICES_KEY,
+  userCosts: USER_COSTS_KEY
 };
