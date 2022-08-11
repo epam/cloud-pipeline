@@ -28,6 +28,7 @@ const validationConfig = {
     total: 50
   },
   ip: new RegExp(/^(?!0)(?!.*\.$)((1?\d?\d|25[0-5]|2[0-4]\d)(\.|$)){4}$/),
+  server: /^[a-z]([0-9a-z-_]{0,61}[0-9a-z_])?$/g,
   messages: {
     required: 'Field is required',
     invalid: 'Invalid format',
@@ -84,12 +85,17 @@ export function validatePort (value, otherPorts) {
 }
 
 export function validateServerName (value) {
-  const {messages} = validationConfig;
+  const {messages, server} = validationConfig;
   if (!value || !value.trim()) {
     return {error: true, message: messages.required};
-  } else {
-    return {error: false};
   }
+  if (!value.split('.').every(v => v.match(server))) {
+    return {error: true, message: messages.invalid};
+  }
+  if (value.length > 253) {
+    return {error: true, message: messages.lengthExceed};
+  }
+  return {error: false};
 }
 
 export function validateIP (value, skip = false) {
