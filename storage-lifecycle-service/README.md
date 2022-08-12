@@ -52,6 +52,8 @@ Additionally, there are some cloud specific aspects that also could be helpful t
 
 ### AWS
 
+**NOTE:** Please see the link to get some useful information on several limitations regarding lifecycle policies: [AWS S3 Lifecycle Docs](https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html)
+
 When application actually do some work on a cloud (tagging files), it creates several internal files like tagging manifest and job reports.
 Manifest and reports for successfully completed jobs will be deleted right after job is complete, but for failed job such files are kept for further investigation.
 
