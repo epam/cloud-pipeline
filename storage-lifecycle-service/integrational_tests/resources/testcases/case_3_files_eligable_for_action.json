@@ -1,0 +1,67 @@
+{
+  "cloudProvider": "AWS",
+  "storages": [
+    {
+      "storage": "cp-lifecycle-storage-policy-test-storage-1",
+      "rule": {
+        "id": 1,
+        "datastorageId": 1,
+        "pathGlob": "/data/",
+        "objectGlob": "*.txt",
+        "transitionMethod": "LATEST_FILE",
+        "transitions": [
+          {
+            "transitionAfterDays": 10,
+            "storageClass": "GLACIER"
+          }
+        ],
+        "notification": {
+          "notifyBeforeDays": 5,
+          "prolongDays": 10,
+          "keepInformedAdmins": false,
+          "keepInformedOwner": true,
+          "enabled": true,
+          "subject": "Lifecycle rule is about to be applied!",
+          "body": ""
+        }
+      },
+      "executions": [
+        {
+          "path": "/data/",
+          "status": "NOTIFICATION_SENT",
+          "storageClass": "GLACIER"
+        }
+      ],
+      "files": [
+        {"key": "/data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+        {"key": "/data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD"},
+        {"key": "/data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD"}
+      ]
+    }
+  ],
+  "result": {
+    "cloud": {
+      "storages": [
+        {
+          "storage": "cp-lifecycle-storage-policy-test-storage-1",
+          "files": [
+            {"key": "/data/file1.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
+            {"key": "/data/file2.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
+            {"key": "/data/file3.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}}
+          ]
+        }
+      ]
+    }
+  },
+  "platform": {
+    "notifications": [],
+    "executions": [
+      {
+        "ruleId": 1,
+        "path": "/data/",
+        "status": "RUNNING",
+        "storageClass": "GLACIER"
+      }
+    ]
+  }
+}
