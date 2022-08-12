@@ -143,15 +143,17 @@ export default class UserCostsPanel extends React.Component {
       endStrict,
       previousEndStrict
     } = filters || {};
-    const positivePercent = percent !== undefined
-      ? percent > 0
-      : undefined;
     let format;
     if (period === Period.month) {
       format = 'MMMM';
     } else {
       format = 'YYYY';
     }
+    const longDash = (
+      <span style={{fontWeight: 'normal'}}>
+        &#8211;
+      </span>
+    );
     const popoverContent = (dateFrom, dateTo, period) => {
       const from = moment(dateFrom);
       const to = moment(dateTo);
@@ -160,64 +162,81 @@ export default class UserCostsPanel extends React.Component {
       }
       return `${to.year()}`;
     };
-    return (
-      <tbody key={filters.name}>
-        <tr>
-          <td
-            colSpan={3}
-            className={styles.subHeader}
-          >
-            {period}
-          </td>
-        </tr>
-        <tr>
-          <Tooltip title={popoverContent(start, endStrict, period)}>
-            <td>
-              {moment(endStrict).format(format)}
-            </td>
-          </Tooltip>
-          <td className={styles.bold}>
-            {current ? (`$${current}`) : null}
-          </td>
-          <td
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}
+    const renderStatistics = (percent) => {
+      if (percent === undefined || Number(percent) === 0) {
+        return null;
+      }
+      return (
+        <div className={styles.statistics}>
+          &#40;
+          <div
             className={classNames({
-              'cp-danger': positivePercent !== undefined && positivePercent,
-              'cp-success': positivePercent !== undefined && !positivePercent
+              'cp-danger': percent > 0,
+              'cp-success': percent < 0
             })}
           >
-            {positivePercent !== undefined ? (
-              <Icon
-                type={positivePercent ? 'caret-up' : 'catet-down'}
-                style={{marginRight: '5px'}}
-              />
-            ) : null
-            }
-            {positivePercent !== undefined ? (
-              <span>
-                {`${positivePercent ? '+' : '-'}${percent}%`}
-              </span>
-            ) : null}
-          </td>
-        </tr>
-        <tr>
+            <Icon
+              type={percent > 0 ? 'caret-up' : 'catet-down'}
+              style={{marginRight: '5px'}}
+            />
+            <span>
+              {`${percent > 0 ? '+' : '-'}${percent}%`}
+            </span>
+          </div>
+          &#41;
+        </div>
+      );
+    };
+    return (
+      [
+        <span className={styles.subHeader}>
+          {period}
+        </span>,
+        <div
+          className={classNames(
+            styles.cell,
+            styles.leftColumn
+          )}
+        >
           <Tooltip
+            placement="topRight"
+            title={popoverContent(start, endStrict, period)}
+          >
+            <span>
+              {moment(endStrict).format(format)}:
+            </span>
+          </Tooltip>
+        </div>,
+        <div
+          className={classNames(
+            styles.cell,
+            styles.spendingsContainer
+          )}
+        >
+          <span className={styles.bold}>
+            {current ? (`$${current}`) : longDash}
+          </span>
+          {renderStatistics(percent)}
+        </div>,
+        <div
+          className={classNames(
+            styles.cell,
+            styles.leftColumn
+          )}
+        >
+          <Tooltip
+            placement="topRight"
             title={popoverContent(previousStart, previousEndStrict, period)}
           >
-            <td>
-              {moment(previousEndStrict).format(format)}
-            </td>
+            <span>
+              {moment(previousEndStrict).format(format)}:
+            </span>
           </Tooltip>
-          <td>
-            {previous ? (`$${previous}`) : null}
-          </td>
-          <td />
-        </tr>
-      </tbody>
+        </div>,
+        <span className={styles.cell}>
+          {previous ? (`$${previous}`) : longDash}
+        </span>
+      ]
     );
   };
 
@@ -228,11 +247,11 @@ export default class UserCostsPanel extends React.Component {
         spinning={pending}
         wrapperClassName={styles.spinner}
       >
-        <table className={styles.table}>
+        <div className={styles.gridContainer}>
           {this.billingInfo.map(billing => (
             this.renderBillingInfo(billing)
           ))}
-        </table>
+        </div>
       </Spin>
     );
   }

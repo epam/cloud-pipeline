@@ -14,30 +14,50 @@
  * limitations under the License.
  */
 
-.table {
-  width: 100%;
-  table-layout: fixed;
-  border-top: 1px solid #8c8c8c;
-  border-right: 1px solid #8c8c8c;
-  border-spacing: 0;
+.grid-container {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  grid-template-rows: auto;
+  justify-content: center;
+  overflow: hidden;
+  font-size: larger;
 }
 
-.table td {
-  overflow: hidden;
-  padding: 2px 5px;
-  vertical-align: middle;
+.sub-header {
+  grid-column-start: 1;
+  grid-column-end: 3;
   text-align: center;
-  border-left: 1px solid #8c8c8c;
+  font-weight: bold;
+  text-transform: capitalize;
   border-bottom: 1px solid #8c8c8c;
 }
 
-.table .sub-header {
-  font-weight: bold;
-  text-transform: capitalize;
+.spendings-container {
+  display: flex;
+  flex-wrap: nowrap;
 }
 
-.table .bold {
+.spendings-container .statistics {
+  margin-left: 3px;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.bold {
   font-weight: bold;
+}
+
+.cell {
+  margin-bottom: 3px;
+  padding: 0px 3px;
+}
+
+.cell.left-column {
+  text-align: right;
+  padding-left: 15px;
 }
 
 .spinner {
