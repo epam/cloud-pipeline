@@ -16,7 +16,17 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {Checkbox, Modal, Input, Button, Form, message, Spin, Select} from 'antd';
+import {
+  Checkbox,
+  Modal,
+  Icon,
+  Input,
+  Button,
+  message,
+  Popover,
+  Spin,
+  Select
+} from 'antd';
 import classNames from 'classnames';
 
 import protocols from '../protocols';
@@ -30,7 +40,35 @@ import {
 } from '../helpers';
 import styles from './add-route-modal.css';
 
-const FormItem = Form.Item;
+function Hint ({className, style, children}) {
+  if (!children) {
+    return null;
+  }
+  return (
+    <Popover
+      placement="right"
+      content={(
+        <div
+          style={{
+            maxWidth: 200
+          }}
+        >
+          {children}
+        </div>
+      )}
+    >
+      <Icon
+        type="question-circle"
+        className={className}
+        style={{
+          ...(style || {}),
+          cursor: 'pointer'
+        }}
+      />
+    </Popover>
+  );
+}
+
 export default class AddRouteForm extends React.Component {
   static portUID = 0;
   static getPortUID = () => {
@@ -216,10 +254,14 @@ export default class AddRouteForm extends React.Component {
     this.resetForm();
   }
 
-  getValidationStatus = (key) => {
+  isError = (key) => {
     const {errors} = this.state;
-    return errors[key] && errors[key].error ? 'error' : 'success';
+    return errors[key] && errors[key].error;
   }
+
+  getValidationClassName = (key) => classNames({
+    'cp-error': this.isError(key)
+  });
 
   getValidationMessage = (key) => {
     const {errors} = this.state;
@@ -347,20 +389,36 @@ export default class AddRouteForm extends React.Component {
       >
         <div>
           <Spin spinning={pending}>
-            <Form>
+            <div>
               <div className={styles.formItemContainer}>
                 <span className={styles.title}>Server name:</span>
-                <FormItem
-                  className={styles.formItem}
-                  validateStatus={this.getValidationStatus('serverName')}
+                <Input
+                  className={
+                    classNames(
+                      styles.formItem,
+                      this.getValidationClassName('serverName')
+                    )
+                  }
+                  placeholder="Server name"
+                  value={serverName}
+                  onChange={this.handleChange('serverName')}
+                  onBlur={this.onAutoResolveIp}
+                />
+                <Hint
+                  style={{marginLeft: 5}}
                 >
-                  <Input
-                    placeholder="Server name"
-                    value={serverName}
-                    onChange={this.handleChange('serverName')}
-                    onBlur={this.onAutoResolveIp}
-                  />
-                </FormItem>
+                  {/* eslint-disable-next-line */}
+                  Domain name is composed of a sequence of <b>lowercased</b> labels concatenated with dots.<br />
+                  Each label must be from 1 to 63 characters long.<br />
+                  {/* eslint-disable-next-line */}
+                  The entire domain name, including the delimiting dots, has a maximum of 253 characters.<br />
+                  {/* eslint-disable-next-line */}
+                  Supported characters are <b>"a"</b>-<b>"z"</b> (<b>lowercase</b>), digits <b>"0"</b>-<b>"9"</b>,
+                  hyphen (<b>"-"</b>) and underscore (<b>"_"</b>).
+                  <br />
+                  {/* eslint-disable-next-line */}
+                  Each label must starts with a character (<b>"a"-"z"</b>) and must not ends with a hyphen (<b>"-"</b>)
+                </Hint>
               </div>
               <FormItemError identifier="serverName" />
               <div className={styles.formItemContainer}>
@@ -369,33 +427,33 @@ export default class AddRouteForm extends React.Component {
                 >
                   {'\u00A0'}
                 </span>
-                <FormItem className={styles.formItem}>
-                  <Checkbox
-                    checked={useIP}
-                    onChange={this.handleUseIP}
-                  >
-                    Specify IP address
-                  </Checkbox>
-                </FormItem>
+                <Checkbox
+                  className={styles.formItem}
+                  checked={useIP}
+                  onChange={this.handleUseIP}
+                >
+                  Specify IP address
+                </Checkbox>
               </div>
               {
                 useIP && (
                   <div className={styles.formItemContainer}>
                     <span className={styles.title}>IP:</span>
-                    <FormItem
-                      className={styles.formItem}
-                      validateStatus={this.getValidationStatus('ip')}
-                    >
-                      <Input
-                        placeholder="127.0.0.1"
-                        value={ip}
-                        onChange={this.handleChange('ip')}
-                      />
-                    </FormItem>
+                    <Input
+                      placeholder="127.0.0.1"
+                      className={
+                        classNames(
+                          styles.formItem,
+                          this.getValidationClassName('ip')
+                        )
+                      }
+                      value={ip}
+                      onChange={this.handleChange('ip')}
+                    />
                     <Button
                       disabled={
                         !serverName ||
-                        (this.getValidationStatus('serverName') === 'error') ||
+                        this.isError('serverName') ||
                         pending
                       }
                       style={{marginLeft: 5}}
@@ -420,15 +478,16 @@ export default class AddRouteForm extends React.Component {
                   >
                     <div className={styles.formItemContainer}>
                       <span className={styles.title}>Port:</span>
-                      <FormItem
-                        className={styles.formItem}
-                        validateStatus={this.getValidationStatus(portIdentifier)}
-                      >
-                        <Input
-                          value={port.value}
-                          onChange={this.handleChange(portIdentifier)}
-                        />
-                      </FormItem>
+                      <Input
+                        className={
+                          classNames(
+                            styles.formItem,
+                            this.getValidationClassName(portIdentifier)
+                          )
+                        }
+                        value={port.value}
+                        onChange={this.handleChange(portIdentifier)}
+                      />
                       {
                         ports.length > 1 && (
                           <Button
@@ -446,15 +505,14 @@ export default class AddRouteForm extends React.Component {
                     />
                     <div className={styles.formItemContainer}>
                       <span className={styles.title}>Protocol:</span>
-                      <FormItem className={styles.formItem}>
-                        <Select
-                          value={port.protocol}
-                          onChange={this.handleProtocolChange(portIdentifier)}
-                        >
-                          <Select.Option value={protocols.TCP}>TCP</Select.Option>
-                          <Select.Option value={protocols.UDP}>UDP</Select.Option>
-                        </Select>
-                      </FormItem>
+                      <Select
+                        className={styles.formItem}
+                        value={port.protocol}
+                        onChange={this.handleProtocolChange(portIdentifier)}
+                      >
+                        <Select.Option value={protocols.TCP}>TCP</Select.Option>
+                        <Select.Option value={protocols.UDP}>UDP</Select.Option>
+                      </Select>
                     </div>
                   </div>
                 ))
@@ -469,19 +527,20 @@ export default class AddRouteForm extends React.Component {
               </div>
               <div className={styles.formItemContainer}>
                 <span className={styles.title}>Comment:</span>
-                <FormItem
-                  className={styles.formItem}
-                  validateStatus={this.getValidationStatus('description')}
-                >
-                  <Input
-                    placeholder="Comment"
-                    value={description}
-                    onChange={this.handleChange('description')}
-                  />
-                </FormItem>
+                <Input
+                  className={
+                    classNames(
+                      styles.formItem,
+                      this.getValidationClassName('description')
+                    )
+                  }
+                  placeholder="Comment"
+                  value={description}
+                  onChange={this.handleChange('description')}
+                />
               </div>
               <FormItemError identifier="description" />
-            </Form>
+            </div>
           </Spin>
         </div>
       </Modal>
