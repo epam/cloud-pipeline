@@ -5,9 +5,12 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
-          {"key": "data/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
+          {"key": "data1/folder/dataset12/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data1/folder/dataset12/file2.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data1/folder/dataset12/file3.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data2/folder/dataset13/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data2/folder/dataset13/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
+          {"key": "data2/folder/dataset13/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
         ]
       }
     ]
@@ -22,7 +25,7 @@
           {
             "id": 1,
             "datastorageId": 1,
-            "pathGlob": "/data",
+            "pathGlob": "/data*/**/dataset*",
             "objectGlob": "*.txt",
             "transitionMethod": "LATEST_FILE",
             "transitionCriterion": {
@@ -30,12 +33,12 @@
             },
             "transitions": [
               {
-                "transitionAfterDays": 10,
+                "transitionAfterDays": 20,
                 "storageClass": "GLACIER"
               }
             ],
             "notification": {
-              "notifyBeforeDays": 5,
+              "notifyBeforeDays": 10,
               "prolongDays": 10,
               "keepInformedAdmins": false,
               "keepInformedOwner": true,
@@ -45,14 +48,7 @@
             }
           }
         ],
-        "executions": [
-          {
-            "ruleId": 1,
-            "path": "/data",
-            "status": "NOTIFICATION_SENT",
-            "storageClass": "GLACIER"
-          }
-        ]
+        "executions": []
       }
     ]
   },
@@ -63,9 +59,12 @@
           "storage": "cp-lifecycle-storage-policy-test-storage",
           "storageProvider": "S3",
           "files": [
-            {"key": "data/file1.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
-            {"key": "data/file2.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
-            {"key": "data/file3.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}}
+            {"key": "data1/folder/dataset12/file1.txt"},
+            {"key": "data1/folder/dataset12/file2.txt"},
+            {"key": "data1/folder/dataset12/file3.txt"},
+            {"key": "data2/folder/dataset13/file1.txt"},
+            {"key": "data2/folder/dataset13/file2.txt"},
+            {"key": "data2/folder/dataset13/file3.txt"}
           ]
         }
       ]
@@ -78,8 +77,14 @@
           "executions": [
             {
               "ruleId": 1,
-              "path": "/data",
-              "status": "RUNNING",
+              "path": "/data1/folder/dataset12",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            },
+            {
+              "ruleId": 1,
+              "path": "/data2/folder/dataset13",
+              "status": "NOTIFICATION_SENT",
               "storageClass": "GLACIER"
             }
           ]

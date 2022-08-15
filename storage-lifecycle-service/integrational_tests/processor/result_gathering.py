@@ -1,29 +1,63 @@
-from integrational_tests.model.testcase import TestCaseResult
+import boto3
+
+from integrational_tests.model.testcase import TestCaseResult, TestCaseFile, TestCaseStorageCloudState, \
+    TestCaseCloudState, TestCasePlatformStorageState, TestCasePlatformState
 from integrational_tests.processor.processor import TestCaseResultGatherer
 
 
 class PlatformTestCaseResultGatherer(TestCaseResultGatherer):
 
+    def __init__(self, cp_api):
+        self.cp_api = cp_api
+
     def gather(self, testcase):
-        return testcase.result
+        storage_states = []
+        for storage in testcase.platform.storages:
+            platform_storage_state = TestCasePlatformStorageState(storage.datastorage_id, storage.storage)
+            for rule in storage.rules:
+                executions = self.cp_api.load_lifecycle_rule_executions(storage.datastorage_id, rule["id"])
+                platform_storage_state.executions.extend(executions if executions else [])
+            if platform_storage_state.executions:
+                storage_states.append(platform_storage_state)
+        return TestCaseResult().with_platform_state(TestCasePlatformState(storage_states))
 
 
 class CloudTestCaseResultGatherer(TestCaseResultGatherer):
 
-    def __init__(self):
+    def __init__(self, aws_region):
         self.cloud_preparators = {
-            "AWS": AWSCloudTestCaseResultGatherer()
+            "S3": AWSCloudTestCaseStorageResultGatherer(aws_region)
         }
 
     def gather(self, testcase):
-        result = TestCaseResult()
-        if not testcase.result.cloud_state or not testcase.result.cloud_state.storages:
-            return result
-        for storage in testcase.result.cloud_state.storages:
-            result = self.cloud_preparators[storage.cloud_provider].gather(testcase).merge(result)
+        return TestCaseResult().with_cloud_state(
+            TestCaseCloudState(
+                [self.cloud_preparators[storage.storage_provider].gather(storage)
+                 for storage in testcase.cloud.storages]
+            )
+        )
 
 
-class AWSCloudTestCaseResultGatherer(TestCaseResultGatherer):
+class AWSCloudTestCaseStorageResultGatherer:
 
-    def gather(self, testcase):
-        return testcase.result
+    def __init__(self, aws_region):
+        self.aws_s3_client = boto3.client("s3", region_name=aws_region)
+
+    def gather(self, storage):
+        result = TestCaseStorageCloudState().with_storage_name(storage.storage).with_storage_provider("S3")
+        paginator = self.aws_s3_client.get_paginator('list_objects')
+        page_iterator = paginator.paginate(Bucket=storage.storage)
+        for page in page_iterator:
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    get_tags_response = self.aws_s3_client.get_object_tagging(
+                        Bucket=storage.storage,
+                        Key=obj["Key"]
+                    )
+                    result.with_file(
+                        TestCaseFile(
+                            obj["Key"], None, None,
+                            {tag["Key"]: tag["Value"] for tag in get_tags_response["TagSet"]}
+                        )
+                    )
+        return result

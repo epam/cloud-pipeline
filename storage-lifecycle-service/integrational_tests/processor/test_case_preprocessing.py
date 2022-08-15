@@ -3,8 +3,6 @@ from typing import List
 
 from integrational_tests.model.testcase import TestCase, TestCaseStorageCloudState, TestCaseFile, TestCaseResult, \
     TestCasePlatformState, TestCaseCloudState, TestCasePlatformStorageState
-from sls.model.rule_model import LifecycleRuleParser, StorageLifecycleRuleExecution
-from sls.util.date_utils import parse_timestamp
 
 CLOUD_PROVIDER = ["AWS"]
 
@@ -43,7 +41,7 @@ def _parse_results(result_json):
     result = TestCaseResult()
 
     if "cloud" in result_json and "storages" in result_json["cloud"]:
-        result.with_cloud_state(TestCaseCloudState())
+        result.with_cloud_state(_parse_cloud_state(result_json["cloud"]))
 
     if "platform" in result_json:
         result.with_platform_state(_parse_platform_state(result_json["platform"], as_result=True))
@@ -58,19 +56,19 @@ def _parse_storage_cloud_state(storage_json):
 
         return TestCaseFile(
             _file_json["key"],
-            _file_json["creationDateShift"] if "creationDateShift" in _file_json else 0,
-            _file_json["storageClass"] if "storageClass" in _file_json else "STANDARD",
+            _file_json["creationDateShift"] if "creationDateShift" in _file_json else None,
+            _file_json["storageClass"] if "storageClass" in _file_json else None,
             _file_json["tags"] if "tags" in _file_json else {}
         )
 
     if "storage" not in storage_json:
         raise AttributeError("Storage description must contain 'storage' entry, describing storage name!")
 
-    if "cloudProvider" not in storage_json:
-        raise AttributeError("Storage description must contain 'cloudProvider' entry, describing storage name!")
+    if "storageProvider" not in storage_json:
+        raise AttributeError("Storage description must contain 'storageProvider' entry!")
 
     description = TestCaseStorageCloudState() \
-        .with_storage_name(storage_json["storage"]).with_cloud_provider(storage_json["cloudProvider"])
+        .with_storage_name(storage_json["storage"]).with_storage_provider(storage_json["storageProvider"])
 
     if "files" in storage_json:
         if not isinstance(storage_json["files"], List):
@@ -93,33 +91,34 @@ def _parse_platform_state(platform_state_json, as_result):
 
 def _parse_platform_storage_state(platform_storage_state_json, as_result):
 
-    def _parse_execution(_execution_json):
-        if not _execution_json:
-            return None
-        return StorageLifecycleRuleExecution(
-            execution_id=None,
-            rule_id=_execution_json["ruleId"],
-            path=_execution_json["path"],
-            status=_execution_json["status"],
-            storage_class=_execution_json["storageClass"],
-            updated=parse_timestamp(_execution_json["updated"]) if "updated" in _execution_json else None
-        )
+    def _validate_execution(_execution_json):
+        if "ruleId" not in _execution_json or "path" not in _execution_json \
+                or "status" not in _execution_json or "storageClass" not in _execution_json:
+            raise AttributeError(
+                "Attributes 'ruleId', 'path', 'status', 'storageClass' should be provided for execution: "
+                + _execution_json)
+
+        return _execution_json
+
+    def _validate_rule(_rule_json):
+        if "id" not in _rule_json or "datastorageId" not in _rule_json or "transitionMethod" not in _rule_json \
+                or "pathGlob" not in _rule_json or "transitions" not in _rule_json or "transitionCriterion" not in _rule_json:
+            raise AttributeError(
+                "Attributes 'id', 'datastorageId', 'transitionMethod', 'pathGlob', "
+                "'transitions', 'transitionCriterion' should be provided for rule: " + _rule_json)
+        return _rule_json
 
     result = TestCasePlatformStorageState(platform_storage_state_json["id"], platform_storage_state_json["storage"])
     if not as_result:
         if not platform_storage_state_json["rules"] or not isinstance(platform_storage_state_json["rules"], List):
             raise AttributeError("Attribute 'rules' in platform results description object should be a list!")
         result.rules = [
-            LifecycleRuleParser({}).parse_rule(rule_json) for rule_json in platform_storage_state_json["rules"]
+            _validate_rule(rule_json) for rule_json in platform_storage_state_json["rules"]
         ]
-    if "notifications" in platform_storage_state_json:
-        if not isinstance(platform_storage_state_json["notifications"], List):
-            raise AttributeError("Attribute 'notifications' in platform results description object should be a list!")
-        result.notifications = platform_storage_state_json["notifications"]
     if "executions" in platform_storage_state_json:
         if not isinstance(platform_storage_state_json["executions"], List):
             raise AttributeError("Attribute 'executions' in platform results description object should be a list!")
         result.executions = [
-            _parse_execution(execution_json) for execution_json in platform_storage_state_json["executions"]
+            _validate_execution(execution_json) for execution_json in platform_storage_state_json["executions"]
         ]
     return result

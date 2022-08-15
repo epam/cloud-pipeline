@@ -8,10 +8,10 @@ class AttributesChangingStorageOperations(StorageOperations):
     def __init__(self, cloud_operations, testcase):
         self.cloud_operations = cloud_operations
         self.watched_files_by_storages = {}
-        for storage in testcase.storages:
+        for storage in testcase.cloud.storages:
             self.watched_files_by_storages[storage.storage] = {}
             for file in storage.files:
-                self.watched_files_by_storages[storage.storage][file.path] = file
+                self.watched_files_by_storages[storage.storage][file.path if file.path.startswith("/") else "/" + file.path] = file
 
     def prepare_bucket_if_needed(self, bucket):
         self.cloud_operations.prepare_bucket_if_needed(bucket)

@@ -5,9 +5,9 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
-          {"key": "data/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
+          {"key": "data/file1.txt", "creationDateShift": 21, "storageClass": "GLACIER"},
+          {"key": "data/file2.txt", "creationDateShift": 20, "storageClass": "GLACIER"},
+          {"key": "data/file3.txt", "creationDateShift": 20, "storageClass": "GLACIER"}
         ]
       }
     ]
@@ -32,6 +32,10 @@
               {
                 "transitionAfterDays": 10,
                 "storageClass": "GLACIER"
+              },
+              {
+                "transitionAfterDays": 20,
+                "storageClass": "DEEP_ARCHIVE"
               }
             ],
             "notification": {
@@ -49,8 +53,14 @@
           {
             "ruleId": 1,
             "path": "/data",
-            "status": "NOTIFICATION_SENT",
+            "status": "SUCCESS",
             "storageClass": "GLACIER"
+          },
+          {
+            "ruleId": 1,
+            "path": "/data",
+            "status": "NOTIFICATION_SENT",
+            "storageClass": "DEEP_ARCHIVE"
           }
         ]
       }
@@ -63,9 +73,9 @@
           "storage": "cp-lifecycle-storage-policy-test-storage",
           "storageProvider": "S3",
           "files": [
-            {"key": "data/file1.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
-            {"key": "data/file2.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
-            {"key": "data/file3.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}}
+            {"key": "data/file1.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "DEEP_ARCHIVE"}},
+            {"key": "data/file2.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "DEEP_ARCHIVE"}},
+            {"key": "data/file3.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "DEEP_ARCHIVE"}}
           ]
         }
       ]
@@ -79,8 +89,14 @@
             {
               "ruleId": 1,
               "path": "/data",
-              "status": "RUNNING",
+              "status": "SUCCESS",
               "storageClass": "GLACIER"
+            },
+            {
+              "ruleId": 1,
+              "path": "/data",
+              "status": "RUNNING",
+              "storageClass": "DEEP_ARCHIVE"
             }
           ]
         }

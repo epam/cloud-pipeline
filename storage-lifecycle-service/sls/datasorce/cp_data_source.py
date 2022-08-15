@@ -1,4 +1,3 @@
-# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,16 +10,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+from pipeline import PipelineAPI
 
 from sls.model.rule_model import LifecycleRuleParser
 
 
+def configure_cp_data_source(cp_api_url, cp_api_token, log_dir, data_source_type="RESTApi"):
+    data_source = None
+    if data_source_type is "RESTApi":
+        if not cp_api_url:
+            raise RuntimeError("Cloud Pipeline data source cannot be configured! Please specify --cp-api-url")
+        if cp_api_token:
+            os.environ["API_TOKEN"] = cp_api_token
+        if not os.getenv("API_TOKEN"):
+            raise RuntimeError("Cloud Pipeline data source cannot be configured! "
+                               "Please specify --cp-api-token or API_TOKEN environment variable")
+        api = PipelineAPI(cp_api_url, log_dir)
+        data_source = RESTApiCloudPipelineDataSource(api)
+    return data_source
+
+
 class CloudPipelineDataSource:
 
-    def __init__(self):
+    def load_storage(self, datastorage_id):
         pass
 
-    def load_datastorage(self, datastorage_id):
+    def load_available_storages(self):
         pass
 
     def load_lifecycle_rules_for_storage(self, datastorage_id):
@@ -32,16 +48,13 @@ class CloudPipelineDataSource:
     def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
         pass
 
-    def load_lifecycle_rule_executions(self, datastorage_id, rule_id):
+    def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
         pass
 
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
         pass
 
     def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
-        pass
-
-    def load_default_lifecycle_rule_notification(self):
         pass
 
     def send_notification(self, subject, body, to_user, copy_users, parameters):
@@ -53,8 +66,14 @@ class CloudPipelineDataSource:
     def load_user_by_name(self, username):
         pass
 
+    def load_user(self, user_id):
+        pass
 
-class RESTApiCloudPipelineDataSource:
+    def _load_default_lifecycle_rule_notification(self):
+        pass
+
+
+class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE = "DATASTORAGE_LIFECYCLE_ACTION"
 
@@ -64,6 +83,9 @@ class RESTApiCloudPipelineDataSource:
 
     def load_available_storages(self):
         return self.api.load_available_storages()
+
+    def load_storage(self, datastorage_id):
+        return self.api.find_datastorage(datastorage_id)
 
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         rules_json = self.api.load_lifecycle_rules_for_storage(datastorage_id)
@@ -138,3 +160,6 @@ class RESTApiCloudPipelineDataSource:
             "prolongDays": int(default_lifecycle_rule_prolong_days["value"]),
             "notifyBeforeDays": int(default_lifecycle_rule_notify_before_days["value"])
         }
+# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
+
+

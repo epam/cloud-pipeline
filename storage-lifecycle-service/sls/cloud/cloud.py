@@ -17,6 +17,7 @@ import datetime
 from time import sleep
 
 import boto3
+from botocore.exceptions import ClientError
 
 from sls.model.cloud_object_model import CloudObject
 
@@ -91,14 +92,18 @@ class S3StorageOperations(StorageOperations):
         }
     }
 
-    def __init__(self, config, cp_data_source, logger):
+    def __init__(self, config, logger):
         self.logger = logger
-        self.cp_data_source = cp_data_source
         self.config = self._verify_config(config)
         self.aws_s3_client = boto3.client("s3")
 
     def prepare_bucket_if_needed(self, bucket):
-        existing_slc = self.aws_s3_client.get_bucket_lifecycle_configuration(Bucket=bucket)
+        try:
+            existing_slc = self.aws_s3_client.get_bucket_lifecycle_configuration(Bucket=bucket)
+        except ClientError as e:
+            self.logger.log("Cannot load BucketLifecycleConfiguration, seems it doesn't exist. {}".format(e))
+            existing_slc = {'Rules': []}
+
         cp_lsc_rules = [rule for rule in existing_slc['Rules'] if rule['ID'].startswith(CP_SLC_RULE_NAME_PREFIX)]
 
         if not cp_lsc_rules:

@@ -198,7 +198,8 @@ class PipelineAPI:
     LOAD_WRITABLE_STORAGES = "/datastorage/mount"
     LOAD_AVAILABLE_STORAGES = "/datastorage/available"
     LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}"
-    LOAD_LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
+    LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
+    PROLONG_LIFECYCLE_RULES_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/prolong?path={path}&days={days}"
     LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution"
     LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution{filter}"
     UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}/status?status={status}"
@@ -759,8 +760,6 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to add hook to pipeline repository. \n {}".format(e))
 
-
-
     def search(self, query, types, page_size=50, offset=0, aggregate=True, highlight=True):
         try:
             data = {
@@ -1031,7 +1030,7 @@ class PipelineAPI:
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         try:
             return self.execute_request(str(self.api_url) +
-                                        self.LOAD_LIFECYCLE_RULES_FOR_STORAGE_URL.format(id=datastorage_id))
+                                        self.LIFECYCLE_RULES_FOR_STORAGE_URL.format(id=datastorage_id))
         except Exception as e:
             raise RuntimeError("Failed to load lifecycle rules by datastorage ID '{}'.",
                                "Error message: {}".format(str(datastorage_id), str(e.message)))
@@ -1047,13 +1046,28 @@ class PipelineAPI:
 
     def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
         try:
-            return self.execute_request(str(self.api_url) +
-                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+            return self.execute_request(str(self.api_url) + self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
                                             id=datastorage_id, rule_id=rule_id), data=json.dumps(execution),
                                         method='post')
         except Exception as e:
             raise RuntimeError("Failed to create lifecycle rule execution for rule ID '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
+
+    def create_lifecycle_rule(self, datastorage_id, rule):
+        try:
+            return self.execute_request(str(self.api_url) + self.LIFECYCLE_RULES_FOR_STORAGE_URL.format(
+                                            id=datastorage_id), data=json.dumps(rule), method='post')
+        except Exception as e:
+            raise RuntimeError("Failed to create lifecycle rule for datastorage ID '{}'.",
+                               "Error message: {}".format(str(datastorage_id), str(e.message)))
+
+    def delete_lifecycle_rule(self, datastorage_id, rule_id):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, rule_id=rule_id), method='delete')
+        except Exception as e:
+            raise RuntimeError("Failed to create lifecycle rule for datastorage ID '{}'.",
+                               "Error message: {}".format(str(datastorage_id), str(e.message)))
 
     def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
 
@@ -1072,7 +1086,7 @@ class PipelineAPI:
 
             return self.execute_request(str(self.api_url) +
                                         self.LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
-                                            id=datastorage_id, rule_id=rule_id, filter=params))
+                                            id=datastorage_id, rule_id=rule_id, filter=params if params else ""))
         except Exception as e:
             raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
@@ -1094,6 +1108,14 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to delete lifecycle rule execution by ID '{}'.",
                                "Error message: {}".format(str(execution_id), str(e.message)))
+
+    def prolong_lifecycle_rule(self, datastorage_id, rule_id, path, days):
+        try:
+            return self.execute_request(str(self.api_url) + self.PROLONG_LIFECYCLE_RULES_URL.format(
+                                            id=datastorage_id, rule_id=rule_id, path=path, days=days), method='put')
+        except Exception as e:
+            raise RuntimeError("Failed to prolong lifecycle rule '{}'.",
+                               "Error message: {}".format(str(rule_id), str(e.message)))
 
     def load_notification_templates(self):
         try:

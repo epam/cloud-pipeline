@@ -5,9 +5,9 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
-          {"key": "data/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
+          {"key": "data/file1.txt", "creationDateShift": 30, "storageClass": "STANDARD"},
+          {"key": "data/file2.txt", "creationDateShift": 31, "storageClass": "STANDARD"},
+          {"key": "data/file3.txt", "creationDateShift": 32, "storageClass": "STANDARD"}
         ]
       }
     ]
@@ -30,8 +30,14 @@
             },
             "transitions": [
               {
-                "transitionAfterDays": 10,
+                "transitionAfterDays": 20,
                 "storageClass": "GLACIER"
+              }
+            ],
+            "prolongations": [
+              {
+                "days": 10,
+                "path": "/data"
               }
             ],
             "notification": {

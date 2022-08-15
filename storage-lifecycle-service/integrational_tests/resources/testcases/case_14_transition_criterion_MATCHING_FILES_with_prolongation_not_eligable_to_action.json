@@ -5,9 +5,12 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
-          {"key": "data/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
+          {"key": "data/file1.txt", "creationDateShift": 5, "storageClass": "STANDARD"},
+          {"key": "data/file2.txt", "creationDateShift": 6, "storageClass": "STANDARD"},
+          {"key": "data/file3.txt", "creationDateShift": 7, "storageClass": "STANDARD"},
+          {"key": "data/file1.pdf", "creationDateShift": 20, "storageClass": "STANDARD"},
+          {"key": "data/file2.pdf", "creationDateShift": 21, "storageClass": "STANDARD"},
+          {"key": "data/file3.pdf", "creationDateShift": 20, "storageClass": "STANDARD"}
         ]
       }
     ]
@@ -26,16 +29,23 @@
             "objectGlob": "*.txt",
             "transitionMethod": "LATEST_FILE",
             "transitionCriterion": {
-              "type": "DEFAULT"
+              "type": "MATCHING_FILES",
+              "value": "*.pdf"
             },
             "transitions": [
               {
-                "transitionAfterDays": 10,
+                "transitionAfterDays": 20,
                 "storageClass": "GLACIER"
               }
             ],
+             "prolongations": [
+              {
+                "days": 10,
+                "path": "/data"
+              }
+            ],
             "notification": {
-              "notifyBeforeDays": 5,
+              "notifyBeforeDays": 10,
               "prolongDays": 10,
               "keepInformedAdmins": false,
               "keepInformedOwner": true,
@@ -46,13 +56,13 @@
           }
         ],
         "executions": [
-          {
-            "ruleId": 1,
-            "path": "/data",
-            "status": "NOTIFICATION_SENT",
-            "storageClass": "GLACIER"
-          }
-        ]
+            {
+              "ruleId": 1,
+              "path": "/data",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
+          ]
       }
     ]
   },
@@ -63,9 +73,12 @@
           "storage": "cp-lifecycle-storage-policy-test-storage",
           "storageProvider": "S3",
           "files": [
-            {"key": "data/file1.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
-            {"key": "data/file2.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}},
-            {"key": "data/file3.txt", "tags": {"DESTINATION_STORAGE_CLASS":  "GLACIER"}}
+            {"key": "data/file1.txt"},
+            {"key": "data/file2.txt"},
+            {"key": "data/file3.txt"},
+            {"key": "data/file1.pdf"},
+            {"key": "data/file2.pdf"},
+            {"key": "data/file3.pdf"}
           ]
         }
       ]
@@ -79,7 +92,7 @@
             {
               "ruleId": 1,
               "path": "/data",
-              "status": "RUNNING",
+              "status": "NOTIFICATION_SENT",
               "storageClass": "GLACIER"
             }
           ]

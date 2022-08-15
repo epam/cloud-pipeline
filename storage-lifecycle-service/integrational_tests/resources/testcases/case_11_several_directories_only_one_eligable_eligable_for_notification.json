@@ -5,9 +5,12 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD"},
-          {"key": "data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD"}
+          {"key": "data1/file1.txt", "creationDateShift": 5, "storageClass": "STANDARD"},
+          {"key": "data1/file2.txt", "creationDateShift": 5, "storageClass": "STANDARD"},
+          {"key": "data1/file3.txt", "creationDateShift": 4, "storageClass": "STANDARD"},
+          {"key": "data2/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data2/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
+          {"key": "data2/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
         ]
       }
     ]
@@ -22,15 +25,15 @@
           {
             "id": 1,
             "datastorageId": 1,
-            "pathGlob": "/data/",
+            "pathGlob": "/data*",
             "objectGlob": "*.txt",
-            "transitionMethod": "EARLIEST_FILE",
+            "transitionMethod": "LATEST_FILE",
             "transitionCriterion": {
               "type": "DEFAULT"
             },
             "transitions": [
               {
-                "transitionAfterDays": 30,
+                "transitionAfterDays": 20,
                 "storageClass": "GLACIER"
               }
             ],
@@ -50,18 +53,34 @@
     ]
   },
   "result": {
-    "platform": {
-      "storages": []
-    },
     "cloud": {
       "storages": [
         {
           "storage": "cp-lifecycle-storage-policy-test-storage",
           "storageProvider": "S3",
           "files": [
-            {"key": "data/file1.txt", "tags": {}},
-            {"key": "data/file2.txt", "tags": {}},
-            {"key": "data/file3.txt", "tags": {}}
+            {"key": "data1/file1.txt"},
+            {"key": "data1/file2.txt"},
+            {"key": "data1/file3.txt"},
+            {"key": "data2/file1.txt"},
+            {"key": "data2/file2.txt"},
+            {"key": "data2/file3.txt"}
+          ]
+        }
+      ]
+    },
+    "platform": {
+      "storages": [
+        {
+          "id": 1,
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data2",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
           ]
         }
       ]

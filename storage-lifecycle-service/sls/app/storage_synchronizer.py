@@ -182,7 +182,8 @@ class StorageLifecycleSynchronizer:
                         continue
                     transition_class = transition.storage_class
                     transition_date = date_of_action
-            result.with_transition(transition_class, file)
+            if transition_class:
+                result.with_transition(transition_class, file)
         return result
 
     def _build_action_items_for_folder(self, path, rule_subject_files, criterion_file, rule):
