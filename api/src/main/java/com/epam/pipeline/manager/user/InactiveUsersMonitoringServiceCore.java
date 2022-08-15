@@ -100,6 +100,7 @@ public class InactiveUsersMonitoringServiceCore {
         final List<PipelineUser> activeNonAdmins = allUsers.stream()
                 .filter(pipelineUser -> !pipelineUser.isBlocked())
                 .filter(pipelineUser -> !userIsAdmin(pipelineUser))
+                .filter(pipelineUser -> !hasRole(pipelineUser, DefaultRoles.ROLE_SERVICE_ACCOUNT.getName()))
                 .collect(Collectors.toList());
 
         log.debug("Fetch from DB {} active non admin users. " +
@@ -137,9 +138,14 @@ public class InactiveUsersMonitoringServiceCore {
     }
 
     private boolean userIsAdmin(final PipelineUser pipelineUser) {
-        return pipelineUser.isAdmin() || ListUtils.emptyIfNull(pipelineUser.getRoles()).stream()
+        return pipelineUser.isAdmin() || hasRole(pipelineUser, DefaultRoles.ROLE_ADMIN.getName());
+    }
+
+    private boolean hasRole(final PipelineUser pipelineUser, final String roleName) {
+        return ListUtils.emptyIfNull(pipelineUser.getRoles())
+                .stream()
                 .map(Role::getName)
-                .anyMatch(role -> DefaultRoles.ROLE_ADMIN.getName().equals(role));
+                .anyMatch(roleName::equals);
     }
 
     private boolean shouldNotify(final PipelineUser user, final LocalDateTime now, final Integer userBlockedDays,
