@@ -57,28 +57,33 @@ class IntegrationTestsRunner(unittest.TestCase):
 
     def assert_platform_state(self, actual, expected):
         self.assertEqual(expected is None, actual is None)
+
         if expected:
             print("Comparing platform states.")
-            self.assertEqual(expected.executions is None, actual.executions is None)
-            if expected.executions:
-                for actual_execution in actual.executions:
-                    corresponding_expected = next(
-                        filter(
-                            lambda e: e.path == actual_execution.path and e.storage_class == actual_execution.storage_class and e.status == actual_execution.status,
-                            expected.executions),
-                        None
-                    )
-                    self.assertIsNotNone(corresponding_expected)
+            self.assertEqual(len(expected.storages), len(actual.storages))
+            expected_storage_states_by_name = {storage.storage: storage for storage in expected.storages}
+            for actual_storage in actual.storages:
+                expected_storage = expected_storage_states_by_name.get(actual_storage.storage, None)
+                self.assertEqual(expected_storage.executions is None, actual_storage.executions is None)
+                if expected_storage.executions:
+                    for actual_execution in actual_storage.executions:
+                        corresponding_expected = next(
+                            filter(
+                                lambda e: e.path == actual_execution.path and e.storage_class == actual_execution.storage_class and e.status == actual_execution.status,
+                                expected_storage.executions),
+                            None
+                        )
+                        self.assertIsNotNone(corresponding_expected)
 
-            if expected.notifications:
-                for actual_notification in actual.notifications:
-                    corresponding_expected = next(
-                        filter(
-                            lambda n: n["template_parameters"] == actual_notification["template_parameters"],
-                            expected.executions),
-                        None
-                    )
-                    self.assertIsNotNone(corresponding_expected)
+                if expected_storage.notifications:
+                    for actual_notification in actual_storage.notifications:
+                        corresponding_expected = next(
+                            filter(
+                                lambda n: n["template_parameters"] == actual_notification["template_parameters"],
+                                expected_storage.executions),
+                            None
+                        )
+                        self.assertIsNotNone(corresponding_expected)
 
 
 if __name__ == '__main__':

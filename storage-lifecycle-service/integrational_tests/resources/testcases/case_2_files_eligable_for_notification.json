@@ -1,46 +1,66 @@
 {
-  "cloudProvider": "AWS",
-  "storages": [
-    {
-      "storage": "cp-lifecycle-storage-policy-test-storage-1",
-      "rule": {
+  "cloud": {
+    "storages": [
+      {
+        "cloudProvider": "AWS",
+        "storage": "cp-lifecycle-storage-policy-test-storage-1",
+        "files": [
+          {"key": "/data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "/data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD"},
+          {"key": "/data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD"}
+        ]
+      }
+    ]
+  },
+  "platform": {
+    "storages": [
+      {
         "id": 1,
-        "datastorageId": 1,
-        "pathGlob": "/data/",
-        "objectGlob": "*.txt",
-        "transitionMethod": "LATEST_FILE",
-        "transitions": [
+        "storage": "cp-lifecycle-storage-policy-test-storage",
+        "rules": [
           {
-            "transitionAfterDays": 20,
-            "storageClass": "GLACIER"
+            "id": 1,
+            "datastorageId": 1,
+            "pathGlob": "/data/",
+            "objectGlob": "*.txt",
+            "transitionMethod": "LATEST_FILE",
+            "transitions": [
+              {
+                "transitionAfterDays": 20,
+                "storageClass": "GLACIER"
+              }
+            ],
+            "notification": {
+              "notifyBeforeDays": 10,
+              "prolongDays": 10,
+              "keepInformedAdmins": false,
+              "keepInformedOwner": true,
+              "enabled": true,
+              "subject": "Lifecycle rule is about to be applied!",
+              "body": ""
+            }
           }
         ],
-        "notification": {
-          "notifyBeforeDays": 10,
-          "prolongDays": 10,
-          "keepInformedAdmins": false,
-          "keepInformedOwner": true,
-          "enabled": true,
-          "subject": "Lifecycle rule is about to be applied!",
-          "body": ""
-        }
-      },
-      "files": [
-        {"key": "/data/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-        {"key": "/data/file2.txt", "creationDateShift": 9, "storageClass": "STANDARD"},
-        {"key": "/data/file3.txt", "creationDateShift": 8, "storageClass": "STANDARD"}
-      ]
-    }
-  ],
+        "executions": [],
+        "notifications": []
+      }
+    ]
+  },
   "result": {
     "platform": {
-      "notifications": [],
-      "executions": [
+      "storages": [
         {
-          "ruleId": 1,
-          "path": "/data/",
-          "status": "NOTIFICATION_SENT",
-          "storageClass": "GLACIER"
+          "id": 1,
+          "storage": "cp-lifecycle-storage-policy-test-storage",
+          "notifications": [],
+          "executions": [
+            {
+              "ruleId": 1,
+              "path": "/data/",
+              "status": "NOTIFICATION_SENT",
+              "storageClass": "GLACIER"
+            }
+          ]
         }
       ]
     }

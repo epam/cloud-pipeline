@@ -12,7 +12,7 @@ class CloudTestCasePreparator(TestCaseProcessor):
         }
 
     def process(self, testcase):
-        return self.cloud_preparators[testcase.cloud].process(testcase)
+        return self.cloud_preparators[testcase.cloud_provider].process(testcase)
 
 
 class AWSCloudTestCasePreparator(TestCaseProcessor):
