@@ -1,7 +1,7 @@
 # Block test Users after tests
 
 Test 
-- blocks test users using api methods
+- blocks test users using API methods
 - verifies that test users are blocked after finish tests
 
 **Prerequisites**:

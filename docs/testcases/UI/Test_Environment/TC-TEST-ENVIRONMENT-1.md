@@ -2,7 +2,7 @@
 
 Test 
 - verifies that test users are blocked before start tests
-- checks user api methods
+- checks user API methods
 
 **Prerequisites**:
 - Admin user
