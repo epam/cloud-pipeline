@@ -102,7 +102,10 @@ class StorageLifecycleSynchronizer:
                     files = self.cloud_providers[storage.storage_type].list_objects_by_prefix(storage.path, path_prefix)
                     file_listing_cache[path_prefix] = files
 
-                subject_folders = self._identify_subject_folders(files, rule.path_glob)
+                running_executions = set(self.cp_data_source.load_lifecycle_rule_executions(
+                    rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
+                subject_folders = set(self._identify_subject_folders(files, rule.path_glob))
+                subject_folders.update(e.path for e in running_executions)
                 self.logger.log(
                     "Storage: {}. Rule: {}. Subject folders are: {}".format(storage.id, rule.rule_id, subject_folders))
 
@@ -185,17 +188,11 @@ class StorageLifecycleSynchronizer:
     def _build_action_items_for_folder(self, path, rule_subject_files, criterion_file, rule):
         result = StorageLifecycleRuleActionItems().with_folder(path).with_rule_id(rule.rule_id)
 
-        if not criterion_file:
-            return result
-
-        effective_transitions = self._define_effective_transitions(
-            self._fetch_prolongation_for_path_or_default(path, rule), rule.transitions)
-
-        rule_executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(
-            rule.datastorage_id, rule.rule_id, path)
+        rule_executions = self.cp_data_source.load_lifecycle_rule_executions(
+            rule.datastorage_id, rule.rule_id, path=path)
 
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Found {} executions.".format(
-                rule.datastorage_id, rule.rule_id, path, len(rule_executions)))
+            rule.datastorage_id, rule.rule_id, path, len(rule_executions)))
 
         for execution_for_transition in rule_executions:
             updated_execution = self._check_rule_execution_progress(
@@ -205,6 +202,12 @@ class StorageLifecycleSynchronizer:
                 execution_for_transition.status = updated_execution.status
                 execution_for_transition.updated = updated_execution.updated
                 result.with_execution(updated_execution)
+
+        if not criterion_file:
+            return result
+
+        effective_transitions = self._define_effective_transitions(
+            self._fetch_prolongation_for_path_or_default(path, rule), rule.transitions)
 
         today = datetime.datetime.now(datetime.timezone.utc).date()
 
@@ -327,7 +330,7 @@ class StorageLifecycleSynchronizer:
                         .format(rule.datastorage_id, rule.rule_id, action_items.folder))
 
     def _create_or_update_execution(self, storage_id, rule, storage_class, path, status):
-        executions = self.cp_data_source.load_lifecycle_rule_executions_by_path(storage_id, rule.rule_id, path)
+        executions = self.cp_data_source.load_lifecycle_rule_executions(storage_id, rule.rule_id, path=path)
         execution = next(filter(lambda e: e.storage_class == storage_class, executions), None)
 
         if execution:

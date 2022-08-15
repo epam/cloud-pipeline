@@ -16,13 +16,13 @@
 
 package com.epam.pipeline.repository.datastorage.lifecycle;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
 import org.springframework.data.repository.CrudRepository;
 
-public interface DataStorageLifecycleRuleExecutionRepository
-        extends CrudRepository<StorageLifecycleRuleExecutionEntity, Long>,
-        DataStorageLifecycleRuleRepositoryCustomQueries {
+public interface DataStorageLifecycleRuleRepositoryCustomQueries {
 
-    Iterable<StorageLifecycleRuleExecutionEntity> findByRuleId(Long ruleId);
-    void deleteByRuleId(Long ruleId);
+    Iterable<StorageLifecycleRuleExecutionEntity> findByRuleIdPathAndStatus(
+            Long ruleId, String path, StorageLifecycleRuleExecutionStatus status);
+
 }

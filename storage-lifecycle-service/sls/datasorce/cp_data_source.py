@@ -35,9 +35,6 @@ class CloudPipelineDataSource:
     def load_lifecycle_rule_executions(self, datastorage_id, rule_id):
         pass
 
-    def load_lifecycle_rule_executions_by_path(self, datastorage_id, rule_id, path):
-        pass
-
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
         pass
 
@@ -81,12 +78,8 @@ class RESTApiCloudPipelineDataSource:
             self.api.create_lifecycle_rule_execution(datastorage_id, rule_id, execution)
         )
 
-    def load_lifecycle_rule_executions(self, datastorage_id, rule_id):
-        executions_json = self.api.load_lifecycle_rule_executions(datastorage_id, rule_id)
-        return [self.parser.parse_execution(execution) for execution in (executions_json if executions_json else [])]
-
-    def load_lifecycle_rule_executions_by_path(self, datastorage_id, rule_id, path):
-        executions_json = self.api.load_lifecycle_rule_executions_by_path(datastorage_id, rule_id, path)
+    def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
+        executions_json = self.api.load_lifecycle_rule_executions(datastorage_id, rule_id, path, status)
         return [self.parser.parse_execution(execution) for execution in (executions_json if executions_json else [])]
 
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):

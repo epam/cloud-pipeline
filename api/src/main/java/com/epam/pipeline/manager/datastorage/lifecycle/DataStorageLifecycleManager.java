@@ -208,20 +208,14 @@ public class DataStorageLifecycleManager {
     }
 
     public List<StorageLifecycleRuleExecution> listStorageLifecycleRuleExecutionsForRuleAndPath(
-            final Long ruleId, final String path) {
+            final Long ruleId, final String path, final StorageLifecycleRuleExecutionStatus status) {
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
-        if (StringUtils.isEmpty(path)) {
-            return StreamSupport.stream(dataStorageLifecycleRuleExecutionRepository
-                            .findByRuleId(lifecycleRuleEntity.getId()).spliterator(), false
-                    ).map(lifecycleEntityMapper::toDto)
-                    .collect(Collectors.toList());
-        } else {
-            return StreamSupport.stream(
-                            dataStorageLifecycleRuleExecutionRepository
-                                    .findByRuleIdAndPath(lifecycleRuleEntity.getId(), path).spliterator(), false
-                    ).map(lifecycleEntityMapper::toDto)
-                    .collect(Collectors.toList());
-        }
+        return StreamSupport.stream(
+                        dataStorageLifecycleRuleExecutionRepository
+                                .findByRuleIdPathAndStatus(lifecycleRuleEntity.getId(), path, status).spliterator(),
+                        false
+                ).map(lifecycleEntityMapper::toDto)
+                .collect(Collectors.toList());
     }
 
     private Long getEffectiveDaysToProlong(final Long daysToProlong, final StorageLifecycleRuleEntity ruleEntity) {

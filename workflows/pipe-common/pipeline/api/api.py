@@ -200,7 +200,7 @@ class PipelineAPI:
     LOAD_LIFECYCLE_RULE_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}"
     LOAD_LIFECYCLE_RULES_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule"
     LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution"
-    LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_AND_PATH_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution?path={path}"
+    LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/{rule_id}/execution{filter}"
     UPDATE_STATUS_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}/status?status={status}"
     DELETE_LIFECYCLE_RULES_EXECUTION_URL = "/datastorage/{id}/lifecycle/rule/execution/{execution_id}"
     LOAD_AVAILABLE_STORAGES_WITH_MOUNTS = "/datastorage/availableWithMounts"
@@ -1055,23 +1055,27 @@ class PipelineAPI:
             raise RuntimeError("Failed to create lifecycle rule execution for rule ID '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
 
-    def load_lifecycle_rule_executions(self, datastorage_id, rule_id):
+    def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
+
+        def _format_param(param_str, name, value):
+            if param_str:
+                return param_str + "&{}={}".format(name, value)
+            else:
+                return "?{}={}".format(name, value)
+
         try:
+            params = None
+            if path:
+                params = _format_param(params, "path", path)
+            if status:
+                params = _format_param(params, "status", status)
+
             return self.execute_request(str(self.api_url) +
-                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
-                                            id=datastorage_id, rule_id=rule_id))
+                                        self.LOAD_LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_URL.format(
+                                            id=datastorage_id, rule_id=rule_id, filter=params))
         except Exception as e:
             raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}'.",
                                "Error message: {}".format(str(rule_id), str(e.message)))
-
-    def load_lifecycle_rule_executions_by_path(self, datastorage_id, rule_id, path):
-        try:
-            return self.execute_request(str(self.api_url) +
-                                        self.LIFECYCLE_RULES_EXECUTION_FOR_STORAGE_AND_PATH_URL.format(
-                                            id=datastorage_id, rule_id=rule_id, path=path))
-        except Exception as e:
-            raise RuntimeError("Failed to load lifecycle rule executions for rule ID '{}' and path {}.",
-                               "Error message: {}".format(str(rule_id), path, str(e.message)))
 
     def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
         try:

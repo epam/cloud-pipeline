@@ -206,8 +206,12 @@ public class DataStorageLifecycleController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<StorageLifecycleRuleExecution>> listStorageLifecyclePolicyRuleExecutions(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = RULE_ID) final Long ruleId,
-            @RequestParam(value = "path", required = false) final String path) {
-        return Result.success(dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(ruleId, path));
+            @RequestParam(value = "path", required = false) final String path,
+            @RequestParam(value = "status", required = false) final StorageLifecycleRuleExecutionStatus status) {
+        return Result.success(
+                dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(
+                        datastorageId, ruleId, path, status));
     }
 }
