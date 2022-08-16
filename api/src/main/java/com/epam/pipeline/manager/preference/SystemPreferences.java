@@ -230,6 +230,12 @@ public class SystemPreferences {
     public static final StringPreference STORAGE_CONVERT_SOURCE_ACTION =
             new StringPreference("storage.convert.source.action", DataStorageConvertRequestAction.LEAVE.name(),
                     DATA_STORAGE_GROUP, (v, ignored) -> DataStorageConvertRequestAction.isValid(v));
+    public static final LongPreference STORAGE_LIFECYCLE_PROLONG_DAYS =
+            new LongPreference("storage.lifecycle.prolong.days", 7L, DATA_STORAGE_GROUP,
+                    isGreaterThan(0), true);
+    public static final LongPreference STORAGE_LIFECYCLE_NOTIFY_BEFORE_DAYS =
+            new LongPreference("storage.lifecycle.notify.before.days", 7L, DATA_STORAGE_GROUP,
+                    isGreaterThan(0), true);
 
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
