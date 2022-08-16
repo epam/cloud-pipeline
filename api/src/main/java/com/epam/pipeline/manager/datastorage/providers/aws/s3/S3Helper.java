@@ -104,6 +104,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -137,6 +138,9 @@ public class S3Helper {
     private static final CannedAccessControlList DEFAULT_CANNED_ACL = CannedAccessControlList.BucketOwnerFullControl;
     private static final String FOLDER_GLOB_SUFFIX = "/**";
     private static final String EMPTY_STRING = "";
+    public static final int MAX_S3_TAGS_NUMBER = 10;
+    public static final String HTTP_REQUEST_JOIN_SIGN = "&";
+    public static final String TAG_FORMAT_REGEXP = ".+=.+";
 
     private final MessageHelper messageHelper;
 
@@ -410,52 +414,90 @@ public class S3Helper {
         return generatePresignedUrl(client, expires, request);
     }
 
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(String bucket, String path, String owner) {
-        AmazonS3 client = getDefaultS3Client();
-        Date expires = new Date((new Date()).getTime() + URL_EXPIRATION);
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, path)
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final String bucket, final String path,
+                                                                       final String owner,
+                                                                       final List<String> objectTags) {
+        final AmazonS3 client = getDefaultS3Client();
+        final Date expires = new Date((new Date()).getTime() + URL_EXPIRATION);
+        final GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucket, path)
                 .withMethod(HttpMethod.PUT)
                 .withExpiration(expires);
-        String ownerTag = buildOwnerTag(owner);
-        request.putCustomRequestHeader(Headers.S3_TAGGING, ownerTag);
+        final String tags = buildTagsHeaderString(objectTags, buildOwnerTag(owner));
+        request.putCustomRequestHeader(Headers.S3_TAGGING, tags);
         request.putCustomRequestHeader(Headers.S3_CANNED_ACL, DEFAULT_CANNED_ACL.toString());
-        return generatePresignedUrl(client, expires, ownerTag, DEFAULT_CANNED_ACL.toString(), request);
+        return generatePresignedUrl(client, expires, tags, DEFAULT_CANNED_ACL.toString(), request);
     }
 
-    public DataStorageFile createFile(String bucket, String path, byte[] contents, String owner)
-            throws DataStorageException {
+    private List<String> verifyS3Tags(List<String> objectTags, String[] additionalTags) {
+        final List<String> effectiveObjectTags = ListUtils.emptyIfNull(objectTags);
+        effectiveObjectTags.addAll(Arrays.asList(additionalTags));
+        if (effectiveObjectTags.size() > MAX_S3_TAGS_NUMBER) {
+            LOGGER.warn(
+                    String.format("Tag list size is: %d, but only %d is allowed, only first %d tags will be applied",
+                            effectiveObjectTags.size(), MAX_S3_TAGS_NUMBER, MAX_S3_TAGS_NUMBER)
+            );
+        }
+        return effectiveObjectTags.stream()
+                .filter(tag -> tag.matches(TAG_FORMAT_REGEXP))
+                .filter(ts -> {
+                    final String[] tagParts = ts.split("=");
+                    boolean isvalidTag = tagParts[0].length() < 128 && tagParts[1].length() < 256;
+                    if (!isvalidTag) {
+                        LOGGER.warn("Tag %s for file %s is not valid, please check it format: key=value, " +
+                                "key.length < 128 and value.length < 256");
+                    }
+                    return isvalidTag;
+                })
+                .limit(MAX_S3_TAGS_NUMBER).collect(Collectors.toList());
+    }
+
+    private String buildTagsHeaderString(final List<String> objectTags, final String... additionalTags) {
+        final List<String> effectiveObjectTags = verifyS3Tags(objectTags, additionalTags);
+        return String.join(HTTP_REQUEST_JOIN_SIGN, effectiveObjectTags);
+    }
+
+    private List<Tag> buildTagsSet(final List<String> objectTags, final String... additionalTags) {
+        final List<String> effectiveObjectTags = verifyS3Tags(objectTags, additionalTags);
+        return effectiveObjectTags.stream()
+                .map(ts -> {
+                    String[] tagParts = ts.split("=");
+                    return new Tag(tagParts[0], tagParts[1]);
+                }).collect(Collectors.toList());
+    }
+
+    public DataStorageFile createFile(String bucket, String path, byte[] contents, String owner,
+                                      List<String> objectTags) throws DataStorageException {
         if (StringUtils.isNullOrEmpty(path)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
         AmazonS3 client = getDefaultS3Client();
         try {
             ByteArrayInputStream byteInputStream = new ByteArrayInputStream(contents);
-            return putFileToBucket(bucket, path, client, byteInputStream, owner);
+            return putFileToBucket(bucket, path, client, byteInputStream, owner, objectTags);
         } catch (SdkClientException e) {
             throw new DataStorageException(e.getMessage(), e.getCause());
         }
     }
 
-    public DataStorageFile createFile(String bucket, String path, InputStream dataStream, String owner)
-        throws DataStorageException {
+    public DataStorageFile createFile(String bucket, String path, InputStream dataStream, String owner,
+                                      List<String> objectTags) throws DataStorageException {
         if (StringUtils.isNullOrEmpty(path)) {
             throw new DataStorageException(PATH_SHOULD_NOT_BE_EMPTY_MESSAGE);
         }
         AmazonS3 client = getDefaultS3Client();
         try {
-            return putFileToBucket(bucket, path, client, dataStream, owner);
+            return putFileToBucket(bucket, path, client, dataStream, owner, objectTags);
         } catch (SdkClientException e) {
             throw new DataStorageException(e.getMessage(), e.getCause());
         }
     }
 
     private DataStorageFile putFileToBucket(String bucket, String path, AmazonS3 client,
-                                            InputStream dataStream, String owner) {
+                                            InputStream dataStream, String owner, List<String> objectTags) {
         ObjectMetadata objectMetadata = new ObjectMetadata();
         objectMetadata.setLastModified(new Date());
         PutObjectRequest putObjectRequest = new PutObjectRequest(bucket, path, dataStream, objectMetadata);
-        List<Tag> tags = Collections.singletonList(new Tag(ProviderUtils.OWNER_TAG_KEY, owner));
-        putObjectRequest.withTagging(new ObjectTagging(tags));
+        putObjectRequest.withTagging(new ObjectTagging(buildTagsSet(objectTags, buildOwnerTag(owner))));
         putObjectRequest.withCannedAcl(DEFAULT_CANNED_ACL);
         client.putObject(putObjectRequest);
         return getFile(client, bucket, path);

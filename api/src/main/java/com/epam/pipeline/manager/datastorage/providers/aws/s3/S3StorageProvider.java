@@ -97,7 +97,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         if (StringUtils.isNotBlank(prefix)) {
             try {
                 s3Helper.createFile(datastoragePath.getRoot(), ProviderUtils.withTrailingDelimiter(prefix),
-                        new byte[]{}, authManager.getAuthorizedUser());
+                        new byte[]{}, authManager.getAuthorizedUser(), Collections.emptyList());
             } catch (DataStorageException e) {
                 log.debug("Failed to create file {}.", prefix);
                 log.debug(e.getMessage(), e);
@@ -213,11 +213,14 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(S3bucketDataStorage dataStorage, String path) {
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final S3bucketDataStorage dataStorage,
+                                                                       final String path,
+                                                                       final List<String> objectTags) {
         validateFilePathMatchingMasks(dataStorage, path);
         final TemporaryCredentials credentials = getStsCredentials(dataStorage, null, true);
         return getS3Helper(credentials, getAwsRegion(dataStorage)).generateDataStorageItemUploadUrl(
-                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), authManager.getAuthorizedUser());
+                dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
+                authManager.getAuthorizedUser(), objectTags);
     }
 
     @Override
@@ -228,21 +231,23 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
         return generateDownloadURL(dataStorage, path, null, null);
     }
 
-    @Override public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path,
-            byte[] contents) {
+    @Override public DataStorageFile createFile(final S3bucketDataStorage dataStorage, final String path,
+                                                final byte[] contents, final List<String> objectTags) {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFile(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path), contents,
-                authManager.getAuthorizedUser());
+                authManager.getAuthorizedUser(), objectTags
+        );
     }
 
     @Override
-    public DataStorageFile createFile(S3bucketDataStorage dataStorage, String path, InputStream dataStream)
+    public DataStorageFile createFile(final S3bucketDataStorage dataStorage, final String path,
+                                      final InputStream dataStream, final List<String> objectTags)
         throws DataStorageException {
         validateFilePathMatchingMasks(dataStorage, path);
         return getS3Helper(dataStorage).createFile(
                 dataStorage.getRoot(), ProviderUtils.buildPath(dataStorage, path),
-                dataStream, authManager.getAuthorizedUser());
+                dataStream, authManager.getAuthorizedUser(), objectTags);
     }
 
     @Override public DataStorageFolder createFolder(S3bucketDataStorage dataStorage, String path) {
@@ -328,7 +333,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             try {
                 s3Helper.createFile(datastoragePath.getRoot(),
                     ProviderUtils.withTrailingDelimiter(datastoragePath.getPath()),
-                    new byte[]{}, authManager.getAuthorizedUser());
+                    new byte[]{}, authManager.getAuthorizedUser(), Collections.emptyList());
             } catch (DataStorageException e) {
                 log.debug("Failed to create file {}.", datastoragePath.getPath());
                 log.debug(e.getMessage(), e);

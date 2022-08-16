@@ -119,7 +119,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final AzureBlobStorage dataStorage,
-                                                                       final String path) {
+                                                                       final String path, List<String> objectTags) {
         final BlobSASPermission permission = new BlobSASPermission()
                 .withRead(true)
                 .withAdd(true)
@@ -172,7 +172,8 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     }
 
     @Override
-    public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents) {
+    public DataStorageFile createFile(final AzureBlobStorage dataStorage, final String path, final byte[] contents,
+                                      List<String> objectTags) {
         return getAzureStorageHelper(dataStorage)
                 .createFile(dataStorage, path, contents, authManager.getAuthorizedUser());
     }
@@ -180,7 +181,7 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     @Override
     public DataStorageFile createFile(final AzureBlobStorage dataStorage,
                                       final String path,
-                                      final InputStream dataStream) {
+                                      final InputStream dataStream, List<String> objectTags) {
         return getAzureStorageHelper(dataStorage)
                 .createFile(dataStorage, path, dataStream, authManager.getAuthorizedUser());
     }

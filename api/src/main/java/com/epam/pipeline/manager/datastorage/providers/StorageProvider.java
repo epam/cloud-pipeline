@@ -63,14 +63,14 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     DataStorageDownloadFileUrl generateDownloadURL(T dataStorage, String path, String version,
                                                    ContentDisposition contentDisposition);
 
-    DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(T dataStorage, String path);
+    DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(T dataStorage, String path, List<String> objectTags);
 
     DataStorageDownloadFileUrl generateUrl(T dataStorage, String path, List<String> permissions, Duration duration);
 
-    DataStorageFile createFile(T dataStorage, String path, byte[] contents)
+    DataStorageFile createFile(T dataStorage, String path, byte[] contents, List<String> objectTags)
             throws DataStorageException;
 
-    DataStorageFile createFile(T dataStorage, String path, InputStream dataStream)
+    DataStorageFile createFile(T dataStorage, String path, InputStream dataStream, List<String> objectTags)
         throws DataStorageException;
 
     DataStorageFolder createFolder(T dataStorage, String path)

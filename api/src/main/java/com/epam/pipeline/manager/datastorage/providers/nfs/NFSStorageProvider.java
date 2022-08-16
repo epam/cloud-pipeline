@@ -277,7 +277,8 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(NFSDataStorage dataStorage, String path) {
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(NFSDataStorage dataStorage, String path,
+                                                                       List<String> objectTags) {
         throw new UnsupportedOperationException();
     }
 
@@ -290,17 +291,18 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public DataStorageFile createFile(NFSDataStorage dataStorage, String path, byte[] contents)
+    public DataStorageFile createFile(NFSDataStorage dataStorage, String path, byte[] contents, List<String> objectTags)
         throws DataStorageException {
         try (ByteArrayInputStream dataStream = new ByteArrayInputStream(contents)) {
-            return createFile(dataStorage, path, dataStream);
+            return createFile(dataStorage, path, dataStream, objectTags);
         } catch (IOException e) {
             throw new DataStorageException(e);
         }
     }
 
     @Override
-    public DataStorageFile createFile(NFSDataStorage dataStorage, String path, InputStream dataStream)
+    public DataStorageFile createFile(NFSDataStorage dataStorage, String path, InputStream dataStream,
+                                      List<String> objectTags)
         throws DataStorageException {
         File dataStorageDir = nfsStorageMounter.mount(dataStorage);
         File file = new File(dataStorageDir, path);

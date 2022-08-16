@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -243,7 +244,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         dataStorage.setFileShareMountId(awsFileShareMount.getId());
         nfsProvider.createStorage(dataStorage);
         String testFileName = "testFile.txt";
-        nfsProvider.createFile(dataStorage, testFileName, "testContent".getBytes());
+        nfsProvider.createFile(dataStorage, testFileName, "testContent".getBytes(), Collections.emptyList());
 
         File dataStorageRoot = new File(testMountPoint, TEST_PATH + "/test");
         File testFile = new File(dataStorageRoot, testFileName);
@@ -293,7 +294,8 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         final Path rootPath = Paths.get(testMountPoint.toString(), TEST_PATH,  "test");
         final Path oldPath = rootPath.resolve("oldFilePath");
         final Path newPath = rootPath.resolve("newFilePath");
-        nfsProvider.createFile(storage, oldPath.getFileName().toString(), CommonCreatorConstants.TEST_BYTES);
+        nfsProvider.createFile(storage, oldPath.getFileName().toString(), CommonCreatorConstants.TEST_BYTES,
+                Collections.emptyList());
 
         nfsProvider.copyFile(storage, oldPath.getFileName().toString(), newPath.getFileName().toString());
 
@@ -345,7 +347,7 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         String testFileName = "testFile.txt";
         String testFolderName = "testFolder";
         String testFolder2Name = "testFolder2";
-        nfsProvider.createFile(dataStorage, testFileName, "testContent".getBytes());
+        nfsProvider.createFile(dataStorage, testFileName, "testContent".getBytes(), Collections.emptyList());
         nfsProvider.createFolder(dataStorage, testFolderName);
         nfsProvider.createFolder(dataStorage, testFolder2Name);
 
@@ -388,14 +390,15 @@ public class NFSStorageProviderTest extends AbstractSpringTest {
         byte[] testContent = "testContent".getBytes();
         byte[] newContent = "new content".getBytes();
 
-        DataStorageFile file = nfsProvider.createFile(dataStorage, testFileName, testContent);
+        DataStorageFile file = nfsProvider.createFile(dataStorage, testFileName, testContent, Collections.emptyList());
 
         Assert.assertArrayEquals(
                 testContent,
                 nfsProvider.getFile(dataStorage, testFileName, file.getVersion(), Long.MAX_VALUE).getContent()
         );
 
-        DataStorageFile updatedFile = nfsProvider.createFile(dataStorage, testFileName, newContent);
+        DataStorageFile updatedFile = nfsProvider.createFile(dataStorage, testFileName, newContent,
+                Collections.emptyList());
 
         Assert.assertArrayEquals(
                 newContent,

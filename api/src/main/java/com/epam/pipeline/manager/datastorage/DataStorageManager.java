@@ -561,18 +561,19 @@ public class DataStorageManager implements SecuredEntityManager {
         return hours > 0 ? Duration.ofHours(hours) : Duration.ZERO;
     }
 
-    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(Long id, String path) {
+    public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final Long id, final String path) {
         AbstractDataStorage dataStorage = load(id);
-        return storageProviderManager.generateDataStorageItemUploadUrl(dataStorage, path);
+        return storageProviderManager.generateDataStorageItemUploadUrl(dataStorage, path, matchObjectTagsForItem(path));
     }
 
-    public List<DataStorageDownloadFileUrl> generateDataStorageItemUploadUrl(Long id, List<String> paths) {
+    public List<DataStorageDownloadFileUrl> generateDataStorageItemUploadUrl(final Long id, final List<String> paths) {
         AbstractDataStorage dataStorage = load(id);
         List<DataStorageDownloadFileUrl> urls = new ArrayList<>();
         if (paths == null) {
             return urls;
         }
-        paths.forEach(path -> urls.add(storageProviderManager.generateDataStorageItemUploadUrl(dataStorage, path)));
+        paths.forEach(path -> urls.add(storageProviderManager.generateDataStorageItemUploadUrl(dataStorage, path,
+                matchObjectTagsForItem(path))));
         return urls;
     }
 
@@ -1114,7 +1115,8 @@ public class DataStorageManager implements SecuredEntityManager {
     private DataStorageFile createDataStorageFile(final AbstractDataStorage storage,
                                                   final String path,
                                                   final byte[] contents) throws DataStorageException {
-        final DataStorageFile file = storageProviderManager.createFile(storage, path, contents);
+        final DataStorageFile file = storageProviderManager.createFile(storage, path, contents,
+                matchObjectTagsForItem(path));
         tagProviderManager.createFileTags(storage, path, file.getVersion());
         return file;
     }
@@ -1122,7 +1124,8 @@ public class DataStorageManager implements SecuredEntityManager {
     private DataStorageFile createDataStorageFile(final AbstractDataStorage storage, 
                                                   final String path, 
                                                   final InputStream contentStream) {
-        final DataStorageFile file = storageProviderManager.createFile(storage, path, contentStream);
+        final DataStorageFile file = storageProviderManager.createFile(storage, path, contentStream,
+                matchObjectTagsForItem(path));
         tagProviderManager.createFileTags(storage, path, file.getVersion());
         return file;
     }
@@ -1167,6 +1170,14 @@ public class DataStorageManager implements SecuredEntityManager {
         Assert.isTrue(storageProviderManager.findFile(dataStorage, path, version).isPresent(),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_PATH_NOT_FOUND,
                         path, dataStorage.getRoot()));
+    }
+
+    private List<String> matchObjectTagsForItem(final String path) {
+        final Map<String, List<String>> objectTagsSchema = MapUtils.emptyIfNull(
+                preferenceManager.getPreference(SystemPreferences.STORAGE_OBJECT_TAGS_SCHEMA));
+        final String filename = Paths.get(path).getFileName().toString();
+        return objectTagsSchema.entrySet().stream().filter(e -> filename.matches(e.getKey()))
+                .flatMap(e -> e.getValue().stream()).collect(Collectors.toList());
     }
 
     private void assertToolsToMount(final DataStorageVO dataStorageVO) {

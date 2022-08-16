@@ -269,6 +269,14 @@ public class SystemPreferences {
             DATA_STORAGE_GROUP,
             PreferenceValidators.isValidGraceConfiguration);
 
+    public static final ObjectPreference<Map<String, List<String>>> STORAGE_OBJECT_TAGS_SCHEMA =
+            new ObjectPreference<>(
+                    "storage.object.tags.schema",
+                    Collections.emptyMap(),
+                    new TypeReference<Map<String, List<String>>>() {},
+                    DATA_STORAGE_GROUP,
+                    isNullOrValidJson(new TypeReference<Map<String, List<String>>>() {}));
+
     // GIT_GROUP
     public static final StringPreference GIT_HOST = new StringPreference("git.host", null, GIT_GROUP, null);
     public static final StringPreference GIT_READER_HOST =

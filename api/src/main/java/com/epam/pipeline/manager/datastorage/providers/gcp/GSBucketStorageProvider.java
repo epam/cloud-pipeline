@@ -115,7 +115,7 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
 
     @Override
     public DataStorageDownloadFileUrl generateDataStorageItemUploadUrl(final GSBucketStorage dataStorage,
-                                                                       final String path) {
+                                                                       final String path, List<String> objectTags) {
         return null;
     }
 
@@ -128,14 +128,15 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
     }
 
     @Override
-    public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path, final byte[] contents)
-            throws DataStorageException {
+    public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path, final byte[] contents,
+                                      List<String> objectTags) throws DataStorageException {
         return getHelper(dataStorage).createFile(dataStorage, path, contents, authManager.getAuthorizedUser());
     }
 
     @Override
     public DataStorageFile createFile(final GSBucketStorage dataStorage, final String path,
-                                      final InputStream dataStream) throws DataStorageException {
+                                      final InputStream dataStream, List<String> objectTags)
+            throws DataStorageException {
         return getHelper(dataStorage).createFile(dataStorage, path, dataStream, authManager.getAuthorizedUser());
     }
 

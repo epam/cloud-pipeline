@@ -21,6 +21,7 @@ import com.epam.pipeline.controller.vo.DataStorageVO;
 import com.epam.pipeline.dao.docker.DockerRegistryDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
 import com.epam.pipeline.entity.datastorage.DataStorageType;
 import com.epam.pipeline.entity.datastorage.NFSStorageMountStatus;
 import com.epam.pipeline.entity.datastorage.StoragePolicy;
@@ -57,7 +58,10 @@ import org.apache.commons.lang3.SystemUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -155,6 +159,9 @@ public class DataStorageManagerTest extends AbstractSpringTest {
     @Autowired
     private MetadataManager metadataManager;
 
+    @Captor
+    ArgumentCaptor<List<String>> tagsCaptor;
+
     @Before
     public void setUp() {
         doReturn(new MockS3Helper()).when(storageProviderManager).getS3Helper(any(S3bucketDataStorage.class));
@@ -167,6 +174,50 @@ public class DataStorageManagerTest extends AbstractSpringTest {
         );
         preferenceManager.update(Collections.singletonList(systemIndependentBlackList));
         cloudRegionDao.create(ObjectCreatorUtils.getDefaultAwsRegion());
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.REQUIRES_NEW, rollbackFor = Exception.class)
+    public void testThatObjectTagsFilteredCorrectly() {
+
+        DataStorageVO storageVO = ObjectCreatorUtils.constructDataStorageVO(NAME, DESCRIPTION, DataStorageType.S3,
+                PATH, STS_DURATION, LTS_DURATION, WITHOUT_PARENT_ID, TEST_MOUNT_POINT, TEST_MOUNT_OPTIONS
+        );
+        AbstractDataStorage saved = storageManager.create(storageVO, false, false, false).getEntity();
+
+        doReturn(new DataStorageFile()).when(storageProviderManager)
+                .createFile(Mockito.any(), Mockito.any(), Mockito.any(byte[].class), Mockito.any());
+
+        byte[] contents = new byte[0];
+
+        Preference preference = SystemPreferences.STORAGE_OBJECT_TAGS_SCHEMA.toPreference();
+        preference.setValue("{\".*txt\": [\"key=value\", \"key2=value2\"]}");
+        preferenceManager.update(Collections.singletonList(preference));
+
+        storageManager.createDataStorageFile(saved.getId(), "test.txt", contents);
+        Mockito.verify(storageProviderManager).createFile(Mockito.any(), Mockito.eq("test.txt"),
+                Mockito.eq(contents), tagsCaptor.capture());
+        List<String> captured = tagsCaptor.getValue();
+        Assert.assertEquals(2, captured.size());
+        Assert.assertEquals("key=value", captured.get(0));
+        Assert.assertEquals("key2=value2", captured.get(1));
+
+        storageManager.createDataStorageFile(saved.getId(), "test", contents);
+        Mockito.verify(storageProviderManager).createFile(Mockito.any(), Mockito.eq("test"),
+                Mockito.eq(contents), tagsCaptor.capture());
+        captured = tagsCaptor.getValue();
+        Assert.assertEquals(0, captured.size());
+
+        preference = SystemPreferences.STORAGE_OBJECT_TAGS_SCHEMA.toPreference();
+        preference.setValue("{\".*txt\": [\"key=value\", \"key2=value2\"], \".*html\": [\"key3=value3\"]}");
+        preferenceManager.update(Collections.singletonList(preference));
+
+        storageManager.createDataStorageFile(saved.getId(), "test.html", contents);
+        Mockito.verify(storageProviderManager).createFile(Mockito.any(), Mockito.eq("test.html"),
+                Mockito.eq(contents), tagsCaptor.capture());
+        captured = tagsCaptor.getValue();
+        Assert.assertEquals(1, captured.size());
+        Assert.assertEquals("key3=value3", captured.get(0));
     }
 
     @Test
