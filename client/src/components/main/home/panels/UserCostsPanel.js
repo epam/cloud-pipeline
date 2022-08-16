@@ -32,6 +32,32 @@ import styles from './UserCostsPanel.css';
 
 const BILLING_PERIODS = [Period.month, Period.year];
 
+function renderStatistics (percent) {
+  if (percent === undefined || Number(percent) === 0) {
+    return null;
+  }
+  return (
+    <div className={styles.statistics}>
+      &#40;
+      <div
+        className={classNames({
+          'cp-danger': percent > 0,
+          'cp-success': percent < 0
+        })}
+      >
+        <Icon
+          type={percent > 0 ? 'caret-up' : 'catet-down'}
+          style={{marginRight: '5px'}}
+        />
+        <span>
+          {`${percent > 0 ? '+' : ''}${percent}%`}
+        </span>
+      </div>
+      &#41;
+    </div>
+  );
+}
+
 function getTotalCosts (billing) {
   const {
     current,
@@ -161,31 +187,6 @@ export default class UserCostsPanel extends React.Component {
         return `${to.format('MMMM YYYY')}, ${from.format('D')} - ${to.format('D')}`;
       }
       return `${to.year()}`;
-    };
-    const renderStatistics = (percent) => {
-      if (percent === undefined || Number(percent) === 0) {
-        return null;
-      }
-      return (
-        <div className={styles.statistics}>
-          &#40;
-          <div
-            className={classNames({
-              'cp-danger': percent > 0,
-              'cp-success': percent < 0
-            })}
-          >
-            <Icon
-              type={percent > 0 ? 'caret-up' : 'catet-down'}
-              style={{marginRight: '5px'}}
-            />
-            <span>
-              {`${percent > 0 ? '+' : '-'}${percent}%`}
-            </span>
-          </div>
-          &#41;
-        </div>
-      );
     };
     return (
       [
