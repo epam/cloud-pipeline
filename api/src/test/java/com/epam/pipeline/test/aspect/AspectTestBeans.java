@@ -69,6 +69,7 @@ import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
 import com.epam.pipeline.manager.datastorage.DataStorageApiService;
 import com.epam.pipeline.manager.datastorage.StorageQuotaTriggersManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.docker.scan.ToolScanScheduler;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
@@ -97,6 +98,8 @@ import com.epam.pipeline.mapper.user.OnlineUsersMapper;
 import com.epam.pipeline.repository.cloud.credentials.CloudProfileCredentialsRepository;
 import com.epam.pipeline.repository.cloud.credentials.aws.AWSProfileCredentialsRepository;
 import com.epam.pipeline.repository.cluster.pool.NodePoolUsageRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.quota.AppliedQuotaRepository;
 import com.epam.pipeline.repository.quota.QuotaActionRepository;
 import com.epam.pipeline.repository.quota.QuotaRepository;
@@ -360,6 +363,12 @@ public class AspectTestBeans {
     protected RoleRepository mockRoleRepository;
 
     @MockBean
+    protected DataStorageLifecycleRuleRepository lifecycleRuleRepository;
+
+    @MockBean
+    protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
+
+    @MockBean
     protected PreferenceDao mockPreferenceDao;
 
     @MockBean
@@ -431,4 +440,6 @@ public class AspectTestBeans {
     @MockBean
     protected NodePoolUsageMapper nodePoolUsageMapper;
 
+    @MockBean
+    protected DataStorageLifecycleManager storageLifecycleManager;
 }

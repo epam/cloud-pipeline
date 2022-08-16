@@ -31,6 +31,7 @@ import com.epam.pipeline.manager.cluster.pool.NodeScheduleManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolManager;
 import com.epam.pipeline.manager.configuration.RunConfigurationManager;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.docker.DockerRegistryManager;
 import com.epam.pipeline.manager.event.EntityEventServiceManager;
@@ -249,6 +250,9 @@ public class AclTestConfiguration {
 
     @MockBean
     protected PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
+    protected DataStorageLifecycleManager dataStorageLifecycleManager;
 
     @Bean
     public PermissionFactory permissionFactory() {

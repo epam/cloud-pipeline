@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,25 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.notification;
+package com.epam.pipeline.dto.datastorage.lifecycle;
 
-public enum NotificationGroup {
-    LONG_RUNNING,
-    ISSUE,
-    PIPELINE_RUN_STATUS,
-    IDLE_RUN,
-    RESOURCE_CONSUMING,
-    LONG_STATUS,
-    LONG_PAUSED,
-    USER,
-    NODE_POOL,
-    DATASTORAGE_LIFECYCLE
+import lombok.Builder;
+import lombok.Value;
+
+import java.util.List;
+
+/**
+ * Set of properties to define how notification should be sent.
+ * */
+@Value
+@Builder
+public class StorageLifecycleNotification {
+    Long notifyBeforeDays;
+    Long prolongDays;
+    List<Long> informedUserIds;
+    Boolean keepInformedAdmins;
+    Boolean keepInformedOwner;
+    Boolean enabled;
+    String subject;
+    String body;
 }

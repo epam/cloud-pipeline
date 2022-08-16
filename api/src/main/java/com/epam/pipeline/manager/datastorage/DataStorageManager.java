@@ -67,6 +67,7 @@ import com.epam.pipeline.entity.templates.DataStorageTemplate;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.entity.user.StorageContainer;
 import com.epam.pipeline.entity.utils.DateUtils;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.providers.ProviderUtils;
 import com.epam.pipeline.manager.metadata.MetadataManager;
 import com.epam.pipeline.manager.docker.ToolVersionManager;
@@ -186,6 +187,9 @@ public class DataStorageManager implements SecuredEntityManager {
 
     @Autowired
     private ToolManager toolManager;
+
+    @Autowired
+    private DataStorageLifecycleManager dataStorageLifecycleManager;
 
     private AbstractDataStorageFactory dataStorageFactory =
             AbstractDataStorageFactory.getDefaultDataStorageFactory();
@@ -465,6 +469,7 @@ public class DataStorageManager implements SecuredEntityManager {
                 LOGGER.error(e.getMessage(), e);
             }
         }
+        dataStorageLifecycleManager.deleteStorageLifecyclePolicyRules(id);
         dataStorageDao.deleteDataStorage(id);
         return dataStorage;
     }
