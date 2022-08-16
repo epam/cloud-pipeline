@@ -11,7 +11,6 @@ spec:
       labels:
         cloud-pipeline/cp-api-srv: "true"
     spec:
-      terminationGracePeriodSeconds: 40
       nodeSelector:
         cloud-pipeline/cp-api-srv: "true"
       tolerations:
@@ -97,6 +96,7 @@ spec:
             - name: cp-cluster-ssh-key
               mountPath: "/etc/cp_ssh"
               readOnly: true
+          terminationGracePeriodSeconds: 50
           readinessProbe:
             httpGet:
               path: /pipeline/launch.sh
@@ -113,6 +113,10 @@ spec:
             initialDelaySeconds: 150
             periodSeconds: 15
             failureThreshold: 4
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
       dnsConfig:
         options:
           - name: ndots
