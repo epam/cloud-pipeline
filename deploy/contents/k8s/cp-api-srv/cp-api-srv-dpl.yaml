@@ -16,6 +16,7 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      terminationGracePeriodSeconds: 50
       containers:
         - name: cp-api-srv-leader-elector
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
@@ -96,7 +97,6 @@ spec:
             - name: cp-cluster-ssh-key
               mountPath: "/etc/cp_ssh"
               readOnly: true
-          terminationGracePeriodSeconds: 50
           readinessProbe:
             httpGet:
               path: /pipeline/launch.sh
