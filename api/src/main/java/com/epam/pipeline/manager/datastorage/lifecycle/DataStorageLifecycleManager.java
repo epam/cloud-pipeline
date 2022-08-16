@@ -173,6 +173,16 @@ public class DataStorageLifecycleManager {
     }
 
     @Transactional
+    public void deleteStorageLifecyclePolicyRules(final Long datastorageId) {
+        final List<StorageLifecycleRuleEntity> loaded = StreamSupport.stream(
+                dataStorageLifecycleRuleRepository.findByDatastorageId(datastorageId).spliterator(),
+                false
+        ).collect(Collectors.toList());
+        loaded.forEach(rule -> dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(rule.getId()));
+        dataStorageLifecycleRuleRepository.deleteByDatastorageId(datastorageId);
+    }
+
+    @Transactional
     public StorageLifecycleRuleExecution createStorageLifecycleRuleExecution(
             final Long ruleId, final StorageLifecycleRuleExecution execution) {
         final StorageLifecycleRuleEntity ruleEntity = loadLifecycleRuleEntity(ruleId);
