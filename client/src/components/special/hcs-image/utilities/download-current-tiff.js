@@ -30,8 +30,8 @@ export function downloadAvailable (viewer) {
     loader.length > 0;
 }
 
-export function downloadCurrentTiff (viewer) {
+export function downloadCurrentTiff (viewer, showEntireWell, wellId) {
   if (downloadAvailable(viewer)) {
-    viewer.makeSnapshot();
+    viewer.makeSnapshot(showEntireWell, wellId);
   }
 }

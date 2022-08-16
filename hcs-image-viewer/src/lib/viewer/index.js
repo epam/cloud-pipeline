@@ -325,19 +325,28 @@ class Viewer {
     });
   }
 
-  makeSnapshot(name) {
+  makeSnapshot(entireWell, wellId, name) {
     if (this.container) {
       const canvas = this.container.getElementsByTagName('canvas')[0];
       let imageName = name;
       if (!imageName && this.viewerState && this.viewerState.metadata) {
-        const { metadata } = this.viewerState;
-        const {
-          ID,
-          Name,
-        } = metadata;
-        const parts = [ID, Name].filter(Boolean);
-        if (parts.length > 0) {
-          imageName = parts.join(' ');
+        if (entireWell && wellId) {
+          imageName = wellId;
+        } else {
+          const { metadata } = this.viewerState;
+          const {
+            ID,
+            Name,
+          } = metadata;
+          const [wellPart, fieldPart] = Name.split(',');
+          const parts = (
+            (!entireWell && wellId)
+              ? [ID, wellId, fieldPart]
+              : [ID, Name]
+          ).filter(Boolean);
+          if (parts.length > 0) {
+            imageName = parts.join(' ');
+          }
         }
       }
       createSnapshot(canvas, imageName);
