@@ -33,6 +33,11 @@ Configuration string to work with AWS S3 storages, possible values:
 AWS Region ID - ID of registered region in Cloud-Pipeline environment, this region will be used to create storages from testcases files
 ```
 
+ - CP_STORAGE_LIFECYCLE_DAEMON_TEST_CASES_PATH
+```
+Path to test case files
+```
+
 ## Launching
 
 1) Export all variables from **Prerequisites** section

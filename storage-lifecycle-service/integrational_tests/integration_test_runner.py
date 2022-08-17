@@ -23,10 +23,10 @@ def build_config():
     return {key: _assert_and_get_value(key) for key in INTEGRATION_TEST_CONFIG_ENV_VARS}
 
 
-TEST_CASES_PATH = "resources/testcases"
-INTEGRATION_TEST_CONFIG_ENV_VARS = ["CP_API_URL", "API_TOKEN",
+INTEGRATION_TEST_CONFIG_ENV_VARS = ["CP_API_URL", "API_TOKEN", "CP_STORAGE_LIFECYCLE_DAEMON_TEST_CASES_PATH",
                                     "CP_STORAGE_LIFECYCLE_DAEMON_AWS_REGION_ID",
                                     "CP_STORAGE_LIFECYCLE_DAEMON_AWS_CONFIG"]
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 config = build_config()
@@ -45,10 +45,11 @@ class IntegrationTestsRunner(unittest.TestCase):
     ]).with_gatherers(
         [PlatformTestCaseResultGatherer(cp_api), CloudTestCaseResultGatherer(aws_region["regionId"])])
 
-    @parameterized.expand([case_file for case_file in os.listdir(TEST_CASES_PATH)])
+    @parameterized.expand([case_file for case_file in os.listdir(config.get("CP_STORAGE_LIFECYCLE_DAEMON_TEST_CASES_PATH"))])
     def test_run_integration_test_cases(self, case_file):
         logger.log(logging.INFO, "Start test case: {}".format(case_file))
-        test_case = test_case_preprocessing.read_test_case(os.path.join(TEST_CASES_PATH, case_file))
+        test_case = test_case_preprocessing.read_test_case(
+            os.path.join(config.get("CP_STORAGE_LIFECYCLE_DAEMON_TEST_CASES_PATH"), case_file))
 
         expected = test_case.result
         actual = self.processors_chain.process(test_case)
