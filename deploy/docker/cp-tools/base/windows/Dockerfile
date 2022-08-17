@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,9 +26,5 @@ COPY requirements.txt $CP_DESKTOP_DIR/requirements.txt
 RUN pip install -r ${env:CP_DESKTOP_DIR}/requirements.txt
 
 COPY init.ps1 c:/init.ps1
-COPY serve_desktop.py \
-     template.nxs \
-     template.dcv \
-     $CP_DESKTOP_DIR/
 
 CMD powershell -Command c:\init.ps1

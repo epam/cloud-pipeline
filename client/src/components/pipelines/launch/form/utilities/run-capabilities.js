@@ -149,8 +149,10 @@ function getPlatformSpecificCapabilities (preferences, platformInfo = {}) {
 @observer
 class RunCapabilities extends React.Component {
   static propTypes = {
+    className: PropTypes.string,
+    style: PropTypes.object,
     disabled: PropTypes.bool,
-    values: PropTypes.arrayOf(PropTypes.string),
+    values: PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(PropTypes.string)]),
     platform: PropTypes.string,
     onChange: PropTypes.func,
     dockerImage: PropTypes.string,
@@ -228,7 +230,9 @@ class RunCapabilities extends React.Component {
       values,
       platform,
       provider,
-      preferences
+      preferences,
+      className,
+      style
     } = this.props;
     const {os} = this.state;
     const capabilities = getPlatformSpecificCapabilities(
@@ -323,9 +327,11 @@ class RunCapabilities extends React.Component {
               {
                 disabled,
                 [styles.disabled]: disabled
-              }
+              },
+              className
             )
           }
+          style={style}
         >
           {
             filteredValues.length === 0 && '\u00A0'
@@ -356,6 +362,17 @@ class RunCapabilities extends React.Component {
       </Dropdown>
     );
   }
+}
+
+export function isCapability (parameterName, preferences) {
+  if (Object.values(RUN_CAPABILITIES_PARAMETERS).includes(parameterName)) {
+    return true;
+  }
+  if (!preferences) {
+    return false;
+  }
+  return !!plainList(preferences.launchCapabilities)
+    .find(o => o.value === parameterName);
 }
 
 export function isCustomCapability (parameterName, preferences) {

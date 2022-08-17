@@ -71,7 +71,9 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
       repository: PropTypes.string,
       repositoryType: PropTypes.string,
       repositoryToken: PropTypes.string,
-      pipelineType: PropTypes.string
+      pipelineType: PropTypes.string,
+      branch: PropTypes.string,
+      configurationPath: PropTypes.string
     }),
     onCancel: PropTypes.func,
     onSubmit: PropTypes.func,
@@ -140,6 +142,8 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
           values.repository = undefined;
           values.token = undefined;
           values.repositoryType = undefined;
+          values.branch = undefined;
+          values.configurationPath = undefined;
         } else {
           values.token = values.token || '';
         }
@@ -156,6 +160,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
     const pipelineType = this.props.pipeline ? this.props.pipeline.pipelineType : undefined;
     const isVersionedStorage = /^versioned_storage$/i.test(pipelineType);
     const objectName = isVersionedStorage ? 'Versioned storage' : 'Pipeline';
+    const readOnly = !!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline);
     const {getFieldDecorator} = this.props.form;
     const descriptionLabel = isVersionedStorage
       ? `Description:`
@@ -177,7 +182,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             initialValue: `${this.props.pipeline ? this.props.pipeline.name : ''}`
           })(
             <Input
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))}
+              disabled={this.props.pending || readOnly}
               onPressEnter={this.handleSubmit}
               ref={this.initializeNameInput} />
         )}
@@ -198,7 +203,7 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             <Input
               type="textarea"
               autosize={{minRows: 2, maxRows: 6}}
-              disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))} />
+              disabled={this.props.pending || readOnly} />
         )}
       </Form.Item>
     ));
@@ -247,6 +252,23 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
         ));
         formItems.push((
           <Form.Item
+            key="branch"
+            className="edit-pipeline-form-branch-container"
+            {...this.formItemLayout} label="Branch">
+            {getFieldDecorator('branch',
+              {
+                initialValue: this.props.pipeline && this.props.pipeline.branch
+                  ? this.props.pipeline.branch
+                  : undefined
+              })(
+              <Input
+                disabled={this.props.pending || readOnly}
+              />
+            )}
+          </Form.Item>
+        ));
+        formItems.push((
+          <Form.Item
             key="token"
             className="edit-pipeline-form-repository-container"
             {...this.formItemLayout} label="Token">
@@ -255,7 +277,24 @@ export default class EditPipelineForm extends localization.LocalizedReactCompone
             })(
               <Input
                 onPressEnter={this.handleSubmit}
-                disabled={this.props.pending || (!!this.props.pipeline && !roleModel.writeAllowed(this.props.pipeline))}/>
+                disabled={this.props.pending || readOnly} />
+            )}
+          </Form.Item>
+        ));
+        formItems.push((
+          <Form.Item
+            key="configurationPath"
+            className="edit-pipeline-form-configuration-path-container"
+            {...this.formItemLayout} label="Configuration path">
+            {getFieldDecorator('configurationPath',
+              {
+                initialValue: this.props.pipeline && this.props.pipeline.configurationPath
+                  ? this.props.pipeline.configurationPath
+                  : undefined
+              })(
+              <Input
+                disabled={this.props.pending || readOnly}
+              />
             )}
           </Form.Item>
         ));

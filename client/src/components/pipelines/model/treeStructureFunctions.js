@@ -427,7 +427,7 @@ export function generateTreeData (
       children.push({
         ...versions[i],
         id: versions[i].commitId,
-        key: `${ItemTypes.version}_${versions[i].commitId}`,
+        key: `${ItemTypes.version}_${parent ? parent.id : ''}_${versions[i].commitId}`,
         name: versions[i].name,
         author: versions[i].author,
         type: ItemTypes.version,

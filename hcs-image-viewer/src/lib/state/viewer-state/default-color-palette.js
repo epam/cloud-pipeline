@@ -23,7 +23,79 @@ const violet = [154, 0, 255];
 const yellow = [255, 255, 0];
 const orange = [255, 60, 0];
 
-export { red, green, blue, white };
+function correctWellKnownChannelName(channelName) {
+  if (/^dapi$/i.test(channelName)) {
+    return 'DAPI';
+  }
+  if (/^alexa[\s_-]+/i.test(channelName)) {
+    const e = /^alexa[\s_-]+([\d]+)$/i.exec(channelName);
+    if (e && e[1]) {
+      return `Alexa ${e[1]}`;
+    }
+  }
+  if (/^gfp$/i.test(channelName)) {
+    return 'GFP';
+  }
+  return channelName;
+}
+
+class DefaultChannelsColors {
+  Events = {
+    defaultColorsUpdated: 'defaultColorsUpdated',
+  };
+
+  constructor(defaultColors = {}) {
+    this.listeners = [];
+    this.update(defaultColors);
+  }
+
+  update(defaultColors = {}) {
+    this.defaultColors = { ...defaultColors };
+  }
+
+  getColorForChannel(channel) {
+    const channelName = correctWellKnownChannelName(channel);
+    if (this.defaultColors[channelName]) {
+      return this.defaultColors[channelName];
+    }
+    return undefined;
+  }
+
+  updateChannelColor(channel, color) {
+    const channelName = correctWellKnownChannelName(channel);
+    this.defaultColors[channelName] = color;
+    this.emit(
+      this.Events.defaultColorsUpdated,
+      this.defaultColors,
+    );
+  }
+
+  addEventListener(event, listener) {
+    this.removeEventListener(event, listener);
+    this.listeners.push({ event, listener });
+  }
+
+  removeEventListener(event, listener) {
+    this.listeners = this.listeners.filter((o) => o.event !== event || o.listener !== listener);
+  }
+
+  emit(event, payload) {
+    this.listeners
+      .filter((o) => o.event === event && typeof o.listener === 'function')
+      .map((o) => o.listener)
+      .forEach((listener) => listener(this, payload));
+  }
+}
+
+const defaultChannelsColors = new DefaultChannelsColors();
+
+export {
+  red,
+  green,
+  blue,
+  white,
+  defaultChannelsColors,
+};
 export default [
   blue,
   green,

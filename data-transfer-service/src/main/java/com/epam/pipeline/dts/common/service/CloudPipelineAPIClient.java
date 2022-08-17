@@ -20,6 +20,9 @@ import com.epam.pipeline.client.pipeline.CloudPipelineAPI;
 import com.epam.pipeline.client.pipeline.CloudPipelineApiBuilder;
 import com.epam.pipeline.client.pipeline.RetryingCloudPipelineApiExecutor;
 import com.epam.pipeline.dts.transfer.model.pipeline.PipelineCredentials;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.entity.datastorage.DataStorageFile;
+import com.epam.pipeline.entity.datastorage.DataStorageItemContent;
 import com.epam.pipeline.entity.dts.submission.DtsRegistry;
 import com.epam.pipeline.entity.metadata.MetadataEntry;
 import com.epam.pipeline.entity.metadata.PipeConfValue;
@@ -101,5 +104,17 @@ public class CloudPipelineAPIClient {
 
     public DtsRegistry updateDtsRegistryHeartbeat(final String dtsId) {
         return pipelineApiExecutor.execute(cloudPipelineAPI.updateDtsHeartbeat(dtsId));
+    }
+
+    public AbstractDataStorage findStorageByPath(final String path) {
+        return pipelineApiExecutor.execute(cloudPipelineAPI.findStorageByPath(path));
+    }
+
+    public DataStorageItemContent getStorageItemContent(final Long storageId, final String path) {
+        return pipelineApiExecutor.execute(cloudPipelineAPI.getStorageItemContent(storageId, path));
+    }
+
+    public DataStorageFile createStorageItem(final Long storageId, final String path, final String content) {
+        return pipelineApiExecutor.execute(cloudPipelineAPI.createStorageItem(storageId, path, content));
     }
 }

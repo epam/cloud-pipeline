@@ -107,6 +107,18 @@ export default class PipelineCode extends Component {
   }
 
   @computed
+  get configurationPath () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {configurationPath} = pipeline.value || {};
+      if (configurationPath) {
+        return removeSlashes(configurationPath);
+      }
+    }
+    return 'config.json';
+  }
+
+  @computed
   get canModifySources () {
     if (!this.props.pipeline.loaded || this.isBitBucket) {
       return false;
@@ -214,7 +226,7 @@ export default class PipelineCode extends Component {
         name: source.name,
         type: source.type,
         path: source.path,
-        editable: source.name.toLowerCase() !== 'config.json'
+        editable: removeSlashes(source.path) !== this.configurationPath
       });
     }
 

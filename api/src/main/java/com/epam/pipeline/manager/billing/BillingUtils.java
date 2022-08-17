@@ -74,8 +74,12 @@ public final class BillingUtils {
     public static final String LAST_STORAGE_USAGE_VALUE = "usage_storages_last";
     public static final String STORAGE_USAGE_FIELD = "usage_bytes";
     public static final String LAST_BY_DATE_DOC_AGG = "last_by_date";
+    public static final String CLOUD_REGION_ID_FIELD = "cloud_region_id";
+    public static final String CLOUD_REGION_PROVIDER_FIELD = "cloud_region_provider";
     public static final String RUN_ID_FIELD = "run_id";
     public static final String STORAGE_ID_FIELD = "storage_id";
+    public static final String STORAGE_NAME_FIELD = "storage_name";
+    public static final String STORAGE_CREATED_FIELD = "storage_created_date";
     public static final String PAGE = "page";
     public static final String TOTAL_PAGES = "totalPages";
     public static final String BILLING_DATE_FIELD = "created_date";

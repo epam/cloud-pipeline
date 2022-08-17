@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -654,6 +654,34 @@ function configureHyperThreading() {
         fi
       done
     fi
+}
+
+function self_terminate_on_cleanup_timeout() {
+      local _min_terminate_timeout_min=1
+      if [ -z "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" ]; then
+            return 0
+      fi
+      if (( "$CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN" < "$_min_terminate_timeout_min" )); then
+            pipe_log_info "Cleanup termination timeout is less than a minimal value ${_min_terminate_timeout_min}. It will be adjusted." "CleanupEnvironment"
+            CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN="$_min_terminate_timeout_min"  
+      fi
+
+      local _node_name=$(echo $(pipe view-runs $RUN_ID --node-details | grep nodeName) | cut -d' ' -f2)
+      if [ -z "$_node_name" ]; then
+            pipe_log_fail "Cannot get node name for a current run" "CleanupEnvironment"
+            return 1
+      fi
+
+      pipe_log_info "Will wait for ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min to let the run stop normally. Otherwise it will be terminated." "CleanupEnvironment"
+
+      sleep $(( $CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN * 60 ))
+
+      local _run_status_after_timeout=$(echo $(pipe view-runs $RUN_ID | grep Status) | cut -d' ' -f2)
+      if [ "$_run_status_after_timeout" == "RUNNING" ]; then
+            pipe_log_success "Run #${RUN_ID} is still running after ${CP_TERMINATE_RUN_ON_CLEANUP_TIMEOUT_MIN}min. Terminating a node." "CleanupEnvironment"
+            pipe terminate-node -y "$_node_name"
+            return 0
+      fi
 }
 
 ######################################################
@@ -1910,6 +1938,20 @@ fi
 
 
 ######################################################
+# Enable mount restrictor
+######################################################
+
+echo "Setup mount restrictor"
+echo "-"
+
+if [ "$CP_MOUNT_RESTRICTOR_DISABLED" != "true" ]; then
+      initialise_wrappers "mount" "mount_restrictor" "$CP_USR_BIN"
+fi
+
+######################################################
+
+
+######################################################
 echo Executing task
 echo "-"
 ######################################################
@@ -2005,6 +2047,11 @@ then
 else
       echo "No data storage rules defined, skipping ${FINALIZATION_TASK_NAME} step"
 fi
+
+# It may happen that the shared filesystem may cause a job to "hang" indefinitely
+# even if the script has exited. To address this, we wait a preconfigured amount of minutes
+# and *terminate* an underlying node. So that it won't be reassigned in that bad state
+self_terminate_on_cleanup_timeout &
 
 if [ "$CP_CAP_KEEP_FAILED_RUN" ] && \
    ( ! ([ $CP_EXEC_RESULT -eq 0 ] || [ $CP_EXEC_RESULT -eq 124 ]) || \

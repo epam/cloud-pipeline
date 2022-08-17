@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from user_model import UserModel
-
+from tool_model import ToolModel
 
 class StorageModel(object):
     def __init__(self):
@@ -25,6 +25,7 @@ class StorageModel(object):
         self.share_mount_id = None
         self.mount_source = None
         self.users = []
+        self.tools_to_mount = []
 
     @classmethod
     def load(cls, json):
@@ -39,6 +40,11 @@ class StorageModel(object):
         instance.type = entity_json['type']
         instance.share_mount_id = entity_json['fileShareMountId'] if 'fileShareMountId' in entity_json else None
         instance.path = entity_json['pathMask'] if 'pathMask' in entity_json else None
+        if 'toolsToMount' in entity_json:
+            for tool_json in entity_json['toolsToMount']:
+                _tool = ToolModel.load(tool_json)
+                if _tool:
+                    instance.tools_to_mount.append(_tool)
         if 'owner' in entity_json and entity_json['owner'].lower() != 'unauthorized':
             user = UserModel()
             user.username = entity_json['owner']

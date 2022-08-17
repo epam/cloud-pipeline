@@ -68,6 +68,7 @@ nginx_root_config_path = '/etc/nginx/nginx.conf'
 nginx_sites_path = '/etc/nginx/sites-enabled'
 nginx_domains_path = '/etc/nginx/sites-enabled/custom-domains'
 external_apps_domains_path = '/etc/nginx/external-apps'
+api_domain_path = '/etc/nginx/ingress/cp-api-srv.conf'
 nginx_loc_module_template = '/etc/nginx/endpoints-config/route.template.loc.conf'
 nginx_srv_module_template = '/etc/nginx/endpoints-config/route.template' + nginx_custom_domain_config_ext
 nginx_sensitive_loc_module_template = '/etc/nginx/endpoints-config/sensitive.template.loc.conf'
@@ -85,6 +86,11 @@ DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
 urllib3.disable_warnings()
 api_url = os.environ.get('API')
 api_token = os.environ.get('API_TOKEN')
+
+api_domain_name = os.environ.get('CP_API_SRV_EXTERNAL_HOST')
+if not api_domain_name:
+        api_domain_name = os.environ.get('CP_API_SRV_INTERNAL_HOST')
+
 if not api_url or not api_token:
         print('API url or API token are not set. Exiting')
         exit(1)
@@ -192,8 +198,11 @@ def store_file_from_lines(lines, path):
                 path_file.write('\n'.join(lines))
 
 def get_domain_config_path(domain, is_external_app=False):
-        domains_path =  external_apps_domains_path if is_external_app else nginx_domains_path
-        return os.path.join(domains_path, domain + nginx_custom_domain_config_ext)
+        if domain == api_domain_name:
+                return api_domain_path
+        else:
+                domains_path =  external_apps_domains_path if is_external_app else nginx_domains_path
+                return os.path.join(domains_path, domain + nginx_custom_domain_config_ext)
 
 def add_custom_domain(domain, location_block, is_external_app=False):
         if not os.path.isdir(nginx_domains_path):
@@ -202,9 +211,11 @@ def add_custom_domain(domain, location_block, is_external_app=False):
         domain_cert = search_custom_domain_cert(domain)
         domain_path_contents = None
         if os.path.exists(domain_path):
+                do_log('-> Adding new location block to existing configuration file at {}'.format(domain_path))
                 with open(domain_path, 'r') as domain_path_file:
                         domain_path_contents = domain_path_file.read()
         else:
+                do_log('-> Creating new custom domain configuration file at {}'.format(domain_path))
                 with open(nginx_srv_module_template, 'r') as nginx_srv_module_template_file:
                         domain_path_contents = nginx_srv_module_template_file.read()
                 domain_path_contents = domain_path_contents \
@@ -247,7 +258,7 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
                 return False
         del domain_path_lines[existing_loc[-1]]
 
-        if (not is_external_app and sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
+        if (not is_external_app and domain_path != api_domain_path and sum(nginx_custom_domain_loc_suffix in line for line in domain_path_lines) == 0):
                 # If no more location block exist in the domain - delete the config file
                 # Do not delete if this is an "external application", where the server block is managed externally
                 do_log('No more location blocks are available for {}, deleting the config file: {}'.format(domain, domain_path))
@@ -258,6 +269,10 @@ def remove_custom_domain(domain, location_block, is_external_app=False):
         return True
 
 def remove_custom_domain_all(location_block):
+        remove_result = False
+        if api_domain_name:
+                if remove_custom_domain(api_domain_name, location_block, is_external_app=False):
+                        do_log('Removed {} location block from the API domain config {}'.format(location_block, api_domain_path))
         for domains_root_path in [ nginx_domains_path, external_apps_domains_path ]:
                 domain_path_list = [f for f in glob.glob(domains_root_path + '/*' + nginx_custom_domain_config_ext)]
                 for domain_path in domain_path_list:
@@ -342,7 +357,10 @@ def construct_additional_endpoints_from_run_parameters(run_details):
         custom_endpoint_run_parameters = [rp for rp in run_details["pipelineRunParameters"]
                                           if rp["name"].startswith(CP_CAP_CUSTOM_ENDPOINT_PREFIX)]
 
-        do_log('Found {} run parameters related to custom endpoints.'.format(len(custom_endpoint_run_parameters)))
+        custom_endpoint_run_parameters_num = len(custom_endpoint_run_parameters)
+        do_log('Found {} run parameters related to custom endpoints.'.format(custom_endpoint_run_parameters_num))
+        if custom_endpoint_run_parameters_num == 0:
+                return []
 
         custom_endpoints_nums = set([CP_CAP_CUSTOM_ENDPOINT_PREFIX + extract_endpoint_num_from_run_parameter(rp)
                                      for rp in custom_endpoint_run_parameters])
@@ -768,6 +786,11 @@ def find_preference(api_preference_query, preference_name):
 
 
 do_log('============ Started iteration ============')
+
+if api_domain_name:
+        do_log('API domain name is determined as {}. It will be used to detect friendly URLs'.format(api_domain_name))
+else:
+        do_log('[WARN] Cannot get API domain name from the environment')
 
 kube_api = HTTPClient(KubeConfig.from_service_account())
 kube_api.session.verify = False

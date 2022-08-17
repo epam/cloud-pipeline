@@ -1,7 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
-import {Popover, Icon, DatePicker, Button} from 'antd';
+import {
+  Checkbox,
+  Popover,
+  Icon,
+  DatePicker,
+  Button
+} from 'antd';
 import moment from 'moment';
 
 const DATE_FORMAT = 'YYYY-MM-DD HH:mm:ss.SSS';
@@ -24,17 +30,34 @@ class RangeDatePicker extends React.Component {
   state = {
     dateFrom: undefined,
     dateTo: undefined,
+    emptyValue: false,
     fromPickerVisible: false,
     toPickerVisible: false,
     rangeFilterVisible: false
   }
 
   get modified () {
-    const {from, to} = this.props;
-    const {dateFrom, dateTo} = this.state;
+    const {
+      from,
+      to,
+      emptyValue
+    } = this.props;
+    const {
+      dateFrom,
+      dateTo,
+      emptyValue: emptyValueState
+    } = this.state;
     const stateFrom = dateFrom ? moment.utc(dateFrom).format(DATE_FORMAT) : undefined;
     const stateTo = dateTo ? moment.utc(dateTo).format(DATE_FORMAT) : undefined;
-    return from !== stateFrom || to !== stateTo;
+    return from !== stateFrom ||
+      to !== stateTo ||
+      emptyValue !== emptyValueState;
+  }
+
+  get resetDisabled () {
+    return !this.props.from &&
+    !this.props.to &&
+    (this.props.supportEmptyValue && !this.props.emptyValue);
   }
 
   componentDidMount () {
@@ -137,23 +160,51 @@ class RangeDatePicker extends React.Component {
         : undefined,
       to: dateTo
         ? moment.utc(dateTo).format(DATE_FORMAT)
-        : undefined
+        : undefined,
+      ...(this.props.supportEmptyValue && {
+        emptyValue: this.state.emptyValue
+      })
     });
     this.handleRangeFilterVisibility(false);
   };
+
   resetRange = async () => {
     const {onChange} = this.props;
-    await this.setState({
+    this.setState({
       dateFrom: null,
-      dateTo: null
+      dateTo: null,
+      emptyValue: false
+    }, () => {
+      onChange(null);
+      this.handleRangeFilterVisibility(false);
     });
-    onChange(null);
-    this.handleRangeFilterVisibility(false);
-  }
+  };
+
+  onChangeEmptyValue = (e) => {
+    this.setState({
+      emptyValue: e.target.checked
+    });
+  };
 
   render () {
     const content = (
       <div style={{display: 'flex', flexDirection: 'column', width: 280}}>
+        {this.props.supportEmptyValue ? (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end'
+            }}
+          >
+            <Checkbox
+              checked={this.state.emptyValue}
+              onChange={this.onChangeEmptyValue}
+            >
+              Empty dates
+            </Checkbox>
+          </div>) : null
+        }
         <div style={{
           display: 'flex',
           justifyContent: 'flex-start',
@@ -169,6 +220,7 @@ class RangeDatePicker extends React.Component {
           <DatePicker
             style={{width: '85%'}}
             id="from"
+            disabled={this.props.supportEmptyValue && this.state.emptyValue}
             disabledDate={this.disabledStartDate}
             placeholder=""
             format={DATE_DISPLAY_FORMAT}
@@ -194,6 +246,7 @@ class RangeDatePicker extends React.Component {
             style={{width: '85%'}}
             id="to"
             allowClear
+            disabled={this.props.supportEmptyValue && this.state.emptyValue}
             disabledDate={this.disabledEndDate}
             placeholder=""
             format={DATE_DISPLAY_FORMAT}
@@ -212,7 +265,7 @@ class RangeDatePicker extends React.Component {
           <Button
             type="danger"
             onClick={() => this.resetRange()}
-            disabled={!this.props.from && !this.props.to}
+            disabled={this.resetDisabled}
           >
             Reset
           </Button>
@@ -260,7 +313,9 @@ RangeDatePicker.propTypes = {
   to: PropTypes.string,
   onChange: PropTypes.func,
   children: PropTypes.node,
-  visibilityChanged: PropTypes.func
+  visibilityChanged: PropTypes.func,
+  supportEmptyValue: PropTypes.bool,
+  emptyValue: PropTypes.bool
 };
 
 export default RangeDatePicker;

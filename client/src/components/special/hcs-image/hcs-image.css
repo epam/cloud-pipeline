@@ -35,6 +35,7 @@
   position: relative;
   display: flex;
   flex-direction: row;
+  padding: 0;
 }
 
 .alert-container {
@@ -60,6 +61,12 @@
   height: 100%;
   overflow: hidden;
   position: relative;
+}
+
+.hcs-batch-job-info {
+  flex: 1;
+  height: 100%;
+  overflow: auto;
 }
 
 .hcs-image {
@@ -92,6 +99,7 @@
   position: relative;
   padding: 5px;
   overflow: auto;
+  max-height: 33vh;
 }
 
 .hcs-image-controls {
@@ -185,4 +193,18 @@
   left: 10px;
   z-index: 2;
   line-height: 1;
+}
+
+.hcs-image-analysis-jobs {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+}
+
+.hcs-image-analysis-jobs-panel {
+  width: 350px;
+  height: 100%;
+  overflow: auto;
 }

@@ -32,6 +32,8 @@ const CollageMeshLayer = class extends CompositeLayer {
       rows = 0,
       columns = 0,
       cells = [],
+      selected = [],
+      notSelectedAlpha = 0.75,
     } = mesh;
 
     const { width = 0, height = 0 } = getImageSize(loader[0]) || {};
@@ -55,6 +57,8 @@ const CollageMeshLayer = class extends CompositeLayer {
       && hoveredCell
       && hoveredCell.column === cell.column
       && hoveredCell.row === cell.row;
+    const cellIsNotSelected = (cell) => cell
+      && !selected.some((s) => s.column === cell.column && s.row === cell.row);
     meshData.sort((a, b) => Number(isCellHovered(a)) - Number(isCellHovered(b)));
     const meshLayer = new PolygonLayer({
       id: `line-${id}`,
@@ -84,7 +88,16 @@ const CollageMeshLayer = class extends CompositeLayer {
       pickable: true,
       getFillColor: [255, 255, 255, 0],
     });
-    return [meshLayer, cellsLayer];
+    const notSelectedCellsLayer = new PolygonLayer({
+      id: `cell-not-selected-${id}`,
+      coordinateSystem: COORDINATE_SYSTEM.CARTESIAN,
+      data: cells.filter(cellIsNotSelected),
+      getPolygon: (cell) => getCellPolygon(cell.column, cell.row),
+      filled: true,
+      stroked: false,
+      getFillColor: [0, 0, 0, Math.max(0, Math.min(255, Math.round(255 * notSelectedAlpha)))],
+    });
+    return [notSelectedCellsLayer, meshLayer, cellsLayer];
   }
 
   onHover(info) {

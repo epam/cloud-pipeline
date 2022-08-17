@@ -1,4 +1,4 @@
-# Copyright 2017-2019 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -177,11 +177,21 @@ class Synchronization(object):
         except OSError as error:
             print 'Error creating directory: {}'.format(error.message)
             return
+        
+        command_opts = []
+        # Do not allow to WRITE for any storage which has tools limitations
+        # We fully rely on the automatic mounting to the jobs for such storages
+        if len(storage.tools_to_mount) > 0 and os.getenv('CP_DAV_TOOLS_TO_MOUNT_RO', 'false') == 'true':
+            command_opts = [ "-o", "ro" ]
+        
         command = ["mount", "-B", storage.mount_source, destination]
+        if len(command_opts) > 0:
+            command = command + command_opts
         print 'Mounting {} storage as {}...'.format(
             storage.name,
             mounted_storage_name
         )
+        print(command)
         code = subprocess.call(command)
         if code == 0:
             print 'Storage mounted: {}'.format(destination)

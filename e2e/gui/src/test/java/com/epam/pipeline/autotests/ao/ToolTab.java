@@ -85,7 +85,8 @@ public abstract class ToolTab<TAB extends ToolTab<TAB>> implements AccessObject<
         click(RUN);
         return new ConfirmationPopupAO<>(new RunsMenuAO())
                 .ensureLaunchTitleIs(format("Are you sure you want to launch %s:%s with default settings?",
-                                nameWithoutGroup(tool), version))
+                        nameWithoutGroup(tool), version))
+                .ensure(byClassName("ob-estimated-price-info__info"), visible)
                 .ok();
     }
 

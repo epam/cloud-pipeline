@@ -404,6 +404,18 @@ class PreferencesLoad extends Remote {
     return {};
   }
 
+  get toolPredefinedKubeLabels () {
+    const value = this.getPreferenceValue('ui.tool.kube.labels');
+    if (value) {
+      try {
+        return JSON.parse(value);
+      } catch (e) {
+        console.warn('Error parsing "ui.tool.kube.labels" preference:', e.message);
+      }
+    }
+    return [];
+  }
+
   toolScanningEnabledForRegistry (registry) {
     return this.loaded &&
       this.toolScanningEnabled &&

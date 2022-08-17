@@ -20,14 +20,9 @@ import generateId from '../common/generate-id';
 import {BooleanParameter} from '../parameters';
 import parseModuleConfiguration, {
   splitStringWithBrackets
-} from './implementation/parse-module-configuration';
+} from './parse-module-configuration';
 import parameterInitializer from '../parameters/parameter-initializer';
-import {allModules} from './implementation';
-
-const IGNORED_PARAMETERS = [
-  'Select objects to display',
-  'Select outline color'
-];
+import allModules from './implementation';
 
 class AnalysisModuleOutput {
   /**
@@ -59,6 +54,15 @@ function expandModules (modules = []) {
     []
   );
 }
+
+function searchParameterCriteria (property) {
+  return function search (name) {
+    return (p) => p.parameter[property] === name;
+  };
+}
+
+const searchParameterByName = searchParameterCriteria('name');
+const searchParameterByParameterName = searchParameterCriteria('parameterName');
 
 class AnalysisModule {
   id;
@@ -92,6 +96,7 @@ class AnalysisModule {
   parentModule;
   @observable pending = false;
   @observable done = false;
+  @observable statusReporting = false;
   composed = false;
 
   /**
@@ -208,7 +213,8 @@ class AnalysisModule {
     this.parametersConfigurations.push(new BooleanParameter({
       name: 'advanced',
       title: 'Show advanced settings',
-      value: false
+      value: false,
+      exportParameter: false
     }));
   }
 
@@ -222,17 +228,25 @@ class AnalysisModule {
     return this.parametersConfigurations.find(config => config.name === name) ||
       this.parametersConfigurations.find(config => config.parameterName === name);
   }
-  getParameterValue (name) {
+
+  /**
+   * @param {string} name
+   * @returns {ModuleParameterValue}
+   */
+  getParameterValueObject (name) {
+    return this.parameters.find(searchParameterByName(name)) ||
+      this.parameters.find(searchParameterByParameterName(name));
+  }
+  getParameterValue (name, ...modifier) {
     if (/^uuid$/i.test(name)) {
       return this.uuid;
     }
     if (/^id$/i.test(name)) {
       return this.id;
     }
-    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name) ||
-      this.parameters.find(parameter => parameter.parameter.parameterName === name);
+    const parameterValue = this.getParameterValueObject(name);
     if (parameterValue) {
-      return parameterValue.value;
+      return parameterValue.getValue(...modifier);
     } else {
       console.warn(`parameter not found: ${name}`);
     }
@@ -242,8 +256,8 @@ class AnalysisModule {
     return ['true', 'on', 'yes'].includes(`${this.getParameterValue(name)}`.toLowerCase());
   }
   setParameterValue (name, value) {
-    const parameterValue = this.parameters.find(parameter => parameter.parameter.name === name) ||
-      this.parameters.find(parameter => parameter.parameter.parameterName === name);
+    const parameterValue = this.parameters.find(searchParameterByName(name)) ||
+      this.parameters.find(searchParameterByParameterName(name));
     if (parameterValue) {
       parameterValue.applyValue(value);
     } else {
@@ -348,30 +362,23 @@ class AnalysisModule {
     }
   }
 
-  getPayload = () => {
+  /**
+   * Returns module's parameters payload
+   * @param {boolean} [validate=false]
+   * @returns {*}
+   */
+  getPayload = (validate = false) => {
     return this.parameters
       .filter((parameter) =>
         !/^advanced$/i.test(parameter.parameter.name) && !parameter.parameter.local
       )
       .reduce((payload, item) => ({
         ...payload,
-        ...item.getPayload()
+        ...item.getPayload(validate)
       }), {...this.extraParameters});
   }
 
-  applySettings = (settings) => {
-    this.extraParameters = {};
-    Object.entries(settings || {})
-      .forEach(([parameterName, value]) => {
-        const parameter = this.parameters.find(p => p.parameter.parameterName === parameterName);
-        if (parameter) {
-          parameter.applyValue(value);
-        } else if (!IGNORED_PARAMETERS.includes(parameterName)) {
-          this.extraParameters[parameterName] = value;
-        }
-      });
-  };
-  exportModule () {
+  exportModule (json = false) {
     const properties = [
       this.hidden ? 'hidden' : false,
       this.composed ? 'composed' : false
@@ -380,16 +387,26 @@ class AnalysisModule {
     if (properties.length > 0) {
       propertiesString = `[${properties.join('|')}]`;
     }
+    const parametersPayload = this.parameters
+      .filter(parameterValue => parameterValue.parameter &&
+        parameterValue.parameter.exportParameter
+      )
+      .map(parameterValue => parameterValue.exportParameterValue())
+      .filter(parameterValue => parameterValue && parameterValue.length);
+    if (json) {
+      return {
+        name: this.name,
+        hidden: this.hidden,
+        composed: this.composed,
+        parameters: parametersPayload
+      };
+    }
     return [
       [
         this.name,
         propertiesString
       ].filter(o => o && o.length > 0).join(':'),
-      ...this.parameters
-        .filter(parameterValue => parameterValue.parameter &&
-          parameterValue.parameter.exportParameter
-        )
-        .map(parameterValue => parameterValue.exportParameterValue())
+      ...parametersPayload
         .map(parameterValue => `\t${parameterValue}`)
     ].join('\n');
   }
@@ -415,7 +432,11 @@ class AnalysisModule {
           ...moduleConfiguration
         });
       Object.entries(values || {}).forEach(([parameter, value]) => {
-        cpModule.setParameterValue(parameter, value);
+        try {
+          cpModule.setParameterValue(parameter, value);
+        } catch (e) {
+          console.warn(`Error setting parameter value. ${parameter} =`, value);
+        }
       });
       return cpModule;
     }

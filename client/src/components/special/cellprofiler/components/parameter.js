@@ -17,6 +17,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {isObservableArray} from 'mobx';
 import {observer} from 'mobx-react';
 import {
   Checkbox,
@@ -27,7 +28,6 @@ import {
 import {AnalysisTypes} from '../model/common/analysis-types';
 import styles from './cell-profiler.css';
 import ColorPicker from '../../color-picker';
-import { isObservableArray } from "mobx";
 
 class CellProfilerParameter extends React.Component {
   reportChanged = () => {
@@ -56,7 +56,14 @@ class CellProfilerParameter extends React.Component {
       : parameterValue.value;
     return (
       <Input
-        className={styles.cellProfilerParameterValue}
+        className={
+          classNames(
+            styles.control,
+            {
+              'cp-error': parameterValue.isInvalid
+            }
+          )
+        }
         value={correctedValue}
         onChange={onChange}
       />
@@ -81,7 +88,7 @@ class CellProfilerParameter extends React.Component {
     const step = 10 ** (Math.log10((max - min) / 100));
     return (
       <Slider
-        className={styles.cellProfilerParameterValue}
+        className={styles.control}
         value={parameterValue.value}
         min={min}
         max={max}
@@ -104,7 +111,7 @@ class CellProfilerParameter extends React.Component {
     };
     return (
       <Checkbox
-        className={styles.cellProfilerParameterValue}
+        className={styles.control}
         checked={!!parameterValue.value}
         onChange={onChange}
       />
@@ -124,7 +131,7 @@ class CellProfilerParameter extends React.Component {
       if (multiple) {
         parameterValue.value = values
           .map(o => o.id)
-          .filter(value => (changedValue || []).includes(value))
+          .filter(value => (changedValue || []).includes(value));
       } else {
         const valueId = changedValue;
         const newValue = values.find(value => value.id === valueId);
@@ -147,7 +154,14 @@ class CellProfilerParameter extends React.Component {
       <Select
         allowClear
         mode={multiple ? 'multiple' : 'default'}
-        className={styles.cellProfilerParameterValue}
+        className={
+          classNames(
+            styles.control,
+            {
+              'cp-error': parameterValue.isInvalid
+            }
+          )
+        }
         value={selected}
         onChange={onChange}
       >
@@ -175,7 +189,7 @@ class CellProfilerParameter extends React.Component {
     };
     return (
       <ColorPicker
-        className={styles.cellProfilerParameterValue}
+        className={styles.control}
         color={parameterValue.value}
         onChange={onChange}
         hex
@@ -204,7 +218,7 @@ class CellProfilerParameter extends React.Component {
     };
     return (
       <div
-        className={styles.cellProfilerParameterValue}
+        className={styles.control}
         style={{display: 'flex'}}
       >
         <span style={{whiteSpace: 'pre'}}>from </span>
@@ -244,7 +258,9 @@ class CellProfilerParameter extends React.Component {
       case AnalysisTypes.string:
         return this.renderStringControl();
       case AnalysisTypes.integer:
-      case AnalysisTypes.float: {
+      case AnalysisTypes.float:
+      case AnalysisTypes.units:
+      case AnalysisTypes.units2: {
         if (
           parameterValue.parameter.range &&
           parameterValue.parameter.range.min !== undefined &&
@@ -261,12 +277,39 @@ class CellProfilerParameter extends React.Component {
       case AnalysisTypes.custom:
       default: {
         if (typeof renderer === 'function') {
-          return renderer(parameterValue, styles.cellProfilerParameterValue);
+          return renderer(parameterValue, styles.control);
         }
         return this.renderStringControl();
       }
     }
   }
+
+  renderUnits = () => {
+    const {
+      parameterValue
+    } = this.props;
+    if (!parameterValue || !parameterValue.parameter) {
+      return null;
+    }
+    if (
+      [AnalysisTypes.units, AnalysisTypes.units2].includes(parameterValue.parameter.type) &&
+      parameterValue.parameter.cpModule &&
+      parameterValue.parameter.cpModule.pipeline &&
+      parameterValue.parameter.cpModule.pipeline.physicalSize
+    ) {
+      return (
+        <span className={styles.units}>
+          {parameterValue.parameter.cpModule.pipeline.physicalSize.unit}
+          {
+            parameterValue.parameter.type === AnalysisTypes.units2 && (
+              <sup>2</sup>
+            )
+          }
+        </span>
+      );
+    }
+    return null;
+  };
 
   render () {
     const {
@@ -299,10 +342,15 @@ class CellProfilerParameter extends React.Component {
           }
         >
           {parameterValue.parameter.title}
+          {this.renderUnits()}
         </div>
-        {
-          this.renderValueControl()
-        }
+        <div
+          className={styles.cellProfilerParameterValue}
+        >
+          {
+            this.renderValueControl()
+          }
+        </div>
       </div>
     );
   }

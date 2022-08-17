@@ -13,10 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
+/* eslint-disable no-unused-vars */
+import {isObservableArray} from 'mobx';
 import {AnalysisTypes} from '../common/analysis-types';
 import {AnalysisModule} from '../modules/base';
 import {getOutputFileAccessInfo} from './output-utilities';
+import {
+  isIntensityMeasurement,
+  isShapeMeasurement
+} from '../parameters/measurements';
 
 /**
  * @param {AnalysisApi} api
@@ -48,7 +53,8 @@ function getComputedValue (rule, module, modules) {
     e = regExp.exec(rule);
   }
   const placeholders = [...placeholderSet].map((placeholder) => {
-    const [parameter, alias = 'this'] = placeholder.split('.').reverse();
+    const [parameterName, ...modifiers] = placeholder.split(':');
+    const [parameter, alias = 'this'] = parameterName.split('.').reverse();
     let link;
     if (alias === 'this') {
       link = module;
@@ -56,7 +62,7 @@ function getComputedValue (rule, module, modules) {
       link = modules[alias];
     }
     if (link) {
-      return {placeholder, value: link.getParameterValue(parameter)};
+      return {placeholder, value: link.getParameterValue(parameter, ...modifiers)};
     }
     return {placeholder, value: placeholder};
   });
@@ -97,10 +103,10 @@ function extractModules (module) {
         const cpModule = AnalysisModule.createModule(
           name,
           {},
-          {id: `${module.id}_sub_${index + 1}`}
+          {id: `${module.id}_sub_${index + 1}`, pipeline: module.pipeline}
         );
-        cpModule.parentModule = module;
         if (cpModule) {
+          cpModule.parentModule = module;
           pipelineModules[alias] = cpModule;
           Object.entries(values || {}).forEach(([parameter, value]) => {
             if (typeof value === 'string' && /\|COMPUTED$/.test(value)) {
@@ -115,11 +121,127 @@ function extractModules (module) {
               cpModule.setParameterValue(parameter, value);
             }
           });
-          result.push(cpModule);
+          result.push(...extractModules(cpModule));
+        } else {
+          console.error(`Unknown module: ${name}`);
         }
       });
     }
   }
+  return result;
+}
+
+/**
+ * @param {string} outputType
+ * @returns {function(AnalysisModule): boolean}
+ */
+function getCriteriaByOutputType (outputType) {
+  return function filter (aModule) {
+    return aModule.outputs.some(output => outputType === output.type);
+  };
+}
+/**
+ * @param {AnalysisModule} aModule
+ * @param {string} outputType
+ * @returns {string[]}
+ */
+function getOutputNamesOfType (aModule, outputType) {
+  return aModule.outputs
+    .filter(output => outputType === output.type)
+    .map(output => output.name);
+}
+/**
+ * @param {string} moduleName
+ * @returns {function(AnalysisModule): boolean}
+ */
+function getCriteriaByModuleName (moduleName) {
+  return function filter (aModule) {
+    return aModule.name === moduleName;
+  };
+}
+
+/**
+ * @param {AnalysisModule[]} modules
+ * @param {AnalysisModule[]} result
+ * @param {function(AnalysisModule):boolean} criteria
+ * @param {function(AnalysisModule):AnalysisModule[]} generator
+ * @param {boolean} [before=false]
+ */
+const appendUsingCriteria = (modules, result, criteria, generator, before = false) => {
+  const match = modules.filter(criteria);
+  match.forEach(matched => {
+    const index = result.indexOf(matched);
+    if (index >= 0) {
+      const generated = generator(matched);
+      generated.forEach(generatedModule => {
+        generatedModule.parentModule = matched;
+      });
+      if (before) {
+        result.splice(index, 1, ...generated, matched);
+      } else {
+        result.splice(index, 1, matched, ...generated);
+      }
+    }
+  });
+};
+
+/**
+ * @param {AnalysisModule[]} modules
+ * @returns {AnalysisModule[]}
+ */
+function appendRequiredModules (modules) {
+  const result = [...modules];
+  /**
+   * @param {AnalysisModule} filterObjectsModule
+   * @returns {AnalysisModule[]}
+   */
+  function generateMeasurementModules (filterObjectsModule) {
+    const objectName = filterObjectsModule.getParameterValue('input');
+    const objectSourceImage = filterObjectsModule && filterObjectsModule.pipeline
+      ? filterObjectsModule.pipeline.getSourceImageForObjet(objectName)
+      : undefined;
+    const measurements = filterObjectsModule.getParameterValue('measurements');
+    const measurementModules = new Set();
+    if (measurements && (Array.isArray(measurements) || isObservableArray(measurements))) {
+      measurements.forEach(({measurement}) => {
+        let type;
+        if (isShapeMeasurement(measurement)) {
+          type = 'shape';
+        } else if (isIntensityMeasurement(measurement)) {
+          type = 'intensity';
+        }
+        measurementModules.add(type);
+      });
+    }
+    return [...measurementModules].map(group => {
+      const id = `${filterObjectsModule.id}_${objectName}_`;
+      switch (group) {
+        case 'shape':
+          return AnalysisModule.createModule('MeasureObjectSizeShape', {
+            objects: [objectName],
+            zernike: true,
+            advancedFeatures: true
+          }, {id: `${id}_size`});
+        case 'intensity':
+          if (objectSourceImage) {
+            return AnalysisModule.createModule('MeasureObjectIntensity', {
+              objects: [objectName],
+              images: [objectSourceImage]
+            }, {id: `${id}_intensity`});
+          }
+          return undefined;
+        default:
+          return undefined;
+      }
+    }).filter(Boolean);
+  }
+  appendUsingCriteria(
+    modules,
+    result,
+    getCriteriaByModuleName('FilterObjects'),
+    generateMeasurementModules,
+    true
+  );
   return result;
 }
 
@@ -134,45 +256,10 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
     return {modules: modules.slice()};
   }
   const result = [...modules];
-  /**
-   * @param {function(AnalysisModule):boolean} criteria
-   * @param {function(AnalysisModule):AnalysisModule[]} generator
-   */
-  const appendUsingCriteria = (criteria, generator) => {
-    const match = modules.filter(criteria);
-    match.forEach(matched => {
-      const index = result.indexOf(matched);
-      if (index >= 0) {
-        const generated = generator(matched);
-        generated.forEach(generatedModule => {
-          generatedModule.parentModule = matched;
-        });
-        result.splice(index, 1, matched, ...generated);
-      }
-    });
-  };
-  /**
-   * @param {string} outputType
-   * @returns {function(AnalysisModule): boolean}
-   */
-  function getCriteriaByOutputType (outputType) {
-    return function filter (aModule) {
-      return aModule.outputs.some(output => outputType === output.type);
-    };
-  }
-  /**
-   * @param {AnalysisModule} aModule
-   * @param {string} outputType
-   * @returns {string[]}
-   */
-  function getOutputNamesOfType (aModule, outputType) {
-    return aModule.outputs
-      .filter(output => outputType === output.type)
-      .map(output => output.name);
-  }
   const metadata = {
     objectImages: {},
-    objectBackgrounds: {}
+    objectBackgrounds: {},
+    images: {}
   };
   /**
    * @param {AnalysisModule} objectModule
@@ -198,6 +285,7 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
         }, {id: `${id}_saved`});
         if (saveImage) {
           metadata.objectImages[objectName] = fileName;
+          metadata.images[objectModule.id] = fileName;
           generated.push(outline);
           generated.push(saveImage);
         }
@@ -239,16 +327,21 @@ function appendExtraOutputModules (modules, prefix = 'DAPI', append = true) {
         format: 'png'
       }, {id: `${objectModule.id}_${aFile}_saved`});
       if (saveImage) {
+        metadata.images[objectModule.id] = aFile;
         generated.push(saveImage);
       }
     });
     return generated;
   }
   appendUsingCriteria(
+    modules,
+    result,
     getCriteriaByOutputType(AnalysisTypes.object),
     generateObjectsModules
   );
   appendUsingCriteria(
+    modules,
+    result,
     getCriteriaByOutputType(AnalysisTypes.file),
     generateFilesModules
   );
@@ -352,14 +445,15 @@ async function runPipeline (api, pipelineId, attempt = 0) {
   if (attempt > MAX_ATTEMPTS) {
     throw new Error(`Error launching analysis pipeline: max attempts exceeded`);
   }
-  await api.runPipeline(pipelineId);
-  const pipeline = await api.getPipeline(pipelineId);
-  const {state} = pipeline || {};
-  if (/^config/i.test(state)) {
-    await wait(ATTEMPT_INTERVAL_MS);
-    return runPipeline(api, pipelineId, attempt + 1);
-  }
-  return pipeline;
+  const runWithoutResponseFn = api.runPipeline.bind(api, pipelineId);
+  (runWithoutResponseFn)();
+  return api.getPipeline(pipelineId);
+  // const {state} = pipeline || {};
+  // if (/^config/i.test(state)) {
+  //   await wait(ATTEMPT_INTERVAL_MS);
+  //   return runPipeline(api, pipelineId, attempt + 1);
+  // }
+  // return pipeline;
 }
 
 /**
@@ -384,6 +478,21 @@ async function fetchStatusUntilDone (api, pipelineId) {
 }
 
 /**
+ * @typedef {Object} AnalysisOutputResult
+ * @property {string} name
+ * @property {string} id
+ * @property {string} [url]
+ * @property {function: Promise<string>} [fetchUrl]
+ * @property {boolean} analysisOutput
+ * @property {boolean} table
+ * @property {boolean} xlsx
+ * @property {AnalysisModule} [module]
+ * @property {string} [object]
+ * @property {boolean} [background]
+ * @property {string} [originalModuleId]
+ */
+
+/**
  * @param {{outputs: string[], name: string, settings: *}} module
  * @param {string} output
  * @param {number} index
@@ -398,12 +507,18 @@ function mapModuleOutput (module, output, index, metadata) {
   }
   let anObjectOutline;
   let background = false;
+  let originalModuleId;
   if (
     /^SaveImages$/i.test(module.name) &&
     module.settings &&
     module.settings['Select the image to save']
   ) {
     name = module.settings['Select the image to save'];
+    const originalModule = Object
+      .entries((metadata || {}).images || {})
+      .map(([moduleId, fileName]) => ({moduleId, fileName}))
+      .find(o => o.fileName === name);
+    originalModuleId = originalModule ? originalModule.moduleId : undefined;
     background = Object
       .entries((metadata || {}).objectBackgrounds || {})
       .map(([object, fileName]) => ({object, fileName}))
@@ -414,8 +529,9 @@ function mapModuleOutput (module, output, index, metadata) {
       .find(o => o.fileName === name);
   }
   const table = /\.csv$/i.test(output);
+  const xlsx = /\.xlsx?$/i.test(output);
   const analysisOutput = /^DefineResults$/i.test(module.name) &&
-    /(^|\/|\\)results\.csv$/i.test(output);
+    /(^|\/|\\)results\.(csv|xlsx|xls)$/i.test(output);
   return {
     name,
     file: output,
@@ -423,7 +539,9 @@ function mapModuleOutput (module, output, index, metadata) {
     object: anObjectOutline ? anObjectOutline.object : undefined,
     background: !!background,
     analysisOutput,
-    table
+    table,
+    xlsx,
+    originalModuleId
   };
 }
 
@@ -509,27 +627,38 @@ function modulesAreTheSame (moduleA, moduleB) {
  * @param {number} pipelineId
  * @param {AnalysisModule[]} [modules]
  * @param {AnalysisModuleCache[]} [cache]
+ * @param {{forceRemove: boolean?,modulesToRemove: number?}} [options={}]
  * @returns {Promise<{start: number, cache: AnalysisModuleCache[]}>}
  */
 async function updatePipeline (
   api,
   pipelineId,
   modules = [],
-  cache = []
+  cache = [],
+  options = {}
 ) {
+  const {
+    forceRemove,
+    modulesToRemove = 0
+  } = options;
+  let remoteModulesToRemoveCount = modulesToRemove;
+  let modulesToAdd = modules.slice();
+  let differenceIndex = 0;
   const modulesPayloads = modules.map(module => ({
     name: module.name,
     settings: module.getPayload()
   }));
-  let differenceIndex = Math.min(modulesPayloads.length, cache.length);
-  for (let i = 0; i < Math.min(modulesPayloads.length, cache.length); i++) {
-    if (!modulesAreTheSame(modulesPayloads[i], cache[i])) {
-      differenceIndex = i;
-      break;
+  if (!forceRemove) {
+    differenceIndex = Math.min(modulesPayloads.length, cache.length);
+    for (let i = 0; i < Math.min(modulesPayloads.length, cache.length); i++) {
+      if (!modulesAreTheSame(modulesPayloads[i], cache[i])) {
+        differenceIndex = i;
+        break;
+      }
     }
+    remoteModulesToRemoveCount = cache.length - differenceIndex;
+    modulesToAdd = modules.slice(differenceIndex);
   }
-  const remoteModulesToRemoveCount = cache.length - differenceIndex;
-  const modulesToAdd = modules.slice(differenceIndex);
   await removeModules(api, pipelineId, remoteModulesToRemoveCount, differenceIndex);
   await createRemoteModules(api, pipelineId, modulesToAdd, differenceIndex);
   return {start: differenceIndex, cache: modulesPayloads};
@@ -568,23 +697,24 @@ function findInitialModule (initialModules = [], executionModules, index) {
 }
 
 /**
- * @typedef {Object} AnalysisOutputResult
- * @property {string} name
- * @property {string} id
- * @property {string} [url]
- * @property {function: Promise<string>} [fetchUrl]
- * @property {boolean} analysisOutput
- * @property {boolean} table
- * @property {AnalysisModule} [module]
- * @property {string} [object]
- * @property {boolean} [background]
+ * @typedef {Object} RunAnalysisOptions
+ * @property {boolean} [debug=false]
+ * @property {boolean} [objectsOutput=false]
+ * @property {function} [callback]
  */
 
 /**
- * @typedef {Object} RunAnalysisOptions
- * @property {boolean} [debug=false]
- * @property {function} [callback]
+ * @param {AnalysisModule[]} modules
+ * @returns {AnalysisModule[]}
  */
+export function getPipelineModules (modules) {
+  return appendRequiredModules(
+    modules.reduce(
+      (analysisModules, module) => ([...analysisModules, ...extractModules(module)]),
+      []
+    )
+  );
+}
 
 /**
  * @param {AnalysisApi} api
@@ -603,6 +733,7 @@ export default async function runAnalysisPipeline (
 ) {
   const {
     debug = false,
+    objectsOutput = debug,
     callback: callbackFn
   } = options;
   if (!api) {
@@ -614,20 +745,27 @@ export default async function runAnalysisPipeline (
   // fetch pipeline info
   const pipeline = await api.getPipeline(pipelineId);
   const {
-    inputs = ['DAPI']
+    inputs = ['DAPI'],
+    modules: remoteModules = []
   } = pipeline;
   const {
     modules: allModules,
     metadata
-  } = appendExtraOutputModules(modules, inputs[0], debug);
-  const analysis = allModules.reduce(
-    (analysisModules, module) => ([...analysisModules, ...extractModules(module)]),
-    []
-  );
+  } = appendExtraOutputModules(modules, inputs[0], objectsOutput);
+  const analysis = getPipelineModules(allModules);
   if (analysis.length === 0) {
     return {results: [], cache};
   }
-  const {start, cache: newCache} = await updatePipeline(api, pipelineId, analysis, cache);
+  const {start, cache: newCache} = await updatePipeline(
+    api,
+    pipelineId,
+    analysis,
+    cache,
+    {
+      forceRemove: true,
+      modulesToRemove: remoteModules.length
+    }
+  );
   const ids = analysis.map((o, idx) => idx + 1).slice(start);
   const runCallback = (id, done) => {
     if (typeof callbackFn === 'function') {
@@ -644,11 +782,9 @@ export default async function runAnalysisPipeline (
       }
     }
   };
-  if (debug) {
-    await runPipelineModules(api, pipelineId, ids, runCallback);
-  } else {
-    await runPipeline(api, pipelineId);
-  }
+  // todo: submit only required modules (if "debug" mode)
+  // await runPipelineModules(api, pipelineId, ids, runCallback);
+  await runPipeline(api, pipelineId);
   const info = await fetchStatusUntilDone(api, pipelineId);
   runCallback();
   if (!info) {

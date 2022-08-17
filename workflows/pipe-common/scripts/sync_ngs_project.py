@@ -6,6 +6,9 @@ import time
 
 from pipeline import Logger, PipelineAPI, common
 
+BYTES_IN_GB = 1024 * 1024 * 1024
+MIN_LUSTRE_SIZE = 1200
+
 DATE_PATTERN = '%Y-%m-%d %H:%M:%S.%f'
 
 EVENT_FAILURE = 'Failure'
@@ -76,7 +79,8 @@ class Settings(object):
 
     def __init__(self, api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                  configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
-                 deploy_name, run_id, last_processed_column):
+                 deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,
+                 estimate_size, sample_sheet_prefix, demultiplex_config_prefix):
         self.complete_token_file_name = api.get_preference('ngs.preprocessing.completion.mark.file.default.name')[
             'value']
         self.sample_sheet_glob = api.get_preference('ngs.preprocessing.samplesheet.pattern')['value']
@@ -96,6 +100,11 @@ class Settings(object):
         self.deploy_name = deploy_name
         self.run_id = run_id
         self.last_processed_column = last_processed_column
+        self.config_prefix = config_prefix
+        self.data_size_multiplier = data_size_multiplier
+        self.estimate_size = estimate_size
+        self.sample_sheet_prefix = sample_sheet_prefix
+        self.demultiplex_config_prefix = demultiplex_config_prefix
 
 
 class MachineRun(object):
@@ -141,8 +150,8 @@ class MachineRun(object):
     def generate_sample_sheet(self, machine_run, run_folder):
         # run Rscript
         # check results
-        command = 'cd %s && Rscript %s %s' % (run_folder, self.settings.r_script,
-                                              self.settings.db_path_prefix + machine_run)
+        command = 'cd %s && Rscript %s %s -r --config-prefix %s' % (run_folder, self.settings.r_script,
+                                              self.settings.db_path_prefix + machine_run, self.settings.config_prefix)
         Logger.info('Executing command %s.' % command, task_name=self.machine_run)
         exit_code, out, err = common.execute_cmd_command_and_get_stdout_stderr(command,
                                                                                silent=True)
@@ -180,11 +189,23 @@ class MachineRun(object):
         results = self.check_results(run_folder)
         for sample_sheet in sample_sheets:
             id = machine_run + ':' + sample_sheet if sample_sheet else machine_run
+            entityId = None
             metadata = self.api.find_metadata_entity(self.settings.project_id, id, self.settings.machine_run_class)
             if metadata:
                 Logger.info('Machine run %s is already registered.' % machine_run, task_name=self.machine_run)
-                return
-            demultiplex_file, demultiplex_config = self.find_demultiplex_config(run_folder)
+                continue
+            if sample_sheet:
+                metadata = self.api.find_metadata_entity(self.settings.project_id, machine_run, self.settings.machine_run_class)
+                if metadata:
+                    if 'data' not in metadata or 'SampleSheet' not in metadata['data'] or \
+                            not metadata['data']['SampleSheet'].get('value', None):
+                        Logger.info('Machine run %s was previously registered without sample sheet. Updating existing entry.' %
+                                    machine_run, task_name=self.machine_run)
+                        id = machine_run
+                        entityId = metadata['id']
+                    else:
+                        continue
+            demultiplex_file, demultiplex_config = self.find_demultiplex_config(run_folder, sample_sheet)
             sequence_date = self.parse_seq_date(machine_run)
             data = {
                 'MachineRunID': {'type': 'string', 'value': machine_run},
@@ -208,6 +229,7 @@ class MachineRun(object):
                 'className': self.settings.machine_run_class,
                 'externalId': id,
                 'entityName': id,
+                'entityId': entityId,
                 'data': data
             }
             metadata_entity = self.api.save_metadata_entity(entity)
@@ -216,8 +238,8 @@ class MachineRun(object):
             self.notifications.append(Event(self.machine_run, 'Metadata created', EVENT_SUCCESS))
             if self.is_before_processed_date(sequence_date):
                 continue
-            if not results and trigger_run and self.settings.configuration_id:
-                self.run_analysis(metadata_entity)
+            if not results and self.settings.configuration_id:
+                self.run_analysis(metadata_entity, run_folder)
             failure_events = ['%s:%s' % (event.type, event.message)
                               for event in self.notifications
                               if event.status == EVENT_FAILURE and event.machine_run == self.machine_run]
@@ -252,7 +274,7 @@ class MachineRun(object):
                 return None
         return None
 
-    def run_analysis(self, metadata_entity):
+    def run_analysis(self, metadata_entity, run_folder):
         Logger.info('Launching analysis for machine run %s.' % self.machine_run, task_name=self.machine_run)
         if self.settings.launch_from_date:
             seq_date = metadata_entity['data']['SequenceDate']['value']
@@ -278,6 +300,14 @@ class MachineRun(object):
                 raise ValueError(
                     'Analysis configuration is misconfigured. Failed to find configuration entry %s.' % self.settings.configuration_entry_name)
             configuration['entries'] = [target_entry]
+            if self.settings.estimate_size:
+                size_gb = max(MIN_LUSTRE_SIZE, self.estimate_disk_size(run_folder) * self.settings.data_size_multiplier)
+                Logger.info('Requesting %d Gb file system for machine run %s.' % (size_gb, self.machine_run), task_name=self.machine_run)
+                target_entry['configuration']['parameters']['CP_CAP_SHARE_FS_SIZE'] = {
+                    "value": size_gb,
+                    "type": "int",
+                    "required": False
+                }
             data = {
                 "entitiesIds": [int(metadata_entity['id'])],
                 "entries": [target_entry],
@@ -287,7 +317,10 @@ class MachineRun(object):
                 "notifications": self.build_run_notification(metadata_entity)
             }
             result = self.api.run_configuration(data)
-            msg = 'Successfully launched analysis for machine run %s. Run id: %d.' % (self.machine_run, result[0]['id'])
+            msg = 'Successfully launched analysis for machine run %s. ' \
+                  'Run id: <a href="%s/#/run/%d/plain">%d</a>.' % (self.machine_run,
+                                                                   get_api_link(self.api.api_url),
+                                                                   result[0]['id'], result[0]['id'])
             Logger.info(msg, task_name=self.machine_run)
             self.notifications.append(Event(self.machine_run, 'Analysis launch', EVENT_SUCCESS, message=msg))
         except BaseException as e:
@@ -321,19 +354,24 @@ class MachineRun(object):
         value = json.dumps([os.path.join(self.settings.cloud_path, machine_run, res) for res in results])
         return {'type': 'Array[Path]', 'value': value}
 
-    def find_demultiplex_config(self, run_folder):
+    def find_demultiplex_config(self, run_folder, sample_sheet):
         result = {}
-        files = [os.path.basename(s) for s in glob.glob(os.path.join(run_folder, self.settings.demultiplex_file))]
-        if not files:
-            Logger.warn('Failed to find demultiplex configuration file for machine run %s.' % self.machine_run,
-                        task_name=self.machine_run)
-            return None, result
-        if len(files) > 1:
-            Logger.warn('Multiple demultiplex files found for machine run %s: %s. First one will be processed.' %
-                        (self.machine_run, ','.join(files)), task_name=self.machine_run)
-        demultiplex_config = files[0]
+        expected_config_name = self.get_expected_config_name(sample_sheet)
+        if expected_config_name and os.path.exists(os.path.join(run_folder, expected_config_name)):
+            demultiplex_config = expected_config_name
+        else:
+            files = [os.path.basename(s) for s in glob.glob(os.path.join(run_folder, self.settings.demultiplex_file))]
+            if not files:
+                Logger.warn('Failed to find demultiplex configuration file for machine run %s.' % self.machine_run,
+                            task_name=self.machine_run)
+                return None, result
+            if len(files) > 1:
+                Logger.warn('Multiple demultiplex files found for machine run %s: %s. First one will be processed.' %
+                            (self.machine_run, ','.join(files)), task_name=self.machine_run)
+            demultiplex_config = files[0]
+
         Logger.info('Reading demultiplex configuration file form %s.' % os.path.join(run_folder, demultiplex_config),
-                    task_name=self.machine_run)
+                        task_name=self.machine_run)
         with open(os.path.join(run_folder, demultiplex_config), 'r') as config:
             for line in config.readlines():
                 if not line or '\t' not in line:
@@ -343,6 +381,28 @@ class MachineRun(object):
                 path = parts[1]
                 result[name] = path
         return demultiplex_config, result
+
+    def get_expected_config_name(self, sample_sheet):
+        if sample_sheet:
+            # SampleSheet_suffix.csv -> demu_config_suffix.txt
+            return self.settings.demultiplex_config_prefix + \
+                   sample_sheet.replace(self.settings.sample_sheet_prefix, '').replace('.csv', '.txt')
+        else:
+            return None
+
+    def estimate_disk_size(self, run_folder):
+        data_folder = os.path.join(run_folder, 'Data')
+        if not os.path.exists(data_folder):
+            return 0
+        try:
+            exit_code, out, err = common.execute_cmd_command_and_get_stdout_stderr('du -s ' + data_folder,
+                                                                                   silent=True)
+            size = int(out.split()[0])
+            return size / BYTES_IN_GB
+        except BaseException as e:
+            Logger.warn('Failed to estimate data size for path %s: %s' % (run_folder, str(e.message)),
+                        task_name=self.machine_run)
+            return 0
 
 
 class NGSSync(object):
@@ -367,9 +427,8 @@ class NGSSync(object):
 
     def build_notification_text(self, notifications):
         event_str = ''
-        api_link = self.api.api_url.rstrip('/').replace('/restapi', '')
+        api_link = get_api_link(self.api.api_url)
         for event in notifications:
-            # https: // genie.alnylam.com / pipeline /  # /run/9767/plain/210727_NB501391_0312_AHTJHCBGXJ
             event_str += EVENT_PATTERN.format(**{'run': event.machine_run,
                                                  'event': event.type,
                                                  'status': event.status,
@@ -381,6 +440,10 @@ class NGSSync(object):
                                         'api': api_link,
                                         'folder_id': str(self.settings.project_id),
                                         'deploy_name': self.settings.deploy_name})
+
+
+def get_api_link(url):
+    return url.rstrip('/').replace('/restapi', '')
 
 
 def get_required_env_var(name):
@@ -405,10 +468,16 @@ def main():
     processed_to_date = os.getenv('NGS_SYNC_PROCESSED_TO_DATE', None)
     deploy_name = os.getenv('NGS_SYNC_DEPLOY_NAME', 'Cloud Pipeline')
     last_processed_column = os.getenv('NGS_SYNC_LAST_PROCESSD_COLUMN', 'LastProcessed')
+    config_prefix = os.getenv('NGS_SYNC_CONFIG_PREFIX', '')
+    data_size_multiplier = os.getenv('NGS_SYNC_SIZE_MULTIPLIER', 2)
+    estimate_size = os.getenv('NGS_SYNC_ESTIMATE_DATA_SIZE', 'false')
+    sample_sheet_prefix = os.getenv('NGS_SYNC_SAMPLE_SHEET_PREFIX', 'SampleSheet')
+    demultiplex_config_prefix = os.getenv('NGS_SYNC_DEMU_CONFIG_PREFIX', 'demu_config')
     api = PipelineAPI(api_url=os.environ['API'], log_dir='sync_ngs')
     settings = Settings(api, project_id, cloud_path, config_path, r_script, db_path_prefix, notify_users,
                         configuration_id, configuration_entry_name, launch_from_date, processed_to_date,
-                        deploy_name, run_id, last_processed_column)
+                        deploy_name, run_id, last_processed_column, config_prefix, data_size_multiplier,
+                        'true' == estimate_size.lower(), sample_sheet_prefix, demultiplex_config_prefix)
     NGSSync(api, settings).sync_ngs_project(folder)
 
 

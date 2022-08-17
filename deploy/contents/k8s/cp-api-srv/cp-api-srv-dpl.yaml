@@ -11,12 +11,12 @@ spec:
       labels:
         cloud-pipeline/cp-api-srv: "true"
     spec:
-      terminationGracePeriodSeconds: 40
       nodeSelector:
         cloud-pipeline/cp-api-srv: "true"
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      terminationGracePeriodSeconds: 50
       containers:
         - name: cp-api-srv-leader-elector
           image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:leader-elector-$CP_VERSION
@@ -113,6 +113,10 @@ spec:
             initialDelaySeconds: 150
             periodSeconds: 15
             failureThreshold: 4
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
       dnsConfig:
         options:
           - name: ndots

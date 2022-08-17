@@ -78,7 +78,7 @@ class NodeScaler:
                     logging.info('Node %s has been registered.', node_name)
                     break
             if not node:
-                logging.warning('Node %s is not registered after %s seconds.',
+                logging.warning('Node %s has not been registered after %s seconds.',
                                 node_name, self._configuration.timeout.scale_up_node_timeout)
                 raise NodeScaleUpTimeoutError(node_name)
             return node
@@ -95,7 +95,7 @@ class NodeScaler:
             while timeout > 0:
                 time.sleep(self._configuration.timeout.scale_up_node_delay)
                 timeout -= self._configuration.timeout.scale_up_node_delay
-                for pod in pods:
+                for pod in list(pods):
                     pod_conditions = self._pod_provider.get_pod_conditions(pod)
                     if Condition.READY in pod_conditions:
                         logging.info('System pod %s is ready on node %s.', pod.name, node.name)
@@ -103,10 +103,10 @@ class NodeScaler:
                 if not pods:
                     break
             if timeout <= 0:
-                logging.warning('Node %s is not initialized after %s seconds.',
+                logging.warning('Node %s has not been initialized after %s seconds.',
                                 node.name, self._configuration.timeout.scale_up_node_timeout)
                 raise NodeScaleUpTimeoutError(node.name)
-            logging.info('Node %s is initialized.', node.name)
+            logging.info('Node %s has been initialized.', node.name)
         except Exception:
             logging.warning('Node %s initialization has failed. It will be scaled down.', node.name)
             self.scale_down_node(node)
@@ -136,7 +136,7 @@ class NodeScaler:
     @AutoscalingTimer.wraps
     def scale_down_node(self, node):
         try:
-            self._node_provider.cordon_node(node)
+            self._node_provider.drain_node(node)
             self._node_provider.delete_node(node)
         finally:
             self._instance_provider.terminate_instance(Instance(name=node.name, persistence=node.persistence))

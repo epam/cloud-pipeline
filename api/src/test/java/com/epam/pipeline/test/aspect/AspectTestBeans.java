@@ -67,6 +67,8 @@ import com.epam.pipeline.dao.tool.ToolVulnerabilityDao;
 import com.epam.pipeline.dao.user.GroupStatusDao;
 import com.epam.pipeline.dao.user.RoleDao;
 import com.epam.pipeline.dao.user.UserDao;
+import com.epam.pipeline.manager.billing.BillingManager;
+import com.epam.pipeline.manager.billing.detail.EntityBillingDetailsLoader;
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.PodMonitor;
 import com.epam.pipeline.manager.contextual.handler.ContextualPreferenceHandler;
@@ -413,6 +415,21 @@ public class AspectTestBeans {
 
     @MockBean
     protected LdapTemplateProvider ldapTemplateProvider;
+
+    @MockBean
+    protected BillingManager billingManager;
+
+    @MockBean(name = "pipelineBillingDetailsLoader")
+    protected EntityBillingDetailsLoader pipelineBillingDetailsLoader;
+
+    @MockBean(name = "toolBillingDetailsLoader")
+    protected EntityBillingDetailsLoader toolBillingDetailsLoader;
+
+    @MockBean(name = "storageBillingDetailsLoader")
+    protected EntityBillingDetailsLoader storageBillingDetailsLoader;
+
+    @MockBean(name = "userBillingDetailsLoader")
+    protected EntityBillingDetailsLoader userBillingDetailsLoader;
 
     @MockBean
     protected QuotaRepository quotaRepository;

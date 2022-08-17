@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-export {
-  allModules,
-  NamesAndTypes
-} from './implementation';
+import allModules from './implementation';
+
+export default allModules;

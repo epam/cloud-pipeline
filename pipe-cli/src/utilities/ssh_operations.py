@@ -254,6 +254,8 @@ def http_proxy_tunnel_connect(proxy, target, timeout=None, retries=None):
 
 def get_conn_info(run_id, region=None):
     run_model = PipelineRun.get(run_id)
+    if not run_model.is_initialized:
+        raise RuntimeError('The specified Run ID #{} is not initialized for the SSH session'.format(run_id))
     proxy_url = Cluster.get_edge_external_url(region)
     if not proxy_url:
         raise RuntimeError('Cannot retrieve EDGE service external url')

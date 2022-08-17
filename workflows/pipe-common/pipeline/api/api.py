@@ -1027,6 +1027,12 @@ class PipelineAPI:
             raise RuntimeError("Failed to launch configuration %s. "
                                "Error message: {}".format(str(data['id']), str(e.message)))
 
+    def get_edge_external_url(self, region=None):
+        endpoint = 'cluster/edge/externalUrl'
+        if region:
+            endpoint += '?region=' + region
+        return self._request('GET', endpoint)
+
     def load_lifecycle_rules_for_storage(self, datastorage_id):
         try:
             return self.execute_request(str(self.api_url) +

@@ -66,6 +66,7 @@ public class PipelineConfiguration {
     private static final String SHARED_WITH_USERS = "share_with_users";
     private static final String SHARED_WITH_ROLES = "share_with_roles";
     private static final String NOTIFICATIONS = "notifications";
+    private static final String RAW_EDIT = "raw";
 
     public static final String EXECUTION_ENVIRONMENT = "EXEC_ENVIRONMENT";
 
@@ -152,6 +153,9 @@ public class PipelineConfiguration {
     private Map<String, String> tags;
 
     private Map<String, String> kubeLabels;
+
+    @JsonProperty(value = RAW_EDIT)
+    private Boolean rawEdit;
 
     @JsonIgnore
     public void setParameters(Map<String, PipeConfValueVO> parameters) {

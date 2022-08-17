@@ -199,19 +199,24 @@ class PipeFS(Operations):
 
     @errorlogged
     def statfs(self, path):
-        # some magic, check if we need to customize this
+        BLOCK_SIZE = 4096
+        # Report 1 Petabyte as a total volume
+        BLOCK_TOTAL = 1 * 1024 * 1024 * 1024 * 1024 * 1024 / BLOCK_SIZE
+        BLOCK_AVAIL = BLOCK_TOTAL - 1
+
         if self._is_win:
             return {
-                'f_bsize': 1000000,
-                'f_blocks': 1000000,
-                'f_bfree': 1000000,
-                'f_bavail': 1000000
+                'f_bavail': BLOCK_AVAIL,
+                'f_blocks': BLOCK_TOTAL,
+                'f_bsize': BLOCK_SIZE,
+                'f_bfree': BLOCK_AVAIL
             }
         else:
             return {
-                'f_bavail': 2048,
-                'f_blocks': 4096,
-                'f_bsize': 4096,
+                'f_bavail': BLOCK_AVAIL,
+                'f_blocks': BLOCK_TOTAL,
+                'f_bsize': BLOCK_SIZE,
+                'f_bfree': BLOCK_AVAIL,
                 'f_frsize': 4096,
                 'f_namemax': 255
             }

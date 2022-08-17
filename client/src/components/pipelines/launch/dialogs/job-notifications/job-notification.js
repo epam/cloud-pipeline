@@ -29,6 +29,26 @@ import styles from './job-notifications.css';
 
 const notificationSettings = new NotificationSettings();
 
+export function mapObservableNotification (notification) {
+  if (!notification) {
+    return undefined;
+  }
+  const {
+    type,
+    recipients = [],
+    triggerStatuses = [],
+    subject,
+    body
+  } = notification;
+  return {
+    type,
+    recipients: recipients.slice(),
+    triggerStatuses: triggerStatuses.slice(),
+    subject,
+    body
+  };
+}
+
 @inject('usersInfo')
 @inject((stores) => ({
   ...stores,

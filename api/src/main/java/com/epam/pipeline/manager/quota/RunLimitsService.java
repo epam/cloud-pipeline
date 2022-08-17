@@ -29,7 +29,6 @@ import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.exception.quota.LaunchQuotaExceededException;
 import com.epam.pipeline.manager.contextual.ContextualPreferenceManager;
 import com.epam.pipeline.manager.pipeline.PipelineRunManager;
-import com.epam.pipeline.manager.preference.AbstractSystemPreference;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.security.AuthManager;
@@ -59,6 +58,8 @@ public class RunLimitsService {
 
     private static final String USER_LIMIT_KEY = "<user-contextual-limit>";
     private static final String USER_GLOBAL_LIMIT_KEY = "<user-global-limit>";
+    private static final String LAUNCH_MAX_RUNS_USER_LIMIT = "launch.max.runs.user";
+    private static final String LAUNCH_MAX_RUNS_GROUP_LIMIT = "launch.max.runs.group";
     private static final List<TaskStatus> ACTIVE_RUN_STATUSES = Arrays.asList(TaskStatus.RESUMING, TaskStatus.RUNNING);
     private final PipelineRunManager runManager;
     private final RoleManager roleManager;
@@ -148,7 +149,7 @@ public class RunLimitsService {
     }
 
     private Optional<Integer> findUserLimit(final Long userId) {
-        return findLimitPreference(SystemPreferences.LAUNCH_MAX_RUNS_USER_LIMIT, ContextualPreferenceLevel.USER, userId)
+        return findLimitPreference(LAUNCH_MAX_RUNS_USER_LIMIT, ContextualPreferenceLevel.USER, userId)
             .map(ContextualPreference::getValue)
             .filter(NumberUtils::isNumber)
             .map(Integer::parseInt);
@@ -160,7 +161,7 @@ public class RunLimitsService {
 
     private Stream<GroupLimit> findUserGroupsLimits(final Set<String> groups) {
         final Map<String, ExtendedRole> groupIdsMapping = getAllMatchingGroupsMapping(groups);
-        return contextualPreferenceManager.load(SystemPreferences.LAUNCH_MAX_RUNS_GROUP_LIMIT.getKey()).stream()
+        return contextualPreferenceManager.load(LAUNCH_MAX_RUNS_GROUP_LIMIT).stream()
             .filter(pref -> isTargetGroupPreference(pref, groupIdsMapping))
             .map(pref -> mapToLimitDetails(pref, groupIdsMapping));
     }
@@ -184,12 +185,12 @@ public class RunLimitsService {
         return new GroupLimit(groupName, Integer.parseInt(pref.getValue()), groupUsers);
     }
 
-    private Optional<ContextualPreference> findLimitPreference(final AbstractSystemPreference.IntPreference pref,
+    private Optional<ContextualPreference> findLimitPreference(final String pref,
                                                                final ContextualPreferenceLevel resourceLevel,
                                                                final Long resourceId) {
         final ContextualPreferenceExternalResource preferenceResource =
             new ContextualPreferenceExternalResource(resourceLevel, resourceId.toString());
-        return contextualPreferenceManager.find(pref.getKey(), preferenceResource);
+        return contextualPreferenceManager.find(pref, preferenceResource);
     }
 
     private boolean exceedsUserLimit(final String userName, final Integer newInstancesCount, final Integer limit) {

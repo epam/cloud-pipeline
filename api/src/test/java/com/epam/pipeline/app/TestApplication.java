@@ -25,6 +25,7 @@ import com.epam.pipeline.manager.cloud.credentials.CloudProfileCredentialsManage
 import com.epam.pipeline.manager.cluster.InstanceOfferScheduler;
 import com.epam.pipeline.manager.cluster.performancemonitoring.ESMonitoringManager;
 import com.epam.pipeline.manager.cluster.pool.NodePoolUsageService;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.ldap.LdapManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationManager;
 import com.epam.pipeline.manager.notification.ContextualNotificationRegistrationManager;
@@ -73,7 +74,8 @@ import java.util.concurrent.Executor;
         DBConfiguration.class,
         CacheConfiguration.class,
         MappersConfiguration.class,
-        ContextualPreferenceConfiguration.class})
+        ContextualPreferenceConfiguration.class,
+        BillingConfiguration.class})
 @EnableAutoConfiguration(exclude = {
         SecurityAutoConfiguration.class,
         ManagementWebSecurityAutoConfiguration.class,
@@ -166,6 +168,9 @@ public class TestApplication {
 
     @MockBean
     public NodePoolUsageService nodePoolUsageService;
+
+    @MockBean
+    public DataStorageLifecycleManager dataStorageLifecycleManager;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {

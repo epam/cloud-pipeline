@@ -115,6 +115,16 @@ export default class Pipeline extends localization.LocalizedReactComponent {
     return !!this.state.metadata;
   }
 
+  @computed
+  get repositoryType () {
+    const {pipeline} = this.props;
+    if (pipeline && pipeline.loaded) {
+      const {repositoryType} = pipeline.value || {};
+      return repositoryType;
+    }
+    return undefined;
+  }
+
   columns = [
     {
       key: 'type',
@@ -309,6 +319,8 @@ export default class Pipeline extends localization.LocalizedReactComponent {
             <Row type="flex" justify="end">
               {
                 roleModel.writeAllowed(this.props.pipeline.value) &&
+                this.props.pipeline.loaded &&
+                !/^BITBUCKET$/i.test(this.repositoryType) &&
                   roleModel.manager.pipeline(
                     <Button
                       id={`folder-item-${item.key}-release-button`}
@@ -396,13 +408,15 @@ export default class Pipeline extends localization.LocalizedReactComponent {
   updatePipelineRequest = new UpdatePipeline();
   updatePipelineTokenRequest = new UpdatePipelineToken();
 
-  editPipeline = async ({name, description, token}) => {
+  editPipeline = async ({name, description, token, branch, configurationPath}) => {
     const hide = message.loading(`Updating ${this.localizedString('pipeline')} ${name}...`, -1);
     await this.updatePipelineRequest.send({
       id: this.props.pipeline.value.id,
       name: name,
       description: description,
-      parentFolderId: this.props.pipeline.value.parentFolderId
+      parentFolderId: this.props.pipeline.value.parentFolderId,
+      branch,
+      configurationPath
     });
     if (this.updatePipelineRequest.error) {
       hide();
@@ -786,7 +800,7 @@ export default class Pipeline extends localization.LocalizedReactComponent {
                       overlayClassName={styles.gitRepositoryPopover}
                       https={this.props.pipeline.value.repository}
                       ssh={this.props.pipeline.value.repositorySsh}
-                      repositoryType={this.props.pipeline.value.repositoryType}
+                      repositoryType={this.repositoryType}
                     />
                   ) : undefined
               }

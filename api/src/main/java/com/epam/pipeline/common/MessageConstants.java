@@ -803,6 +803,7 @@ public final class MessageConstants {
             "error.ngs.preprocessing.no.folder.metadata";
     public static final String ERROR_NGS_PREPROCESSING_SAMPLE_ID_NOT_FOUND =
             "error.ngs.preprocessing.sampleid.is.not.found";
+
     private MessageConstants() {
         // no-op
     }

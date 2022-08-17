@@ -57,7 +57,26 @@ function CellProfilerModuleHeaderRenderer (props) {
   if (!cpModule) {
     return null;
   }
+  /**
+   * @type {Analysis}
+   */
+  const analysis = cpModule.analysis;
+  /**
+   * @type {AnalysisPipeline}
+   */
+  const pipeline = cpModule.pipeline;
+  // eslint-disable-next-line
+  const outputImage = analysis
+    ? analysis.getOutputImageForModule(cpModule)
+    : undefined;
+  const hasOutputImage = !!outputImage;
+  const selected = pipeline &&
+    pipeline.graphicsOutput &&
+    pipeline.graphicsOutput.outputIsSelectedAsOverlayImage(outputImage);
   const renderIcon = () => {
+    if (!cpModule.statusReporting) {
+      return null;
+    }
     if (cpModule.pending || cpModule.done) {
       return (
         <Circle
@@ -96,6 +115,20 @@ function CellProfilerModuleHeaderRenderer (props) {
     prevent(e);
     cpModule.remove();
   };
+  const onSelectOutput = (event) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    if (!pipeline || !pipeline.graphicsOutput) {
+      return;
+    }
+    if (selected) {
+      (pipeline.graphicsOutput.setOverlayImage)(undefined, analysis.hcsImageViewer);
+    } else {
+      (pipeline.graphicsOutput.setOverlayImage)(outputImage, analysis.hcsImageViewer);
+    }
+  };
   return (
     <div
       style={{
@@ -107,6 +140,25 @@ function CellProfilerModuleHeaderRenderer (props) {
       <b style={{marginRight: 'auto'}}>
         {renderIcon()}
         {cpModule.displayName}
+        {
+          hasOutputImage && (
+            <Icon
+              type="picture"
+              className={
+                classNames({
+                  'cp-text-not-important': !selected,
+                  'cp-primary': selected
+                })
+              }
+              style={{
+                cursor: 'pointer',
+                marginLeft: 5,
+                fontWeight: 'normal'
+              }}
+              onClick={onSelectOutput}
+            />
+          )
+        }
       </b>
       {
         !cpModule.hidden && movable && (

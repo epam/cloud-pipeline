@@ -51,10 +51,23 @@ class CellProfilerPipeline extends React.Component {
       pipeline,
       viewer,
       className,
-      style
+      style,
+      hidden
     } = this.props;
-    if (!pipeline) {
+    if (!pipeline || hidden) {
       return null;
+    }
+    let infoHeader = (
+      <b className={styles.title}>
+        <Icon type="info-circle-o" /> Info
+      </b>
+    );
+    if (pipeline.name) {
+      infoHeader = (
+        <b className={styles.title}>
+          <Icon type="info-circle-o" /> Info: {pipeline.name}
+        </b>
+      );
     }
     return (
       <div
@@ -62,11 +75,7 @@ class CellProfilerPipeline extends React.Component {
         style={style}
       >
         <Collapse
-          header={(
-            <b className={styles.title}>
-              <Icon type="info-circle-o" /> Info
-            </b>
-          )}
+          header={infoHeader}
         >
           <AnalysisPipelineInfo
             pipeline={pipeline}
@@ -90,23 +99,29 @@ class CellProfilerPipeline extends React.Component {
               </Collapse>
             ))
         }
-        <Collapse
-          header={(
-            <CellProfilerModuleHeader
-              cpModule={pipeline.defineResults}
-              removable={false}
-              movable={false}
-            />
-          )}
-        >
-          <CellProfilerModule
-            cpModule={pipeline.defineResults}
-          />
-        </Collapse>
         {
           pipeline &&
-          pipeline.objectsOutlines &&
-          pipeline.objectsOutlines.configurations.length > 0 && (
+          pipeline.objects &&
+          pipeline.objects.length > 0 && (
+            <Collapse
+              header={(
+                <CellProfilerModuleHeader
+                  cpModule={pipeline.defineResults}
+                  removable={false}
+                  movable={false}
+                />
+              )}
+            >
+              <CellProfilerModule
+                cpModule={pipeline.defineResults}
+              />
+            </Collapse>
+          )
+        }
+        {
+          pipeline &&
+          pipeline.graphicsOutput &&
+          pipeline.graphicsOutput.configurations.length > 0 && (
             <Collapse header="Display objects">
               <ObjectsOutlineRenderer
                 pipeline={pipeline}
@@ -125,7 +140,8 @@ CellProfilerPipeline.propTypes = {
   style: PropTypes.object,
   pipeline: PropTypes.object,
   viewer: PropTypes.object,
-  expandSingle: PropTypes.bool
+  expandSingle: PropTypes.bool,
+  hidden: PropTypes.bool
 };
 
 export default observer(CellProfilerPipeline);

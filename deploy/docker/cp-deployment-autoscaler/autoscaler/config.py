@@ -56,7 +56,8 @@ KubeNodeConfiguration = collections.namedtuple('KubeNodeConfiguration',
                                                'kube_token, kube_ip, kube_port, kube_dns_ip, aws_fs_url')
 TimeoutConfiguration = collections.namedtuple('TimeoutConfiguration',
                                               'scale_up_node_timeout, scale_up_node_delay, '
-                                              'scale_up_instance_timeout, scale_up_instance_delay')
+                                              'scale_up_instance_timeout, scale_up_instance_delay, '
+                                              'scale_down_node_timeout, scale_down_node_delay')
 MiscConfiguration = collections.namedtuple('MiscConfiguration',
                                            'boto3_retry_count')
 
@@ -223,7 +224,9 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
             scale_up_node_timeout=self._get_number(configuration, 'timeout.scale_up_node_timeout', 15 * 60),
             scale_up_node_delay=self._get_number(configuration, 'timeout.scale_up_node_delay', 10),
             scale_up_instance_timeout=self._get_number(configuration, 'timeout.scale_up_instance_timeout', 60),
-            scale_up_instance_delay=self._get_number(configuration, 'timeout.scale_up_instance_delay', 10))
+            scale_up_instance_delay=self._get_number(configuration, 'timeout.scale_up_instance_delay', 10),
+            scale_down_node_timeout=self._get_number(configuration, 'timeout.scale_down_node_timeout', 2 * 60),
+            scale_down_node_delay=self._get_number(configuration, 'timeout.scale_down_node_delay', 10))
         self._misc = MiscConfiguration(
             boto3_retry_count=self._get_number(configuration, 'misc.boto3_retry_count', 10))
 

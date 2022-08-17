@@ -16,5 +16,6 @@
 
 __all__ = [
     'storage_model',
-    'user_model'
+    'user_model',
+    'tool_model'
 ]

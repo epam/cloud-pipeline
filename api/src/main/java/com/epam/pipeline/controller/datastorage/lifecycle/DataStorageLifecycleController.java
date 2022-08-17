@@ -188,7 +188,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageLifecycleRuleExecution> updateStorageLifecycleRuleExecutionStatus(
+    public Result<StorageLifecycleRuleExecution> deleteStorageLifecycleRuleExecution(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = EXECUTION_ID) final Long executionId) {
         return Result.success(

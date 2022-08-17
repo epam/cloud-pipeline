@@ -20,6 +20,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {inject, observer} from 'mobx-react';
 import styles from './hcs-cell-selector.css';
+import {cellsArraysAreEqual} from '../utilities/cells-utilities';
 
 const DEFAULT_MINIMUM_CELL_SIZE = 5;
 const DEFAULT_MAXIMUM_CELL_SIZE = 30;
@@ -48,6 +49,29 @@ function renderLegend (size, count, style) {
     ));
 }
 
+function getRegionSelectionFilter (region = {}, currentSelection = []) {
+  const {
+    start,
+    end,
+    append = false
+  } = region;
+  const previouslySelected = aCell => currentSelection
+    .some(selectedCell => selectedCell.x === aCell.x && selectedCell.y === aCell.y);
+  if (!start || !end) {
+    return previouslySelected;
+  }
+  const [minX, maxX] = [start, end]
+    .map(aCell => aCell.x)
+    .sort((a, b) => a - b);
+  const [minY, maxY] = [start, end]
+    .map(aCell => aCell.y)
+    .sort((a, b) => a - b);
+  return aCell => (
+    aCell.x >= minX && aCell.x <= maxX &&
+    aCell.y >= minY && aCell.y <= maxY
+  ) || (append && previouslySelected(aCell));
+}
+
 const Shapes = {
   circle: 'circle',
   rect: 'rect'
@@ -62,7 +86,8 @@ class HcsCellSelector extends React.Component {
     widthPx: undefined,
     heightPx: undefined,
     hovered: false,
-    maxHeight: undefined
+    maxHeight: undefined,
+    regionSelection: undefined
   };
 
   get canZoomOut () {
@@ -78,6 +103,13 @@ class HcsCellSelector extends React.Component {
       cellSize
     } = this.state;
     return cellSize && DEFAULT_MAXIMUM_CELL_SIZE && cellSize < DEFAULT_MAXIMUM_CELL_SIZE;
+  }
+
+  get currentSelection () {
+    const {
+      selected = []
+    } = this.props;
+    return selected;
   }
 
   componentDidMount () {
@@ -96,10 +128,9 @@ class HcsCellSelector extends React.Component {
     ) {
       this.updateSize();
     } else if (
-      prevProps.selectedCell !== this.props.selectedCell ||
-      prevProps.selectedId !== this.props.selectedId ||
-      prevProps.cells !== this.props.cells ||
-      prevProps.entireWellView !== this.props.entireWellView
+      !cellsArraysAreEqual(prevProps.selected, this.props.selected) ||
+      !cellsArraysAreEqual(prevProps.cells, this.props.cells) ||
+      prevState.regionSelection !== this.state.regionSelection
     ) {
       this.draw();
     }
@@ -259,7 +290,6 @@ class HcsCellSelector extends React.Component {
       offsetX,
       offsetY
     } = event.nativeEvent || {};
-    let cell;
     if (offsetX !== undefined && offsetY !== undefined) {
       let x = Math.ceil(offsetX / cellSize);
       let y = Math.ceil(offsetY / cellSize);
@@ -276,26 +306,86 @@ class HcsCellSelector extends React.Component {
       if (flipVertical) {
         y = height - y + 1;
       }
-      cell = (cells.find(o => o.y === y && o.x === x));
+      const cell = (cells.find(o => o.y === y && o.x === x));
+      return {
+        cell,
+        x,
+        y
+      };
     }
-    return cell;
+    return {cell: undefined};
   };
+
+  handleMouseDown = event => {
+    const {multiple} = this.props;
+    const currentCell = this.getCellUnderEvent(event);
+    if (multiple) {
+      this.setState({
+        regionSelection: {
+          start: currentCell,
+          end: currentCell,
+          append: event && event.nativeEvent && event.nativeEvent.shiftKey
+        }
+      });
+    }
+  }
+
+  handleMouseUp = event => {
+    const {cell, x, y} = this.getCellUnderEvent(event);
+    const {regionSelection} = this.state;
+    const {
+      onChange,
+      cells,
+      multiple
+    } = this.props;
+    if (multiple && x !== undefined && y !== undefined && regionSelection) {
+      const {start, append} = regionSelection;
+      const selection = cells.filter(
+        getRegionSelectionFilter(
+          {
+            start,
+            end: {x, y},
+            append
+          },
+          this.currentSelection
+        )
+      );
+      if (selection.length > 0 && typeof onChange === 'function') {
+        onChange(selection);
+      }
+      this.setState({
+        regionSelection: undefined
+      });
+    } else if (multiple && regionSelection) {
+      this.setState({
+        regionSelection: undefined
+      });
+    } else if (cell && typeof onChange === 'function') {
+      onChange([cell]);
+    }
+  }
 
   handleMouseMove = event => {
     const {
-      hovered: currentHovered
+      hovered: currentHovered,
+      regionSelection
     } = this.state;
-    let hovered = !!this.getCellUnderEvent(event);
-    if (hovered !== currentHovered) {
-      this.setState({hovered});
+    const {
+      multiple
+    } = this.props;
+    const {cell, x, y} = this.getCellUnderEvent(event);
+    if (multiple && x !== undefined && y !== undefined && regionSelection) {
+      const {start, end, append} = regionSelection;
+      if (!end || end.x !== x || end.y !== y) {
+        this.setState({
+          regionSelection: {start, end: {x, y}, append},
+          hovered: true
+        });
+        return;
+      }
     }
-  };
-
-  handleClick = event => {
-    const cell = this.getCellUnderEvent(event);
-    const {onChange} = this.props;
-    if (cell && onChange) {
-      onChange(cell);
+    if ((!!cell) !== currentHovered) {
+      this.setState({hovered: !!cell});
     }
   };
 
@@ -316,20 +406,18 @@ class HcsCellSelector extends React.Component {
         this.canvas.height
       );
       const {
-        cellSize
+        cellSize,
+        regionSelection
       } = this.state;
       const {
         height = 0,
         width = 0,
         themes,
         cells = [],
-        selectedCell,
-        selectedId,
         gridShape = Shapes.rect,
         gridRadius = 0,
         flipVertical,
-        flipHorizontal,
-        entireWellView
+        flipHorizontal
       } = this.props;
       let {
         cellShape = Shapes.circle
@@ -338,10 +426,10 @@ class HcsCellSelector extends React.Component {
         cellShape = Shapes.rect;
       }
       let selected = [];
-      if (entireWellView) {
-        selected = cells;
+      if (regionSelection) {
+        selected = cells.filter(getRegionSelectionFilter(regionSelection, this.currentSelection));
       } else {
-        selected = [selectedCell || cells.find(o => o.id === selectedId)];
+        selected = this.currentSelection;
       }
       if (height && width && cellSize) {
         if (this.drawHandle) {
@@ -633,7 +721,8 @@ class HcsCellSelector extends React.Component {
                 ref={this.initializeCanvas}
                 onMouseMove={this.handleMouseMove}
                 onMouseLeave={this.unHover}
-                onClick={this.handleClick}
+                onMouseDown={this.handleMouseDown}
+                onMouseUp={this.handleMouseUp}
               >
                 {'\u00A0'}
               </canvas>
@@ -650,15 +739,17 @@ const CellPropType = PropTypes.shape({
   y: PropTypes.number
 });
 
+const arrayOf = of => PropTypes.oneOfType([PropTypes.object, PropTypes.arrayOf(of)]);
+
 HcsCellSelector.propTypes = {
   className: PropTypes.string,
   style: PropTypes.object,
   height: PropTypes.number,
   width: PropTypes.number,
-  selectedCell: CellPropType,
-  selectedId: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
-  cells: PropTypes.arrayOf(CellPropType),
+  selected: arrayOf(CellPropType),
+  cells: arrayOf(CellPropType),
   onChange: PropTypes.func,
+  multiple: PropTypes.bool,
   cellShape: PropTypes.oneOf([
     Shapes.circle,
     Shapes.rect
@@ -673,15 +764,13 @@ HcsCellSelector.propTypes = {
   flipVertical: PropTypes.bool,
   flipHorizontal: PropTypes.bool,
   title: PropTypes.string,
-  showLegend: PropTypes.bool,
-  entireWellView: PropTypes.bool
+  showLegend: PropTypes.bool
 };
 
 HcsCellSelector.defaultProps = {
   cellShape: Shapes.circle,
   gridShape: Shapes.rect,
-  showLegend: true,
-  entireWellView: false
+  showLegend: true
 };
 
 HcsCellSelector.Shapes = Shapes;

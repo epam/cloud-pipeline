@@ -303,7 +303,8 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/vanilla "$CP_DIST_RE
 # - CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda9-${DOCKERS_VERSION}" "library/centos-cuda:7-cuda9" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda10-${DOCKERS_VERSION}" "library/centos-cuda:7-cuda10" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda-${DOCKERS_VERSION}" "library/centos-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda11-${DOCKERS_VERSION}" "library/centos-cuda:7-cuda11" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/centos/cuda "$CP_DIST_REPO_NAME:tools-base-centos-7-cuda-${DOCKERS_VERSION}" "library/centos-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 
 # Ubuntu
 # - Vanilla
@@ -313,7 +314,8 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/vanilla "$CP_DIST_RE
 # - CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-16.04-cuda9-${DOCKERS_VERSION}" "library/ubuntu-cuda:16-cuda9" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-18.04-cuda10-${DOCKERS_VERSION}" "library/ubuntu-cuda:18-cuda10" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-cuda:18.04-cuda11" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/ubuntu/cuda "$CP_DIST_REPO_NAME:tools-base-ubuntu-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-cuda:latest" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
 # RStudio
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/rstudio "$CP_DIST_REPO_NAME:tools-base-rstudio-${DOCKERS_VERSION}" "library/rstudio:3.5.1"
@@ -337,9 +339,9 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/luigi "$CP_DIST_REPO_NAME:t
 
 # Jupyter
 ## - Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-${DOCKERS_VERSION}" "library/jupyter:conda-2" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7" --build-arg ANACONDA_VERSION="2-latest"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-3-${DOCKERS_VERSION}" "library/jupyter:conda-3" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" "library/jupyter:latest" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-${DOCKERS_VERSION}" "library/jupyter:conda-2" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="2-latest"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-3-${DOCKERS_VERSION}" "library/jupyter:conda-3" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-${DOCKERS_VERSION}" "library/jupyter:latest" --spec "vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908" --build-arg ANACONDA_VERSION="3-py37_4.9.2"
 
 ## - CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/jupyter "$CP_DIST_REPO_NAME:tools-base-jupyter-2-cuda9-${DOCKERS_VERSION}" "library/jupyter-cuda:conda-2-cuda9" --spec "cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7" --build-arg ANACONDA_VERSION="2-latest"
@@ -374,17 +376,19 @@ build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/noVNC "$CP_DIST_REP
 ### -- CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-16.04-cuda9-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:16-cuda9" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-ubuntu16.04"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda10-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:18-cuda10" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-ubuntu18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda11-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:18.04-cuda11" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-ubuntu-nomachine-18.04-cuda-${DOCKERS_VERSION}" "library/ubuntu-nomachine-cuda:latest" --file "ubuntu/Dockerfile" --spec "ubuntu/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-ubuntu18.04"
 
 ## - Centos
 ### -- Vanilla
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:7" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:latest" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:7" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-${DOCKERS_VERSION}" "library/centos-nomachine:latest" --file "centos/Dockerfile" --spec "centos/vanilla" --build-arg BASE_IMAGE="library/centos:7.7.1908"
 
 ### -- CUDA
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda9-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:7-cuda9" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:9.0-cudnn7-runtime-centos7"
 build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda10-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:7-cuda10" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7"
-build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:latest" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:10.0-cudnn7-runtime-centos7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda11-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:7-cuda11" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
+build_and_push_tool $BASE_TOOLS_DOCKERS_SOURCES_PATH/desktop/nomachine "$CP_DIST_REPO_NAME:tools-base-centos-nomachine-7-cuda-${DOCKERS_VERSION}" "library/centos-nomachine-cuda:latest" --file "centos/Dockerfile" --spec "centos/cuda" --build-arg BASE_IMAGE="nvidia/cuda:11.3.1-cudnn8-runtime-centos7"
 
 
 ########################

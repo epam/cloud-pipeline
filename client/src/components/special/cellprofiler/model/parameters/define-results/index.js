@@ -77,16 +77,22 @@ const DefineResults = (cpModule) => {
     module: 'DefineResults',
     values: {
       specs,
-      grouping: 'Well'
+      grouping: ['Well', 'Timepoint']
     }
   };
 };
 
-const defineResultsSubModules = (cpModule) => [
-  ...ObjectsIntensities(cpModule),
-  ObjectSizes(cpModule),
-  DefineResults(cpModule)
-].filter(Boolean);
+const defineResultsSubModules = (cpModule) => {
+  const configuration = cpModule.getParameterValue('configuration') || [];
+  if (!configuration || !configuration.length) {
+    return [];
+  }
+  return [
+    ...ObjectsIntensities(cpModule),
+    ObjectSizes(cpModule),
+    DefineResults(cpModule)
+  ].filter(Boolean);
+};
 
 export {
   DefineResultsParameter,
