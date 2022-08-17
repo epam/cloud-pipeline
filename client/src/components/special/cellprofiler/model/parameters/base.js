@@ -184,19 +184,30 @@ class ModuleParameter {
     return this.pipeline.channels;
   }
 
+  wrapValuesWithEmptyValue = (values = []) => {
+    const _values = [];
+    if (this.isList && !this.multiple && this.emptyValue) {
+      _values.push(mapListItem(this.emptyValue));
+    }
+    return _values.concat(values);
+  };
+
   @computed
   get values () {
     if (typeof this._values === 'function') {
-      return (this._values(this.cpModule) || [])
-        .map(mapListItem)
-        .filter(Boolean);
+      return this.wrapValuesWithEmptyValue(
+        (this._values(this.cpModule) || [])
+          .map(mapListItem)
+          .filter(Boolean)
+      );
+    } else if (this._values !== undefined && this._values.length) {
+      return this.wrapValuesWithEmptyValue(
+        this._values
+          .map(mapListItem)
+          .filter(Boolean)
+      );
     }
-    if (this._values !== undefined && this._values.length) {
-      return this._values
-        .map(mapListItem)
-        .filter(Boolean);
-    }
-    return [];
+    return this.wrapValuesWithEmptyValue([]);
   }
   @computed
   get visible () {
@@ -304,8 +315,9 @@ class ModuleParameterValue {
   get isEmpty () {
     const aValue = this.value;
     return aValue === undefined ||
-    (typeof aValue === 'string' && aValue.trim() === '') ||
-    (typeof aValue === 'object' && aValue.length === 0);
+      (this.parameter && this.parameter.isList && this.parameter.emptyValue === aValue) ||
+      (typeof aValue === 'string' && aValue.trim() === '') ||
+      (typeof aValue === 'object' && aValue.length === 0);
   }
 
   @computed
@@ -387,6 +399,14 @@ class ModuleParameterValue {
     if (this.parameter && this.parameter.computed) {
       result = getComputedValue(this.parameter.computed, this.parameter.cpModule);
     }
+    if (
+      this.parameter &&
+      this.parameter.isList &&
+      !this.parameter.multiple &&
+      (!result || `${result}`.trim() === '')
+    ) {
+      result = this.parameter.emptyValue;
+    }
     return modifyValue(
       result,
       this.pipeline,
@@ -396,6 +416,14 @@ class ModuleParameterValue {
 
   setValue (aValue, ...modifier) {
     let result = aValue;
+    if (
+      this.parameter &&
+      this.parameter.isList &&
+      !this.parameter.multiple &&
+      (!result || `${result}`.trim() === '')
+    ) {
+      result = this.parameter.emptyValue;
+    }
     if (this.parameter && this.parameter.multiple) {
       result = aValue && (isObservableArray(aValue) || Array.isArray(aValue))
         ? aValue
