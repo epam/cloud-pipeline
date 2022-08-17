@@ -55,7 +55,7 @@ const findCells = {
     'Objects name|string|Cells|ALIAS name|REQUIRED',
     'Method|[Default,Suppress features,Combine channels]|Default|ALIAS mainMethod',
     'Feature size|units|10|IF mainMethod=="Suppress features"|ALIAS featureSize',
-    'Configure threshold|flag|false|IF mainMethod=="Combine channels" OR mainMethod=="B"|ALIAS configureThresholdCombine|ADVANCED',
+    'Configure threshold|flag|false|IF mainMethod=="Default" OR mainMethod=="A" OR mainMethod=="Combine channels" OR mainMethod=="B"|ALIAS configureThresholdCombine|ADVANCED',
     'Configure threshold|flag|false|IF mainMethod=="Suppress features"|ALIAS configureThresholdSuppress|ADVANCED',
     'Use multiple channels|flag|false|ADVANCED|ALIAS multipleChannels|IF mainMethod=="Combine channels"',
     'Erode shape|[Ball,Cube,Diamond,Disk,Octahedron,Square,Star]|Disk|ALIAS erodeShape|IF erode==true',

@@ -76,12 +76,8 @@ class ObjectsOutline extends React.Component {
     if (!color) {
       return null;
     }
-    const {
-      pending
-    } = this.state;
     return (
       <ColorPicker
-        disabled={pending}
         color={color}
         hex
         onChange={aColor => {

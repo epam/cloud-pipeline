@@ -320,7 +320,7 @@ class ModuleParameterValue {
     return this.getPayload();
   }
 
-  getPayload (validate = false, exportLocal = false) {
+  getPayload (validate = false, exportLocal = false, useSystemNames = false) {
     if (!this.parameter) {
       return {};
     }
@@ -344,10 +344,13 @@ class ModuleParameterValue {
         ? o
         : [o].filter(oo => oo !== undefined);
     };
+    const name = useSystemNames
+      ? this.parameter.name
+      : this.parameter.parameterName;
     let formattedValue = valueFormatter(multipleFormatter(this.value), this.parameter.cpModule);
     if (isRange) {
       return {
-        [this.parameter.parameterName]: (formattedValue || []).map(idx =>
+        [name]: (formattedValue || []).map(idx =>
           Number.isNaN(Number(idx)) ? 0 : Number(idx)
         )
       };
@@ -371,11 +374,11 @@ class ModuleParameterValue {
     switch (type) {
       case AnalysisTypes.string:
         return {
-          [this.parameter.parameterName]:
+          [name]:
             `${formattedValue === undefined ? '' : formattedValue}`
         };
       default:
-        return {[this.parameter.parameterName]: formattedValue};
+        return {[name]: formattedValue};
     }
   }
 
@@ -433,7 +436,7 @@ class ModuleParameterValue {
     }
   };
   exportParameterValue = () => {
-    const payload = this.getPayload(false, true);
+    const payload = this.getPayload(false, true, true);
     return Object.entries(payload)
       .map(([name, value]) => `${name}:${JSON.stringify(value)}`);
   }
