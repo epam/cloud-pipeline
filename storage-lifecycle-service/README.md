@@ -11,6 +11,7 @@ Storage Lifecycle Service is a python application to manage and execute storage 
 - boto3 1.24.46
 - botocore 1.27.46
 - DateTime 4.3 
+- parameterized 0.8.1
 - pipeline 1.0 (pipe-common)
 
 ## Launching

@@ -28,8 +28,7 @@ setup(
         'botocore==1.27.46',
         'DateTime==4.3',
         'pipeline==1.0',
-        'parameterized=0.8.1',
-        'jproperties=2.1.1'
+        'parameterized=0.8.1'
     ],
     entry_points='''
         [console_scripts]
