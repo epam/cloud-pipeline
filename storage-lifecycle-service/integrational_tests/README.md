@@ -41,7 +41,7 @@ Path to test case files
 ## Launching
 
 1) Export all variables from **Prerequisites** section
-2) Install all dependencies from setup.py
+2) Install all dependencies from setup.py + pipe-common package
 3) Run tests
 
 ```

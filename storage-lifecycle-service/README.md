@@ -12,7 +12,7 @@ Storage Lifecycle Service is a python application to manage and execute storage 
 - botocore 1.27.46
 - DateTime 4.3 
 - parameterized 0.8.1
-- pipeline 1.0 (pipe-common)
+- pipe-common
 
 ## Launching
 
@@ -45,6 +45,7 @@ python cp-storage-lifecycle-service.py
 
 **--at** (not required, default: 00:01) - Used with --mode=daemon, use when you need to specify a time when sync process should be performed
 
+**--max-execution-running-days** - How long execution can be running before it will be treated as FAILED
 
 ## Troubleshooting
 
