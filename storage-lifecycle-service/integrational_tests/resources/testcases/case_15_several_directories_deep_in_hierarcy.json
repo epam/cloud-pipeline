@@ -5,12 +5,12 @@
         "storageProvider": "S3",
         "storage": "cp-lifecycle-storage-policy-test-storage",
         "files": [
-          {"key": "data1/folder/dataset12/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data1/folder/dataset12/file2.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data1/folder/dataset12/file3.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data2/folder/dataset13/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
-          {"key": "data2/folder/dataset13/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
-          {"key": "data2/folder/dataset13/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
+          {"key": "data1/folder/subfolder/dataset12/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data1/folder/subfolder/dataset12/file2.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data1/folder/subfolder/dataset12/file3.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data2/folder/subfolder/dataset13/file1.txt", "creationDateShift": 10, "storageClass": "STANDARD"},
+          {"key": "data2/folder/subfolder/dataset13/file2.txt", "creationDateShift": 11, "storageClass": "STANDARD"},
+          {"key": "data2/folder/subfolder/dataset13/file3.txt", "creationDateShift": 12, "storageClass": "STANDARD"}
         ]
       }
     ]
@@ -59,12 +59,12 @@
           "storage": "cp-lifecycle-storage-policy-test-storage",
           "storageProvider": "S3",
           "files": [
-            {"key": "data1/folder/dataset12/file1.txt"},
-            {"key": "data1/folder/dataset12/file2.txt"},
-            {"key": "data1/folder/dataset12/file3.txt"},
-            {"key": "data2/folder/dataset13/file1.txt"},
-            {"key": "data2/folder/dataset13/file2.txt"},
-            {"key": "data2/folder/dataset13/file3.txt"}
+            {"key": "data1/folder/subfolder/dataset12/file1.txt"},
+            {"key": "data1/folder/subfolder/dataset12/file2.txt"},
+            {"key": "data1/folder/subfolder/dataset12/file3.txt"},
+            {"key": "data2/folder/subfolder/dataset13/file1.txt"},
+            {"key": "data2/folder/subfolder/dataset13/file2.txt"},
+            {"key": "data2/folder/subfolder/dataset13/file3.txt"}
           ]
         }
       ]
@@ -77,13 +77,13 @@
           "executions": [
             {
               "ruleId": 1,
-              "path": "/data1/folder/dataset12",
+              "path": "/data1/folder/subfolder/dataset12",
               "status": "NOTIFICATION_SENT",
               "storageClass": "GLACIER"
             },
             {
               "ruleId": 1,
-              "path": "/data2/folder/dataset13",
+              "path": "/data2/folder/subfolder/dataset13",
               "status": "NOTIFICATION_SENT",
               "storageClass": "GLACIER"
             }
