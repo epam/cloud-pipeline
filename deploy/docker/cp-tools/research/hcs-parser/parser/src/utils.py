@@ -88,7 +88,18 @@ class HcsParsingUtils:
         return plate
 
     @staticmethod
-    def build_preview_file_path(hcs_root_folder_path):
+    def build_preview_file_path(hcs_root_folder_path, with_id=False):
+        file_name = HcsParsingUtils.build_preview_file_name(hcs_root_folder_path)
+        if with_id:
+            file_name = file_name + '.' + hcs_root_folder_path.split('/')[-1]
+        preview_file_basename = file_name + '.hcs'
+        parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
+            if HCS_PROCESSING_OUTPUT_FOLDER is not None \
+            else os.path.dirname(hcs_root_folder_path)
+        return os.path.join(parent_folder, preview_file_basename)
+
+    @staticmethod
+    def build_preview_file_name(hcs_root_folder_path):
         index_file_abs_path = os.path.join(HcsParsingUtils.get_file_without_extension(hcs_root_folder_path),
                                            HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
         hcs_xml_info_root = ET.parse(index_file_abs_path).getroot()
@@ -100,11 +111,7 @@ class HcsParsingUtils:
             file_pretty_name = name_xml_element.text
             if file_pretty_name is not None:
                 file_name = file_pretty_name
-        preview_file_basename = file_name + '.hcs'
-        parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
-            if HCS_PROCESSING_OUTPUT_FOLDER is not None \
-            else os.path.dirname(hcs_root_folder_path)
-        return os.path.join(parent_folder, preview_file_basename)
+        return file_name
 
     @staticmethod
     def get_stat_active_file_name(hcs_img_path):

@@ -14,6 +14,7 @@
 
 import os
 from .utils import HcsParsingUtils, log_run_info, get_list_run_param
+from .processors import HcsRoot
 
 
 def get_processing_roots(should_force_processing, measurement_index_file):
@@ -24,9 +25,18 @@ def get_processing_roots(should_force_processing, measurement_index_file):
             return []
         log_run_info('Following paths are specified for processing: {}'.format(lookup_paths))
         log_run_info('Lookup for unprocessed files')
-        paths_to_hcs_roots = HcsProcessingDirsGenerator(
+        result = HcsProcessingDirsGenerator(
             lookup_paths, measurement_index_file, should_force_processing).generate_paths()
-    return paths_to_hcs_roots
+    else:
+        result = []
+        image_names = get_list_run_param('HCS_TARGET_IMG_NAMES')
+        if image_names and len(image_names) == len(paths_to_hcs_roots):
+            for index, root in enumerate(paths_to_hcs_roots):
+                result.append(HcsRoot(root, image_names[index]))
+        else:
+            for root in paths_to_hcs_roots:
+                result.append(HcsRoot(root, HcsParsingUtils.build_preview_file_path(root)))
+    return result
 
 
 class HcsProcessingDirsGenerator:
@@ -51,7 +61,12 @@ class HcsProcessingDirsGenerator:
     def generate_paths(self):
         hcs_roots = self.find_all_hcs_roots()
         log_run_info('Found {} HCS files'.format(len(hcs_roots)))
-        return filter(lambda p: self.is_processing_required(p), hcs_roots)
+        roots_with_preview = self.build_roots_with_preview(hcs_roots)
+        filtered = []
+        for root, preview in roots_with_preview.items():
+            if self.is_processing_required(root, preview):
+                filtered.append(HcsRoot(root, preview))
+        return filtered
 
     def find_all_hcs_roots(self):
         hcs_roots = set()
@@ -64,10 +79,9 @@ class HcsProcessingDirsGenerator:
                         hcs_roots.add(full_file_path[:-len(self.measurement_index_file_path)])
         return hcs_roots
 
-    def is_processing_required(self, hcs_folder_root_path):
+    def is_processing_required(self, hcs_folder_root_path, hcs_img_path):
         if self.force_processing:
             return True
-        hcs_img_path = HcsParsingUtils.build_preview_file_path(hcs_folder_root_path)
         if not os.path.exists(hcs_img_path):
             return True
         active_stat_file = HcsParsingUtils.get_stat_active_file_name(hcs_img_path)
@@ -78,3 +92,20 @@ class HcsProcessingDirsGenerator:
             return True
         stat_file_modification_date = HcsParsingUtils.get_file_last_modification_time(stat_file)
         return self.is_folder_content_modified_after(hcs_folder_root_path, stat_file_modification_date)
+
+    def build_roots_with_preview(self, hcs_roots):
+        result = {}
+        names = {}
+        for root in hcs_roots:
+            hcs_img_name = HcsParsingUtils.build_preview_file_name(root)
+            if hcs_img_name not in names:
+                names[hcs_img_name] = [root]
+            else:
+                names[hcs_img_name].append(root)
+        for name, roots in names.items():
+            with_id = len(roots) > 1
+            if with_id:
+                log_run_info('Find duplicate name {} for roots {}'.format(name, str(roots)))
+            for root in roots:
+                result[root] = HcsParsingUtils.build_preview_file_path(root, with_id=with_id)
+        return result
