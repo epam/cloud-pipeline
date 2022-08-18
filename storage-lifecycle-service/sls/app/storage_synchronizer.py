@@ -74,6 +74,9 @@ class StorageLifecycleSynchronizer:
         self.logger.log("Done object lifecycle synchronization process...")
 
     def _sync_storage(self, storage):
+        if storage.shared:
+            self.logger.log("Storage {} marked as shared, skipping".format(storage.path))
+
         rules = self.cp_data_source.load_lifecycle_rules_for_storage(storage.id)
 
         # No rules for storage exist - just skip it
