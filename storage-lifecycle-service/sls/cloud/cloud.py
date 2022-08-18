@@ -32,7 +32,7 @@ class StorageOperations:
     def list_objects_by_prefix(self, bucket, prefix, convert_paths=True):
         pass
 
-    def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
+    def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
         pass
 
 
@@ -128,15 +128,15 @@ class S3StorageOperations(StorageOperations):
                     result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
         return result
 
-    def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
+    def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
         aws_s3control_client = boto3.client("s3control", region_name=region)
         manifest_content = "\n".join(["{},{}".format(bucket, self._path_to_s3_format(file.path)) for file in files])
 
-        job_location_prefix = os.path.join(self.config["system_bucket_prefix"], bucket, "rule_" + str(rule.rule_id))
+        job_location_prefix = os.path.join(self.config["system_bucket_prefix"], bucket, "rule_" + transit_id)
 
         manifest_key = os.path.join(
             job_location_prefix,
-            "_".join([bucket, self._path_to_s3_format(folder), storage_class,
+            "_".join([bucket, transit_id, storage_class,
                       str(datetime.datetime.utcnow()), ".csv"]).replace(" ", "_").replace(":", "_").replace("/", ".")
         )
         manifest_object = self.aws_s3_client.put_object(

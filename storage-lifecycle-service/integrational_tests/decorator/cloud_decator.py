@@ -40,5 +40,5 @@ class AttributesChangingStorageOperations(StorageOperations):
                     days=self.watched_files_by_storages[bucket][file.path].storage_date_shift)
         return intermediate_result
 
-    def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
-        return self.cloud_operations.process_files_on_cloud(bucket, region, rule, folder, storage_class, files)
+    def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
+        return self.cloud_operations.tag_files_to_transit(bucket, files, storage_class, region, transit_id)

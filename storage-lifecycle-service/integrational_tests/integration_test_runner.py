@@ -86,11 +86,10 @@ class IntegrationTestsRunner(unittest.TestCase):
             for actual_storage in actual.storages:
                 expected_storage = expected_storage_states_by_name.get(actual_storage.storage, None)
                 self.assertIsNotNone(expected_storage)
-                self.assertEqual(len(expected_storage.files), len(actual_storage.files))
-                expected_file_states_by_name = {file.path: file for file in expected_storage.files}
-                for actual_file in actual_storage.files:
-                    expected_file = expected_file_states_by_name.get(actual_file.path, None)
-                    self.assertIsNotNone(expected_file)
+                actual_file_states_by_name = {file.path: file for file in actual_storage.files}
+                for expected_file in expected_storage.files:
+                    actual_file = actual_file_states_by_name.get(expected_file.path, None)
+                    self.assertIsNotNone(actual_file)
                     self.assertDictEqual(expected_file.tags, actual_file.tags)
 
     def assert_platform_state(self, actual, expected):

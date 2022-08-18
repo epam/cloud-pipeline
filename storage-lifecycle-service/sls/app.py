@@ -15,6 +15,8 @@
 import re
 
 import argparse
+
+from sls.app.cloud_storage_adapter import PlatformToCloudOperationsAdapter
 from sls.app.run_mode import ApplicationModeRunner
 from sls.cloud.cloud import S3StorageOperations
 from sls.util.logger import AppLogger
@@ -50,10 +52,11 @@ def run_application(args, logger):
     cloud_operations = {}
     if args.aws:
         cloud_operations[S3_TYPE] = S3StorageOperations(parse_config_string(args.aws), logger)
+    cloud_bridge = PlatformToCloudOperationsAdapter(cloud_operations)
     config = SynchronizerConfig(args.max_execution_running_days, args.mode, args.at)
     logger.log("Running application with config: {}".format(config.to_json()))
     ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(config, data_source, cloud_operations, logger),
+        StorageLifecycleSynchronizer(config, data_source, cloud_bridge, logger),
         config
     ).run()
 

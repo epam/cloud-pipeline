@@ -43,9 +43,9 @@ ROLE_ADMIN_ID = 1
 
 class StorageLifecycleSynchronizer:
 
-    def __init__(self, config, cp_data_source, cloud_providers, logger):
+    def __init__(self, config, cp_data_source, cloud_bridge, logger):
         self.config = config
-        self.cloud_providers = cloud_providers
+        self.cloud_bridge = cloud_bridge
         self.cp_data_source = cp_data_source
         self.logger = logger
 
@@ -84,12 +84,10 @@ class StorageLifecycleSynchronizer:
             self.logger.log("No rules for storage {} is defined, skipping".format(storage.path))
             return
 
-        if storage.storage_type not in self.cloud_providers:
+        if not self.cloud_bridge.is_support(storage):
             self.logger.log(
                 "Lifecycle rules feature is not implemented for storage with type {}.".format(storage.storage_type)
             )
-
-        self.cloud_providers[storage.storage_type].prepare_bucket_if_needed(storage.path)
 
         file_listing_cache = {}
 
@@ -106,7 +104,7 @@ class StorageLifecycleSynchronizer:
                 if existing_listing_prefix:
                     files = [f for f in file_listing_cache[existing_listing_prefix] if f.path.startswith(path_prefix)]
                 else:
-                    files = self.cloud_providers[storage.storage_type].list_objects_by_prefix(storage.path, path_prefix)
+                    files = self.cloud_bridge.list_objects_by_prefix(storage, path_prefix)
                     file_listing_cache[path_prefix] = files
 
                 running_executions = set(self.cp_data_source.load_lifecycle_rule_executions(
@@ -326,8 +324,8 @@ class StorageLifecycleSynchronizer:
                 if action_items.mode == ACTIONS_MODE_FOLDER:
                     self._create_or_update_execution(storage.id, rule, storage_class,
                                                      action_items.folder, EXECUTION_RUNNING_STATUS)
-                is_successful = self.cloud_providers[storage.storage_type].process_files_on_cloud(
-                    storage.path, storage.region_name, rule, action_items.folder, storage_class, subject_files)
+                is_successful = self.cloud_bridge.tag_files_to_transit(
+                    storage, subject_files, storage_class, self._get_transition_id(action_items, rule))
 
                 if not is_successful:
                     if action_items.mode == ACTIONS_MODE_FOLDER:
@@ -528,6 +526,10 @@ class StorageLifecycleSynchronizer:
                 file_prolongation
             )
         return file_prolongation
+
+    @staticmethod
+    def _get_transition_id(action_items, rule):
+        return "{}_{}".format(str(rule.rule_id), action_items.folder)
 
     @staticmethod
     def _identify_subject_folders(files, glob_str):

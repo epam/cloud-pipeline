@@ -70,15 +70,15 @@ class AWSStorageTestCasePreparator(StorageTestCasePreparator):
             )
 
     def cleanup(self, storage):
-        if storage.files:
-            self.aws_s3_client.delete_objects(
-                Bucket=storage.storage,
-                Delete={
-                    "Objects": [
-                        {"Key": f.path} for f in storage.files
-                    ]
-                }
-            )
+        _files = []
+        paginator = self.aws_s3_client.get_paginator('list_objects')
+        page_iterator = paginator.paginate(Bucket=storage.storage)
+        for page in page_iterator:
+            if 'Contents' in page:
+                for obj in page['Contents']:
+                    _files.append(obj["Key"])
+        if _files:
+            self.aws_s3_client.delete_objects(Bucket=storage.storage, Delete={"Objects": [{"Key": f} for f in _files]})
         self.aws_s3_client.delete_bucket(Bucket=storage.storage)
 
 
@@ -104,7 +104,7 @@ class CloudPipelinePlatformTestCasePreparator(TestCaseProcessor):
             storage_from_result = next(filter(
                 lambda s: s.datastorage_id == storage.datastorage_id, testcase.result.platform.storages), None)
 
-            cloud_storage = next(filter(lambda s: s.storage == storage.storage, testcase.cloud.storages), None)
+            cloud_storage = next(filter(lambda s: storage.storage.startswith(s.storage), testcase.cloud.storages), None)
             created_storage = self.api.datastorage_create(
                 datastorage_data={
                     "name": storage.storage,
