@@ -19,6 +19,7 @@ package com.epam.pipeline.controller.vo;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.epam.pipeline.entity.filter.AclSecuredFilter;
 import com.epam.pipeline.entity.pipeline.TaskStatus;
@@ -28,6 +29,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 
 @Getter
 @Setter
@@ -46,8 +48,8 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
     private List<Long> projectIds;
     private List<String> dockerImages;
     private String prettyUrl;
-
     private boolean userModified = true;
+    private Map<String, String> tags;
     private boolean eagerGrouping = true;
 
     //these filters are used for ACL filtering
@@ -78,7 +80,8 @@ public class PipelineRunFilterVO implements AclSecuredFilter {
                 && parentId == null && CollectionUtils.isEmpty(owners)
                 && CollectionUtils.isEmpty(configurationIds) && CollectionUtils.isEmpty(entitiesIds)
                 && CollectionUtils.isEmpty(projectIds)
-                && prettyUrl == null;
+                && prettyUrl == null
+                && MapUtils.isEmpty(tags);
     }
 
     @Data

@@ -37,6 +37,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -644,6 +645,16 @@ public class PipelineRunDao extends NamedParameterJdbcDaoSupport {
             params.addValue(PipelineRunParameters.PRETTY_URL.name(),
                     String.format("%%\"path\":\"%s\"%%", filter.getPrettyUrl()));
             clausesCount++;
+        }
+
+        if (MapUtils.isNotEmpty(filter.getTags())) {
+            appendAnd(whereBuilder, clausesCount);
+            final String keyValuePattern = "r.tags @> '{\"%s\": \"%s\"}'::jsonb";
+            clausesCount++;
+            final String tagsFilterConditions = filter.getTags().entrySet().stream()
+                    .map(entry -> String.format(keyValuePattern, entry.getKey(), entry.getValue()))
+                    .collect(Collectors.joining(AND));
+            whereBuilder.append(tagsFilterConditions);
         }
 
         appendProjectFilter(projectFilter, params, whereBuilder, clausesCount);

@@ -124,6 +124,8 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TAG_KEY_2 = "key2";
     private static final String TAG_VALUE_1 = "value1";
     private static final String TAG_VALUE_2 = "value2";
+    private static final String TAG_KEY_3 = "key3";
+    private static final String TAG_VALUE_3 = "value3";
     private static final ZoneId ZONE_ID = ZoneId.systemDefault();
     private static final String DOCKER_IMAGE = "dockerImage";
     private static final String ACTUAL_DOCKER_IMAGE = "actualDockerImage";
@@ -296,6 +298,36 @@ public class PipelineRunDaoTest extends AbstractJdbcTest {
         pipelineRunDao.updateRunsTags(Arrays.asList(run1, run2));
         loadTagsAndCompareWithExpected(run1.getId(), tags1);
         loadTagsAndCompareWithExpected(run2.getId(), tags2);
+    }
+
+    @Test
+    public void shouldSearchPipelineByTags() {
+        final PipelineRun run1 = createTestPipelineRun();
+        final Map<String, String> tags1 = new HashMap<>();
+        tags1.put(TAG_KEY_1, TAG_VALUE_1);
+        tags1.put(TAG_KEY_2, TAG_VALUE_2);
+        tags1.put(TAG_KEY_3, TAG_VALUE_3);
+        updateTagsAndVerifySaveIsCorrect(run1, tags1);
+
+        final PipelineRun run2 = createTestPipelineRun();
+        final Map<String, String> tags2 = new HashMap<>();
+        tags2.put(TAG_KEY_1, TAG_VALUE_1);
+        tags2.put(TAG_KEY_2, TAG_VALUE_1);
+        tags2.put(TAG_KEY_3, TAG_VALUE_3);
+        updateTagsAndVerifySaveIsCorrect(run2, tags2);
+
+        final Map<String, String> filterTags = new HashMap<>();
+        filterTags.put(TAG_KEY_1, TAG_VALUE_1);
+        filterTags.put(TAG_KEY_2, TAG_VALUE_2);
+
+        final PagingRunFilterVO filterVO = new PagingRunFilterVO();
+        filterVO.setPage(1);
+        filterVO.setPageSize(TEST_PAGE_SIZE);
+        filterVO.setTags(filterTags);
+        final List<PipelineRun> runs = pipelineRunDao.searchPipelineRuns(filterVO);
+        assertFalse(runs.isEmpty());
+        assertEquals(1, runs.size());
+        assertEquals(run1.getId(), runs.get(0).getId());
     }
 
     @Test
