@@ -89,7 +89,7 @@ export async function submitBatchAnalysis (specification) {
     pipeline
   } = specification;
   const spec = {
-    measurementUUID,
+    measurementUUID: (measurementUUID || '').split('/').pop(),
     inputs,
     modules,
     pipeline

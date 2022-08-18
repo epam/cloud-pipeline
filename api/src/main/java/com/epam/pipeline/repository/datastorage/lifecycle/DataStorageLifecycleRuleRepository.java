@@ -17,15 +17,9 @@
 package com.epam.pipeline.repository.datastorage.lifecycle;
 
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface DataStorageLifecycleRuleRepository extends CrudRepository<StorageLifecycleRuleEntity, Long> {
+public interface DataStorageLifecycleRuleRepository extends JpaRepository<StorageLifecycleRuleEntity, Long> {
     Iterable<StorageLifecycleRuleEntity> findByDatastorageId(Long datastorageId);
-
-    @Modifying
-    @Query("delete from StorageLifecycleRuleEntity r where r.datastorageId = ?1")
-    void deleteByDatastorageId(Long datastorageId);
 
 }

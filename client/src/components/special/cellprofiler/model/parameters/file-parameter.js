@@ -52,12 +52,14 @@ class FileParameter extends ModuleParameter {
 
   @computed
   get values () {
-    return getFilesForModule(this.cpModule).map((output) => ({
-      value: output,
-      id: output,
-      key: output,
-      title: output
-    }));
+    return this.wrapValuesWithEmptyValue(
+      getFilesForModule(this.cpModule)
+        .map((output) => ({
+          value: output,
+          id: output,
+          key: output,
+          title: output
+        })));
   }
 
   get defaultValue () {

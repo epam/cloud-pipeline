@@ -179,7 +179,8 @@ public class DataStorageLifecycleManager {
                 false
         ).collect(Collectors.toList());
         loaded.forEach(rule -> dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(rule.getId()));
-        dataStorageLifecycleRuleRepository.deleteByDatastorageId(datastorageId);
+        dataStorageLifecycleRuleRepository.delete(loaded);
+        dataStorageLifecycleRuleRepository.flush();
     }
 
     @Transactional
