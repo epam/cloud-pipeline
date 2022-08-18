@@ -51,9 +51,9 @@ def resolve_azure_api(resource):
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
+    if str(r1.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
+    elif str(r1.type).split('/')[-1].lower() == "networkinterfaces" and not str(r2.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
     return 0
 

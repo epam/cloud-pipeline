@@ -647,12 +647,12 @@ def verify_run_id(run_id):
     vm_name = None
     private_ip = None
     for resource in resource_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + run_id + "'"):
-        if str(resource.type).split('/')[-1] == "virtualMachines":
+        if str(resource.type).split('/')[-1].lower() == "virtualmachines":
             vm_name = resource.name
             private_ip = network_client.network_interfaces\
                 .get(resource_group_name, vm_name + '-nic').ip_configurations[0].private_ip_address
             break
-        if str(resource.type).split('/')[-1] == "virtualMachineScaleSet":
+        if str(resource.type).split('/')[-1].lower() == "virtualmachinescaleset":
             scale_set_name = resource.name
             vm_name, private_ip = get_instance_name_and_private_ip_from_vmss(scale_set_name)
             break
@@ -824,9 +824,9 @@ def resolve_azure_api(resource):
 
 
 def azure_resource_type_cmp(r1, r2):
-    if str(r1.type).split('/')[-1].startswith("virtualMachine"):
+    if str(r1.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
-    elif str(r1.type).split('/')[-1] == "networkInterfaces" and not str(r2.type).split('/')[-1].startswith("virtualMachine"):
+    elif str(r1.type).split('/')[-1].lower() == "networkinterfaces" and not str(r2.type).split('/')[-1].lower().startswith("virtualmachine"):
         return -1
     return 0
 
@@ -846,8 +846,8 @@ def delete_all_by_run_id(run_id):
         # we need to sort resources to be sure that vm and nic will be deleted first,
         # because it has attached resorces(disks and ip)
         resources.sort(key=functools.cmp_to_key(azure_resource_type_cmp))
-        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].startswith('virtualMachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
-        if str(resources[0].type).split('/')[-1] == 'virtualMachines':
+        vm_name = resources[0].name if str(resources[0].type).split('/')[-1].lower().startswith('virtualmachine') else resources[0].name[0:len(VM_NAME_PREFIX) + UUID_LENGHT]
+        if str(resources[0].type).split('/')[-1].lower() == 'virtualmachines':
             detach_disks_and_nic(vm_name)
         for resource in resources:
             resource_client.resources.delete(
