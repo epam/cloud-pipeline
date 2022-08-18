@@ -16,10 +16,10 @@ import os
 import multiprocessing
 import traceback
 
-from .src.utils import log_run_info, log_run_success
-from .src.utils import get_int_run_param, get_bool_run_param
-from .src.fs import get_processing_roots
-from .src.processors import HcsFileParser
+from src.utils import log_run_info, log_run_success
+from src.utils import get_int_run_param, get_bool_run_param
+from src.fs import get_processing_roots
+from src.processors import HcsFileParser
 
 TAGS_PROCESSING_ONLY = get_bool_run_param('HCS_PARSING_TAGS_ONLY')
 FORCE_PROCESSING = get_bool_run_param('HCS_PARSING_FORCE_PROCESSING')
@@ -31,15 +31,17 @@ HCS_IMAGE_DIR_NAME = os.getenv('HCS_PARSING_IMAGE_DIR_NAME', 'Images')
 MEASUREMENT_INDEX_FILE_PATH = '/{}/{}'.format(HCS_IMAGE_DIR_NAME, HCS_INDEX_FILE_NAME)
 
 
-def try_process_hcs(hcs_root_dir):
+def try_process_hcs(hcs_root):
     parser = None
     processing_result = 1
     try:
-        parser = HcsFileParser(hcs_root_dir)
+        log_run_info('Starting processing of folder {} with image preview {}'
+                     .format(hcs_root.root_path, hcs_root.hcs_img_path))
+        parser = HcsFileParser(hcs_root.root_path, hcs_root.hcs_img_path)
         processing_result = parser.process_file()
         return processing_result
     except Exception as e:
-        log_run_info('An error occurred during [{}] parsing: {}'.format(hcs_root_dir, str(e)))
+        log_run_info('An error occurred during [{}] parsing: {}'.format(hcs_root.root_path, str(e)))
         print(traceback.format_exc())
     finally:
         if parser:

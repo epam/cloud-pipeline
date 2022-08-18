@@ -21,9 +21,9 @@ import re
 import traceback
 import subprocess
 
-from .src.fs import get_processing_roots
-from .src.utils import HcsFileLogger, log_run_info, log_run_success
-from .src.utils import get_int_run_param, get_bool_run_param
+from src.fs import get_processing_roots
+from src.utils import HcsFileLogger, log_run_info, log_run_success
+from src.utils import get_int_run_param, get_bool_run_param
 
 
 CLUSTER_MAX_SIZE = get_int_run_param('CP_CAP_AUTOSCALE_WORKERS', 1)
@@ -49,8 +49,9 @@ class HcsFileSgeParser:
     PENDING_JOB_STATUSES = ['qw', 'qw', 'hqw', 'hqw', 'hRwq', 'hRwq', 'hRwq', 'qw', 'qw']
     RUNNING_JOB_STATUSES = ['r', 't', 'Rr', 'Rt']
 
-    def __init__(self, hcs_file_root_path):
+    def __init__(self, hcs_file_root_path, hcs_img_path):
         self.hcs_root_path = hcs_file_root_path
+        self.hcs_img_path = hcs_img_path
         self.processing_logger = HcsFileLogger(hcs_file_root_path)
 
     @staticmethod
@@ -65,6 +66,8 @@ class HcsFileSgeParser:
         self.processing_logger.log_info(message)
 
     def process_file_in_sge(self):
+        self.log_info('Starting SGE processing of folder {} with image preview {}'
+                      .format(self.hcs_root_path, self.hcs_img_path))
         hcs_root_size = self._calculate_hcs_dir_size_gigabytes()
         if hcs_root_size < 0:
             self.log_info('Size calculation fails, skip processing')
@@ -106,10 +109,11 @@ class HcsFileSgeParser:
         jvm_parameters = COMMON_JAVA_OPTS + ' -Xmx{}G'.format(heap_limit_gb)
         env_vars_string = '''
         export HCS_TARGET_DIRECTORIES="{}"
+        export HCS_TARGET_IMG_NAMES="{}"
         export JAVA_OPTS="{}"
         export HCS_PARSER_PROCESSING_THREADS=1
         export PATH="{}"
-        '''.format(self.hcs_root_path, jvm_parameters, os.getenv('PATH'))
+        '''.format(self.hcs_root_path, self.hcs_img_path, jvm_parameters, os.getenv('PATH'))
         for key, value in os.environ.items():
             if key.startswith('HCS_PARSING_'):
                 if key == 'HCS_PARSING_PLATE_DETAILS_DICT':
@@ -206,7 +210,7 @@ class HcsFileSgeParser:
 
 
 def try_process_hcs_in_cluster(hcs_root_dir):
-    parser = HcsFileSgeParser(hcs_root_dir)
+    parser = HcsFileSgeParser(hcs_root_dir.root_path, hcs_root_dir.hcs_img_path)
     try:
         return parser.process_file_in_sge()
     except Exception as e:
