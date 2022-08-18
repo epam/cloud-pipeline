@@ -154,7 +154,7 @@ class HCSImageSequence {
             if (this.omeTiff && this.offsetsJson) {
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
             }
-            return Promise.resolve();
+            return Promise.resolve([]);
           })
           .then(array => {
             this.metadata = array.map(item => item.metadata);
@@ -189,6 +189,7 @@ class HCSImageSequence {
             resolve(this.metadata);
           })
           .catch(() => {
+            resolve();
           });
       });
     }

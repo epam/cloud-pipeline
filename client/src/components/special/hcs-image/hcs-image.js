@@ -416,7 +416,9 @@ class HcsImage extends React.PureComponent {
   };
 
   onAnalysisDone = () => {
-    const resultsAvailable = !!this.hcsAnalysis && !!this.hcsAnalysis.analysisOutput;
+    const resultsAvailable = !!this.hcsAnalysis &&
+      !!this.hcsAnalysis.defineResultsOutputs &&
+      this.hcsAnalysis.defineResultsOutputs.length > 0;
     this.setState({
       showAnalysisResults: resultsAvailable
     });
@@ -645,7 +647,13 @@ class HcsImage extends React.PureComponent {
             className={styles.action}
             size="small"
             disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
+            onClick={() => downloadCurrentTiff(
+              this.hcsImageViewer,
+              {
+                wellView: this.showEntireWell,
+                wellId: this.selectedWell ? this.selectedWell.id : undefined
+              }
+            )}
           >
             <Icon
               type="camera"
@@ -714,7 +722,7 @@ class HcsImage extends React.PureComponent {
           <Button
             className={styles.action}
             disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
+            onClick={() => downloadCurrentTiff(this.hcsImageViewer, this.showEntireWell, this.selectedWell.id)}
           >
             Download current image
           </Button>
@@ -733,7 +741,8 @@ class HcsImage extends React.PureComponent {
       showAnalysisResults &&
       this.hcsAnalysis &&
       this.hcsAnalysis.available &&
-      this.hcsAnalysis.analysisOutput
+      this.hcsAnalysis.defineResultsOutputs &&
+      this.hcsAnalysis.defineResultsOutputs.length > 0
     ) {
       return (
         <div

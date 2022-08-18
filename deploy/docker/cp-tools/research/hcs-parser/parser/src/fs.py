@@ -38,9 +38,12 @@ class HcsProcessingDirsGenerator:
 
     @staticmethod
     def is_folder_content_modified_after(dir_path, modification_date):
+        ignore_files = get_list_run_param('HCS_IGNORE_MODIFIED_FILES')
         dir_root = os.walk(dir_path)
         for dir_root, directories, files in dir_root:
             for file in files:
+                if ignore_files and file in ignore_files:
+                    continue
                 if HcsParsingUtils.get_file_last_modification_time(os.path.join(dir_root, file)) > modification_date:
                     return True
         return False

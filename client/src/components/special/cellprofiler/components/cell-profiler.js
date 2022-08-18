@@ -290,7 +290,7 @@ class CellProfiler extends React.Component {
           viewer={analysis.hcsImageViewer}
         />
         {
-          (analysis.analysisOutput) && (
+          analysis.defineResultsOutputs.length > 0 && (
             <div
               className={
                 classNames(

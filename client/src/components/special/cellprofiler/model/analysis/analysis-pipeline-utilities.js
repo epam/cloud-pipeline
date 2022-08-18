@@ -105,8 +105,8 @@ function extractModules (module) {
           {},
           {id: `${module.id}_sub_${index + 1}`, pipeline: module.pipeline}
         );
-        cpModule.parentModule = module;
         if (cpModule) {
+          cpModule.parentModule = module;
           pipelineModules[alias] = cpModule;
           Object.entries(values || {}).forEach(([parameter, value]) => {
             if (typeof value === 'string' && /\|COMPUTED$/.test(value)) {
@@ -122,6 +122,8 @@ function extractModules (module) {
             }
           });
           result.push(...extractModules(cpModule));
+        } else {
+          console.error(`Unknown module: ${name}`);
         }
       });
     }
@@ -476,6 +478,21 @@ async function fetchStatusUntilDone (api, pipelineId) {
 }
 
 /**
+ * @typedef {Object} AnalysisOutputResult
+ * @property {string} name
+ * @property {string} id
+ * @property {string} [url]
+ * @property {function: Promise<string>} [fetchUrl]
+ * @property {boolean} analysisOutput
+ * @property {boolean} table
+ * @property {boolean} xlsx
+ * @property {AnalysisModule} [module]
+ * @property {string} [object]
+ * @property {boolean} [background]
+ * @property {string} [originalModuleId]
+ */
+
+/**
  * @param {{outputs: string[], name: string, settings: *}} module
  * @param {string} output
  * @param {number} index
@@ -512,8 +529,9 @@ function mapModuleOutput (module, output, index, metadata) {
       .find(o => o.fileName === name);
   }
   const table = /\.csv$/i.test(output);
+  const xlsx = /\.xlsx?$/i.test(output);
   const analysisOutput = /^DefineResults$/i.test(module.name) &&
-    /(^|\/|\\)results\.csv$/i.test(output);
+    /(^|\/|\\)results\.(csv|xlsx|xls)$/i.test(output);
   return {
     name,
     file: output,
@@ -522,6 +540,7 @@ function mapModuleOutput (module, output, index, metadata) {
     background: !!background,
     analysisOutput,
     table,
+    xlsx,
     originalModuleId
   };
 }
@@ -676,20 +695,6 @@ function findInitialModule (initialModules = [], executionModules, index) {
   }
   return find(executionModules[index]);
 }
-
-/**
- * @typedef {Object} AnalysisOutputResult
- * @property {string} name
- * @property {string} id
- * @property {string} [url]
- * @property {function: Promise<string>} [fetchUrl]
- * @property {boolean} analysisOutput
- * @property {boolean} table
- * @property {AnalysisModule} [module]
- * @property {string} [object]
- * @property {boolean} [background]
- * @property {string} [originalModuleId]
- */
 
 /**
  * @typedef {Object} RunAnalysisOptions

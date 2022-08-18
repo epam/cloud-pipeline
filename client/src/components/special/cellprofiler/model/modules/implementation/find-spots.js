@@ -17,6 +17,8 @@
 import {thresholding} from './common';
 
 const methods = {
+  identify: 'Identify',
+  watershed: 'Watershed',
   enhanceAndIdentify: 'Enhance & Identify',
   enhanceAndWatershed: 'Enhance & Watershed'
 };
@@ -25,8 +27,8 @@ const {
   parameters,
   values
 } = thresholding({
-  method: 'Manual',
-  manualDefault: 0.075
+  strategy: 'Adaptive',
+  thresholdingMethod: 'Robust Background'
 });
 
 const findSpots = {
@@ -35,12 +37,15 @@ const findSpots = {
   sourceImageParameter: 'input',
   composed: true,
   parameters: [
-    'Parent objects|object|ALIAS parentObject|REQUIRED',
+    'Parent objects|object|ALIAS parentObject|EMPTY None',
     'Select the input image|file|ALIAS input|REQUIRED',
     'Objects name|string|Spots|ALIAS output|REQUIRED',
-    `Method|[${[methods.enhanceAndIdentify].map(o => `"${o}"`).join(',')}]|"${methods.enhanceAndIdentify}"|ALIAS mainMethod`,
-    'Enhance feature by|units|2|ADVANCED|ALIAS featureSize|PARAMETER Feature size',
-    `Typical diameter of objects (Min,Max)|units[0,Infinity]|[0.1, 5]|ALIAS=diameterRange|ADVANCED|IF mainMethod==${methods.enhanceAndIdentify}|PARAMETER Typical diameter of objects, in pixel units (Min,Max)`,
+    `Method|[${Object.values(methods).map(o => `"${o}"`).join(',')}]|"${methods.enhanceAndWatershed}"|ALIAS mainMethod`,
+    'Deviations|integer|{deviations}|IF thresholdingMethod=="Robust Background"|COMPUTED',
+    'Rescale input image intensity|flag|false|ALIAS rescale|ADVANCED',
+    `Enhance feature by|units|2|ADVANCED|IF mainMethod=="${methods.enhanceAndIdentify}" OR mainMethod=="${methods.enhanceAndWatershed}"|ALIAS featureSize|PARAMETER Feature size`,
+    `Typical diameter of objects (Min,Max)|units[0,Infinity]|[0.1, 5]|ALIAS=diameterRange|ADVANCED|IF mainMethod=="${methods.enhanceAndIdentify}" OR mainMethod==${methods.identify}|PARAMETER Typical diameter of objects, in pixel units (Min,Max)`,
+    'Handling of overlapping objects|[Keep,Remove,Keep overlapping region,Remove depending on overlap]|Remove|ALIAS overlap|IF parentObject!=None',
     ...parameters
   ],
   subModules: (cpModule) => {
@@ -55,59 +60,127 @@ const findSpots = {
         featureSize: '{parent.featureSize}|COMPUTED'
       }
     };
-    const rescale = {
+    const thresholdModule = input => ({
+      module: 'Threshold',
+      alias: 'threshold',
+      values: {
+        input,
+        output: '{this.id}_threshold|COMPUTED',
+        ...values
+      }
+    });
+    const rescaleFn = input => ({
       alias: 'rescale',
       module: 'RescaleIntensity',
       values: {
-        input: '{enhance.output}|COMPUTED',
-        output: '{enhance.output}_rescaled|COMPUTED',
+        input,
+        output: '{this.id}_rescaled|COMPUTED',
         method: 'Stretch each image to use the full intensity range'
       }
+    });
+    const parentObject = cpModule.getParameterValue('parentObject');
+    const parentObjectIsSet = parentObject && !/^none$/i.test(parentObject);
+    let objectUtilityName;
+    const identifyFn = input => {
+      let output = '{this.id}_identified|COMPUTED';
+      if (!parentObjectIsSet) {
+        output = '{parent.output}|COMPUTED';
+      }
+      objectUtilityName = 'identify.name';
+      return {
+        alias: 'identify',
+        module: 'IdentifyPrimaryObjects',
+        values: {
+          input,
+          name: output,
+          diameterRange: '{parent.diameterRange}|COMPUTED',
+          ...values
+        }
+      };
+    };
+    const watershedFn = input => {
+      let output = '{this.id}_watershed|COMPUTED';
+      if (!parentObjectIsSet) {
+        output = '{parent.output}|COMPUTED';
+      }
+      objectUtilityName = 'watershed.output';
+      return {
+        alias: 'watershed',
+        module: 'Watershed',
+        values: {
+          input,
+          output,
+          generate: 'Distance',
+          footprint: 8,
+          downsample: 1
+        }
+      };
     };
 
     const method = cpModule.getParameterValue('mainMethod');
+    const rescaleInput = cpModule.getBooleanParameterValue('rescale');
+    const result = [];
     switch (method) {
-      case methods.enhanceAndWatershed:
-        return [
-          enhance,
-          rescale
-        ];
-      default:
+      case methods.identify:
+        if (rescaleInput) {
+          result.push(rescaleFn('{parent.input}|COMPUTED'));
+          result.push(identifyFn('{rescale.output}|COMPUTED'));
+        } else {
+          result.push(identifyFn('{parent.input}|COMPUTED'));
+        }
+        break;
       case methods.enhanceAndIdentify:
-        return [
-          enhance,
-          rescale,
-          {
-            alias: 'identify',
-            module: 'IdentifyPrimaryObjects',
-            values: {
-              input: '{rescale.output}|COMPUTED',
-              name: '{this.id}_identified|COMPUTED',
-              diameterRange: '{parent.diameterRange}|COMPUTED',
-              ...values
-            }
-          },
-          {
-            alias: 'mask',
-            module: 'MaskObjects',
-            values: {
-              input: '{identify.name}|COMPUTED',
-              output: '{parent.output}|COMPUTED',
-              method: 'Objects',
-              maskingObject: '{parent.parentObject}|COMPUTED',
-              overlap: 'Keep overlapping region'
-            }
-          },
-          {
-            alias: 'relate',
-            module: 'RelateObjects',
-            values: {
-              parent: '{parent.parentObject}|COMPUTED',
-              child: '{parent.output}|COMPUTED'
-            }
-          }
-        ];
+        result.push(enhance);
+        if (rescaleInput) {
+          result.push(rescaleFn('{enhance.output}|COMPUTED'));
+          result.push(identifyFn('{rescale.output}|COMPUTED'));
+        } else {
+          result.push(identifyFn('{enhance.output}|COMPUTED'));
+        }
+        break;
+      case methods.enhanceAndWatershed:
+        result.push(enhance);
+        result.push(thresholdModule('{enhance.output}|COMPUTED'));
+        if (rescaleInput) {
+          result.push(rescaleFn('{threshold.output}|COMPUTED'));
+          result.push(watershedFn('{rescale.output}|COMPUTED'));
+        } else {
+          result.push(watershedFn('{threshold.output}|COMPUTED'));
+        }
+        break;
+      default:
+      case methods.watershed:
+        result.push(thresholdModule('{parent.input}|COMPUTED'));
+        if (rescaleInput) {
+          result.push(rescaleFn('{threshold.output}|COMPUTED'));
+          result.push(watershedFn('{rescale.output}|COMPUTED'));
+        } else {
+          result.push(watershedFn('{threshold.output}|COMPUTED'));
+        }
+        break;
     }
+    if (parentObjectIsSet) {
+      result.push({
+        alias: 'mask',
+        module: 'MaskObjects',
+        values: {
+          input: `{${objectUtilityName}}|COMPUTED`,
+          output: '{parent.output}|COMPUTED',
+          method: 'Objects',
+          maskingObject: '{parent.parentObject}|COMPUTED',
+          overlap: '{parent.overlap}|COMPUTED'
+        }
+      });
+      result.push({
+        alias: 'relate',
+        module: 'RelateObjects',
+        values: {
+          parent: '{parent.parentObject}|COMPUTED',
+          child: '{parent.output}|COMPUTED'
+        }
+      });
+    }
+    return result;
   }
 };
 

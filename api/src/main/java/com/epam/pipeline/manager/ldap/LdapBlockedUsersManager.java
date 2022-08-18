@@ -69,8 +69,8 @@ public class LdapBlockedUsersManager {
                 SystemPreferences.LDAP_BLOCKED_USER_NAME_ATTRIBUTE);
         final LdapBlockedUserSearchMethod ldapSearchMethod = chooseLdapSearchMethod();
 
-        log.debug(String.format("LDAP search method: %s, filterTemplate: %s, nameAttribute: %s",
-                ldapSearchMethod.name(), filterTemplate, nameAttribute));
+        log.debug("LDAP search method: {}, filterTemplate: {}, nameAttribute: {}",
+                ldapSearchMethod.name(), filterTemplate, nameAttribute);
 
         final List<List<PipelineUser>> userPatches = Lists.partition(users, pageSize);
         return userPatches.stream()
@@ -96,6 +96,13 @@ public class LdapBlockedUsersManager {
                 .map(StringUtils::upperCase)
                 .collect(Collectors.toSet());
 
+        if (userNamesFromLdap.isEmpty()) {
+            log.debug("Result from LDAP are empty, " +
+                            "will not try to determinate blocking users in this patch: {}",
+                    patch.stream().map(PipelineUser::getUserName).collect(Collectors.joining(", ")));
+            return Collections.emptyList();
+        }
+
         final Map<String, PipelineUser> usersByName = patch.stream()
                 .collect(Collectors.toMap(user -> StringUtils.upperCase(user.getUserName()),
                         Function.identity()));
@@ -105,11 +112,14 @@ public class LdapBlockedUsersManager {
                 return userNamesFromLdap.stream()
                         .filter(usersByName::containsKey)
                         .map(usersByName::get)
+                        .peek(u -> log.debug("Found blocked user: " + u.getUserName()))
                         .collect(Collectors.toList());
             case LOAD_ACTIVE_AND_INTERCEPT:
                 return usersByName.entrySet().stream()
                         .filter(pu -> !userNamesFromLdap.contains(pu.getKey()))
-                        .map(Map.Entry::getValue).collect(Collectors.toList());
+                        .map(Map.Entry::getValue)
+                        .peek(u -> log.debug("Found blocked user: " + u.getUserName()))
+                        .collect(Collectors.toList());
             default:
                 throw new IllegalArgumentException("Unsupported search method: " + searchMethod.name());
         }
@@ -168,7 +178,10 @@ public class LdapBlockedUsersManager {
 
     private LdapSearchResponse queryLdap(final LdapSearchRequest request, final String filter) {
         try {
-            return ldapManager.search(request, filter);
+            log.debug("Query LDAP with query string: {}", request.getQuery());
+            final LdapSearchResponse response = ldapManager.search(request, filter);
+            log.debug("Received LDAP response {}", response);
+            return response;
         } catch (Exception e) {
             log.warn("LDAP request failed.", e);
             return null;

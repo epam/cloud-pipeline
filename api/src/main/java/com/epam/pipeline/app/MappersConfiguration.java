@@ -21,6 +21,7 @@ import com.epam.pipeline.mapper.cloud.credentials.CloudProfileCredentialsMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolUsageMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodeScheduleMapper;
 import com.epam.pipeline.mapper.cluster.pool.NodePoolMapper;
+import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.mapper.git.BitbucketMapper;
 import com.epam.pipeline.mapper.notification.ContextualNotificationMapper;
 import com.epam.pipeline.mapper.ontology.OntologyMapper;
@@ -106,6 +107,11 @@ public class MappersConfiguration {
     @Bean
     public OntologyMapper ontologyMapper() {
         return Mappers.getMapper(OntologyMapper.class);
+    }
+
+    @Bean
+    public StorageLifecycleEntityMapper datastorageLifecycleMapper() {
+        return Mappers.getMapper(StorageLifecycleEntityMapper.class);
     }
 
     @Bean

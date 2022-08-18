@@ -17,6 +17,10 @@ class NodeScaleUpTimeoutError(RuntimeError):
     pass
 
 
+class NodeEvictionTimeoutError(RuntimeError):
+    pass
+
+
 class ForbiddenNodeScaleDownError(RuntimeError):
     pass
 

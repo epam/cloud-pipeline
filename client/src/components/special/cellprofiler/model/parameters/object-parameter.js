@@ -47,12 +47,14 @@ class ObjectParameter extends ModuleParameter {
 
   @computed
   get values () {
-    return getObjectsForModule(this.cpModule).map((object) => ({
-      value: object,
-      id: object,
-      key: object,
-      title: object
-    }));
+    return this.wrapValuesWithEmptyValue(
+      getObjectsForModule(this.cpModule)
+        .map((object) => ({
+          value: object,
+          id: object,
+          key: object,
+          title: object
+        })));
   }
 
   get defaultValue () {

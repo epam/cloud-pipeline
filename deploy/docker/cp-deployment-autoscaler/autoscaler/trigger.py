@@ -21,11 +21,21 @@ import sys
 from abc import ABC, abstractmethod
 
 from autoscaler.cluster.provider import NodeProvider
+from autoscaler.config import AutoscalingConfiguration
 from autoscaler.model import Condition
 
 
 def _at_least(size, required_size, extra_size):
     return max(size, required_size + extra_size) if size >= required_size else required_size
+
+
+def _scaling_msg(entities_type, entities_number, required_entities_number):
+    if required_entities_number > entities_number:
+        return f'Scaling {entities_type} ↑ from {entities_number} to {required_entities_number} is required. '
+    elif required_entities_number < entities_number:
+        return f'Scaling {entities_type} ↓ from {entities_number} to {required_entities_number} is required. '
+    else:
+        return f'Scaling {entities_type} is not required. '
 
 
 class AutoscalingTrigger(ABC):
@@ -38,6 +48,7 @@ class AutoscalingTrigger(ABC):
 
 
 class CoefficientTrigger(AutoscalingTrigger):
+
     class EntitiesType(Enum):
         NODES = 1
         REPLICAS = 2
@@ -151,7 +162,8 @@ class TargetReplicasPerTargetNodesCoefficientTrigger(CoefficientTrigger):
 
 class NodeConditionTrigger(AutoscalingTrigger):
 
-    def __init__(self, node_provider, condition, condition_name, condition_target):
+    def __init__(self, configuration, node_provider, condition, condition_name, condition_target):
+        self._configuration: AutoscalingConfiguration = configuration
         self._node_provider: NodeProvider = node_provider
         self._condition: Condition = condition
         self._condition_name: str = condition_name
@@ -168,11 +180,9 @@ class NodeConditionTrigger(AutoscalingTrigger):
             required_replicas_number = _at_least(replicas_number, required_replicas_number,
                                                  self._configuration.rules.on_threshold_trigger.extra_replicas)
             logging.info('[TRIGGER] %s (%s) >= target (%s). '
-                         'Scaling nodes ↑ from %s to %s is required. '
-                         'Scaling replicas ↑ from %s to %s is required.',
-                         self._condition_name, pressured_nodes_number, self._condition_target,
-                         nodes_number, required_nodes_number,
-                         replicas_number, required_replicas_number)
+                         + _scaling_msg('nodes', nodes_number, required_nodes_number)
+                         + _scaling_msg('replicas', replicas_number, required_replicas_number),
+                         self._condition_name, pressured_nodes_number, self._condition_target)
         return required_nodes_number, required_replicas_number
 
     def _count_conditions(self, nodes, condition):
@@ -188,21 +198,21 @@ class NodeConditionTrigger(AutoscalingTrigger):
 class NodeDiskPressureTrigger(NodeConditionTrigger):
 
     def __init__(self, configuration, node_provider):
-        super().__init__(node_provider, Condition.DISK_PRESSURE, 'disk pressured nodes',
+        super().__init__(configuration, node_provider, Condition.DISK_PRESSURE, 'disk pressured nodes',
                          configuration.trigger.disk_pressured_nodes)
 
 
 class NodeMemoryPressureTrigger(NodeConditionTrigger):
 
     def __init__(self, configuration, node_provider):
-        super().__init__(node_provider, Condition.MEMORY_PRESSURE, 'memory pressured nodes',
+        super().__init__(configuration, node_provider, Condition.MEMORY_PRESSURE, 'memory pressured nodes',
                          configuration.trigger.memory_pressured_nodes)
 
 
 class NodePidPressureTrigger(NodeConditionTrigger):
 
     def __init__(self, configuration, node_provider):
-        super().__init__(node_provider, Condition.PID_PRESSURE, 'pid pressured nodes',
+        super().__init__(configuration, node_provider, Condition.PID_PRESSURE, 'pid pressured nodes',
                          configuration.trigger.pid_pressured_nodes)
 
 
@@ -242,16 +252,15 @@ class NodeHeapsterElasticMetricTrigger(AutoscalingTrigger):
                                    replicas_number, required_replicas_number)
         return required_nodes_number, required_replicas_number
 
-    def _apply(self, trigger_name, memory_utilization, target_utilization, nodes_number, required_nodes_number,
+    def _apply(self, trigger_name, current_utilization, target_utilization,
+               nodes_number, required_nodes_number,
                replicas_number, required_replicas_number):
         required_nodes_number = _at_least(nodes_number, required_nodes_number,
                                           self._configuration.rules.on_threshold_trigger.extra_nodes)
         required_replicas_number = _at_least(replicas_number, required_replicas_number,
                                              self._configuration.rules.on_threshold_trigger.extra_replicas)
         logging.info('[TRIGGER] %s (%s%%) >= target (%s%%). '
-                     'Scaling nodes ↑ from %s to %s is required. '
-                     'Scaling replicas ↑ from %s to %s is required.',
-                     trigger_name, memory_utilization, target_utilization,
-                     nodes_number, required_nodes_number,
-                     replicas_number, required_replicas_number)
+                     + _scaling_msg('nodes', nodes_number, required_nodes_number)
+                     + _scaling_msg('replicas', replicas_number, required_replicas_number),
+                     trigger_name, current_utilization, target_utilization)
         return required_nodes_number, required_replicas_number

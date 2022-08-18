@@ -59,9 +59,19 @@ const measureImageIntensity = {
   ]
 };
 
+const measureObjectSkeleton = {
+  name: 'MeasureObjectSkeleton',
+  group: MEASUREMENTS_GROUP,
+  parameters: [
+    'Select the seed objects|object|Nuclei|REQUIRED|ALIAS seed',
+    'Select the skeletonized image|file|REQUIRED|ALIAS image'
+  ]
+};
+
 export default [
   measureImageAreaOccupied,
   measureImageIntensity,
   measureObjectIntensity,
-  measureObjectSizeShape
+  measureObjectSizeShape,
+  measureObjectSkeleton
 ];

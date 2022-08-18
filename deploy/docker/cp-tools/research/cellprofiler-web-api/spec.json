@@ -1,0 +1,7 @@
+{
+    "short_description": "CellProfiler Web API",
+    "instance_type": "${CP_PREF_CLUSTER_INSTANCE_TYPE}",
+    "disk_size": "50",
+    "default_command": "bash /opt/cellprofiler-api-wrapper/start.sh",
+    "endpoints": [ "{ \"name\": \"CellProfiler API\", \"nginx\": { \"port\": \"8080\", \"additional\": \"if (${CP_DOLLAR}request_method = OPTIONS ) { add_header Content-Length 0;add_header Content-Type text/plain;add_header Access-Control-Allow-Headers bearer;add_header Access-Control-Allow-Methods *;add_header Access-Control-Allow-Origin https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT};add_header Vary Origin;add_header Access-Control-Allow-Credentials true;return 200;}add_header Access-Control-Allow-Origin https://${CP_API_SRV_EXTERNAL_HOST}:${CP_API_SRV_EXTERNAL_PORT};add_header Vary Origin;add_header Access-Control-Allow-Headers *;add_header Access-Control-Allow-Methods *;add_header Access-Control-Allow-Credentials true;\" }, \"isDefault\": true }" ]
+}

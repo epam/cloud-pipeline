@@ -59,6 +59,7 @@ import com.epam.pipeline.manager.datastorage.FileShareMountManager;
 import com.epam.pipeline.manager.datastorage.RunMountService;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.datastorage.convert.DataStorageConvertManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.manager.datastorage.lustre.LustreFSManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagBatchManager;
 import com.epam.pipeline.manager.datastorage.tag.DataStorageTagManager;
@@ -561,6 +562,9 @@ public class AclTestBeans {
 
     @MockBean
     protected RunLimitsService runLimitsService;
+
+    @MockBean
+    protected DataStorageLifecycleManager storageLifecycleManager;
 
     @Bean
     public GrantPermissionManager grantPermissionManager() {

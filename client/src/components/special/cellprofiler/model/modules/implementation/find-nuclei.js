@@ -24,7 +24,8 @@ const {
   parameters: thresholdingParameters,
   values: thresholdingValues
 } = thresholding({
-  method: 'Adaptive Minimum Cross-Entropy'
+  strategy: 'Adaptive',
+  thresholdingMethod: 'Minimum Cross-Entropy'
 });
 
 const findNuclei = {

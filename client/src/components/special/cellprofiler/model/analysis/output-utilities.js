@@ -16,7 +16,8 @@
 
 import {createObjectStorageWrapper} from '../../../../../utils/object-storage';
 import storages from '../../../../../models/dataStorage/DataStorageAvailable';
-import GenerateDownloadUrl from "../../../../../models/dataStorage/GenerateDownloadUrl";
+import GenerateDownloadUrl from '../../../../../models/dataStorage/GenerateDownloadUrl';
+import DataStorageTags from '../../../../../models/dataStorage/tags/DataStorageTags';
 
 const expirationTimeoutMS = 1000 * 60; // 1 minute
 
@@ -60,14 +61,15 @@ export async function getOutputFileAccessInfo (output) {
 }
 
 /**
- * @param {{url: string?, storageId: string?, path: string?}} options
+ * @param {{url: string?, storageId: string?, path: string?, checkExists: boolean?}} options
  * @returns {Promise<string>}
  */
 export async function generateResourceUrl (options = {}) {
   const {
     url,
     storageId,
-    path
+    path,
+    checkExists = false
   } = options;
   if (typeof url === 'string' && /^https?:\/\//i.test(url)) {
     return url;
@@ -80,6 +82,13 @@ export async function generateResourceUrl (options = {}) {
     return url;
   }
   if (storageId && path) {
+    if (checkExists) {
+      const tags = new DataStorageTags(storageId, path);
+      await tags.fetch();
+      if (tags.error) {
+        return undefined;
+      }
+    }
     const request = new GenerateDownloadUrl(storageId, path);
     await request.fetch();
     if (request.error) {

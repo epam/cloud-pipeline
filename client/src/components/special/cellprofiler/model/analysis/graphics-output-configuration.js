@@ -97,9 +97,9 @@ class OutlineObjectConfiguration {
   };
 }
 
-export default class OutlineObjectsConfiguration {
+export default class GraphicsOutputConfiguration {
   static importConfigurations (configurations) {
-    const result = new OutlineObjectsConfiguration();
+    const result = new GraphicsOutputConfiguration();
     result.configurations = JSON.parse(configurations)
       .map(config => OutlineObjectConfiguration.importConfiguration(config));
     return result;
@@ -109,15 +109,21 @@ export default class OutlineObjectsConfiguration {
    */
   @observable configurations = [];
   @observable hidden = false;
+  /**
+   * @type {AnalysisOutputResult}
+   * @private
+   */
+  @observable _overlayImage = undefined;
   constructor (analysisOutputs = []) {
     this.update(analysisOutputs);
   }
 
   /**
    * @param {AnalysisOutputResult[]} analysisOutputs
+   * @param {AnalysisOutputResult} overlayImage
    * @param {*} [viewer]
    */
-  update (analysisOutputs = [], viewer) {
+  update (analysisOutputs = [], overlayImage, viewer) {
     const objectNames = [...new Set(analysisOutputs.filter(o => o.object).map(o => o.object))];
     /**
      * @type {OutlineObjectConfiguration[]}
@@ -154,10 +160,12 @@ export default class OutlineObjectsConfiguration {
       }
     });
     this.configurations = updated;
+    this._overlayImage = overlayImage;
     (this.renderOutlines)(viewer);
   }
 
   detachResults = (hcsImageViewer) => {
+    this._overlayImage = undefined;
     this.configurations.forEach(aConfiguration => {
       aConfiguration.url = undefined;
       aConfiguration.backgroundUrl = undefined;
@@ -194,31 +202,56 @@ export default class OutlineObjectsConfiguration {
     }
   }
 
+  setOverlayImage = (overlayImage, viewer) => {
+    this._overlayImage = overlayImage;
+    return this.renderOutlines(viewer);
+  };
+
+  outputIsSelectedAsOverlayImage = (overlayImage) => {
+    return this._overlayImage &&
+      overlayImage &&
+      this._overlayImage.id === overlayImage.id;
+  };
+
   renderOutlines = async (hcsImageViewer) => {
     if (!hcsImageViewer) {
       return;
     }
     const setOverlayImages = images => hcsImageViewer.setOverlayImages(images);
+    const overlays = [];
+    if (this._overlayImage) {
+      const url = await this._overlayImage.fetchUrl();
+      overlays.push({
+        url,
+        color: '#FFFFFF',
+        ignoreColor: '#000000',
+        ignoreColorAccuracy: 0.08
+      });
+    }
     if (this.hidden) {
-      setOverlayImages([]);
+      setOverlayImages(overlays);
     } else {
       await Promise.all(
         this.configurations
           .filter(configuration => configuration.visible)
           .map(configuration => configuration.fetchUrls())
       );
+      const objectImages = this.configurations
+        .filter(outline => outline.visible)
+        .map(outline => [
+          outline.backgroundUrl ? {
+            url: outline.backgroundUrl,
+            color: fadeoutHex(outline.color, 0.6)
+          } : undefined,
+          outline.url ? {url: outline.url, color: outline.color} : undefined
+        ])
+        .reduce((r, c) => ([...r, ...c]), [])
+        .filter(Boolean);
       setOverlayImages(
-        this.configurations
-          .filter(outline => outline.visible)
-          .map(outline => [
-            outline.backgroundUrl ? {
-              url: outline.backgroundUrl,
-              color: fadeoutHex(outline.color, 0.6)
-            } : undefined,
-            outline.url ? {url: outline.url, color: outline.color} : undefined
-          ])
-          .reduce((r, c) => ([...r, ...c]), [])
-          .filter(Boolean)
+        [
+          ...overlays,
+          ...objectImages
+        ]
       );
     }
   };
