@@ -105,7 +105,7 @@ class HcsProcessingDirsGenerator:
         for name, roots in names.items():
             with_id = len(roots) > 1
             if with_id:
-                log_run_info('Find duplicate name {} for roots {}'.format(name, str(roots)))
+                log_run_info('Found duplicate name {} for roots {}'.format(name, str(roots)))
             for root in roots:
                 result[root] = HcsParsingUtils.build_preview_file_path(root, with_id=with_id)
         return result

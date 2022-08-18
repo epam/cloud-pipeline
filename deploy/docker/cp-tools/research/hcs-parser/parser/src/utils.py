@@ -92,7 +92,7 @@ class HcsParsingUtils:
         file_name = HcsParsingUtils.build_preview_file_name(hcs_root_folder_path)
         if with_id:
             file_name = file_name + '.' + hcs_root_folder_path.split('/')[-1]
-        preview_file_basename = file_name + '.hcs'
+        preview_file_basename = HcsParsingUtils.replace_special_chars(file_name) + '.hcs'
         parent_folder = HCS_PROCESSING_OUTPUT_FOLDER \
             if HCS_PROCESSING_OUTPUT_FOLDER is not None \
             else os.path.dirname(hcs_root_folder_path)
@@ -162,4 +162,8 @@ class HcsParsingUtils:
     @staticmethod
     def quote_string(string):
         return '"{}"'.format(string)
+
+    @staticmethod
+    def replace_special_chars(file_path):
+        return file_path.replace('/', '|')
 
