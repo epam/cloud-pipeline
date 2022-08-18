@@ -59,7 +59,7 @@ def find_and_tag_instance(old_id, new_id):
     # if we can't load one of resources from the filtered list - we will fail before we try to change a tag value
     for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + old_id + "'"):
         resource_type = str(resource.type).split('/')[-1]
-        if resource_type == "virtualMachines":
+        if resource_type.lower() == "virtualmachines":
             ins_id = resource.name
 
         az_api_version = resolve_azure_api(resource)
