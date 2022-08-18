@@ -121,6 +121,12 @@
   display: none;
 }
 
+.cell-profiler-parameter-hint {
+  margin-left: 4px;
+  margin-top: 1px;
+  width: 12px;
+}
+
 .modal-footer {
   display: flex;
   align-items: center;
