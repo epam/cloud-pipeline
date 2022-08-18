@@ -2,6 +2,9 @@ from .config import Config
 from .hcs_pipeline import ImageCoords, HcsPipeline, PipelineState
 from multiprocessing import Process
 from time import sleep
+import glob
+import os
+from .z_planes_pipeline import ZPlanesPipeline
 
 
 class HCSManager:
@@ -21,19 +24,15 @@ class HCSManager:
         pipeline = self._get_pipeline(pipeline_id)
         return pipeline.get_structure()
 
-    def add_files(self, pipeline_id, files_data):
+    def add_files(self, pipeline_id: int, input_data: dict):
         pipeline = self._get_pipeline(pipeline_id)
-        coordinates_list = list()
-        for coordinates in files_data:
-            x = int(self._get_required_field(coordinates, 'x'))
-            y = int(self._get_required_field(coordinates, 'y'))
-            z = int(self._get_required_field(coordinates, 'z'))
-            field_id = int(self._get_required_field(coordinates, 'fieldId'))
-            time_point = int(self._get_required_field(coordinates, 'timepoint'))
-            channel = int(coordinates.get('channel', 1))
-            channel_name = coordinates.get('channelName', 'DAPI')
-            coordinates_list.append(ImageCoords(x, y, time_point, z, field_id, channel, channel_name))
+        files_data = self._get_required_field(input_data, 'files')
+        z_planes = input_data.get('zPlanes', None)
+        bit_depth = input_data.get('bitDepth', None)
+        coordinates_list = [self._parse_inputs(coordinates) for coordinates in files_data]
         pipeline.set_input(coordinates_list)
+        if z_planes:
+            self.squash_z_planes(pipeline_id, z_planes, files_data, bit_depth)
 
     def create_module(self, pipeline_id, module_data):
         pipeline = self._get_pipeline(pipeline_id)
@@ -104,9 +103,65 @@ class HCSManager:
             raise RuntimeError("Failed to find pipeline '%s'" % pipeline_id)
         return pipeline
 
+    def squash_z_planes(self, parent_pipeline_id: int, z_planes: list, files_data: list, bit_depth: str = None):
+        parent_pipeline = self._get_pipeline(parent_pipeline_id)
+        parent_pipeline.set_z_planes(z_planes)
+
+        projection_pipeline = ZPlanesPipeline(parent_pipeline.get_measurement(), bit_depth)
+        pipeline_id = projection_pipeline.get_id()
+        self.pipelines.update({pipeline_id: projection_pipeline})
+        parent_pipeline.set_pre_processing_pipeline(pipeline_id)
+
+        projection_pipeline.set_z_planes(z_planes)
+        coordinates = [self._parse_inputs(coordinates) for coordinates in files_data]
+        projection_pipeline.set_input(coordinates)
+
+    def launch_pipeline(self, pipeline_id: int):
+        parent_pipeline = self._get_pipeline(pipeline_id)
+        pre_processing_pipeline = parent_pipeline.get_pre_processing_pipeline()
+        if pre_processing_pipeline is not None:
+            self.run_projection_pipeline(pipeline_id)
+        self.run_pipeline(pipeline_id)
+
+    def run_projection_pipeline(self, parent_pipeline_id: int):
+        parent_pipeline = self._get_pipeline(parent_pipeline_id)
+
+        projection_pipeline_id = parent_pipeline.get_pre_processing_pipeline()
+        projection_pipeline = self._get_pipeline(projection_pipeline_id)
+        if not projection_pipeline.pipeline_inputs or len(projection_pipeline.pipeline_inputs) == 0:
+            # no projection pipeline launch required
+            return
+        self.run_pipeline(projection_pipeline_id)
+        parent_pipeline.set_pipeline_files(self._collect_parent_pipeline_inputs(parent_pipeline, projection_pipeline))
+
+    def _parse_inputs(self, coordinates):
+        x = int(self._get_required_field(coordinates, 'x'))
+        y = int(self._get_required_field(coordinates, 'y'))
+        z = int(self._get_required_field(coordinates, 'z'))
+        field_id = int(self._get_required_field(coordinates, 'fieldId'))
+        time_point = int(self._get_required_field(coordinates, 'timepoint'))
+        channel = int(coordinates.get('channel', 1))
+        channel_name = coordinates.get('channelName', 'DAPI')
+        return ImageCoords(x, y, time_point, z, field_id, channel, channel_name)
+
+    def _collect_parent_pipeline_inputs(self, parent_pipeline: HcsPipeline, projection_pipeline: ZPlanesPipeline):
+        parent_pipeline_inputs = self._collect_pipeline_tiff_outputs(projection_pipeline.get_id(),
+                                                                     parent_pipeline.get_measurement())
+        for image in projection_pipeline.parent_pipeline_inputs:
+            parent_pipeline_inputs.append(parent_pipeline._map_to_file_name(image))
+        return parent_pipeline_inputs
+
     @staticmethod
     def _get_required_field(json_data, field_name):
         field_value = json_data.get(field_name)
         if field_value is None:
             raise RuntimeError("Field '%s' is required" % field_name)
         return field_value
+
+    @staticmethod
+    def _collect_pipeline_tiff_outputs(pipeline_id, measurements_uuid):
+        results = list()
+        results_dir = os.path.join(Config.COMMON_RESULTS_DIR, measurements_uuid, pipeline_id)
+        for tiff_file_path in glob.iglob(results_dir + '/**/*.tiff', recursive=True):
+            results.append(tiff_file_path)
+        return results

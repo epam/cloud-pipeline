@@ -63,14 +63,29 @@ class HcsPipeline(object):
         self._pipeline_state_message = ''
         self._input_sets = set()
         self._fields_by_well = dict()
+        self._measurement_uuid = measurement_id
+        self._pre_processing_pipeline_id = None
+        self._z_planes = None  # z-planes to squash
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
         self._pipeline_state = status
         self._pipeline_state_message = message
 
+    def set_pre_processing_pipeline(self, pipeline_id):
+        self._pre_processing_pipeline_id = pipeline_id
+
+    def get_pre_processing_pipeline(self):
+        return self._pre_processing_pipeline_id
+
     def get_id(self):
         return self._pipeline_id
+
+    def get_measurement(self):
+        return self._measurement_uuid
+
+    def set_z_planes(self, z_planes):
+        self._z_planes = z_planes
 
     def get_module_outputs(self, module):
         module_id = str(module.id)
@@ -95,6 +110,8 @@ class HcsPipeline(object):
         data['state'] = self._pipeline_state.name
         data['message'] = self._pipeline_state_message
         data['inputs'] = list(self._input_sets)
+        if self.get_pre_processing_pipeline():
+            data['pre_process_pipeline'] = self.get_pre_processing_pipeline()
         return data
 
     def get_module_status(self):
@@ -145,6 +162,7 @@ class HcsPipeline(object):
             module_name = module.module_name
         if module_name == DefineResults.MODULE_NAME:
             module_config.update({DefineResults.FIELDS_BY_WELL: self._fields_by_well})
+            module_config.update({DefineResults.Z_PLANES: self._z_planes})
         processor = self._modules_factory.get_module_processor(module, module_name)
         module = processor.configure_module(module_config)
         return module
