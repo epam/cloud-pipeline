@@ -35,8 +35,8 @@ public class DataStorageLifecycleApiService {
     private final DataStorageLifecycleManager storageLifecycleManager;
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long id) {
-        return storageLifecycleManager.listStorageLifecyclePolicyRules(id);
+    public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long id, final String path) {
+        return storageLifecycleManager.listStorageLifecyclePolicyRules(id, path);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
