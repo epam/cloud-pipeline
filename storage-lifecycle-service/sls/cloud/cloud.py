@@ -29,7 +29,7 @@ class StorageOperations:
     def prepare_bucket_if_needed(self, bucket):
         pass
 
-    def list_objects_by_prefix(self, bucket, glob_str):
+    def list_objects_by_prefix(self, bucket, prefix, convert_paths=True):
         pass
 
     def process_files_on_cloud(self, bucket, region, rule, folder, storage_class, files):
