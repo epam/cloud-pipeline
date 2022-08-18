@@ -40,7 +40,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
 import static org.mockito.Matchers.any;
@@ -50,6 +52,9 @@ public class DataStorageLifecycleManagerTest {
 
     public static final long ID = 1L;
     public static final String ROOT = "/data/**/dataset*";
+
+    public static final String ROOT_2 = "/root/**/dataset*";
+
     public static final String STORAGE_CLASS = "Glacier";
     public static final String OBJECT_GLOB = "*.txt";
     public static final StorageLifecycleRule RULE = StorageLifecycleRule.builder()
@@ -116,6 +121,12 @@ public class DataStorageLifecycleManagerTest {
         lifecycleManager.createStorageLifecyclePolicyRule(ID, RULE);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailCreateLifecycleRuleIfPathNotFromRoot() {
+        final StorageLifecycleRule rule = RULE.toBuilder().pathGlob("path/not/from/root").build();
+        lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
+    }
+
     @Test
     public void shouldSuccessfullyCreateLifecycleRuleIfRuleWithAnotherSettingsExists() {
         Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
@@ -124,6 +135,27 @@ public class DataStorageLifecycleManagerTest {
         final StorageLifecycleRule anotherRule = RULE.toBuilder().objectGlob(null).build();
         final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, anotherRule);
         verifyRule(created, RULE_WITH_ID);
+    }
+
+    @Test
+    public void shouldListAllRulesIfPathNotProvided() {
+        final StorageLifecycleRule anotherRule = RULE.toBuilder().id(ID + 1).pathGlob(ROOT_2).build();
+        Mockito.doReturn(Arrays.asList(mapper.toEntity(RULE_WITH_ID), mapper.toEntity(anotherRule)))
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+        final List<StorageLifecycleRule> listed = lifecycleManager.listStorageLifecyclePolicyRules(ID, null);
+        Assert.assertEquals(2, listed.size());
+    }
+
+    @Test
+    public void shouldListOnlyMatchingRulesIfPathProvided() {
+        final StorageLifecycleRule anotherRule = RULE.toBuilder().id(ID + 1).pathGlob(ROOT_2).build();
+        Mockito.doReturn(Arrays.asList(mapper.toEntity(RULE_WITH_ID), mapper.toEntity(anotherRule)))
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+        final List<StorageLifecycleRule> listed =
+                lifecycleManager.listStorageLifecyclePolicyRules(ID, "/root/data_folder/dataset1");
+        Assert.assertEquals(1, listed.size());
     }
 
     @Test
