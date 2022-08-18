@@ -647,7 +647,13 @@ class HcsImage extends React.PureComponent {
             className={styles.action}
             size="small"
             disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
+            onClick={() => downloadCurrentTiff(
+              this.hcsImageViewer,
+              {
+                wellView: this.showEntireWell,
+                wellId: this.selectedWell ? this.selectedWell.id : undefined
+              }
+            )}
           >
             <Icon
               type="camera"
@@ -716,7 +722,7 @@ class HcsImage extends React.PureComponent {
           <Button
             className={styles.action}
             disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer)}
+            onClick={() => downloadCurrentTiff(this.hcsImageViewer, this.showEntireWell, this.selectedWell.id)}
           >
             Download current image
           </Button>

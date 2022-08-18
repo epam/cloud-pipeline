@@ -30,8 +30,30 @@ export function downloadAvailable (viewer) {
     loader.length > 0;
 }
 
-export function downloadCurrentTiff (viewer) {
+/**
+ * @param {object} viewer
+ * @param {{wellView: boolean?, wellId: string?}} options
+ */
+export function downloadCurrentTiff (viewer, options = {}) {
   if (downloadAvailable(viewer)) {
-    viewer.makeSnapshot();
+    const {
+      wellId,
+      wellView
+    } = options;
+    let fileName;
+    if (wellId && wellView) {
+      fileName = wellId;
+    } else if (wellId) {
+      const {
+        viewerState
+      } = viewer;
+      const {
+        metadata
+      } = viewerState || {};
+      const {Name = wellId} = metadata;
+      const parts = Name.split(',').map(o => o.trim());
+      fileName = parts.map(o => /(\s|^)well(\s|$)/i.test(o) ? wellId : o).join(', ');
+    }
+    viewer.makeSnapshot(fileName);
   }
 }
