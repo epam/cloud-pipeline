@@ -484,7 +484,7 @@ class AzureInstanceProvider(AbstractInstanceProvider):
         api version) """
         provider = self.resource_client.providers.get(resource.id.split('/')[6])
         rt = next((t for t in provider.resource_types
-                   if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
+                   if t.resource_type.lower() == '/'.join(resource.type.split('/')[1:]).lower()), None)
         if rt and 'api_versions' in rt.__dict__:
             api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
             return api_version[0] if api_version else rt.__dict__['api_versions'][0]
