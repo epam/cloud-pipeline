@@ -276,7 +276,9 @@ public class AzureVMService {
             return Optional.empty();
         }
         final Optional<GenericResource> virtualMachineContainer = currentPage.items().stream()
-                .filter(r -> resourceType(r).startsWith(VIRTUAL_MACHINE_PREFIX)).findFirst();
+                .filter(r -> resourceType(r).startsWith(VIRTUAL_MACHINE_PREFIX) ||
+                        resourceType(r).equals(VIRTUAL_MACHINE_SCALE_SET_TYPE))
+                .findFirst();
         return virtualMachineContainer.isPresent() ? virtualMachineContainer : checkNextPage(currentPage, resources);
     }
 
