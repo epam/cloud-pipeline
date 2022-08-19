@@ -301,6 +301,8 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.rule.datastorage.id.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED =
             "error.datastirage.lifecycle.root.path.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_IS_NOT_ABSOLUTE =
+            "error.datastirage.lifecycle.path.is.not.absolute";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED =
             "error.datastirage.lifecycle.transitions.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS =

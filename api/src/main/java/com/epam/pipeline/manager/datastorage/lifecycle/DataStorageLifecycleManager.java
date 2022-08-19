@@ -58,6 +58,7 @@ public class DataStorageLifecycleManager {
 
     private static final String EMPTY = "";
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+    public static final String PATH_SEPARATOR = "/";
     private final MessageHelper messageHelper;
     private final StorageLifecycleEntityMapper lifecycleEntityMapper;
     private final DataStorageLifecycleRuleRepository dataStorageLifecycleRuleRepository;
@@ -68,12 +69,18 @@ public class DataStorageLifecycleManager {
     private final PreferenceManager preferenceManager;
 
 
-    public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long storageId) {
+    public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long storageId, final String path) {
+        validatePathIsAbsolute(path);
         return StreamSupport.stream(
                         dataStorageLifecycleRuleRepository.findByDatastorageId(storageId).spliterator(),
                         false
                 ).map(lifecycleEntityMapper::toDto)
+                .filter(rule -> !StringUtils.hasText(path) || PATH_MATCHER.match(rule.getPathGlob(), path))
                 .collect(Collectors.toList());
+    }
+
+    public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long storageId) {
+        return listStorageLifecyclePolicyRules(storageId, null);
     }
 
     public StorageLifecycleRule loadStorageLifecyclePolicyRule(final Long datastorageId, final Long ruleId) {
@@ -180,7 +187,8 @@ public class DataStorageLifecycleManager {
                 false
         ).collect(Collectors.toList());
         loaded.forEach(rule -> dataStorageLifecycleRuleExecutionRepository.deleteByRuleId(rule.getId()));
-        dataStorageLifecycleRuleRepository.deleteByDatastorageId(datastorageId);
+        dataStorageLifecycleRuleRepository.delete(loaded);
+        dataStorageLifecycleRuleRepository.flush();
     }
 
     @Transactional
@@ -316,6 +324,7 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
         Assert.isTrue(!StringUtils.isEmpty(rule.getPathGlob()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED));
+        validatePathIsAbsolute(rule.getPathGlob());
         final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
         Assert.notNull(datastorageId,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
@@ -386,5 +395,12 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED));
         Assert.hasLength(notification.getBody(),
                 messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_BODY_NOT_SPECIFIED));
+    }
+
+    private void validatePathIsAbsolute(final String path) {
+        if (StringUtils.hasText(path)) {
+            Assert.isTrue(path.startsWith(PATH_SEPARATOR),
+                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_IS_NOT_ABSOLUTE));
+        }
     }
 }

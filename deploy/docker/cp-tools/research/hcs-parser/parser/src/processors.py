@@ -51,6 +51,12 @@ OVERVIEW_DIR_NAME = 'overview'
 PATH_DELIMITER = '/'
 
 
+class HcsRoot:
+    def __init__(self, root_path, hcs_img_path):
+        self.root_path = root_path
+        self.hcs_img_path = hcs_img_path
+
+
 class FieldDetails:
     def __init__(self, well_column, well_row, ome_image_id, x, y):
         self.well_column = int(well_column)
@@ -83,9 +89,9 @@ class WellGrid:
 
 class HcsFileParser:
 
-    def __init__(self, hcs_root_dir):
+    def __init__(self, hcs_root_dir, hcs_img_path):
         self.hcs_root_dir = get_path_without_trailing_delimiter(hcs_root_dir)
-        self.hcs_img_path = HcsParsingUtils.build_preview_file_path(hcs_root_dir)
+        self.hcs_img_path = hcs_img_path
         self.hcs_img_service_dir = HcsParsingUtils.get_service_directory(self.hcs_img_path)
         self.ome_xml_info_file_path = os.path.join(self.hcs_img_service_dir, 'info.ome.xml')
         self.stat_file_path = HcsParsingUtils.get_stat_file_name(self.hcs_img_path)

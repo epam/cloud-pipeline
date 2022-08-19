@@ -46,7 +46,10 @@ public class DataStorageLifecycleController extends AbstractRestController {
 
     public static final String DATASTORAGE_ID = "datastorageId";
     public static final String RULE_ID = "ruleId";
+    public static final String PATH = "path";
     public static final String EXECUTION_ID = "executionId";
+    public static final String STATUS = "status";
+
     @Autowired
     private DataStorageLifecycleApiService dataStorageLifecycleApiService;
 
@@ -60,8 +63,9 @@ public class DataStorageLifecycleController extends AbstractRestController {
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<StorageLifecycleRule>> listStorageLifecyclePolicyRules(
-            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId) {
-        return Result.success(dataStorageLifecycleApiService.listStorageLifecyclePolicyRules(datastorageId));
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH, required = false) final String path) {
+        return Result.success(dataStorageLifecycleApiService.listStorageLifecyclePolicyRules(datastorageId, path));
     }
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}")
@@ -121,7 +125,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
     public Result<StorageLifecycleRule> prolongStorageLifecyclePolicyRule(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = RULE_ID) final Long ruleId,
-            @RequestParam(value = "path") final String path,
+            @RequestParam(value = PATH) final String path,
             @RequestParam(value = "days", required = false) final Long days) {
         return Result.success(
                 dataStorageLifecycleApiService.prolongStorageLifecyclePolicyRule(datastorageId, ruleId, path, days)
@@ -173,7 +177,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
     public Result<StorageLifecycleRuleExecution> updateStorageLifecycleRuleExecutionStatus(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = EXECUTION_ID) final Long executionId,
-            @RequestParam(value = "status") final StorageLifecycleRuleExecutionStatus status) {
+            @RequestParam(value = STATUS) final StorageLifecycleRuleExecutionStatus status) {
         return Result.success(
                 dataStorageLifecycleApiService.updateStorageLifecycleRuleExecutionStatus(
                         datastorageId, executionId, status));
@@ -200,7 +204,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
     @ResponseBody
     @ApiOperation(
             value = "Lists all available lifecycle rule executions.",
-            notes = "Lists all available lifecycle rule executions. Could be filtered by path",
+            notes = "Lists all available lifecycle rule executions. Could be filtered by path and status",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
@@ -208,8 +212,8 @@ public class DataStorageLifecycleController extends AbstractRestController {
     public Result<List<StorageLifecycleRuleExecution>> listStorageLifecyclePolicyRuleExecutions(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = RULE_ID) final Long ruleId,
-            @RequestParam(value = "path", required = false) final String path,
-            @RequestParam(value = "status", required = false) final StorageLifecycleRuleExecutionStatus status) {
+            @RequestParam(value = PATH, required = false) final String path,
+            @RequestParam(value = STATUS, required = false) final StorageLifecycleRuleExecutionStatus status) {
         return Result.success(
                 dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(
                         datastorageId, ruleId, path, status));

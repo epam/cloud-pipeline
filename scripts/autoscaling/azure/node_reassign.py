@@ -44,10 +44,25 @@ def resolve_azure_api(resource):
     api version) """
     provider = res_client.providers.get(resource.id.split('/')[6])
     rt = next((t for t in provider.resource_types
-               if t.resource_type == '/'.join(resource.type.split('/')[1:])), None)
+               if t.resource_type.lower() == '/'.join(resource.type.split('/')[1:]).lower()), None)
     if rt and 'api_versions' in rt.__dict__:
         api_version = [v for v in rt.__dict__['api_versions'] if 'preview' not in v.lower()]
         return api_version[0] if api_version else rt.__dict__['api_versions'][0]
+
+
+def get_instance_name_and_private_ip_from_vmss(scale_set_name):
+    vm_vmss_id = None
+    for vm in compute_client.virtual_machine_scale_set_vms.list(resource_group_name, scale_set_name):
+        vm_vmss_id = vm.instance_id
+        break
+    instance_name = compute_client.virtual_machine_scale_set_vms \
+        .get_instance_view(resource_group_name, scale_set_name, vm_vmss_id) \
+        .additional_properties["computerName"]
+    private_ip = network_client.network_interfaces. \
+        get_virtual_machine_scale_set_ip_configuration(resource_group_name, scale_set_name, vm_vmss_id,
+                                                       scale_set_name + "-nic", scale_set_name + "-ip") \
+        .private_ip_address
+    return instance_name, private_ip
 
 
 def find_and_tag_instance(old_id, new_id):
@@ -59,15 +74,17 @@ def find_and_tag_instance(old_id, new_id):
     # if we can't load one of resources from the filtered list - we will fail before we try to change a tag value
     for resource in res_client.resources.list(filter="tagName eq 'Name' and tagValue eq '" + old_id + "'"):
         resource_type = str(resource.type).split('/')[-1]
-        if resource_type == "virtualMachines":
+        if resource_type.lower() == "virtualmachines":
             ins_id = resource.name
-
+        elif str(resource.type).split('/')[-1].lower() == "virtualmachinescalesets":
+            ins_id, _ = get_instance_name_and_private_ip_from_vmss(resource.name)
         az_api_version = resolve_azure_api(resource)
         loaded_resource = res_client.resources.get_by_id(resource.id, az_api_version)
         if not loaded_resource:
             raise RuntimeError("Failed to load resource by id {}".format(resource.id))
         retrieved_resources.append(loaded_resource)
-
+    if not ins_id:
+        raise RuntimeError("Failed to find instance {}".format(old_id))
     # after all resources are successfully loaded - let's change a tag
     for resource in retrieved_resources:
         az_api_version = resolve_azure_api(resource)
@@ -76,10 +93,7 @@ def find_and_tag_instance(old_id, new_id):
         resource.tags["Name"] = new_id
         res_client.resources.update_by_id(resource.id, az_api_version,
                                           GenericResource(tags=resource.tags))
-    if ins_id is not None:
-        return ins_id
-    else:
-        raise RuntimeError("Failed to find instance {}".format(old_id))
+    return ins_id
 
 
 def verify_regnode(kube_api, ins_id):

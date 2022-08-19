@@ -146,7 +146,7 @@ const thresholding = (options = {}) => {
   const displayCondition = condition ? `(${condition})` : `${prefix}configureThreshold==true`;
   return {
     parameters: [
-      condition ? undefined : `Configure threshold|flag|false|ALIAS ${prefix}configureThreshold|ADVANCED`,
+      condition ? undefined : `Configure threshold|flag|false|ALIAS ${prefix}configureThreshold`,
       // Thresholding
       `Threshold strategy|[Global,Adaptive]|${strategy}|ALIAS ${prefix}strategy|IF ${displayCondition}`,
       `Thresholding method|[Minimum Cross-Entropy,Otsu,Robust Background,Savuola|IF ${prefix}strategy==Adaptive,Manual|IF ${prefix}strategy!=Adaptive]|${thresholdingMethod}|IF ${displayCondition}|ALIAS ${prefix}thresholdingMethod`,
@@ -169,7 +169,7 @@ const thresholding = (options = {}) => {
       `Threshold smoothing scale|float|${thresholdSmoothingScale}|ALIAS ${prefix}thresholdSmoothingScale|IF ${displayCondition}`,
       `Threshold correction factor|float|${thresholdCorrectionFactor}|IF (${prefix}thresholdingMethod!==Manual AND ${displayCondition})|ALIAS ${prefix}thresholdCorrectionFactor`,
       `Lower and upper bounds on threshold|float[]|[${bounds.join(',')}]|IF (${prefix}thresholdingMethod!==Manual AND ${displayCondition})|ALIAS ${prefix}bounds`,
-      `Size of adaptive window|integer|${adaptive}|IF (${prefix}strategy==Adaptive AND ${displayCondition})|ALIAS ${prefix}adaptive`,
+      `Size of adaptive window|units|${adaptive}|IF (${prefix}strategy==Adaptive AND ${displayCondition})|ALIAS ${prefix}adaptive`,
       `Log transform before thresholding?|flag|${logTransform}|IF ((${prefix}thresholdingMethod==Otsu OR ${prefix}thresholdingMethod=="Minimum Cross-Entropy") AND ${displayCondition})|ALIAS ${prefix}logTransform`
     ].filter(Boolean),
     values: {
