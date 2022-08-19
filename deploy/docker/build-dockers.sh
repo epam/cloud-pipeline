@@ -289,6 +289,13 @@ docker build    $DOCKERS_SOURCES_PATH/cp-deployment-autoscaler \
                 --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
 docker push "$CP_DEPLOYMENT_AUTOSCALER_DIST_NAME"
 
+# Docker comp
+CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME=${CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME:-"$CP_DIST_REPO_NAME:storage-lifecycle-service-${DOCKERS_VERSION}"}
+docker build    $DOCKERS_SOURCES_PATH/storage-lifecycle-service \
+                -t "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME" \
+                --build-arg CP_API_DIST_URL="$CP_API_DIST_URL"
+docker push "$CP_STORAGE_LIFECYCLE_SERVICE_DIST_NAME"
+
 ########################
 # Base tools dockers
 ########################

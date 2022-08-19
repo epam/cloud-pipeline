@@ -6,14 +6,6 @@ task build(type: Exec) {
     commandLine 'python', "$project.rootDir/storage-lifecycle-service/setup.py", 'sdist'
     doLast {
         setSLSVersion()
-        delete("$project.rootDir/api/src/main/resources/static/sls.tar.gz")
-        copy {
-            from "$project.rootDir/storage-lifecycle-service/dist/sls-${version}.tar.gz"
-            into "$project.rootDir/api/src/main/resources/static/"
-            rename { String fileName ->
-                fileName.replace("sls-${version}", "sls")
-            }
-        }
         copy {
             from "$project.rootDir/storage-lifecycle-service/dist/sls-${version}.tar.gz"
             into "$project.rootDir/storage-lifecycle-service/dist/"
@@ -38,7 +30,7 @@ def setSLSVersion() {
 def cleanSLSVersion() {
     copy {
         from('temp/version.py')
-        into('gitreader')
+        into('storage-lifecycle-service')
     }
     delete("temp")
 }

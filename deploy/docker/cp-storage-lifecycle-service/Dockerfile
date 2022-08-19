@@ -41,11 +41,11 @@ RUN cd /tmp && \
     wget -q "$CP_API_DIST_URL" -O cloud-pipeline.tgz && \
     tar -zxf cloud-pipeline.tgz && \
     cd bin && \
+    mkdir -p $CP_SLS_HOME && \
+    mv sls.tar.gz $CP_SLS_HOME/ && \
     unzip pipeline.jar && \
     mkdir -p $COMMON_REPO_DIR && \
     mv BOOT-INF/classes/static/pipe-common.tar.gz $COMMON_REPO_DIR/pipe-common.tar.gz && \
-    mkdir -p $CP_SLS_HOME && \
-    mv /sls.tar.gz $CP_SLS_HOME/ && \
     # Installing pipe-common
     cd $COMMON_REPO_DIR && \
     tar xf pipe-common.tar.gz && \
