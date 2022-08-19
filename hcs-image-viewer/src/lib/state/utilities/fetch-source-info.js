@@ -16,6 +16,7 @@
 
 import { loadOmeTiff } from '@hms-dbmi/viv';
 import { fromUrl as geoTiffFromUrl } from 'geotiff';
+import WorkersPool from './workers.pool';
 
 /**
  * @typedef {Object} OMETIFFLoaderOptions
@@ -24,6 +25,13 @@ import { fromUrl as geoTiffFromUrl } from 'geotiff';
  */
 
 const MAX_CHANNELS = 40;
+let sharedPool;
+function getSharedWorkersPool() {
+  if (!sharedPool) {
+    sharedPool = new WorkersPool();
+  }
+  return sharedPool;
+}
 
 export class OffsetsFileNotFoundError extends Error {
   /**
@@ -84,7 +92,7 @@ export async function fetchSourceInfo(options = {}) {
   const offsets = !offsetsRequestFailed
     ? await offsetsRequest.json()
     : undefined;
-  const source = await loadOmeTiff(url, { offsets, images: 'all' });
+  const source = await loadOmeTiff(url, { offsets, images: 'all', pool: getSharedWorkersPool() });
 
   if (offsetsRequestFailed) {
     const totalImageCount = await getTotalImageCount(

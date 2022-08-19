@@ -14,23 +14,18 @@
  *  limitations under the License.
  */
 
-const path = require('path');
-const webpackModule = require('./configuration/webpack/module');
+import { Pool } from 'geotiff';
 
-module.exports = {
-  mode: 'production',
-  entry: {
-    'hcs-image': path.resolve(__dirname, './src/lib/index.js'),
-  },
-  output: {
-    path: path.resolve(__dirname, './dist'),
-    filename: '[name].js',
-    library: {
-      name: 'HcsImageViewer',
-      type: 'global',
-    },
-    clean: true,
-  },
-  target: ['web', 'es5'],
-  module: webpackModule,
-};
+function createWorker() {
+  return new Worker(new URL('./decoder.worker.js', import.meta.url));
+}
+
+class WorkersPool extends Pool {
+  constructor() {
+    const defaultPoolSize = window?.navigator?.hardwareConcurrency ?? 4;
+    console.log('HCS Image. Workers pool size:', defaultPoolSize);
+    super(defaultPoolSize, createWorker);
+  }
+}
+
+export default WorkersPool;

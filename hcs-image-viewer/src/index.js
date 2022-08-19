@@ -15,6 +15,7 @@
  */
 
 import { Viewer } from './lib';
+import { generateUrls } from './.test/index';
 
 const viewer = new Viewer({
   container: document.getElementById('root'),
@@ -33,3 +34,32 @@ window.addEventListener('message', (message) => {
     viewer[method](...options);
   }
 });
+
+generateUrls()
+  .then((urls) => {
+    const {
+      url,
+      offsets,
+      urlOverview,
+      offsetsOverview,
+    } = urls;
+    let o = 0;
+    const presets = [
+      { url, offsets },
+      { url: urlOverview, offsets: offsetsOverview },
+    ];
+
+    const next = () => {
+      const preset = presets[o % presets.length];
+      console.log(`#${o}: ${preset.url}`);
+      o += 1;
+      viewer
+        .setData(preset.url, preset.offsets)
+        .catch((e) => console.warn(e.message))
+        .then(() => {
+          // setTimeout(next, 1000);
+        });
+    };
+
+    next();
+  });

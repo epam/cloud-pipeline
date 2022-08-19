@@ -13,24 +13,21 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+import { BaseDecoder } from 'geotiff';
+import { decompress } from 'lzw-tiff-decoder';
 
-const path = require('path');
-const webpackModule = require('./configuration/webpack/module');
+export default class LZWDecoder extends BaseDecoder {
+  constructor(fileDirectory) {
+    super();
+    const width = fileDirectory.TileWidth || fileDirectory.ImageWidth;
+    const height = fileDirectory.TileLength || fileDirectory.ImageLength;
+    const nbytes = fileDirectory.BitsPerSample[0] / 8;
+    this.maxUncompressedSize = width * height * nbytes;
+  }
 
-module.exports = {
-  mode: 'production',
-  entry: {
-    'hcs-image': path.resolve(__dirname, './src/lib/index.js'),
-  },
-  output: {
-    path: path.resolve(__dirname, './dist'),
-    filename: '[name].js',
-    library: {
-      name: 'HcsImageViewer',
-      type: 'global',
-    },
-    clean: true,
-  },
-  target: ['web', 'es5'],
-  module: webpackModule,
-};
+  async decodeBlock(buffer) {
+    const bytes = new Uint8Array(buffer);
+    const decoded = await decompress(bytes, this.maxUncompressedSize);
+    return decoded.buffer;
+  }
+}

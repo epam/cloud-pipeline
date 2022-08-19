@@ -68,9 +68,9 @@ function getWellCoordinateString (coordinate, dimension) {
 class HCSImageWell {
   /**
    * @param {WellOptions} options
-   * @param {HCSInfo} hcs
+   * @param {{width: number, height: number}} plate
    */
-  constructor (options = {}, hcs) {
+  constructor (options = {}, plate) {
     const {
       x,
       y,
@@ -83,7 +83,7 @@ class HCSImageWell {
     const {
       width: plateWidth = 10,
       height: plateHeight = 10
-    } = hcs || {};
+    } = plate || {};
     const size = Math.max(plateWidth, plateHeight);
     const idx = getWellCoordinateString(x, size);
     const idy = getWellCoordinateString(y, size);
@@ -135,13 +135,17 @@ class HCSImageWell {
     this.wellImageId = wellImageId;
   }
 
+  destroy () {
+    this.images = undefined;
+  }
+
   /**
    * Parses wells_map.json content
    * @param {Object} wellsFileContentsJSON
-   * @param {HCSInfo} [hcs]
+   * @param {{width: number, height: number}} [plate]
    * @return {HCSImageWell[]}
    */
-  static parseWellsInfo (wellsFileContentsJSON, hcs) {
+  static parseWellsInfo (wellsFileContentsJSON, plate) {
     return Object.keys(wellsFileContentsJSON || {})
       .map(key => ({
         key,
@@ -150,7 +154,7 @@ class HCSImageWell {
       .filter(o => o.parsed)
       .map(({key, parsed}) => new HCSImageWell(
         {...parsed, ...wellsFileContentsJSON[key]},
-        hcs
+        plate
       ));
   }
 }

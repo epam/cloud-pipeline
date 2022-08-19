@@ -13,24 +13,15 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+/* eslint-disable no-restricted-globals */
+import { addDecoder, getDecoder } from 'geotiff';
+import LZWDecoder from './lzw-decoder';
 
-const path = require('path');
-const webpackModule = require('./configuration/webpack/module');
+addDecoder(5, () => LZWDecoder);
 
-module.exports = {
-  mode: 'production',
-  entry: {
-    'hcs-image': path.resolve(__dirname, './src/lib/index.js'),
-  },
-  output: {
-    path: path.resolve(__dirname, './dist'),
-    filename: '[name].js',
-    library: {
-      name: 'HcsImageViewer',
-      type: 'global',
-    },
-    clean: true,
-  },
-  target: ['web', 'es5'],
-  module: webpackModule,
-};
+self.addEventListener('message', async (e) => {
+  const { id, fileDirectory, buffer } = e.data;
+  const decoder = await getDecoder(fileDirectory);
+  const decoded = await decoder.decode(fileDirectory, buffer);
+  self.postMessage({ decoded, id }, [decoded]);
+});

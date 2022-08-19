@@ -92,6 +92,10 @@ class HcsImage extends React.PureComponent {
     this.container = undefined;
     this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
+    if (this.hcsInfo) {
+      this.hcsInfo.destroy();
+      this.hcsInfo = undefined;
+    }
   }
 
   @computed
@@ -203,6 +207,10 @@ class HcsImage extends React.PureComponent {
       storageId,
       path
     } = this.props;
+    if (this.hcsInfo) {
+      this.hcsInfo.destroy();
+      this.hcsInfo = undefined;
+    }
     if ((storageId || storage) && path) {
       if (this.hcsAnalysis) {
         this.hcsAnalysis.setSource(
