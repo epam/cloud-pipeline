@@ -217,7 +217,7 @@ class StorageLifecycleSynchronizer:
 
         today = datetime.datetime.now(datetime.timezone.utc).date()
 
-        transition_class, transition_date, transition_execution, trn_subject_file = \
+        transition_class, transition_date, transition_execution, trn_subject_files = \
             self._get_eligible_transition(criterion_file, effective_transitions, rule_executions,
                                           rule_subject_files, today)
 
@@ -233,7 +233,7 @@ class StorageLifecycleSynchronizer:
                     rule.datastorage_id, rule.rule_id, path))
             return result
 
-        if not trn_subject_file:
+        if not trn_subject_files:
             self.logger.log(
                 "Storage: {}. Rule: {}. Path: '{}'. Transition: {}. No files to transit.".format(
                     rule.datastorage_id, rule.rule_id, path, transition_class))
@@ -243,16 +243,16 @@ class StorageLifecycleSynchronizer:
         notification = rule.notification
         if self._notification_should_be_sent(notification, transition_execution, transition_date, today):
             self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Transition: {}. Notification will be sent.".format(
-                rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_file)))
+                rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_files)))
             result.with_notification(path, transition_class, str(transition_date), notification.prolong_days)
 
         # Check if action is needed
         if date_utils.is_date_after_that(transition_date, today):
             self.logger.log(
                 "Storage: {}. Rule: {}. Path: '{}'. Transition: {}. All criteria are met. Will transit {} files."
-                .format(rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_file)))
+                .format(rule.datastorage_id, rule.rule_id, path, transition_class, len(trn_subject_files)))
 
-            for file in trn_subject_file:
+            for file in trn_subject_files:
                 result.with_transition(transition_class, file)
         else:
             self.logger.log(
