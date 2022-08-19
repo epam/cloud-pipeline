@@ -133,6 +133,7 @@ class HCSManager:
             return
         self.run_pipeline(projection_pipeline_id)
         parent_pipeline.set_pipeline_files(self._collect_parent_pipeline_inputs(parent_pipeline, projection_pipeline))
+        parent_pipeline.set_input_sets()
 
     def _parse_inputs(self, coordinates):
         x = int(self._get_required_field(coordinates, 'x'))

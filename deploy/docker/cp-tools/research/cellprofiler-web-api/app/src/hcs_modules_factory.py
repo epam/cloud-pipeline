@@ -584,7 +584,6 @@ class SaveImagesModuleProcessor(OutputModuleProcessor):
     def generated_params(self):
         return {'Overwrite existing files without warning?': 'Yes',
                 'Save with lossless compression?': 'No',
-                'Append a suffix to the image file name?': 'Yes',
                 'Output file location': self._output_location()}
 
 

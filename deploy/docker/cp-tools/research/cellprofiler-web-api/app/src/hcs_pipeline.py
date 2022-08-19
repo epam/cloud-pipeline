@@ -66,6 +66,7 @@ class HcsPipeline(object):
         self._measurement_uuid = measurement_id
         self._pre_processing_pipeline_id = None
         self._z_planes = None  # z-planes to squash
+        self._channels_map = dict()
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
@@ -179,18 +180,14 @@ class HcsPipeline(object):
         self._pipeline.file_list.extend(files)
         self.set_pipeline_state(PipelineState.CONFIGURING)
 
-    def set_input(self, image_coords_list: List[ImageCoords]):
-        self.set_pipeline_state(PipelineState.CONFIGURING)
-        self.set_pipeline_files([self._map_to_file_name(image) for image in image_coords_list])
-        self._set_fields_by_well(image_coords_list)
+    def set_input_sets(self):
         self._input_sets.clear()
         self._pipeline.modules()[2].assignments.clear()
-        channels_map = {image.channel_name: image.channel for image in image_coords_list}
-        for channel_name, channel_number in channels_map.items():
+        for channel_name, channel_number in self._channels_map.items():
             group = SettingsGroup()
             channel_predicate = 'and (file does contain "ch{:02d}")'.format(channel_number)
             group.rule_filter = Filter('Select the rule criteria', [channel_predicate], value=channel_predicate)
-            group.image_name = FileImageName('Name to assign these images',  value=channel_name)
+            group.image_name = FileImageName('Name to assign these images', value=channel_name)
             group.load_as_choice = Choice('Select the image type', ['Grayscale image'], value='Grayscale image')
             group.rescale = Choice('Set intensity range from', ['Image metadata'], value='Image metadata')
             group.manual_rescale = Float('Maximum intensity')
@@ -198,6 +195,13 @@ class HcsPipeline(object):
             group.object_name = LabelName('Name to assign these objects', channel_name)
             self._pipeline.modules()[2].assignments.append(group)
             self._input_sets.add(channel_name)
+
+    def set_input(self, image_coords_list: List[ImageCoords]):
+        self.set_pipeline_state(PipelineState.CONFIGURING)
+        self.set_pipeline_files([self._map_to_file_name(image) for image in image_coords_list])
+        self._set_fields_by_well(image_coords_list)
+        self._channels_map = {image.channel_name: image.channel for image in image_coords_list}
+        self.set_input_sets()
 
     def _map_to_file_name(self, coords: ImageCoords):
         well_full_name = "r{:02d}c{:02d}".format(coords.well_x, coords.well_y)

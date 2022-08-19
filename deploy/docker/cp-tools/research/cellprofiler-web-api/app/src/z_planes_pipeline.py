@@ -47,7 +47,7 @@ class ZPlanesPipeline(HcsPipeline):
     def _construct_extra_modules(self):
         channels_map = {image.channel_name: image.channel for image in self.pipeline_inputs}
 
-        module_id = 0
+        module_id = 4
         for channel_name in channels_map.keys():
             module_id += 1
             self.add_module('MakeProjection', module_id, self._make_projection_module_config(channel_name))
@@ -74,7 +74,7 @@ class ZPlanesPipeline(HcsPipeline):
         return {
             'Select the input image': channel_name,
             'Type of projection': 'Maximum',
-            'Name of the output image': '%s-projection' % channel_name
+            'Name the output image': '%s-projection' % channel_name
         }
 
     @staticmethod
@@ -84,7 +84,10 @@ class ZPlanesPipeline(HcsPipeline):
             'Select the image to save': '%s-projection' % channel_name,
             'Select method for constructing file names': 'From image filename',
             'Image bit depth': bit_depth or ZPlanesPipeline.DEFAULT_BIT_DEPTH,
-            'When to save': 'Last cycle'
+            'When to save': 'Last cycle',
+            'Select image name for file prefix': channel_name,
+            'Record the file and path information to the saved image?': 'No',
+            'Create subfolders in the output folder?': 'No'
         }
 
     @staticmethod
