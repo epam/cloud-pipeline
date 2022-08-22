@@ -73,7 +73,6 @@ class HCSManager:
 
     def squash_z_planes(self, parent_pipeline_id: int, z_planes: list, files_data: list, bit_depth: str = None):
         parent_pipeline = self._get_pipeline(parent_pipeline_id)
-        parent_pipeline.set_z_planes(z_planes)
 
         projection_pipeline = ZPlanesPipeline(parent_pipeline.get_measurement(), bit_depth)
         pipeline_id = projection_pipeline.get_id()
@@ -84,11 +83,17 @@ class HCSManager:
         coordinates = [self._parse_inputs(coordinates) for coordinates in files_data]
         projection_pipeline.set_input(coordinates)
 
+        if projection_pipeline.is_empty():
+            parent_pipeline.set_pre_processing_pipeline(None)
+            parent_pipeline.set_z_planes(None)
+            return
+        parent_pipeline.set_z_planes(z_planes)
+
     def launch_pipeline(self, pipeline_id: int):
         parent_pipeline = self._get_pipeline(pipeline_id)
         pre_processing_pipeline = parent_pipeline.get_pre_processing_pipeline()
         if pre_processing_pipeline is not None:
-            self._run_projection_pipeline(pipeline_id)
+            self._run_projection_pipeline(pre_processing_pipeline, parent_pipeline)
         self._run_pipeline(pipeline_id)
 
     def _run_pipeline(self, pipeline_id, parent_pipeline=None):
@@ -122,13 +127,10 @@ class HCSManager:
             self._set_pipeline_state(pipeline, PipelineState.FAILED, parent_pipeline, message=str(e))
             raise e
 
-    def _run_projection_pipeline(self, parent_pipeline_id: int):
-        parent_pipeline = self._get_pipeline(parent_pipeline_id)
-
-        projection_pipeline_id = parent_pipeline.get_pre_processing_pipeline()
+    def _run_projection_pipeline(self, projection_pipeline_id: int, parent_pipeline: HcsPipeline):
         projection_pipeline = self._get_pipeline(projection_pipeline_id)
-        if not projection_pipeline.pipeline_inputs or len(projection_pipeline.pipeline_inputs) == 0:
-            # no projection pipeline launch required
+        if projection_pipeline.is_empty():
+            print("[DEBUG] No need to run projection pipeline.")
             return
         self._run_pipeline(projection_pipeline_id, parent_pipeline)
         parent_pipeline.set_pipeline_files(self._collect_parent_pipeline_inputs(parent_pipeline, projection_pipeline))

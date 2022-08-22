@@ -20,12 +20,15 @@ class ZPlanesPipeline(HcsPipeline):
         z_planes_map = self._construct_z_plane_groups(coordinates_list)
         self._filter_pipeline_inputs(z_planes_map)
 
-        if not self.pipeline_inputs or len(self.pipeline_inputs) == 0:
+        if self.is_empty():
             return
 
         super().set_input(self.pipeline_inputs)
         self._construct_grouping_module()
         self._construct_extra_modules()
+
+    def is_empty(self):
+        return not self.pipeline_inputs or len(self.pipeline_inputs) == 0
 
     def _filter_pipeline_inputs(self, z_planes_map: dict):
         for group_key, planes in z_planes_map.items():
