@@ -198,12 +198,12 @@ class HcsPipeline(object):
 
     def set_input(self, image_coords_list: List[ImageCoords]):
         self.set_pipeline_state(PipelineState.CONFIGURING)
-        self.set_pipeline_files([self._map_to_file_name(image) for image in image_coords_list])
+        self.set_pipeline_files([self.map_to_file_name(image) for image in image_coords_list])
         self._set_fields_by_well(image_coords_list)
         self._channels_map = {image.channel_name: image.channel for image in image_coords_list}
         self.set_input_sets()
 
-    def _map_to_file_name(self, coords: ImageCoords):
+    def map_to_file_name(self, coords: ImageCoords):
         well_full_name = "r{:02d}c{:02d}".format(coords.well_x, coords.well_y)
         image_relative_path = 'images/{well}/{well}f{field:02d}p{plane:02d}-ch{channel:02d}t{timepoint:02d}.tiff' \
             .format(well=well_full_name, field=coords.field, plane=coords.z_plane,

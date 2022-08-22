@@ -55,38 +55,6 @@ class HCSManager:
         pipeline = self._get_pipeline(pipeline_id)
         pipeline.remove_module(module_id)
 
-    def run_pipeline(self, pipeline_id):
-        pipeline = self._get_pipeline(pipeline_id)
-        pipeline.set_pipeline_state(PipelineState.CONFIGURING)
-        delay = int(Config.RUN_DELAY)
-        pool_size = int(Config.POOL_SIZE)
-        try:
-            while True:
-                available_processors = pool_size - len(self.running_processes)
-                if available_processors > 0:
-                    if len(self.queue) == 0 or self.queue[0] == pipeline_id:
-                        if len(self.queue) != 0:
-                            self.queue.remove(pipeline_id)
-                        pipeline.set_pipeline_state(PipelineState.RUNNING)
-                        process = Process(target=pipeline.run_pipeline)
-                        process.start()
-                        print("[DEBUG] Run process '%s' started with PID %d" % (pipeline_id, process.pid))
-                        self.running_processes.update({pipeline_id: process})
-                        process.join()
-                        print("[DEBUG] Run processes '%s' finished" % pipeline_id)
-                        pipeline.set_pipeline_state(PipelineState.FINISHED)
-                        self.running_processes.pop(pipeline_id)
-                        return
-                if not self.queue.__contains__(pipeline_id):
-                    pipeline.set_pipeline_state(PipelineState.QUEUED)
-                    self.queue.append(pipeline_id)
-                    print("[DEBUG] Run '%s' queued" % pipeline_id)
-                sleep(delay)
-        except BaseException as e:
-            error_description = str(e)
-            pipeline.set_pipeline_state(PipelineState.FAILED, message=error_description)
-            raise e
-
     def run_module(self, pipeline_id, module_id):
         pipeline = self._get_pipeline(pipeline_id)
         pipeline.run_module(module_id)
@@ -120,10 +88,41 @@ class HCSManager:
         parent_pipeline = self._get_pipeline(pipeline_id)
         pre_processing_pipeline = parent_pipeline.get_pre_processing_pipeline()
         if pre_processing_pipeline is not None:
-            self.run_projection_pipeline(pipeline_id)
-        self.run_pipeline(pipeline_id)
+            self._run_projection_pipeline(pipeline_id)
+        self._run_pipeline(pipeline_id)
 
-    def run_projection_pipeline(self, parent_pipeline_id: int):
+    def _run_pipeline(self, pipeline_id, parent_pipeline=None):
+        pipeline = self._get_pipeline(pipeline_id)
+        pipeline.set_pipeline_state(PipelineState.CONFIGURING)
+        delay = int(Config.RUN_DELAY)
+        pool_size = int(Config.POOL_SIZE)
+        try:
+            while True:
+                available_processors = pool_size - len(self.running_processes)
+                if available_processors > 0:
+                    if len(self.queue) == 0 or self.queue[0] == pipeline_id:
+                        if len(self.queue) != 0:
+                            self.queue.remove(pipeline_id)
+                        self._set_pipeline_state(pipeline, PipelineState.RUNNING, parent_pipeline)
+                        process = Process(target=pipeline.run_pipeline)
+                        process.start()
+                        print("[DEBUG] Run process '%s' started with PID %d" % (pipeline_id, process.pid))
+                        self.running_processes.update({pipeline_id: process})
+                        process.join()
+                        print("[DEBUG] Run process '%s' finished" % pipeline_id)
+                        pipeline.set_pipeline_state(PipelineState.FINISHED)
+                        self.running_processes.pop(pipeline_id)
+                        return
+                if not self.queue.__contains__(pipeline_id):
+                    self._set_pipeline_state(pipeline, PipelineState.QUEUED, parent_pipeline)
+                    self.queue.append(pipeline_id)
+                    print("[DEBUG] Run '%s' queued" % pipeline_id)
+                sleep(delay)
+        except BaseException as e:
+            self._set_pipeline_state(pipeline, PipelineState.FAILED, parent_pipeline, message=str(e))
+            raise e
+
+    def _run_projection_pipeline(self, parent_pipeline_id: int):
         parent_pipeline = self._get_pipeline(parent_pipeline_id)
 
         projection_pipeline_id = parent_pipeline.get_pre_processing_pipeline()
@@ -131,7 +130,7 @@ class HCSManager:
         if not projection_pipeline.pipeline_inputs or len(projection_pipeline.pipeline_inputs) == 0:
             # no projection pipeline launch required
             return
-        self.run_pipeline(projection_pipeline_id)
+        self._run_pipeline(projection_pipeline_id, parent_pipeline)
         parent_pipeline.set_pipeline_files(self._collect_parent_pipeline_inputs(parent_pipeline, projection_pipeline))
         parent_pipeline.set_input_sets()
 
@@ -149,7 +148,7 @@ class HCSManager:
         parent_pipeline_inputs = self._collect_pipeline_tiff_outputs(projection_pipeline.get_id(),
                                                                      parent_pipeline.get_measurement())
         for image in projection_pipeline.parent_pipeline_inputs:
-            parent_pipeline_inputs.append(parent_pipeline._map_to_file_name(image))
+            parent_pipeline_inputs.append(parent_pipeline.map_to_file_name(image))
         return parent_pipeline_inputs
 
     @staticmethod
@@ -166,3 +165,9 @@ class HCSManager:
         for tiff_file_path in glob.iglob(results_dir + '/**/*.tiff', recursive=True):
             results.append(tiff_file_path)
         return results
+
+    @staticmethod
+    def _set_pipeline_state(current_pipeline, pipeline_state, parent_pipeline=None, message=''):
+        current_pipeline.set_pipeline_state(pipeline_state, message=message)
+        if parent_pipeline:
+            parent_pipeline.set_pipeline_state(pipeline_state, message=message)
