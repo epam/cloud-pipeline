@@ -383,6 +383,9 @@ function configure_package_manager {
             local CP_REPO_BASE_URL="${CP_REPO_BASE_URL_DEFAULT}/${CP_OS}/${CP_VER}"
             if [ "$CP_OS" == "centos" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        # Remove nvidia repositories, as they cause run initialization failure
+                        rm -f /etc/yum.repos.d/cuda.repo
+
                         curl -sk "${CP_REPO_BASE_URL}/cloud-pipeline.repo" > /etc/yum.repos.d/cloud-pipeline.repo && \
                         yum --disablerepo=* --enablerepo=cloud-pipeline install yum-priorities -y -q >> /var/log/yum.cp.log 2>&1
 
@@ -408,6 +411,11 @@ function configure_package_manager {
                   done
             elif [ "$CP_OS" == "debian" ] || [ "$CP_OS" == "ubuntu" ]; then
                   for _CP_REPO_RETRY_ITER in $(seq 1 $CP_REPO_RETRY_COUNT); do
+                        # Remove nvidia repositories, as they cause run initialization failure
+                        rm -f /etc/apt/sources.list.d/cuda.list \
+                              /etc/apt/sources.list.d/nvidia-ml.list \
+                              /etc/apt/sources.list.d/tensorRT.list 
+
                         apt-get update -qq -y --allow-insecure-repositories && \
                         apt-get install curl apt-transport-https gnupg -y -qq && \
                         sed -i "\|${CP_REPO_BASE_URL}|d" /etc/apt/sources.list && \
