@@ -122,7 +122,9 @@ class StorageLifecycleSynchronizer:
                     # and get 'effective' glob like '{folder-path}/{glob}'
                     # so with glob = '*.txt' we can match files like:
                     # {folder-path}/{filename}.txt
-                    effective_glob = os.path.join(folder, rule.object_glob) if rule.object_glob else None
+                    effective_glob = os.path.join(folder, rule.object_glob) \
+                        if rule.object_glob \
+                        else os.path.join(folder, "*")
 
                     self.logger.log(
                         "Storage: {}. Rule: {}. Path: '{}'. Effective glob is '{}'".format(
