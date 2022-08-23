@@ -243,6 +243,10 @@ public class SystemPreferences {
                 new TypeReference<Map<String, Map<String, String>>>() {}, DATA_STORAGE_GROUP,
                 isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
 
+    public static final LongPreference STORAGE_LIFECYCLE_DEFAULT_RESTORE_DAYS =
+            new LongPreference("storage.lifecycle.default.restore.days", 30L, DATA_STORAGE_GROUP,
+                    isGreaterThan(0), true);
+
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
      */

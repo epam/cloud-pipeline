@@ -236,6 +236,17 @@ public class DataStorageLifecycleManager {
                 .collect(Collectors.toList());
     }
 
+    public List<StorageLifecycleRule> restoreStorageObjectsByPath(final Long storageId, final String path,
+                                                                  final Integer days) {
+        validatePathIsAbsolute(path);
+        return StreamSupport.stream(
+                        dataStorageLifecycleRuleRepository.findByDatastorageId(storageId).spliterator(),
+                        false
+                ).map(lifecycleEntityMapper::toDto)
+                .filter(rule -> !StringUtils.hasText(path) || PATH_MATCHER.match(rule.getPathGlob(), path))
+                .collect(Collectors.toList());
+    }
+
     private Long getEffectiveDaysToProlong(final Long daysToProlong, final StorageLifecycleRuleEntity ruleEntity) {
         if (daysToProlong != null) {
             return daysToProlong;
