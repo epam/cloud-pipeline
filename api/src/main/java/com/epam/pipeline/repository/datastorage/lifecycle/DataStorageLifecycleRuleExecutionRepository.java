@@ -21,12 +21,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-public interface DataStorageLifecycleRuleExecutionRepository 
-        extends CrudRepository<StorageLifecycleRuleExecutionEntity, Long> {
-    Iterable<StorageLifecycleRuleExecutionEntity> findByRuleId(Long ruleId);
-
+public interface DataStorageLifecycleRuleExecutionRepository
+        extends CrudRepository<StorageLifecycleRuleExecutionEntity, Long>,
+        DataStorageLifecycleRuleRepositoryCustomQueries {
     @Modifying
     @Query("delete from StorageLifecycleRuleExecutionEntity e where e.ruleId = ?1")
     void deleteByRuleId(Long ruleId);
-    Iterable<StorageLifecycleRuleExecutionEntity> findByRuleIdAndPath(Long ruleId, String path);
 }

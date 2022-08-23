@@ -80,7 +80,7 @@ task buildAllFast(dependsOn: [":core:build", "client:buildUI", buildPipe, buildD
                           ":data-transfer-service:bundleLinux",
                           ":data-sharing-service:buildFast", ":fs-browser:build", ":billing-report-agent:bootJar",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
-                          ":git-reader:build", ":monitoring-service:build"]) {
+                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
 }
 
@@ -92,7 +92,7 @@ task buildAll(dependsOn: [":core:build", "client:buildUI", buildPipe, buildDoc,
                           ":data-transfer-service:bundleLinux",
                           ":data-sharing-service:buildAll", ":fs-browser:build", ":billing-report-agent:build",
                           ":cloud-pipeline-webdav-client:buildWin", ":cloud-pipeline-webdav-client:buildLinux",
-                          ":git-reader:build", ":monitoring-service:build"]) {
+                          ":git-reader:build", ":monitoring-service:build", ":storage-lifecycle-service:build"]) {
     group = 'build'
 }
 
@@ -167,7 +167,8 @@ task installDist() {
                 "$rootDir/data-sharing-service/api/build/libs/data-sharing-service.jar",
                 "$rootDir/billing-report-agent/build/libs/billing-report-agent.jar",
                 "$rootDir/git-reader/dist/gitreader.tar.gz",
-                "$rootDir/monitoring-service/build/libs/monitoring-service.jar"
+                "$rootDir/monitoring-service/build/libs/monitoring-service.jar",
+                "$rootDir/storage-lifecycle-service/dist/sls.tar.gz"
         )
 
         distFiles.each {

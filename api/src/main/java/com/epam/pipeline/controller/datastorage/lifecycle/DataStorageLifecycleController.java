@@ -183,18 +183,39 @@ public class DataStorageLifecycleController extends AbstractRestController {
                         datastorageId, executionId, status));
     }
 
+    @DeleteMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/execution/{executionId}")
+    @ResponseBody
+    @ApiOperation(
+            value = "Deletes lifecycle rule execution.",
+            notes = "Deletes lifecycle rule execution.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageLifecycleRuleExecution> deleteStorageLifecycleRuleExecution(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @PathVariable(value = EXECUTION_ID) final Long executionId) {
+        return Result.success(
+                dataStorageLifecycleApiService.deleteStorageLifecycleRuleExecution(
+                        datastorageId, executionId));
+    }
+
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/execution")
     @ResponseBody
     @ApiOperation(
             value = "Lists all available lifecycle rule executions.",
-            notes = "Lists all available lifecycle rule executions. Could be filtered by path",
+            notes = "Lists all available lifecycle rule executions. Could be filtered by path and status",
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
     public Result<List<StorageLifecycleRuleExecution>> listStorageLifecyclePolicyRuleExecutions(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = RULE_ID) final Long ruleId,
-            @RequestParam(value = PATH, required = false) final String path) {
-        return Result.success(dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(ruleId, path));
+            @RequestParam(value = PATH, required = false) final String path,
+            @RequestParam(value = STATUS, required = false) final StorageLifecycleRuleExecutionStatus status) {
+        return Result.success(
+                dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(
+                        datastorageId, ruleId, path, status));
     }
 }
