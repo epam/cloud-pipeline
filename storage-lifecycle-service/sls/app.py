@@ -11,21 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import re
 
 import argparse
 
 from sls.app.cloud_storage_adapter import PlatformToCloudOperationsAdapter
 from sls.app.run_mode import ApplicationModeRunner
-from sls.cloud.cloud import S3StorageOperations
 from sls.util.logger import AppLogger
 from sls.model.config_model import SynchronizerConfig
 from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
 from sls.datasorce.cp_data_source import configure_cp_data_source
-from sls.util.parse_utils import parse_config_string
-
-S3_TYPE = "S3"
 
 
 def main():
@@ -37,7 +32,6 @@ def main():
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
     parser.add_argument("--log-dir", default="/var/log/")
     parser.add_argument("--max-execution-running-days", default=2)
-    parser.add_argument("--aws")
 
     args = parser.parse_args()
     logger = AppLogger()
@@ -47,16 +41,15 @@ def main():
 
 def run_application(args, logger):
     data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, args.data_source)
+
     if not re.match("\\d\\d:\\d\\d", args.at):
         raise RuntimeError("Wrong format of 'at' argument: {}, please specify it in format: 00:00".format(args.at))
-    cloud_operations = {}
-    if args.aws:
-        cloud_operations[S3_TYPE] = S3StorageOperations(parse_config_string(args.aws), logger)
-    cloud_bridge = PlatformToCloudOperationsAdapter(cloud_operations)
+
+    cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
     config = SynchronizerConfig(args.max_execution_running_days, args.mode, args.at)
     logger.log("Running application with config: {}".format(config.to_json()))
     ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(config, data_source, cloud_bridge, logger),
+        StorageLifecycleSynchronizer(config, data_source, cloud_adapter, logger),
         config
     ).run()
 

@@ -20,21 +20,11 @@ Example of launching `Storage Lifecycle Service`:
 ```commandline
 python cp-storage-lifecycle-service.py
          --cp-api-url=<value> \
-         --aws="key1=value1|key2=value2" \
         [--cp-api-token="<value>"]
         [--mode=<value>]
         [--at=<value>]
 ```
 **--cp-api-url** - URL for Cloud-Pipeline REST API instance
-
-**--aws** - Configuration string to work with AWS S3 storages, possible values:
-
-    - system_bucket - name of the bucket that will be used as temporary store for internal files like s3 object tagging manifest, report files etc
-    - system_bucket_prefix - bucket location prefix under which internal files will be stored
-    - role_arn - AWS IAM Role ARN that will be used to perform batch tagging job
-    - aws_account_id - AWS account id where batch tagging job will be performed
-    - tagging_job_poll_status_retry_count - how much job status polls perform before fail
-    - tagging_job_poll_status_sleep_sec - lenght of the pause to perform before next poll, in sec
 
 **--cp-api-token** (not required) - Cloud-Pipeline JWT token, if not provided application will try to get in from **API_TOKEN** env var
 
@@ -46,6 +36,20 @@ python cp-storage-lifecycle-service.py
 **--at** (not required, default: 00:01) - Used with --mode=daemon, use when you need to specify a time when sync process should be performed
 
 **--max-execution-running-days** - How long execution can be running before it will be treated as FAILED
+
+Storage Lifecycle Service expects that Cloud-Pipeline environment has configured System Preference `storage.lifecycle.service.cloud.config` with the next values:
+```
+{
+    "S3": {
+        "tagging_job_aws_account_id": "<AWS account id where batch tagging job will be performed>",
+        "tagging_job_role_arn": "<AWS IAM Role ARN that will be used to perform batch tagging job>",
+        "tagging_job_report_bucket": "<name of the bucket that will be used as temporary store for internal files like s3 object tagging manifest, report files etc>",
+        "tagging_job_report_bucket_prefix (Optional)": "<bucket location prefix under which internal files will be stored>",
+        "tagging_job_poll_status_retry_count (Optional)": "<how much job status polls perform before fail>",
+        "tagging_job_poll_status_sleep_sec (Optional)": "<Lenght of the pause to perform before next poll, in sec>" 
+    }
+}
+```
 
 ## Troubleshooting
 

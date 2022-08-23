@@ -59,5 +59,8 @@ class MockedNotificationRESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_user(self, user_id):
         return self.cp_source.load_user(user_id)
 
+    def load_preference(self, preference_name):
+        return self.cp_source.load_preference(preference_name)
+
     def _load_default_lifecycle_rule_notification(self):
         return self.cp_source._load_default_lifecycle_rule_notification()
