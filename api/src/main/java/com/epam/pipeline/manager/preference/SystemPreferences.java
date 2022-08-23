@@ -237,6 +237,12 @@ public class SystemPreferences {
             new LongPreference("storage.lifecycle.notify.before.days", 7L, DATA_STORAGE_GROUP,
                     isGreaterThan(0), true);
 
+    public static final ObjectPreference<Map<String, Map<String, String>>> STORAGE_LIFECYCLE_SERVICE_CLOUD_CONFIG =
+            new ObjectPreference<>(
+                "storage.lifecycle.service.cloud.config", Collections.emptyMap(),
+                new TypeReference<Map<String, Map<String, String>>>() {}, DATA_STORAGE_GROUP,
+                isNullOrValidJson(new TypeReference<Map<String, Map<String, String>>>() {}));
+
     /**
      * Configures parameters that will be passed to pipeline containers to be able to configure fbrowser.
      */

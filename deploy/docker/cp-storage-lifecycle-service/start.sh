@@ -23,13 +23,7 @@ if [ -z "${API_TOKEN}" ]; then
     exit 22
 fi
 
-if [ -z "${CP_STORAGE_LIFECYCLE_DAEMON_AWS_CONFIG}" ]; then
-    echo "CP_STORAGE_LIFECYCLE_DAEMON_AWS_CONFIG is not provided!"
-    exit 22
-fi
-
 python3 ${CP_SLS_HOME}/sls/sls/app.py --cp-api-url=${API_URL} \
-         --aws=${CP_STORAGE_LIFECYCLE_DAEMON_AWS_CONFIG} \
          --max-execution-running-days=${CP_STORAGE_LIFECYCLE_DAEMON_MAX_EXECUTION_RUNNING_DAYS:-2} \
          --mode=${CP_STORAGE_LIFECYCLE_DAEMON_MODE:-single} \
          --at="${CP_STORAGE_LIFECYCLE_DAEMON_AT_TIME:-00:05}"
