@@ -669,7 +669,7 @@ class NFSMounter(StorageMounter):
                 'path': self.get_path()}
 
     def build_mount_command(self, params):
-        command = 'mount -t {protocol}'
+        command = '/bin/mount -t {protocol}'
 
         mount_options = self.storage.mount_options if self.storage.mount_options else self.share_mount.mount_options
 
