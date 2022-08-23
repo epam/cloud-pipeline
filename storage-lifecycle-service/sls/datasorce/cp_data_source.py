@@ -1,3 +1,4 @@
+# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +70,9 @@ class CloudPipelineDataSource:
     def load_user(self, user_id):
         pass
 
+    def load_preference(self, preference_name):
+        pass
+
     def _load_default_lifecycle_rule_notification(self):
         pass
 
@@ -129,6 +133,9 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_user(self, user_id):
         return self.api.load_user(user_id)
 
+    def load_preference(self, preference_name):
+        return self.api.get_preference(preference_name)
+
     def _load_default_lifecycle_rule_notification(self):
         default_lifecycle_notification_template = next(
             filter(
@@ -143,8 +150,8 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
                 self.api.load_notification_settings()
             ), None
         )
-        default_lifecycle_rule_prolong_days = self.api.get_preference("storage.lifecycle.prolong.days")
-        default_lifecycle_rule_notify_before_days = self.api.get_preference("storage.lifecycle.notify.before.days")
+        default_lifecycle_rule_prolong_days = self.load_preference("storage.lifecycle.prolong.days")
+        default_lifecycle_rule_notify_before_days = self.load_preference("storage.lifecycle.notify.before.days")
         if not default_lifecycle_notification_settings or not default_lifecycle_notification_template \
                 or not default_lifecycle_rule_prolong_days or not default_lifecycle_rule_notify_before_days:
             return None
@@ -160,6 +167,3 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
             "prolongDays": int(default_lifecycle_rule_prolong_days["value"]),
             "notifyBeforeDays": int(default_lifecycle_rule_notify_before_days["value"])
         }
-# Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
-
-

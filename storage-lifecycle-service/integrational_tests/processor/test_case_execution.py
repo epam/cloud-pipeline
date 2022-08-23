@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+import json
 
 import sls.datasorce.cp_data_source
 from integrational_tests.decorator import cp_api_decator
@@ -22,7 +23,6 @@ from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
 from sls.cloud.cloud import S3StorageOperations
 from sls.model.config_model import SynchronizerConfig
 from sls.util.logger import AppLogger
-from sls.util.parse_utils import parse_config_string
 
 
 class TestCaseExecutor(TestCaseProcessor):
@@ -38,10 +38,11 @@ class TestCaseExecutor(TestCaseProcessor):
                 self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp")
         )
 
+        storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(data_source)
         cloud_operations = {
             "S3": AttributesChangingStorageOperations(
                 S3StorageOperations(
-                    parse_config_string(self.config.get("CP_STORAGE_LIFECYCLE_DAEMON_AWS_CONFIG")),
+                   storage_lifecycle_service_config["S3"],
                     logger
                 ),
                 testcase
@@ -55,3 +56,10 @@ class TestCaseExecutor(TestCaseProcessor):
             loaded_storage = data_source.load_storage(str(storage.datastorage_id))
             synchronizer._sync_storage(loaded_storage)
         return testcase
+
+    @staticmethod
+    def fetch_storage_lifecycle_service_config(data_source):
+        config_preference = data_source.load_preference("storage.lifecycle.service.cloud.config")
+        if not config_preference or "value" not in config_preference:
+            raise RuntimeError("storage.lifecycle.service.cloud.config is not defined in Cloud-Pipeline env!")
+        return json.loads(config_preference["value"])

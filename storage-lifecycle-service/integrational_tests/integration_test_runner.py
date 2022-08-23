@@ -39,8 +39,7 @@ def build_config():
 
 
 INTEGRATION_TEST_CONFIG_ENV_VARS = ["CP_API_URL", "API_TOKEN", "CP_STORAGE_LIFECYCLE_DAEMON_TEST_CASES_PATH",
-                                    "CP_STORAGE_LIFECYCLE_DAEMON_AWS_REGION_ID",
-                                    "CP_STORAGE_LIFECYCLE_DAEMON_AWS_CONFIG"]
+                                    "CP_STORAGE_LIFECYCLE_DAEMON_AWS_REGION_ID"]
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
