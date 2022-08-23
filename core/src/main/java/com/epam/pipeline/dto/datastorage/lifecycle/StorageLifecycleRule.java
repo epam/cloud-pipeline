@@ -85,6 +85,9 @@ import java.util.List;
 
  * This solves a case when we need to transit one file type depending on condition of another file type
  * (f.e. when we generate one files from another and want to transit after successful generation)
+
+ * For AWS see useful information about some limitation on lifecycle policies:
+ * <a href="https://docs.aws.amazon.com/AmazonS3/latest/userguide/lifecycle-transition-general-considerations.html">...</a>
  **/
 @Data
 @NoArgsConstructor

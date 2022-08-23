@@ -17,6 +17,7 @@
 package com.epam.pipeline.manager.datastorage.providers.aws.s3;
 
 import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.StorageClass;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
@@ -74,8 +75,11 @@ import java.util.Set;
 @Slf4j
 public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
-    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList("GLACIER",
-            "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
+    /**
+     * See {@link StorageClass} from s3 model.
+     * */
+    private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(
+            "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;

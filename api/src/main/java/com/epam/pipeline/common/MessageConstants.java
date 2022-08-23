@@ -316,6 +316,10 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.rule.provide.enable.flag";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
             "error.datastirage.lifecycle.rule.transition.criterion.value.is.not.provided";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_HAS_DEFAULT_CRITERION =
+            "error.datastirage.lifecycle.rule.one.by.one.has.default.criterion";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED =
+            "error.datastirage.lifecycle.rule.one.by.one.notification.enabled";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";
