@@ -33,7 +33,7 @@ def convert_glob_to_regexp(glob_str):
         if "*" not in glob_part:
             resulted_regexp += glob_part + "\\/"
         elif glob_part == "**":
-            resulted_regexp += "(?:[^\\/]+\\/)+"
+            resulted_regexp += "(?:[^\\/]+\\/)*[^\\/]*"
         else:
             resulted_regexp += glob_part.replace("*", "[^\\/]*") + "\\/"
     if resulted_regexp.endswith("\\/"):

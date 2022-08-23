@@ -12,7 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
-
+import time
 import unittest
 import os
 import logging
@@ -73,6 +73,7 @@ class IntegrationTestsRunner(unittest.TestCase):
         self.assert_platform_state(actual.platform, expected.platform)
 
         logger.log(logging.INFO, "Finish test case: {}\n\n".format(case_file))
+        time.sleep(5)
 
     def assertCloudState(self, actual, expected):
         self.assertEqual(expected is None, actual is None)

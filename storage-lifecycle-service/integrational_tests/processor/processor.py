@@ -74,10 +74,15 @@ class ProcessorChain:
         finally:
             self.logger.log(logging.INFO, "Cleanup for test case.")
             for processor in self.postprocessors:
-                try:
-                    testcase = processor.process(testcase)
-                except Exception as e:
-                    self.logger.exception(e)
+                clean_up_retry = 0
+                while clean_up_retry < 3:
+                    try:
+                        testcase = processor.process(testcase)
+                        break
+                    except Exception as e:
+                        clean_up_retry += 1
+                        self.logger.log(logging.INFO, "Problem with clean upping resources.")
+                        self.logger.exception(e)
             self.logger.log(logging.INFO, "Finish cleanup for test case.")
 
     def _gather(self, testcase):

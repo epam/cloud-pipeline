@@ -47,6 +47,30 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
             sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
         )
 
+    def test_identify_datasets_from_root_glob(self):
+        glob = "/**"
+        files = [
+            CloudObject("/dataset1/file.txt", None, None),
+            CloudObject("/dataset2/file.txt", None, None),
+            CloudObject("/dataset3/subdir1/file.txt", None, None),
+        ]
+        self.assertEqual(
+            sorted(["/dataset1", "/dataset2", "/dataset3", "/dataset3/subdir1"]),
+            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+        )
+
+    def test_identify_datasets_from_wide_root_glob_and_suffix(self):
+        glob = "/**/machine*"
+        files = [
+            CloudObject("/machinerun1/file.txt", None, None),
+            CloudObject("/dataset3/machinerun2/file.txt", None, None),
+            CloudObject("/dataset3/subdir1/machinerun3/file.txt", None, None),
+        ]
+        self.assertEqual(
+            sorted(["/dataset3/subdir1/machinerun3", "/dataset3/machinerun2", "/machinerun1"]),
+            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+        )
+
     def test_identify_datasets_from_root_by_prefix(self):
         glob = "/data*"
         files = [

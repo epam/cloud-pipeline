@@ -132,7 +132,7 @@ class StorageLifecycleSynchronizer:
                     rule_subject_files = [
                         file for file in files
                         if file.path.startswith(folder)
-                        and fnmatch.fnmatch(file.path, effective_glob)
+                        and re.compile(path_utils.convert_glob_to_regexp(effective_glob)).match(file.path)
                     ] if effective_glob else files
                     self.logger.log(
                         "Storage: {}. Rule: {}. Path: '{}'. Found {} subject files, "
@@ -493,7 +493,8 @@ class StorageLifecycleSynchronizer:
             transition_criterion_files_glob = os.path.join(folder, rule.transition_criterion.value)
             criterion_files = [
                 file for file in file_listing
-                if file.path.startswith(folder) and fnmatch.fnmatch(file.path, transition_criterion_files_glob)
+                if file.path.startswith(folder) and
+                   re.compile(path_utils.convert_glob_to_regexp(transition_criterion_files_glob)).match(file.path)
             ]
         # Sort by date (reverse or not depends on transition method) and get first element or None
         return next(
