@@ -53,7 +53,8 @@ AwsInstanceConfiguration = collections.namedtuple('AwsInstanceConfiguration',
                                                   'cloud, region, image, type, disk, sshkey, subnet, name, '
                                                   'security_groups, role, init_script')
 KubeNodeConfiguration = collections.namedtuple('KubeNodeConfiguration',
-                                               'kube_token, kube_ip, kube_port, kube_dns_ip, aws_fs_url')
+                                               'kube_token, kube_ip, kube_port, kube_dns_ip, aws_fs_url, '
+                                               'http_proxy, https_proxy, no_proxy')
 TimeoutConfiguration = collections.namedtuple('TimeoutConfiguration',
                                               'scale_up_node_timeout, scale_up_node_delay, '
                                               'scale_up_instance_timeout, scale_up_instance_delay, '
@@ -219,7 +220,10 @@ class LocalFileAutoscalingConfiguration(AutoscalingConfiguration, RefreshableCon
             kube_ip=self._get_string(configuration, 'node.kube_ip'),
             kube_port=self._get_string(configuration, 'node.kube_port'),
             kube_dns_ip=self._get_string(configuration, 'node.kube_dns_ip'),
-            aws_fs_url=self._get_string(configuration, 'node.aws_fs_url'))
+            aws_fs_url=self._get_string(configuration, 'node.aws_fs_url'),
+            http_proxy=self._get_string(configuration, 'node.http_proxy', ''),
+            https_proxy=self._get_string(configuration, 'node.https_proxy', ''),
+            no_proxy=self._get_string(configuration, 'node.no_proxy', ''))
         self._timeout = TimeoutConfiguration(
             scale_up_node_timeout=self._get_number(configuration, 'timeout.scale_up_node_timeout', 15 * 60),
             scale_up_node_delay=self._get_number(configuration, 'timeout.scale_up_node_delay', 10),

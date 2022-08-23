@@ -52,7 +52,10 @@ class AwsProvider(InstanceProvider):
                                                .replace('@KUBE_TOKEN@', self._configuration.node.kube_token) \
                                                .replace('@KUBE_DNS_IP@', self._configuration.node.kube_dns_ip) \
                                                .replace('@KUBE_LABELS@', kube_labels_string) \
-                                               .replace('@AWS_FS_URL@', self._configuration.node.aws_fs_url)
+                                               .replace('@AWS_FS_URL@', self._configuration.node.aws_fs_url) \
+                                               .replace('@HTTP_PROXY@', self._configuration.node.http_proxy) \
+                                               .replace('@HTTPS_PROXY@', self._configuration.node.https_proxy) \
+                                               .replace('@NO_PROXY@', self._configuration.node.no_proxy)
             compressed_user_data_script = pack_script_contents(user_data_script)
         raw_tags = self._merge_dicts({'Name': self._configuration.instance.name},
                                      self._configuration.target.tags,
