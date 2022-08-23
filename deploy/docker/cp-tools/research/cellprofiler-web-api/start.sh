@@ -125,21 +125,26 @@ else
     # merge results
     common_define_results_file="$CELLPROFILER_API_BATCH_RESULTS_DIR/Results.csv"
     first_pipeline_processed=0
+    measurement_id=${measurement_uuid##*/}
     for pipeline_id in "${pipelines[@]}"
     do
         module_id="$(curl -k -s -X GET "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?pipelineId=$pipeline_id" | jq -r '.payload.pipelineId.modules | map(select(.name=="DefineResults"))[] | .id//""')"
-        define_results_pipeline_file="$CELLPROFILER_API_COMMON_RESULTS_DIR/$measurement_uuid/$pipeline_id/$module_id/Results.csv"
+        define_results_pipeline_file="$CELLPROFILER_API_COMMON_RESULTS_DIR/$measurement_id/$pipeline_id/$module_id/Results.csv"
         if [ ! -f "$define_results_pipeline_file" ]; then
+            echo "[DEBUG] DefineResults module output file '$define_results_pipeline_file' not found"
             continue
         fi
         if [ "$first_pipeline_processed" == 0 ]; then
             cat "$define_results_pipeline_file" > "$common_define_results_file"
             first_pipeline_processed=1
+            echo "[DEBUG] Created common results '$common_define_results_file' from '$define_results_pipeline_file'"
         else
             tail -n +2 "$define_results_pipeline_file" >> "$common_define_results_file"
+            echo "[DEBUG] Updated common results '$common_define_results_file' from '$define_results_pipeline_file'"
         fi
     done
     if [ -f "$common_define_results_file" ]; then
         libreoffice --headless --convert-to xlsx:"Calc MS Excel 2007 XML" --outdir "$CELLPROFILER_API_BATCH_RESULTS_DIR" "$common_define_results_file" > /dev/null
+        echo "[DEBUG] Saved common results in xlsx format to '$CELLPROFILER_API_BATCH_RESULTS_DIR' folder"
     fi
 fi
