@@ -49,9 +49,9 @@ class TestCaseExecutor(TestCaseProcessor):
             )
         }
 
-        cloud_bridge = PlatformToCloudOperationsAdapter(cloud_operations)
+        cloud_adapter = PlatformToCloudOperationsAdapter._from_provided_cloud_operations(cloud_operations)
 
-        synchronizer = StorageLifecycleSynchronizer(SynchronizerConfig(), data_source, cloud_bridge, logger)
+        synchronizer = StorageLifecycleSynchronizer(SynchronizerConfig(), data_source, cloud_adapter, logger)
         for storage in testcase.platform.storages:
             loaded_storage = data_source.load_storage(str(storage.datastorage_id))
             synchronizer._sync_storage(loaded_storage)

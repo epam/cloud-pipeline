@@ -11,20 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import re
 
 import argparse
 
 from sls.app.cloud_storage_adapter import PlatformToCloudOperationsAdapter
 from sls.app.run_mode import ApplicationModeRunner
-from sls.cloud.cloud import S3StorageOperations
 from sls.util.logger import AppLogger
 from sls.model.config_model import SynchronizerConfig
 from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
 from sls.datasorce.cp_data_source import configure_cp_data_source
-
-S3_TYPE = "S3"
 
 
 def main():
@@ -45,28 +41,17 @@ def main():
 
 def run_application(args, logger):
     data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, args.data_source)
+
     if not re.match("\\d\\d:\\d\\d", args.at):
         raise RuntimeError("Wrong format of 'at' argument: {}, please specify it in format: 00:00".format(args.at))
 
-    storage_lifecycle_service_config = fetch_storage_lifecycle_service_config(data_source)
-    cloud_operations = {
-        S3_TYPE: S3StorageOperations(storage_lifecycle_service_config[S3_TYPE], logger)
-    }
-
-    cloud_bridge = PlatformToCloudOperationsAdapter(cloud_operations)
+    cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
     config = SynchronizerConfig(args.max_execution_running_days, args.mode, args.at)
     logger.log("Running application with config: {}".format(config.to_json()))
     ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(config, data_source, cloud_bridge, logger),
+        StorageLifecycleSynchronizer(config, data_source, cloud_adapter, logger),
         config
     ).run()
-
-
-def fetch_storage_lifecycle_service_config(data_source):
-    config_preference = data_source.load_preference("storage.lifecycle.service.cloud.config")
-    if not config_preference or "value" not in config_preference:
-        raise RuntimeError("storage.lifecycle.service.cloud.config is not defined in Cloud-Pipeline env!")
-    return json.loads(config_preference["value"])
 
 
 if __name__ == '__main__':
