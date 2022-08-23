@@ -36,6 +36,7 @@ import com.epam.pipeline.manager.AbstractManagerTest;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.manager.scheduling.RunScheduler;
 import com.epam.pipeline.manager.user.UserManager;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -54,6 +55,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 
 @DirtiesContext
 @Transactional
@@ -87,6 +89,9 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
     @Autowired
     private UserManager userManager;
 
+    @Autowired
+    private PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
     @MockBean
     private RunScheduler runScheduler;
 
@@ -116,6 +121,10 @@ public class RunScheduleManagerTest extends AbstractManagerTest {
         testRunScheduleVO2 = getRunScheduleVO(RunScheduledAction.RESUME, CRON_EXPRESSION2);
         testRunScheduleVO3 = getRunScheduleVO(RunScheduledAction.RUN, CRON_EXPRESSION2);
 
+        doReturn(Collections.emptyList()).when(pipelineRunServiceUrlRepository)
+                .findByPipelineRunId(any());
+        doReturn(Collections.emptyList()).when(pipelineRunServiceUrlRepository)
+                .findByPipelineRunIdIn(Collections.singletonList(any()));
     }
 
     @Test

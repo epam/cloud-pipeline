@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.pipeline;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.controller.vo.PagingRunFilterVO;
 import com.epam.pipeline.controller.vo.PipelineRunFilterVO;
 import com.epam.pipeline.dao.filter.FilterDao;
@@ -46,6 +45,7 @@ import com.epam.pipeline.manager.filter.FilterExpressionType;
 import com.epam.pipeline.manager.filter.FilterOperandType;
 import com.epam.pipeline.manager.filter.WrongFilterException;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import com.epam.pipeline.util.TestUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -85,7 +85,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class PipelineRunDaoTest extends AbstractSpringTest {
+public class PipelineRunDaoTest extends AbstractJdbcTest {
     private static final String TEST_USER = "TEST";
     private static final String TEST_PARAMS = "123 321";
     private static final String TEST_POD_ID = "pod1";

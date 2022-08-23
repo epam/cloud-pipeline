@@ -55,6 +55,7 @@ import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
 import com.epam.pipeline.manager.region.CloudRegionManager;
 import com.epam.pipeline.manager.security.CheckPermissionHelper;
+import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.util.TestUtils;
 import io.reactivex.subjects.BehaviorSubject;
 import org.apache.commons.collections.CollectionUtils;
@@ -168,6 +169,9 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
     private ToolScanInfoManager toolScanInfoManager;
 
     @Autowired
+    private PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @Autowired
     private PipelineRunDao pipelineRunDao;
 
     @Autowired
@@ -235,6 +239,10 @@ public class PipelineRunManagerTest extends AbstractManagerTest {
         region.setRegionCode("us-east-1");
         doNothing().when(entityManager).setManagers(any());
         doNothing().when(resourceMonitoringManager).monitorResourceUsage();
+        doReturn(Collections.emptyList()).when(pipelineRunServiceUrlRepository)
+                .findByPipelineRunId(any());
+        doReturn(Collections.emptyList()).when(pipelineRunServiceUrlRepository)
+                .findByPipelineRunIdIn(Collections.singletonList(any()));
 
         PipelineRun parentRun = new PipelineRun();
         parentRun.setId(PARENT_RUN_ID);

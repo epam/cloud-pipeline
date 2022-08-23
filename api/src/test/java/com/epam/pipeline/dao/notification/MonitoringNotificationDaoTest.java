@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.dao.notification;
 
-import com.epam.pipeline.AbstractSpringTest;
 import com.epam.pipeline.dao.pipeline.PipelineDao;
 import com.epam.pipeline.dao.pipeline.PipelineRunDao;
 import com.epam.pipeline.dao.region.CloudRegionDao;
@@ -34,6 +33,7 @@ import com.epam.pipeline.entity.user.DefaultRoles;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.epam.pipeline.manager.ObjectCreatorUtils;
 import com.epam.pipeline.mapper.PipelineRunMapper;
+import com.epam.pipeline.test.jdbc.AbstractJdbcTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @Transactional
-public class MonitoringNotificationDaoTest extends AbstractSpringTest {
+public class MonitoringNotificationDaoTest extends AbstractJdbcTest {
 
     private static final String TEST_USER1 = "test_user1";
     private static final String TEST_POD_ID = "pod1";

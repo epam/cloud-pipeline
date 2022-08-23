@@ -139,6 +139,9 @@ public class TestApplication {
     public CloudProfileCredentialsManager cloudProfileCredentialsManager;
 
     @MockBean
+    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
+
+    @MockBean
     public LdapManager ldapManager;
 
     @MockBean
@@ -152,9 +155,6 @@ public class TestApplication {
 
     @MockBean
     public QuotaService mockQuotaService;
-
-    @MockBean
-    public PipelineRunServiceUrlRepository pipelineRunServiceUrlRepository;
 
     @Bean
     public EmbeddedServletContainerCustomizer containerCustomizer() throws FileNotFoundException {
