@@ -12,24 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM centos:7
-
-RUN yum install -y wget \
-                   bzip2 \
-                   gcc \
-                   zlib-devel \
-                   bzip2-devel \
-                   xz-devel \
-                   make \
-                   ncurses-devel \
-                   unzip \
-                   git \
-                   curl \
-                   python3 \
-                   python3-devel \
-                   epel-release && \
-    yum clean all && \
-    curl https://cloud-pipeline-oss-builds.s3.amazonaws.com/tools/pip/2.7/get-pip.py | python -
+FROM ubuntu:18.04
+RUN apt update && \
+        apt install -y \
+                    wget \
+                    curl \
+                    unzip \
+                    gcc \
+                    python3 python3-venv python3-pip python3-dev \
+                    build-essential libssl-dev libffi-dev python3-setuptools
+RUN python3 -m pip install --upgrade pip && python3 -m pip install setuptools_rust
 
 # API distribution
 ARG CP_API_DIST_URL=""
@@ -67,4 +59,3 @@ ADD start.sh /start.sh
 RUN chmod +x /start.sh
 
 CMD ["/start.sh"]
-
