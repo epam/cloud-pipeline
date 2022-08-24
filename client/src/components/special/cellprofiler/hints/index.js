@@ -1,7 +1,7 @@
-import findNuclei from './findNuclei';
-import findCells from './findCells';
+import imageProcessing from './imageProcessing';
+import advanced from './advanced';
 
 export default {
-  ...findNuclei,
-  ...findCells
+  ...imageProcessing,
+  ...advanced
 };

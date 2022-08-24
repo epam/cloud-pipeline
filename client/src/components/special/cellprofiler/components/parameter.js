@@ -24,13 +24,14 @@ import {
   Input,
   Select,
   Slider,
-  Tooltip,
+  Popover,
   Icon
 } from 'antd';
 import {AnalysisTypes} from '../model/common/analysis-types';
 import styles from './cell-profiler.css';
 import ColorPicker from '../../color-picker';
 import hints from '../hints';
+import Markdown from '../../markdown';
 
 class CellProfilerParameter extends React.Component {
   reportChanged = () => {
@@ -324,11 +325,17 @@ class CellProfilerParameter extends React.Component {
     const moduleName = parameterValue.parameter.cpModule.name;
     const parameterName = parameterValue.parameter.name;
     const parameterHint = hints[`${moduleName}.${parameterName}`];
+    const parameterHintMarkdown = (() => (
+      <Markdown
+        md={parameterHint}
+        style={{width: '500px', margin: '10px 0'}}
+      />
+    ))();
     return (
       parameterHint
-        ? <Tooltip title={parameterHint} placement="right">
+        ? <Popover content={parameterHintMarkdown} placement="right">
           <Icon type="question-circle" />
-        </Tooltip>
+        </Popover>
         : null
     );
   }

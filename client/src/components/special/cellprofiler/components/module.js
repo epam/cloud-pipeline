@@ -17,11 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon, Tooltip} from 'antd';
+import {Button, Icon, Popover} from 'antd';
 import {observer} from 'mobx-react';
 import CellProfilerParameter from './parameter';
 import styles from './cell-profiler.css';
 import hints from '../hints';
+import Markdown from '../../markdown';
 
 function Circle ({className, pending, empty}) {
   return (
@@ -130,9 +131,17 @@ function CellProfilerModuleHeaderRenderer (props) {
       (pipeline.graphicsOutput.setOverlayImage)(outputImage, analysis.hcsImageViewer);
     }
   };
-  const moduleHint = hints[cpModule.name];
+  const moduleHintMarkdown = (() => (
+    <Markdown
+      md={hints[cpModule.name]}
+      style={{width: '500px', margin: '10px 0'}}
+    />
+  ))();
   return (
-    <Tooltip title={moduleHint} placement="right">
+    <Popover
+      content={moduleHintMarkdown}
+      placement="right"
+    >
       <div
         style={{
           display: 'inline-flex',
@@ -206,7 +215,7 @@ function CellProfilerModuleHeaderRenderer (props) {
           )
         }
       </div>
-    </Tooltip>
+    </Popover>
   );
 }
 
