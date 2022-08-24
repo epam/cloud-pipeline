@@ -242,6 +242,11 @@ public class GSBucketStorageProvider implements StorageProvider<GSBucketStorage>
         throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
     }
 
+    @Override
+    public boolean isRestoreActionEligible(final GSBucketStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
     private GSBucketStorageHelper getHelper(final GSBucketStorage storage) {
         final GCPRegion gcpRegion = cloudRegionManager.getGCPRegion(storage);
         return new GSBucketStorageHelper(messageHelper, gcpRegion, gcpClient);

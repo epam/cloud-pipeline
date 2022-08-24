@@ -239,4 +239,8 @@ public class StorageProviderManager {
                                                     final StorageLifecycleRuleExecution execution) {
         getStorageProvider(dataStorage).verifyStorageLifecycleRuleExecution(execution);
     }
+
+    public boolean isRestoreActionEligible(final AbstractDataStorage dataStorage, final String path) {
+        return getStorageProvider(dataStorage).isRestoreActionEligible(dataStorage, path);
+    }
 }

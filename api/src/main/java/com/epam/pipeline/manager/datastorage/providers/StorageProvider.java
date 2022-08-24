@@ -133,4 +133,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void verifyStorageLifecyclePolicyRule(StorageLifecycleRule rule);
 
     void verifyStorageLifecycleRuleExecution(StorageLifecycleRuleExecution execution);
+
+    boolean isRestoreActionEligible(T dataStorage, String path);
 }

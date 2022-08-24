@@ -524,6 +524,11 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
         throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
     }
 
+    @Override
+    public boolean isRestoreActionEligible(final NFSDataStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
     private String encodeUrl(final String path) {
         try {
             return URLEncoder.encode(path, StandardCharsets.UTF_8.toString());

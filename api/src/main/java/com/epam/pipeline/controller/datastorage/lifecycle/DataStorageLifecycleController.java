@@ -22,6 +22,7 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreAction;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -217,5 +218,70 @@ public class DataStorageLifecycleController extends AbstractRestController {
         return Result.success(
                 dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(
                         datastorageId, ruleId, path, status));
+    }
+
+    @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/restore")
+    @ResponseBody
+    @ApiOperation(
+            value = "Initiate process of restoring objects in datastorage under specified path.",
+            notes = "Initiate process of restoring objects in datastorage under specified path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StoragePathRestoreAction> initiateRestoreStorageObjects(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = "days", required = false) final Long days,
+            @RequestParam(value = "force", required = false, defaultValue = FALSE) final Boolean force) {
+        return Result.success(
+                dataStorageLifecycleApiService.initiateRestoreStorageObjects(datastorageId, path, days, force));
+    }
+
+    @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/restore")
+    @ResponseBody
+    @ApiOperation(
+            value = "Updates lifecycle restore action.",
+            notes = "Updates lifecycle restore action.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StoragePathRestoreAction> updateRestoreAction(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestBody final StoragePathRestoreAction action) {
+        return Result.success(dataStorageLifecycleApiService.updateRestoreAction(datastorageId, action));
+    }
+
+    @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/restore")
+    @ResponseBody
+    @ApiOperation(
+            value = "Lists all available lifecycle restore actions for datastorage and path (optional).",
+            notes = "Lists all available lifecycle restore actions for datastorage and path (optional)",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<StoragePathRestoreAction>> listStorageLifecyclePolicyRuleExecutions(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH, required = false) final String path) {
+        return Result.success(
+                dataStorageLifecycleApiService.loadRestoreStoragePathActionsByPath(datastorageId, path));
+    }
+
+    @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/effective")
+    @ResponseBody
+    @ApiOperation(
+            value = "Find last applied restore action for datastorage and path.",
+            notes = "Find last applied restore action for datastorage and path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StoragePathRestoreAction> loadEffectiveRestoreStoragePathActionByPath(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH, required = false) final String path) {
+        return Result.success(
+                dataStorageLifecycleApiService.loadEffectiveRestoreStoragePathActionByPath(datastorageId, path));
     }
 }

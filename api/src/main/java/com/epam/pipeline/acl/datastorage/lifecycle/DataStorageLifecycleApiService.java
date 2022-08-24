@@ -19,6 +19,7 @@ package com.epam.pipeline.acl.datastorage.lifecycle;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreAction;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
@@ -89,5 +90,26 @@ public class DataStorageLifecycleApiService {
     public List<StorageLifecycleRuleExecution> listStorageLifecyclePolicyRuleExecutions(
             final Long id, final Long ruleId, final String path, final StorageLifecycleRuleExecutionStatus status) {
         return storageLifecycleManager.listStorageLifecycleRuleExecutionsForRuleAndPath(ruleId, path, status);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StoragePathRestoreAction initiateRestoreStorageObjects(
+            final Long id, final String path, final Long days, final boolean force) {
+        return storageLifecycleManager.initiateRestoreStorageObjects(id, path, days, force);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
+    public StoragePathRestoreAction updateRestoreAction(final Long id, final StoragePathRestoreAction action) {
+        return storageLifecycleManager.updateRestoreAction(action);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public List<StoragePathRestoreAction> loadRestoreStoragePathActionsByPath(final Long id, final String path) {
+        return storageLifecycleManager.loadRestoreStoragePathActionsByPath(id, path);
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public StoragePathRestoreAction loadEffectiveRestoreStoragePathActionByPath(final Long id, final String path) {
+        return storageLifecycleManager.loadEffectiveRestoreStoragePathActionByPath(id, path);
     }
 }

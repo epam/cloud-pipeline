@@ -14,42 +14,29 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.dto.datastorage.lifecycle.restore;
 
-import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
 import java.time.LocalDateTime;
 
-@Entity
-@Getter
-@Setter
+
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "datastorage_lifecycle_rule_execution", schema = "pipeline")
-public class StorageLifecycleRuleExecutionEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+public class StoragePathRestoreAction {
     private Long id;
-    private Long ruleId;
+    private Long storageId;
+    private Long userActorId;
     private String path;
+    private Long days;
+    private LocalDateTime started;
     private LocalDateTime updated;
-
-    @Enumerated(EnumType.STRING)
-    private StorageLifecycleRuleExecutionStatus status;
-
-    private String storageClass;
+    private LocalDateTime restoredTill;
+    private StoragePathRestoreStatus status;
 }

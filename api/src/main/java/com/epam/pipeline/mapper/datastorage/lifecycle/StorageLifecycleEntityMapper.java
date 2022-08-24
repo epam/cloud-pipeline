@@ -20,10 +20,13 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StoragePathRestoreActionEntity;
+import com.epam.pipeline.entity.user.PipelineUser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +56,11 @@ public interface StorageLifecycleEntityMapper {
     String TRANSITION_CRITERION_JSON_TO_DTO = "transitionCriterionJsonToDto";
     String TRANSITION_CRITERION_TO_JSON = "transitionCriterionToJson";
 
+    String PIPELINE_USER_TO_ID = "pipelineUserToId";
+    String ID_TO_PIPELINE_USER = "idToPipelineUser";
+    String USER_ACTOR_ID = "userActorId";
+    String USER_ACTOR = "userActor";
+
     ObjectMapper OBJECT_MAPPER = new JsonMapper();
 
     @Mapping(source = TRANSITION_CRITERION, target = TRANSITION_CRITERION_JSON,
@@ -70,6 +78,24 @@ public interface StorageLifecycleEntityMapper {
     StorageLifecycleRuleExecutionEntity toEntity(StorageLifecycleRuleExecution execution);
     StorageLifecycleRuleExecution toDto(StorageLifecycleRuleExecutionEntity executionEntity);
 
+    @Mapping(source = USER_ACTOR_ID, target = USER_ACTOR, qualifiedByName = ID_TO_PIPELINE_USER)
+    StoragePathRestoreActionEntity toEntity(StoragePathRestoreAction restoreAction);
+
+    @Mapping(source = USER_ACTOR, target = USER_ACTOR_ID, qualifiedByName = PIPELINE_USER_TO_ID)
+    StoragePathRestoreAction toDto(StoragePathRestoreActionEntity restoreActionEntity);
+
+    @Named(PIPELINE_USER_TO_ID)
+    static Long pipelineUserToId(final PipelineUser user) {
+        if (user == null) {
+            return null;
+        }
+        return user.getId();
+    }
+
+    @Named(ID_TO_PIPELINE_USER)
+    static PipelineUser idToPipelineUser(final Long id) {
+        return PipelineUser.builder().id(id).build();
+    }
 
     @Named(NOTIFICATION_TO_JSON)
     static String notificationToJson(final StorageLifecycleNotification notification) throws JsonProcessingException {

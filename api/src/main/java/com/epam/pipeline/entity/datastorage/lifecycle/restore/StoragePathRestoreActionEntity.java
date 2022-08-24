@@ -14,26 +14,27 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.entity.datastorage.lifecycle.restore;
 
-import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
+import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreStatus;
+import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -41,25 +42,25 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "datastorage_lifecycle_rule", schema = "pipeline")
-public class StorageLifecycleRuleEntity {
+@Table(name = "datastorage_lifecycle_restore_action", schema = "pipeline")
+public class StoragePathRestoreActionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @OneToOne
+    @JoinColumn(name = "user_actor_id")
+    private PipelineUser userActor;
+
     private Long datastorageId;
+    private String path;
+    private Long days;
+    private LocalDateTime started;
+    private LocalDateTime updated;
+    private LocalDateTime restoredTill;
 
     @Enumerated(EnumType.STRING)
-    private StorageLifecycleTransitionMethod transitionMethod;
+    private StoragePathRestoreStatus status;
 
-    private String transitionCriterionJson;
-
-    @OneToMany(fetch = FetchType.EAGER, cascade = CascadeType.ALL,
-            mappedBy = "lifecycleRule", orphanRemoval = true)
-    private List<StorageLifecycleRuleProlongationEntity> prolongations;
-
-    private String pathGlob;
-    private String objectGlob;
-    private String transitionsJson;
-    private String notificationJson;
 }

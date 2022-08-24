@@ -285,6 +285,12 @@ public class AzureBlobStorageProvider implements StorageProvider<AzureBlobStorag
     public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
         throw new UnsupportedOperationException("Lifecycle policy mechanism isn't supported for this provider.");
     }
+
+    @Override
+    public boolean isRestoreActionEligible(final AzureBlobStorage dataStorage, final String path) {
+        throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
+    }
+
     private AzureStorageHelper getAzureStorageHelper(final AzureBlobStorage storage) {
         final AzureRegion region = cloudRegionManager.getAzureRegion(storage);
         final AzureRegionCredentials credentials = cloudRegionManager.loadCredentials(region);

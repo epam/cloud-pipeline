@@ -27,6 +27,7 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
 import com.epam.pipeline.entity.datastorage.DataStorageAction;
@@ -404,6 +405,11 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
         Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(execution.getStorageClass()),
                 "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+    }
+
+    @Override
+    public boolean isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
+        return listDataStorageFiles(dataStorage, path).findAny().isPresent();
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
