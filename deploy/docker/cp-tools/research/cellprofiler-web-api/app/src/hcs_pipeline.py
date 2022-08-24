@@ -208,7 +208,10 @@ class HcsPipeline(object):
         image_relative_path = 'images/{well}/{well}f{field:02d}p{plane:02d}-ch{channel:02d}t{timepoint:02d}.tiff' \
             .format(well=well_full_name, field=coords.field, plane=coords.z_plane,
                     channel=coords.channel, timepoint=coords.timepoint)
-        return os.path.join(self._pipeline_input_dir, image_relative_path)
+        image_full_path = os.path.join(self._pipeline_input_dir, image_relative_path)
+        if not os.path.exists(image_full_path):
+            raise FileNotFoundError("The file '%s' does not exist." % image_full_path)
+        return image_full_path
 
     def _verify_module_num(self, module_num: int):
         modules = self._pipeline.modules()
