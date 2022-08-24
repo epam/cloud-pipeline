@@ -23,6 +23,7 @@ class PlatformToCloudOperationsAdapter:
 
     def __init__(self, data_source, logger):
         storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(data_source)
+        self.logger = logger
         self.cloud_operations = {
             S3_TYPE: S3StorageOperations(storage_lifecycle_service_config[S3_TYPE], logger)
         }
@@ -44,18 +45,24 @@ class PlatformToCloudOperationsAdapter:
         return files
 
     def tag_files_to_transit(self, storage, files, storage_class, transit_id):
-        storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
-        for file in files:
-            if storage_path_prefix:
-                file.path = storage_path_prefix + file.path
-        return self.cloud_operations[storage.storage_type].tag_files_to_transit(
-            storage_cloud_identifier, files, storage_class, storage.region_name, transit_id)
+        try:
+            storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            for file in files:
+                if storage_path_prefix:
+                    file.path = storage_path_prefix + file.path
+            return self.cloud_operations[storage.storage_type].tag_files_to_transit(
+                storage_cloud_identifier, files, storage_class, storage.region_name, transit_id)
+        except Exception as e:
+            self.logger.log("Something went wrong when try to tag files from {}. Cause: {}".format(storage.path, e))
+            return False
 
     @staticmethod
     def fetch_storage_lifecycle_service_config(data_source):
         config_preference = data_source.load_preference("storage.lifecycle.service.cloud.config")
         if not config_preference or "value" not in config_preference:
             raise RuntimeError("storage.lifecycle.service.cloud.config is not defined in Cloud-Pipeline env!")
+        if S3_TYPE not in config_preference["value"]:
+            raise RuntimeError("storage.lifecycle.service.cloud.config doesn't contain S3 section!")
         return json.loads(config_preference["value"])
 
     @staticmethod

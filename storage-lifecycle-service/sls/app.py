@@ -46,7 +46,7 @@ def run_application(args, logger):
         raise RuntimeError("Wrong format of 'at' argument: {}, please specify it in format: 00:00".format(args.at))
 
     cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
-    config = SynchronizerConfig(args.max_execution_running_days, args.mode, args.at)
+    config = SynchronizerConfig(int(args.max_execution_running_days), args.mode, args.at)
     logger.log("Running application with config: {}".format(config.to_json()))
     ApplicationModeRunner.get_application_runner(
         StorageLifecycleSynchronizer(config, data_source, cloud_adapter, logger),

@@ -51,7 +51,7 @@ class StorageLifecycleSynchronizer:
 
     def sync(self):
         self.logger.log("Starting object lifecycle synchronization process...")
-        available_storages = self.cp_data_source.load_available_storages()
+        available_storages = [s for s in self.cp_data_source.load_available_storages() if s.type != "NFS"]
         self.logger.log("{} storages loaded.".format(len(available_storages)))
 
         regions_by_id = {region.id: region.region_id for region in self.cp_data_source.load_regions()}
@@ -323,16 +323,13 @@ class StorageLifecycleSynchronizer:
                                 "Starting to tagging files for transition, number of files: {}.".format(
                     rule.datastorage_id, rule.rule_id, action_items.folder, storage_class, len(subject_files)))
 
-                if action_items.mode == ACTIONS_MODE_FOLDER:
-                    self._create_or_update_execution(storage.id, rule, storage_class,
-                                                     action_items.folder, EXECUTION_RUNNING_STATUS)
                 is_successful = self.cloud_bridge.tag_files_to_transit(
                     storage, subject_files, storage_class, self._get_transition_id(action_items, rule))
 
-                if not is_successful:
+                if is_successful:
                     if action_items.mode == ACTIONS_MODE_FOLDER:
                         self._create_or_update_execution(storage.id, rule, storage_class,
-                                                         action_items.folder, EXECUTION_FAILED_STATUS)
+                                                         action_items.folder, EXECUTION_RUNNING_STATUS)
 
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Complete action items."
                         .format(rule.datastorage_id, rule.rule_id, action_items.folder))
