@@ -51,7 +51,7 @@ class StorageLifecycleSynchronizer:
 
     def sync(self):
         self.logger.log("Starting object lifecycle synchronization process...")
-        available_storages = [s for s in self.cp_data_source.load_available_storages() if s.type != "NFS"]
+        available_storages = [s for s in self.cp_data_source.load_available_storages() if s.storage_type != "NFS"]
         self.logger.log("{} storages loaded.".format(len(available_storages)))
 
         regions_by_id = {region.id: region.region_id for region in self.cp_data_source.load_regions()}
