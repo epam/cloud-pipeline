@@ -730,7 +730,12 @@ class HcsImage extends React.PureComponent {
           <Button
             className={styles.action}
             disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(this.hcsImageViewer, this.showEntireWell, this.selectedWell.id)}
+            onClick={() => downloadCurrentTiff(
+              this.hcsImageViewer,
+              {
+                wellView: this.showEntireWell,
+                wellId: this.selectedWell ? this.selectedWell.id : undefined
+              })}
           >
             Download current image
           </Button>
