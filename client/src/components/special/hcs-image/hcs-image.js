@@ -61,6 +61,7 @@ class HcsImage extends React.PureComponent {
     batchJobId: undefined,
     selectedSequenceTimePoints: [],
     selectedZCoordinates: [],
+    mergeZPlanes: false,
     selectedWells: [],
     selectedFields: []
   };
@@ -225,7 +226,8 @@ class HcsImage extends React.PureComponent {
         plateWidth: 0,
         plateHeight: 0,
         selectedSequenceTimePoints: [],
-        selectedZCoordinates: []
+        selectedZCoordinates: [],
+        mergeZPlanes: false
       }, () => {
         HCSInfo.fetch({storageInfo: storage, storageId, path})
           .then(info => {
@@ -261,7 +263,8 @@ class HcsImage extends React.PureComponent {
               plateWidth: 0,
               plateHeight: 0,
               selectedSequenceTimePoints: [],
-              selectedZCoordinates: []
+              selectedZCoordinates: [],
+              mergeZPlanes: false
             }, () => {
               this.hcsInfo = undefined;
             });
@@ -275,7 +278,8 @@ class HcsImage extends React.PureComponent {
         plateWidth: 0,
         plateHeight: 0,
         selectedSequenceTimePoints: [],
-        selectedZCoordinates: []
+        selectedZCoordinates: [],
+        mergeZPlanes: false
       }, () => {
         this.hcsInfo = undefined;
       });
@@ -303,10 +307,11 @@ class HcsImage extends React.PureComponent {
     });
   };
 
-  onChangeZCoordinates = (selection = []) => {
+  onChangeZCoordinates = (selection = [], mergeZPlanes = false) => {
     const currentZ = this.selectedZCoordinate;
     this.setState({
-      selectedZCoordinates: selection.slice()
+      selectedZCoordinates: selection.slice(),
+      mergeZPlanes
     }, () => {
       const newZ = this.selectedZCoordinate;
       if (newZ !== currentZ && this.hcsImageViewer) {
@@ -438,7 +443,8 @@ class HcsImage extends React.PureComponent {
         selectedWells,
         selectedFields,
         selectedSequenceTimePoints,
-        selectedZCoordinates: zCoordinates = []
+        selectedZCoordinates: zCoordinates = [],
+        mergeZPlanes
       } = this.state;
       const selectedZCoordinates = zCoordinates.length > 0 ? zCoordinates : [0];
       const analysisInputs = [];
@@ -487,7 +493,7 @@ class HcsImage extends React.PureComponent {
           fields[0].physicalSize,
           fields[0].unit
         );
-        this.hcsAnalysis.changeFile(analysisInputs);
+        this.hcsAnalysis.changeFile(analysisInputs, mergeZPlanes);
         this.hcsAnalysis.hcsImageViewer = this.hcsImageViewer;
       }
     }
@@ -886,6 +892,7 @@ class HcsImage extends React.PureComponent {
       plateHeight,
       selectedSequenceTimePoints = [],
       selectedZCoordinates = [],
+      mergeZPlanes,
       selectedWells = [],
       selectedFields = []
     } = this.state;
@@ -947,6 +954,7 @@ class HcsImage extends React.PureComponent {
           <HcsZPositionSelector
             image={selectedImage}
             selection={selectedZCoordinates}
+            mergeZPlanes={mergeZPlanes}
             onChange={this.onChangeZCoordinates}
             multiple
           />

@@ -26,6 +26,7 @@ class NamesAndTypes extends AnalysisModule {
    * @type {HCSSourceFileOptions[]}
    */
   @observable sourceFiles = [];
+  @observable mergeZPlanes = false;
 
   /**
    * @param {HCSSourceFileOptions[]} sources
@@ -50,7 +51,7 @@ class NamesAndTypes extends AnalysisModule {
   get multipleFields () {
     return this.wells.length > 1 ||
       this.timePoints.length > 1 ||
-      this.zCoordinates.length > 1 ||
+      (!this.mergeZPlanes && this.zCoordinates.length > 1) ||
       this.wellFields.some(({fields = []}) => fields.length > 1);
   }
 
