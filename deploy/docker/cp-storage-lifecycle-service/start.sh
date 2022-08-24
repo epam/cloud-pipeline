@@ -13,20 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if [ -z "${API_URL}" ]; then
-    echo "API_URL is not provided!"
-    exit 22
+if [ -z "$API" ]; then
+    if [ -z "${CP_API_SRV_INTERNAL_HOST}" ] || [ -z "$CP_API_SRV_INTERNAL_PORT" ]; then
+      echo "API is not provided and CP_API_SRV_INTERNAL_HOST CP_API_SRV_INTERNAL_PORT also is not present, can't construct API!"
+      exit 22
+    fi
+    export API="https://${CP_API_SRV_INTERNAL_HOST}:${CP_API_SRV_INTERNAL_PORT}/pipeline/restapi/"
 fi
+
 
 if [ -z "${API_TOKEN}" ]; then
-    echo "API_TOKEN is not provided!"
-    exit 22
+    if [ "CP_API_JWT_ADMIN" ]; then
+       export API_TOKEN="$CP_API_JWT_ADMIN"
+    else
+       echo "API_TOKEN is not provided!"
+       exit 22
+    fi
 fi
 
-python3 ${CP_SLS_HOME}/sls/sls/app.py --cp-api-url=${API_URL} \
+python3 ${CP_SLS_HOME}/sls/sls/app.py --cp-api-url=${API} \
          --max-execution-running-days=${CP_STORAGE_LIFECYCLE_DAEMON_MAX_EXECUTION_RUNNING_DAYS:-2} \
          --mode=${CP_STORAGE_LIFECYCLE_DAEMON_MODE:-single} \
-         --at="${CP_STORAGE_LIFECYCLE_DAEMON_AT_TIME:-00:05}"
+         --at="${CP_STORAGE_LIFECYCLE_DAEMON_AT_TIME:-00:05}" >> $CP_SLS_HOME/logs/storage-lifecycle-service-$(date -u --iso-8601).log
 
 
 

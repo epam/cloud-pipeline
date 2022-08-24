@@ -18,7 +18,6 @@ package com.epam.pipeline.repository.datastorage.lifecycle;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
-import org.springframework.data.repository.CrudRepository;
 
 public interface DataStorageLifecycleRuleRepositoryCustomQueries {
 

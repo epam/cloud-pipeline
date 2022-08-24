@@ -103,7 +103,7 @@ class LifecycleRuleParser:
             else []
         transition_criterion = self._parse_transition_criterion(rule_json_dict["transitionCriterion"]) \
             if "transitionCriterion" in rule_json_dict \
-            else StorageLifecycleTransitionCriterion("Default", None)
+            else StorageLifecycleTransitionCriterion("DEFAULT", None)
         notification = self._parse_notification(rule_json_dict["notification"]) \
             if "notification" in rule_json_dict \
             else self.default_lifecycle_notification

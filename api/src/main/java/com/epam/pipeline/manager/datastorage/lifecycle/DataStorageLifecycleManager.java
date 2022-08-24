@@ -336,14 +336,19 @@ public class DataStorageLifecycleManager {
         Assert.notNull(rule.getTransitionMethod(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED));
-        verifyLifecycleRuleTransitionCriterion(rule.getTransitionCriterion());
+        verifyLifecycleRuleTransitionCriterion(rule);
         verifyNotification(rule);
         storageProviderManager.verifyStorageLifecycleRule(dataStorage, rule);
     }
 
-    private void verifyLifecycleRuleTransitionCriterion(
-            final StorageLifecycleTransitionCriterion transitionCriterion) {
+    private void verifyLifecycleRuleTransitionCriterion(final StorageLifecycleRule rule) {
+        final StorageLifecycleTransitionCriterion transitionCriterion = rule.getTransitionCriterion();
         if (transitionCriterion == null) {
+            rule.setTransitionCriterion(
+                    StorageLifecycleTransitionCriterion.builder().type(
+                            StorageLifecycleTransitionCriterion.StorageLifecycleTransitionCriterionType.DEFAULT
+                    ).build()
+            );
             return;
         }
         switch (transitionCriterion.getType()) {
