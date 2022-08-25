@@ -52,3 +52,9 @@
   flex-direction: column;
   width: fit-content;
 }
+
+.history-filter {
+  min-width: 150px;
+  max-width: 350px;
+  margin-left: 5px;
+}

@@ -16,6 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import {
   Button,
   Input,
@@ -25,11 +27,9 @@ import {
   Col,
   Select,
   Collapse,
-  message,
   Spin
 } from 'antd';
 import moment from 'moment-timezone';
-import UsersInfoFilter from '../../../../../../../models/user/UsersInfoFilter';
 import {NotificationForm, TransitionsForm} from '../../forms';
 import styles from './life-cycle-edit-modal.css';
 
@@ -81,9 +81,20 @@ function FormSection ({
   );
 }
 
+@inject('usersInfo')
+@observer
 class LifeCycleEditModal extends React.Component {
   state = {
     pending: false
+  }
+
+  @computed
+  get usersInfo () {
+    const {usersInfo} = this.props;
+    if (usersInfo.loaded) {
+      return usersInfo.value;
+    }
+    return [];
   }
 
   get showMatches () {
@@ -119,7 +130,7 @@ class LifeCycleEditModal extends React.Component {
             delete payload.notification.disabled;
           }
           if (notification && notification.informedUserIds) {
-            const recipientsIds = await this.fetchRecipientsInfo(notification.informedUserIds);
+            const recipientsIds = this.getIdsFromUsers(notification.informedUserIds);
             payload.notification.informedUserIds = recipientsIds;
           }
           if (transitions && transitions.length) {
@@ -147,24 +158,14 @@ class LifeCycleEditModal extends React.Component {
     });
   };
 
-  fetchRecipientsInfo = async (recipients) => {
-    if (!recipients || !recipients.length > 0) {
-      return undefined;
-    }
-    const names = recipients
-      .map(recipient => recipient.name)
-      .filter(Boolean);
-    if (names && names.length) {
-      const request = new UsersInfoFilter(names);
-      await request.fetch();
-      if (request.error) {
-        message.error(request.error, 5);
+  getIdsFromUsers = (users = []) => {
+    return users.map(user => {
+      const userInfo = this.usersInfo.find(info => info.name === user.name);
+      if (userInfo) {
+        return userInfo.id;
       }
-      return request.loaded && request.value && request.value.length > 0
-        ? request.value.map(user => user.id)
-        : undefined;
-    }
-    return undefined;
+      return undefined;
+    }).filter(Boolean);
   };
 
   onCancel = () => {

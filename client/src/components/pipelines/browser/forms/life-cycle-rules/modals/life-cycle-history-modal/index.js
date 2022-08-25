@@ -97,7 +97,9 @@ class LifeCycleHistoryModal extends React.Component {
     const {executions} = this.state;
     const executionsData = executions.map(execution => ({
       date: moment.utc(execution.updated).format(FULL_FORMAT),
-      action: ACTION_TYPES.transition,
+      action: DESTINATIONS[execution.storageClass] === DESTINATIONS.DELETION
+        ? ACTION_TYPES.deletion
+        : ACTION_TYPES.transition,
       user: 'System',
       file: execution.path,
       prolongation: undefined,
@@ -120,8 +122,9 @@ class LifeCycleHistoryModal extends React.Component {
 
   get filteredHistory () {
     const {actionFilter} = this.state;
-    if (actionFilter) {
-      return this.history.filter(entry => entry.action === actionFilter);
+    if (actionFilter && actionFilter.length > 0) {
+      return this.history
+        .filter(entry => actionFilter.includes(entry.action));
     }
     return this.history;
   }
@@ -142,8 +145,8 @@ class LifeCycleHistoryModal extends React.Component {
     }
   };
 
-  onSelectActionFilter = (key) => {
-    this.setState({actionFilter: key});
+  onSelectActionFilter = (keys) => {
+    this.setState({actionFilter: keys});
   };
 
   renderHeader = () => {
@@ -172,14 +175,10 @@ class LifeCycleHistoryModal extends React.Component {
               Action type:
             </span>
             <Select
+              mode="multiple"
               onChange={this.onSelectActionFilter}
-              style={{marginLeft: 5, width: 150}}
+              className={styles.historyFilter}
             >
-              <Select.Option
-                style={{height: 32}}
-                value={undefined}
-                key="empty"
-              />
               {Object.values(ACTION_TYPES).map((description) => (
                 <Select.Option
                   value={description}

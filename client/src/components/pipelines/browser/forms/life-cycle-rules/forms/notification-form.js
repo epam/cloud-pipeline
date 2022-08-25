@@ -16,6 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Button,
@@ -52,6 +54,8 @@ const fullWidthLayout = {
   }
 };
 
+@inject('usersInfo')
+@observer
 class NotificationForm extends React.Component {
   state = {
     previewMode: false,
@@ -63,6 +67,21 @@ class NotificationForm extends React.Component {
   get notificationsDisabled () {
     const {form} = this.props;
     return form.getFieldValue('notification.disabled');
+  }
+
+  @computed
+  get informedUsers () {
+    const {usersInfo, rule} = this.props;
+    if (usersInfo.loaded &&
+      rule.notification &&
+      rule.notification.informedUserIds
+    ) {
+      return (rule.notification.informedUserIds || []).map(id => {
+        const user = (usersInfo.value || []).find(info => info.id === id);
+        return user || undefined;
+      }).filter(Boolean);
+    }
+    return [];
   }
 
   setPreviewMode = (preview) => {
@@ -118,8 +137,8 @@ class NotificationForm extends React.Component {
             {getFieldDecorator('notification.informedUserIds', {
               type: 'array',
               initialValue: rule.notification
-                ? rule.notification.informedUserIds
-                : undefined
+                ? this.informedUsers
+                : []
             })(
               <UsersRolesSelect
                 adGroups={false}
