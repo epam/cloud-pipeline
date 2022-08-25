@@ -346,10 +346,10 @@ public class DockerContainerOperationManager {
 
     private void failRunAndTerminateNode(PipelineRun run, Exception e) {
         LOGGER.error(e.getMessage());
-        nodesManager.terminateNode(run.getInstance().getNodeName(), false);
         run.setEndDate(DateUtils.now());
         run.setStatus(TaskStatus.FAILURE);
         runManager.updatePipelineStatus(run);
+        nodesManager.terminateRun(run);
     }
 
     private void addRunLog(final PipelineRun run, final String logMessage, final String taskName) {
@@ -386,6 +386,7 @@ public class DockerContainerOperationManager {
             case TERMINATED:
                 throw new IllegalStateException(messageHelper
                         .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "stop"));
+            case STOPPING:
             default:
                 break;
         }
@@ -402,6 +403,10 @@ public class DockerContainerOperationManager {
                     return false;
                 }
                 break;
+            case STOPPING:
+                rollbackRunToPausedState(run, CloudInstanceOperationResult.fail(
+                        messageHelper.getMessage(MessageConstants.WARN_INSTANCE_STOPPING)));
+                return false;
             case TERMINATED:
                 throw new IllegalStateException(messageHelper
                         .getMessage(MessageConstants.ERROR_STOP_START_INSTANCE_TERMINATED, "start"));
