@@ -277,8 +277,10 @@ public class AWSInstanceService implements CloudInstanceService<AwsRegion> {
                 || InstanceStateName.Running.toString().equals(instanceStateName)) {
             return CloudInstanceState.RUNNING;
         }
-        if (InstanceStateName.Stopping.toString().equals(instanceStateName)
-                || InstanceStateName.Stopped.toString().equals(instanceStateName)) {
+        if (InstanceStateName.Stopping.toString().equals(instanceStateName)) {
+            return CloudInstanceState.STOPPING;
+        }
+        if (InstanceStateName.Stopped.toString().equals(instanceStateName)) {
             return CloudInstanceState.STOPPED;
         }
         return null;
