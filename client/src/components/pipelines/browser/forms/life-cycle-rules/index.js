@@ -66,7 +66,7 @@ class LifeCycleRules extends React.Component {
   get rules () {
     const {lifeCycleRules} = this.props;
     if (lifeCycleRules && lifeCycleRules.loaded && !lifeCycleRules.error) {
-      return lifeCycleRules.value;
+      return lifeCycleRules.value || [];
     }
     return [];
   }
@@ -255,19 +255,21 @@ class LifeCycleRules extends React.Component {
             <Icon type="plus" />
             Create
           </Button>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Root</th>
-                <th>Glob</th>
-                <th>Transition</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {this.rules.map((rule, index) => this.renderRule(rule, index))}
-            </tbody>
-          </table>
+          {this.rules.length > 0 ? (
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Root</th>
+                  <th>Glob</th>
+                  <th>Transition</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {this.rules.map((rule, index) => this.renderRule(rule, index))}
+              </tbody>
+            </table>
+          ) : null }
           {editRule ? (
             <LifeCycleEditModal
               visible={Boolean(editRule)}

@@ -17,8 +17,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {inject, observer} from 'mobx-react';
-import {observable, computed} from 'mobx';
 import {
   Button,
   Input,
@@ -26,14 +24,11 @@ import {
   Row,
   Col,
   Icon,
-  Checkbox,
-  message
+  Checkbox
 } from 'antd';
 import UsersRolesSelect from '../../../../../special/users-roles-select';
 import CodeEditor from '../../../../../special/CodeEditor';
 import EmailPreview from '../../../../../../components/settings/forms/EmailPreview';
-import NotificationTemplates from '../../../../../../models/settings/NotificationTemplates';
-import NotificationSettings from '../../../../../../models/settings/NotificationSettings';
 import styles from './life-cycle-forms.css';
 
 const columnLayout = {
@@ -57,91 +52,17 @@ const fullWidthLayout = {
   }
 };
 
-const SETTINGS_KEY = 'DATASTORAGE_LIFECYCLE_ACTION';
-
-@inject('usersInfo')
-@observer
 class NotificationForm extends React.Component {
   state = {
     previewMode: false,
     pending: false
   }
 
-  @observable systemEmailSettings;
-  @observable systemTemplate;
-
-  componentDidMount () {
-    this.fetchEmailSettings();
-  }
-
   notifyFormContainer;
-
-  @computed
-  get getInitialBody () {
-    const {rule} = this.props;
-    if (rule.notification && rule.notification.body) {
-      return rule.notification.body;
-    }
-    if (this.systemTemplate) {
-      return this.systemTemplate.body;
-    }
-    return undefined;
-  }
-
-  @computed
-  get initialSubject () {
-    const {rule} = this.props;
-    if (rule.notification && rule.notification.subject) {
-      return rule.notification.subject;
-    }
-    if (this.systemTemplate) {
-      return this.systemTemplate.subject;
-    }
-    return undefined;
-  }
-
-  @computed
-  get initialRecipients () {
-    const {rule, usersInfo} = this.props;
-    if (usersInfo && usersInfo.loaded) {
-      if (rule.notification && rule.notification.informedUserIds) {
-        return rule.notification.informedUserIds
-          .map(id => usersInfo.value.find(info => info.id === id));
-      }
-      if (this.systemEmailSettings) {
-        return (this.systemEmailSettings.informedUserIds || [])
-          .map(id => usersInfo.value.find(info => info.id === id));
-      }
-      return undefined;
-    }
-  }
 
   get notificationsDisabled () {
     const {form} = this.props;
     return form.getFieldValue('notification.disabled');
-  }
-
-  fetchEmailSettings = () => {
-    this.setState({pending: true}, async () => {
-      const promises = [
-        new NotificationSettings(),
-        new NotificationTemplates()
-      ].map(request => new Promise((resolve) => request
-        .fetch()
-        .then(() => resolve(request))
-        .catch(() => resolve(request))
-      ));
-      const results = await Promise.all(promises);
-      this.setState({pending: false}, () => {
-        results.filter(result => result.error)
-          .forEach(result => message.error(result.error, 5));
-        const [settings, templates] = results;
-        this.systemEmailSettings = (settings.value || [])
-          .find(setting => setting.type === SETTINGS_KEY);
-        this.systemTemplate = (templates.value || [])
-          .find(template => template.name === SETTINGS_KEY);
-      });
-    });
   }
 
   setPreviewMode = (preview) => {
@@ -167,7 +88,18 @@ class NotificationForm extends React.Component {
               valuePropName: 'checked',
               initialValue: rule.notification && rule.notification.enabled !== undefined
                 ? !rule.notification.enabled
-                : false
+                : false,
+              rules: [{
+                required: false,
+                validator: (rule, value, callback) => {
+                  const method = form.getFieldValue('transitionMethod');
+                  const message = 'If one-by-one method selected, notifications should be disabled';
+                  if (method === 'ONE_BY_ONE' && value === false) {
+                    callback(message);
+                  }
+                  callback();
+                }
+              }]
             })(
               <Checkbox
                 disabled={pending}
@@ -185,7 +117,9 @@ class NotificationForm extends React.Component {
           >
             {getFieldDecorator('notification.informedUserIds', {
               type: 'array',
-              initialValue: this.initialRecipients
+              initialValue: rule.notification
+                ? rule.notification.informedUserIds
+                : undefined
             })(
               <UsersRolesSelect
                 adGroups={false}
@@ -270,7 +204,9 @@ class NotificationForm extends React.Component {
             style={{display: previewMode ? 'none' : 'inherit'}}
           >
             {getFieldDecorator('notification.subject', {
-              initialValue: this.initialSubject
+              initialValue: rule.notification
+                ? rule.notification.subject
+                : undefined
             })(
               <Input
                 disabled={this.notificationsDisabled || pending}
@@ -311,7 +247,9 @@ class NotificationForm extends React.Component {
           >
             {getFieldDecorator('notification.body', {
               valuePropName: 'code',
-              initialValue: this.getInitialBody
+              initialValue: rule.notification
+                ? rule.notification.body
+                : undefined
             })(
               <CodeEditor
                 className={classNames(styles.codeEditor, 'cp-code-editor')}

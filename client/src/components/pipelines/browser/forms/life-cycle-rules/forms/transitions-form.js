@@ -89,15 +89,16 @@ class TransitionsForm extends React.Component {
     const dateTypes = {...userDefinedDateTypes};
     dateTypes[index] = periodType;
     this.setState({userDefinedDateTypes: dateTypes}, () => {
-      if (periodType === TRANSITION_PERIOD.at) {
-        form.setFieldsValue({
-          [`transitions[${index}].transitionAfterDays`]: undefined
-        });
-      } else {
-        form.setFieldsValue({
-          [`transitions[${index}].transitionDate`]: undefined
-        });
-      }
+      form.setFields({
+        [`transitions[${index}].transitionAfterDays`]: {
+          value: undefined,
+          errors: undefined
+        },
+        [`transitions[${index}].transitionDate`]: {
+          value: undefined,
+          errors: undefined
+        }
+      });
     });
   };
 
@@ -147,7 +148,11 @@ class TransitionsForm extends React.Component {
                   style={{marginRight: 15}}
                 >
                   {form.getFieldDecorator(`transitions[${index}].storageClass`, {
-                    initialValue: transition.storageClass
+                    initialValue: transition.storageClass,
+                    rules: [{
+                      required: true,
+                      message: ' '
+                    }]
                   })(
                     <Select style={{minWidth: '280px'}}>
                       {Object.entries(DESTINATIONS).map(([key, description]) => (
@@ -180,7 +185,11 @@ class TransitionsForm extends React.Component {
                       className={styles.transitionFormItem}
                     >
                       {form.getFieldDecorator(`transitions[${index}].transitionAfterDays`, {
-                        initialValue: transition.transitionAfterDays
+                        initialValue: transition.transitionAfterDays,
+                        rules: [{
+                          required: this.getTransitionDateType(index) === TRANSITION_PERIOD.after,
+                          message: ' '
+                        }]
                       })(
                         <Input
                           style={{minWidth: '35px'}}
@@ -207,7 +216,11 @@ class TransitionsForm extends React.Component {
                       {form.getFieldDecorator(`transitions[${index}].transitionDate`, {
                         initialValue: transition.transitionDate
                           ? moment(transition.transitionDate)
-                          : undefined
+                          : undefined,
+                        rules: [{
+                          required: this.getTransitionDateType(index) === TRANSITION_PERIOD.at,
+                          message: ' '
+                        }]
                       })(
                         <DatePicker
                           disabled={this.getTransitionDateType(index) !== TRANSITION_PERIOD.at}

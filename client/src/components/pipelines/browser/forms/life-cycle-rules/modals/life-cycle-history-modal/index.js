@@ -120,7 +120,6 @@ class LifeCycleHistoryModal extends React.Component {
 
   get filteredHistory () {
     const {actionFilter} = this.state;
-    console.log(this.history);
     if (actionFilter) {
       return this.history.filter(entry => entry.action === actionFilter);
     }

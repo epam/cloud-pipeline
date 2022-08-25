@@ -86,6 +86,12 @@ class LifeCycleEditModal extends React.Component {
     pending: false
   }
 
+  get showMatches () {
+    const {form} = this.props;
+    const criteriaType = form.getFieldValue('transitionCriterion.type');
+    return CRITERIA[criteriaType] === CRITERIA.MATCHING_FILES;
+  }
+
   handleSubmit = (e) => {
     const {form, onOk} = this.props;
     e.preventDefault();
@@ -220,7 +226,10 @@ class LifeCycleEditModal extends React.Component {
                     initialValue: rule && rule.pathGlob
                       ? rule.pathGlob
                       : undefined,
-                    rules: [{required: true}]
+                    rules: [{
+                      required: true,
+                      message: ' '
+                    }]
                   })(
                     <Input />
                   )}
@@ -234,7 +243,10 @@ class LifeCycleEditModal extends React.Component {
                     initialValue: rule && rule.objectGlob
                       ? rule.objectGlob
                       : undefined,
-                    rules: [{required: true}]
+                    rules: [{
+                      required: true,
+                      message: ' '
+                    }]
                   })(
                     <Input />
                   )}
@@ -249,8 +261,23 @@ class LifeCycleEditModal extends React.Component {
                   {getFieldDecorator('transitionMethod', {
                     initialValue: rule && rule.transitionMethod
                       ? rule.transitionMethod
-                      : METHODS.ONE_BY_ONE,
-                    rules: [{required: true}]
+                      : 'ONE_BY_ONE',
+                    rules: [{
+                      required: true,
+                      message: ' ',
+                      validator: (rule, value, callback) => {
+                        const notifyErrors = form
+                          .getFieldError('notification.disabled') || [];
+                        if (value !== 'ONE_BY_ONE' && notifyErrors.length) {
+                          form.setFields({
+                            'notification.disabled': {
+                              errors: undefined
+                            }
+                          });
+                        }
+                        callback();
+                      }
+                    }]
                   })(
                     <Select>
                       {Object.entries(METHODS).map(([key, description]) => (
@@ -272,8 +299,11 @@ class LifeCycleEditModal extends React.Component {
                   {getFieldDecorator('transitionCriterion.type', {
                     initialValue: rule && rule.transitionCriterion
                       ? rule.transitionCriterion.type
-                      : CRITERIA.DEFAULT,
-                    rules: [{required: true}]
+                      : 'DEFAULT',
+                    rules: [{
+                      required: true,
+                      message: ' '
+                    }]
                   })(
                     <Select>
                       {Object.entries(CRITERIA).map(([key, description]) => (
@@ -287,22 +317,21 @@ class LifeCycleEditModal extends React.Component {
                     </Select>
                   )}
                 </Form.Item>
-                {CRITERIA[form.getFieldValue('transitionCriterion.type')] === CRITERIA.MATCHING_FILES
-                  ? (
-                    <Form.Item
-                      {...formItemLayout}
-                      className={styles.formItem}
-                      label="Matches"
-                    >
-                      {getFieldDecorator('transitionCriterion.value', {
-                        initialValue: rule && rule.transitionCriterion
-                          ? rule.transitionCriterion.value
-                          : undefined
-                      })(
-                        <Input />
-                      )}
-                    </Form.Item>)
-                  : null}
+                {this.showMatches ? (
+                  <Form.Item
+                    {...formItemLayout}
+                    className={styles.formItem}
+                    label="Matches"
+                  >
+                    {getFieldDecorator('transitionCriterion.value', {
+                      initialValue: rule && rule.transitionCriterion
+                        ? rule.transitionCriterion.value
+                        : undefined
+                    })(
+                      <Input />
+                    )}
+                  </Form.Item>
+                ) : null}
               </Col>
             </Row>
             <FormSection title="Transitions">
