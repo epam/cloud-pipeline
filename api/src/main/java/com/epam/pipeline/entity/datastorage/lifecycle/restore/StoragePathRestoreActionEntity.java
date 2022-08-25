@@ -16,7 +16,6 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle.restore;
 
-import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
