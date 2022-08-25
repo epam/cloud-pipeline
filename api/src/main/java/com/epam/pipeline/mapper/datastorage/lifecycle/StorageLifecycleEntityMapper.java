@@ -20,12 +20,12 @@ import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
-import com.epam.pipeline.entity.datastorage.lifecycle.restore.StoragePathRestoreActionEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreActionEntity;
 import com.epam.pipeline.entity.user.PipelineUser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -79,10 +79,10 @@ public interface StorageLifecycleEntityMapper {
     StorageLifecycleRuleExecution toDto(StorageLifecycleRuleExecutionEntity executionEntity);
 
     @Mapping(source = USER_ACTOR_ID, target = USER_ACTOR, qualifiedByName = ID_TO_PIPELINE_USER)
-    StoragePathRestoreActionEntity toEntity(StoragePathRestoreAction restoreAction);
+    StorageRestoreActionEntity toEntity(StorageRestoreAction restoreAction);
 
     @Mapping(source = USER_ACTOR, target = USER_ACTOR_ID, qualifiedByName = PIPELINE_USER_TO_ID)
-    StoragePathRestoreAction toDto(StoragePathRestoreActionEntity restoreActionEntity);
+    StorageRestoreAction toDto(StorageRestoreActionEntity restoreActionEntity);
 
     @Named(PIPELINE_USER_TO_ID)
     static Long pipelineUserToId(final PipelineUser user) {

@@ -60,6 +60,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
@@ -407,8 +408,8 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     }
 
     @Override
-    public boolean isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
-        return listDataStorageFiles(dataStorage, path).findAny().isPresent();
+    public Pair<Boolean, String> isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
+        return Pair.of(listDataStorageFiles(dataStorage, path).findAny().isPresent(), "Path not found!");
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {

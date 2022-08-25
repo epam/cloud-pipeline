@@ -16,19 +16,13 @@
 
 package com.epam.pipeline.repository.datastorage.lifecycle;
 
-import com.epam.pipeline.entity.datastorage.lifecycle.restore.StoragePathRestoreActionEntity;
+import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreActionEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface DataStoragePathRestoreActionRepository extends JpaRepository<StoragePathRestoreActionEntity, Long> {
+public interface DataStorageRestoreActionRepository extends JpaRepository<StorageRestoreActionEntity, Long>,
+        DataStorageRestoreActionRepositoryCustomQueries {
 
-    @Query("FROM StoragePathRestoreActionEntity as a where a.datastorageId = :datastorageId " +
-            "and :path LIKE '%' || a.path || '%'")
-    List<StoragePathRestoreActionEntity> findByPathWithHierarchy(@Param("datastorageId") Long datastorageId,
-                                                                 @Param("path") String path);
-
-    List<StoragePathRestoreActionEntity> findByDatastorageId(Long datastorageId);
+    List<StorageRestoreActionEntity> findByDatastorageId(Long datastorageId);
 }

@@ -331,6 +331,19 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.rule.one.by.one.has.default.criterion";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED =
             "error.datastirage.lifecycle.rule.one.by.one.notification.enabled";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED =
+            "error.datastirage.lifecycle.restore.path.not.specified";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE =
+            "error.datastirage.lifecycle.restore.cannot.be.done";
+    public static final String DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE =
+            "debug.datastirage.lifecycle.existing.restore";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED =
+            "error.datastirage.lifecycle.path.already.restored";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE =
+            "error.datastirage.lifecycle.restore.action.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS =
+            "error.datastirage.lifecycle.restore.in.final.status";
+
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

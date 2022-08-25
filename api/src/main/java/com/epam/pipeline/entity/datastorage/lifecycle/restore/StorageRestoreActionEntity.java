@@ -16,7 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle.restore;
 
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,7 +42,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 @Table(name = "datastorage_lifecycle_restore_action", schema = "pipeline")
-public class StoragePathRestoreActionEntity {
+public class StorageRestoreActionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -60,6 +60,6 @@ public class StoragePathRestoreActionEntity {
     private LocalDateTime restoredTill;
 
     @Enumerated(EnumType.STRING)
-    private StoragePathRestoreStatus status;
+    private StorageRestoreStatus status;
 
 }

@@ -41,6 +41,7 @@ import com.epam.pipeline.utils.CommonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -240,7 +241,7 @@ public class StorageProviderManager {
         getStorageProvider(dataStorage).verifyStorageLifecycleRuleExecution(execution);
     }
 
-    public boolean isRestoreActionEligible(final AbstractDataStorage dataStorage, final String path) {
+    public Pair<Boolean, String> isRestoreActionEligible(final AbstractDataStorage dataStorage, final String path) {
         return getStorageProvider(dataStorage).isRestoreActionEligible(dataStorage, path);
     }
 }

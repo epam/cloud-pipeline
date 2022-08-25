@@ -19,7 +19,8 @@ package com.epam.pipeline.acl.datastorage.lifecycle;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StoragePathRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
@@ -93,23 +94,28 @@ public class DataStorageLifecycleApiService {
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StoragePathRestoreAction initiateRestoreStorageObjects(
+    public StorageRestoreAction initiateStorageFolderRestore(
             final Long id, final String path, final Long days, final boolean force) {
-        return storageLifecycleManager.initiateRestoreStorageObjects(id, path, days, force);
+        return storageLifecycleManager.initiateStorageFolderRestore(id, path, days, force);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
-    public StoragePathRestoreAction updateRestoreAction(final Long id, final StoragePathRestoreAction action) {
-        return storageLifecycleManager.updateRestoreAction(action);
+    public StorageRestoreAction updateStorageFolderRestoreAction(final Long id,
+                                                                 final StorageRestoreAction action) {
+        return storageLifecycleManager.updateStorageFolderRestoreAction(action);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public List<StoragePathRestoreAction> loadRestoreStoragePathActionsByPath(final Long id, final String path) {
-        return storageLifecycleManager.loadRestoreStoragePathActionsByPath(id, path);
+    public List<StorageRestoreAction> filterRestoreStorageFolderActions(final Long id,
+                                                                        final StorageRestoreActionSearchFilter filter) {
+        if (filter.getDatastorageId() == null) {
+            filter.setDatastorageId(id);
+        }
+        return storageLifecycleManager.filterRestoreStorageFolderActions(filter);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public StoragePathRestoreAction loadEffectiveRestoreStoragePathActionByPath(final Long id, final String path) {
+    public StorageRestoreAction loadEffectiveRestoreStorageFolderAction(final Long id, final String path) {
         return storageLifecycleManager.loadEffectiveRestoreStoragePathActionByPath(id, path);
     }
 }

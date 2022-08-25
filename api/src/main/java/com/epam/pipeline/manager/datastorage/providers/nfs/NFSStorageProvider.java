@@ -46,6 +46,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedOutputStream;
@@ -525,7 +526,7 @@ public class NFSStorageProvider implements StorageProvider<NFSDataStorage> {
     }
 
     @Override
-    public boolean isRestoreActionEligible(final NFSDataStorage dataStorage, final String path) {
+    public Pair<Boolean, String> isRestoreActionEligible(final NFSDataStorage dataStorage, final String path) {
         throw new UnsupportedOperationException("Restore mechanism isn't supported for this provider.");
     }
 

@@ -16,27 +16,25 @@
 
 package com.epam.pipeline.dto.datastorage.lifecycle.restore;
 
-import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StoragePathRestoreAction {
-    private Long id;
-    private Long storageId;
-    private Long userActorId;
+public class StorageRestoreActionSearchFilter {
+    private Long datastorageId;
     private String path;
-    private Long days;
-    private LocalDateTime started;
-    private LocalDateTime updated;
-    private LocalDateTime restoredTill;
-    private StoragePathRestoreStatus status;
+    private SearchType searchType;
+    private List<StorageRestoreStatus> statuses;
+
+    public enum SearchType {
+        SEARCH_PARENT, SEARCH_CHILD
+    }
 }
