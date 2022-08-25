@@ -338,8 +338,6 @@ export default class DataStorage extends React.Component {
         this.props.info.value.policySupported &&
         storage.serviceType !== ServiceTypes.fileShare &&
         (
-          storage.longTermStorageDuration !== undefined ||
-          storage.shortTermStorageDuration !== undefined ||
           storage.backupDuration !== undefined ||
           !storage.versioningEnabled
         )
@@ -348,8 +346,6 @@ export default class DataStorage extends React.Component {
         await updatePolicyRequest.send({
           id: this.props.storageId,
           storagePolicy: {
-            longTermStorageDuration: storage.longTermStorageDuration,
-            shortTermStorageDuration: storage.shortTermStorageDuration,
             backupDuration: storage.backupDuration,
             versioningEnabled: storage.versioningEnabled
           }
@@ -2113,26 +2109,6 @@ export default class DataStorage extends React.Component {
               {
                 this.props.info.value.description &&
                 <Row><b>Description: </b>{this.props.info.value.description}</Row>
-              }
-              {
-                this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.shortTermStorageDuration !== undefined
-                  ? (
-                    <Row>
-                      <b>Short-Term Storage duration: </b>
-                      {`${this.props.info.value.storagePolicy.shortTermStorageDuration} days`}
-                    </Row>
-                  ) : undefined
-              }
-              {
-                this.props.info.value.storagePolicy &&
-                this.props.info.value.storagePolicy.longTermStorageDuration !== undefined
-                  ? (
-                    <Row>
-                      <b>Long-Term Storage duration: </b>
-                      {`${this.props.info.value.storagePolicy.longTermStorageDuration} days`}
-                    </Row>
-                  ) : undefined
               }
             </Row>
             <Row style={{marginLeft: 5}}>

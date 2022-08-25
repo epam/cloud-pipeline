@@ -459,38 +459,6 @@ export class DataStorageEditDialog extends React.Component {
                   )
                 }
                 {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="STS duration">
-                    {getFieldDecorator('shortTermStorageDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.shortTermStorageDuration : undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly} />
-                    )}
-                  </Form.Item>
-                }
-                {
-                  !this.isNfsMount && this.props.policySupported && this.currentRegionSupportsPolicy &&
-                  <Form.Item
-                    className={styles.dataStorageFormItem}
-                    {...this.formItemLayout}
-                    label="LTS duration">
-                    {getFieldDecorator('longTermStorageDuration', {
-                      initialValue: this.props.dataStorage && this.props.dataStorage.storagePolicy
-                        ? this.props.dataStorage.storagePolicy.longTermStorageDuration: undefined
-                    })(
-                      <InputNumber
-                        style={{width: '100%'}}
-                        disabled={this.props.pending || isReadOnly} />
-                    )}
-                  </Form.Item>
-                }
-                {
                   !this.isNfsMount &&
                   <Row>
                     <Col xs={24} sm={6} />
