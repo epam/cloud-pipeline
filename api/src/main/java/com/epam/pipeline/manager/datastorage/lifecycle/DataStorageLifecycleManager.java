@@ -281,7 +281,7 @@ public class DataStorageLifecycleManager {
             }
         }
 
-        final StorageRestoreActionEntity actionToBeUpdated = StorageRestoreActionEntity.builder()
+        final StorageRestoreActionEntity actionToCreate = StorageRestoreActionEntity.builder()
                 .datastorageId(datastorageId)
                 .userActor(userManager.getCurrentUser())
                 .path(effectivePath)
@@ -291,7 +291,7 @@ public class DataStorageLifecycleManager {
                 .updated(nowUTC)
                 .build();
 
-        return lifecycleEntityMapper.toDto(dataStoragePathRestoreActionRepository.save(actionToBeUpdated));
+        return lifecycleEntityMapper.toDto(dataStoragePathRestoreActionRepository.save(actionToCreate));
     }
 
     @Transactional
@@ -323,9 +323,10 @@ public class DataStorageLifecycleManager {
                 StorageRestoreActionSearchFilter.builder()
                         .datastorageId(datastorageId)
                         .path(getEffectivePathForRestoreAction(dataStorage, path))
-                        .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT).build()
+                        .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
+                        .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
+                        .build()
         ).stream()
-        .filter(a -> a.getStatus().isActive())
         .max(Comparator.comparing(StorageRestoreAction::getStarted)).orElse(null);
     }
 

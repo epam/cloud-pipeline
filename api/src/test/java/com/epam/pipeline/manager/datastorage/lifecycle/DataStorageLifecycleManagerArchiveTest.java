@@ -50,7 +50,7 @@ import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 
-public class DataStorageLifecycleManagerTest {
+public class DataStorageLifecycleManagerArchiveTest {
 
     public static final long ID = 1L;
     public static final String ROOT = "/data/**/dataset*";

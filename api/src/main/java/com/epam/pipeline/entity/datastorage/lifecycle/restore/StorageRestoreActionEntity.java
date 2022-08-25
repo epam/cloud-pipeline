@@ -40,7 +40,7 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @Table(name = "datastorage_lifecycle_restore_action", schema = "pipeline")
 public class StorageRestoreActionEntity {
 
