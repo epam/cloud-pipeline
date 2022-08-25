@@ -16,6 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 import {inject} from 'mobx-react';
 import {computed} from 'mobx';
 import {
@@ -40,6 +41,7 @@ import {
   DataStoragePathInput,
   parseFSMountPath
 } from './DataStoragePathInput';
+import LifeCycleRules from './life-cycle-rules';
 import styles from './DataStorageEditDialog.css';
 
 export const ServiceTypes = {
@@ -347,7 +349,8 @@ export class DataStorageEditDialog extends React.Component {
                 : 'Create object storage'))
         }
         onCancel={this.props.onCancel}
-        width={this.isNfsMount ? '50%' : '33%'}
+        style={{transition: 'width 0.2s ease'}}
+        width={(this.state.activeTab === 'transitionRules' || this.isNfsMount) ? '50%' : '33%'}
         footer={this.state.activeTab === 'info' ? modalFooter : false}>
         <Spin spinning={this.props.pending}>
           <Tabs
@@ -603,6 +606,15 @@ export class DataStorageEditDialog extends React.Component {
                   readonly={isReadOnly}
                   objectIdentifier={this.props.dataStorage.id}
                   objectType="DATA_STORAGE" />
+              </Tabs.TabPane>
+            }
+            {
+              this.props.dataStorage && this.props.dataStorage.id &&
+              <Tabs.TabPane key="transitionRules" tab="Transition rules">
+                <LifeCycleRules
+                  rules={this.props.lifeCycleRules}
+                  storageId={this.props.dataStorage.id}
+                />
               </Tabs.TabPane>
             }
           </Tabs>
