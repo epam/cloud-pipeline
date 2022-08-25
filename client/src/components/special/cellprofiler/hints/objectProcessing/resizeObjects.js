@@ -1,0 +1,6 @@
+export default {
+  'ResizeObjects': `
+__ResizeObjects__ will upsize or downsize an object’s label matrix by a factor or by specifying the final dimensions in pixels. ResizeObjects uses nearest neighbor interpolation to preserve object labels after the resizing operation.
+
+When resizing 3D data, the height and width will be changed, but the original depth (or z-dimension) will be kept. This 3D behavior was chosen, because in most cases the number of slices in a z-stack is much fewer than the number of pixels that define the x-y dimensions. Otherwise, a significant fraction of z information would be lost during downsizing. __ResizeObjects__ is useful for processing very large or 3D data to reduce computation time. You might downsize a 3D image with __ResizeImage__ to generate a segmentation, then use __ResizeObjects__ to stretch the segmented objects to their original size before computing measurements with the original 3D image. __ResizeObjects__ differs from __ExpandOrShrinkObjects__ and __ShrinkToObjectCenters__ in that the overall dimensions of the object label matrix, or image, are changed. In contrast, __ExpandOrShrinkObjects__ will alter the size of the objects within an image, but it will not change the size of the image itself.`
+};

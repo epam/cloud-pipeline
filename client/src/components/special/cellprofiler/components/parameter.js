@@ -23,11 +23,15 @@ import {
   Checkbox,
   Input,
   Select,
-  Slider
+  Slider,
+  Popover,
+  Icon
 } from 'antd';
 import {AnalysisTypes} from '../model/common/analysis-types';
 import styles from './cell-profiler.css';
 import ColorPicker from '../../color-picker';
+import hints from '../hints';
+import Markdown from '../../markdown';
 
 class CellProfilerParameter extends React.Component {
   reportChanged = () => {
@@ -311,6 +315,31 @@ class CellProfilerParameter extends React.Component {
     return null;
   };
 
+  renderHint () {
+    const {
+      parameterValue
+    } = this.props;
+    if (!parameterValue || !parameterValue.parameter) {
+      return null;
+    }
+    const moduleName = parameterValue.parameter.cpModule.name;
+    const parameterName = parameterValue.parameter.name;
+    const parameterHint = hints[`${moduleName}.${parameterName}`];
+    const parameterHintMarkdown = (() => (
+      <Markdown
+        md={parameterHint}
+        style={{width: '500px', margin: '10px 0'}}
+      />
+    ))();
+    return (
+      parameterHint
+        ? <Popover content={parameterHintMarkdown} placement="right">
+          <Icon type="question-circle" />
+        </Popover>
+        : null
+    );
+  }
+
   render () {
     const {
       parameterValue,
@@ -350,6 +379,11 @@ class CellProfilerParameter extends React.Component {
           {
             this.renderValueControl()
           }
+        </div>
+        <div
+          className={styles.cellProfilerParameterHint}
+        >
+          {this.renderHint()}
         </div>
       </div>
     );

@@ -17,10 +17,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import {Button, Icon} from 'antd';
+import {Button, Icon, Popover} from 'antd';
 import {observer} from 'mobx-react';
 import CellProfilerParameter from './parameter';
 import styles from './cell-profiler.css';
+import hints from '../hints';
+import Markdown from '../../markdown';
 
 function Circle ({className, pending, empty}) {
   return (
@@ -129,80 +131,91 @@ function CellProfilerModuleHeaderRenderer (props) {
       (pipeline.graphicsOutput.setOverlayImage)(outputImage, analysis.hcsImageViewer);
     }
   };
+  const moduleHintMarkdown = (() => (
+    <Markdown
+      md={hints[cpModule.name]}
+      style={{width: '500px', margin: '10px 0'}}
+    />
+  ))();
   return (
-    <div
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        flex: 1
-      }}
+    <Popover
+      content={moduleHintMarkdown}
+      placement="right"
     >
-      <b style={{marginRight: 'auto'}}>
-        {renderIcon()}
-        {cpModule.displayName}
+      <div
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          flex: 1
+        }}
+      >
+        <b style={{marginRight: 'auto'}}>
+          {renderIcon()}
+          {cpModule.displayName}
+          {
+            hasOutputImage && (
+              <Icon
+                type="picture"
+                className={
+                  classNames({
+                    'cp-text-not-important': !selected,
+                    'cp-primary': selected
+                  })
+                }
+                style={{
+                  cursor: 'pointer',
+                  marginLeft: 5,
+                  fontWeight: 'normal'
+                }}
+                onClick={onSelectOutput}
+              />
+            )
+          }
+        </b>
         {
-          hasOutputImage && (
-            <Icon
-              type="picture"
-              className={
-                classNames({
-                  'cp-text-not-important': !selected,
-                  'cp-primary': selected
-                })
-              }
-              style={{
-                cursor: 'pointer',
-                marginLeft: 5,
-                fontWeight: 'normal'
-              }}
-              onClick={onSelectOutput}
-            />
+          !cpModule.hidden && movable && (
+            <Button
+              className={styles.action}
+              size="small"
+              disabled={cpModule.isFirst}
+              onClick={moveUp}
+            >
+              <Icon
+                type="up"
+              />
+            </Button>
           )
         }
-      </b>
-      {
-        !cpModule.hidden && movable && (
-          <Button
-            className={styles.action}
-            size="small"
-            disabled={cpModule.isFirst}
-            onClick={moveUp}
-          >
-            <Icon
-              type="up"
-            />
-          </Button>
-        )
-      }
-      {
-        !cpModule.hidden && movable && (
-          <Button
-            className={styles.action}
-            size="small"
-            disabled={cpModule.isLast}
-            onClick={moveDown}
-          >
-            <Icon
-              type="down"
-            />
-          </Button>
-        )
-      }
-      {
-        !cpModule.hidden && removable && (
-          <Button
-            className={styles.action}
-            size="small"
-            type="danger"
-            onClick={remove}
-          >
-            <Icon
-              type="delete"
-            />
-          </Button>
-        )
-      }
-    </div>
+        {
+          !cpModule.hidden && movable && (
+            <Button
+              className={styles.action}
+              size="small"
+              disabled={cpModule.isLast}
+              onClick={moveDown}
+            >
+              <Icon
+                type="down"
+              />
+            </Button>
+          )
+        }
+        {
+          !cpModule.hidden && removable && (
+            <Button
+              className={styles.action}
+              size="small"
+              type="danger"
+              onClick={remove}
+            >
+              <Icon
+                type="delete"
+              />
+            </Button>
+          )
+        }
+      </div>
+    </Popover>
   );
 }
 
