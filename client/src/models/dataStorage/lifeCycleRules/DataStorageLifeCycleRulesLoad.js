@@ -18,11 +18,13 @@ import Remote from '../../basic/Remote';
 
 export default class DataStorageLifeCycleRulesLoad extends Remote {
   url;
+  path;
 
-  constructor (id, path) {
+  constructor (id, path = '') {
     super();
     if (path) {
-      this.url = `/datastorage/${id}/lifecycle/rule?path=${path}`;
+      this.path = path.startsWith('/') ? path : `/${path}`;
+      this.url = `/datastorage/${id}/lifecycle/rule?path=${this.path}`;
     } else {
       this.url = `/datastorage/${id}/lifecycle/rule`;
     }

@@ -608,15 +608,16 @@ export class DataStorageEditDialog extends React.Component {
                   objectType="DATA_STORAGE" />
               </Tabs.TabPane>
             }
-            {
-              this.props.dataStorage && this.props.dataStorage.id &&
+            {this.props.dataStorage &&
+            this.props.dataStorage.id &&
+            /^s3$/i.test(this.props.dataStorage.type) && (
               <Tabs.TabPane key="transitionRules" tab="Transition rules">
                 <LifeCycleRules
                   rules={this.props.lifeCycleRules}
                   storageId={this.props.dataStorage.id}
                 />
               </Tabs.TabPane>
-            }
+            )}
           </Tabs>
         </Spin>
         <Modal

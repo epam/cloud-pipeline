@@ -77,7 +77,6 @@ class UsersRolesSelect extends React.Component {
   @computed
   get users () {
     const {users} = this.props;
-    console.log('users', users)
     if (users && users.loaded) {
       return (users.value || [])
         .map(user => ({

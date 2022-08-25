@@ -65,6 +65,7 @@ import {
   METADATA_PANEL_KEY
 } from '../../special/splitPanel';
 import Metadata from '../../special/metadata/Metadata';
+import LifeCycleCounter from './forms/life-cycle-rules/life-cycle-counter';
 import PreviewModal from '../../search/preview/preview-modal';
 import {getTiles, getTilesInfo} from '../../search/preview/vsi-preview';
 import UploadButton from '../../special/UploadButton';
@@ -2199,6 +2200,10 @@ export default class DataStorage extends React.Component {
                   : false
               ].filter(Boolean)}
               extraInfo={[
+                <LifeCycleCounter
+                  storage={this.props.info.value}
+                  path={this.props.path}
+                />,
                 <StorageSize storage={this.props.info.value} />
               ]}
               specialTagsProperties={{
