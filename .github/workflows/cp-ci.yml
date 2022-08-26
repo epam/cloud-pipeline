@@ -1,0 +1,157 @@
+#---------------------------------------------------------------------
+# GitHub Action Workflow for Cloud-Pipeline
+# Version 1.1
+# 2022
+#---------------------------------------------------------------------
+
+name: cp-ci
+on:
+  push:
+    branches: 
+    - 'develop'
+    - 'release/**'
+    paths-ignore:
+      - ".github/workflows/**"
+      - "**README.md"
+      - ".gitignore"
+      - "quick-launcher/**"
+  pull_request:
+    branches: 
+      - '**'
+    paths-ignore:
+      - ".github/workflows/**"
+      - "**README.md"
+      - ".gitignore"
+      - "quick-launcher/**"
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+
+ build_macos:
+
+   runs-on: macos-latest
+   steps:
+
+    - uses: actions/checkout@v3
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: "8"
+        cache: "gradle"
+
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+
+    - name: Setup Python 2.7 
+      uses: actions/setup-python@v4
+      with:
+        python-version: '2.7'
+
+    - name: Setup Node.js 10 
+      uses: actions/setup-node@v3
+      with:
+        node-version: 10
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+
+    - name: Gradle pipe-cli:test
+      run: ./gradlew -PbuildNumber=${{ github.run_number }}.${{ github.sha }} -Pprofile=release pipe-cli:buildMac --no-daemon -x :pipe-cli:test
+    
+    - name: Packing the build artifact
+      run: tar -zcf pipe-osx-full.${{ github.run_number }}.tar.gz pipe-cli/dist
+
+    - name: Upload a build artifact on the GitHub Actions job page
+      uses: actions/upload-artifact@v3
+      with:
+        name: pipe-osx-full.${{ github.run_number }}.tar.gz
+        path: pipe-osx-full.${{ github.run_number }}.tar.gz
+        retention-days: 1
+
+ pack_dist:
+
+    needs: build_macos
+    env:
+      API_STATIC_PATH: api/src/main/resources/static
+      _OSX_CLI_TAR_NAME: pipe-osx-full.${{ github.run_number }}.tar.gz
+      _OSX_CLI_PATH: assemble
+    
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Java JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: "temurin"
+        java-version: "8"
+        cache: "gradle"
+
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+
+    - name: Setup Python 2.7 
+      uses: actions/setup-python@v4
+      with:
+        python-version: '2.7'
+    - run: python2 -m pip install mkdocs
+
+    - name: Setup Node.js 10 
+      uses: actions/setup-node@v3
+      with:
+        node-version: 10
+    
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_DEFAULT_REGION }}
+    
+    - name: Downloading a build artifact from the build_macos job
+      uses: actions/download-artifact@v3
+      with:
+        name: pipe-osx-full.${{ github.run_number }}.tar.gz
+
+    - name: Layout of assembly files 1
+      run: |
+        mkdir $_OSX_CLI_PATH
+        rm -rf $API_STATIC_PATH/*
+        rm -rf build/install/dist/*
+        mkdir -p $API_STATIC_PATH
+        mv $_OSX_CLI_TAR_NAME $_OSX_CLI_PATH/
+        tar -zxf $_OSX_CLI_PATH/$_OSX_CLI_TAR_NAME -C $_OSX_CLI_PATH
+        mv $_OSX_CLI_PATH/pipe-cli/dist/dist-file/pipe-osx $API_STATIC_PATH/pipe-osx
+        mv $_OSX_CLI_PATH/pipe-cli/dist/dist-folder/pipe-osx.tar.gz $API_STATIC_PATH/pipe-osx.tar.gz 
+
+    - name: Gradle pipe-cli:buildLinux
+      run: _BUILD_DOCKER_IMAGE="${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:python2.7-centos6" ./gradlew -PbuildNumber=${{ github.run_number }}.${{ github.sha }} -Pprofile=release pipe-cli:buildLinux --no-daemon -x :pipe-cli:test
+
+    - name: Fixing permissions
+      run: sudo chown -R $USER:$USER ${{ github.workspace }}
+
+    - name: Layout of assembly files 2
+      run: | 
+        mv pipe-cli/dist/dist-file/pipe $API_STATIC_PATH/pipe-el6
+        mv pipe-cli/dist/dist-folder/pipe.tar.gz $API_STATIC_PATH/pipe-el6.tar.gz
+
+    - name: Gradle pipe-cli:buildWin
+      run: ./gradlew -PbuildNumber=${{ github.run_number }}.${{ github.sha }} -Pprofile=release -x test pipe-cli:buildWin --no-daemon
+
+    - name: Gradle distTar
+      run: ./gradlew distTar -PbuildNumber=${{ github.run_number }}.${{ github.sha }} -Pprofile=release -x test -Pfast --no-daemon -x pipe-cli:buildLinux -x pipe-cli:buildWin
+
+    - name: Copying a build artifact to AWS
+      if: ${{ github.event_name == 'push' && (contains(github.ref_name, 'develop') || contains(github.ref_name, 'master') || contains(github.ref_name, 'release') || contains(github.ref_name, 'stage')) }}
+      run: aws s3 cp $DIST_TGZ_NAME s3://cloud-pipeline-oss-builds/builds/gha/$GITHUB_REF_NAME/
+      shell: bash
+      env:
+        DIST_TGZ_NAME: build/install/dist/cloud-pipeline*
