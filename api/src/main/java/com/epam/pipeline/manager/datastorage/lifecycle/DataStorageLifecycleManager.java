@@ -282,8 +282,6 @@ public class DataStorageLifecycleManager {
 
     private StorageLifecycleRuleEntity mergeRulesEntity(final StorageLifecycleRuleEntity loadedRuleEntity,
                                                         final StorageLifecycleRuleEntity updatedRuleEntity) {
-        loadedRuleEntity.setPathGlob(updatedRuleEntity.getPathGlob());
-        loadedRuleEntity.setObjectGlob(updatedRuleEntity.getObjectGlob());
         loadedRuleEntity.setTransitionMethod(updatedRuleEntity.getTransitionMethod());
         loadedRuleEntity.setTransitionsJson(updatedRuleEntity.getTransitionsJson());
         loadedRuleEntity.setNotificationJson(updatedRuleEntity.getNotificationJson());
@@ -299,6 +297,7 @@ public class DataStorageLifecycleManager {
 
     private void verifyStorageLifecycleRuleObject(final StorageLifecycleRule rule) {
         final Long datastorageId = rule.getDatastorageId();
+        verifyLifecycleRuleTransitionCriterion(rule);
         Assert.isTrue(
                 listStorageLifecyclePolicyRules(datastorageId).stream().noneMatch(existingRule -> {
                     if (existingRule.getId().equals(rule.getId())) {
@@ -311,7 +310,8 @@ public class DataStorageLifecycleManager {
                             ? rule.getObjectGlob() : EMPTY;
 
                     return existingRule.getPathGlob().equals(rule.getPathGlob())
-                            && existingRuleObjectGlob.equals(newObjectGlob);
+                            && existingRuleObjectGlob.equals(newObjectGlob)
+                            && existingRule.getTransitionCriterion().equals(rule.getTransitionCriterion());
                 }), messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS));
 
         final boolean ifTransitionMethodIsOneByOneThenCriterionIsDefault =
@@ -338,7 +338,6 @@ public class DataStorageLifecycleManager {
         Assert.notNull(rule.getTransitionMethod(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED));
-        verifyLifecycleRuleTransitionCriterion(rule);
         verifyNotification(rule);
         storageProviderManager.verifyStorageLifecycleRule(dataStorage, rule);
     }
@@ -360,6 +359,11 @@ public class DataStorageLifecycleManager {
                         messageHelper.getMessage(
                                 MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED));
                 break;
+            case DEFAULT:
+                // clean up value for default criterion
+                rule.setTransitionCriterion(
+                        rule.getTransitionCriterion().toBuilder().value(null).build()
+                );
             default:
                 break;
         }
