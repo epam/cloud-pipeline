@@ -50,7 +50,6 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -289,27 +288,6 @@ public class DataStorageLifecycleManager {
         loadedRuleEntity.setTransitionsJson(updatedRuleEntity.getTransitionsJson());
         loadedRuleEntity.setNotificationJson(updatedRuleEntity.getNotificationJson());
         loadedRuleEntity.setTransitionCriterionJson(updatedRuleEntity.getTransitionCriterionJson());
-
-        final Map<Long,StorageLifecycleRuleProlongationEntity> existingProlongations =
-                ListUtils.emptyIfNull(updatedRuleEntity.getProlongations()).stream()
-                        .filter(p -> p.getId() != null)
-                        .collect(Collectors.toMap(StorageLifecycleRuleProlongationEntity::getId, p -> p));
-
-        final List<StorageLifecycleRuleProlongationEntity> prolongationsToUpdate =
-                ListUtils.emptyIfNull(loadedRuleEntity.getProlongations());
-        prolongationsToUpdate.removeIf(p -> !existingProlongations.containsKey(p.getId()));
-        prolongationsToUpdate
-                .forEach(p -> Optional.ofNullable(existingProlongations.get(p.getId()))
-                .ifPresent(u -> {
-                    p.setDays(u.getDays());
-                    p.setProlongedDate(DateUtils.nowUTC());
-                    p.setPath(u.getPath());
-                })
-        );
-
-        ListUtils.emptyIfNull(updatedRuleEntity.getProlongations()).stream()
-                .filter(p -> p.getId() == null)
-                .forEach(p -> loadedRuleEntity.getProlongations().add(p));
         return loadedRuleEntity;
     }
 
