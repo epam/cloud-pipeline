@@ -2,6 +2,11 @@ from .config import Config
 from .hcs_pipeline import ImageCoords, HcsPipeline, PipelineState
 from multiprocessing import Process
 from time import sleep
+from tifffile import imread
+import numpy as np
+from moviepy.editor import ImageSequenceClip
+import time
+from PIL import Image, ImageOps
 
 
 class HCSManager:
@@ -103,6 +108,91 @@ class HCSManager:
         if not pipeline:
             raise RuntimeError("Failed to find pipeline '%s'" % pipeline_id)
         return pipeline
+
+    def create_clip(self, clip_params):
+        t = time.time()
+
+        clip_format = clip_params.get('format') if 'format' in clip_params else '.webm'
+        codec = clip_params.get('codec') if 'codec' in clip_params else None
+        fps = clip_params.get('fps') if 'fps' in clip_params else 1
+        ome_tiff_dir = self._get_required_field(clip_params, 'ome_tiff_dir')
+        by_field = self._get_required_field(clip_params, 'byField')
+        channels = self._get_required_field(clip_params, 'channels')
+        timepoints = self._get_required_field(clip_params, 'timepoints')
+        cell = self._get_required_field(clip_params, 'cell')
+        params = self._get_required_field(clip_params, 'params')
+
+        clip_dir = ome_tiff_dir
+        clip_file_name = ('field_' if by_field else 'well_') + str(cell)
+        ome_tiff = self.get_ome_tiff_path(ome_tiff_dir, by_field)
+
+        channel_ids = list(map(lambda d: d['channelId'], params))
+        if len(channel_ids) < 1:
+            raise RuntimeError("At least one channel is required")
+
+        images = imread(ome_tiff, key=self.get_pages(channel_ids, channels, timepoints, cell))
+        clips = []
+        curr = 0
+        for time_point in range(timepoints):
+            channel_images = []
+            for channel in channel_ids:
+                channel_image = images[curr]
+                channel_params = self.get_channel_params(params, channel)
+                colored_image = self.color_image(channel_image, channel_params)
+                channel_images.append(colored_image)
+                curr = curr + 1
+            merged_image = self.merge_channels(channel_images)
+            clips.append(np.array(merged_image))
+        slide = ImageSequenceClip(clips, fps)
+        slide.write_videofile(clip_dir + clip_file_name + clip_format, codec=codec)
+        t1 = time.time()
+        return round((t1 - t), 2)
+
+    @staticmethod
+    def get_ome_tiff_path(ome_tiff_dir, by_field):
+        return ome_tiff_dir + ('data' if by_field else 'overview_data') + '.ome.tiff'
+
+    @staticmethod
+    def get_pages(channel_ids, channels, timepoints, cell):
+        pages = []
+        num = 0
+        for time_point in range(timepoints):
+            for channel_id in range(channels):
+                if channel_id in channel_ids:
+                    pages.append(num + channels * timepoints * cell)
+                num = num + 1
+        return pages
+
+    @staticmethod
+    def get_channel_params(params, channel):
+        return next(filter(lambda p: p['channelId'] == channel, params))
+
+    @staticmethod
+    def merge_channels(images):
+        result = images[0]
+        for i in range(1, len(images)):
+            image = images[i]
+            r1, g1, b1 = image.split()
+            r2, g2, b2 = result.split()
+            r = np.minimum(255, np.add(np.array(r1), np.array(r2)))
+            g = np.minimum(255, np.add(np.array(g1), np.array(g2)))
+            b = np.minimum(255, np.add(np.array(b1), np.array(b2)))
+            result = Image.merge("RGB", (Image.fromarray(r), Image.fromarray(g), Image.fromarray(b)))
+        return result
+
+    @staticmethod
+    def change_intensity(intensity, contrast_min, contrast_max):
+        return (intensity - contrast_min) / max(0.0005, (contrast_max - contrast_min))
+
+    def color_image(self, image, params):
+        image = self.change_intensity(image, params['min'], params['max'])
+        image = np.where(image <= 0, 0, 255 * image)
+        image = np.where(image <= 255, image, 255)
+        image = Image.fromarray(image)
+        grayscale_image = ImageOps.grayscale(image)
+        rgb = (params['r'], params['g'], params['b'])
+        colored_image = ImageOps.colorize(grayscale_image, black='black', white=rgb)
+        return colored_image
 
     @staticmethod
     def _get_required_field(json_data, field_name):

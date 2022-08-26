@@ -198,6 +198,18 @@ def get_status():
         return jsonify(error(e.__str__()))
 
 
+@app.route('/hcs/clip', methods=['POST'])
+def get_movie():
+    manager = app.config['hcs']
+    try:
+        clip_params = json.loads(request.data)
+        total_time = manager.create_clip(clip_params)
+        return jsonify(success({"totalTime": total_time}))
+    except Exception as e:
+        print(traceback.format_exc())
+        return jsonify(error(e.__str__()))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
