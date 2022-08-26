@@ -109,6 +109,11 @@ class AnalysisApi extends EndpointAPI {
       statuses: modulesStatuses.map((status, idx) => ({cpModule: modules[idx], status}))
     };
   }
+
+  generateVideo = (options) => this.apiCall({
+    uri: 'hcs/clip',
+    query: options
+  })
 }
 
 export default AnalysisApi;

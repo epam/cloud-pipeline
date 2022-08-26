@@ -43,6 +43,9 @@ import roleModel from '../../../utils/roleModel';
 import ObjectsOutline from '../cellprofiler/components/objects-outline';
 import {cellsAreEqual, ascSorter} from './utilities/cells-utilities';
 import CellProfilerJobResults from '../cellprofiler/components/cell-profiler-job-results';
+import HcsVideoPlayer from './hcs-video-player';
+import HcsVideoSource from './hcs-video-player/hcs-video-source';
+import VideoButton from './hcs-video-player/video-button';
 import styles from './hcs-image.css';
 
 @observer
@@ -70,10 +73,12 @@ class HcsImage extends React.PureComponent {
   @observable container;
   @observable hcsViewerState = new ViewerState();
   @observable hcsSourceState = new SourceState();
+  @observable hcsVideoSource = new HcsVideoSource();
   @observable hcsImageViewer;
   @observable hcsAnalysis = new Analysis();
 
   componentDidMount () {
+    this.hcsVideoSource.attachViewerState(this.hcsViewerState);
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
     this.hcsAnalysis.addEventListener(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.prepare();
@@ -91,6 +96,8 @@ class HcsImage extends React.PureComponent {
 
   componentWillUnmount () {
     this.container = undefined;
+    this.hcsVideoSource.destroy();
+    this.hcsVideoSource = undefined;
     this.hcsAnalysis.removeEventListeners(Analysis.Events.analysisDone, this.onAnalysisDone);
     this.hcsAnalysis.destroy();
     if (this.hcsInfo) {
@@ -211,6 +218,7 @@ class HcsImage extends React.PureComponent {
     if (this.hcsInfo) {
       this.hcsInfo.destroy();
       this.hcsInfo = undefined;
+      this.hcsVideoSource.setHcsFile();
     }
     if ((storageId || storage) && path) {
       if (this.hcsAnalysis) {
@@ -248,6 +256,11 @@ class HcsImage extends React.PureComponent {
               plateHeight: height
             }, () => {
               this.hcsInfo = info;
+              this.hcsVideoSource.setHcsFile({
+                storageId: storage ? storage.id : storageId,
+                path,
+                pathMask: info && info.objectStorage ? info.objectStorage.pathMask : undefined
+              });
               this.onChangeSequenceTimePoints([
                 {
                   sequence,
@@ -304,6 +317,10 @@ class HcsImage extends React.PureComponent {
         this.hcsImageViewer.setGlobalTimePosition(timePointId);
         this.loadImageForAnalysis();
       }
+      this.hcsVideoSource.setSequenceTimePoints(
+        newSequenceId,
+        this.selectedTimePoints
+      );
     });
   };
 
@@ -391,24 +408,30 @@ class HcsImage extends React.PureComponent {
   };
 
   loadImage = () => {
-    if (this.hcsImageViewer) {
-      const sequence = this.selectedSequence;
-      const well = this.selectedWell;
-      const fields = this.selectedWellFields;
-      if (
-        sequence &&
-        sequence.omeTiff &&
-        well &&
-        fields.length > 0
-      ) {
-        let url = sequence.omeTiff;
-        let offsetsJsonUrl = sequence.offsetsJson;
-        let {id} = fields[0];
-        if (this.showEntireWell) {
-          url = sequence.overviewOmeTiff;
-          offsetsJsonUrl = sequence.overviewOffsetsJson;
-          id = well.wellImageId;
-        }
+    const sequence = this.selectedSequence;
+    const well = this.selectedWell;
+    const fields = this.selectedWellFields;
+    if (
+      sequence &&
+      sequence.omeTiff &&
+      well &&
+      fields.length > 0
+    ) {
+      let url = sequence.omeTiff;
+      let offsetsJsonUrl = sequence.offsetsJson;
+      let {id} = fields[0];
+      if (this.showEntireWell) {
+        url = sequence.overviewOmeTiff;
+        offsetsJsonUrl = sequence.overviewOffsetsJson;
+        id = well.wellImageId;
+      }
+      if (this.hcsVideoSource) {
+        this.hcsVideoSource.setWellView(
+          this.showEntireWell,
+          id
+        );
+      }
+      if (this.hcsImageViewer) {
         this.hcsImageViewer.setData(url, offsetsJsonUrl)
           .then(() => {
             if (this.hcsImageViewer) {
@@ -625,6 +648,46 @@ class HcsImage extends React.PureComponent {
     );
   }
 
+  renderDownloadBtn () {
+    if (this.hcsVideoSource.videoMode) {
+      return (
+        <Button
+          className={styles.action}
+          size="small"
+          disabled={!this.hcsVideoSource.videoUrl || this.hcsVideoSource.videoPending}
+          onClick={() => {
+            window.location.href = this.hcsVideoSource.videoUrl;
+          }}
+        >
+          <Icon
+            type="download"
+            className="cp-larger"
+          />
+        </Button>
+      );
+    }
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
+    return (
+      <Button
+        className={styles.action}
+        size="small"
+        disabled={!downloadAvailable}
+        onClick={() => downloadCurrentTiff(
+          this.hcsImageViewer,
+          {
+            wellView: this.showEntireWell,
+            wellId: this.selectedWell ? this.selectedWell.id : undefined
+          }
+        )}
+      >
+        <Icon
+          type="camera"
+          className="cp-larger"
+        />
+      </Button>
+    );
+  }
+
   renderConfigurationActions = () => {
     const {
       error,
@@ -639,13 +702,19 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer) &&
+      !this.hcsVideoSource.videoMode;
     const analysisAvailable = this.hcsAnalysis && this.hcsAnalysis.available;
     if (!showConfiguration) {
       return (
         <div
           className={styles.configurationActions}
         >
+          <VideoButton
+            className={styles.action}
+            videoSource={this.hcsVideoSource}
+            available={this.selectedSequence && this.selectedSequence.timeSeries.length > 1}
+          />
           {
             this.wellViewAvailable && (
               <Button
@@ -657,23 +726,7 @@ class HcsImage extends React.PureComponent {
               </Button>
             )
           }
-          <Button
-            className={styles.action}
-            size="small"
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(
-              this.hcsImageViewer,
-              {
-                wellView: this.showEntireWell,
-                wellId: this.selectedWell ? this.selectedWell.id : undefined
-              }
-            )}
-          >
-            <Icon
-              type="camera"
-              className="cp-larger"
-            />
-          </Button>
+          {this.renderDownloadBtn()}
           <Button
             className={styles.action}
             size="small"
@@ -691,6 +744,7 @@ class HcsImage extends React.PureComponent {
                 size="small"
                 onClick={this.toggleAnalysis}
                 type={showAnalysis ? 'primary' : 'default'}
+                disabled={this.hcsVideoSource.videoMode}
               >
                 <Icon
                   type="api"
@@ -819,7 +873,14 @@ class HcsImage extends React.PureComponent {
     } = this.state;
     const pending = hcsImagePending ||
       sequencePending ||
-      !this.hcsImageViewer ||
+      (
+        !this.hcsImageViewer &&
+        !this.hcsVideoSource.videoMode
+      ) ||
+      (
+        this.hcsVideoSource.videoMode &&
+        this.hcsVideoSource.videoPending
+      ) ||
       this.hcsSourceState.pending ||
       this.hcsViewerState.pending;
     if (this.showBatchJobInfo) {
@@ -873,7 +934,8 @@ class HcsImage extends React.PureComponent {
             classNames(
               styles.hcsImage,
               {
-                [styles.pending]: pending
+                [styles.pending]: pending,
+                [styles.hidden]: this.hcsVideoSource.videoMode
               }
             )
           }
@@ -881,6 +943,14 @@ class HcsImage extends React.PureComponent {
         >
           {'\u00A0'}
         </div>
+        {
+          this.hcsVideoSource.videoMode && (
+            <HcsVideoPlayer
+              videoSource={this.hcsVideoSource}
+              className={styles.hcsImage}
+            />
+          )
+        }
         {this.renderHcsAnalysisResults()}
       </div>
     );
