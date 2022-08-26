@@ -232,7 +232,9 @@ class LifeCycleEditModal extends React.Component {
                       message: ' '
                     }]
                   })(
-                    <Input />
+                    <Input
+                      disabled={!createNewRule}
+                    />
                   )}
                 </Form.Item>
                 <Form.Item
@@ -249,7 +251,9 @@ class LifeCycleEditModal extends React.Component {
                       message: ' '
                     }]
                   })(
-                    <Input />
+                    <Input
+                      disabled={!createNewRule}
+                    />
                   )}
                 </Form.Item>
               </Col>
