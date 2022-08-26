@@ -99,6 +99,19 @@ class HcsImage extends React.PureComponent {
   }
 
   @computed
+  get videoPayload () {
+    if (this.hcsViewerState && this.hcsViewerState.videoPayload) {
+      return {
+        mode: this.showEntireWell ? 'well' : 'field',
+        source: this.props.path,
+        storageId: this.props.storageId,
+        ...this.hcsViewerState.videoPayload
+      };
+    }
+    return undefined;
+  }
+
+  @computed
   get sequences () {
     if (!this.hcsInfo) {
       return [];

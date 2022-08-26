@@ -107,6 +107,7 @@ class ViewerState {
   @observable channelsLocked = false;
   @observable imageZPosition = 0;
   @observable fieldID;
+  @observable videoPayload; // todo
 
   constructor (viewer) {
     this.attachToViewer(viewer);
@@ -223,6 +224,10 @@ class ViewerState {
         this.channels.push(new ChannelState(updatedChannels[i]));
       }
     }
+    // todo: update this.videoPayload
+    //
+    // Format: {imageId: <metadata.ID>, channelsCount: number, channels: <color, contrasts>[]}
+    // if metadata is empty (null / undefined), videoPayload shall be undefined as well
   };
 
   @action
