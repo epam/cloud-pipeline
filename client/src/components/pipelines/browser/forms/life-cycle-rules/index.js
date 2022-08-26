@@ -66,7 +66,8 @@ class LifeCycleRules extends React.Component {
   get rules () {
     const {lifeCycleRules} = this.props;
     if (lifeCycleRules && lifeCycleRules.loaded && !lifeCycleRules.error) {
-      return lifeCycleRules.value || [];
+      return [...(lifeCycleRules.value || [])]
+        .sort((ruleA, ruleB) => ruleA.pathGlob.localeCompare(ruleB.pathGlob));
     }
     return [];
   }
@@ -163,7 +164,7 @@ class LifeCycleRules extends React.Component {
     return this.createRule(payload);
   };
 
-  renderRule = (rule, index) => {
+  renderRule = (rule) => {
     const controls = [
       <Button
         className={styles.controlBtn}
@@ -215,7 +216,12 @@ class LifeCycleRules extends React.Component {
         <td>{rule.pathGlob}</td>
         <td>{rule.objectGlob}</td>
         <td>
-          <span>
+          <span
+            className={destination === DESTINATIONS.DELETION
+              ? 'cp-error'
+              : ''
+            }
+          >
             {destination}
           </span>
           {(rule.transitions || []).length > 1 ? (
@@ -266,7 +272,7 @@ class LifeCycleRules extends React.Component {
                 </tr>
               </thead>
               <tbody>
-                {this.rules.map((rule, index) => this.renderRule(rule, index))}
+                {this.rules.map((rule) => this.renderRule(rule))}
               </tbody>
             </table>
           ) : null }
@@ -292,7 +298,6 @@ class LifeCycleRules extends React.Component {
 }
 
 LifeCycleRules.propTypes = {
-  rules: PropTypes.array,
   storageId: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
 };
 

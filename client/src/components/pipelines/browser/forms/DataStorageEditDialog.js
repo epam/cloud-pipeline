@@ -16,7 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import classNames from 'classnames';
 import {inject} from 'mobx-react';
 import {computed} from 'mobx';
 import {
@@ -581,7 +580,6 @@ export class DataStorageEditDialog extends React.Component {
             /^s3$/i.test(this.props.dataStorage.type) && (
               <Tabs.TabPane key="transitionRules" tab="Transition rules">
                 <LifeCycleRules
-                  rules={this.props.lifeCycleRules}
                   storageId={this.props.dataStorage.id}
                 />
               </Tabs.TabPane>

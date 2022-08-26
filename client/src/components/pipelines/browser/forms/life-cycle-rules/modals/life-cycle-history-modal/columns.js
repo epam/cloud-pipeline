@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+import React from 'react';
+import {DESTINATIONS} from '../life-cycle-edit-modal';
+
 const columns = [{
   title: 'Date',
   dataIndex: 'date',
@@ -33,7 +36,17 @@ const columns = [{
 }, {
   title: 'Destination',
   dataIndex: 'destination',
-  key: 'destination'
+  key: 'destination',
+  render: (destination) => (
+    <span
+      className={destination === DESTINATIONS.DELETION
+        ? 'cp-error'
+        : ''
+      }
+    >
+      {destination}
+    </span>
+  )
 }, {
   title: 'Prolongation, days',
   dataIndex: 'prolongation',
