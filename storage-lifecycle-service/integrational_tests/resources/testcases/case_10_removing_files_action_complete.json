@@ -32,8 +32,7 @@
             "notification": {
               "notifyBeforeDays": 10,
               "prolongDays": 10,
-              "keepInformedAdmins": false,
-              "keepInformedOwner": true,
+              "recipients": [{"name": "ROLE_ADMIN", "principal": false}],
               "enabled": true,
               "subject": "Lifecycle rule is about to be applied!",
               "body": "Lifecycle rule is about to be applied!"

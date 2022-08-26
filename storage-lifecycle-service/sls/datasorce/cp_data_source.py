@@ -14,10 +14,10 @@
 import os
 from pipeline import PipelineAPI
 
-from sls.model.rule_model import LifecycleRuleParser
+from sls.model.rule_model import LifecycleRuleParser, StorageLifecycleNotification
 
 
-def configure_cp_data_source(cp_api_url, cp_api_token, log_dir, data_source_type="RESTApi"):
+def configure_cp_data_source(cp_api_url, cp_api_token, api_log_dir, logger, data_source_type="RESTApi"):
     data_source = None
     if data_source_type is "RESTApi":
         if not cp_api_url:
@@ -27,8 +27,8 @@ def configure_cp_data_source(cp_api_url, cp_api_token, log_dir, data_source_type
         if not os.getenv("API_TOKEN"):
             raise RuntimeError("Cloud Pipeline data source cannot be configured! "
                                "Please specify --cp-api-token or API_TOKEN environment variable")
-        api = PipelineAPI(cp_api_url, log_dir)
-        data_source = RESTApiCloudPipelineDataSource(api)
+        api = PipelineAPI(cp_api_url, api_log_dir)
+        data_source = RESTApiCloudPipelineDataSource(api, logger)
     return data_source
 
 
@@ -81,8 +81,9 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE = "DATASTORAGE_LIFECYCLE_ACTION"
 
-    def __init__(self, api):
+    def __init__(self, api, logger):
         self.api = api
+        self.logger = logger
         self.parser = LifecycleRuleParser(self._load_default_lifecycle_rule_notification())
 
     def load_available_storages(self):
@@ -156,14 +157,23 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
                 or not default_lifecycle_rule_prolong_days or not default_lifecycle_rule_notify_before_days:
             return None
 
-        return {
-            "id": default_lifecycle_notification_template["id"],
-            "informedUserIds": default_lifecycle_notification_settings["informedUserIds"] if "informedUserIds" in default_lifecycle_notification_settings else [],
-            "keepInformedAdmins": default_lifecycle_notification_settings["keepInformedAdmins"] if "keepInformedAdmins" in default_lifecycle_notification_settings else False,
-            "keepInformedOwners": default_lifecycle_notification_settings["keepInformedOwner"] if "keepInformedOwner" in default_lifecycle_notification_settings else False,
-            "enabled": default_lifecycle_notification_settings["enabled"] if "enabled" in default_lifecycle_notification_settings else False,
-            "subject": default_lifecycle_notification_template["subject"] if "subject" in default_lifecycle_notification_template else "",
-            "body": default_lifecycle_notification_template["body"] if "body" in default_lifecycle_notification_template else "",
-            "prolongDays": int(default_lifecycle_rule_prolong_days["value"]),
-            "notifyBeforeDays": int(default_lifecycle_rule_notify_before_days["value"])
-        }
+        recipients = [{"name": "ROLE_ADMIN", "principal": False}] if "keepInformedAdmins" in default_lifecycle_notification_settings else []
+        if "informedUserIds" in default_lifecycle_notification_settings:
+            for user_id in default_lifecycle_notification_settings["informedUserIds"]:
+                try:
+                    user = self.api.load_user(int(user_id))
+                    recipients.append({
+                        "name": user["userName"],
+                        "principal": True
+                    })
+                except Exception as e:
+                    self.logger.log("Fail to load user by id: {}. Will skip it!".format(str(user_id)))
+
+        return StorageLifecycleNotification(
+            notify_before_days=int(default_lifecycle_rule_notify_before_days["value"]),
+            prolong_days=int(default_lifecycle_rule_prolong_days["value"]),
+            recipients=recipients,
+            enabled=default_lifecycle_notification_settings["enabled"] if "enabled" in default_lifecycle_notification_settings else False,
+            subject=default_lifecycle_notification_template["subject"] if "subject" in default_lifecycle_notification_template else "",
+            body=default_lifecycle_notification_template["body"] if "body" in default_lifecycle_notification_template else None
+        )

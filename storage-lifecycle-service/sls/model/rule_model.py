@@ -41,13 +41,10 @@ class StorageLifecycleRuleProlongation:
 
 class StorageLifecycleNotification:
 
-    def __init__(self, notify_before_days, prolong_days, user_to_notify_ids,
-                 keep_informed_admins, keep_informed_owner, enabled, subject, body):
+    def __init__(self, notify_before_days, prolong_days, recipients, enabled, subject, body):
         self.notify_before_days = notify_before_days
         self.prolong_days = prolong_days
-        self.user_to_notify_ids = user_to_notify_ids
-        self.keep_informed_admins = keep_informed_admins
-        self.keep_informed_owner = keep_informed_owner
+        self.recipients = recipients
         self.enabled = enabled
         self.subject = subject
         self.body = body
@@ -88,8 +85,9 @@ class StorageLifecycleRuleExecution:
 
 class LifecycleRuleParser:
 
-    def __init__(self, default_lifecycle_notification_json):
-        self.default_lifecycle_notification = self._parse_notification(default_lifecycle_notification_json)
+    def __init__(self, default_lifecycle_notification):
+        # TODO Test this palace
+        self.default_lifecycle_notification = default_lifecycle_notification
 
     def parse_rule(self, rule_json_dict):
         if not rule_json_dict:
@@ -187,15 +185,9 @@ class LifecycleRuleParser:
             prolong_days=notification_json["prolongDays"]
             if "prolongDays" in notification_json
             else None,
-            user_to_notify_ids=notification_json["informedUserIds"]
-            if "informedUserIds" in notification_json
+            recipients=notification_json["recipients"]
+            if "recipients" in notification_json
             else [],
-            keep_informed_admins=notification_json["keepInformedAdmins"]
-            if "keepInformedAdmins" in notification_json
-            else False,
-            keep_informed_owner=notification_json["keepInformedOwner"]
-            if "keepInformedOwner" in notification_json
-            else False,
             enabled=notification_json["enabled"]
             if "enabled" in notification_json
             else True,

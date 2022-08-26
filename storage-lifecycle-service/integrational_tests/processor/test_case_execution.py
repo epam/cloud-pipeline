@@ -35,7 +35,7 @@ class TestCaseExecutor(TestCaseProcessor):
         logger = AppLogger()
         data_source = cp_api_decator.MockedNotificationRESTApiCloudPipelineDataSource(
             sls.datasorce.cp_data_source.configure_cp_data_source(
-                self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp")
+                self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp", logger)
         )
 
         storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(data_source)
