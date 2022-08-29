@@ -266,62 +266,26 @@ public class DataStorageLifecycleManager {
 
         final boolean force = BooleanUtils.isTrue(request.getForce());
         final String restoreMode = storageProviderManager.verifyOrDefaultRestoreMode(dataStorage, request);
-        return request.getPaths().stream()
-                .map(path -> initiateStoragePathRestore(dataStorage, path, restoreMode, effectiveDays, force))
+        final List<StorageRestoreActionEntity> actions = request.getPaths().stream()
+                .sorted(Comparator.comparing(StorageRestorePath::getPath))
+                .map(path -> buildStoragePathRestoreAction(dataStorage, path, restoreMode, effectiveDays, force))
                 .collect(Collectors.toList());
-    }
-
-    protected StorageRestoreAction initiateStoragePathRestore(final AbstractDataStorage dataStorage,
-                                                              final StorageRestorePath path,
-                                                              final String restoreMode, final Long days,
-                                                              final boolean force) {
-        Assert.state(path.getPath() != null && path.getType() != null,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
-        final String effectivePath = getEffectivePathForRestoreAction(dataStorage, path);
-        final Pair<Boolean, String> eligibility = storageProviderManager.isRestoreActionEligible(
-                dataStorage, effectivePath);
-        Assert.isTrue(eligibility.getFirst(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE,
-                        dataStorage.getPath(), dataStorage.getType(), effectivePath, eligibility.getSecond()));
-
-        final StorageRestoreAction effectiveRestore = loadEffectiveRestoreStorageActionByPath(dataStorage.getId(), path);
-
-        final LocalDateTime nowUTC = DateUtils.nowUTC();
-        if (effectiveRestore != null) {
-            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE,
-                    effectiveRestore.getPath(), effectiveRestore.getStatus()));
-            if (!force) {
-                Assert.isTrue(effectiveRestore.getStatus() == StorageRestoreStatus.SUCCEEDED
-                                && effectiveRestore.getRestoredTill().isBefore(nowUTC),
-                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED,
-                                dataStorage.getPath(), effectiveRestore.getPath()));
-            }
-        }
-
-        final StorageRestoreActionEntity actionToCreate = StorageRestoreActionEntity.builder()
-                .datastorageId(dataStorage.getId())
-                .userActor(userManager.getCurrentUser())
-                .path(effectivePath)
-                .type(path.getType())
-                .restoreMode(restoreMode)
-                .status(StorageRestoreStatus.INITIATED)
-                .days(days)
-                .started(nowUTC)
-                .updated(nowUTC)
-                .build();
-
-        return lifecycleEntityMapper.toDto(dataStoragePathRestoreActionRepository.save(actionToCreate));
+        return dataStoragePathRestoreActionRepository.save(actions).stream()
+                .map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
     }
 
     @Transactional
     public StorageRestoreAction updateStorageRestoreAction(final StorageRestoreAction action) {
         final StorageRestoreActionEntity loaded = dataStoragePathRestoreActionRepository.findOne(action.getId());
         Assert.notNull(loaded,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE, action.getId()));
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE,
+                        action.getId()));
         Assert.state(!loaded.getStatus().isTerminal(),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS));
         loaded.setStatus(action.getStatus());
-        loaded.setRestoredTill(action.getRestoredTill());
+        if (action.getStatus() == StorageRestoreStatus.SUCCEEDED) {
+            loaded.setRestoredTill(action.getRestoredTill());
+        }
         loaded.setUpdated(DateUtils.nowUTC());
         return lifecycleEntityMapper.toDto(loaded);
     }
@@ -348,6 +312,46 @@ public class DataStorageLifecycleManager {
                         .build()
         ).stream()
         .max(Comparator.comparing(StorageRestoreAction::getStarted)).orElse(null);
+    }
+
+    protected StorageRestoreActionEntity buildStoragePathRestoreAction(final AbstractDataStorage dataStorage,
+                                                                       final StorageRestorePath path,
+                                                                       final String restoreMode, final Long days,
+                                                                       final boolean force) {
+        Assert.state(path.getPath() != null && path.getType() != null,
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
+        final String effectivePath = getEffectivePathForRestoreAction(dataStorage, path);
+        final Pair<Boolean, String> eligibility = storageProviderManager.isRestoreActionEligible(
+                dataStorage, effectivePath);
+        Assert.isTrue(eligibility.getFirst(),
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE,
+                        dataStorage.getPath(), dataStorage.getType(), effectivePath, eligibility.getSecond()));
+
+        final StorageRestoreAction effectiveRestore = loadEffectiveRestoreStorageActionByPath(dataStorage.getId(), path);
+
+        final LocalDateTime nowUTC = DateUtils.nowUTC();
+        if (effectiveRestore != null) {
+            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE,
+                    effectiveRestore.getPath(), effectiveRestore.getStatus()));
+            if (!force) {
+                Assert.isTrue(effectiveRestore.getStatus() == StorageRestoreStatus.SUCCEEDED
+                                && effectiveRestore.getRestoredTill().isBefore(nowUTC),
+                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED,
+                                dataStorage.getPath(), effectiveRestore.getPath()));
+            }
+        }
+
+        return StorageRestoreActionEntity.builder()
+                .datastorageId(dataStorage.getId())
+                .userActor(userManager.getCurrentUser())
+                .path(effectivePath)
+                .type(path.getType())
+                .restoreMode(restoreMode)
+                .status(StorageRestoreStatus.INITIATED)
+                .days(days)
+                .started(nowUTC)
+                .updated(nowUTC)
+                .build();
     }
 
     private static String getEffectivePathForRestoreAction(final AbstractDataStorage dataStorage,

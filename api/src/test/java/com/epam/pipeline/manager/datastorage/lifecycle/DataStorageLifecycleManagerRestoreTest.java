@@ -124,7 +124,7 @@ public class DataStorageLifecycleManagerRestoreTest {
     @Test(expected = IllegalStateException.class)
     public void failToInitiateRestoreIfAlreadyExistAndIsntForcedTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
-        lifecycleManager.initiateStoragePathRestore(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
+        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
                 STANDARD_RESTORE_MODE, 10L, false);
     }
 
@@ -134,8 +134,8 @@ public class DataStorageLifecycleManagerRestoreTest {
         Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
                 .when(dataStoragePathRestoreActionRepository)
                 .save(Mockito.any(StorageRestoreActionEntity.class));
-        final StorageRestoreAction storageRestoreAction =
-                lifecycleManager.initiateStoragePathRestore(dataStorage,
+        final StorageRestoreActionEntity storageRestoreAction =
+                lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
                         STANDARD_RESTORE_MODE, 10L, true);
         Assert.assertNotNull(storageRestoreAction);
@@ -148,8 +148,8 @@ public class DataStorageLifecycleManagerRestoreTest {
         Mockito.doReturn(INITIATED_ACTION.toBuilder().build())
                 .when(dataStoragePathRestoreActionRepository)
                 .save(Mockito.any(StorageRestoreActionEntity.class));
-        final StorageRestoreAction storageRestoreAction =
-                lifecycleManager.initiateStoragePathRestore(dataStorage,
+        final StorageRestoreActionEntity storageRestoreAction =
+                lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_2).type(StorageRestorePathType.FOLDER).build(),
                         STANDARD_RESTORE_MODE, 10L, false);
         Assert.assertNotNull(storageRestoreAction);

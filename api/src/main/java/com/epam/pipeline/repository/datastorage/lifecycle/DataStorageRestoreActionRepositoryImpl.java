@@ -17,6 +17,7 @@
 package com.epam.pipeline.repository.datastorage.lifecycle;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreStatus;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreActionEntity;
 import lombok.RequiredArgsConstructor;
@@ -51,13 +52,17 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
         final List<Predicate> predicates = new ArrayList<>();
         Assert.notNull(filter.getDatastorageId(), "datastorageId should be provided!");
         predicates.add(cb.equal(restoreAction.get(DATASTORAGE_ID), filter.getDatastorageId()));
-        if (filter.getPath() != null) {
+        if (filter.getPath() != null && filter.getPath().getPath() != null) {
             if (filter.getSearchType() == null ||
                     filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT) {
                 final Expression<String> pathFromDb = cb.concat(restoreAction.get(PATH), ANY_SIGN);
                 predicates.add(cb.like(cb.literal(filter.getPath().getPath()), pathFromDb));
             } else if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD) {
-                predicates.add(cb.like(restoreAction.get(PATH), filter.getPath() + ANY_SIGN));
+                if (filter.getPath().getType() == StorageRestorePathType.FOLDER) {
+                    predicates.add(cb.like(restoreAction.get(PATH), filter.getPath().getPath() + ANY_SIGN));
+                } else {
+                    predicates.add(cb.equal(restoreAction.get(PATH), filter.getPath().getPath()));
+                }
             }
         }
         if (!CollectionUtils.isEmpty(filter.getStatuses())) {
