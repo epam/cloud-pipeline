@@ -49,6 +49,8 @@ public class DataStorageLifecycleController extends AbstractRestController {
     public static final String PATH = "path";
     public static final String EXECUTION_ID = "executionId";
     public static final String STATUS = "status";
+    public static final String FORCE = "force";
+    public static final String DAYS = "days";
 
     @Autowired
     private DataStorageLifecycleApiService dataStorageLifecycleApiService;
@@ -126,10 +128,11 @@ public class DataStorageLifecycleController extends AbstractRestController {
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = RULE_ID) final Long ruleId,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(value = "days", required = false) final Long days) {
+            @RequestParam(value = DAYS, required = false) final Long days,
+            @RequestParam(value = FORCE, required = false, defaultValue = FALSE) final Boolean force) {
         return Result.success(
-                dataStorageLifecycleApiService.prolongStorageLifecyclePolicyRule(datastorageId, ruleId, path, days)
-        );
+                dataStorageLifecycleApiService.prolongStorageLifecyclePolicyRule(
+                        datastorageId, ruleId, path, days, force));
     }
 
     @DeleteMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}")
