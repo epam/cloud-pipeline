@@ -18,13 +18,15 @@ package com.epam.pipeline.dto.datastorage.lifecycle.transition;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 /**
  * Describes strategy to decide when files defined in {@link StorageLifecycleRule} should be transitioned.
  * */
 @Value
-@Builder
+@Builder(toBuilder = true)
+@EqualsAndHashCode
 public class StorageLifecycleTransitionCriterion {
 
     StorageLifecycleTransitionCriterionType type;

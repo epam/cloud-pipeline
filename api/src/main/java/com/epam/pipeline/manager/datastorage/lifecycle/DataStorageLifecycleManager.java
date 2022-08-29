@@ -33,6 +33,7 @@ import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
@@ -45,9 +46,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -65,9 +67,8 @@ public class DataStorageLifecycleManager {
     private final DataStorageLifecycleRuleExecutionRepository dataStorageLifecycleRuleExecutionRepository;
     private final DataStorageManager storageManager;
     private final StorageProviderManager storageProviderManager;
-
     private final PreferenceManager preferenceManager;
-
+    private final UserManager userManager;
 
     public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long storageId, final String path) {
         validatePathIsAbsolute(path);
@@ -122,7 +123,9 @@ public class DataStorageLifecycleManager {
 
     @Transactional
     public StorageLifecycleRule prolongLifecyclePolicyRule(final Long datastorageId, final Long ruleId,
-                                                           final String path, final Long daysToProlong) {
+                                                           final String path, final Long daysToProlong,
+                                                           final Boolean force) {
+        final LocalDateTime now = DateUtils.nowUTC();
         final StorageLifecycleRuleEntity lifecycleRuleEntity = loadLifecycleRuleEntity(ruleId);
         Assert.isTrue(PATH_MATCHER.match(lifecycleRuleEntity.getPathGlob(), path),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB));
@@ -131,6 +134,7 @@ public class DataStorageLifecycleManager {
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE,
                         lifecycleRuleEntity.getDatastorageId()));
         final Long effectiveDaysToProlong = getEffectiveDaysToProlong(daysToProlong, lifecycleRuleEntity);
+        final Long effectiveNotifyBeforeDays = getEffectiveNotifyBeforeDays(lifecycleRuleEntity);
 
         Assert.notNull(effectiveDaysToProlong,
                 messageHelper.getMessage(
@@ -138,10 +142,11 @@ public class DataStorageLifecycleManager {
         Assert.isTrue(effectiveDaysToProlong > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG));
 
-        final StorageLifecycleRuleProlongationEntity prolongation =
+        final StorageLifecycleRuleProlongationEntity lastProlongation =
                 ListUtils.emptyIfNull(lifecycleRuleEntity.getProlongations())
                         .stream().filter(p -> p.getPath().equals(path))
-                        .findFirst().orElseGet(() -> {
+                        .max(Comparator.comparing(StorageLifecycleRuleProlongationEntity::getProlongedDate))
+                        .orElseGet(() -> {
                             final StorageLifecycleRuleProlongationEntity prolongationEntity =
                                     StorageLifecycleRuleProlongationEntity.builder()
                                             .path(path).days(0L).build();
@@ -149,20 +154,21 @@ public class DataStorageLifecycleManager {
                             return prolongationEntity;
                         });
 
-        if (prolongation.getProlongedDate() != null &&
-                DateUtils.nowUTC().minus(effectiveDaysToProlong, ChronoUnit.DAYS)
-                        .isBefore(prolongation.getProlongedDate())) {
-            throw new IllegalStateException(
-                    String.format(
-                            messageHelper.getMessage(
-                                    MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE,
-                                    effectiveDaysToProlong
-                            ), daysToProlong));
+        if (lastProlongation.getProlongedDate() != null && !force) {
+            final LocalDateTime nextNotificationDate = lastProlongation.getProlongedDate()
+                    .plus(Math.max(1, effectiveDaysToProlong - effectiveNotifyBeforeDays), ChronoUnit.DAYS);
+            if(nextNotificationDate.isAfter(now)) {
+                throw new IllegalStateException(
+                        messageHelper.getMessage(
+                            MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE,
+                            lastProlongation.getProlongedDate(), nextNotificationDate));
+            }
         }
 
-        prolongation.setDays(prolongation.getDays() + effectiveDaysToProlong);
-        prolongation.setProlongedDate(DateUtils.nowUTC());
-        prolongation.setLifecycleRule(lifecycleRuleEntity);
+        lastProlongation.setDays(lastProlongation.getDays() + effectiveDaysToProlong);
+        lastProlongation.setProlongedDate(now);
+        lastProlongation.setLifecycleRule(lifecycleRuleEntity);
+        lastProlongation.setUserId(userManager.getCurrentUser().getId());
         return lifecycleEntityMapper.toDto(
                 dataStorageLifecycleRuleRepository.save(lifecycleRuleEntity));
     }
@@ -257,35 +263,29 @@ public class DataStorageLifecycleManager {
         return preferenceManager.getPreference(SystemPreferences.STORAGE_LIFECYCLE_PROLONG_DAYS);
     }
 
+    private Long getEffectiveNotifyBeforeDays(final StorageLifecycleRuleEntity ruleEntity) {
+        final String notificationJson = ruleEntity.getNotificationJson();
+        if (!StringUtils.isEmpty(notificationJson)) {
+            try {
+                final StorageLifecycleNotification notification =
+                        StorageLifecycleEntityMapper.notificationJsonToDto(notificationJson);
+                if (notification != null && notification.getNotifyBeforeDays() != null) {
+                    return notification.getNotifyBeforeDays();
+                }
+            } catch (final IOException e) {
+                throw new IllegalStateException(messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION), e);
+            }
+        }
+        return preferenceManager.getPreference(SystemPreferences.STORAGE_LIFECYCLE_NOTIFY_BEFORE_DAYS);
+    }
+
     private StorageLifecycleRuleEntity mergeRulesEntity(final StorageLifecycleRuleEntity loadedRuleEntity,
                                                         final StorageLifecycleRuleEntity updatedRuleEntity) {
-        loadedRuleEntity.setPathGlob(updatedRuleEntity.getPathGlob());
-        loadedRuleEntity.setObjectGlob(updatedRuleEntity.getObjectGlob());
         loadedRuleEntity.setTransitionMethod(updatedRuleEntity.getTransitionMethod());
         loadedRuleEntity.setTransitionsJson(updatedRuleEntity.getTransitionsJson());
         loadedRuleEntity.setNotificationJson(updatedRuleEntity.getNotificationJson());
         loadedRuleEntity.setTransitionCriterionJson(updatedRuleEntity.getTransitionCriterionJson());
-
-        final Map<Long,StorageLifecycleRuleProlongationEntity> existingProlongations =
-                ListUtils.emptyIfNull(updatedRuleEntity.getProlongations()).stream()
-                        .filter(p -> p.getId() != null)
-                        .collect(Collectors.toMap(StorageLifecycleRuleProlongationEntity::getId, p -> p));
-
-        final List<StorageLifecycleRuleProlongationEntity> prolongationsToUpdate =
-                ListUtils.emptyIfNull(loadedRuleEntity.getProlongations());
-        prolongationsToUpdate.removeIf(p -> !existingProlongations.containsKey(p.getId()));
-        prolongationsToUpdate
-                .forEach(p -> Optional.ofNullable(existingProlongations.get(p.getId()))
-                .ifPresent(u -> {
-                    p.setDays(u.getDays());
-                    p.setProlongedDate(DateUtils.nowUTC());
-                    p.setPath(u.getPath());
-                })
-        );
-
-        ListUtils.emptyIfNull(updatedRuleEntity.getProlongations()).stream()
-                .filter(p -> p.getId() == null)
-                .forEach(p -> loadedRuleEntity.getProlongations().add(p));
         return loadedRuleEntity;
     }
 
@@ -297,6 +297,7 @@ public class DataStorageLifecycleManager {
 
     private void verifyStorageLifecycleRuleObject(final StorageLifecycleRule rule) {
         final Long datastorageId = rule.getDatastorageId();
+        verifyLifecycleRuleTransitionCriterion(rule);
         Assert.isTrue(
                 listStorageLifecyclePolicyRules(datastorageId).stream().noneMatch(existingRule -> {
                     if (existingRule.getId().equals(rule.getId())) {
@@ -309,7 +310,8 @@ public class DataStorageLifecycleManager {
                             ? rule.getObjectGlob() : EMPTY;
 
                     return existingRule.getPathGlob().equals(rule.getPathGlob())
-                            && existingRuleObjectGlob.equals(newObjectGlob);
+                            && existingRuleObjectGlob.equals(newObjectGlob)
+                            && existingRule.getTransitionCriterion().equals(rule.getTransitionCriterion());
                 }), messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS));
 
         final boolean ifTransitionMethodIsOneByOneThenCriterionIsDefault =
@@ -336,7 +338,6 @@ public class DataStorageLifecycleManager {
         Assert.notNull(rule.getTransitionMethod(),
                 messageHelper.getMessage(
                         MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED));
-        verifyLifecycleRuleTransitionCriterion(rule);
         verifyNotification(rule);
         storageProviderManager.verifyStorageLifecycleRule(dataStorage, rule);
     }
@@ -358,6 +359,11 @@ public class DataStorageLifecycleManager {
                         messageHelper.getMessage(
                                 MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED));
                 break;
+            case DEFAULT:
+                // clean up value for default criterion
+                rule.setTransitionCriterion(
+                        rule.getTransitionCriterion().toBuilder().value(null).build()
+                );
             default:
                 break;
         }
