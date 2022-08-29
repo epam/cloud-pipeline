@@ -28,13 +28,10 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class StorageRestoreActionSearchFilter {
-    private Long datastorageId;
-    private StorageRestorePath path;
-    private SearchType searchType;
-    private List<StorageRestoreStatus> statuses;
+public class StorageRestoreActionRequest {
+    private List<StorageRestorePath> paths;
+    private String restoreMode;
+    private Long days;
+    private Boolean force;
 
-    public enum SearchType {
-        SEARCH_PARENT, SEARCH_CHILD
-    }
 }

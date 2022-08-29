@@ -23,7 +23,9 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
@@ -230,13 +232,11 @@ public class DataStorageLifecycleController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<StorageRestoreAction> initiateRestoreStorageObjects(
+    public Result<List<StorageRestoreAction>> initiateRestoreStorageObjects(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
-            @RequestParam(value = PATH) final String path,
-            @RequestParam(value = "days", required = false) final Long days,
-            @RequestParam(value = "force", required = false, defaultValue = FALSE) final Boolean force) {
+            @RequestBody final StorageRestoreActionRequest request) {
         return Result.success(
-                dataStorageLifecycleApiService.initiateStorageFolderRestore(datastorageId, path, days, force));
+                dataStorageLifecycleApiService.initiateStorageRestores(datastorageId, request));
     }
 
     @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/restore")
@@ -251,7 +251,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
     public Result<StorageRestoreAction> updateRestoreAction(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @RequestBody final StorageRestoreAction action) {
-        return Result.success(dataStorageLifecycleApiService.updateStorageFolderRestoreAction(datastorageId, action));
+        return Result.success(dataStorageLifecycleApiService.updateStorageRestoreAction(datastorageId, action));
     }
 
     @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/filter")
@@ -267,7 +267,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @RequestBody final StorageRestoreActionSearchFilter filter) {
         return Result.success(
-                dataStorageLifecycleApiService.filterRestoreStorageFolderActions(datastorageId, filter));
+                dataStorageLifecycleApiService.filterRestoreStorageActions(datastorageId, filter));
     }
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/effective")
@@ -281,8 +281,9 @@ public class DataStorageLifecycleController extends AbstractRestController {
             })
     public Result<StorageRestoreAction> loadEffectiveRestoreStoragePathAction(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
-            @RequestParam(value = PATH, required = false) final String path) {
+            @RequestParam(value = PATH) final String path,
+            @RequestParam(value = "pathType", required = false) final StorageRestorePathType pathType) {
         return Result.success(
-                dataStorageLifecycleApiService.loadEffectiveRestoreStorageFolderAction(datastorageId, path));
+                dataStorageLifecycleApiService.loadEffectiveRestoreStorageAction(datastorageId, path, pathType));
     }
 }

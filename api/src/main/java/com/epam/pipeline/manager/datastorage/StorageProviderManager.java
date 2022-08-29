@@ -20,6 +20,7 @@ import com.epam.pipeline.common.MessageConstants;
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -243,5 +244,10 @@ public class StorageProviderManager {
 
     public Pair<Boolean, String> isRestoreActionEligible(final AbstractDataStorage dataStorage, final String path) {
         return getStorageProvider(dataStorage).isRestoreActionEligible(dataStorage, path);
+    }
+
+    public String verifyOrDefaultRestoreMode(final AbstractDataStorage dataStorage,
+                                             final StorageRestoreActionRequest restoreActionRequest) {
+        return getStorageProvider(dataStorage).verifyOrDefaultRestoreMode(restoreActionRequest);
     }
 }

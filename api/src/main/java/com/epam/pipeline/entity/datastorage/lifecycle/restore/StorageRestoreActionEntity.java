@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.entity.datastorage.lifecycle.restore;
 
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreStatus;
 import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
@@ -54,6 +55,12 @@ public class StorageRestoreActionEntity {
 
     private Long datastorageId;
     private String path;
+
+    @Enumerated(EnumType.STRING)
+    private StorageRestorePathType type;
+
+    private String restoreMode;
+
     private Long days;
     private LocalDateTime started;
     private LocalDateTime updated;

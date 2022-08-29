@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -136,4 +137,6 @@ public interface StorageProvider<T extends AbstractDataStorage> {
     void verifyStorageLifecycleRuleExecution(StorageLifecycleRuleExecution execution);
 
     Pair<Boolean, String> isRestoreActionEligible(T dataStorage, String path);
+
+    String verifyOrDefaultRestoreMode(StorageRestoreActionRequest restoreMode);
 }

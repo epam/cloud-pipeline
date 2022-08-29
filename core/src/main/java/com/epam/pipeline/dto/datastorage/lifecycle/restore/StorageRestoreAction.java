@@ -33,6 +33,8 @@ public class StorageRestoreAction {
     private Long storageId;
     private Long userActorId;
     private String path;
+    private StorageRestorePathType type;
+    private String restoreMode;
     private Long days;
     private LocalDateTime started;
     private LocalDateTime updated;

@@ -55,7 +55,7 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
             if (filter.getSearchType() == null ||
                     filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT) {
                 final Expression<String> pathFromDb = cb.concat(restoreAction.get(PATH), ANY_SIGN);
-                predicates.add(cb.like(cb.literal(filter.getPath()), pathFromDb));
+                predicates.add(cb.like(cb.literal(filter.getPath().getPath()), pathFromDb));
             } else if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD) {
                 predicates.add(cb.like(restoreAction.get(PATH), filter.getPath() + ANY_SIGN));
             }
