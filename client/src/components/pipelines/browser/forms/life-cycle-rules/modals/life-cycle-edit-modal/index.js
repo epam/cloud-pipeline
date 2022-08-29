@@ -115,11 +115,14 @@ class LifeCycleEditModal extends React.Component {
 
   get modified () {
     const {initialRule} = this.state;
-    const {form} = this.props;
+    const {form, createNewRule} = this.props;
+    if (createNewRule) {
+      return true;
+    }
     if (!initialRule) {
       return false;
     }
-    const {notification} = initialRule;
+    const {notification = {}} = initialRule;
     const stringFieldModified = (formPath, initialValue) => {
       const fieldValue = form.getFieldValue(formPath);
       return `${initialValue}` !== `${fieldValue}`;
