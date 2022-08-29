@@ -64,6 +64,9 @@ class CloudPipelineDataSource:
     def load_role(self, role_id):
         pass
 
+    def load_role_by_name(self, role_name):
+        pass
+
     def load_user_by_name(self, username):
         pass
 
@@ -71,6 +74,9 @@ class CloudPipelineDataSource:
         pass
 
     def load_preference(self, preference_name):
+        pass
+
+    def load_regions(self):
         pass
 
     def _load_default_lifecycle_rule_notification(self):
@@ -124,6 +130,9 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     def load_role(self, role_id):
         return self.api.load_role(role_id)
+
+    def load_role_by_name(self, role_name):
+        return self.api.load_role_by_name(role_name)
 
     def load_regions(self):
         return self.api.get_regions()

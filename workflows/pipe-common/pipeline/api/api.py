@@ -1018,6 +1018,13 @@ class PipelineAPI:
             raise RuntimeError("Failed to load user by id '{}'.", "Error message: {}".format(str(user_id),
                                                                                              str(e.message)))
 
+    def load_role_by_name(self, name):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE.format(name))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by name '{}'.", "Error message: {}".format(str(name),
+                                                                                               str(e.message)))
+
     def run_configuration(self, data):
         try:
             result = self.execute_request(str(self.api_url) + self.RUN_CONFIGURATION, method='post',

@@ -129,7 +129,7 @@ public class RoleController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<Role> getRole(@PathVariable Long id) {
+    public Result<Role> getRole(@PathVariable String id) {
         return Result.success(roleApiService.loadRole(id));
     }
 

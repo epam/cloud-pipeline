@@ -53,6 +53,9 @@ class MockedNotificationRESTApiCloudPipelineDataSource(CloudPipelineDataSource):
     def load_role(self, role_id):
         return self.cp_source.load_role(role_id)
 
+    def load_role_by_name(self, role_name):
+        return self.cp_source.load_role_by_name(role_name)
+
     def load_user_by_name(self, username):
         return self.cp_source.load_user_by_name(username)
 
@@ -61,6 +64,9 @@ class MockedNotificationRESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     def load_preference(self, preference_name):
         return self.cp_source.load_preference(preference_name)
+
+    def load_regions(self):
+        return self.cp_source.load_regions()
 
     def _load_default_lifecycle_rule_notification(self):
         return self.cp_source._load_default_lifecycle_rule_notification()

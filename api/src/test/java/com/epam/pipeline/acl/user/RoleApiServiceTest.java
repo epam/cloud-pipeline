@@ -86,7 +86,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     public void shouldLoadRoleForAdmin() {
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
-        assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
+        assertThat(roleApiService.loadRole(String.valueOf(ID))).isEqualTo(extendedRole);
     }
 
     @Test
@@ -94,7 +94,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     public void shouldLoadRoleForUserReader() {
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
-        assertThat(roleApiService.loadRole(ID)).isEqualTo(extendedRole);
+        assertThat(roleApiService.loadRole(String.valueOf(ID))).isEqualTo(extendedRole);
     }
 
     @Test
@@ -102,7 +102,7 @@ public class RoleApiServiceTest extends AbstractAclTest {
     public void shouldDenyLoadRoleForNotUserReader() {
         doReturn(extendedRole).when(mockRoleManager).loadRoleWithUsers(ID);
 
-        assertThrows(AccessDeniedException.class, () -> roleApiService.loadRole(ID));
+        assertThrows(AccessDeniedException.class, () -> roleApiService.loadRole(String.valueOf(ID)));
     }
 
     @Test

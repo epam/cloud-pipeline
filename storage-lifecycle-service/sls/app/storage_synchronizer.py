@@ -392,8 +392,7 @@ class StorageLifecycleSynchronizer:
                 if recipient["principal"]:
                     cc_users.append(recipient["name"])
                 else:
-                    # TODO add method to load role with users by name, not id
-                    loaded_role = self.cp_data_source.load_role(recipient["name"])
+                    loaded_role = self.cp_data_source.load_role_by_name(recipient["name"])
                     if loaded_role and "users" in loaded_role:
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
