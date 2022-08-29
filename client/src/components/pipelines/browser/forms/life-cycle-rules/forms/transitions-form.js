@@ -30,7 +30,7 @@ import styles from './life-cycle-forms.css';
 
 const DESTINATIONS = {
   GLACIER_IR: 'S3 Glacier Instant Retrieval',
-  GLACIER: 'S3 Glacier Flexible Retrieval (formally Glacier)',
+  GLACIER: 'S3 Glacier Flexible Retrieval (formerly Glacier)',
   DEEP_ARCHIVE: 'S3 Glacier Deep Archive',
   DELETION: 'Deletion'
 };
@@ -70,15 +70,21 @@ class TransitionsForm extends React.Component {
 
   addTransitionRule = (rule = {}) => {
     const {transitions} = this.state;
-    this.setState({transitions: [...transitions, rule]});
+    const {form} = this.props;
+    this.setState({transitions: [...transitions, rule]}, () => {
+      form.setFieldsValue({});
+    });
   };
 
   removeTransitionRule = (key) => {
     const {transitions} = this.state;
+    const {form} = this.props;
     if (this.removeTransitionsEnabled) {
       const transitionsState = [...transitions];
       transitionsState[key] = undefined;
-      this.setState({transitions: transitionsState});
+      this.setState({transitions: transitionsState}, () => {
+        form.setFieldsValue({});
+      });
     }
   };
 
@@ -103,7 +109,7 @@ class TransitionsForm extends React.Component {
   };
 
   setFormInitialValues = () => {
-    const {rule} = this.props;
+    const {rule, form} = this.props;
     if (!rule) {
       return;
     }
@@ -112,7 +118,7 @@ class TransitionsForm extends React.Component {
       transitions: rule.transitions && rule.transitions.length
         ? rule.transitions
         : [blankRule]
-    });
+    }, () => form.setFieldsValue({}));
   };
 
   getTransitionDateType = (index) => {

@@ -283,6 +283,7 @@ class LifeCycleRules extends React.Component {
               onCancel={this.closeEditRuleDialog}
               rule={editRule}
               createNewRule={Object.keys(editRule).length === 0}
+              pending={pending}
             />
           ) : null}
           <LifeCycleHistoryModal

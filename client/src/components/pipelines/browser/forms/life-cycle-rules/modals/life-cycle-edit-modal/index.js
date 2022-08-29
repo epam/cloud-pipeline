@@ -31,6 +31,7 @@ import {
 } from 'antd';
 import moment from 'moment-timezone';
 import {NotificationForm, TransitionsForm} from '../../forms';
+import compareArrays from '../../../../../../../utils/compareArrays';
 import styles from './life-cycle-edit-modal.css';
 
 const formItemLayout = {
@@ -84,9 +85,24 @@ function FormSection ({
 @inject('usersInfo')
 @observer
 class LifeCycleEditModal extends React.Component {
-  state = {
-    pending: false
+  state={
+    initialRule: null
   }
+
+  componentDidMount () {
+    this.setInitialRule();
+  }
+
+  componentDidUpdate (prevProps) {
+    if (this.props.rule !== prevProps.rule) {
+      this.setInitialRule();
+    }
+  }
+
+  setInitialRule = () => {
+    const {rule} = this.props;
+    this.setState({initialRule: rule});
+  };
 
   @computed
   get usersInfo () {
@@ -95,6 +111,43 @@ class LifeCycleEditModal extends React.Component {
       return usersInfo.value;
     }
     return [];
+  }
+
+  get modified () {
+    const {initialRule} = this.state;
+    const {form} = this.props;
+    if (!initialRule) {
+      return false;
+    }
+    const {notification} = initialRule;
+    const stringFieldModified = (formPath, initialValue) => {
+      const fieldValue = form.getFieldValue(formPath);
+      return `${initialValue}` !== `${fieldValue}`;
+    };
+    const arrayFieldModified = (
+      formPath,
+      initialValue,
+      comparerFn = ((a, b) => a === b)
+    ) => {
+      const fieldValue = form.getFieldValue(formPath);
+      return !compareArrays(initialValue, fieldValue, comparerFn);
+    };
+    // TODO: add informedIserIds check when API change ids to user\group objects
+    return stringFieldModified('notification.body', notification.body) ||
+      stringFieldModified('notification.disabled', !notification.enabled) ||
+      stringFieldModified('notification.notifyBeforeDays', notification.notifyBeforeDays) ||
+      stringFieldModified('notification.prolongDays', notification.prolongDays) ||
+      stringFieldModified('notification.subject', notification.subject) ||
+      stringFieldModified('objectGlob', initialRule.objectGlob) ||
+      stringFieldModified('pathGlob', initialRule.pathGlob) ||
+      stringFieldModified('transitionCriterion', initialRule.transitionCriterion) ||
+      stringFieldModified('transitionMethod', initialRule.transitionMethod) ||
+      arrayFieldModified(
+        'transitions',
+        initialRule.transitions,
+        (a, b) => (a.storageClass === b.storageClass &&
+          a.transitionAfterDays === b.transitionAfterDays)
+      );
   }
 
   get showMatches () {
@@ -108,52 +161,49 @@ class LifeCycleEditModal extends React.Component {
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
       if (!err) {
-        this.setState({pending: true}, async () => {
-          const {rule} = this.props;
-          const {
-            objectGlob,
-            pathGlob,
-            notification,
-            transitionMethod,
-            transitionCriterion,
-            transitions
-          } = values;
-          const payload = {
-            objectGlob,
-            pathGlob,
-            transitionMethod,
-            transitionCriterion
-          };
-          if (notification) {
-            payload.notification = notification;
-            payload.notification.enabled = !notification.disabled;
-            delete payload.notification.disabled;
-          }
-          if (notification && notification.informedUserIds) {
-            const recipientsIds = this.getIdsFromUsers(notification.informedUserIds);
-            payload.notification.informedUserIds = recipientsIds;
-          }
-          if (transitions && transitions.length) {
-            payload.transitions = transitions
-              .filter(Boolean)
-              .map(transition => {
-                const {
-                  transitionAfterDays,
-                  transitionDate,
-                  storageClass
-                } = transition;
-                return {
-                  storageClass,
-                  ...(transitionDate && {
-                    transitionDate: moment(transitionDate).format('YYYY-MM-DD')
-                  }),
-                  ...(transitionAfterDays && {transitionAfterDays})
-                };
-              });
-          }
-          this.setState({pending: false});
-          onOk && onOk(payload, rule.id);
-        });
+        const {rule} = this.props;
+        const {
+          objectGlob,
+          pathGlob,
+          notification,
+          transitionMethod,
+          transitionCriterion,
+          transitions
+        } = values;
+        const payload = {
+          objectGlob,
+          pathGlob,
+          transitionMethod,
+          transitionCriterion
+        };
+        if (notification) {
+          payload.notification = notification;
+          payload.notification.enabled = !notification.disabled;
+          delete payload.notification.disabled;
+        }
+        if (notification && notification.informedUserIds) {
+          const recipientsIds = this.getIdsFromUsers(notification.informedUserIds);
+          payload.notification.informedUserIds = recipientsIds;
+        }
+        if (transitions && transitions.length) {
+          payload.transitions = transitions
+            .filter(Boolean)
+            .map(transition => {
+              const {
+                transitionAfterDays,
+                transitionDate,
+                storageClass
+              } = transition;
+              return {
+                storageClass,
+                ...(transitionDate && {
+                  transitionDate: moment(transitionDate).format('YYYY-MM-DD')
+                }),
+                ...(transitionAfterDays && {transitionAfterDays})
+              };
+            });
+        }
+        onOk && onOk(payload, rule.id);
       }
     });
   };
@@ -171,9 +221,6 @@ class LifeCycleEditModal extends React.Component {
   onCancel = () => {
     const {onCancel, form} = this.props;
     form.resetFields();
-    this.setState({
-      pending: false
-    });
     onCancel && onCancel();
   };
 
@@ -184,7 +231,7 @@ class LifeCycleEditModal extends React.Component {
       form,
       createNewRule
     } = this.props;
-    const {pending} = this.state;
+    const {pending} = this.props;
     const {getFieldDecorator} = form;
     if (!rule) {
       return null;
@@ -204,7 +251,7 @@ class LifeCycleEditModal extends React.Component {
             <Button
               type="primary"
               onClick={this.handleSubmit}
-              disabled={pending}
+              disabled={pending || !this.modified}
             >
               Save
             </Button>
@@ -363,7 +410,8 @@ LifeCycleEditModal.propTypes = {
   onOk: PropTypes.func,
   onCancel: PropTypes.func,
   rule: PropTypes.object,
-  createNewRule: PropTypes.bool
+  createNewRule: PropTypes.bool,
+  pending: PropTypes.bool
 };
 
 export {DESTINATIONS};
