@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_restore_action(
     updated TIMESTAMP WITH TIME ZONE NOT NULL,
     started TIMESTAMP WITH TIME ZONE NOT NULL,
     status TEXT NOT NULL,
-    restored_till TIMESTAMP WITH TIME ZONE DEFAULT NULL
+    restored_till TIMESTAMP WITH TIME ZONE DEFAULT NULL,
+    notification_json TEXT NOT NULL
 );

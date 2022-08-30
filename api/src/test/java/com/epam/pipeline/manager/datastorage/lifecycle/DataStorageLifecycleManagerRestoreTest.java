@@ -18,6 +18,7 @@ package com.epam.pipeline.manager.datastorage.lifecycle;
 
 import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePath;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
@@ -43,6 +44,7 @@ import org.springframework.data.util.Pair;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class DataStorageLifecycleManagerRestoreTest {
@@ -68,6 +70,7 @@ public class DataStorageLifecycleManagerRestoreTest {
             .started(DateUtils.nowUTC().minus(1L, ChronoUnit.DAYS)).build();
     private static final String PATH_2 = "data2/";
     public static final String STANDARD_RESTORE_MODE = "Standard";
+    public static final StorageRestoreActionNotification DISABLED_NOTIFICATION = new StorageRestoreActionNotification(false, Collections.emptyList());
 
     private final DataStorageManager storageManager = Mockito.mock(DataStorageManager.class);
     private final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
@@ -125,8 +128,17 @@ public class DataStorageLifecycleManagerRestoreTest {
     public void failToInitiateRestoreIfAlreadyExistAndIsntForcedTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
-                STANDARD_RESTORE_MODE, 10L, false);
+                STANDARD_RESTORE_MODE, 10L, false, DISABLED_NOTIFICATION);
     }
+
+    @Test(expected = IllegalStateException.class)
+    public void failToInitiateRestoreWithoutWellFormedNotificationTest() {
+        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
+        lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
+                STANDARD_RESTORE_MODE, 10L, false,
+                new StorageRestoreActionNotification(true, Collections.emptyList()));
+    }
+
 
     @Test
     public void succeedToInitiateRestoreIfAlreadyExistAndIsForcedTest() {
@@ -137,7 +149,7 @@ public class DataStorageLifecycleManagerRestoreTest {
         final StorageRestoreActionEntity storageRestoreAction =
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, 10L, true);
+                        STANDARD_RESTORE_MODE, 10L, true, DISABLED_NOTIFICATION);
         Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
@@ -151,7 +163,7 @@ public class DataStorageLifecycleManagerRestoreTest {
         final StorageRestoreActionEntity storageRestoreAction =
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_2).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, 10L, false);
+                        STANDARD_RESTORE_MODE, 10L, false, DISABLED_NOTIFICATION);
         Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }

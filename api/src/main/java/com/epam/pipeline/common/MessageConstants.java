@@ -322,7 +322,7 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND =
             "error.datastirage.lifecycle.rule.execution.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION =
-            "error.datastirage.lifecycle.rule.cant.parse.notofication";
+            "error.datastirage.lifecycle.rule.cant.parse.notification";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED =
             "error.datastirage.lifecycle.rule.provide.enable.flag";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
@@ -343,7 +343,8 @@ public final class MessageConstants {
             "error.datastirage.lifecycle.restore.action.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS =
             "error.datastirage.lifecycle.restore.in.final.status";
-
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY =
+            "error.datastirage.lifecycle.restore.rule.cant.parse.notification";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

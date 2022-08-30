@@ -16,8 +16,8 @@
 
 package com.epam.pipeline.dto.datastorage.lifecycle.restore;
 
+import com.epam.pipeline.entity.user.SidImpl;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -27,12 +27,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class StorageRestoreActionRequest {
-    private List<StorageRestorePath> paths;
-    private String restoreMode;
-    private Long days;
-    private Boolean force;
-    private StorageRestoreActionNotification notification;
-
+public class StorageRestoreActionNotification {
+    private Boolean enabled;
+    private List<SidImpl> recipients;
 }

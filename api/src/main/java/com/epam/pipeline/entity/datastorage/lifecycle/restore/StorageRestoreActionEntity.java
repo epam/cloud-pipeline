@@ -69,4 +69,5 @@ public class StorageRestoreActionEntity {
     @Enumerated(EnumType.STRING)
     private StorageRestoreStatus status;
 
+    private String notificationJson;
 }

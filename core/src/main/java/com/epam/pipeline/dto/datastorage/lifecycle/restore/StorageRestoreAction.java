@@ -40,4 +40,5 @@ public class StorageRestoreAction {
     private LocalDateTime updated;
     private LocalDateTime restoredTill;
     private StorageRestoreStatus status;
+    private StorageRestoreActionNotification notification;
 }

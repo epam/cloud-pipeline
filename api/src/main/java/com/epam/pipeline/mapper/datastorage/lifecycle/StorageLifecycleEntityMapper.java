@@ -21,6 +21,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
@@ -61,6 +62,10 @@ public interface StorageLifecycleEntityMapper {
     String USER_ACTOR_ID = "userActorId";
     String USER_ACTOR = "userActor";
 
+    String RESTORE_NOTIFICATION_JSON_TO_DTO = "restoreNotificationJsonToDto";
+    String RESTORE_NOTIFICATION_TO_JSON = "restoreNotificationToJson";
+
+
     ObjectMapper OBJECT_MAPPER = new JsonMapper();
 
     @Mapping(source = TRANSITION_CRITERION, target = TRANSITION_CRITERION_JSON,
@@ -79,9 +84,11 @@ public interface StorageLifecycleEntityMapper {
     StorageLifecycleRuleExecution toDto(StorageLifecycleRuleExecutionEntity executionEntity);
 
     @Mapping(source = USER_ACTOR_ID, target = USER_ACTOR, qualifiedByName = ID_TO_PIPELINE_USER)
+    @Mapping(source = NOTIFICATION, target = NOTIFICATION_JSON, qualifiedByName = RESTORE_NOTIFICATION_TO_JSON)
     StorageRestoreActionEntity toEntity(StorageRestoreAction restoreAction);
 
     @Mapping(source = USER_ACTOR, target = USER_ACTOR_ID, qualifiedByName = PIPELINE_USER_TO_ID)
+    @Mapping(source = NOTIFICATION_JSON, target = NOTIFICATION, qualifiedByName = RESTORE_NOTIFICATION_JSON_TO_DTO)
     StorageRestoreAction toDto(StorageRestoreActionEntity restoreActionEntity);
 
     @Named(PIPELINE_USER_TO_ID)
@@ -145,4 +152,21 @@ public interface StorageLifecycleEntityMapper {
         );
     }
 
+    @Named(RESTORE_NOTIFICATION_TO_JSON)
+    static String restoreNotificationToJson(final StorageRestoreActionNotification notification)
+            throws JsonProcessingException {
+        if (notification == null) {
+            return null;
+        }
+        return OBJECT_MAPPER.writeValueAsString(notification);
+    }
+
+    @Named(RESTORE_NOTIFICATION_JSON_TO_DTO)
+    static StorageRestoreActionNotification restoreNotificationJsonToDto(final String notificationJson)
+            throws IOException {
+        if (StringUtils.isEmpty(notificationJson)) {
+            return null;
+        }
+        return OBJECT_MAPPER.readValue(notificationJson, new TypeReference<StorageRestoreActionNotification>(){});
+    }
 }
