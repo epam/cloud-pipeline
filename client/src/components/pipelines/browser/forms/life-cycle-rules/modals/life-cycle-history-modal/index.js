@@ -16,8 +16,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {observer} from 'mobx-react';
 import {computed} from 'mobx';
+import {inject, observer} from 'mobx-react';
 import {
   Button,
   Modal,
@@ -56,6 +56,7 @@ function getTransitionDate (prolongation = {}) {
   return undefined;
 }
 
+@inject('usersInfo')
 @observer
 class LifeCycleHistoryModal extends React.Component {
   state = {
@@ -93,6 +94,15 @@ class LifeCycleHistoryModal extends React.Component {
   }
 
   @computed
+  get usersInfo () {
+    const {usersInfo} = this.props;
+    if (usersInfo.loaded) {
+      return usersInfo.value;
+    }
+    return [];
+  }
+
+  @computed
   get history () {
     const {executions} = this.state;
     const executionsData = executions.map(execution => ({
@@ -110,7 +120,9 @@ class LifeCycleHistoryModal extends React.Component {
       .map(prolongation => ({
         date: moment.utc(prolongation.prolongedDate).format(FULL_FORMAT),
         action: ACTION_TYPES.prolongation,
-        user: prolongation.user || '',
+        user: prolongation.userId
+          ? this.getUserById(prolongation.userId)
+          : '',
         file: prolongation.path,
         prolongation: `${prolongation.days} days`,
         transition: getTransitionDate(prolongation),
@@ -143,6 +155,14 @@ class LifeCycleHistoryModal extends React.Component {
         this.setState({pending: false});
       });
     }
+  };
+
+  getUserById = (userId) => {
+    const userObject = this.usersInfo.find(user => user.id === userId);
+    if (userObject) {
+      return userObject.name;
+    }
+    return '';
   };
 
   onSelectActionFilter = (keys) => {
