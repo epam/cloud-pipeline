@@ -109,35 +109,32 @@ class HCSManager:
             raise RuntimeError("Failed to find pipeline '%s'" % pipeline_id)
         return pipeline
 
-    def create_clip(self, clip_params):
+    def create_clip(self, params):
         t = time.time()
 
-        clip_format = clip_params.get('format') if 'format' in clip_params else '.webm'
-        codec = clip_params.get('codec') if 'codec' in clip_params else None
-        fps = clip_params.get('fps') if 'fps' in clip_params else 1
-        ome_tiff_dir = self._get_required_field(clip_params, 'ome_tiff_dir')
-        by_field = self._get_required_field(clip_params, 'byField')
-        channels = self._get_required_field(clip_params, 'channels')
-        timepoints = self._get_required_field(clip_params, 'timepoints')
-        cell = self._get_required_field(clip_params, 'cell')
-        params = self._get_required_field(clip_params, 'params')
+        clip_format = params.get('format') if 'format' in params else '.webm'
+        codec = params.get('codec') if 'codec' in params else None
+        fps = int(params.get('fps')) if 'fps' in params else 1
+        ome_tiff_dir = self._get_required_field(params, 'path')
+        by_field = int(self._get_required_field(params, 'byField'))
+        chs = int(self._get_required_field(params, 'chs'))
+        tps = int(self._get_required_field(params, 'tps'))
+        cell = int(self._get_required_field(params, 'cell'))
 
         clip_dir = ome_tiff_dir
         clip_file_name = ('field_' if by_field else 'well_') + str(cell)
         ome_tiff = self.get_ome_tiff_path(ome_tiff_dir, by_field)
 
-        channel_ids = list(map(lambda d: d['channelId'], params))
-        if len(channel_ids) < 1:
-            raise RuntimeError("At least one channel is required")
+        channel_ids, channels = self.get_channels(chs, params)
 
-        images = imread(ome_tiff, key=self.get_pages(channel_ids, channels, timepoints, cell))
+        images = imread(ome_tiff, key=self.get_pages(channel_ids, chs, tps, cell))
         clips = []
         curr = 0
-        for time_point in range(timepoints):
+        for time_point in range(tps):
             channel_images = []
             for channel in channel_ids:
                 channel_image = images[curr]
-                channel_params = self.get_channel_params(params, channel)
+                channel_params = next(filter(lambda c: c['id'] == channel, channels))
                 colored_image = self.color_image(channel_image, channel_params)
                 channel_images.append(colored_image)
                 curr = curr + 1
@@ -162,6 +159,26 @@ class HCSManager:
                     pages.append(num + channels * timepoints * cell)
                 num = num + 1
         return pages
+
+    def get_channels(self, chs, params):
+        channels = []
+        channel_ids = []
+        for chl in range(chs):
+            ch_id = params.get('ch' + str(chl))
+            if ch_id is not None:
+                ch_id = int(ch_id)
+                channel = dict()
+                channel['id'] = ch_id
+                channel['r'] = int(self._get_required_field(params, 'r' + str(chl)))
+                channel['g'] = int(self._get_required_field(params, 'g' + str(chl)))
+                channel['b'] = int(self._get_required_field(params, 'b' + str(chl)))
+                channel['min'] = int(self._get_required_field(params, 'min' + str(chl)))
+                channel['max'] = int(self._get_required_field(params, 'max' + str(chl)))
+                channel_ids.append(ch_id)
+                channels.append(channel)
+        if len(channels) < 1:
+            raise RuntimeError("At least one channel is required")
+        return channel_ids, channels
 
     @staticmethod
     def get_channel_params(params, channel):

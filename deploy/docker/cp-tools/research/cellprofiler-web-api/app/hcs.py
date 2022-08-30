@@ -198,12 +198,12 @@ def get_status():
         return jsonify(error(e.__str__()))
 
 
-@app.route('/hcs/clip', methods=['POST'])
+@app.route('/hcs/clip', methods=['GET'])
 def get_movie():
     manager = app.config['hcs']
     try:
-        clip_params = json.loads(request.data)
-        total_time = manager.create_clip(clip_params)
+        params = flask.request.args
+        total_time = manager.create_clip(params)
         return jsonify(success({"totalTime": total_time}))
     except Exception as e:
         print(traceback.format_exc())
