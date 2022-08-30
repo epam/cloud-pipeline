@@ -160,21 +160,24 @@ class HCSManager:
                 num = num + 1
         return pages
 
-    def get_channels(self, chs, params):
+    @staticmethod
+    def get_channels(chs, params):
         channels = []
         channel_ids = []
         for chl in range(chs):
-            ch_id = params.get('ch' + str(chl))
-            if ch_id is not None:
-                ch_id = int(ch_id)
+            channel_params = params.get('ch' + str(chl))
+            if channel_params is not None:
+                channel_params = channel_params.split(',')
+                if len(channel_params) != 6:
+                    raise RuntimeError("Channel should have 6 parameters")
                 channel = dict()
-                channel['id'] = ch_id
-                channel['r'] = int(self._get_required_field(params, 'r' + str(chl)))
-                channel['g'] = int(self._get_required_field(params, 'g' + str(chl)))
-                channel['b'] = int(self._get_required_field(params, 'b' + str(chl)))
-                channel['min'] = int(self._get_required_field(params, 'min' + str(chl)))
-                channel['max'] = int(self._get_required_field(params, 'max' + str(chl)))
-                channel_ids.append(ch_id)
+                channel['id'] = int(channel_params[0])
+                channel['r'] = int(channel_params[1])
+                channel['g'] = int(channel_params[2])
+                channel['b'] = int(channel_params[3])
+                channel['min'] = int(channel_params[4])
+                channel['max'] = int(channel_params[5])
+                channel_ids.append(int(channel_params[0]))
                 channels.append(channel)
         if len(channels) < 1:
             raise RuntimeError("At least one channel is required")
