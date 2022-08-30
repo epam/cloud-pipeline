@@ -86,7 +86,6 @@ class StorageLifecycleRuleExecution:
 class LifecycleRuleParser:
 
     def __init__(self, default_lifecycle_notification):
-        # TODO Test this palace
         self.default_lifecycle_notification = default_lifecycle_notification
 
     def parse_rule(self, rule_json_dict):
