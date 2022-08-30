@@ -31,7 +31,18 @@ import java.util.List;
 public class StorageRestoreActionSearchFilter {
     private Long datastorageId;
     private StorageRestorePath path;
+
+    /**
+     * @see SearchType, for more details
+     * */
     private SearchType searchType;
+
+    /**
+     * If true, will filter method will return only one (and the latest, will determinate it by started date)
+     * restore action for path (if present).
+     * */
+    private Boolean isLatest;
+
     private List<StorageRestoreStatus> statuses;
 
     public enum SearchType {

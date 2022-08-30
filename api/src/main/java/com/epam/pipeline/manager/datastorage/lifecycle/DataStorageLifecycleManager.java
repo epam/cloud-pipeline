@@ -45,6 +45,7 @@ import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapp
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
+import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -305,16 +306,19 @@ public class DataStorageLifecycleManager {
     public List<StorageRestoreAction> filterRestoreStorageActions(final StorageRestoreActionSearchFilter filter) {
         final AbstractDataStorage dataStorage = storageManager.load(filter.getDatastorageId());
         if (filter.getPath() != null) {
-            filter.getPath().setPath(getEffectivePathForRestoreAction(dataStorage, filter.getPath()));
+            filter.getPath().setPath(getEffectivePathForRestoreAction(filter.getPath(), dataStorage.getDelimiter()));
         }
         return dataStoragePathRestoreActionRepository.filterBy(filter)
-                .stream().map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
+                .stream().map(lifecycleEntityMapper::toDto)
+                .sorted(Comparator.comparing(StorageRestoreAction::getStarted).reversed())
+                .filter(BooleanUtils.isTrue(filter.getIsLatest())
+                        ? StreamUtils.distinctByKeyPredicate(StorageRestoreAction::getPath)
+                        : action -> true
+                ).collect(Collectors.toList());
     }
 
     public StorageRestoreAction loadEffectiveRestoreStorageActionByPath(final Long datastorageId,
                                                                         final StorageRestorePath path) {
-        final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
-        path.setPath(getEffectivePathForRestoreAction(dataStorage, path));
         return filterRestoreStorageActions(
                 StorageRestoreActionSearchFilter.builder()
                         .datastorageId(datastorageId)
@@ -322,8 +326,7 @@ public class DataStorageLifecycleManager {
                         .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
                         .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
                         .build()
-        ).stream()
-        .max(Comparator.comparing(StorageRestoreAction::getStarted)).orElse(null);
+        ).stream().findFirst().orElse(null);
     }
 
     protected StorageRestoreActionEntity buildStoragePathRestoreAction(
@@ -332,7 +335,7 @@ public class DataStorageLifecycleManager {
             final StorageRestoreActionNotification notification) {
         Assert.state(path.getPath() != null && path.getType() != null,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
-        final String effectivePath = getEffectivePathForRestoreAction(dataStorage, path);
+        final String effectivePath = getEffectivePathForRestoreAction(path, dataStorage.getDelimiter());
         final Pair<Boolean, String> eligibility = storageProviderManager.isRestoreActionEligible(
                 dataStorage, effectivePath);
         Assert.isTrue(eligibility.getFirst(),
@@ -372,14 +375,13 @@ public class DataStorageLifecycleManager {
         return StorageLifecycleEntityMapper.restoreNotificationToJson(notification);
     }
 
-    private static String getEffectivePathForRestoreAction(final AbstractDataStorage dataStorage,
-                                                           final StorageRestorePath path) {
-        final String result = path.getPath().startsWith(dataStorage.getDelimiter())
-                ? path.getPath().substring(dataStorage.getDelimiter().length())
+    private static String getEffectivePathForRestoreAction(final StorageRestorePath path, final String delimiter) {
+        final String result = path.getPath().startsWith(delimiter)
+                ? path.getPath().substring(delimiter.length())
                 : path.getPath();
         switch (path.getType()) {
             case FOLDER:
-                return result.endsWith(dataStorage.getDelimiter()) ? result : result + dataStorage.getDelimiter();
+                return result.endsWith(delimiter) ? result : result + delimiter;
             case FILE:
             default:
                 return result;

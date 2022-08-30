@@ -70,7 +70,7 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
             filter.getStatuses().forEach(inStatuses::value);
             predicates.add(inStatuses);
         }
-        cq.where(predicates.toArray(new Predicate[0]));
+        cq.where(predicates.toArray(new Predicate[0])).orderBy(cb.desc(restoreAction.get("started")));
         return em.createQuery(cq).getResultList();
     }
 }
