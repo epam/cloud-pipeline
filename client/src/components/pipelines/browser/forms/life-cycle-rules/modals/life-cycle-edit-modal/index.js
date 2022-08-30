@@ -63,17 +63,29 @@ const CRITERIA = {
   MATCHING_FILES: 'Files matches'
 };
 
+const PANELS = {
+  transitions: 'Transitions',
+  notify: 'Notify'
+};
+
 function FormSection ({
   children,
   title = '',
-  defaultExpanded = true
+  disabled = false,
+  expanded,
+  onChange
 }) {
   return (
     <Collapse
-      defaultActiveKey={defaultExpanded ? [title] : []}
+      activeKey={expanded ? [title] : []}
       style={{marginBottom: '5px'}}
+      onChange={() => onChange(title)}
     >
-      <Collapse.Panel header={title} key={title}>
+      <Collapse.Panel
+        header={title}
+        key={title}
+        disabled={disabled}
+      >
         <div className={styles.formSection}>
           {children}
         </div>
@@ -86,7 +98,11 @@ function FormSection ({
 @observer
 class LifeCycleEditModal extends React.Component {
   state={
-    initialRule: null
+    initialRule: null,
+    expandedPanels: [
+      PANELS.transitions,
+      PANELS.notify
+    ]
   }
 
   componentDidMount () {
@@ -98,11 +114,6 @@ class LifeCycleEditModal extends React.Component {
       this.setInitialRule();
     }
   }
-
-  setInitialRule = () => {
-    const {rule} = this.props;
-    this.setState({initialRule: rule});
-  };
 
   @computed
   get usersInfo () {
@@ -127,6 +138,15 @@ class LifeCycleEditModal extends React.Component {
       const fieldValue = form.getFieldValue(formPath);
       return `${initialValue}` !== `${fieldValue}`;
     };
+    const objectFieldModified = (formPath, initialValue = {}) => {
+      const fieldValue = form.getFieldValue(formPath) || {};
+      const current = Object.values(fieldValue);
+      const initial = Object.values(initialValue);
+      return !!current
+        .filter(x => !initial.includes(x))
+        .concat(initial.filter(x => !current.includes(x)))
+        .length;
+    };
     const arrayFieldModified = (
       formPath,
       initialValue,
@@ -143,7 +163,7 @@ class LifeCycleEditModal extends React.Component {
       stringFieldModified('notification.subject', notification.subject) ||
       stringFieldModified('objectGlob', initialRule.objectGlob) ||
       stringFieldModified('pathGlob', initialRule.pathGlob) ||
-      stringFieldModified('transitionCriterion', initialRule.transitionCriterion) ||
+      objectFieldModified('transitionCriterion', initialRule.transitionCriterion) ||
       stringFieldModified('transitionMethod', initialRule.transitionMethod) ||
       arrayFieldModified(
         'transitions',
@@ -153,18 +173,36 @@ class LifeCycleEditModal extends React.Component {
       );
   }
 
+  get notificationsDisabled () {
+    const {form} = this.props;
+    return form.getFieldValue('notification.disabled');
+  }
+
   get showMatches () {
     const {form} = this.props;
     const criteriaType = form.getFieldValue('transitionCriterion.type');
     return CRITERIA[criteriaType] === CRITERIA.MATCHING_FILES;
   }
 
+  get showNotificationsForm () {
+    const {form} = this.props;
+    const method = form.getFieldValue('transitionMethod');
+    return METHODS[method] !== METHODS.ONE_BY_ONE;
+  }
+
   handleSubmit = (e) => {
     const {form, onOk} = this.props;
     e.preventDefault();
     form.validateFieldsAndScroll((err, values) => {
-      if (!err) {
-        const {rule} = this.props;
+      if (err) {
+        if (err.notification) {
+          this.expandPanel(PANELS.notify);
+        }
+        if (err.transitions) {
+          this.expandPanel(PANELS.transitions);
+        }
+      } else {
+        const {rule = {}} = this.props;
         const {
           objectGlob,
           pathGlob,
@@ -173,12 +211,16 @@ class LifeCycleEditModal extends React.Component {
           transitionCriterion,
           transitions
         } = values;
-        const payload = {
-          objectGlob,
-          pathGlob,
-          transitionMethod,
-          transitionCriterion
-        };
+        const payload = Object.assign({},
+          rule, {
+            objectGlob,
+            pathGlob,
+            transitionMethod,
+            transitionCriterion
+          }
+        );
+        delete payload.prolongations;
+        const method = form.getFieldValue('transitionMethod');
         if (notification) {
           payload.notification = notification;
           payload.notification.enabled = !notification.disabled;
@@ -187,6 +229,12 @@ class LifeCycleEditModal extends React.Component {
         if (notification && notification.informedUserIds) {
           const recipientsIds = this.getIdsFromUsers(notification.informedUserIds);
           payload.notification.informedUserIds = recipientsIds;
+        }
+        if (METHODS[method] === METHODS.ONE_BY_ONE) {
+          if (!payload.notification) {
+            payload.notification = {};
+          }
+          payload.notification.enabled = false;
         }
         if (transitions && transitions.length) {
           payload.transitions = transitions
@@ -211,6 +259,11 @@ class LifeCycleEditModal extends React.Component {
     });
   };
 
+  setInitialRule = () => {
+    const {rule} = this.props;
+    this.setState({initialRule: rule});
+  };
+
   getIdsFromUsers = (users = []) => {
     return users.map(user => {
       const userInfo = this.usersInfo.find(info => info.name === user.name);
@@ -227,14 +280,41 @@ class LifeCycleEditModal extends React.Component {
     onCancel && onCancel();
   };
 
+  expandPanel = (key) => {
+    const {expandedPanels} = this.state;
+    if (!expandedPanels.includes(key)) {
+      this.setState({expandedPanels: [...expandedPanels, key]});
+    }
+  };
+
+  collapsePanel = (key) => {
+    const {expandedPanels} = this.state;
+    this.setState({expandedPanels: expandedPanels.filter(k => k !== key)});
+  };
+
+  onTogglePanel = (key) => {
+    const {expandedPanels} = this.state;
+    if (expandedPanels.includes(key)) {
+      return this.collapsePanel(key);
+    }
+    this.expandPanel(key);
+  };
+
+  onChangeMethod = (key) => {
+    if (METHODS[key] === METHODS.ONE_BY_ONE) {
+      this.collapsePanel(PANELS.notify);
+    }
+  };
+
   render () {
     const {
       visible,
       rule,
       form,
-      createNewRule
+      createNewRule,
+      pending
     } = this.props;
-    const {pending} = this.props;
+    const {expandedPanels} = this.state;
     const {getFieldDecorator} = form;
     if (!rule) {
       return null;
@@ -319,22 +399,12 @@ class LifeCycleEditModal extends React.Component {
                       : 'ONE_BY_ONE',
                     rules: [{
                       required: true,
-                      message: ' ',
-                      validator: (rule, value, callback) => {
-                        const notifyErrors = form
-                          .getFieldError('notification.disabled') || [];
-                        if (value !== 'ONE_BY_ONE' && notifyErrors.length) {
-                          form.setFields({
-                            'notification.disabled': {
-                              errors: undefined
-                            }
-                          });
-                        }
-                        callback();
-                      }
+                      message: ' '
                     }]
                   })(
-                    <Select>
+                    <Select
+                      onChange={this.onChangeMethod}
+                    >
                       {Object.entries(METHODS).map(([key, description]) => (
                         <Select.Option
                           value={key}
@@ -381,7 +451,11 @@ class LifeCycleEditModal extends React.Component {
                     {getFieldDecorator('transitionCriterion.value', {
                       initialValue: rule && rule.transitionCriterion
                         ? rule.transitionCriterion.value
-                        : undefined
+                        : undefined,
+                      rules: [{
+                        required: true,
+                        message: ' '
+                      }]
                     })(
                       <Input />
                     )}
@@ -389,16 +463,29 @@ class LifeCycleEditModal extends React.Component {
                 ) : null}
               </Col>
             </Row>
-            <FormSection title="Transitions">
+            <FormSection
+              title={PANELS.transitions}
+              expanded={expandedPanels.includes(PANELS.transitions)}
+              onChange={this.onTogglePanel}
+            >
               <TransitionsForm
                 form={form}
                 rule={rule}
               />
             </FormSection>
-            <FormSection title="Notify">
+            <FormSection
+              title={PANELS.notify}
+              disabled={!this.showNotificationsForm}
+              expanded={
+                this.showNotificationsForm &&
+                expandedPanels.includes(PANELS.notify)
+              }
+              onChange={this.onTogglePanel}
+            >
               <NotificationForm
                 form={form}
                 rule={rule}
+                notificationsDisabled={this.notificationsDisabled}
               />
             </FormSection>
           </Form>

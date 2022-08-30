@@ -62,12 +62,13 @@ class NotificationForm extends React.Component {
     pending: false
   }
 
-  notifyFormContainer;
-
-  get notificationsDisabled () {
-    const {form} = this.props;
-    return form.getFieldValue('notification.disabled');
+  componentDidUpdate (prevProps) {
+    if (this.props.notificationsDisabled !== prevProps.notificationsDisabled) {
+      this.checkRequiredFields();
+    }
   }
+
+  notifyFormContainer;
 
   @computed
   get informedUsers () {
@@ -84,12 +85,24 @@ class NotificationForm extends React.Component {
     return [];
   }
 
+  checkRequiredFields = () => {
+    const {form} = this.props;
+    form.validateFields(
+      ['notification.subject'],
+      {force: true}
+    );
+  };
+
   setPreviewMode = (preview) => {
     this.setState({previewMode: preview});
   };
 
   render () {
-    const {form, rule} = this.props;
+    const {
+      form,
+      rule,
+      notificationsDisabled
+    } = this.props;
     const {previewMode, pending} = this.state;
     const {getFieldDecorator} = form;
     return (
@@ -109,15 +122,7 @@ class NotificationForm extends React.Component {
                 ? !rule.notification.enabled
                 : false,
               rules: [{
-                required: false,
-                validator: (rule, value, callback) => {
-                  const method = form.getFieldValue('transitionMethod');
-                  const message = 'If one-by-one method selected, notifications should be disabled';
-                  if (method === 'ONE_BY_ONE' && value === false) {
-                    callback(message);
-                  }
-                  callback();
-                }
+                required: false
               }]
             })(
               <Checkbox
@@ -143,7 +148,7 @@ class NotificationForm extends React.Component {
               <UsersRolesSelect
                 adGroups={false}
                 showRoles={false}
-                disabled={this.notificationsDisabled || pending}
+                disabled={notificationsDisabled || pending}
                 style={{flex: 1}}
                 dropdownStyle={{maxHeight: '80%'}}
                 popupContainerFn={() => this.notifyFormContainer}
@@ -167,7 +172,7 @@ class NotificationForm extends React.Component {
                   : undefined
               })(
                 <Input
-                  disabled={this.notificationsDisabled || pending}
+                  disabled={notificationsDisabled || pending}
                 />
               )}
             </Form.Item>
@@ -187,7 +192,7 @@ class NotificationForm extends React.Component {
 
               })(
                 <Input
-                  disabled={this.notificationsDisabled || pending}
+                  disabled={notificationsDisabled || pending}
                 />
               )}
             </Form.Item>
@@ -225,10 +230,14 @@ class NotificationForm extends React.Component {
             {getFieldDecorator('notification.subject', {
               initialValue: rule.notification
                 ? rule.notification.subject
-                : undefined
+                : undefined,
+              rules: [{
+                required: !notificationsDisabled,
+                message: ' '
+              }]
             })(
               <Input
-                disabled={this.notificationsDisabled || pending}
+                disabled={notificationsDisabled || pending}
               />
             )}
           </Form.Item>
@@ -274,7 +283,7 @@ class NotificationForm extends React.Component {
                 className={classNames(styles.codeEditor, 'cp-code-editor')}
                 language="application/x-jsp"
                 lineWrapping
-                readOnly={this.notificationsDisabled || pending}
+                readOnly={notificationsDisabled || pending}
               />
             )}
           </Form.Item>
@@ -306,7 +315,8 @@ class NotificationForm extends React.Component {
 
 NotificationForm.propTypes = {
   form: PropTypes.object,
-  rule: PropTypes.object
+  rule: PropTypes.object,
+  notificationsDisabled: PropTypes.bool
 };
 
 export default NotificationForm;
