@@ -17,9 +17,9 @@ import argparse
 
 from sls.app.cloud_storage_adapter import PlatformToCloudOperationsAdapter
 from sls.app.run_mode import ApplicationModeRunner
+from sls.app.storage_archiving import StorageLifecycleArchivingSynchronizer
 from sls.util.logger import AppLogger
 from sls.model.config_model import SynchronizerConfig
-from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
 from sls.datasorce.cp_data_source import configure_cp_data_source
 
 
@@ -49,7 +49,7 @@ def run_application(args, logger):
     config = SynchronizerConfig(int(args.max_execution_running_days), args.mode, args.at)
     logger.log("Running application with config: {}".format(config.to_json()))
     ApplicationModeRunner.get_application_runner(
-        StorageLifecycleSynchronizer(config, data_source, cloud_adapter, logger),
+        StorageLifecycleArchivingSynchronizer(config, data_source, cloud_adapter, logger),
         config
     ).run()
 

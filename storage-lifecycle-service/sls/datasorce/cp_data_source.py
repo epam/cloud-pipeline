@@ -15,6 +15,7 @@ import os
 from pipeline import PipelineAPI
 
 from sls.model.rule_model import LifecycleRuleParser, StorageLifecycleNotification
+from sls.model.restore_model import StorageLifecycleRestoreAction
 
 
 def configure_cp_data_source(cp_api_url, cp_api_token, api_log_dir, logger, data_source_type="RESTApi"):
@@ -145,6 +146,21 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     def load_preference(self, preference_name):
         return self.api.get_preference(preference_name)
+
+    def filter_restore_actions(self, datastorage_id, filter_obj):
+        api_response_object = self.api.filter_lifecycle_restore_action(datastorage_id, filter_obj)
+        return [StorageLifecycleRestoreAction.parse_from_dict(obj_dict) for obj_dict in api_response_object]
+
+    def update_restore_action(self, action):
+        data = {
+            "id": action.action_id,
+            "datastorageId": action.datastorage_id,
+            "path": action.path,
+            "pathType": action.path_type,
+            "status": action.status,
+            "restoredTill": action.restored_till
+        }
+        self.api.update_lifecycle_restore_action(action.datastorage_id, data)
 
     def _load_default_lifecycle_rule_notification(self):
         default_lifecycle_notification_template = next(
