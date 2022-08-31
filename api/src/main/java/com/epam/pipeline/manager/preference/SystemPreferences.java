@@ -582,6 +582,8 @@ public class SystemPreferences {
     public static final ObjectPreference<List<String>> UI_KUBE_LABELS = new ObjectPreference<>(
             "ui.tool.kube.labels", null, new TypeReference<List<String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}), true);
+    public static final StringPreference UI_MY_COSTS_DISCLAIMER = new StringPreference("ui.my.costs.disclaimer",
+            "", UI_GROUP, pass);
 
     // BASE_URLS_GROUP
     public static final StringPreference BASE_API_HOST = new StringPreference("base.api.host", null,
