@@ -29,10 +29,16 @@ class StorageOperations:
     def prepare_bucket_if_needed(self, bucket):
         pass
 
-    def list_objects_by_prefix(self, bucket, prefix, convert_paths=True):
+    def list_objects_by_prefix(self, bucket, prefix, list_versions=False, convert_paths=True):
         pass
 
     def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
+        pass
+
+    def run_files_restore(self, bucket, files, days, restore_tear, region, operation_id):
+        pass
+
+    def check_files_restore(self, bucket, files):
         pass
 
 
@@ -118,25 +124,71 @@ class S3StorageOperations(StorageOperations):
         else:
             self.logger.log("There are already defined S3 Lifecycle rules for storage: {}.".format(bucket))
 
-    def list_objects_by_prefix(self, bucket, prefix, convert_paths=True):
+    def list_objects_by_prefix(self, bucket, prefix, list_versions=False, convert_paths=True):
         result = []
-        paginator = self.aws_s3_client.get_paginator('list_objects')
+        paginator = self.aws_s3_client.get_paginator('list_objects' if not list_versions else 'list_object_versions')
         page_iterator = paginator.paginate(Bucket=bucket, Prefix=self._path_to_s3_format(prefix))
         for page in page_iterator:
-            if 'Contents' in page:
-                for obj in page['Contents']:
-                    result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
+            if not list_versions:
+                if 'Contents' in page:
+                    for obj in page['Contents']:
+                        result.append(self._map_s3_obj_to_cloud_obj(obj, convert_paths))
+            else:
+                if 'Versions' in page:
+                    for version in page['Versions']:
+                        result.append(self._map_s3_obj_to_cloud_obj(version, convert_paths))
         return result
 
     def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
-        aws_s3control_client = boto3.client("s3control", region_name=region)
-        manifest_content = "\n".join(["{},{}".format(bucket, self._path_to_s3_format(file.path)) for file in files])
+        tag_operation = {
+            'S3PutObjectTagging': {
+                'TagSet': [
+                    {
+                        'Key': DESTINATION_STORAGE_CLASS_TAG,
+                        'Value': storage_class
+                    },
+                ]
+            }
+        }
+        job_description = self._run_s3_batch_operation(bucket, files, region, tag_operation, transit_id)
+        return self._is_s3_batch_operation_failed(job_description)
 
-        job_location_prefix = os.path.join(self.config["tagging_job_report_bucket_prefix"], bucket, "rule_" + transit_id)
+    def run_files_restore(self, bucket, files, days, restore_tear, region, restore_operation_id):
+        restore_operation = {
+            ' S3InitiateRestoreObject': {
+                'ExpirationInDays': days,
+                'GlacierJobTier': restore_tear
+            }
+        }
+        job_description = self._run_s3_batch_operation(bucket, files, region, restore_operation, restore_operation_id)
+        return {
+            "status": self._is_s3_batch_operation_failed(job_description),
+            "cause": job_description
+        }
+
+    def check_files_restore(self, bucket, files):
+        return {
+            "status": False,
+            "value": datetime.datetime.now(),
+            "cause": ""
+        }
+
+    def _run_s3_batch_operation(self, bucket, files, region, operation_obj, operation_id):
+        aws_s3control_client = boto3.client("s3control", region_name=region)
+        is_files_versioned = True if next(iter(files), None).version_id else False
+        manifest_content = "\n".join(
+            ["{},{}".format(bucket, self._path_to_s3_format(file.path))
+             if not is_files_versioned
+             else
+             "{},{},{}".format(bucket, self._path_to_s3_format(file.path), file.version_id)
+             for file in files]
+        )
+
+        job_location_prefix = os.path.join(self.config["tagging_job_report_bucket_prefix"], bucket, operation_id)
 
         manifest_key = os.path.join(
             job_location_prefix,
-            "_".join([bucket, transit_id, storage_class,
+            "_".join([bucket, operation_id,
                       str(datetime.datetime.utcnow()), ".csv"]).replace(" ", "_").replace(":", "_").replace("/", ".")
         )
         manifest_object = self.aws_s3_client.put_object(
@@ -149,16 +201,7 @@ class S3StorageOperations(StorageOperations):
         s3_tagging_job = aws_s3control_client.create_job(
             AccountId=self.config["tagging_job_aws_account_id"],
             ConfirmationRequired=False,
-            Operation={
-                'S3PutObjectTagging': {
-                    'TagSet': [
-                        {
-                            'Key': DESTINATION_STORAGE_CLASS_TAG,
-                            'Value': storage_class
-                        },
-                    ]
-                },
-            },
+            Operation=operation_obj,
             Report={
                 'Bucket': "arn:aws:s3:::" + self.config["tagging_job_report_bucket"],
                 'Format': 'Report_CSV_20180820',
@@ -169,10 +212,11 @@ class S3StorageOperations(StorageOperations):
             Manifest={
                 'Spec': {
                     'Format': 'S3BatchOperations_CSV_20180820',
-                    'Fields': ['Bucket', 'Key']
+                    'Fields': ['Bucket', 'Key', 'VersionId'] if is_files_versioned else ['Bucket', 'Key']
                 },
                 'Location': {
-                    'ObjectArn': "".join(["arn:aws:s3:::", self.config["tagging_job_report_bucket"], "/", manifest_key]),
+                    'ObjectArn': "".join(
+                        ["arn:aws:s3:::", self.config["tagging_job_report_bucket"], "/", manifest_key]),
                     'ETag': manifest_object["ETag"]
                 }
             },
@@ -188,30 +232,27 @@ class S3StorageOperations(StorageOperations):
                 JobId=s3_tagging_job["JobId"]
             )
             if "Job" in s3_tagging_job_description and "Status" in s3_tagging_job_description["Job"]:
-                if s3_tagging_job_description["Job"]["Status"] == "Complete":
+                if s3_tagging_job_description["Job"]["Status"] == "Complete" or s3_tagging_job_description["Job"]["Status"] == "Failed":
                     self.logger.log("Job status: {}. Proceeding.".format(s3_tagging_job_description["Job"]["Status"]))
                     break
                 else:
                     self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Job"]["Status"]))
             sleep(self.config["tagging_job_poll_status_sleep_sec"])
 
-        if not s3_tagging_job_description or "Job" not in s3_tagging_job_description or \
-                "Status" not in s3_tagging_job_description["Job"] \
-                or s3_tagging_job_description["Job"]["Status"] != "Complete" \
-                or "ProgressSummary" not in s3_tagging_job_description["Job"] \
-                or s3_tagging_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] > 0:
+        if self._is_s3_batch_operation_failed(s3_tagging_job_description):
             self.logger.log(
-                "Can't get Job status. Will keep manifest and report and skip. Task summary: {}".format(
+                "Job status is not successful. Will keep manifest and report and skip. Task summary: {}".format(
                     str(s3_tagging_job_description))
             )
-            return False
+        else:
+            self._clean_up_after_job(job_location_prefix, manifest_key, s3_tagging_job["JobId"])
 
-        self._clean_up_after_job(job_location_prefix, manifest_key, s3_tagging_job["JobId"])
-        return True
+        return s3_tagging_job_description
 
     def _clean_up_after_job(self, job_location_prefix, manifest_key, job_id):
         job_report_dir = os.path.join(job_location_prefix, "job-" + job_id)
-        job_related_files = self.list_objects_by_prefix(self.config["tagging_job_report_bucket"], job_report_dir, False)
+        job_related_files = self.list_objects_by_prefix(self.config["tagging_job_report_bucket"], job_report_dir,
+                                                        list_versions=False, convert_paths=False)
         for file in job_related_files:
             self.aws_s3_client.delete_object(
                 Bucket=self.config["tagging_job_report_bucket"],
@@ -223,11 +264,20 @@ class S3StorageOperations(StorageOperations):
         )
 
     @staticmethod
+    def _is_s3_batch_operation_failed(s3_tagging_job_description):
+        return not s3_tagging_job_description or "Job" not in s3_tagging_job_description or \
+               "Status" not in s3_tagging_job_description["Job"] \
+               or s3_tagging_job_description["Job"]["Status"] != "Complete" \
+               or "ProgressSummary" not in s3_tagging_job_description["Job"] \
+               or s3_tagging_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] > 0
+
+    @staticmethod
     def _map_s3_obj_to_cloud_obj(s3_object, convert_path):
         return CloudObject(
             S3StorageOperations._path_from_s3_format(s3_object["Key"]) if convert_path else s3_object["Key"],
             s3_object["LastModified"],
-            s3_object["StorageClass"]
+            s3_object["StorageClass"],
+            s3_object["VersionId"] if 'VersionId' in s3_object else None
         )
 
     @staticmethod

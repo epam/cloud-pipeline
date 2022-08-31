@@ -38,7 +38,7 @@ class StorageLifecycleRestoreNotification:
 
 class StorageLifecycleRestoreAction:
 
-    def __init__(self, action_id, datastorage_id, user_actor_id, path, path_type, restore_mode,
+    def __init__(self, action_id, datastorage_id, user_actor_id, path, path_type, restore_versions, restore_mode,
                  days, started, updated, status, restored_till, notification):
 
         self.action_id = action_id
@@ -46,6 +46,7 @@ class StorageLifecycleRestoreAction:
         self.user_actor_id = user_actor_id
         self.path = path
         self.path_type = path_type
+        self.restore_versions = restore_versions
         self.restore_mode = restore_mode
         self.days = days
         self.started = started
@@ -69,6 +70,7 @@ class StorageLifecycleRestoreAction:
 
         return StorageLifecycleRestoreAction(
             obj_dict["id"], obj_dict["datastorageId"], obj_dict["userActorId"], obj_dict["path"], obj_dict["pathType"],
+            restore_versions=obj_dict["restoreVersions"] if "restoreVersions" in obj_dict else False,
             restore_mode=obj_dict["restoreMode"] if "restoreMode" in obj_dict else "STANDARD",
             days=obj_dict["days"],
             started=parse_timestamp(obj_dict["started"]),

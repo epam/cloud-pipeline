@@ -149,7 +149,7 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
 
     def filter_restore_actions(self, datastorage_id, filter_obj):
         api_response_object = self.api.filter_lifecycle_restore_action(datastorage_id, filter_obj)
-        return [StorageLifecycleRestoreAction.parse_from_dict(obj_dict) for obj_dict in api_response_object]
+        return [StorageLifecycleRestoreAction.parse_from_dict(obj_dict) for obj_dict in api_response_object] if api_response_object else []
 
     def update_restore_action(self, action):
         data = {

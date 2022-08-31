@@ -31,8 +31,10 @@ class AttributesChangingStorageOperations(StorageOperations):
     def prepare_bucket_if_needed(self, bucket):
         self.cloud_operations.prepare_bucket_if_needed(bucket)
 
-    def list_objects_by_prefix(self, bucket, prefix, convert_paths=True):
-        intermediate_result = self.cloud_operations.list_objects_by_prefix(bucket, prefix, convert_paths)
+    def list_objects_by_prefix(self, bucket, prefix, list_versions=False, convert_paths=True):
+        intermediate_result = self.cloud_operations.list_objects_by_prefix(bucket, prefix,
+                                                                           list_versions=list_versions,
+                                                                           convert_paths=convert_paths)
         for file in intermediate_result:
             if file.path in self.watched_files_by_storages[bucket]:
                 file.storage_class = self.watched_files_by_storages[bucket][file.path].storage_class

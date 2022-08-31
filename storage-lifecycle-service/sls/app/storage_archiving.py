@@ -498,7 +498,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
 
     @staticmethod
     def _get_transition_id(action_items, rule):
-        return "{}_{}".format(str(rule.rule_id), action_items.folder)
+        return "archive_rule_{}_{}".format(str(rule.rule_id), action_items.folder).replace(" ", "_").replace(":", "_").replace("/", ".")
 
     @staticmethod
     def _identify_subject_folders(files, glob_str):
