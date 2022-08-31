@@ -59,6 +59,8 @@ public class StorageRestoreActionEntity {
     @Enumerated(EnumType.STRING)
     private StorageRestorePathType type;
 
+    private Boolean restoreVersions;
+
     private String restoreMode;
 
     private Long days;

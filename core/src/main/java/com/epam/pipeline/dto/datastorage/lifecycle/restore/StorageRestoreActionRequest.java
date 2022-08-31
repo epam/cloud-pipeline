@@ -32,6 +32,7 @@ public class StorageRestoreActionRequest {
     private List<StorageRestorePath> paths;
     private String restoreMode;
     private Long days;
+    private Boolean restoreVersions;
     private Boolean force;
     private StorageRestoreActionNotification notification;
 

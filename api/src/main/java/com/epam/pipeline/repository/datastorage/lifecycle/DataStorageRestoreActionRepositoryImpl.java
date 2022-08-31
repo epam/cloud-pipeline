@@ -42,6 +42,7 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
     public static final String STATUS = "status";
     public static final String ANY_SIGN = "%";
     public static final String DATASTORAGE_ID = "datastorageId";
+    public static final String DELIMITER = "/";
 
     final EntityManager em;
 
@@ -51,15 +52,19 @@ public class DataStorageRestoreActionRepositoryImpl implements DataStorageRestor
         final Root<StorageRestoreActionEntity> restoreAction = cq.from(StorageRestoreActionEntity.class);
         final List<Predicate> predicates = new ArrayList<>();
         Assert.notNull(filter.getDatastorageId(), "datastorageId should be provided!");
+        Assert.notNull(filter.getSearchType(), "searchType should be provided!");
         predicates.add(cb.equal(restoreAction.get(DATASTORAGE_ID), filter.getDatastorageId()));
         if (filter.getPath() != null && filter.getPath().getPath() != null) {
-            if (filter.getSearchType() == null ||
-                    filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT) {
+            if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT) {
                 final Expression<String> pathFromDb = cb.concat(restoreAction.get(PATH), ANY_SIGN);
                 predicates.add(cb.like(cb.literal(filter.getPath().getPath()), pathFromDb));
-            } else if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD) {
+            } else {
                 if (filter.getPath().getType() == StorageRestorePathType.FOLDER) {
                     predicates.add(cb.like(restoreAction.get(PATH), filter.getPath().getPath() + ANY_SIGN));
+                    if (filter.getSearchType() == StorageRestoreActionSearchFilter.SearchType.SEARCH_CHILD) {
+                        predicates.add(cb.notLike(restoreAction.get(PATH),
+                                filter.getPath().getPath() + ANY_SIGN + DELIMITER + ANY_SIGN));
+                    }
                 } else {
                     predicates.add(cb.equal(restoreAction.get(PATH), filter.getPath().getPath()));
                 }

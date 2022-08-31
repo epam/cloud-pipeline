@@ -290,61 +290,63 @@ public final class MessageConstants {
     public static final String ERROR_DATASTORAGE_CANNOT_CREATE_FILE = "error.datastorage.cannot.set.file.permission";
 
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOT_FOUND =
-            "error.datastirage.lifecycle.rule.not.found";
+            "error.datastorage.lifecycle.rule.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_DEFINE_DAYS_TO_PROLONG =
-            "error.datastirage.lifecycle.rule.cant.define.days.to.prolong";
+            "error.datastorage.lifecycle.rule.cant.define.days.to.prolong";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG =
-            "error.datastirage.lifecycle.rule.wrong.days.to.prolong";
+            "error.datastorage.lifecycle.rule.wrong.days.to.prolong";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_WAS_PROLONGED_BEFORE =
-            "error.datastirage.lifecycle.rule.was.prolong.before";
+            "error.datastorage.lifecycle.rule.was.prolong.before";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.rule.datastorage.id.not.specified";
+            "error.datastorage.lifecycle.rule.datastorage.id.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.root.path.not.specified";
+            "error.datastorage.lifecycle.root.path.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_IS_NOT_ABSOLUTE =
-            "error.datastirage.lifecycle.path.is.not.absolute";
+            "error.datastorage.lifecycle.path.is.not.absolute";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITIONS_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.transitions.not.specified";
+            "error.datastorage.lifecycle.transitions.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS =
-            "error.datastirage.lifecycle.wrong.notify.before.days";
+            "error.datastorage.lifecycle.wrong.notify.before.days";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_METHOD_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.transition.method.not.specified";
+            "error.datastorage.lifecycle.transition.method.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ALREADY_EXISTS =
-            "error.datastirage.lifecycle.rule.already.exists";
+            "error.datastorage.lifecycle.rule.already.exists";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ASSIGNED_TO_ANOTHER_DATASTORAGE =
-            "error.datastirage.lifecycle.rule.assigned.to.another.datastorage";
+            "error.datastorage.lifecycle.rule.assigned.to.another.datastorage";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ID_IS_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.rule.id.not.specified";
+            "error.datastorage.lifecycle.rule.id.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_MATCH_GLOB =
-            "error.datastirage.lifecycle.rule.path.doesnt.match.glob";
+            "error.datastorage.lifecycle.rule.path.doesnt.match.glob";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_PATH_NOT_PROVIDED =
-            "error.datastirage.lifecycle.rule.path.not.provided";
+            "error.datastorage.lifecycle.rule.path.not.provided";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_FOUND =
-            "error.datastirage.lifecycle.rule.execution.not.found";
+            "error.datastorage.lifecycle.rule.execution.not.found";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_EXECUTION_NOT_MATCH =
+            "error.datastorage.lifecycle.rule.execution.not.match";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_CANNOT_PARSE_NOTIFICATION =
-            "error.datastirage.lifecycle.rule.cant.parse.notification";
+            "error.datastorage.lifecycle.rule.cant.parse.notification";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ENABLE_FLAG_NOT_PROVIDED =
-            "error.datastirage.lifecycle.rule.provide.enable.flag";
+            "error.datastorage.lifecycle.rule.provide.enable.flag";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
-            "error.datastirage.lifecycle.rule.transition.criterion.value.is.not.provided";
+            "error.datastorage.lifecycle.rule.transition.criterion.value.is.not.provided";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_HAS_DEFAULT_CRITERION =
-            "error.datastirage.lifecycle.rule.one.by.one.has.default.criterion";
+            "error.datastorage.lifecycle.rule.one.by.one.has.default.criterion";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED =
-            "error.datastirage.lifecycle.rule.one.by.one.notification.enabled";
+            "error.datastorage.lifecycle.rule.one.by.one.notification.enabled";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED =
-            "error.datastirage.lifecycle.restore.path.not.specified";
+            "error.datastorage.lifecycle.restore.path.not.specified";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE =
-            "error.datastirage.lifecycle.restore.cannot.be.done";
+            "error.datastorage.lifecycle.restore.cannot.be.done";
     public static final String DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE =
-            "debug.datastirage.lifecycle.existing.restore";
+            "debug.datastorage.lifecycle.existing.restore";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED =
-            "error.datastirage.lifecycle.path.already.restored";
+            "error.datastorage.lifecycle.path.already.restored";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE =
-            "error.datastirage.lifecycle.restore.action.not.found";
+            "error.datastorage.lifecycle.restore.action.not.found";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS =
-            "error.datastirage.lifecycle.restore.in.final.status";
+            "error.datastorage.lifecycle.restore.in.final.status";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY =
-            "error.datastirage.lifecycle.restore.rule.cant.parse.notification";
+            "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

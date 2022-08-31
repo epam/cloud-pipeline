@@ -27,13 +27,10 @@ import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.aws.S3bucketDataStorage;
 import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreActionEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
-import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
-import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
-import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,7 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-public class DataStorageLifecycleManagerRestoreTest {
+public class DataStorageLifecycleRestoreManagerTest {
 
     private static final long ID = 1L;
     private static final String STORAGE_NAME = "storage-name";
@@ -72,12 +69,7 @@ public class DataStorageLifecycleManagerRestoreTest {
     public static final String STANDARD_RESTORE_MODE = "Standard";
     public static final StorageRestoreActionNotification DISABLED_NOTIFICATION = new StorageRestoreActionNotification(false, Collections.emptyList());
 
-    private final DataStorageManager storageManager = Mockito.mock(DataStorageManager.class);
     private final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
-    private final DataStorageLifecycleRuleRepository lifecycleRuleRepository =
-            Mockito.mock(DataStorageLifecycleRuleRepository.class);
-    private final DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository =
-            Mockito.mock(DataStorageLifecycleRuleExecutionRepository.class);
     private final DataStorageRestoreActionRepository dataStoragePathRestoreActionRepository =
             Mockito.mock(DataStorageRestoreActionRepository.class);
     private final StorageLifecycleEntityMapper mapper = Mappers.getMapper(StorageLifecycleEntityMapper.class);
@@ -88,9 +80,9 @@ public class DataStorageLifecycleManagerRestoreTest {
     private final AbstractDataStorage dataStorage = new S3bucketDataStorage(ID, STORAGE_NAME, STORAGE_NAME);
 
 
-    private final DataStorageLifecycleManager lifecycleManager = new DataStorageLifecycleManager(
-            messageHelper, mapper, lifecycleRuleRepository, lifecycleRuleExecutionRepository,
-            dataStoragePathRestoreActionRepository, storageManager, providerManager, preferenceManager, userManager
+    private final DataStorageLifecycleRestoreManager lifecycleManager = new DataStorageLifecycleRestoreManager(
+            messageHelper, mapper, dataStoragePathRestoreActionRepository,
+            providerManager, preferenceManager, userManager
     );
 
     private final List<StorageRestoreActionEntity> filteredAsEffective = Arrays.asList(
@@ -112,15 +104,14 @@ public class DataStorageLifecycleManagerRestoreTest {
                                     .build()
                         )
                 );
-
-        Mockito.doReturn(dataStorage).when(storageManager).load(ID);
     }
 
     @Test
     public void effectiveActionFilteredCorrectlyTest() {
         final StorageRestoreAction storageRestoreAction =
-                lifecycleManager.loadEffectiveRestoreStorageActionByPath(
-                        ID, StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build());
+                lifecycleManager.loadEffectiveRestoreStorageAction(
+                        dataStorage,
+                        StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build());
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
 

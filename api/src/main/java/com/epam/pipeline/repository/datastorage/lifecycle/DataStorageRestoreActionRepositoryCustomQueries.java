@@ -23,6 +23,11 @@ import java.util.List;
 
 public interface DataStorageRestoreActionRepositoryCustomQueries {
 
+    /**
+     * Filter existing {@link StorageRestoreActionEntity} according to provided filters,
+     * it is guaranteed that result will be returned in order respectively to 'started' field,
+     * so it is possible to retrieve the latest on from top
+     * */
     List<StorageRestoreActionEntity> filterBy(StorageRestoreActionSearchFilter filter);
 
 }

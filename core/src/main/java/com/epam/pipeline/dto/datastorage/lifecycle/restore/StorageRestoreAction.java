@@ -30,10 +30,11 @@ import java.time.LocalDateTime;
 @Builder
 public class StorageRestoreAction {
     private Long id;
-    private Long storageId;
+    private Long datastorageId;
     private Long userActorId;
     private String path;
     private StorageRestorePathType type;
+    private Boolean restoreVersions;
     private String restoreMode;
     private Long days;
     private LocalDateTime started;

@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS pipeline.datastorage_lifecycle_restore_action(
     user_actor_id BIGINT NOT NULL REFERENCES pipeline.user (id),
     path TEXT NOT NULL,
     type TEXT NOT NULL,
+    restore_versions BOOLEAN DEFAULT FALSE,
     restore_mode TEXT NOT NULL,
     days BIGINT NOT NULL,
     updated TIMESTAMP WITH TIME ZONE NOT NULL,

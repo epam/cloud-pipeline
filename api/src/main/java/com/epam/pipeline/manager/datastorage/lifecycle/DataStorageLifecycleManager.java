@@ -22,37 +22,23 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionNotification;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePath;
-import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreStatus;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleExecutionEntity;
 import com.epam.pipeline.entity.datastorage.lifecycle.StorageLifecycleRuleProlongationEntity;
-import com.epam.pipeline.entity.datastorage.lifecycle.restore.StorageRestoreActionEntity;
 import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
 import com.epam.pipeline.manager.preference.SystemPreferences;
-import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
-import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
-import com.epam.pipeline.utils.StreamUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.lang3.BooleanUtils;
-import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.AntPathMatcher;
@@ -60,9 +46,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,13 +65,9 @@ public class DataStorageLifecycleManager {
     private final StorageLifecycleEntityMapper lifecycleEntityMapper;
     private final DataStorageLifecycleRuleRepository dataStorageLifecycleRuleRepository;
     private final DataStorageLifecycleRuleExecutionRepository dataStorageLifecycleRuleExecutionRepository;
-    private final DataStorageRestoreActionRepository dataStoragePathRestoreActionRepository;
     private final DataStorageManager storageManager;
     private final StorageProviderManager storageProviderManager;
     private final PreferenceManager preferenceManager;
-
-    private final UserManager userManager;
-
 
     public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long storageId, final String path) {
         validatePathIsAbsolute(path);
@@ -254,138 +234,6 @@ public class DataStorageLifecycleManager {
                         false
                 ).map(lifecycleEntityMapper::toDto)
                 .collect(Collectors.toList());
-    }
-
-    @Transactional
-    public List<StorageRestoreAction> initiateStorageRestores(final Long datastorageId,
-                                                              final StorageRestoreActionRequest request) {
-        Assert.state(!CollectionUtils.isEmpty(request.getPaths()),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
-
-        final StorageRestoreActionNotification notification = request.getNotification();
-        final boolean notificationFormedCorrectly = notification != null
-                && (BooleanUtils.isFalse(notification.getEnabled())
-                || CollectionUtils.isNotEmpty(notification.getRecipients()));
-        Assert.state(notificationFormedCorrectly,
-                messageHelper.getMessage(
-                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY));
-
-        final Long effectiveDays = request.getDays() == null
-                ? preferenceManager.getPreference(SystemPreferences.STORAGE_LIFECYCLE_DEFAULT_RESTORE_DAYS)
-                : request.getDays();
-
-        final AbstractDataStorage storage = storageManager.load(datastorageId);
-
-        final boolean force = BooleanUtils.isTrue(request.getForce());
-        final String restoreMode = storageProviderManager.verifyOrDefaultRestoreMode(storage, request);
-        final List<StorageRestoreActionEntity> actions = request.getPaths().stream()
-                .sorted(Comparator.comparing(StorageRestorePath::getPath))
-                .map(path ->
-                        buildStoragePathRestoreAction(storage, path, restoreMode, effectiveDays, force, notification))
-                .collect(Collectors.toList());
-        return dataStoragePathRestoreActionRepository.save(actions).stream()
-                .map(lifecycleEntityMapper::toDto).collect(Collectors.toList());
-    }
-
-    @Transactional
-    public StorageRestoreAction updateStorageRestoreAction(final StorageRestoreAction action) {
-        final StorageRestoreActionEntity loaded = dataStoragePathRestoreActionRepository.findOne(action.getId());
-        Assert.notNull(loaded,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_CANNOT_FIND_RESTORE,
-                        action.getId()));
-        Assert.state(!loaded.getStatus().isTerminal(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_IN_FINAL_STATUS));
-        loaded.setStatus(action.getStatus());
-        if (action.getStatus() == StorageRestoreStatus.SUCCEEDED) {
-            loaded.setRestoredTill(action.getRestoredTill());
-        }
-        loaded.setUpdated(DateUtils.nowUTC());
-        return lifecycleEntityMapper.toDto(loaded);
-    }
-
-    public List<StorageRestoreAction> filterRestoreStorageActions(final StorageRestoreActionSearchFilter filter) {
-        final AbstractDataStorage dataStorage = storageManager.load(filter.getDatastorageId());
-        if (filter.getPath() != null) {
-            filter.getPath().setPath(getEffectivePathForRestoreAction(filter.getPath(), dataStorage.getDelimiter()));
-        }
-        return dataStoragePathRestoreActionRepository.filterBy(filter)
-                .stream().map(lifecycleEntityMapper::toDto)
-                .sorted(Comparator.comparing(StorageRestoreAction::getStarted).reversed())
-                .filter(BooleanUtils.isTrue(filter.getIsLatest())
-                        ? StreamUtils.distinctByKeyPredicate(StorageRestoreAction::getPath)
-                        : action -> true
-                ).collect(Collectors.toList());
-    }
-
-    public StorageRestoreAction loadEffectiveRestoreStorageActionByPath(final Long datastorageId,
-                                                                        final StorageRestorePath path) {
-        return filterRestoreStorageActions(
-                StorageRestoreActionSearchFilter.builder()
-                        .datastorageId(datastorageId)
-                        .path(path)
-                        .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
-                        .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
-                        .build()
-        ).stream().findFirst().orElse(null);
-    }
-
-    protected StorageRestoreActionEntity buildStoragePathRestoreAction(
-            final AbstractDataStorage dataStorage, final StorageRestorePath path,
-            final String restoreMode, final Long days, final boolean force,
-            final StorageRestoreActionNotification notification) {
-        Assert.state(path.getPath() != null && path.getType() != null,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_PATH_IS_NOT_SPECIFIED));
-        final String effectivePath = getEffectivePathForRestoreAction(path, dataStorage.getDelimiter());
-        final Pair<Boolean, String> eligibility = storageProviderManager.isRestoreActionEligible(
-                dataStorage, effectivePath);
-        Assert.isTrue(eligibility.getFirst(),
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE,
-                        dataStorage.getPath(), dataStorage.getType(), effectivePath, eligibility.getSecond()));
-
-        final StorageRestoreAction effectiveRestore = loadEffectiveRestoreStorageActionByPath(dataStorage.getId(), path);
-
-        final LocalDateTime nowUTC = DateUtils.nowUTC();
-        if (effectiveRestore != null) {
-            log.debug(messageHelper.getMessage(MessageConstants.DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE,
-                    effectiveRestore.getPath(), effectiveRestore.getStatus()));
-            if (!force) {
-                Assert.isTrue(effectiveRestore.getStatus() == StorageRestoreStatus.SUCCEEDED
-                                && effectiveRestore.getRestoredTill().isBefore(nowUTC),
-                        messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED,
-                                dataStorage.getPath(), effectiveRestore.getPath()));
-            }
-        }
-
-        return StorageRestoreActionEntity.builder()
-                .datastorageId(dataStorage.getId())
-                .userActor(userManager.getCurrentUser())
-                .path(effectivePath)
-                .type(path.getType())
-                .restoreMode(restoreMode)
-                .status(StorageRestoreStatus.INITIATED)
-                .days(days)
-                .started(nowUTC)
-                .updated(nowUTC)
-                .notificationJson(parseRestoreNotification(notification))
-                .build();
-    }
-
-    @SneakyThrows
-    private static String parseRestoreNotification(final StorageRestoreActionNotification notification) {
-        return StorageLifecycleEntityMapper.restoreNotificationToJson(notification);
-    }
-
-    private static String getEffectivePathForRestoreAction(final StorageRestorePath path, final String delimiter) {
-        final String result = path.getPath().startsWith(delimiter)
-                ? path.getPath().substring(delimiter.length())
-                : path.getPath();
-        switch (path.getType()) {
-            case FOLDER:
-                return result.endsWith(delimiter) ? result : result + delimiter;
-            case FILE:
-            default:
-                return result;
-        }
     }
 
     private Long getEffectiveDaysToProlong(final Long daysToProlong, final StorageLifecycleRuleEntity ruleEntity) {

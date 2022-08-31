@@ -24,7 +24,10 @@ import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionR
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePath;
 import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
+import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
+import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleManager;
+import com.epam.pipeline.manager.datastorage.lifecycle.DataStorageLifecycleRestoreManager;
 import com.epam.pipeline.security.acl.AclExpressions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,7 +40,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DataStorageLifecycleApiService {
 
+    private final DataStorageManager storageManager;
+
     private final DataStorageLifecycleManager storageLifecycleManager;
+    private final DataStorageLifecycleRestoreManager restoreManager;
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
     public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long id, final String path) {
@@ -99,13 +105,14 @@ public class DataStorageLifecycleApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public List<StorageRestoreAction> initiateStorageRestores(final Long id,
                                                               final StorageRestoreActionRequest request) {
-        return storageLifecycleManager.initiateStorageRestores(id, request);
+        final AbstractDataStorage storage = storageManager.load(id);
+        return restoreManager.initiateStorageRestores(storage, request);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public StorageRestoreAction updateStorageRestoreAction(final Long id,
                                                            final StorageRestoreAction action) {
-        return storageLifecycleManager.updateStorageRestoreAction(action);
+        return restoreManager.updateStorageRestoreAction(action);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
@@ -114,14 +121,25 @@ public class DataStorageLifecycleApiService {
         if (filter.getDatastorageId() == null) {
             filter.setDatastorageId(id);
         }
-        return storageLifecycleManager.filterRestoreStorageActions(filter);
+        final AbstractDataStorage storage = storageManager.load(id);
+        return restoreManager.filterRestoreStorageActions(storage, filter);
     }
 
     @PreAuthorize(AclExpressions.STORAGE_ID_READ)
-    public StorageRestoreAction loadEffectiveRestoreStorageAction(final Long id, final String path,
+    public StorageRestoreAction loadEffectiveRestoreStorageAction(final Long datastorageId, final String path,
                                                                   final StorageRestorePathType pathType) {
-        final StorageRestorePathType restorePathType = pathType != null ? pathType : StorageRestorePathType.FOLDER;
-        return storageLifecycleManager.loadEffectiveRestoreStorageActionByPath(
-                id, StorageRestorePath.builder().type(restorePathType). path(path).build());
+        final AbstractDataStorage storage = storageManager.load(datastorageId);
+        return restoreManager.loadEffectiveRestoreStorageAction(
+                storage, StorageRestorePath.builder().type(pathType).path(path).build());
+    }
+
+    @PreAuthorize(AclExpressions.STORAGE_ID_READ)
+    public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final Long datastorageId,
+                                                                                 final String path,
+                                                                                 final StorageRestorePathType pathType,
+                                                                                 final Boolean recursive) {
+        final AbstractDataStorage storage = storageManager.load(datastorageId);
+        return restoreManager.loadEffectiveRestoreStorageActionHierarchy(
+                storage, StorageRestorePath.builder().type(pathType).path(path).build(), recursive);
     }
 }

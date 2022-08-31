@@ -46,6 +46,6 @@ public class StorageRestoreActionSearchFilter {
     private List<StorageRestoreStatus> statuses;
 
     public enum SearchType {
-        SEARCH_PARENT, SEARCH_CHILD
+        SEARCH_PARENT, SEARCH_CHILD, SEARCH_CHILD_RECURSIVELY
     }
 }

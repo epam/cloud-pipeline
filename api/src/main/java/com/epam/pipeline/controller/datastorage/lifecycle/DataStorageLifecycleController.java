@@ -282,8 +282,28 @@ public class DataStorageLifecycleController extends AbstractRestController {
     public Result<StorageRestoreAction> loadEffectiveRestoreStoragePathAction(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @RequestParam(value = PATH) final String path,
-            @RequestParam(value = "pathType", required = false) final StorageRestorePathType pathType) {
+            @RequestParam final StorageRestorePathType pathType) {
         return Result.success(
-                dataStorageLifecycleApiService.loadEffectiveRestoreStorageAction(datastorageId, path, pathType));
+                dataStorageLifecycleApiService.loadEffectiveRestoreStorageAction(
+                        datastorageId, path, pathType));
+    }
+
+    @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/effectiveHierarchy")
+    @ResponseBody
+    @ApiOperation(
+            value = "Find last applied restore action for datastorage and path.",
+            notes = "Find last applied restore action for datastorage and path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<StorageRestoreAction>> loadEffectiveRestoreStoragePathAction(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam final StorageRestorePathType pathType,
+            @RequestParam(defaultValue = "false") final Boolean recursive) {
+        return Result.success(
+                dataStorageLifecycleApiService.loadEffectiveRestoreStorageActionHierarchy(
+                        datastorageId, path, pathType, recursive));
     }
 }
