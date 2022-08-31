@@ -61,6 +61,11 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
+  get myCostsDisclaimer () {
+    return this.getPreferenceValue('ui.my.costs.disclaimer');
+  }
+
+  @computed
   get useSpot () {
     return `${this.getPreferenceValue('cluster.spot')}` === 'true';
   }
