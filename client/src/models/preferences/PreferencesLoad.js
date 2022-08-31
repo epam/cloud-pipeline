@@ -62,7 +62,7 @@ class PreferencesLoad extends Remote {
   }
 
   @computed
-  get myCostsPreference () {
+  get myCostsDisclaimer () {
     return this.getPreferenceValue('ui.my.costs.disclaimer');
   }
 
