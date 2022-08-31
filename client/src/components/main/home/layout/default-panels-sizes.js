@@ -26,5 +26,5 @@ export default {
   [Panels.recentlyCompletedRuns]: {w: 1, h: 2},
   [Panels.runs]: {w: 1, h: 1},
   [Panels.services]: {w: 1, h: 1},
-  [Panels.userCosts]: {w: 1, h: 0.6}
+  [Panels.userCosts]: {w: 1, h: 0.9}
 };
