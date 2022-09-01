@@ -75,6 +75,7 @@ class SpecItem(object):
 class DefineResults(ExportToSpreadsheet):
     MODULE_NAME = 'DefineResults'
     FIELDS_BY_WELL = 'fields_by_well'
+    Z_PLANES = 'z_planes'
     _METADATA_COLUMN_PREFIX = 'Metadata_'
     _MEAN_STAT_FUNC_KEY = 'Mean'
     _MEDIAN_STAT_FUNC_KEY = 'Median'
@@ -94,6 +95,7 @@ class DefineResults(ExportToSpreadsheet):
     _WELL_ROW = "WellRow"
     _WELL_COLUMN = "WellColumn"
     _WELL = "Well"
+    _PLANE = "Plane"
 
     def __init__(self):
         super(DefineResults, self).__init__()
@@ -101,11 +103,13 @@ class DefineResults(ExportToSpreadsheet):
         self._grouping = []
         self.module_name = self.MODULE_NAME
         self._fields_by_well = {}
+        self._squashed_z_planes_column_value = None
+        self._z_planes = list()
 
     def update_settings(self, setting: list):
         pass
 
-    def set_calculation_spec(self, specs, grouping, fields_by_well):
+    def set_calculation_spec(self, specs, grouping, fields_by_well, z_planes=None):
         self._calculation_specs = specs if specs is not None else []
         self._grouping = grouping
         if self._grouping and self._WELL not in self._grouping:
@@ -114,7 +118,12 @@ class DefineResults(ExportToSpreadsheet):
             self._grouping.append(self._WELL_ROW)
         if self._grouping and self._WELL_COLUMN not in self._grouping:
             self._grouping.append(self._WELL_COLUMN)
+        if self._grouping and self._PLANE not in self._grouping:
+            self._grouping.append(self._PLANE)
         self._fields_by_well = self._calculate_fields_count_by_well(fields_by_well)
+        if z_planes:
+            self._z_planes = [str(z_plane) for z_plane in z_planes]
+            self._squashed_z_planes_column_value = 'Projection %s' % '-'.join(self._z_planes)
 
     def get_calculation_specs_as_json(self):
         return [spec.to_json() for spec in self._calculation_specs]
@@ -221,7 +230,9 @@ class DefineResults(ExportToSpreadsheet):
         result_data_list = list()
         well_y_index = self._grouping.index(self._WELL_COLUMN)
         well_x_index = self._grouping.index(self._WELL_ROW)
+        plane_index = self._grouping.index(self._PLANE)
         for group_name, group_calculation_results in result_data_dict.items():
+            group_name = self._build_group_name_with_squashed_z_planes(group_name, plane_index)
             result_index.append(group_name)
             result_data_list.append(group_calculation_results)
             well_key = (group_name[well_y_index], group_name[well_x_index])
@@ -474,6 +485,13 @@ class DefineResults(ExportToSpreadsheet):
             secondary_to_primary_region_intensity_dataseries = pandas.Series(data=series_list)
             self._calculate_and_add_all_stat_functions(
                 result_data_dict, secondary_to_primary_region_intensity_dataseries, grouping_value, spec)
+
+    def _build_group_name_with_squashed_z_planes(self, group_name, plane_index):
+        if self._squashed_z_planes_column_value and str(group_name[plane_index]) in self._z_planes:
+            return tuple(self._squashed_z_planes_column_value if i == plane_index else group_name[i]
+                         for i in range(len(group_name)))
+        else:
+            return group_name
 
     @staticmethod
     def _calculate_fields_count_by_well(fields_by_well: dict):

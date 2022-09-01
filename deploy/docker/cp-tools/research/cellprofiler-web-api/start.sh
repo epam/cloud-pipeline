@@ -71,13 +71,14 @@ else
 
     CELLPROFILER_API_TMP_DIR=$(mktemp -d)
     measurement_uuid=$(jq -r .measurementUUID $CELLPROFILER_API_BATCH_SPEC_FILE)
+    z_planes=$(jq -r '.inputs.zPlanes' $CELLPROFILER_API_BATCH_SPEC_FILE)
     modules_count=$(jq '.modules | length' $CELLPROFILER_API_BATCH_SPEC_FILE)
     prepare_modules "$modules_count"
 
     pipelines=()
     tmp_inputs_dir="$CELLPROFILER_API_TMP_DIR/inputs"
     mkdir "$tmp_inputs_dir"
-    inputs_by_well="[$(jq -r '.inputs | [ group_by(.x, .y)[] | [{"x": .[0].x, "y": .[0].y, "data": .}] | add | tojson ] | join(",")' $CELLPROFILER_API_BATCH_SPEC_FILE)]"
+    inputs_by_well="[$(jq -r '.inputs.files | [ group_by(.x, .y)[] | [{"x": .[0].x, "y": .[0].y, "data": .}] | add | tojson ] | join(",")' $CELLPROFILER_API_BATCH_SPEC_FILE)]"
     inputs_count=$(echo "$inputs_by_well" | jq '. | length')
     for i in $(seq "$inputs_count");
     do
@@ -85,8 +86,9 @@ else
         well=$(echo "$inputs_by_well" | jq ".[$index]")
         well_x=$(echo "$well" | jq -r '.x//""')
         well_y=$(echo "$well" | jq -r '.y//""')
+        well_data=$(echo "$well" | jq -r '.data//""')
         tmp_well_inputs_file="$tmp_inputs_dir/well-$well_x$well_y.json"
-        echo "$well" | jq -r '.data//""' > "$tmp_well_inputs_file"
+        echo "{ \"files\": $well_data, \"zPlanes\": $z_planes}" > "$tmp_well_inputs_file"
 
         pipeline_id="$(curl -k -s -H 'Content-Type: application/json' -X POST "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?measurementUUID=$measurement_uuid" | jq -r '.payload.pipelineId//""')"
         if [ -z "$pipeline_id" ]; then
@@ -123,21 +125,26 @@ else
     # merge results
     common_define_results_file="$CELLPROFILER_API_BATCH_RESULTS_DIR/Results.csv"
     first_pipeline_processed=0
+    measurement_id=${measurement_uuid##*/}
     for pipeline_id in "${pipelines[@]}"
     do
         module_id="$(curl -k -s -X GET "http://localhost:$CELLPROFILER_API_PORT/hcs/pipelines?pipelineId=$pipeline_id" | jq -r '.payload.pipelineId.modules | map(select(.name=="DefineResults"))[] | .id//""')"
-        define_results_pipeline_file="$CELLPROFILER_API_COMMON_RESULTS_DIR/$measurement_uuid/$pipeline_id/$module_id/Results.csv"
+        define_results_pipeline_file="$CELLPROFILER_API_COMMON_RESULTS_DIR/$measurement_id/$pipeline_id/$module_id/Results.csv"
         if [ ! -f "$define_results_pipeline_file" ]; then
+            echo "[DEBUG] DefineResults module output file '$define_results_pipeline_file' not found"
             continue
         fi
         if [ "$first_pipeline_processed" == 0 ]; then
             cat "$define_results_pipeline_file" > "$common_define_results_file"
             first_pipeline_processed=1
+            echo "[DEBUG] Created common results '$common_define_results_file' from '$define_results_pipeline_file'"
         else
             tail -n +2 "$define_results_pipeline_file" >> "$common_define_results_file"
+            echo "[DEBUG] Updated common results '$common_define_results_file' from '$define_results_pipeline_file'"
         fi
     done
     if [ -f "$common_define_results_file" ]; then
         libreoffice --headless --convert-to xlsx:"Calc MS Excel 2007 XML" --outdir "$CELLPROFILER_API_BATCH_RESULTS_DIR" "$common_define_results_file" > /dev/null
+        echo "[DEBUG] Saved common results in xlsx format to '$CELLPROFILER_API_BATCH_RESULTS_DIR' folder"
     fi
 fi
