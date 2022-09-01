@@ -303,6 +303,9 @@ class PipelineAPI:
             'date': date
         })
 
+    def get_preference_efficiently(self, name):
+        return self._request('GET', 'preferences/' + name) or ''
+
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
         count = 0
@@ -1025,6 +1028,10 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load role by name '{}'.", "Error message: {}".format(str(name),
                                                                                                str(e.message)))
+
+    def load_users(self):
+        return self._request('GET', 'users') or []
+
 
     def run_configuration(self, data):
         try:

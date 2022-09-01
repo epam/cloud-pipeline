@@ -1,4 +1,4 @@
-# Copyright 2017-2021 EPAM Systems, Inc. (https://www.epam.com/)
+# Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,29 +12,121 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import grp
 import logging
 import os
-import pwd
 import shutil
 import stat
 import time
-import traceback
 from functools import reduce
 
-from pipeline.api import PipelineAPI
+from pipeline.api import PipelineAPI, APIError
 from pipeline.log.logger import LocalLogger, RunLogger, TaskLogger, LevelLogger
 from pipeline.utils.account import create_user
 from pipeline.utils.path import mkdir
+from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
 
 _ROOT_HOME_DIR = '/root'
 _ROOT_SSH_DIR = os.path.join(_ROOT_HOME_DIR, '.ssh')
 _SSH_FILE_PATHS = ['id_rsa', 'id_rsa.pub', 'authorized_keys']
+_BASH_PROFILE_CONTENT = """
+if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+fi
+
+PATH=$PATH:$HOME/.local/bin:$HOME/bin
+export PATH
+"""
+_BASHRC_CONTENT = """
+if [ -f /etc/bashrc ]; then
+    . /etc/bashrc
+fi
+"""
+
+
+def sync_users():
+    api_url = os.environ['API']
+    run_id = os.environ['RUN_ID']
+    shared_dir = os.getenv('SHARED_ROOT', '/common')
+    root_home_dir = os.getenv('CP_CAP_SYNC_USERS_HOME_DIR', os.path.join(shared_dir, 'home'))
+    uid_seed_default = int(os.getenv('CP_CAP_UID_SEED', '70000'))
+    sync_timeout = int(os.getenv('CP_CAP_SYNC_USERS_TIMEOUT_SECONDS', '60'))
+    logging_directory = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
+    logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'ERROR')
+    logging_level_local = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
+    logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+
+    logging.basicConfig(level=logging_level_local, format=logging_format,
+                        filename=os.path.join(logging_directory, 'sync_users.log'))
+
+    api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
+    logger = RunLogger(api=api, run_id=run_id)
+    logger = TaskLogger(task='UsersSynchronization', inner=logger)
+    logger = LevelLogger(level=logging_level, inner=logger)
+    logger = LocalLogger(inner=logger)
+
+    executor = LocalExecutor()
+    executor = LoggingExecutor(logger=logger, inner=executor)
+
+    while True:
+        try:
+            time.sleep(sync_timeout)
+            logger.info('Starting users synchronization...')
+
+            logger.info('Loading preferences...')
+            try:
+                uid_seed = int(api.get_preference_efficiently('launch.uid.seed') or uid_seed_default)
+            except APIError:
+                uid_seed = uid_seed_default
+            logger.info('Loaded uid seed: {}.', uid_seed)
+
+            logger.info('Loading shared users and groups...')
+            run_users, run_groups = _get_run_shared_users_and_groups(api, run_id)
+            shared_users = set()
+            shared_users.update(run_users)
+            shared_users.update(_get_group_users(api, run_groups))
+            logger.info('Loaded {} shared users.'.format(len(shared_users)))
+            logger.debug('Loaded shared users: {}'.format(shared_users))
+
+            logger.info('Loading local users...')
+            local_users = set(_get_local_users())
+            logger.info('Loaded {} local users.'.format(len(local_users)))
+            logger.debug('Loaded local users: {}'.format(local_users))
+
+            logger.info('Loading user details...')
+            user_details = {user['userName']: user for user in api.load_users()}
+            logger.info('Loaded {} user details.'.format(len(user_details.keys())))
+
+            users_to_create = shared_users - local_users
+            logger.info('Creating {} users...'.format(len(users_to_create)))
+            logger.debug('Creating users {}...'.format(users_to_create))
+
+            for user in users_to_create:
+                try:
+                    user_id = user_details.get(user, {}).get('id', 0)
+                    if not user_id:
+                        logger.warning('Skipping {} user creation since the corresponding details have not been found.')
+                        continue
+                    user_uid, user_gid, user_home_dir = _create_account(user, user_id, uid_seed, root_home_dir, logger)
+                    _configure_bash_profile(user, user_uid, user_gid, user_home_dir, logger)
+                    _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger)
+                except KeyboardInterrupt:
+                    logger.warning('Interrupted.')
+                    raise
+                except Exception:
+                    logger.warning('User {} creation has failed.'.format(user), trace=True)
+            logger.info('Finishing users synchronization...')
+        except KeyboardInterrupt:
+            logger.warning('Interrupted.')
+            break
+        except Exception:
+            logger.warning('Users synchronization has failed.', trace=True)
+        except BaseException:
+            logger.error('Users synchronization has failed completely.', trace=True)
+            raise
 
 
 def _get_run_shared_users_and_groups(api, run_id):
-    run = api.load_run(run_id) or {}
-    run_sids = run.get('runSids', [])
+    run_sids = api.load_run_efficiently(run_id).get('runSids', [])
     return reduce(
         lambda (us, gs), sid: (us + [sid['name']], gs) if sid['isPrincipal'] else (us, gs + [sid['name']]),
         run_sids,
@@ -62,78 +154,68 @@ def _get_local_users():
             yield stripped_line.split(':')[0]
 
 
-def sync_users():
-    api_url = os.environ['API']
-    run_id = os.environ['RUN_ID']
-    shared_dir = os.getenv('SHARED_ROOT', '/common')
-    shared_home_dir = os.getenv('CP_CAP_SYNC_USERS_HOME_DIR', os.path.join(shared_dir, 'home'))
-    sync_timeout = int(os.getenv('CP_CAP_SYNC_USERS_TIMEOUT_SECONDS', '60'))
-    logging_directory = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
-    logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'ERROR')
-    logging_level_local = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
-    logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+def _create_account(user, user_id, uid_seed, root_home_dir, logger):
+    logger.debug('Creating {} user account...'.format(user))
+    user_uid, user_gid = _resolve_uid_gid(user_id, uid_seed)
+    user_home_dir = os.path.join(root_home_dir, user)
+    mkdir(user_home_dir)
+    _set_permissions(user_home_dir, user_uid, user_gid)
+    create_user(user, user, uid=user_uid, gid=user_gid, home_dir=user_home_dir,
+                skip_existing=True, logger=logger)
+    logger.info('User {} account has been created.'.format(user))
+    return user_uid, user_gid, user_home_dir
 
-    logging.basicConfig(level=logging_level_local, format=logging_format,
-                        filename=os.path.join(logging_directory, 'sync_users.log'))
 
-    api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
-    logger = RunLogger(api=api, run_id=run_id)
-    logger = TaskLogger(task='UsersSynchronization', inner=logger)
-    logger = LevelLogger(level=logging_level, inner=logger)
-    logger = LocalLogger(inner=logger)
+def _resolve_uid_gid(user_id, uid_seed):
+    user_uid = uid_seed + user_id
+    user_gid = user_uid
+    return user_uid, user_gid
 
-    while True:
-        try:
-            time.sleep(sync_timeout)
-            logger.info('Starting users synchronization...')
 
-            logger.info('Loading shared users and groups...')
-            run_users, run_groups = _get_run_shared_users_and_groups(api, run_id)
-            shared_users = set()
-            shared_users.update(run_users)
-            shared_users.update(_get_group_users(api, run_groups))
-            logger.info('Loaded {} shared users.'.format(len(shared_users)))
-            logger.debug('Loaded shared users: {}'.format(shared_users))
+def _configure_bash_profile(user, user_uid, user_gid, user_home_dir, logger):
+    logger.debug('Configuring {} user bash profile...'.format(user))
+    _create_file(os.path.join(user_home_dir, '.bash_profile'), _BASH_PROFILE_CONTENT,
+                 user_uid, user_gid)
+    _create_file(os.path.join(user_home_dir, '.bashrc'), _BASHRC_CONTENT,
+                 user_uid, user_gid)
+    logger.debug('User {} bash profile is configured.'.format(user))
 
-            logger.info('Loading local users...')
-            local_users = set(_get_local_users())
-            logger.info('Loaded {} local users.'.format(len(local_users)))
-            logger.debug('Loaded local users: {}'.format(local_users))
 
-            users_to_create = shared_users - local_users
-            logger.info('Creating {} users...'.format(len(users_to_create)))
-            logger.debug('Creating users {}...'.format(users_to_create))
-            for user in users_to_create:
-                logger.debug('Creating {} user...'.format(user))
-                user_home_dir = os.path.join(shared_home_dir, user)
-                create_user(user, user, home_dir=user_home_dir, skip_existing=True, logger=logger)
-                logger.debug('Configuring passwordless SSH for {} user...'.format(user))
-                user_uid = pwd.getpwnam(user).pw_uid
-                user_gid = grp.getgrnam(user).gr_gid
-                user_ssh_dir = os.path.join(user_home_dir, '.ssh')
-                mkdir(user_ssh_dir)
-                os.chown(user_ssh_dir, user_uid, user_gid)
-                os.chmod(user_ssh_dir, stat.S_IRWXU)
-                for ssh_file_path in _SSH_FILE_PATHS:
-                    ssh_file_source_path = os.path.join(_ROOT_SSH_DIR, ssh_file_path)
-                    ssh_file_target_path = os.path.join(user_ssh_dir, ssh_file_path)
-                    shutil.copy(ssh_file_source_path, ssh_file_target_path)
-                    os.chown(ssh_file_target_path, user_uid, user_gid)
-                    os.chmod(ssh_file_target_path, stat.S_IRUSR | stat.S_IWUSR)
+def _create_file(target_path, target_content, user_uid, user_gid):
+    if not os.path.exists(target_path):
+        with open(target_path, 'w') as f:
+            f.write(target_content)
+        _set_permissions(target_path, user_uid, user_gid)
 
-            logger.info('Finishing users synchronization...')
-        except KeyboardInterrupt:
-            logging.warning('Interrupted.')
-            break
-        except Exception as e:
-            traceback.print_exc()
-            stacktrace = traceback.format_exc()
-            logger.warning('Users synchronization has failed: {} {}'.format(e, stacktrace))
-        except BaseException as e:
-            traceback.print_exc()
-            stacktrace = traceback.format_exc()
-            logger.error('Users synchronization has failed: {} {}'.format(e, stacktrace))
-            raise
+
+def _set_permissions(target_path, user_uid, user_gid):
+    os.chown(target_path, user_uid, user_gid)
+    if os.path.isdir(target_path):
+        os.chmod(target_path, stat.S_IRWXU)
+    else:
+        os.chmod(target_path, stat.S_IRUSR | stat.S_IWUSR)
+
+
+def _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger):
+    logger.debug('Configuring {} user SSH keys...'.format(user))
+    user_ssh_dir = os.path.join(user_home_dir, '.ssh')
+    user_ssh_private_key_path = os.path.join(user_ssh_dir, 'id_rsa')
+    user_ssh_public_key_path = os.path.join(user_ssh_dir, 'id_rsa.pub')
+    user_ssh_authorized_keys_path = os.path.join(user_ssh_dir, 'authorized_keys')
+    if os.path.exists(user_ssh_private_key_path):
+        logger.debug('User {} SSH keys are already configured.'.format(user))
+        return
+    mkdir(user_ssh_dir)
+    executor.execute('ssh-keygen -t rsa -f {ssh_private_key_path} -N "" -q'
+                     .format(ssh_private_key_path=user_ssh_private_key_path))
+    if not os.path.exists(user_ssh_authorized_keys_path):
+        shutil.copy(user_ssh_public_key_path, user_ssh_authorized_keys_path)
+    _set_permissions(user_ssh_dir, user_uid, user_gid)
+    for ssh_file_path in _SSH_FILE_PATHS:
+        ssh_file_target_path = os.path.join(user_ssh_dir, ssh_file_path)
+        if os.path.exists(ssh_file_target_path):
+            _set_permissions(ssh_file_target_path, user_uid, user_gid)
+    logger.info('User {} SSH keys have been configured.'.format(user))
 
 
 if __name__ == '__main__':

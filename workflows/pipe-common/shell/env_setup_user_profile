@@ -39,20 +39,7 @@ if [ -f "$_OWNER_ATTRIBUTES_ENV_FILE" ]; then
     rm -f "$_OWNER_ATTRIBUTES_ENV_FILE"
 fi
 
-echo "Getting owner ($OWNER) user id"
-_OWNER_ID=$(curl -s \
-            --max-time 30 \
-            -X GET \
-            --insecure \
-            --header "Accept: application/json" \
-            --header "Authorization: Bearer $API_TOKEN" \
-            "$API/whoami" | jq -r '.payload.id // 0')
-
-if [ "$_OWNER_ID" == 0 ]; then
-    echo "Cannot determine owner's user id (current owner is $OWNER)"
-    exit 1
-fi
-echo "Owner ($OWNER) user id is: $_OWNER_ID"
+echo "Resolving $OWNER user (id: $OWNER_ID) attributes..."
 
 _OWNER_ATTRIBUTES="$(curl -s \
                     --max-time 30 \
@@ -61,7 +48,7 @@ _OWNER_ATTRIBUTES="$(curl -s \
                     --header 'Content-Type: application/json' \
                     --header 'Accept: application/json' \
                     --header "Authorization: Bearer $API_TOKEN" \
-                    -d "[ { \"entityId\": $_OWNER_ID, \"entityClass\": \"PIPELINE_USER\" } ]" \
+                    -d "[ { \"entityId\": $OWNER_ID, \"entityClass\": \"PIPELINE_USER\" } ]" \
                     "$API/metadata/load")"
 
 
