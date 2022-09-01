@@ -89,8 +89,7 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
             "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
 
     public static final String STANDARD_RESTORE_MODE = "STANDARD";
-    private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(
-            STANDARD_RESTORE_MODE, "BULK", "EXPEDITED");
+    private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(STANDARD_RESTORE_MODE, "BULK");
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
