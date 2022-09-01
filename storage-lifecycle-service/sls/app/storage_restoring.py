@@ -11,7 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import OrderedDict
+
 from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
+from sls.model.restore_model import StorageLifecycleRestoreAction
 
 
 class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
@@ -38,7 +41,10 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             }
         )
         if not ongoing_restore_actions or len(ongoing_restore_actions) == 0:
+            self.logger.log("Storage: {}. No active restore action found for storage.".format(storage.id))
             return
+        else:
+            self.logger.log("Storage: {}. Found {} active restore action.".format(storage.id, len(ongoing_restore_actions)))
 
         # Go through paths for which actions are defined.
         # Here we will do the next for each path:
@@ -48,41 +54,84 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
         #    (f.e. actions for child folders and files that were launched before current one)
         #    In this case current one will override these and we need to cancel these actions
         actions_by_path = self._fetch_restore_action_paths_sorted(ongoing_restore_actions)
-        for path, actions in actions_by_path:
+        for path, actions in actions_by_path.items():
             latest_running_action = next(
                 filter(lambda a: a.status == self.RUNNING_STATUS, sorted(actions, key=lambda a: a.started, reverse=True)),
                 None
             )
             if latest_running_action:
+                self.logger.log("Storage: {}. Action: {}. Path: {}. Found running action, processing it."
+                                .format(storage.id, latest_running_action.action_id, path))
                 self._process_action_and_update(storage, latest_running_action)
 
             effective_action = next(iter(sorted(actions, key=lambda a: a.started, reverse=True)), None)
             if effective_action and effective_action.status in self.ACTIVE_STATUSES:
+                self.logger.log(
+                    "Storage: {}. Action: {}. Path: {}. Found effective action, status: {}, updated date: {}, processing it."
+                    .format(storage.id, effective_action.action_id, path, effective_action.status, effective_action.updated))
                 self._process_action_and_update(storage, effective_action)
                 related_actions_to_cancel = self._fetch_actions_to_override(effective_action, ongoing_restore_actions)
+                if len(related_actions_to_cancel) > 0:
+                    self.logger.log(
+                        "Storage: {}. Action: {}. Path: {}. There are '{}' related actions, that will be cancelled.".format(
+                            storage.id, effective_action.action_id, path, len(related_actions_to_cancel)))
+
                 for action_to_cancel in related_actions_to_cancel:
                     self._update_action(action_to_cancel, self.CANCELLED_STATUS)
 
     def _process_action_and_update(self, storage, action):
         if action.status == self.INITIATED_STATUS:
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Initiating restore process for '{}' days."
+                            .format(storage.id, action.action_id, action.path, action.days))
             restore_result = self.cloud_bridge.run_restore_action(storage, action, self._get_restore_operation_id(action))
-            if restore_result["status"]:
-                self._update_action(action, self.RUNNING_STATUS)
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Restore initiating process finished with status: '{}' reason: '{}'"
+                            .format(storage.id, action.action_id, action.path, restore_result["status"], restore_result["reason"]))
+            self._update_action(action, self.RUNNING_STATUS if restore_result["status"] else self.FAILED_STATUS)
         elif action.status == self.RUNNING_STATUS:
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Checking status of restore process."
+                            .format(storage.id, action.action_id, action.path))
             restore_result = self.cloud_bridge.check_restore_action(storage, action)
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Checking restore process finished with status: {} and reason: {}"
+                            .format(storage.id, action.action_id, action.path, restore_result["status"], restore_result["reason"]))
             if restore_result["status"]:
                 self._update_action(action, self.SUCCEEDED_STATUS, restored_till=restore_result["value"])
+                if action.notification.enabled:
+                    self._send_restore_notification(storage, action)
 
     def _update_action(self, action_to_update, status, restored_till=None):
         action_to_update.status = status
         if restored_till:
             action_to_update.restored_till = restored_till
-        updated_action = self.cp_data_source.update_restore_action(action_to_update)
-        if updated_action:
+        updated_response = self.cp_data_source.update_restore_action(action_to_update)
+        if updated_response:
+            updated_action = StorageLifecycleRestoreAction.parse_from_dict(updated_response)
             self._merge_actions(action_to_update, updated_action)
         else:
-            self.logger.log("Problem to update restore action with id: {}")
+            self.logger.log("Problem to update restore action with id: {}".format(action_to_update.id))
         return action_to_update
+
+    def _send_restore_notification(self, storage, action):
+
+        def _prepare_message():
+            cc_users = []
+            for recipient in action.notification.recipients:
+                if recipient["principal"]:
+                    cc_users.append(recipient["name"])
+                else:
+                    loaded_role = self.cp_data_source.load_role_by_name(recipient["name"])
+                    if loaded_role and "users" in loaded_role:
+                        cc_users.extend([user["userName"] for user in loaded_role["users"]])
+
+            _to_user = next(iter(cc_users), None)
+            # TODO add code to retrieve notification
+            return "Files are ready!", "Files are ready!", _to_user, cc_users, {}
+
+        subject, body, to_user, copy_users, parameters = _prepare_message()
+        result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
+        if not result:
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Problem to send restore notification."
+                            .format(storage.id, action.action_id, action.path))
+
 
     @staticmethod
     def _fetch_actions_to_override(root_action, actions):
@@ -90,16 +139,15 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
 
     @staticmethod
     def _fetch_restore_action_paths_sorted(_ongoing_restore_actions):
-        _unique_paths = set()
         _actions_by_path = {}
         for action in _ongoing_restore_actions:
-            _unique_paths.add(action.path)
             actions_for_path = []
             if action.path in _actions_by_path:
                 actions_for_path = _actions_by_path[action.path]
+            else:
+                _actions_by_path[action.path] = actions_for_path
             actions_for_path.append(action)
-
-        return sorted(_actions_by_path)
+        return OrderedDict(sorted(_actions_by_path.items()))
 
     @staticmethod
     def _merge_actions(to_merge, updated):
@@ -111,4 +159,4 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
 
     @staticmethod
     def _get_restore_operation_id(action):
-        return "restore_{}".format(action.path)
+        return "restore_{}".format(action.path.replace(" ", "_").replace("/", "."))

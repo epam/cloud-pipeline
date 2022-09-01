@@ -1166,7 +1166,7 @@ class PipelineAPI:
         try:
             return self.execute_request(str(self.api_url) +
                                         self.LIFECYCLE_RESTORE_ACTION_URL.format(id=datastorage_id),
-                                        data=json.dumps(restore_action))
+                                        data=json.dumps(restore_action), method='put')
         except Exception as e:
             raise RuntimeError(
                 "Failed to update lifecycle restore actions for storage: '{}', action: '{}'.".format(

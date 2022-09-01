@@ -156,11 +156,11 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
             "id": action.action_id,
             "datastorageId": action.datastorage_id,
             "path": action.path,
-            "pathType": action.path_type,
+            "type": action.path_type,
             "status": action.status,
             "restoredTill": action.restored_till
         }
-        self.api.update_lifecycle_restore_action(action.datastorage_id, data)
+        return self.api.update_lifecycle_restore_action(action.datastorage_id, data)
 
     def _load_default_lifecycle_rule_notification(self):
         default_lifecycle_notification_template = next(

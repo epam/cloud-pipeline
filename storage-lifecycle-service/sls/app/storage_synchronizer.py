@@ -38,7 +38,7 @@ class StorageLifecycleSynchronizer:
                 self._sync_storage(storage)
             except Exception as e:
                 self.logger.log(
-                    "Storage: {}. Problems to apply process storage. Cause: {}".format(storage.id, str(e)))
+                    "Storage: {}. Problems to process storage. Cause: {}".format(storage.id, str(e)))
             self.logger.log(
                 "Finish object lifecycle synchronization process for {} with type {}.".format(
                     storage.path, storage.storage_type)

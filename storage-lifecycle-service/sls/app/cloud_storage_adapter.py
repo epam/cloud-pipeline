@@ -59,25 +59,43 @@ class PlatformToCloudOperationsAdapter:
             return False
 
     def run_restore_action(self, storage, action, restore_operation_id):
-        storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
-        files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-            storage_cloud_identifier, storage_path_prefix + action.path,
-            convert_paths=False, list_version=action.restore_verisons
-        )
-        return self.cloud_operations[storage.storage_type].run_files_restore(
-            storage_cloud_identifier, files, action.days, action.restore_mode,
-            storage.region_name, restore_operation_id
-        )
+        try:
+            storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
+                storage_cloud_identifier, storage_path_prefix + action.path,
+                convert_paths=False, list_versions=action.restore_versions
+            )
+            self.logger.log("Storage: {}. Path: {}. Found '{}' files to restore.".format(storage.id, action.path, len(files)))
+            return self.cloud_operations[storage.storage_type].run_files_restore(
+                storage_cloud_identifier, files, action.days, action.restore_mode,
+                storage.region_name, restore_operation_id
+            )
+        except Exception as e:
+            self.logger.log("Storage: {}. Path: {}. Problem with restoring files, cause: {}"
+                            .format(storage.id, action.path, e))
+            return {
+                "status": False,
+                "reason": e,
+                "value": None
+            }
 
     def check_restore_action(self, storage, action):
-        storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
-        files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-            storage_cloud_identifier, storage_path_prefix + action.path,
-            convert_paths=False, list_version=action.restore_verisons
-        )
-        return self.cloud_operations[storage.storage_type].check_files_restore(
-            storage_cloud_identifier, files
-        )
+        try:
+            storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
+                storage_cloud_identifier, storage_path_prefix + action.path,
+                convert_paths=False, list_versions=action.restore_versions
+            )
+            return self.cloud_operations[storage.storage_type].check_files_restore(
+                storage_cloud_identifier, files, action.updated, action.restore_mode
+            )
+        except Exception as e:
+            self.logger.log("Problem with cheking restoring files, cause: {}".format(e))
+            return {
+                "status": False,
+                "reason": e,
+                "value": None
+            }
 
     @staticmethod
     def fetch_storage_lifecycle_service_config(data_source):

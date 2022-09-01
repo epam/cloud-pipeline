@@ -26,6 +26,8 @@ class StorageLifecycleRestoreNotification:
     def parse_from_dict(obj_dict):
         if "enabled" not in obj_dict:
             raise RuntimeError("Lifecycle restore notification object doesn't have 'enabled' flag!")
+        enabled = obj_dict["enabled"]
+        recipients = None
         if obj_dict["enabled"]:
             if "recipients" not in obj_dict or len(obj_dict["recipients"]) < 1:
                 raise RuntimeError("Lifecycle restore notification object with 'enabled' = true, "
@@ -33,7 +35,8 @@ class StorageLifecycleRestoreNotification:
             for recipient in obj_dict["recipients"]:
                 if "name" not in recipient or "principal" not in recipient:
                     raise RuntimeError("Wrong format of 'recipient' object, should have 'name' and 'principal'")
-        return StorageLifecycleRestoreNotification(obj_dict["enabled"], obj_dict["recipients"])
+            recipients = obj_dict["recipients"]
+        return StorageLifecycleRestoreNotification(enabled, recipients)
 
 
 class StorageLifecycleRestoreAction:
@@ -59,7 +62,7 @@ class StorageLifecycleRestoreAction:
     def parse_from_dict(obj_dict):
 
         _required_fields_names = [
-            "id", "datastorageId", "userActorId", "path", "pathType",
+            "id", "datastorageId", "userActorId", "path", "type",
             "days", "started", "updated", "status", "notification"
         ]
 
@@ -69,13 +72,13 @@ class StorageLifecycleRestoreAction:
                                    "Field: '{}' is not present in dictionary object!".format(_required_field))
 
         return StorageLifecycleRestoreAction(
-            obj_dict["id"], obj_dict["datastorageId"], obj_dict["userActorId"], obj_dict["path"], obj_dict["pathType"],
+            obj_dict["id"], obj_dict["datastorageId"], obj_dict["userActorId"], obj_dict["path"], obj_dict["type"],
             restore_versions=obj_dict["restoreVersions"] if "restoreVersions" in obj_dict else False,
             restore_mode=obj_dict["restoreMode"] if "restoreMode" in obj_dict else "STANDARD",
             days=obj_dict["days"],
             started=parse_timestamp(obj_dict["started"]),
             updated=parse_timestamp(obj_dict["updated"]),
             status=obj_dict["status"],
-            restored_till=parse_timestamp(obj_dict["restoredTill"] if "restoredTill" in obj_dict else None),
+            restored_till=parse_timestamp(obj_dict["restoredTill"]) if "restoredTill" in obj_dict else None,
             notification=StorageLifecycleRestoreNotification.parse_from_dict(obj_dict["notification"])
         )

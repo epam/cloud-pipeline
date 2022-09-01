@@ -14,6 +14,7 @@
 
 import os
 import datetime
+import urllib
 from time import sleep
 
 import boto3
@@ -38,7 +39,7 @@ class StorageOperations:
     def run_files_restore(self, bucket, files, days, restore_tear, region, operation_id):
         pass
 
-    def check_files_restore(self, bucket, files):
+    def check_files_restore(self, bucket, files, updated, restore_mode):
         pass
 
 
@@ -74,6 +75,10 @@ class S3StorageOperations(StorageOperations):
     GLACIER_IR = "GLACIER_IR"
     DEEP_ARCHIVE = "DEEP_ARCHIVE"
     DELETION = "DELETION"
+
+    EXPEDITED_RESTORE_MODE = "EXPEDITED"
+    STANDARD_RESTORE_MODE = "STANDARD"
+    BULK_RESTORE_MODE = "BULK"
 
     S3_STORAGE_CLASS_TO_RULE = {
         GLACIER: construct_s3_slc_rule(GLACIER),
@@ -151,36 +156,76 @@ class S3StorageOperations(StorageOperations):
             }
         }
         job_description = self._run_s3_batch_operation(bucket, files, region, tag_operation, transit_id)
-        return self._is_s3_batch_operation_failed(job_description)
+        return self._is_s3_batch_operation_succeeded(job_description)
 
     def run_files_restore(self, bucket, files, days, restore_tear, region, restore_operation_id):
         restore_operation = {
-            ' S3InitiateRestoreObject': {
+            'S3InitiateRestoreObject': {
                 'ExpirationInDays': days,
                 'GlacierJobTier': restore_tear
             }
         }
         job_description = self._run_s3_batch_operation(bucket, files, region, restore_operation, restore_operation_id)
         return {
-            "status": self._is_s3_batch_operation_failed(job_description),
-            "cause": job_description
+            "status": self._is_s3_batch_operation_succeeded(job_description),
+            "reason": job_description,
+            "value": None
         }
 
-    def check_files_restore(self, bucket, files):
-        return {
-            "status": False,
-            "value": datetime.datetime.now(),
-            "cause": ""
-        }
+    def check_files_restore(self, bucket, files, updated, restore_mode):
+        is_restore_possibly_ready = self._check_if_restore_could_be_ready(next(iter(files), None), updated, restore_mode)
+        restored_till_value = None
+        if not is_restore_possibly_ready:
+            self.logger.log("Probably files is steel restoring because appropriate period of time is not passed. "
+                            "Will not send head request for each file. Last update time: {}. restore mode: {}.".format(updated, restore_mode))
+            return {
+                "status": False,
+                "value": None,
+                "reason": ""
+            }
+        else:
+            self.logger.log("Files may be ready, so will check each file. "
+                            "Last update time: {}. restore mode: {}.".format(updated, restore_mode))
+            for file in files:
+                if file.version_id:
+                    result = self.aws_s3_client.head_object(Bucket=bucket, Key=file.path, VersionId=file.version_id)
+                else:
+                    result = self.aws_s3_client.head_object(Bucket=bucket, Key=file.path)
+                if not result or "Restore" not in result:
+                    self.logger.log(
+                        "Cannot get head of object: '{}' in bucket: {}, or 'Restore' property is not set"
+                        .format(file.path, bucket))
+                    return {
+                        "status": False,
+                        "value": None,
+                        "reason": "Cannot get head for: '{}' bucket: {}, or 'Restore' property is not set"
+                        .format(file.path, bucket)
+                    }
+                else:
+                    if 'ongoing-request="true"' in result["Restore"]:
+                        return {
+                            "status": False,
+                            "value": None,
+                            "reason": "Status is {} for file: '{}' bucket: {}"
+                            .format(result["Restore"], file.path, bucket)
+                        }
+                    elif 'ongoing-request="false"' in result["Restore"]:
+                        restored_till_value = None
+
+            return {
+                "status": True,
+                "value": restored_till_value,
+                "reason": "All files are ready!"
+            }
 
     def _run_s3_batch_operation(self, bucket, files, region, operation_obj, operation_id):
         aws_s3control_client = boto3.client("s3control", region_name=region)
         is_files_versioned = True if next(iter(files), None).version_id else False
         manifest_content = "\n".join(
-            ["{},{}".format(bucket, self._path_to_s3_format(file.path))
+            ["{},{}".format(bucket, urllib.parse.quote(self._path_to_s3_format(file.path)))
              if not is_files_versioned
              else
-             "{},{},{}".format(bucket, self._path_to_s3_format(file.path), file.version_id)
+             "{},{},{}".format(bucket, urllib.parse.quote(self._path_to_s3_format(file.path)), file.version_id)
              for file in files]
         )
 
@@ -239,7 +284,7 @@ class S3StorageOperations(StorageOperations):
                     self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Job"]["Status"]))
             sleep(self.config["tagging_job_poll_status_sleep_sec"])
 
-        if self._is_s3_batch_operation_failed(s3_tagging_job_description):
+        if not self._is_s3_batch_operation_succeeded(s3_tagging_job_description):
             self.logger.log(
                 "Job status is not successful. Will keep manifest and report and skip. Task summary: {}".format(
                     str(s3_tagging_job_description))
@@ -264,12 +309,12 @@ class S3StorageOperations(StorageOperations):
         )
 
     @staticmethod
-    def _is_s3_batch_operation_failed(s3_tagging_job_description):
-        return not s3_tagging_job_description or "Job" not in s3_tagging_job_description or \
-               "Status" not in s3_tagging_job_description["Job"] \
-               or s3_tagging_job_description["Job"]["Status"] != "Complete" \
-               or "ProgressSummary" not in s3_tagging_job_description["Job"] \
-               or s3_tagging_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] > 0
+    def _is_s3_batch_operation_succeeded(s3_tagging_job_description):
+        return s3_tagging_job_description and "Job" in s3_tagging_job_description and \
+               "Status" in s3_tagging_job_description["Job"] \
+               and s3_tagging_job_description["Job"]["Status"] == "Complete" \
+               and "ProgressSummary" in s3_tagging_job_description["Job"] \
+               and s3_tagging_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] == 0
 
     @staticmethod
     def _map_s3_obj_to_cloud_obj(s3_object, convert_path):
@@ -317,3 +362,23 @@ class S3StorageOperations(StorageOperations):
     @staticmethod
     def _path_to_s3_format(path):
         return path.replace("/", "", 1) if path.startswith("/") else path
+
+    # For more information on periods see:
+    # https://docs.aws.amazon.com/AmazonS3/latest/userguide/restoring-objects-retrieval-options.html
+    def _check_if_restore_could_be_ready(self, file, updated, restore_mode):
+        if not file or not updated:
+            return False
+        now = datetime.datetime.now(datetime.timezone.utc)
+        restore_mode = self.STANDARD_RESTORE_MODE if not restore_mode else restore_mode
+        check_shift_period = datetime.timedelta(hours=12)
+        if file.storage_class == self.GLACIER or file.storage_class == self.GLACIER_IR:
+            if restore_mode == self.BULK_RESTORE_MODE:
+                check_shift_period = datetime.timedelta(hours=12)
+            elif restore_mode == self.STANDARD_RESTORE_MODE:
+                check_shift_period = datetime.timedelta(hours=5)
+        if file.storage_class == self.DEEP_ARCHIVE:
+            if restore_mode == self.BULK_RESTORE_MODE:
+                check_shift_period = datetime.timedelta(hours=48)
+            elif restore_mode == self.STANDARD_RESTORE_MODE:
+                check_shift_period = datetime.timedelta(hours=12)
+        return updated + check_shift_period < now
