@@ -56,7 +56,7 @@ def _add_win_user_to_group(username, domain, group, skip_existing=False):
 def _create_lin_user(username, password, uid=None, gid=None, home_dir=None, groups=None, skip_existing=False,
                      logger=None):
     try:
-        execute('id -u {username}'.format(username=username))
+        execute('id {username}'.format(username=username))
         if not skip_existing:
             raise RuntimeError('User {} already exists.'.format(username))
     except Exception:

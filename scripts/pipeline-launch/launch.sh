@@ -641,17 +641,26 @@ function configure_owner_account() {
         export OWNER="${owner_info[0]}"
         export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
         export OWNER_GROUPS="${OWNER_GROUPS:-root}"
-        UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
-        export UID_SEED
         OWNER_ID="$(resolve_owner_id)"
         export OWNER_ID
-        export OWNER_UID=$(( UID_SEED + OWNER_ID ))
-        export OWNER_GID="$OWNER_UID"
-        if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
-            return 0
+        if check_cp_cap "CP_CAP_UID_SEED_DISABLED"; then
+            if check_user_created "$OWNER"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "" "" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
         else
-            create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS"
-            return "$?"
+            UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
+            export UID_SEED
+            export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            export OWNER_GID="$OWNER_UID"
+            if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
         fi
     else
         echo "OWNER is not set - skipping owner account configuration"
@@ -703,7 +712,8 @@ function check_user_created() {
         _existing_user_uid="$(id "$_user_name" -u)"
         _existing_user_gid="$(id "$_user_name" -g)"
         echo "User $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) already exists"
-        if [[ "$_user_uid" != "$_existing_user_uid" ]] || [[ "$_user_gid" != "$_existing_user_gid" ]]; then
+        if [[ "$_user_uid" ]] && [[ "$_user_uid" != "$_existing_user_uid" ]] \
+            || [[ "$_user_gid" ]] && [[ "$_user_gid" != "$_existing_user_gid" ]]; then
             echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
         fi
         return 0
@@ -722,15 +732,25 @@ function create_user() {
 
     echo "Creating user $_user_name..."
     if check_installed "useradd"; then
-        useradd -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home"
+        if [[ "$_user_uid" ]] && [[ "$_user_gid" ]]; then
+            useradd -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home"
+        else
+            useradd -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home"
+        fi
     elif check_installed "adduser"; then
-        adduser -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home" -D
+        if [[ "$_user_uid" ]] && [[ "$_user_gid" ]]; then
+            adduser -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home" -D
+        else
+            adduser -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home" -D
+        fi
     else
         echo "Cannot create user $_user_name: useradd and adduser commands not installed"
         return 1
     fi
     echo "$_user_name:$_user_pass" | chpasswd
-    echo "User ${OWNER} (uid: $OWNER_UID, gid: $OWNER_GID) has been created"
+    _existing_user_uid="$(id "$_user_name" -u)"
+    _existing_user_gid="$(id "$_user_name" -g)"
+    echo "User ${_user_name} (uid: $_existing_user_uid, gid: $_existing_user_gid) has been created"
     return 0
 }
 
