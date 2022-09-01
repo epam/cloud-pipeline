@@ -635,14 +635,15 @@ function add_self_to_no_proxy() {
 }
 
 function configure_owner_account() {
+    OWNER_ID="$(resolve_owner_id)"
+    export OWNER_ID
+
     if [ "$OWNER" ]; then
         # Crop OWNER account by @ if present
         IFS='@' read -r -a owner_info <<< "$OWNER"
         export OWNER="${owner_info[0]}"
         export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
         export OWNER_GROUPS="${OWNER_GROUPS:-root}"
-        OWNER_ID="$(resolve_owner_id)"
-        export OWNER_ID
         if check_cp_cap "CP_CAP_UID_SEED_DISABLED"; then
             if check_user_created "$OWNER"; then
                 return 0
