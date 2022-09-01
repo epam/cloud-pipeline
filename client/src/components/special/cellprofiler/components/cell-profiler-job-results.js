@@ -19,6 +19,7 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {Alert} from 'antd';
 import {inject, observer} from 'mobx-react';
+import {isObservableArray} from 'mobx';
 import {Link} from 'react-router';
 import {getBatchJobInfo, getSpecification} from '../model/analysis/batch';
 import LoadingView from '../../LoadingView';
@@ -31,6 +32,22 @@ import Collapse from './collapse';
 import styles from './cell-profiler.css';
 
 const REFETCH_JOB_TIMEOUT_MS = 1000 * 5;
+
+function parseInputs (inputs = []) {
+  if (!inputs) {
+    return {
+      files: [],
+      zPlanes: []
+    };
+  }
+  if (Array.isArray(inputs) || isObservableArray(inputs)) {
+    return {
+      files: inputs,
+      zPlanes: []
+    };
+  }
+  return inputs;
+}
 
 class CellProfilerJobResults extends React.PureComponent {
   state = {
@@ -228,11 +245,17 @@ class CellProfilerJobResults extends React.PureComponent {
         return null;
       }
       const {
-        inputs = []
+        inputs
       } = specification;
-      const wellsCount = new Set(inputs.map(o => `${o.x}|${o.y}`)).size;
-      const fieldsCount = new Set(inputs.map(o => o.fieldId)).size;
-      const timePointsCount = new Set(inputs.map(o => o.timepoint)).size;
+      const {
+        files = [],
+        zPlanes = []
+      } = parseInputs(inputs);
+      const wellsCount = new Set(files.map(o => `${o.x}|${o.y}`)).size;
+      const fieldsCount = new Set(files.map(o => o.fieldId)).size;
+      const timePointsCount = new Set(files.map(o => o.timepoint)).size;
+      const zPlanesCount = new Set(files.map(o => o.z)).size;
+      const mergeZPlanes = zPlanes.length > 0;
       const plural = (count, label) => `${count} ${label}${count === 1 ? '' : 's'}`;
       return renderInfo(
         'Selection',
@@ -243,6 +266,11 @@ class CellProfilerJobResults extends React.PureComponent {
             {plural(fieldsCount, 'field')}
             {', '}
             {plural(timePointsCount, 'time point')}
+            {', '}
+            {plural(zPlanesCount, 'z-plane')}
+            {
+              mergeZPlanes && ` (projection)`
+            }
           </span>
         )
       );

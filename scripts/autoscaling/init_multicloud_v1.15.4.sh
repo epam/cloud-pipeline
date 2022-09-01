@@ -1,4 +1,7 @@
 #!/bin/bash
+launch_token="/etc/user_data_launched"
+if [[ -f "$launch_token" ]]; then exit 0; fi
+
 user_data_log="/var/log/user_data.log"
 exec > "$user_data_log" 2>&1
 
@@ -400,4 +403,5 @@ if [[ ! -z "${_PRE_PULL_DOCKERS}" ]]; then
   done
 fi
 
+touch "$launch_token"
 nc -l -k 8888 &

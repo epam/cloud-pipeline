@@ -68,11 +68,11 @@ class AnalysisApi extends EndpointAPI {
     httpMethod: 'POST'
   });
 
-  attachFiles = (pipelineId, ...files) => this.apiCall({
+  attachFiles = (pipelineId, filesPayload) => this.apiCall({
     uri: 'hcs/pipelines/files',
     query: {pipelineId},
     httpMethod: 'POST',
-    body: files
+    body: filesPayload
   });
 
   createModule = (pipelineId, cpModule) => this.apiCall({

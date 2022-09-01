@@ -2,8 +2,9 @@ package com.epam.pipeline.entity.datastorage.lifecycle;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -14,7 +15,8 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Builder
 @Entity
 @NoArgsConstructor
@@ -30,7 +32,9 @@ public class StorageLifecycleRuleProlongationEntity {
     @JoinColumn(name = "rule_id", referencedColumnName = "id")
     private StorageLifecycleRuleEntity lifecycleRule;
 
-    String path;
-    LocalDateTime prolongedDate;
-    Long days;
+    private Long userId;
+
+    private String path;
+    private LocalDateTime prolongedDate;
+    private Long days;
 }

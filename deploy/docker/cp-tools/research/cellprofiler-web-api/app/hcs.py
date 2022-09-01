@@ -159,7 +159,7 @@ def run_pipeline():
         pipeline_id = flask.request.args.get("pipelineId")
         if not pipeline_id:
             raise RuntimeError("Parameter 'pipelineId' must be specified.")
-        manager.run_pipeline(pipeline_id)
+        manager.launch_pipeline(pipeline_id)
         return jsonify({"status": "OK"})
     except Exception as e:
         print(traceback.format_exc())

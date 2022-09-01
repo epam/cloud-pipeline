@@ -21,6 +21,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class StorageLifecycleRuleProlongation {
     Long id;
+    Long userId;
     String path;
     LocalDateTime prolongedDate;
     Long days;

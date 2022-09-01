@@ -146,7 +146,7 @@ class SelectionInfo extends React.Component {
             {countLabel(namesAndTypesModule.wells.length, 'well')}
             {countLabel(namesAndTypesModule.commonFields.length, 'field')}
             {countLabel(namesAndTypesModule.timePoints.length, 'time point')}
-            {countLabel(namesAndTypesModule.zCoordinates.length, 'z coordinate', false)}
+            {countLabel(namesAndTypesModule.zCoordinates.length, 'z-plane', false)}
           </div>
           {this.renderInfo()}
           <div style={{marginTop: 5}}>

@@ -59,8 +59,9 @@ public class DataStorageLifecycleApiService {
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public StorageLifecycleRule prolongStorageLifecyclePolicyRule(final Long id,
                                                                   final Long ruleId, final String path,
-                                                                  final Long daysToProlong) {
-        return storageLifecycleManager.prolongLifecyclePolicyRule(id, ruleId, path, daysToProlong);
+                                                                  final Long daysToProlong,
+                                                                  final Boolean force) {
+        return storageLifecycleManager.prolongLifecyclePolicyRule(id, ruleId, path, daysToProlong, force);
     }
     @PreAuthorize(AclExpressions.STORAGE_ID_WRITE)
     public StorageLifecycleRule deleteStorageLifecyclePolicyRule(final Long id, final Long ruleId) {

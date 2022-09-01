@@ -530,8 +530,9 @@ class DefineResultsModuleProcessor(ExportToSpreadsheetModuleProcessor):
         grouping = module_config['grouping'] if 'grouping' in module_config else None
         fields_by_well = \
             module_config[DefineResults.FIELDS_BY_WELL] if DefineResults.FIELDS_BY_WELL in module_config else {}
+        z_planes = module_config[DefineResults.Z_PLANES] if DefineResults.Z_PLANES in module_config else None
         self._validate_configuration(specs, grouping)
-        self.module.set_calculation_spec(specs, grouping, fields_by_well)
+        self.module.set_calculation_spec(specs, grouping, fields_by_well, z_planes)
         self.set_required_data_to_module_config(module_config, specs)
         ExportToSpreadsheetModuleProcessor.configure_module(self, module_config)
         return self.module
@@ -583,7 +584,6 @@ class SaveImagesModuleProcessor(OutputModuleProcessor):
     def generated_params(self):
         return {'Overwrite existing files without warning?': 'Yes',
                 'Save with lossless compression?': 'No',
-                'Append a suffix to the image file name?': 'Yes',
                 'Output file location': self._output_location()}
 
 
