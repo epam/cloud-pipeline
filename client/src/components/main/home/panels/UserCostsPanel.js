@@ -48,7 +48,7 @@ function renderStatistics (percent) {
         })}
       >
         <Icon
-          type={percent > 0 ? 'caret-up' : 'catet-down'}
+          type={percent > 0 ? 'caret-up' : 'caret-down'}
           style={{marginRight: '5px'}}
         />
         <span>
