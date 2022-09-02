@@ -16,8 +16,6 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
 import classNames from 'classnames';
 import {
   Button,
@@ -54,35 +52,18 @@ const fullWidthLayout = {
   }
 };
 
-@inject('usersInfo')
-@observer
 class NotificationForm extends React.Component {
   state = {
     previewMode: false,
     pending: false
   }
 
+  notifyFormContainer;
+
   componentDidUpdate (prevProps) {
     if (this.props.notificationsDisabled !== prevProps.notificationsDisabled) {
       this.checkRequiredFields();
     }
-  }
-
-  notifyFormContainer;
-
-  @computed
-  get informedUsers () {
-    const {usersInfo, rule} = this.props;
-    if (usersInfo.loaded &&
-      rule.notification &&
-      rule.notification.informedUserIds
-    ) {
-      return (rule.notification.informedUserIds || []).map(id => {
-        const user = (usersInfo.value || []).find(info => info.id === id);
-        return user || undefined;
-      }).filter(Boolean);
-    }
-    return [];
   }
 
   checkRequiredFields = () => {
@@ -120,10 +101,7 @@ class NotificationForm extends React.Component {
               valuePropName: 'checked',
               initialValue: rule.notification && rule.notification.enabled !== undefined
                 ? !rule.notification.enabled
-                : false,
-              rules: [{
-                required: false
-              }]
+                : false
             })(
               <Checkbox
                 disabled={pending}
@@ -139,15 +117,13 @@ class NotificationForm extends React.Component {
             className={styles.formItem}
             label="Recipients"
           >
-            {getFieldDecorator('notification.informedUserIds', {
+            {getFieldDecorator('notification.recipients', {
               type: 'array',
-              initialValue: rule.notification
-                ? this.informedUsers
+              initialValue: rule.notification && rule.notification.recipients
+                ? rule.notification.recipients
                 : []
             })(
               <UsersRolesSelect
-                adGroups={false}
-                showRoles={false}
                 disabled={notificationsDisabled || pending}
                 style={{flex: 1}}
                 dropdownStyle={{maxHeight: '80%'}}
@@ -280,7 +256,10 @@ class NotificationForm extends React.Component {
                 : undefined
             })(
               <CodeEditor
-                className={classNames(styles.codeEditor, 'cp-code-editor')}
+                className={classNames(
+                  styles.codeEditor,
+                  'cp-code-editor'
+                )}
                 language="application/x-jsp"
                 lineWrapping
                 readOnly={notificationsDisabled || pending}

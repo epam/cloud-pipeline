@@ -16,8 +16,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {computed} from 'mobx';
-import {inject, observer} from 'mobx-react';
+import {observer} from 'mobx-react';
 import {
   Button,
   Input,
@@ -94,7 +93,6 @@ function FormSection ({
   );
 }
 
-@inject('usersInfo')
 @observer
 class LifeCycleEditModal extends React.Component {
   state={
@@ -113,15 +111,6 @@ class LifeCycleEditModal extends React.Component {
     if (this.props.rule !== prevProps.rule) {
       this.setInitialRule();
     }
-  }
-
-  @computed
-  get usersInfo () {
-    const {usersInfo} = this.props;
-    if (usersInfo.loaded) {
-      return usersInfo.value;
-    }
-    return [];
   }
 
   get modified () {
@@ -155,7 +144,6 @@ class LifeCycleEditModal extends React.Component {
       const fieldValue = form.getFieldValue(formPath);
       return !compareArrays(initialValue, fieldValue, comparerFn);
     };
-    // TODO: add informedIserIds check when API change ids to user\group objects
     return stringFieldModified('notification.body', notification.body) ||
       stringFieldModified('notification.disabled', !notification.enabled) ||
       stringFieldModified('notification.notifyBeforeDays', notification.notifyBeforeDays) ||
@@ -170,6 +158,11 @@ class LifeCycleEditModal extends React.Component {
         initialRule.transitions,
         (a, b) => (a.storageClass === b.storageClass &&
           a.transitionAfterDays === b.transitionAfterDays)
+      ) ||
+      arrayFieldModified(
+        'notification.recipients',
+        (initialRule.notification || {}).recipients,
+        (a, b) => (a.name === b.name && a.principal === b.principal)
       );
   }
 
@@ -226,10 +219,6 @@ class LifeCycleEditModal extends React.Component {
           payload.notification.enabled = !notification.disabled;
           delete payload.notification.disabled;
         }
-        if (notification && notification.informedUserIds) {
-          const recipientsIds = this.getIdsFromUsers(notification.informedUserIds);
-          payload.notification.informedUserIds = recipientsIds;
-        }
         if (METHODS[method] === METHODS.ONE_BY_ONE) {
           if (!payload.notification) {
             payload.notification = {};
@@ -264,16 +253,6 @@ class LifeCycleEditModal extends React.Component {
     this.setState({initialRule: rule});
   };
 
-  getIdsFromUsers = (users = []) => {
-    return users.map(user => {
-      const userInfo = this.usersInfo.find(info => info.name === user.name);
-      if (userInfo) {
-        return userInfo.id;
-      }
-      return undefined;
-    }).filter(Boolean);
-  };
-
   onCancel = () => {
     const {onCancel, form} = this.props;
     form.resetFields();
@@ -301,9 +280,25 @@ class LifeCycleEditModal extends React.Component {
   };
 
   onChangeMethod = (key) => {
+    const {form} = this.props;
+    const {initialRule} = this.state;
     if (METHODS[key] === METHODS.ONE_BY_ONE) {
-      this.collapsePanel(PANELS.notify);
+      form.setFields({
+        'notification.disabled': {
+          value: true,
+          errors: undefined
+        }
+      });
+      return this.collapsePanel(PANELS.notify);
     }
+    return form.setFields({
+      'notification.disabled': {
+        value: (initialRule.notification || {}).enabled !== undefined
+          ? !initialRule.notification.enabled
+          : false,
+        errors: undefined
+      }
+    });
   };
 
   render () {
