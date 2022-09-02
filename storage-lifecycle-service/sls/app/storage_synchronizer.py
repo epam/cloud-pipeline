@@ -387,22 +387,16 @@ class StorageLifecycleSynchronizer:
 
     def _send_notification(self, storage, rule, notification_properties):
         def _prepare_massage():
-            cc_users = [
-                self.cp_data_source.load_user(user_id)["userName"]
-                for user_id in (rule.notification.user_to_notify_ids if rule.notification.user_to_notify_ids else [])
-            ]
-            if rule.notification.keep_informed_admins:
-                role_admin = self.cp_data_source.load_role(ROLE_ADMIN_ID)
-                if role_admin and "users" in role_admin:
-                    cc_users.extend([user["userName"] for user in role_admin["users"]])
+            cc_users = []
+            for recipient in rule.notification.recipients:
+                if recipient["principal"]:
+                    cc_users.append(recipient["name"])
+                else:
+                    loaded_role = self.cp_data_source.load_role_by_name(recipient["name"])
+                    if loaded_role and "users" in loaded_role:
+                        cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
-            _to_user = None
-            if rule.notification.keep_informed_owner:
-                loaded = self.cp_data_source.load_user_by_name(storage.owner)
-                _to_user = loaded["userName"]
-            if not _to_user:
-                _to_user = next(iter(cc_users), None)
-
+            _to_user = next(iter(cc_users), None)
             notification_parameters = {
                 "storageName": storage.name,
                 "storageId": storage.id,

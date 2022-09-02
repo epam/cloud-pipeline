@@ -226,6 +226,7 @@ class PipelineAPI:
     LOAD_CURRENT_USER = 'whoami'
     LOAD_ROLES = 'role/loadAll?loadUsers={}'
     LOAD_ROLE = 'role/{}'
+    LOAD_ROLE_BY_NAME = 'role?name={}'
     LOAD_USER_BY_NAME = 'user?name={}'
     LOAD_USER = 'user/{}'
     RUN_CONFIGURATION = '/runConfiguration'
@@ -996,6 +997,13 @@ class PipelineAPI:
         except Exception as e:
             raise RuntimeError("Failed to load user by id '{}'.", "Error message: {}".format(str(user_id),
                                                                                              str(e.message)))
+
+    def load_role_by_name(self, name):
+        try:
+            return self.execute_request(str(self.api_url) + self.LOAD_ROLE_BY_NAME.format(name))
+        except Exception as e:
+            raise RuntimeError("Failed to load role by name '{}'.", "Error message: {}".format(str(name),
+                                                                                               str(e.message)))
 
     def get_edge_external_url(self, region=None):
         endpoint = 'cluster/edge/externalUrl'
