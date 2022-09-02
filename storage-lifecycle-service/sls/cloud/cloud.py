@@ -14,6 +14,7 @@
 
 import os
 import datetime
+import re
 import urllib
 from time import sleep
 
@@ -202,19 +203,23 @@ class S3StorageOperations(StorageOperations):
                         .format(file.path, bucket)
                     }
                 else:
-                    if 'ongoing-request="true"' in result["Restore"]:
+                    restoring_status_match = re.match('.*expiry-date=["\'](.*)["\']', result["Restore"])
+                    if not restoring_status_match:
                         return {
                             "status": False,
                             "value": None,
                             "reason": "Status is {} for file: '{}' bucket: {}"
                             .format(result["Restore"], file.path, bucket)
                         }
-                    elif 'ongoing-request="false"' in result["Restore"]:
-                        restored_till_value = None
+                    else:
+                        file_restored_till_value = datetime.datetime.strptime(
+                            restoring_status_match.group(1), "%a, %d %b %Y %H:%M:%S %Z")
+                        if restored_till_value is None or file_restored_till_value < restored_till_value:
+                            restored_till_value = file_restored_till_value
 
             return {
                 "status": True,
-                "value": restored_till_value,
+                "value": restored_till_value.strftime("%Y-%m-%d %H:%M:%S.000"),
                 "reason": "All files are ready!"
             }
 

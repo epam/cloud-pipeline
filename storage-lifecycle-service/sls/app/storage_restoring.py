@@ -19,6 +19,8 @@ from sls.model.restore_model import StorageLifecycleRestoreAction
 
 class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
 
+    DATASTORAGE_RESTORE_ACTION_NOTIFICATION_TYPE = "DATASTORAGE_LIFECYCLE_RESTORE_ACTION"
+
     SEARCH_CHILD_RECURSIVELY = "SEARCH_CHILD_RECURSIVELY"
 
     INITIATED_STATUS = "INITIATED"
@@ -32,7 +34,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
     TERMINAL_STATUSES = [SUCCEEDED_STATUS, CANCELLED_STATUS, FAILED_STATUS]
 
     def _sync_storage(self, storage):
-        ongoing_restore_actions = self.cp_data_source.filter_restore_actions(
+        ongoing_actions = self.cp_data_source.filter_restore_actions(
             storage.id,
             filter_obj={
                 "datastorageId": storage.id,
@@ -40,11 +42,15 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                 "searchType": self.SEARCH_CHILD_RECURSIVELY
             }
         )
-        if not ongoing_restore_actions or len(ongoing_restore_actions) == 0:
+        if not ongoing_actions or len(ongoing_actions) == 0:
             self.logger.log("Storage: {}. No active restore action found for storage.".format(storage.id))
             return
         else:
-            self.logger.log("Storage: {}. Found {} active restore action.".format(storage.id, len(ongoing_restore_actions)))
+            self.logger.log("Storage: {}. Found {} active restore action.".format(storage.id, len(ongoing_actions)))
+
+        running_actions = [a for a in ongoing_actions if a.status == self.RUNNING_STATUS]
+        for running_action in running_actions:
+            self._process_action_and_update(storage, running_action)
 
         # Go through paths for which actions are defined.
         # Here we will do the next for each path:
@@ -53,24 +59,32 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
         #  - Find all action that can be effected by current one
         #    (f.e. actions for child folders and files that were launched before current one)
         #    In this case current one will override these and we need to cancel these actions
-        actions_by_path = self._fetch_restore_action_paths_sorted(ongoing_restore_actions)
+        actions_by_path = self._fetch_restore_action_paths_sorted(ongoing_actions)
         for path, actions in actions_by_path.items():
-            latest_running_action = next(
-                filter(lambda a: a.status == self.RUNNING_STATUS, sorted(actions, key=lambda a: a.started, reverse=True)),
-                None
-            )
-            if latest_running_action:
-                self.logger.log("Storage: {}. Action: {}. Path: {}. Found running action, processing it."
-                                .format(storage.id, latest_running_action.action_id, path))
-                self._process_action_and_update(storage, latest_running_action)
-
             effective_action = next(iter(sorted(actions, key=lambda a: a.started, reverse=True)), None)
-            if effective_action and effective_action.status in self.ACTIVE_STATUSES:
-                self.logger.log(
-                    "Storage: {}. Action: {}. Path: {}. Found effective action, status: {}, updated date: {}, processing it."
-                    .format(storage.id, effective_action.action_id, path, effective_action.status, effective_action.updated))
-                self._process_action_and_update(storage, effective_action)
-                related_actions_to_cancel = self._fetch_actions_to_override(effective_action, ongoing_restore_actions)
+            if effective_action and effective_action.status in self.RUNNING_STATUSES:
+
+                running_related_action = next(
+                    filter(lambda a: a.status == self.RUNNING_STATUS,
+                           sorted(self._fetch_child_actions_to_current_one(effective_action, ongoing_actions),
+                                  key=lambda a: a.started, reverse=True)),
+                    None
+                )
+
+                if running_related_action:
+                    self.logger.log(
+                        "Storage: {}. Action: {}. Path: {}. Found running action: {} that is related to current. "
+                        "Will skip current action to wait until running one will finish."
+                        .format(storage.id, effective_action.action_id, path, running_related_action.action_id))
+                else:
+                    self.logger.log(
+                        "Storage: {}. Action: {}. Path: {}. Found effective action, status: {}, updated date: {}, processing it."
+                        .format(storage.id, effective_action.action_id, path, effective_action.status, effective_action.updated))
+                    self._process_action_and_update(storage, effective_action)
+
+                related_actions_to_cancel = [a for a in
+                                             sorted(self._fetch_child_actions_to_current_one(effective_action, ongoing_actions))
+                                             if a.status == self.INITIATED_STATUS]
                 if len(related_actions_to_cancel) > 0:
                     self.logger.log(
                         "Storage: {}. Action: {}. Path: {}. There are '{}' related actions, that will be cancelled.".format(
@@ -113,7 +127,14 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
     def _send_restore_notification(self, storage, action):
 
         def _prepare_message():
+            notification = self.cp_data_source.load_notification(self.DATASTORAGE_RESTORE_ACTION_NOTIFICATION_TYPE)
             cc_users = []
+
+            if notification.settings.keep_informed_admins:
+                loaded_role = self.cp_data_source.load_role_by_name("ROLE_ADMIN")
+                if loaded_role and "users" in loaded_role:
+                    cc_users.extend([user["userName"] for user in loaded_role["users"]])
+
             for recipient in action.notification.recipients:
                 if recipient["principal"]:
                     cc_users.append(recipient["name"])
@@ -123,8 +144,15 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
             _to_user = next(iter(cc_users), None)
-            # TODO add code to retrieve notification
-            return "Files are ready!", "Files are ready!", _to_user, cc_users, {}
+            return notification.template.subject, notification.template.body, _to_user, cc_users, \
+                   {
+                       "datastorageId": storage.id,
+                       "datastorageName": storage.path,
+                       "path": action.path,
+                       "pathType": action.path_type,
+                       "actionId": action.action_id,
+                       "restoredTill": action.restoredTill
+                   }
 
         subject, body, to_user, copy_users, parameters = _prepare_message()
         result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
@@ -132,15 +160,18 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             self.logger.log("Storage: {}. Action: {}. Path: {}. Problem to send restore notification."
                             .format(storage.id, action.action_id, action.path))
 
-
     @staticmethod
-    def _fetch_actions_to_override(root_action, actions):
-        return [a for a in actions if a.path.startswith(root_action.path) and root_action.started > a.started]
+    def _fetch_child_actions_to_current_one(root_action, actions):
+        return [a for a in actions
+                if a.path.startswith(root_action.path)
+                and root_action.started > a.started
+                and root_action is not a]
 
-    @staticmethod
-    def _fetch_restore_action_paths_sorted(_ongoing_restore_actions):
+    def _fetch_restore_action_paths_sorted(self, _ongoing_restore_actions):
         _actions_by_path = {}
         for action in _ongoing_restore_actions:
+            if action.status not in self.ACTIVE_STATUSES:
+                continue
             actions_for_path = []
             if action.path in _actions_by_path:
                 actions_for_path = _actions_by_path[action.path]

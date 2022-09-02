@@ -14,6 +14,7 @@
 import os
 from pipeline import PipelineAPI
 
+from sls.model.common_model import CloudPipelineNotification
 from sls.model.rule_model import LifecycleRuleParser, StorageLifecycleNotification
 from sls.model.restore_model import StorageLifecycleRestoreAction
 
@@ -161,6 +162,27 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
             "restoredTill": action.restored_till
         }
         return self.api.update_lifecycle_restore_action(action.datastorage_id, data)
+
+    def load_notification(self, notification_type):
+        notification_template = next(
+            filter(
+                lambda t: t["name"] == notification_type,
+                self.api.load_notification_templates()
+            ), None
+        )
+
+        notification_settings = next(
+            filter(
+                lambda t: t["type"] == notification_type,
+                self.api.load_notification_settings()
+            ), None
+        )
+
+        if not notification_template or not notification_settings:
+            raise RuntimeError("Failed to load notification with type: {}, template: {} settings: {}"
+                               .format(notification_type, notification_template, notification_settings))
+
+        return CloudPipelineNotification.build_from_dicts(notification_template, notification_settings)
 
     def _load_default_lifecycle_rule_notification(self):
         default_lifecycle_notification_template = next(
