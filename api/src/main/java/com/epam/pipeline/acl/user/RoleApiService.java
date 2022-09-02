@@ -47,12 +47,13 @@ public class RoleApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public Role loadRole(final String id) {
-        if (StringUtils.isNumeric(id)) {
-            return roleManager.loadRoleWithUsers(Long.parseLong(id));
-        } else {
-            return roleManager.loadRoleByNameWithUsers(id);
-        }
+    public Role loadRole(final Long id) {
+        return roleManager.loadRoleWithUsers(id);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    public Role loadRoleByName(final String name) {
+        return roleManager.loadRoleByNameWithUsers(name);
     }
 
     @PreAuthorize(ADMIN_ONLY)
@@ -79,5 +80,4 @@ public class RoleApiService {
     public ExtendedRole removeRole(Long roleId, List<Long> userIds) {
         return roleManager.removeRole(roleId, userIds);
     }
-
 }

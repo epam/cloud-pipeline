@@ -163,11 +163,11 @@ public class RoleControllerTest extends AbstractControllerTest {
     @Test
     @WithMockUser
     public void shouldGetRole() {
-        doReturn(role).when(mockRoleApiService).loadRole(String.valueOf(ID));
+        doReturn(role).when(mockRoleApiService).loadRole(ID);
 
         final MvcResult mvcResult = performRequest(get(String.format(ROLE_ID_URL, ID)));
 
-        verify(mockRoleApiService).loadRole(String.valueOf(ID));
+        verify(mockRoleApiService).loadRole(ID);
         assertResponse(mvcResult, role, UserCreatorUtils.ROLE_INSTANCE_TYPE);
     }
 
