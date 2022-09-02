@@ -1032,7 +1032,6 @@ class PipelineAPI:
     def load_users(self):
         return self._request('GET', 'users') or []
 
-
     def run_configuration(self, data):
         try:
             result = self.execute_request(str(self.api_url) + self.RUN_CONFIGURATION, method='post',

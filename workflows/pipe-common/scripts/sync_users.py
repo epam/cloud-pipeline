@@ -28,19 +28,6 @@ from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
 _ROOT_HOME_DIR = '/root'
 _ROOT_SSH_DIR = os.path.join(_ROOT_HOME_DIR, '.ssh')
 _SSH_FILE_PATHS = ['id_rsa', 'id_rsa.pub', 'authorized_keys']
-_BASH_PROFILE_CONTENT = """
-if [ -f ~/.bashrc ]; then
-    . ~/.bashrc
-fi
-
-PATH=$PATH:$HOME/.local/bin:$HOME/bin
-export PATH
-"""
-_BASHRC_CONTENT = """
-if [ -f /etc/bashrc ]; then
-    . /etc/bashrc
-fi
-"""
 
 
 def sync_users():
@@ -108,7 +95,6 @@ def sync_users():
                         continue
                     user_uid, user_gid, user_home_dir = _create_account(user, user_id, uid_seed, root_home_dir,
                                                                         executor, logger)
-                    _configure_bash_profile(user, user_uid, user_gid, user_home_dir, logger)
                     _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger)
                 except KeyboardInterrupt:
                     logger.warning('Interrupted.')
@@ -159,8 +145,7 @@ def _create_account(user, user_id, uid_seed, root_home_dir, executor, logger):
     logger.debug('Creating {} user account...'.format(user))
     user_uid, user_gid = _resolve_uid_gid(user_id, uid_seed)
     user_home_dir = os.path.join(root_home_dir, user)
-    mkdir(user_home_dir)
-    _set_permissions(user_home_dir, user_uid, user_gid)
+    mkdir(os.path.dirname(user_home_dir))
     create_user(user, user, uid=user_uid, gid=user_gid, home_dir=user_home_dir,
                 skip_existing=True, executor=executor)
     logger.info('User {} account has been created.'.format(user))
@@ -171,22 +156,6 @@ def _resolve_uid_gid(user_id, uid_seed):
     user_uid = uid_seed + user_id
     user_gid = user_uid
     return user_uid, user_gid
-
-
-def _configure_bash_profile(user, user_uid, user_gid, user_home_dir, logger):
-    logger.debug('Configuring {} user bash profile...'.format(user))
-    _create_file(os.path.join(user_home_dir, '.bash_profile'), _BASH_PROFILE_CONTENT,
-                 user_uid, user_gid)
-    _create_file(os.path.join(user_home_dir, '.bashrc'), _BASHRC_CONTENT,
-                 user_uid, user_gid)
-    logger.debug('User {} bash profile is configured.'.format(user))
-
-
-def _create_file(target_path, target_content, user_uid, user_gid):
-    if not os.path.exists(target_path):
-        with open(target_path, 'w') as f:
-            f.write(target_content)
-        _set_permissions(target_path, user_uid, user_gid)
 
 
 def _set_permissions(target_path, user_uid, user_gid):

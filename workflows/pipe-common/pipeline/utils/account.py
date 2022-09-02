@@ -66,7 +66,7 @@ def _create_lin_user(executor, username, password, uid=None, gid=None, home_dir=
         if _is_command_available('useradd', executor) and _is_command_available('groupadd', executor):
             if gid:
                 executor.execute('groupadd "{groupname}" '.format(groupname=username) + gid_arg)
-            executor.execute('useradd -s "/bin/bash" "{username}" '.format(username=username)
+            executor.execute('useradd -m -s "/bin/bash" "{username}" '.format(username=username)
                              + uid_arg + gid_arg + home_dir_arg + groups_arg)
             executor.execute('echo "{username}:{password}" | chpasswd'
                              .format(username=username, password=password))
@@ -74,7 +74,7 @@ def _create_lin_user(executor, username, password, uid=None, gid=None, home_dir=
         if _is_command_available('adduser', executor) and _is_command_available('addgroup', executor):
             if gid:
                 executor.execute('addgroup "{groupname}" '.format(groupname=username) + gid_arg)
-            executor.execute('adduser -s "/bin/bash" "{username}" '.format(username=username)
+            executor.execute('adduser -m -s "/bin/bash" "{username}" '.format(username=username)
                              + uid_arg + gid_arg + home_dir_arg + groups_arg)
             executor.execute('echo "{username}:{password}" | chpasswd'
                              .format(username=username, password=password))
