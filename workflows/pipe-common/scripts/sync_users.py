@@ -106,7 +106,8 @@ def sync_users():
                     if not user_id:
                         logger.warning('Skipping {} user creation since the corresponding details have not been found.')
                         continue
-                    user_uid, user_gid, user_home_dir = _create_account(user, user_id, uid_seed, root_home_dir, logger)
+                    user_uid, user_gid, user_home_dir = _create_account(user, user_id, uid_seed, root_home_dir,
+                                                                        executor, logger)
                     _configure_bash_profile(user, user_uid, user_gid, user_home_dir, logger)
                     _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger)
                 except KeyboardInterrupt:
@@ -154,14 +155,14 @@ def _get_local_users():
             yield stripped_line.split(':')[0]
 
 
-def _create_account(user, user_id, uid_seed, root_home_dir, logger):
+def _create_account(user, user_id, uid_seed, root_home_dir, executor, logger):
     logger.debug('Creating {} user account...'.format(user))
     user_uid, user_gid = _resolve_uid_gid(user_id, uid_seed)
     user_home_dir = os.path.join(root_home_dir, user)
     mkdir(user_home_dir)
     _set_permissions(user_home_dir, user_uid, user_gid)
     create_user(user, user, uid=user_uid, gid=user_gid, home_dir=user_home_dir,
-                skip_existing=True, logger=logger)
+                skip_existing=True, executor=executor)
     logger.info('User {} account has been created.'.format(user))
     return user_uid, user_gid, user_home_dir
 

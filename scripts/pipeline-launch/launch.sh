@@ -683,9 +683,9 @@ function get_pipe_preference_low_level() {
                    --header "Accept: application/json" \
                    --header "Authorization: Bearer $API_TOKEN" \
                    "$API/preferences/$_preference" \
-        | jq -r '.payload.value')"
+        | jq -r '.payload.value // empty')"
 
-    if [[ "$?" == "0" && "$_value" ]]; then
+    if [ "$?" == "0" ] && [ "$_value" ]; then
         echo "$_value"
     else
         echo "$_default_value"
@@ -713,8 +713,8 @@ function check_user_created() {
         _existing_user_uid="$(id "$_user_name" -u)"
         _existing_user_gid="$(id "$_user_name" -g)"
         echo "User $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) already exists"
-        if [[ "$_user_uid" ]] && [[ "$_user_uid" != "$_existing_user_uid" ]] \
-            || [[ "$_user_gid" ]] && [[ "$_user_gid" != "$_existing_user_gid" ]]; then
+        if [ "$_user_uid" ] && [ "$_user_uid" != "$_existing_user_uid" ] \
+            || [ "$_user_gid" ] && [ "$_user_gid" != "$_existing_user_gid" ]; then
             echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
         fi
         return 0
@@ -732,20 +732,29 @@ function create_user() {
     local _user_groups="$6"
 
     echo "Creating user $_user_name..."
-    if check_installed "useradd"; then
-        if [[ "$_user_uid" ]] && [[ "$_user_gid" ]]; then
+    if [ "$_user_uid" ] && [ "$_user_gid" ]; then
+        if check_installed "useradd" && check_installed "groupadd"; then
+            groupadd "$_user_name" -g "$_user_gid"
             useradd -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home"
-        else
-            useradd -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home"
-        fi
-    elif check_installed "adduser"; then
-        if [[ "$_user_uid" ]] && [[ "$_user_gid" ]]; then
+        elif check_installed "adduser" && check_installed "addgroup"; then
+            addgroup "$_user_name" -g "$_user_gid"
             adduser -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home" -D
         else
-            adduser -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home" -D
+            echo "Cannot create user $_user_name: useradd/groupadd and adduser/addgroup commands are not installed"
+            return 1
         fi
     else
-        echo "Cannot create user $_user_name: useradd and adduser commands not installed"
+        if check_installed "useradd"; then
+            useradd -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser"; then
+            adduser -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd and adduser commands are not installed"
+            return 1
+        fi
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Cannot create user $_user_name: creation command has failed"
         return 1
     fi
     echo "$_user_name:$_user_pass" | chpasswd

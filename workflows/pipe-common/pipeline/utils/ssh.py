@@ -88,9 +88,9 @@ class LocalExecutor(CloudPipelineExecutor):
 
     def execute(self, command, user=None, logger=None):
         exit_code, out, err = self._execute(command, user=user)
-        if out:
+        if out and logger:
             logger.debug(out)
-        if err:
+        if err and logger:
             logger.debug(err)
         if exit_code != 0:
             raise ExecutorError('Command has finished with exit code ' + str(exit_code))
