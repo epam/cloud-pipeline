@@ -65,7 +65,8 @@ class PlatformToCloudOperationsAdapter:
                 storage_cloud_identifier, storage_path_prefix + action.path,
                 convert_paths=False, list_versions=action.restore_versions
             )
-            self.logger.log("Storage: {}. Path: {}. Found '{}' files to restore.".format(storage.id, action.path, len(files)))
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Listed '{}' files to possible restore."
+                            .format(storage.id, action.action_id, action.path, len(files)))
             return self.cloud_operations[storage.storage_type].run_files_restore(
                 storage_cloud_identifier, files, action.days, action.restore_mode,
                 storage.region_name, restore_operation_id

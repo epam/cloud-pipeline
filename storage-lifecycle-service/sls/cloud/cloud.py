@@ -166,7 +166,10 @@ class S3StorageOperations(StorageOperations):
                 'GlacierJobTier': restore_tear
             }
         }
-        job_description = self._run_s3_batch_operation(bucket, files, region, restore_operation, restore_operation_id)
+        archived_files_to_restore = [f for f in files if f.storage_class != self.STANDARD]
+        self.logger.log("Filtered '{}' actual archived files to restore.".format(len(files)))
+        job_description = self._run_s3_batch_operation(
+            bucket, archived_files_to_restore, region, restore_operation, restore_operation_id)
         return {
             "status": self._is_s3_batch_operation_succeeded(job_description),
             "reason": job_description,
@@ -192,9 +195,9 @@ class S3StorageOperations(StorageOperations):
                     result = self.aws_s3_client.head_object(Bucket=bucket, Key=file.path, VersionId=file.version_id)
                 else:
                     result = self.aws_s3_client.head_object(Bucket=bucket, Key=file.path)
-                if not result or "Restore" not in result:
+                if not result:
                     self.logger.log(
-                        "Cannot get head of object: '{}' in bucket: {}, or 'Restore' property is not set"
+                        "Cannot get head of object: '{}' in bucket: {}"
                         .format(file.path, bucket))
                     return {
                         "status": False,
@@ -203,6 +206,9 @@ class S3StorageOperations(StorageOperations):
                         .format(file.path, bucket)
                     }
                 else:
+                    if "Restore" not in result:
+                        continue
+
                     restoring_status_match = re.match('.*expiry-date=["\'](.*)["\']', result["Restore"])
                     if not restoring_status_match:
                         return {

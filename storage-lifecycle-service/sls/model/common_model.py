@@ -36,7 +36,7 @@ class CloudPipelineNotification:
             settings_id=int(settings_dict["id"]),
             template_id=int(settings_dict["templateId"]),
             notification_type=settings_dict["type"],
-            user_to_notify_ids=settings_dict["informedUserIds"]
+            informed_user_ids=settings_dict["informedUserIds"]
             if "informedUserIds" in settings_dict
             else [],
             keep_informed_admins=settings_dict["keepInformedAdmins"]
@@ -73,14 +73,14 @@ class CloudPipelineNotificationTemplate:
 
 class CloudPipelineNotificationSettings:
 
-    def __init__(self, settings_id, template_id, notification_type, user_to_notify_ids,
+    def __init__(self, settings_id, template_id, notification_type, informed_user_ids,
                  keep_informed_admins, keep_informed_owner, enabled,
                  threshold=None, resend_delay=None, statuses_to_inform=None):
         self.settings_id = settings_id
         self.template_id = template_id
         self.notification_type = notification_type
         self.enabled = enabled
-        self.user_to_notify_ids = user_to_notify_ids
+        self.informed_user_ids = informed_user_ids
         self.keep_informed_admins = keep_informed_admins
         self.keep_informed_owner = keep_informed_owner
         self.threshold = threshold

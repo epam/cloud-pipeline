@@ -28,6 +28,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--cp-api-url")
     parser.add_argument("--cp-api-token", required=False)
+    parser.add_argument("--command", default="archive", choices=['archive', 'restore'])
     parser.add_argument("--mode", default="single", choices=['single', 'daemon'])
     parser.add_argument("--at", default="00:01", required=False)
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
@@ -47,12 +48,14 @@ def run_application(args, logger):
         raise RuntimeError("Wrong format of 'at' argument: {}, please specify it in format: 00:00".format(args.at))
 
     cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
-    config = SynchronizerConfig(int(args.max_execution_running_days), args.mode, args.at)
+    config = SynchronizerConfig(args.command, args.mode, args.at, int(args.max_execution_running_days))
     logger.log("Running application with config: {}".format(config.to_json()))
-    ApplicationModeRunner.get_application_runner(
-        StorageLifecycleRestoringSynchronizer(config, data_source, cloud_adapter, logger),
-        config
-    ).run()
+
+    lifecycle_storage_synchronizer = StorageLifecycleRestoringSynchronizer(config, data_source, cloud_adapter, logger) \
+        if config.command == "restore" \
+        else StorageLifecycleArchivingSynchronizer(config, data_source, cloud_adapter, logger)
+
+    ApplicationModeRunner.get_application_runner(lifecycle_storage_synchronizer, config).run()
 
 
 if __name__ == '__main__':

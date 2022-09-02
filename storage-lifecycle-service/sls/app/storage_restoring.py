@@ -46,8 +46,10 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             self.logger.log("Storage: {}. No active restore action found for storage.".format(storage.id))
             return
         else:
-            self.logger.log("Storage: {}. Found {} active restore action.".format(storage.id, len(ongoing_actions)))
+            self.logger.log("Storage: {}. Found {} INITIATED or RUNNING restore actions."
+                            .format(storage.id, len(ongoing_actions)))
 
+        self.logger.log("Storage: {}. Processing RUNNING restore actions.".format(storage.id))
         running_actions = [a for a in ongoing_actions if a.status == self.RUNNING_STATUS]
         for running_action in running_actions:
             self._process_action_and_update(storage, running_action)
@@ -60,9 +62,10 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
         #    (f.e. actions for child folders and files that were launched before current one)
         #    In this case current one will override these and we need to cancel these actions
         actions_by_path = self._fetch_restore_action_paths_sorted(ongoing_actions)
+        self.logger.log("Storage: {}. Processing INITIATED restore actions.".format(storage.id))
         for path, actions in actions_by_path.items():
             effective_action = next(iter(sorted(actions, key=lambda a: a.started, reverse=True)), None)
-            if effective_action and effective_action.status in self.RUNNING_STATUSES:
+            if effective_action and effective_action.status == self.INITIATED_STATUS:
 
                 running_related_action = next(
                     filter(lambda a: a.status == self.RUNNING_STATUS,
@@ -83,15 +86,14 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                     self._process_action_and_update(storage, effective_action)
 
                 related_actions_to_cancel = [a for a in
-                                             sorted(self._fetch_child_actions_to_current_one(effective_action, ongoing_actions))
+                                             self._fetch_child_actions_to_current_one(effective_action, ongoing_actions)
                                              if a.status == self.INITIATED_STATUS]
                 if len(related_actions_to_cancel) > 0:
                     self.logger.log(
                         "Storage: {}. Action: {}. Path: {}. There are '{}' related actions, that will be cancelled.".format(
                             storage.id, effective_action.action_id, path, len(related_actions_to_cancel)))
-
-                for action_to_cancel in related_actions_to_cancel:
-                    self._update_action(action_to_cancel, self.CANCELLED_STATUS)
+                    for action_to_cancel in related_actions_to_cancel:
+                        self._update_action(action_to_cancel, self.CANCELLED_STATUS)
 
     def _process_action_and_update(self, storage, action):
         if action.status == self.INITIATED_STATUS:
@@ -151,14 +153,20 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                        "path": action.path,
                        "pathType": action.path_type,
                        "actionId": action.action_id,
-                       "restoredTill": action.restoredTill
+                       "restoredTill": action.restored_till.strftime("%Y-%m-%d %H:%M:%S")
                    }
 
         subject, body, to_user, copy_users, parameters = _prepare_message()
-        result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
-        if not result:
-            self.logger.log("Storage: {}. Action: {}. Path: {}. Problem to send restore notification."
-                            .format(storage.id, action.action_id, action.path))
+        if subject and body and to_user:
+            result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
+            if not result:
+                self.logger.log("Storage: {}. Action: {}. Path: {}. Problem to send restore notification."
+                                .format(storage.id, action.action_id, action.path))
+        else:
+            self.logger.log("Storage: {}. Action: {}. Path: {}. "
+                            "Will not send notification because parameters are not present, "
+                            "subject: {} body: {} to_user: {}"
+                            .format(storage.id, action.action_id, action.path, subject, body, to_user))
 
     @staticmethod
     def _fetch_child_actions_to_current_one(root_action, actions):

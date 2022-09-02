@@ -185,42 +185,29 @@ class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):
         return CloudPipelineNotification.build_from_dicts(notification_template, notification_settings)
 
     def _load_default_lifecycle_rule_notification(self):
-        default_lifecycle_notification_template = next(
-            filter(
-                lambda t: t["name"] == self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE,
-                self.api.load_notification_templates()
-            ), None
-        )
 
-        default_lifecycle_notification_settings = next(
-            filter(
-                lambda t: t["type"] == self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE,
-                self.api.load_notification_settings()
-            ), None
-        )
-        default_lifecycle_rule_prolong_days = self.load_preference("storage.lifecycle.prolong.days")
-        default_lifecycle_rule_notify_before_days = self.load_preference("storage.lifecycle.notify.before.days")
-        if not default_lifecycle_notification_settings or not default_lifecycle_notification_template \
-                or not default_lifecycle_rule_prolong_days or not default_lifecycle_rule_notify_before_days:
+        notification = self.load_notification(self.DATASTORAGE_LIFECYCLE_ACTION_NOTIFICATION_TYPE)
+        default_rule_prolong_days = self.load_preference("storage.lifecycle.prolong.days")
+        default_rule_notify_before_days = self.load_preference("storage.lifecycle.notify.before.days")
+        if not notification or not default_rule_prolong_days or not default_rule_notify_before_days:
             return None
 
-        recipients = [{"name": "ROLE_ADMIN", "principal": False}] if "keepInformedAdmins" in default_lifecycle_notification_settings else []
-        if "informedUserIds" in default_lifecycle_notification_settings:
-            for user_id in default_lifecycle_notification_settings["informedUserIds"]:
-                try:
-                    user = self.api.load_user(int(user_id))
-                    recipients.append({
-                        "name": user["userName"],
-                        "principal": True
-                    })
-                except Exception as e:
-                    self.logger.log("Fail to load user by id: {}. Will skip it!".format(str(user_id)))
+        recipients = [{"name": "ROLE_ADMIN", "principal": False}] if notification.settings.keep_informed_admins else []
+        for user_id in notification.settings.informed_user_ids:
+            try:
+                user = self.api.load_user(int(user_id))
+                recipients.append({
+                    "name": user["userName"],
+                    "principal": True
+                })
+            except Exception as e:
+                self.logger.log("Fail to load user by id: {}. Will skip it!".format(str(user_id)))
 
         return StorageLifecycleNotification(
-            notify_before_days=int(default_lifecycle_rule_notify_before_days["value"]),
-            prolong_days=int(default_lifecycle_rule_prolong_days["value"]),
+            notify_before_days=int(default_rule_notify_before_days["value"]),
+            prolong_days=int(default_rule_prolong_days["value"]),
             recipients=recipients,
-            enabled=default_lifecycle_notification_settings["enabled"] if "enabled" in default_lifecycle_notification_settings else False,
-            subject=default_lifecycle_notification_template["subject"] if "subject" in default_lifecycle_notification_template else "",
-            body=default_lifecycle_notification_template["body"] if "body" in default_lifecycle_notification_template else None
+            enabled=notification.settings.enabled,
+            subject=notification.template.subject if notification.template.subject else "",
+            body=notification.template.body if notification.template.body else ""
         )
