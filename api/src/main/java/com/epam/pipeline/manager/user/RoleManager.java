@@ -156,6 +156,9 @@ public class RoleManager {
                 .collect(Collectors.toList());
     }
 
+    public Role loadRoleByNameWithUsers(final String name) {
+        return roleDao.loadExtendedRole(loadRole(name).getId());
+    }
 
     public Role loadRole(Long roleId) {
         return roleDao.loadRole(roleId)

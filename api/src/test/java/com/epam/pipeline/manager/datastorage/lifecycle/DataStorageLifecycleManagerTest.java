@@ -28,6 +28,7 @@ import com.epam.pipeline.entity.utils.DateUtils;
 import com.epam.pipeline.manager.datastorage.DataStorageManager;
 import com.epam.pipeline.manager.datastorage.StorageProviderManager;
 import com.epam.pipeline.manager.preference.PreferenceManager;
+import com.epam.pipeline.manager.user.UserManager;
 import com.epam.pipeline.mapper.datastorage.lifecycle.StorageLifecycleEntityMapper;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
@@ -44,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion.*;
 import static com.epam.pipeline.manager.ObjectCreatorUtils.createS3Bucket;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -61,6 +63,8 @@ public class DataStorageLifecycleManagerTest {
             .datastorageId(ID)
             .pathGlob(ROOT)
             .objectGlob(OBJECT_GLOB)
+            .transitionCriterion(builder()
+                    .type(StorageLifecycleTransitionCriterionType.DEFAULT).build())
             .transitionMethod(StorageLifecycleTransitionMethod.EARLIEST_FILE)
             .transitions(
                     Collections.singletonList(
@@ -82,11 +86,12 @@ public class DataStorageLifecycleManagerTest {
     private final MessageHelper messageHelper = Mockito.mock(MessageHelper.class);
     private final StorageProviderManager providerManager = Mockito.mock(StorageProviderManager.class);
 
+    private final UserManager userManager = Mockito.mock(UserManager.class);
 
 
     private final DataStorageLifecycleManager lifecycleManager = new DataStorageLifecycleManager(
             messageHelper, mapper, lifecycleRuleRepository, lifecycleRuleExecutionRepository,
-            storageManager, providerManager, preferenceManager
+            storageManager, providerManager, preferenceManager, userManager
     );
 
     @Before
@@ -123,6 +128,15 @@ public class DataStorageLifecycleManagerTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void shouldFailCreateLifecycleRuleIfExistsButCriterionEmpty() {
+        Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+        StorageLifecycleRule ruleWithoutCriterion = RULE.toBuilder().transitionCriterion(null).build();
+        lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithoutCriterion);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void shouldFailCreateLifecycleRuleIfPathNotFromRoot() {
         final StorageLifecycleRule rule = RULE.toBuilder().pathGlob("path/not/from/root").build();
         lifecycleManager.createStorageLifecyclePolicyRule(ID, rule);
@@ -135,6 +149,20 @@ public class DataStorageLifecycleManagerTest {
                 .findByDatastorageId(eq(ID));
         final StorageLifecycleRule anotherRule = RULE.toBuilder().objectGlob(null).build();
         final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, anotherRule);
+        verifyRule(created, RULE_WITH_ID);
+    }
+
+    @Test
+    public void shouldSuccessfullyCreateLifecycleRuleIfRuleWithAnotherCriterionExists() {
+        Mockito.doReturn(Collections.singletonList(mapper.toEntity(RULE_WITH_ID)))
+                .when(lifecycleRuleRepository)
+                .findByDatastorageId(eq(ID));
+        final StorageLifecycleRule ruleWithAnotherCriterion = RULE.toBuilder()
+                .transitionCriterion(
+                        builder().type(StorageLifecycleTransitionCriterionType.MATCHING_FILES)
+                                .value(OBJECT_GLOB).build()
+                ).build();
+        final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithAnotherCriterion);
         verifyRule(created, RULE_WITH_ID);
     }
 

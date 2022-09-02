@@ -22,7 +22,7 @@ from sls.model.rule_model import StorageLifecycleNotification, StorageLifecycleR
 
 class TestNotificationPositive(unittest.TestCase):
 
-    enabled_notification = StorageLifecycleNotification(7, 7, [], False, False, True, "", "")
+    enabled_notification = StorageLifecycleNotification(7, 7, [], True, "", "")
     completed_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_SUCCESS_STATUS, "/", "GLACIER", datetime.datetime.now())
     failed_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_FAILED_STATUS, "/", "GLACIER", datetime.datetime.now())
 
@@ -66,8 +66,8 @@ class TestNotificationPositive(unittest.TestCase):
 
 class TestNotificationNegative(unittest.TestCase):
 
-    enabled_notification = StorageLifecycleNotification(7, 7, [], False, False, True, "", "")
-    disabled_notification = StorageLifecycleNotification(None, None, None, False, False, False, None, None)
+    enabled_notification = StorageLifecycleNotification(7, 7, [], True, "", "")
+    disabled_notification = StorageLifecycleNotification(None, None, None, False, None, None)
     running_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_RUNNING_STATUS, "/", "GLACIER", datetime.datetime.now())
     notification_execution = StorageLifecycleRuleExecution(1, 1, sls.app.storage_synchronizer.EXECUTION_NOTIFICATION_SENT_STATUS, "/", "GLACIER", datetime.datetime.now())
     today = datetime.datetime.now().date()

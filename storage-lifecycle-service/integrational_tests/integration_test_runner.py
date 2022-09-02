@@ -72,7 +72,7 @@ class IntegrationTestsRunner(unittest.TestCase):
         self.assert_platform_state(actual.platform, expected.platform)
 
         logger.log(logging.INFO, "Finish test case: {}\n\n".format(case_file))
-        time.sleep(5)
+        time.sleep(30)
 
     def assertCloudState(self, actual, expected):
         self.assertEqual(expected is None, actual is None)

@@ -63,14 +63,30 @@ class HcsPipeline(object):
         self._pipeline_state_message = ''
         self._input_sets = set()
         self._fields_by_well = dict()
+        self._measurement_uuid = measurement_id
+        self._pre_processing_pipeline_id = None
+        self._z_planes = None  # z-planes to squash
+        self._channels_map = dict()
         cellprofiler_core.preferences.set_headless()
 
     def set_pipeline_state(self, status: PipelineState, message: str = ''):
         self._pipeline_state = status
         self._pipeline_state_message = message
 
+    def set_pre_processing_pipeline(self, pipeline_id):
+        self._pre_processing_pipeline_id = pipeline_id
+
+    def get_pre_processing_pipeline(self):
+        return self._pre_processing_pipeline_id
+
     def get_id(self):
         return self._pipeline_id
+
+    def get_measurement(self):
+        return self._measurement_uuid
+
+    def set_z_planes(self, z_planes):
+        self._z_planes = z_planes
 
     def get_module_outputs(self, module):
         module_id = str(module.id)
@@ -95,6 +111,8 @@ class HcsPipeline(object):
         data['state'] = self._pipeline_state.name
         data['message'] = self._pipeline_state_message
         data['inputs'] = list(self._input_sets)
+        if self.get_pre_processing_pipeline():
+            data['pre_process_pipeline'] = self.get_pre_processing_pipeline()
         return data
 
     def get_module_status(self):
@@ -145,6 +163,7 @@ class HcsPipeline(object):
             module_name = module.module_name
         if module_name == DefineResults.MODULE_NAME:
             module_config.update({DefineResults.FIELDS_BY_WELL: self._fields_by_well})
+            module_config.update({DefineResults.Z_PLANES: self._z_planes})
         processor = self._modules_factory.get_module_processor(module, module_name)
         module = processor.configure_module(module_config)
         return module
@@ -161,18 +180,14 @@ class HcsPipeline(object):
         self._pipeline.file_list.extend(files)
         self.set_pipeline_state(PipelineState.CONFIGURING)
 
-    def set_input(self, image_coords_list: List[ImageCoords]):
-        self.set_pipeline_state(PipelineState.CONFIGURING)
-        self.set_pipeline_files([self._map_to_file_name(image) for image in image_coords_list])
-        self._set_fields_by_well(image_coords_list)
+    def set_input_sets(self):
         self._input_sets.clear()
         self._pipeline.modules()[2].assignments.clear()
-        channels_map = {image.channel_name: image.channel for image in image_coords_list}
-        for channel_name, channel_number in channels_map.items():
+        for channel_name, channel_number in self._channels_map.items():
             group = SettingsGroup()
             channel_predicate = 'and (file does contain "ch{:02d}")'.format(channel_number)
             group.rule_filter = Filter('Select the rule criteria', [channel_predicate], value=channel_predicate)
-            group.image_name = FileImageName('Name to assign these images',  value=channel_name)
+            group.image_name = FileImageName('Name to assign these images', value=channel_name)
             group.load_as_choice = Choice('Select the image type', ['Grayscale image'], value='Grayscale image')
             group.rescale = Choice('Set intensity range from', ['Image metadata'], value='Image metadata')
             group.manual_rescale = Float('Maximum intensity')
@@ -181,12 +196,22 @@ class HcsPipeline(object):
             self._pipeline.modules()[2].assignments.append(group)
             self._input_sets.add(channel_name)
 
-    def _map_to_file_name(self, coords: ImageCoords):
+    def set_input(self, image_coords_list: List[ImageCoords]):
+        self.set_pipeline_state(PipelineState.CONFIGURING)
+        self.set_pipeline_files([self.map_to_file_name(image) for image in image_coords_list])
+        self._set_fields_by_well(image_coords_list)
+        self._channels_map = {image.channel_name: image.channel for image in image_coords_list}
+        self.set_input_sets()
+
+    def map_to_file_name(self, coords: ImageCoords):
         well_full_name = "r{:02d}c{:02d}".format(coords.well_x, coords.well_y)
         image_relative_path = 'images/{well}/{well}f{field:02d}p{plane:02d}-ch{channel:02d}t{timepoint:02d}.tiff' \
             .format(well=well_full_name, field=coords.field, plane=coords.z_plane,
                     channel=coords.channel, timepoint=coords.timepoint)
-        return os.path.join(self._pipeline_input_dir, image_relative_path)
+        image_full_path = os.path.join(self._pipeline_input_dir, image_relative_path)
+        if not os.path.exists(image_full_path):
+            raise FileNotFoundError("The file '%s' does not exist." % image_full_path)
+        return image_full_path
 
     def _verify_module_num(self, module_num: int):
         modules = self._pipeline.modules()

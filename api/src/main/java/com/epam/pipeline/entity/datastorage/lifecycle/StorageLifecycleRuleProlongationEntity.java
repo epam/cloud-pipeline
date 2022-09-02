@@ -32,7 +32,9 @@ public class StorageLifecycleRuleProlongationEntity {
     @JoinColumn(name = "rule_id", referencedColumnName = "id")
     private StorageLifecycleRuleEntity lifecycleRule;
 
-    String path;
-    LocalDateTime prolongedDate;
-    Long days;
+    private Long userId;
+
+    private String path;
+    private LocalDateTime prolongedDate;
+    private Long days;
 }

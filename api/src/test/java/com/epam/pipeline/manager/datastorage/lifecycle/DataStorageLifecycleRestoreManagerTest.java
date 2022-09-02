@@ -67,7 +67,8 @@ public class DataStorageLifecycleRestoreManagerTest {
             .started(DateUtils.nowUTC().minus(1L, ChronoUnit.DAYS)).build();
     private static final String PATH_2 = "data2/";
     public static final String STANDARD_RESTORE_MODE = "Standard";
-    public static final StorageRestoreActionNotification DISABLED_NOTIFICATION = new StorageRestoreActionNotification(false, Collections.emptyList());
+    public static final StorageRestoreActionNotification DISABLED_NOTIFICATION =
+            new StorageRestoreActionNotification(false, Collections.emptyList());
 
     private final PreferenceManager preferenceManager = Mockito.mock(PreferenceManager.class);
     private final DataStorageRestoreActionRepository dataStoragePathRestoreActionRepository =
@@ -119,14 +120,14 @@ public class DataStorageLifecycleRestoreManagerTest {
     public void failToInitiateRestoreIfAlreadyExistAndIsntForcedTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
-                STANDARD_RESTORE_MODE, 10L, false, DISABLED_NOTIFICATION);
+                STANDARD_RESTORE_MODE, 10L, false, false, DISABLED_NOTIFICATION);
     }
 
     @Test(expected = IllegalStateException.class)
     public void failToInitiateRestoreWithoutWellFormedNotificationTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
-                STANDARD_RESTORE_MODE, 10L, false,
+                STANDARD_RESTORE_MODE, 10L, false, false,
                 new StorageRestoreActionNotification(true, Collections.emptyList()));
     }
 
@@ -140,7 +141,7 @@ public class DataStorageLifecycleRestoreManagerTest {
         final StorageRestoreActionEntity storageRestoreAction =
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, 10L, true, DISABLED_NOTIFICATION);
+                        STANDARD_RESTORE_MODE, 10L, false, true, DISABLED_NOTIFICATION);
         Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
@@ -154,7 +155,7 @@ public class DataStorageLifecycleRestoreManagerTest {
         final StorageRestoreActionEntity storageRestoreAction =
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_2).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, 10L, false, DISABLED_NOTIFICATION);
+                        STANDARD_RESTORE_MODE, 10L, false, false, DISABLED_NOTIFICATION);
         Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }

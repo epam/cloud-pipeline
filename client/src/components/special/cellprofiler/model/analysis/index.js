@@ -334,9 +334,11 @@ class Analysis {
 
   getInputsPayload = () => {
     if (!this.namesAndTypes) {
-      return [];
+      return {
+        files: []
+      };
     }
-    return this.namesAndTypes.sourceFiles.map(aFile => ({
+    const files = this.namesAndTypes.sourceFiles.map(aFile => ({
       x: aFile.x,
       y: aFile.y,
       z: aFile.z,
@@ -345,6 +347,13 @@ class Analysis {
       channel: aFile.c,
       channelName: aFile.channel
     }));
+    const zPlanes = this.namesAndTypes.mergeZPlanes
+      ? ([...new Set(files.map(aFile => aFile.z))].sort((a, b) => a - b))
+      : undefined;
+    return {
+      files,
+      zPlanes
+    };
   }
 
   @action
@@ -359,7 +368,7 @@ class Analysis {
       this.error = undefined;
       await this.analysisAPI.attachFiles(
         this.pipelineId,
-        ...this.getInputsPayload()
+        this.getInputsPayload()
       );
       this.sourceFileChanged = false;
       this.analysisCache = [];
@@ -534,8 +543,9 @@ class Analysis {
 
   /**
    * @param {HCSSourceFileOptions[]} hcsSourceFiles
+   * @param {boolean} [mergeZPlanes=false]
    */
-  changeFile (hcsSourceFiles) {
+  changeFile (hcsSourceFiles, mergeZPlanes = false) {
     const onChange = () => {
       this.pipelineId = undefined;
       this.analysisResults = [];
@@ -554,6 +564,8 @@ class Analysis {
     } else {
       changed = this.namesAndTypes.changeFiles(hcsSourceFiles);
     }
+    changed = changed || (this.namesAndTypes.mergeZPlanes !== mergeZPlanes);
+    this.namesAndTypes.mergeZPlanes = mergeZPlanes;
     if (HCSSourceFile.check(...hcsSourceFiles) && changed) {
       onChange();
     }

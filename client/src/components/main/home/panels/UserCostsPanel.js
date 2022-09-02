@@ -17,9 +17,10 @@
 import React from 'react';
 import classNames from 'classnames';
 import {computed, observable} from 'mobx';
-import {observer} from 'mobx-react';
+import {inject, observer} from 'mobx-react';
 import moment from 'moment-timezone';
 import {
+  Alert,
   Icon,
   Tooltip,
   message,
@@ -28,6 +29,7 @@ import {
 import roleModel from '../../../../utils/roleModel';
 import {GetBillingData} from '../../../../models/billing';
 import {Period, getPeriod} from '../../../special/periods';
+import Markdown from '../../../special/markdown';
 import styles from './UserCostsPanel.css';
 
 const BILLING_PERIODS = [Period.month, Period.year];
@@ -46,7 +48,7 @@ function renderStatistics (percent) {
         })}
       >
         <Icon
-          type={percent > 0 ? 'caret-up' : 'catet-down'}
+          type={percent > 0 ? 'caret-up' : 'caret-down'}
           style={{marginRight: '5px'}}
         />
         <span>
@@ -93,6 +95,7 @@ function getTotalCosts (billing) {
 }
 
 @roleModel.authenticationInfo
+@inject('preferences')
 @observer
 export default class UserCostsPanel extends React.Component {
   state={
@@ -132,6 +135,15 @@ export default class UserCostsPanel extends React.Component {
     return [];
   }
 
+  @computed
+  get disclaimer () {
+    const {preferences} = this.props;
+    if (preferences.loaded) {
+      return preferences.myCostsDisclaimer || '';
+    }
+    return '';
+  }
+
   fetchBillingInfo = (userName) => {
     this.setState({pending: true}, async () => {
       const promises = BILLING_PERIODS.map(period => {
@@ -159,6 +171,25 @@ export default class UserCostsPanel extends React.Component {
         this._billingRequests = results;
       });
     });
+  };
+
+  renderDisclaimer = () => {
+    if (!this.disclaimer) {
+      return null;
+    }
+    const message = (
+      <Markdown
+        md={this.disclaimer}
+        className={styles.markdown}
+      />
+    );
+    return (
+      <Alert
+        message={message}
+        type="warning"
+        style={{padding: '8px 15px', marginBottom: '10px'}}
+      />
+    );
   };
 
   renderBillingInfo = (billing) => {
@@ -256,10 +287,13 @@ export default class UserCostsPanel extends React.Component {
         spinning={pending}
         wrapperClassName={styles.spinner}
       >
-        <div className={styles.gridContainer}>
-          {this.billingInfo.map(billing => (
-            this.renderBillingInfo(billing)
-          ))}
+        <div className={styles.container}>
+          {this.renderDisclaimer()}
+          <div className={styles.gridContainer}>
+            {this.billingInfo.map(billing => (
+              this.renderBillingInfo(billing)
+            ))}
+          </div>
         </div>
       </Spin>
     );
