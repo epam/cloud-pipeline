@@ -20,6 +20,7 @@ import com.epam.pipeline.controller.vo.user.RoleVO;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.user.RoleManager;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -46,8 +47,13 @@ public class RoleApiService {
     }
 
     @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
-    public Role loadRole(Long id) {
+    public Role loadRole(final Long id) {
         return roleManager.loadRoleWithUsers(id);
+    }
+
+    @PreAuthorize(ADMIN_ONLY + OR_USER_READER)
+    public Role loadRoleByName(final String name) {
+        return roleManager.loadRoleByNameWithUsers(name);
     }
 
     @PreAuthorize(ADMIN_ONLY)
@@ -74,5 +80,4 @@ public class RoleApiService {
     public ExtendedRole removeRole(Long roleId, List<Long> userIds) {
         return roleManager.removeRole(roleId, userIds);
     }
-
 }

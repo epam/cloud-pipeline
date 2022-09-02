@@ -16,6 +16,7 @@
 
 package com.epam.pipeline.dto.datastorage.lifecycle;
 
+import com.epam.pipeline.entity.user.SidImpl;
 import lombok.Builder;
 import lombok.Value;
 
@@ -29,9 +30,7 @@ import java.util.List;
 public class StorageLifecycleNotification {
     Long notifyBeforeDays;
     Long prolongDays;
-    List<Long> informedUserIds;
-    Boolean keepInformedAdmins;
-    Boolean keepInformedOwner;
+    List<SidImpl> recipients;
     Boolean enabled;
     String subject;
     String body;

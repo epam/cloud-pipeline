@@ -40,7 +40,7 @@ def main():
 
 
 def run_application(args, logger):
-    data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, args.data_source)
+    data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
     if not re.match("\\d\\d:\\d\\d", args.at):
         raise RuntimeError("Wrong format of 'at' argument: {}, please specify it in format: 00:00".format(args.at))
