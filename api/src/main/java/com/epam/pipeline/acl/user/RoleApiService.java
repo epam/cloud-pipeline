@@ -20,7 +20,6 @@ import com.epam.pipeline.controller.vo.user.RoleVO;
 import com.epam.pipeline.entity.user.ExtendedRole;
 import com.epam.pipeline.entity.user.Role;
 import com.epam.pipeline.manager.user.RoleManager;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
