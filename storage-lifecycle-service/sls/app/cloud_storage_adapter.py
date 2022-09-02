@@ -14,7 +14,7 @@
 #
 import json
 
-from sls.cloud.cloud import S3StorageOperations
+from sls.cloud.s3_cloud import S3StorageOperations
 
 S3_TYPE = "S3"
 

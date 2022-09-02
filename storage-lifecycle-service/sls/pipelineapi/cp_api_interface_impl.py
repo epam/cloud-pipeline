@@ -14,9 +14,10 @@
 import os
 from pipeline import PipelineAPI
 
-from sls.model.common_model import CloudPipelineNotification
-from sls.model.rule_model import LifecycleRuleParser, StorageLifecycleNotification
-from sls.model.restore_model import StorageLifecycleRestoreAction
+from sls.app.cp_api_interface import CloudPipelineDataSource
+from sls.pipelineapi.model.common_model import CloudPipelineNotification
+from sls.pipelineapi.model.archive_rule_model import LifecycleRuleParser, StorageLifecycleNotification
+from sls.pipelineapi.model.restore_action_model import StorageLifecycleRestoreAction
 
 
 def configure_cp_data_source(cp_api_url, cp_api_token, api_log_dir, logger, data_source_type="RESTApi"):
@@ -32,57 +33,6 @@ def configure_cp_data_source(cp_api_url, cp_api_token, api_log_dir, logger, data
         api = PipelineAPI(cp_api_url, api_log_dir)
         data_source = RESTApiCloudPipelineDataSource(api, logger)
     return data_source
-
-
-class CloudPipelineDataSource:
-
-    def load_storage(self, datastorage_id):
-        pass
-
-    def load_available_storages(self):
-        pass
-
-    def load_lifecycle_rules_for_storage(self, datastorage_id):
-        pass
-
-    def load_lifecycle_rule(self, datastorage_id, rule_id):
-        pass
-
-    def create_lifecycle_rule_execution(self, datastorage_id, rule_id, execution):
-        pass
-
-    def load_lifecycle_rule_executions(self, datastorage_id, rule_id, path=None, status=None):
-        pass
-
-    def update_status_lifecycle_rule_execution(self, datastorage_id, execution_id, status):
-        pass
-
-    def delete_lifecycle_rule_execution(self, datastorage_id, execution_id):
-        pass
-
-    def send_notification(self, subject, body, to_user, copy_users, parameters):
-        pass
-
-    def load_role(self, role_id):
-        pass
-
-    def load_role_by_name(self, role_name):
-        pass
-
-    def load_user_by_name(self, username):
-        pass
-
-    def load_user(self, user_id):
-        pass
-
-    def load_preference(self, preference_name):
-        pass
-
-    def load_regions(self):
-        pass
-
-    def _load_default_lifecycle_rule_notification(self):
-        pass
 
 
 class RESTApiCloudPipelineDataSource(CloudPipelineDataSource):

@@ -12,14 +12,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+#
 
 import datetime
 import os
 import re
 
-from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
-from sls.model.action_model import StorageLifecycleRuleActionItems
-from sls.model.rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
+from sls.app.synchronizer.storage_synchronizer_interface import StorageLifecycleSynchronizer
+from sls.app.model.sync_event_model import StorageLifecycleRuleActionItems
+from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation
 from sls.util import path_utils, date_utils
 
 CRITERION_MATCHING_FILES = "MATCHING_FILES"

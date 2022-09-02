@@ -16,12 +16,12 @@ import re
 import argparse
 
 from sls.app.cloud_storage_adapter import PlatformToCloudOperationsAdapter
-from sls.app.run_mode import ApplicationModeRunner
-from sls.app.storage_archiving import StorageLifecycleArchivingSynchronizer
-from sls.app.storage_restoring import StorageLifecycleRestoringSynchronizer
+from sls.app.app_mode_runner import ApplicationModeRunner
+from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArchivingSynchronizer
+from sls.app.synchronizer.restoring_synchronizer_impl import StorageLifecycleRestoringSynchronizer
 from sls.util.logger import AppLogger
-from sls.model.config_model import SynchronizerConfig
-from sls.datasorce.cp_data_source import configure_cp_data_source
+from sls.app.model.config_model import SynchronizerConfig
+from sls.pipelineapi.cp_api_interface_impl import configure_cp_data_source
 
 
 def main():
