@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
 import os
-from time import sleep, time
-from pipeline.api import PipelineAPI
-import jwt
+import traceback
 
-ENV_SRC = os.environ.get('CP_ENV_FILE_TO_SOURCE', '/etc/cp_env.sh')
+import jwt
+from datetime import datetime
+from time import sleep, time
+
+from pipeline.api import PipelineAPI
+
+
+ENV_SRC = os.getenv('CP_JWT_TOKEN_EXPIRATION_SRC', os.getenv('CP_ENV_FILE_TO_SOURCE', '/etc/cp_env.sh'))
 API_TOKEN_PREFIX = "export API_TOKEN="
 MONITORING_DELAY_HOUR = int(os.getenv("CP_JWT_TOKEN_EXPIRATION_CHECK_TIMEOUT_HOUR", 1)) * 60 * 60
 GLOBAL_REFRESH_THRESHOLD = "launch.jwt.token.expiration.refresh.threshold"
 API_URL = os.environ['API']
-LOG_DIR = os.environ.get('LOG_DIR', 'logs')
+LOG_DIR = os.getenv('LOG_DIR', 'logs')
 
 
 def read_env_src():
@@ -113,6 +117,8 @@ if __name__ == '__main__':
     while True:
         try:
             refresh_token()
-        except BaseException as e:
-            print(e)
+        except KeyboardInterrupt:
+            break
+        except Exception:
+            traceback.print_exc()
         sleep(MONITORING_DELAY_HOUR)
