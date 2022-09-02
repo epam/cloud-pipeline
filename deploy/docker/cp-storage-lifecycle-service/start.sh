@@ -31,9 +31,15 @@ if [ -z "${API_TOKEN}" ]; then
     fi
 fi
 
+if [ -z "${CP_STORAGE_LIFECYCLE_RUN_COMMAND}" ]; then
+     echo "CP_STORAGE_LIFECYCLE_RUN_COMMAND is not provided! Possible values are: 'restore' or 'archive'"
+     exit 22
+fi
+
 python3 ${CP_SLS_HOME}/sls/sls/app.py --cp-api-url=${API} \
          --max-execution-running-days=${CP_STORAGE_LIFECYCLE_DAEMON_MAX_EXECUTION_RUNNING_DAYS:-2} \
          --mode=${CP_STORAGE_LIFECYCLE_DAEMON_MODE:-single} \
+         --command=${CP_STORAGE_LIFECYCLE_RUN_COMMAND} \
          --at="${CP_STORAGE_LIFECYCLE_DAEMON_AT_TIME:-00:05}" 2>&1 | tee -a  $CP_SLS_HOME/logs/storage-lifecycle-service-$(date -u --iso-8601).log
 
 
