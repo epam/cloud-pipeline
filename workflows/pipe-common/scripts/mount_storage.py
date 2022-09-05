@@ -25,8 +25,9 @@ from abc import ABCMeta, abstractmethod
 
 import time
 
-from pipeline import PipelineAPI, common, DataStorageWithShareMount, RunLogger, TaskLogger, LevelLogger, LocalLogger
+from pipeline import PipelineAPI, DataStorageWithShareMount, RunLogger, TaskLogger, LevelLogger, LocalLogger
 from pipeline.utils.plat import is_windows
+from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -108,14 +109,10 @@ class PermissionHelper:
 
 class MountStorageTask:
 
-    def __init__(self, run_id, api):
+    def __init__(self, run_id, api, mounters):
         self.api = api
         self.run_id = int(run_id)
-        if is_windows():
-            available_mounters = [S3Mounter, GCPMounter]
-        else:
-            available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
-        self.mounters = {mounter.type(): mounter for mounter in available_mounters}
+        self.mounters = {mounter.type(): mounter for mounter in mounters}
 
     def parse_storage(self, placeholder):
         storage_id = None
@@ -326,10 +323,12 @@ class StorageMounter:
 
     @staticmethod
     def execute_and_check_command(command):
-        install_check, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=False)
-        if install_check != 0:
-            Logger.warning('Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr))
-        return install_check == 0
+        try:
+            Executor.execute(command)
+            return True
+        except ExecutorError:
+            Logger.warning('Installation script {command} failed.'.format(command=command))
+            return False
 
     @staticmethod
     def create_directory(path):
@@ -366,10 +365,10 @@ class StorageMounter:
 
     @staticmethod
     def execute_mount(command, params):
-        result = common.execute_cmd_command(command, executable=None if is_windows() else '/bin/bash')
-        if result == 0:
-            Logger.info('-->{path} mounted to {mount}'.format(**params))
-        else:
+        try:
+            Executor.execute(command)
+            Logger.info('--> {path} mounted to {mount}'.format(**params))
+        except ExecutorError:
             Logger.warning('--> Failed mounting {path} to {mount}'.format(**params))
 
     def get_path(self):
@@ -447,10 +446,10 @@ class AzureMounter(StorageMounter):
         command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
                   '&& cat > /etc/hosts <<< "$etc_hosts_clear" ' \
                   '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
-        exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
-        if exit_code != 0:
-            Logger.warning('Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'
-                           .format(stderr))
+        try:
+            Executor.execute(command)
+        except ExecutorError:
+            Logger.warning('Azure BLOB service hostname resolution and writing to /etc/hosts failed')
 
 
 class S3Mounter(StorageMounter):
@@ -775,7 +774,11 @@ def main():
 
     api_url = os.environ['API']
     run_id = os.getenv('RUN_ID', '-1')
-    logging_directory = os.getenv('CP_CAP_MOUNTS_STORAGES_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
+
+    if is_windows():
+        logging_directory = os.getenv('CP_CAP_MOUNTS_STORAGES_LOG_DIR', os.getenv('LOG_DIR', 'c:\\logs'))
+    else:
+        logging_directory = os.getenv('CP_CAP_MOUNTS_STORAGES_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
     logging_level = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_LEVEL', 'DEBUG')
     logging_level_local = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_LEVEL_LOCAL', 'DEBUG')
     logging_format = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
@@ -785,17 +788,27 @@ def main():
                         filename=os.path.join(logging_directory, 'mount_storages.log'))
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
-    logger = RunLogger(api=api, run_id=run_id)
-    logger = TaskLogger(task=logging_task, inner=logger)
-    logger = LevelLogger(level=logging_level, inner=logger)
-    logger = LocalLogger(inner=logger)
-    Logger = logger
+
     global Logger
+    Logger = RunLogger(api=api, run_id=run_id)
+    Logger = TaskLogger(task=logging_task, inner=Logger)
+    Logger = LevelLogger(level=logging_level, inner=Logger)
+    Logger = LocalLogger(inner=Logger)
+
+    global Executor
+    Executor = LocalExecutor()
+    Executor = LoggingExecutor(logger=Logger, inner=Executor)
 
     if EXEC_ENVIRONMENT in os.environ and os.environ[EXEC_ENVIRONMENT] == DTS:
-        logger.success('Skipping cloud storage mount for execution environment %s' % DTS)
+        Logger.success('Skipping cloud storage mount for execution environment %s' % DTS)
         return
-    MountStorageTask(run_id, api).run(args.mount_root, args.tmp_dir)
+
+    if is_windows():
+        mounters = [S3Mounter, GCPMounter]
+    else:
+        mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
+
+    MountStorageTask(run_id, api, mounters).run(args.mount_root, args.tmp_dir)
 
 
 if __name__ == '__main__':
