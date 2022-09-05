@@ -33,7 +33,7 @@ function setRequestUrl (payload) {
     sequenceId: payload.sequenceId,
     ...channels
   });
-  const requestUrl = 'https://edge-us.aws.cloud-pipeline.com/pipeline-30044-8080-0/hcs/clip?';
+  const requestUrl = ''; //todo
   return requestUrl + params;
 }
 
