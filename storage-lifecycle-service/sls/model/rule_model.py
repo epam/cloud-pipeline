@@ -101,7 +101,7 @@ class LifecycleRuleParser:
         transition_criterion = self._parse_transition_criterion(rule_json_dict["transitionCriterion"]) \
             if "transitionCriterion" in rule_json_dict \
             else StorageLifecycleTransitionCriterion("DEFAULT", None)
-        notification = self._parse_notification(rule_json_dict["notification"]) \
+        notification = self._parse_notification(rule_json_dict["notification"], self.default_lifecycle_notification) \
             if "notification" in rule_json_dict \
             else self.default_lifecycle_notification
 
@@ -176,24 +176,15 @@ class LifecycleRuleParser:
         return [_parse_prolongation(prolongation) for prolongation in prolongations_json]
 
     @staticmethod
-    def _parse_notification(notification_json):
+    def _parse_notification(notification_json, default_notification):
         return StorageLifecycleNotification(
             notify_before_days=notification_json["notifyBeforeDays"]
-            if "notifyBeforeDays" in notification_json
-            else None,
+            if "notifyBeforeDays" in notification_json else default_notification.notify_before_days,
             prolong_days=notification_json["prolongDays"]
-            if "prolongDays" in notification_json
-            else None,
+            if "prolongDays" in notification_json else default_notification.prolong_days,
             recipients=notification_json["recipients"]
-            if "recipients" in notification_json
-            else [],
-            enabled=notification_json["enabled"]
-            if "enabled" in notification_json
-            else True,
-            subject=notification_json["subject"]
-            if "subject" in notification_json
-            else None,
-            body=notification_json["body"]
-            if "body" in notification_json
-            else None
+            if "recipients" in notification_json else notification_json.recipients,
+            enabled=notification_json["enabled"] if "enabled" in notification_json else default_notification.enabled,
+            subject=notification_json["subject"] if "subject" in notification_json else default_notification.subject,
+            body=notification_json["body"] if "body" in notification_json else default_notification.body
         )
