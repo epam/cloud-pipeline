@@ -15,19 +15,22 @@
  */
 
 import React from 'react';
-import Channels from './channels';
-import ColorMap from './color-map';
-import Lens from './lens';
-import styles from './hcs-image-controls.css';
+import styles from './hcs-video.css';
 
-function HcsImageControls ({videoView, loadVideo}) {
-  return (
-    <div className={styles.container}>
-      <ColorMap />
-      <Lens />
-      <Channels videoView={videoView} loadVideo={loadVideo} />
-    </div>
-  );
+function HcsVideoPlayer ({videoSource}) {
+  if (videoSource) {
+    return (
+      <div className={styles.hcsVideoContainer}>
+        <video controls autoPlay >
+          <source src={videoSource} type="video/mp4" />
+          <source src={videoSource} type="video/ogg" />
+          <source src={videoSource} type="video/webm" />
+          <p>Your browser cannot play the provided video file.</p>
+        </video>
+      </div>
+    );
+  }
+  return null;
 }
 
-export default HcsImageControls;
+export default HcsVideoPlayer;

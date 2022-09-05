@@ -19,7 +19,9 @@ import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer, Provider} from 'mobx-react';
 import {computed, observable} from 'mobx';
-import {Alert, Button, Icon, Radio} from 'antd';
+import {Alert, Button, Icon, Radio, Input} from 'antd';
+import Menu, {MenuItem} from 'rc-menu';
+import Dropdown from 'rc-dropdown';
 
 import HCSImageViewer from './hcs-image-viewer';
 import HCSInfo from './utilities/hcs-image-info';
@@ -28,6 +30,7 @@ import HcsSequenceSelector from './hcs-sequence-selector';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
 import {getWellMesh, getWellImageFromMesh} from './utilities/get-well-mesh';
+import {getVideoSrc} from './utilities/hcs-video-url';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
@@ -44,6 +47,7 @@ import ObjectsOutline from '../cellprofiler/components/objects-outline';
 import {cellsAreEqual, ascSorter} from './utilities/cells-utilities';
 import CellProfilerJobResults from '../cellprofiler/components/cell-profiler-job-results';
 import styles from './hcs-image.css';
+import HcsVideoPlayer from './hcs-video-player';
 
 @observer
 class HcsImage extends React.PureComponent {
@@ -62,7 +66,13 @@ class HcsImage extends React.PureComponent {
     selectedSequenceTimePoints: [],
     selectedZCoordinates: [],
     selectedWells: [],
-    selectedFields: []
+    selectedFields: [],
+    videoView: false,
+    videoSource: '',
+    videoLoading: false,
+    showVideoSettings: false,
+    playbackSpeed: 3,
+    playbackSpeedError: false
   };
 
   @observable hcsInfo;
@@ -102,9 +112,13 @@ class HcsImage extends React.PureComponent {
   get videoPayload () {
     if (this.hcsViewerState && this.hcsViewerState.videoPayload) {
       return {
-        mode: this.showEntireWell ? 'well' : 'field',
+        byField: this.showEntireWell ? 0 : 1,
         source: this.props.path,
         storageId: this.props.storageId,
+        path: this.hcsInfo.objectStorage.path,
+        pathMask: this.hcsInfo.objectStorage.pathMask,
+        sequenceId: this.selectedSequence.id,
+        fps: this.state.playbackSpeed,
         ...this.hcsViewerState.videoPayload
       };
     }
@@ -366,7 +380,8 @@ class HcsImage extends React.PureComponent {
   changeWells = (wellsSelection = []) => {
     const currentWell = this.selectedWell;
     this.setState({
-      selectedWells: wellsSelection
+      selectedWells: wellsSelection,
+      videoView: false
     }, () => {
       const well = this.selectedWell;
       if (well && !cellsAreEqual(currentWell, well)) {
@@ -394,7 +409,8 @@ class HcsImage extends React.PureComponent {
 
   changeWellImages = (images = []) => {
     this.setState({
-      selectedFields: images.slice()
+      selectedFields: images.slice(),
+      videoView: false
     }, () => this.loadImage());
   };
 
@@ -606,11 +622,13 @@ class HcsImage extends React.PureComponent {
   toggleWellView = () => {
     if (this.showEntireWell) {
       this.setState({
+        videoView: false,
         selectedFields: this.selectedWellFields.slice(0, 1)
       }, this.loadImage);
     } else if (this.wellViewAvailable && this.selectedWell) {
       const {images = []} = this.selectedWell;
       this.setState({
+        videoView: false,
         selectedFields: images.slice()
       }, this.loadImage);
     }
@@ -632,6 +650,222 @@ class HcsImage extends React.PureComponent {
     );
   }
 
+  showHcsVideo = async () => {
+    this.setState({
+      videoLoading: true
+    }, async () => {
+      try {
+        await getVideoSrc(this.videoPayload)
+          .then(src => {
+            this.setState({
+              videoSource: src,
+              videoLoading: false,
+              error: undefined
+            });
+          });
+      } catch (err) {
+        this.setState({
+          videoView: false,
+          videoSource: '',
+          videoLoading: false,
+          error: err
+        }, () => {
+          setTimeout(() => {
+            this.setState({
+              error: undefined
+            });
+          }, 5000);
+        });
+      }
+    });
+  }
+
+  renderVideoBtn () {
+    const videoAvailable = (() => {
+      const [first] = this.sequences;
+      const {timeSeries = []} = first || {};
+      return timeSeries.length > 1 && this.videoPayload;
+    })();
+    if (!videoAvailable) {
+      return null;
+    }
+
+    const {
+      videoView,
+      videoLoading,
+      showVideoSettings,
+      playbackSpeed,
+      playbackSpeedError
+    } = this.state;
+
+    const handleClickVideoViewButton = () => {
+      if (!videoView) {
+        this.setState({
+          videoView: !videoView
+        }, () => {
+          this.showHcsVideo();
+        });
+      } else {
+        this.setState({
+          videoView: !videoView,
+          videoSource: '',
+          videoLoading: false,
+          error: undefined
+        });
+      }
+    };
+
+    const videoSettingsBtn = (() => {
+      if (videoView) {
+        return null;
+      }
+
+      const handleVisibleChange = (flag) => {
+        this.setState({showVideoSettings: flag});
+      };
+
+      const videoSettingsMenu = (() => {
+        const onChangePlaybackSpeed = (event) => {
+          const speed = event.target.value;
+          this.setState({
+            playbackSpeed: speed
+          });
+        };
+        const validatePlaybackSpeed = (event) => {
+          const speed = event.target.value;
+          const isInvalid = !((/[1-9]/g).test(speed));
+          this.setState({
+            playbackSpeedError: isInvalid
+          });
+        };
+        const handleClickPlaybackSpeedBtn = () => {
+          this.setState({showVideoSettings: !showVideoSettings}, async () => {
+            await handleClickVideoViewButton();
+          });
+        };
+        const playbackSpeedBtnText = (() => (
+          playbackSpeedError
+            ? 'Invalid speed'
+            : 'Create video'
+        ))();
+
+        return (
+          <Menu
+            selectedKeys={[]}
+            onClick={e => {}}
+            className={styles.videoSettingsMenu}
+          >
+            <MenuItem key="playback-speed">
+              <div className={styles.videoSettings}>
+                <div>
+                  Playback speed:
+                  <Input
+                    value={playbackSpeed}
+                    onChange={onChangePlaybackSpeed}
+                    onBlur={validatePlaybackSpeed}
+                    onPressEnter={validatePlaybackSpeed}
+                    className={classNames(
+                      styles.playbackSpeedInput,
+                      {'cp-error': !!playbackSpeedError}
+                    )}
+                  />
+                  <em>fps</em>
+                </div>
+                <Button
+                  className={styles.playbackSpeedBtn}
+                  disabled={playbackSpeedError}
+                  onClick={handleClickPlaybackSpeedBtn}
+                >
+                  {playbackSpeedBtnText}
+                </Button>
+              </div>
+            </MenuItem>
+          </Menu>
+        );
+      })();
+
+      return (
+        <Dropdown
+          trigger={['click']}
+          visible={showVideoSettings}
+          onVisibleChange={handleVisibleChange}
+          overlay={videoSettingsMenu}
+        >
+          <Button
+            size="small"
+            className={classNames(
+              styles.action,
+              styles.videoSettingsBtn
+            )}
+            disabled={videoLoading}
+          >
+            <Icon type="down" className="cp-larger" />
+          </Button>
+        </Dropdown>
+      );
+    })();
+
+    const iconType = videoView ? 'picture' : 'play-circle';
+    return (
+      <Button.Group className={styles.videoBtnGroup}>
+        {videoSettingsBtn}
+        <Button
+          size="small"
+          className={classNames(
+            styles.action,
+            styles.videoViewBtn
+          )}
+          onClick={handleClickVideoViewButton}
+          disabled={videoLoading}
+        >
+          <Icon type={iconType} className="cp-larger" />
+        </Button>
+      </Button.Group>
+    );
+  }
+
+  renderDownloadBtn () {
+    const {videoView} = this.state;
+    if (videoView) {
+      return (
+        <Button
+          className={styles.action}
+          size="small"
+          disabled={this.state.videoLoading}
+          onClick={() => {
+            window.location.href = this.state.videoSource;
+          }
+          }
+        >
+          <Icon
+            type="download"
+            className="cp-larger"
+          />
+        </Button>
+      );
+    }
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer) || !videoView;
+    return (
+      <Button
+        className={styles.action}
+        size="small"
+        disabled={!downloadAvailable}
+        onClick={() => downloadCurrentTiff(
+          this.hcsImageViewer,
+          {
+            wellView: this.showEntireWell,
+            wellId: this.selectedWell ? this.selectedWell.id : undefined
+          }
+        )}
+      >
+        <Icon
+          type="camera"
+          className="cp-larger"
+        />
+      </Button>
+    );
+  }
+
   renderConfigurationActions = () => {
     const {
       error,
@@ -646,41 +880,28 @@ class HcsImage extends React.PureComponent {
     ) {
       return null;
     }
-    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer);
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer) ||
+      !this.state.videoView;
     const analysisAvailable = this.hcsAnalysis && this.hcsAnalysis.available;
     if (!showConfiguration) {
       return (
         <div
           className={styles.configurationActions}
         >
+          {this.renderVideoBtn()}
           {
             this.wellViewAvailable && (
               <Button
                 className={styles.action}
                 size="small"
                 onClick={this.toggleWellView}
+                disabled={this.state.videoView}
               >
                 <Icon type={this.showEntireWell ? 'appstore' : 'appstore-o'} />
               </Button>
             )
           }
-          <Button
-            className={styles.action}
-            size="small"
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(
-              this.hcsImageViewer,
-              {
-                wellView: this.showEntireWell,
-                wellId: this.selectedWell ? this.selectedWell.id : undefined
-              }
-            )}
-          >
-            <Icon
-              type="camera"
-              className="cp-larger"
-            />
-          </Button>
+          {this.renderDownloadBtn()}
           <Button
             className={styles.action}
             size="small"
@@ -698,6 +919,7 @@ class HcsImage extends React.PureComponent {
                 size="small"
                 onClick={this.toggleAnalysis}
                 type={showAnalysis ? 'primary' : 'default'}
+                disabled={this.state.videoView}
               >
                 <Icon
                   type="api"
@@ -715,7 +937,10 @@ class HcsImage extends React.PureComponent {
         className={styles.configuration}
         onClose={this.hideConfiguration}
       >
-        <HcsImageControls />
+        <HcsImageControls
+          videoView={this.state.videoView}
+          loadVideo={this.showHcsVideo}
+        />
         <ObjectsOutline />
         <div className={styles.additionalConfigurationControls}>
           {this.wellViewAvailable && (
@@ -822,13 +1047,17 @@ class HcsImage extends React.PureComponent {
       error,
       pending: hcsImagePending,
       sequencePending,
-      showDetails
+      showDetails,
+      videoView,
+      videoLoading,
+      videoSource
     } = this.state;
     const pending = hcsImagePending ||
       sequencePending ||
-      !this.hcsImageViewer ||
+      (!this.hcsImageViewer && !videoView) ||
       this.hcsSourceState.pending ||
-      this.hcsViewerState.pending;
+      this.hcsViewerState.pending ||
+      videoLoading;
     if (this.showBatchJobInfo) {
       return null;
     }
@@ -875,19 +1104,25 @@ class HcsImage extends React.PureComponent {
             ? this.showDetailsPanel()
             : this.renderDetailsActions()
         }
-        <div
-          className={
-            classNames(
-              styles.hcsImage,
-              {
-                [styles.pending]: pending
-              }
+        {
+          videoView
+            ? <HcsVideoPlayer videoSource={videoSource} />
+            : (
+              <div
+                className={
+                  classNames(
+                    styles.hcsImage,
+                    {
+                      [styles.pending]: pending
+                    }
+                  )
+                }
+                ref={this.init}
+              >
+                {'\u00A0'}
+              </div>
             )
-          }
-          ref={this.init}
-        >
-          {'\u00A0'}
-        </div>
+        }
         {this.renderHcsAnalysisResults()}
       </div>
     );
