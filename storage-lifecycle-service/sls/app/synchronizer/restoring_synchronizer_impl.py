@@ -127,10 +127,13 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             self.logger.log("Storage: {}. Action: {}. Path: {}. Checking restore process finished with status: {} and reason: {}"
                             .format(storage.id, action.action_id, action.path, restore_result["status"], restore_result["reason"]))
             if restore_result["status"]:
+                self.logger.log(
+                    "Storage: {}. Action: {}. Path: {}. Restore process succeeded, restoredTill: {}"
+                    .format(storage.id, action.action_id, action.path, restore_result["value"]))
                 succeeded_action = self._update_action(action, self.SUCCEEDED_STATUS, restored_till=restore_result["value"])
                 if succeeded_action:
                     if action.notification.enabled:
-                        self._send_restore_notification(storage, action)
+                        self._send_restore_notification(storage, succeeded_action)
                 else:
                     self.logger.log(
                         "Storage: {}. Action: {}. Path: {}. Something went wrong. "

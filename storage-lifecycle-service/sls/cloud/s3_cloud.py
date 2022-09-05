@@ -161,12 +161,15 @@ class S3StorageOperations(StorageOperations):
             "value": None
         }
 
-    def check_files_restore(self, bucket, files, updated, restore_mode):
-        is_restore_possibly_ready = self._check_if_restore_could_be_ready(next(iter(files), None), updated, restore_mode)
+    def check_files_restore(self, bucket, files, restore_timestamp, restore_mode):
+        archived_files_to_check = [f for f in files if f.storage_class != self.STANDARD]
+        is_restore_possibly_ready = self._check_if_restore_could_be_ready(
+            next(iter(archived_files_to_check), None), restore_timestamp, restore_mode)
         restored_till_value = None
         if not is_restore_possibly_ready:
             self.logger.log("Probably files is steel restoring because appropriate period of time is not passed. "
-                            "Will not send head request for each file. Last update time: {}. restore mode: {}.".format(updated, restore_mode))
+                            "Will not send head request for each file. Restore process start: {}. restore mode: {}."
+                            .format(restore_timestamp, restore_mode))
             return {
                 "status": False,
                 "value": None,
@@ -174,8 +177,8 @@ class S3StorageOperations(StorageOperations):
             }
         else:
             self.logger.log("Files may be ready, so will check each file. "
-                            "Last update time: {}. restore mode: {}.".format(updated, restore_mode))
-            for file in files:
+                            "Last update time: {}. restore mode: {}.".format(restore_timestamp, restore_mode))
+            for file in archived_files_to_check:
                 if file.version_id:
                     result = self.aws_s3_client.head_object(Bucket=bucket, Key=file.path, VersionId=file.version_id)
                 else:

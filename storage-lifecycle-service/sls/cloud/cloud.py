@@ -26,5 +26,5 @@ class StorageOperations:
     def run_files_restore(self, bucket, files, days, restore_tear, region, operation_id):
         pass
 
-    def check_files_restore(self, bucket, files, updated, restore_mode):
+    def check_files_restore(self, bucket, files, restore_timestamp, restore_mode):
         pass
