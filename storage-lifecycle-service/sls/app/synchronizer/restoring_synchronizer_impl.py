@@ -1,17 +1,4 @@
 #  Copyright 2022 EPAM Systems, Inc. (https://www.epam.com/)
-#  #
-#  Licensed under the Apache License, Version 2.0 (the "License");
-#  you may not use this file except in compliance with the License.
-#  You may obtain a copy of the License at
-#  #
-#     http://www.apache.org/licenses/LICENSE-2.0
-#  #
-#  Unless required by applicable law or agreed to in writing, software
-#  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#  See the License for the specific language governing permissions and
-#  limitations under the License.
-#
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -106,7 +93,18 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                         "Storage: {}. Action: {}. Path: {}. There are '{}' related actions, that will be cancelled.".format(
                             storage.id, effective_action.action_id, path, len(related_actions_to_cancel)))
                     for action_to_cancel in related_actions_to_cancel:
-                        self._update_action(action_to_cancel, self.CANCELLED_STATUS)
+                        self.logger.log(
+                            "Storage: {}. Action: {}. Path: {}. Cancelling.".format(
+                                storage.id, action_to_cancel.action_id, action_to_cancel.path))
+                        updated_action = self._update_action(action_to_cancel, self.CANCELLED_STATUS)
+                        if not updated_action:
+                            self.logger.log(
+                                "Storage: {}. Action: {}. Path: {}. Something went wrong, can't cancel action.".format(
+                                    storage.id, action_to_cancel.action_id, action_to_cancel.path))
+                        else:
+                            self.logger.log(
+                                "Storage: {}. Action: {}. Path: {}. Successfully cancelled.".format(
+                                    storage.id, action_to_cancel.action_id, action_to_cancel.path))
 
     def _process_action_and_update(self, storage, action):
         if action.status == self.INITIATED_STATUS:
@@ -115,7 +113,13 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             restore_result = self.cloud_bridge.run_restore_action(storage, action, self._get_restore_operation_id(action))
             self.logger.log("Storage: {}. Action: {}. Path: {}. Restore initiating process finished with status: '{}' reason: '{}'"
                             .format(storage.id, action.action_id, action.path, restore_result["status"], restore_result["reason"]))
-            self._update_action(action, self.RUNNING_STATUS if restore_result["status"] else self.FAILED_STATUS)
+            run_action = self._update_action(action, self.RUNNING_STATUS if restore_result["status"] else self.FAILED_STATUS)
+            if not run_action:
+                self.logger.log(
+                    "Storage: {}. Action: {}. Path: {}. Something went wrong. "
+                    "Can't updated status for run restoring action action."
+                    .format(storage.id, action.action_id, action.path)
+                )
         elif action.status == self.RUNNING_STATUS:
             self.logger.log("Storage: {}. Action: {}. Path: {}. Checking status of restore process."
                             .format(storage.id, action.action_id, action.path))
@@ -123,20 +127,28 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             self.logger.log("Storage: {}. Action: {}. Path: {}. Checking restore process finished with status: {} and reason: {}"
                             .format(storage.id, action.action_id, action.path, restore_result["status"], restore_result["reason"]))
             if restore_result["status"]:
-                self._update_action(action, self.SUCCEEDED_STATUS, restored_till=restore_result["value"])
-                if action.notification.enabled:
-                    self._send_restore_notification(storage, action)
+                succeeded_action = self._update_action(action, self.SUCCEEDED_STATUS, restored_till=restore_result["value"])
+                if succeeded_action:
+                    if action.notification.enabled:
+                        self._send_restore_notification(storage, action)
+                else:
+                    self.logger.log(
+                        "Storage: {}. Action: {}. Path: {}. Something went wrong. "
+                        "Can't updated status for succeeded action.".format(storage.id, action.action_id, action.path)
+                    )
 
     def _update_action(self, action_to_update, status, restored_till=None):
-        action_to_update.status = status
+        copy_action_to_update = action_to_update.copy()
+        copy_action_to_update.status = status
         if restored_till:
-            action_to_update.restored_till = restored_till
-        updated_response = self.cp_data_source.update_restore_action(action_to_update)
+            copy_action_to_update.restored_till = restored_till
+        updated_response = self.cp_data_source.update_restore_action(copy_action_to_update)
         if updated_response:
             updated_action = StorageLifecycleRestoreAction.parse_from_dict(updated_response)
             self._merge_actions(action_to_update, updated_action)
         else:
             self.logger.log("Problem to update restore action with id: {}".format(action_to_update.id))
+            return None
         return action_to_update
 
     def _send_restore_notification(self, storage, action):
@@ -161,8 +173,8 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             _to_user = next(iter(cc_users), None)
             return notification.template.subject, notification.template.body, _to_user, cc_users, \
                    {
-                       "datastorageId": storage.id,
-                       "datastorageName": storage.path,
+                       "storageId": storage.id,
+                       "storageName": storage.path,
                        "path": action.path,
                        "pathType": action.path_type,
                        "actionId": action.action_id,

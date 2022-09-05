@@ -82,3 +82,16 @@ class StorageLifecycleRestoreAction:
             restored_till=parse_timestamp(obj_dict["restoredTill"]) if "restoredTill" in obj_dict else None,
             notification=StorageLifecycleRestoreNotification.parse_from_dict(obj_dict["notification"])
         )
+
+    def copy(self):
+        return StorageLifecycleRestoreAction(
+            self.action_id, self.datastorage_id, self.user_actor_id, self.path, self.path_type,
+            restore_versions=self.restore_versions,
+            restore_mode=self.restore_mode,
+            days=self.days,
+            started=self.started,
+            updated=self.updated,
+            status=self.status,
+            restored_till=self.restored_till,
+            notification=self.notification
+        )

@@ -170,7 +170,7 @@ class S3StorageOperations(StorageOperations):
             return {
                 "status": False,
                 "value": None,
-                "reason": ""
+                "reason": "Probably files is steel restoring because appropriate period of time is not passed."
             }
         else:
             self.logger.log("Files may be ready, so will check each file. "
