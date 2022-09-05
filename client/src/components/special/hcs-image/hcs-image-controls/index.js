@@ -20,12 +20,12 @@ import ColorMap from './color-map';
 import Lens from './lens';
 import styles from './hcs-image-controls.css';
 
-function HcsImageControls () {
+function HcsImageControls ({videoView, loadVideo}) {
   return (
     <div className={styles.container}>
       <ColorMap />
       <Lens />
-      <Channels />
+      <Channels videoView={videoView} loadVideo={loadVideo} />
     </div>
   );
 }

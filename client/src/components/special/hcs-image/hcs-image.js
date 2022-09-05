@@ -30,6 +30,7 @@ import HcsSequenceSelector from './hcs-sequence-selector';
 import ViewerState from './utilities/viewer-state';
 import SourceState from './utilities/source-state';
 import {getWellMesh, getWellImageFromMesh} from './utilities/get-well-mesh';
+import {getVideoSrc} from './utilities/hcs-video-url';
 import HcsImageControls from './hcs-image-controls';
 import LoadingView from '../LoadingView';
 import Panel from '../panel';
@@ -67,6 +68,8 @@ class HcsImage extends React.PureComponent {
     selectedWells: [],
     selectedFields: [],
     videoView: false,
+    videoSource: '',
+    videoLoading: false,
     showVideoSettings: false,
     playbackSpeed: 3,
     playbackSpeedError: false
@@ -109,9 +112,13 @@ class HcsImage extends React.PureComponent {
   get videoPayload () {
     if (this.hcsViewerState && this.hcsViewerState.videoPayload) {
       return {
-        mode: this.showEntireWell ? 'well' : 'field',
+        byField: this.showEntireWell ? 0 : 1,
         source: this.props.path,
         storageId: this.props.storageId,
+        path: this.hcsInfo.objectStorage.path,
+        pathMask: this.hcsInfo.objectStorage.pathMask,
+        sequenceId: this.selectedSequence.id,
+        fps: this.state.playbackSpeed,
         ...this.hcsViewerState.videoPayload
       };
     }
@@ -643,11 +650,41 @@ class HcsImage extends React.PureComponent {
     );
   }
 
-  renderVideoBtn = () => {
+  showHcsVideo = async () => {
+    this.setState({
+      videoLoading: true
+    }, async () => {
+      try {
+        await getVideoSrc(this.videoPayload)
+          .then(src => {
+            this.setState({
+              videoSource: src,
+              videoLoading: false,
+              error: undefined
+            });
+          });
+      } catch (err) {
+        this.setState({
+          videoView: false,
+          videoSource: '',
+          videoLoading: false,
+          error: err
+        }, () => {
+          setTimeout(() => {
+            this.setState({
+              error: undefined
+            });
+          }, 5000);
+        });
+      }
+    });
+  }
+
+  renderVideoBtn () {
     const videoAvailable = (() => {
       const [first] = this.sequences;
       const {timeSeries = []} = first || {};
-      return timeSeries.length > 1;
+      return timeSeries.length > 1 && this.videoPayload;
     })();
     if (!videoAvailable) {
       return null;
@@ -655,19 +692,28 @@ class HcsImage extends React.PureComponent {
 
     const {
       videoView,
+      videoLoading,
+      showVideoSettings,
       playbackSpeed,
-      playbackSpeedError,
-      showVideoSettings
+      playbackSpeedError
     } = this.state;
 
     const handleClickVideoViewButton = () => {
-      this.setState({videoView: !videoView});
+      if (!videoView) {
+        this.setState({
+          videoView: !videoView
+        }, () => {
+          this.showHcsVideo();
+        });
+      } else {
+        this.setState({
+          videoView: !videoView,
+          videoSource: '',
+          videoLoading: false,
+          error: undefined
+        });
+      }
     };
-
-    const videoViewBtnIcon = (() => {
-      const iconType = videoView ? 'picture' : 'play-circle';
-      return <Icon type={iconType} className="cp-larger" />;
-    })();
 
     const videoSettingsBtn = (() => {
       if (videoView) {
@@ -693,8 +739,8 @@ class HcsImage extends React.PureComponent {
           });
         };
         const handleClickPlaybackSpeedBtn = () => {
-          this.setState({showVideoSettings: !showVideoSettings}, () => {
-            handleClickVideoViewButton();
+          this.setState({showVideoSettings: !showVideoSettings}, async () => {
+            await handleClickVideoViewButton();
           });
         };
         const playbackSpeedBtnText = (() => (
@@ -751,6 +797,7 @@ class HcsImage extends React.PureComponent {
               styles.action,
               styles.videoSettingsBtn
             )}
+            disabled={videoLoading}
           >
             <Icon type="down" className="cp-larger" />
           </Button>
@@ -758,6 +805,7 @@ class HcsImage extends React.PureComponent {
       );
     })();
 
+    const iconType = videoView ? 'picture' : 'play-circle';
     return (
       <Button.Group className={styles.videoBtnGroup}>
         {videoSettingsBtn}
@@ -768,10 +816,53 @@ class HcsImage extends React.PureComponent {
             styles.videoViewBtn
           )}
           onClick={handleClickVideoViewButton}
+          disabled={videoLoading}
         >
-          {videoViewBtnIcon}
+          <Icon type={iconType} className="cp-larger" />
         </Button>
       </Button.Group>
+    );
+  }
+
+  renderDownloadBtn () {
+    const {videoView} = this.state;
+    if (videoView) {
+      return (
+        <Button
+          className={styles.action}
+          size="small"
+          disabled={this.state.videoLoading}
+          onClick={() => {
+            window.location.href = this.state.videoSource;
+          }
+          }
+        >
+          <Icon
+            type="download"
+            className="cp-larger"
+          />
+        </Button>
+      );
+    }
+    const downloadAvailable = downloadCurrentTiffAvailable(this.hcsImageViewer) || !videoView;
+    return (
+      <Button
+        className={styles.action}
+        size="small"
+        disabled={!downloadAvailable}
+        onClick={() => downloadCurrentTiff(
+          this.hcsImageViewer,
+          {
+            wellView: this.showEntireWell,
+            wellId: this.selectedWell ? this.selectedWell.id : undefined
+          }
+        )}
+      >
+        <Icon
+          type="camera"
+          className="cp-larger"
+        />
+      </Button>
     );
   }
 
@@ -810,23 +901,7 @@ class HcsImage extends React.PureComponent {
               </Button>
             )
           }
-          <Button
-            className={styles.action}
-            size="small"
-            disabled={!downloadAvailable}
-            onClick={() => downloadCurrentTiff(
-              this.hcsImageViewer,
-              {
-                wellView: this.showEntireWell,
-                wellId: this.selectedWell ? this.selectedWell.id : undefined
-              }
-            )}
-          >
-            <Icon
-              type="camera"
-              className="cp-larger"
-            />
-          </Button>
+          {this.renderDownloadBtn()}
           <Button
             className={styles.action}
             size="small"
@@ -862,7 +937,10 @@ class HcsImage extends React.PureComponent {
         className={styles.configuration}
         onClose={this.hideConfiguration}
       >
-        <HcsImageControls />
+        <HcsImageControls
+          videoView={this.state.videoView}
+          loadVideo={this.showHcsVideo}
+        />
         <ObjectsOutline />
         <div className={styles.additionalConfigurationControls}>
           {this.wellViewAvailable && (
@@ -970,13 +1048,16 @@ class HcsImage extends React.PureComponent {
       pending: hcsImagePending,
       sequencePending,
       showDetails,
-      videoView
+      videoView,
+      videoLoading,
+      videoSource
     } = this.state;
     const pending = hcsImagePending ||
       sequencePending ||
       (!this.hcsImageViewer && !videoView) ||
       this.hcsSourceState.pending ||
-      this.hcsViewerState.pending;
+      this.hcsViewerState.pending ||
+      videoLoading;
     if (this.showBatchJobInfo) {
       return null;
     }
@@ -1025,7 +1106,7 @@ class HcsImage extends React.PureComponent {
         }
         {
           videoView
-            ? <HcsVideoPlayer />
+            ? <HcsVideoPlayer videoSource={videoSource} />
             : (
               <div
                 className={

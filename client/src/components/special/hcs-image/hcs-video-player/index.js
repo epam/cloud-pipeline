@@ -17,16 +17,20 @@
 import React from 'react';
 import styles from './hcs-video.css';
 
-function HcsVideoPlayer () {
-  const videoSrc = '';
-  return (
-    <div className={styles.hcsVideoContainer}>
-      <video controls autoPlay>
-        <source src={videoSrc} type="video/mp4" />
-        <p>Your browser cannot play the provided video file.</p>
-      </video>
-    </div>
-  );
+function HcsVideoPlayer ({videoSource}) {
+  if (videoSource) {
+    return (
+      <div className={styles.hcsVideoContainer}>
+        <video controls autoPlay >
+          <source src={videoSource} type="video/mp4" />
+          <source src={videoSource} type="video/ogg" />
+          <source src={videoSource} type="video/webm" />
+          <p>Your browser cannot play the provided video file.</p>
+        </video>
+      </div>
+    );
+  }
+  return null;
 }
 
 export default HcsVideoPlayer;

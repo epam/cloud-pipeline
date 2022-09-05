@@ -69,13 +69,28 @@ function HcsImageChannelsControl (
             contrastLimits={channel.contrastLimits}
             loading={pending}
             onVisibilityChanged={
-              (visible) => hcsViewerState.changeChannelVisibility(channel, visible)
+              (visible) => {
+                hcsViewerState.changeChannelVisibility(channel, visible);
+                if (this.props.videoView) {
+                  this.props.loadVideo();
+                }
+              }
             }
             onContrastLimitsChanged={
-              (limits) => hcsViewerState.changeChannelContrastLimits(channel, limits)
+              (limits) => {
+                hcsViewerState.changeChannelContrastLimits(channel, limits);
+                if (this.props.videoView) {
+                  this.props.loadVideo();
+                }
+              }
             }
             onColorChanged={
-              (color) => hcsViewerState.changeChannelColor(channel, color)
+              (color) => {
+                hcsViewerState.changeChannelColor(channel, color);
+                if (this.props.videoView) {
+                  this.props.loadVideo();
+                }
+              }
             }
           />
         ))
