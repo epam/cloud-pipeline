@@ -25,4 +25,6 @@ public interface DataStorageRestoreActionRepository extends JpaRepository<Storag
         DataStorageRestoreActionRepositoryCustomQueries {
 
     List<StorageRestoreActionEntity> findByDatastorageId(Long datastorageId);
+
+   void deleteByDatastorageId(Long datastorageId);
 }

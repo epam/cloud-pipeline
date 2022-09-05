@@ -177,6 +177,12 @@ public class DataStorageLifecycleRestoreManager {
         );
     }
 
+    @Transactional
+    public void deleteRestoreActions(final Long datastorageId) {
+        dataStoragePathRestoreActionRepository.deleteByDatastorageId(datastorageId);
+        dataStoragePathRestoreActionRepository.flush();
+    }
+
     protected StorageRestoreActionEntity buildStoragePathRestoreAction(
             final AbstractDataStorage storage, final StorageRestorePath path,
             final String restoreMode, final Long days, final boolean restoreVersions, final boolean force,
