@@ -348,6 +348,8 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.restore.in.final.status";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RESTORE_NOTIFICATION_CONFIGURED_INCORRECTLY =
             "error.datastorage.lifecycle.restore.rule.cant.parse.notification";
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED =
+            "error.datastorage.lifecycle.rule.notification.recipients.not.provided";
 
     // Git messages
     public static final String ERROR_REPOSITORY_FILE_WAS_UPDATED = "error.repository.file.was.updated";

@@ -400,14 +400,13 @@ public class DataStorageLifecycleManager {
             return;
         }
 
+        Assert.notEmpty(notification.getRecipients(),
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_NOTIFICATION_RECIPIENTS_NOT_PROVIDED));
         Assert.isTrue(notification.getProlongDays() == null || notification.getProlongDays() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_WRONG_DAYS_TO_PROLONG));
         Assert.isTrue(notification.getNotifyBeforeDays() == null || notification.getNotifyBeforeDays() > 0,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS));
-        Assert.hasLength(notification.getSubject(),
-                messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_SUBJECT_NOT_SPECIFIED));
-        Assert.hasLength(notification.getBody(),
-                messageHelper.getMessage(MessageConstants.ERROR_NOTIFICATION_BODY_NOT_SPECIFIED));
     }
 
     private void validatePathIsAbsolute(final String path) {

@@ -18,7 +18,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import {observer} from 'mobx-react';
-import {Icon} from 'antd';
+import {Icon, Alert} from 'antd';
 import {Analysis} from '../model/analysis';
 import AnalysisOutputTable, {fetchContents} from './analysis-output-table';
 import {generateResourceUrl} from '../model/analysis/output-utilities';
@@ -192,6 +192,14 @@ class AnalysisOutputWithDownload extends React.Component {
           pending && !url && (
             <Icon type="loading" />
           )
+        }
+        {
+          !pending && (!url || !data) ? (
+            <Alert
+              message="Analysis results not found."
+              type="info"
+            />
+          ) : null
         }
         <div
           className={styles.analysisOutputTableContainer}
