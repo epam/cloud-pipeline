@@ -18,14 +18,15 @@
 # CP_S3_FUSE_TYPE: goofys/s3fs (default: goofys)
 
 import argparse
-import platform
-import re
+import logging
 import os
-import time
-import traceback
+import re
 from abc import ABCMeta, abstractmethod
 
-from pipeline import PipelineAPI, Logger, common, DataStorageWithShareMount
+import time
+
+from pipeline import PipelineAPI, common, DataStorageWithShareMount, RunLogger, TaskLogger, LevelLogger, LocalLogger
+from pipeline.utils.plat import is_windows
 
 READ_MASK = 1
 WRITE_MASK = 1 << 1
@@ -107,11 +108,10 @@ class PermissionHelper:
 
 class MountStorageTask:
 
-    def __init__(self, task):
-        self.api = PipelineAPI(os.environ['API'], 'logs')
-        self.run_id = int(os.getenv('RUN_ID', -1))
-        self.task_name = task
-        if platform.system() == 'Windows':
+    def __init__(self, run_id, api):
+        self.api = api
+        self.run_id = int(run_id)
+        if is_windows():
             available_mounters = [S3Mounter, GCPMounter]
         else:
             available_mounters = [NFSMounter, S3Mounter, AzureMounter, GCPMounter]
@@ -124,13 +124,13 @@ class MountStorageTask:
                 user_info = self.api.load_current_user()
                 if 'defaultStorageId' in user_info:
                     storage_id = int(user_info['defaultStorageId'])
-                    Logger.info('User default storage is parsed as {}'.format(str(storage_id)), task_name=self.task_name)
+                    Logger.info('User default storage is parsed as {}'.format(str(storage_id)))
             elif placeholder.lower() == MOUNT_LIMITS_NONE:
-                Logger.info('{} placeholder found while parsing storage id, skipping it'.format(MOUNT_LIMITS_NONE), task_name=self.task_name)
+                Logger.info('{} placeholder found while parsing storage id, skipping it'.format(MOUNT_LIMITS_NONE))
             else:
                 storage_id = int(placeholder.strip())
-        except Exception as parse_storage_ex:
-            Logger.warn('Unable to parse {} placeholder to a storage ID: {}.'.format(placeholder, str(parse_storage_ex)), task_name=self.task_name)
+        except Exception:
+            Logger.warning('Unable to parse {} placeholder to a storage ID.'.format(placeholder), trace=True)
         return storage_id
 
     def parse_storage_list(self, csv_storages):
@@ -151,45 +151,46 @@ class MountStorageTask:
             #    Otherwise we won't be able to mount sensitive storages. API will consider this job as "outside of the sensitive context"
             is_sensitive_job = os.getenv('CP_SENSITIVE_RUN')
             if is_sensitive_job == 'true':
-                Logger.info('A sensitive job detected, will wait for the Pod IP assignment', task_name=self.task_name)
+                Logger.info('A sensitive job detected, will wait for the Pod IP assignment')
                 current_wait_iteration = 1
                 while current_wait_iteration <= wait_before_mount_attempts:
                     current_run = self.api.load_run(self.run_id)
                     if current_run == None:
-                        Logger.warn('Cannot load run info, while waiting for the sensitive pod IP assignment. Will not wait anymore', task_name=self.task_name)
+                        Logger.warning('Cannot load run info, while waiting for the sensitive pod IP assignment. '
+                                       'Will not wait anymore')
                         break
                     else:
                         if 'podIP' in current_run and current_run['podIP'] != '' and current_run['podIP'] != None:
-                            Logger.info('Pod IP is assigned, proceeding further', task_name=self.task_name)
+                            Logger.info('Pod IP is assigned, proceeding further')
                             break
-                        Logger.info('Pod IP is NOT available yet, waiting...', task_name=self.task_name)
+                        Logger.info('Pod IP is NOT available yet, waiting...')
                         current_wait_iteration = current_wait_iteration + 1
                         time.sleep(wait_before_mount_timeout_sec)
             # 2. ... Add more conditions here ...
             #    ...
-        except Exception as e:
-            Logger.fail('An error occured while waiting for the mounts prerequisites: {}.'.format(str(e.message)), task_name=self.task_name)
+        except Exception:
+            Logger.error('An error occurred while waiting for the mounts prerequisites.', trace=True)
 
     def run(self, mount_root, tmp_dir):
         try:
-            Logger.info('Starting mounting remote data storages.', task_name=self.task_name)
+            Logger.info('Starting mounting remote data storages.')
 
             self.wait_before_mount()
 
             # use -1 as default in order to don't mount any NFS if CLOUD_REGION_ID is not provided
             cloud_region_id = int(os.getenv('CLOUD_REGION_ID', -1))
             if cloud_region_id == -1:
-                Logger.warn('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, \
-                 and no storage will be filtered by mount storage rule of a region', task_name=self.task_name)
+                Logger.warning('CLOUD_REGION_ID env variable is not provided, no NFS will be mounted, '
+                               'and no storage will be filtered by mount storage rule of a region')
 
             run = None
             if self.run_id != -1:
-                Logger.info('Fetching run info...', task_name=self.task_name)
+                Logger.info('Fetching run info...')
                 run = self.api.load_run(self.run_id)
             else:
-                Logger.warn('Cannot load run info, run id is not specified.', task_name=self.task_name)
+                Logger.warning('Cannot load run info, run id is not specified.')
 
-            Logger.info('Fetching list of allowed storages...', task_name=self.task_name)
+            Logger.info('Fetching list of allowed storages...')
             available_storages_with_mounts = self.api.load_available_storages_with_share_mount(cloud_region_id if cloud_region_id != -1 else None)
             # filtering nfs storages in order to fetch only nfs from the same region
             available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.storage_type != NFS_TYPE
@@ -199,7 +200,7 @@ class MountStorageTask:
             # NOTE: Any storage, defined by CP_CAP_FORCE_MOUNTS will still be mounted
             skip_storages = os.getenv('CP_CAP_SKIP_MOUNTS')
             if skip_storages:
-                Logger.info('Storage(s) "{}" requested to be skipped'.format(skip_storages), task_name=self.task_name)
+                Logger.info('Storage(s) "{}" requested to be skipped'.format(skip_storages))
                 skip_storages_list = self.parse_storage_list(skip_storages)
                 available_storages_with_mounts = [x for x in available_storages_with_mounts if x.storage.id not in skip_storages_list ]
 
@@ -208,7 +209,7 @@ class MountStorageTask:
             force_storages = os.getenv('CP_CAP_FORCE_MOUNTS')
             force_storages_list = []
             if force_storages:
-                Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages), task_name=self.task_name)
+                Logger.info('Storage(s) "{}" forced to be mounted even if the storage mounts list is limited'.format(force_storages))
                 force_storages_list = self.parse_storage_list(force_storages)
             
             limited_storages = os.getenv('CP_CAP_LIMIT_MOUNTS')
@@ -229,15 +230,15 @@ class MountStorageTask:
                         storage = self.api.find_datastorage(str(storage_id))
                         if storage.sensitive:
                             available_storages_with_mounts.append(DataStorageWithShareMount(storage, None))
-                    Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)), task_name=self.task_name)
-                except Exception as limited_storages_ex:
-                    Logger.warn('Unable to parse CP_CAP_LIMIT_MOUNTS value({}) with error: {}.'.format(limited_storages, str(limited_storages_ex)), task_name=self.task_name)
-                    traceback.print_exc()
+                    Logger.info('Run is launched with mount limits ({}) Only {} storages will be mounted'.format(limited_storages, len(available_storages_with_mounts)))
+                except Exception:
+                    Logger.warning('Unable to parse CP_CAP_LIMIT_MOUNTS value({}).'.format(limited_storages),
+                                   trace=True)
 
             if not available_storages_with_mounts:
-                Logger.success('No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none', task_name=self.task_name)
+                Logger.success('No remote storages are available or CP_CAP_LIMIT_MOUNTS configured to none')
                 return
-            Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)), task_name=self.task_name)
+            Logger.info('Found {} available storage(s). Checking mount options.'.format(len(available_storages_with_mounts)))
 
             sensitive_policy = None
             sensitive_policy_preference = self.api.get_preference(SENSITIVE_POLICY_PREFERENCE)
@@ -246,48 +247,45 @@ class MountStorageTask:
             for mounter in [mounter for mounter in self.mounters.values()]:
                 storage_count_by_type = len(list(filter((lambda dsm: dsm.storage.storage_type == mounter.type()), available_storages_with_mounts)))
                 if storage_count_by_type > 0:
-                    mounter.check_or_install(self.task_name, sensitive_policy)
-                    mounter.init_tmp_dir(tmp_dir, self.task_name)
+                    mounter.check_or_install(sensitive_policy)
+                    mounter.init_tmp_dir(tmp_dir)
 
             if all([not mounter.is_available() for mounter in self.mounters.values()]):
-                Logger.success('Mounting of remote storages is not available for this image', task_name=self.task_name)
+                Logger.success('Mounting of remote storages is not available for this image')
                 return
             initialized_mounters = []
             for storage_and_mount in available_storages_with_mounts:
                 if not PermissionHelper.is_storage_readable(storage_and_mount.storage):
-                    Logger.info('Storage is not readable', task_name=self.task_name)
+                    Logger.info('Storage is not readable')
                     continue
                 if PermissionHelper.is_storage_mount_disabled(storage_and_mount.storage):
-                    Logger.info('Storage disabled for mounting, skipping.', task_name=self.task_name)
+                    Logger.info('Storage disabled for mounting, skipping.')
                     continue
                 if not PermissionHelper.is_storage_available_for_mount(storage_and_mount.storage, run):
                     storage_not_allowed_msg = 'Storage {} is not allowed for {} image'.format(storage_and_mount.storage.name, run.get("actualDockerImage", ""))
                     if storage_and_mount.storage.id in force_storages_list:
-                        Logger.info(storage_not_allowed_msg + ', but it is forced to be mounted', task_name=self.task_name)
+                        Logger.info(storage_not_allowed_msg + ', but it is forced to be mounted')
                     else:
-                        Logger.info(storage_not_allowed_msg + ', skipping it', task_name=self.task_name)
+                        Logger.info(storage_not_allowed_msg + ', skipping it')
                         continue
                 mounter = self.mounters[storage_and_mount.storage.storage_type](self.api, storage_and_mount.storage,
                                                                                 storage_and_mount.file_share_mount,
                                                                                 sensitive_policy) \
                     if storage_and_mount.storage.storage_type in self.mounters else None
                 if not mounter:
-                    Logger.warn('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type), task_name=self.task_name)
+                    Logger.warning('Unsupported storage type {}.'.format(storage_and_mount.storage.storage_type))
                 elif mounter.is_available():
                     initialized_mounters.append(mounter)
 
             initialized_mounters.sort(key=lambda mnt: mnt.build_mount_point(mount_root))
             for mnt in initialized_mounters:
                 try:
-                    mnt.mount(mount_root, self.task_name)
-                except RuntimeError as e:
-                    Logger.warn(
-                        'Data storage {} mounting has failed: {}'.format(mnt.storage.name, e),
-                        task_name=self.task_name)
-            Logger.success('Finished data storage mounting', task_name=self.task_name)
-        except Exception as e:
-            Logger.fail('Unhandled error during mount task: {}.'.format(str(e)), task_name=self.task_name)
-            traceback.print_exc()
+                    mnt.mount(mount_root)
+                except RuntimeError:
+                    Logger.warning('Data storage {} mounting has failed.'.format(mnt.storage.name), trace=True)
+            Logger.success('Finished data storage mounting')
+        except Exception:
+            Logger.error('Unhandled error during mount task.', trace=True)
 
 
 class StorageMounter:
@@ -313,7 +311,7 @@ class StorageMounter:
 
     @staticmethod
     @abstractmethod
-    def check_or_install(task_name, sensitive_policy):
+    def check_or_install(sensitive_policy):
         pass
 
     @staticmethod
@@ -323,35 +321,34 @@ class StorageMounter:
 
     @staticmethod
     @abstractmethod
-    def init_tmp_dir(tmp_dir, task_name):
+    def init_tmp_dir(tmp_dir):
         pass
 
     @staticmethod
-    def execute_and_check_command(command, task_name=MOUNT_DATA_STORAGES):
+    def execute_and_check_command(command):
         install_check, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=False)
         if install_check != 0:
-            Logger.warn('Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr), task_name=task_name)
+            Logger.warning('Installation script {command} failed: \n {stderr}'.format(command=command, stderr=stderr))
         return install_check == 0
 
     @staticmethod
-    def create_directory(path, task_name):
+    def create_directory(path):
         try:
             expanded_path = os.path.expandvars(path)
             if not os.path.exists(expanded_path):
                 os.makedirs(expanded_path)
             return True
-        except:
-            Logger.warn('Failed to create mount directory: {path}'.format(path=path), task_name=task_name)
-            traceback.print_exc()
+        except Exception:
+            Logger.warning('Failed to create mount directory: {path}'.format(path=path), trace=True)
             return False
 
-    def mount(self, mount_root, task_name):
+    def mount(self, mount_root):
         mount_point = self.build_mount_point(mount_root)
-        if not self.create_directory(mount_point, task_name):
+        if not self.create_directory(mount_point):
             return
         params = self.build_mount_params(mount_point)
         mount_command = self.build_mount_command(params)
-        self.execute_mount(mount_command, params, task_name)
+        self.execute_mount(mount_command, params)
 
     def build_mount_point(self, mount_root):
         mount_point = self.storage.mount_point
@@ -368,12 +365,12 @@ class StorageMounter:
         pass
 
     @staticmethod
-    def execute_mount(command, params, task_name):
-        result = common.execute_cmd_command(command, executable=None if StorageMounter.is_windows() else '/bin/bash')
+    def execute_mount(command, params):
+        result = common.execute_cmd_command(command, executable=None if is_windows() else '/bin/bash')
         if result == 0:
-            Logger.info('-->{path} mounted to {mount}'.format(**params), task_name=task_name)
+            Logger.info('-->{path} mounted to {mount}'.format(**params))
         else:
-            Logger.warn('--> Failed mounting {path} to {mount}'.format(**params), task_name=task_name)
+            Logger.warning('--> Failed mounting {path} to {mount}'.format(**params))
 
     def get_path(self):
         return self.storage.path.replace(self.scheme(), '', 1)
@@ -391,10 +388,6 @@ class StorageMounter:
                                .format(region_id))
         return account_id, account_key, account_region, account_token
 
-    @staticmethod
-    def is_windows():
-        return platform.system() == 'Windows'
-
 
 class AzureMounter(StorageMounter):
     available = False
@@ -409,22 +402,22 @@ class AzureMounter(StorageMounter):
         return AZ_TYPE
 
     @staticmethod
-    def check_or_install(task_name, sensitive_policy):
-        AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse', task_name=task_name)
+    def check_or_install(sensitive_policy):
+        AzureMounter.available = StorageMounter.execute_and_check_command('install_azure_fuse_blobfuse')
 
     @staticmethod
     def is_available():
         return AzureMounter.available
 
     @staticmethod
-    def init_tmp_dir(tmp_dir, task_name):
+    def init_tmp_dir(tmp_dir):
         fuse_tmp = os.path.join(tmp_dir, "blobfuse")
-        if StorageMounter.create_directory(fuse_tmp, task_name):
+        if StorageMounter.create_directory(fuse_tmp):
             AzureMounter.fuse_tmp = fuse_tmp
 
-    def mount(self, mount_root, task_name):
-        self.__resolve_azure_blob_service_url(task_name=task_name)
-        super(AzureMounter, self).mount(mount_root, task_name)
+    def mount(self, mount_root):
+        self.__resolve_azure_blob_service_url()
+        super(AzureMounter, self).mount(mount_root)
 
     def build_mount_params(self, mount_point):
         account_id, account_key, _, _ = self._get_credentials(self.storage)
@@ -448,7 +441,7 @@ class AzureMounter(StorageMounter):
                '-o allow_other ' \
                '{mount_options}'.format(**params)
 
-    def __resolve_azure_blob_service_url(self, task_name=MOUNT_DATA_STORAGES):
+    def __resolve_azure_blob_service_url(self):
         # add resolved ip address for azure blob service to /etc/hosts (only once per account_name)
         account_name, _, _, _ = self._get_credentials(self.storage)
         command = 'etc_hosts_clear="$(sed -E \'/.*{account_name}.blob.core.windows.net.*/d\' /etc/hosts)" ' \
@@ -456,7 +449,8 @@ class AzureMounter(StorageMounter):
                   '&& getent hosts {account_name}.blob.core.windows.net >> /etc/hosts'.format(account_name=account_name)
         exit_code, _, stderr = common.execute_cmd_command_and_get_stdout_stderr(command, silent=True)
         if exit_code != 0:
-            Logger.warn('Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'.format(stderr), task_name=task_name)
+            Logger.warning('Azure BLOB service hostname resolution and writing to /etc/hosts failed: \n {}'
+                           .format(stderr))
 
 
 class S3Mounter(StorageMounter):
@@ -472,31 +466,28 @@ class S3Mounter(StorageMounter):
         return S3_TYPE
 
     @staticmethod
-    def check_or_install(task_name, sensitive_policy):
-        S3Mounter.fuse_type = S3Mounter._check_or_install(task_name)
+    def check_or_install(sensitive_policy):
+        S3Mounter.fuse_type = S3Mounter._check_or_install()
 
     @staticmethod
-    def _check_or_install(task_name):
+    def _check_or_install():
         fuse_type = os.getenv('CP_S3_FUSE_TYPE', FUSE_GOOFYS_ID)
         if fuse_type == FUSE_GOOFYS_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
+            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys')
             return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         elif fuse_type == FUSE_S3FS_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_s3fs', task_name=task_name)
+            fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_s3fs')
             if fuse_installed:
                 return FUSE_S3FS_ID
             else:
-                Logger.warn(
-                    "FUSE {fuse_type} was preferred, but failed to install, will try to setup default goofys".format(
-                        fuse_type=fuse_type),
-                    task_name=task_name)
-                fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys', task_name=task_name)
+                Logger.warning("FUSE {fuse_type} was preferred, but failed to install, will try to setup default goofys"
+                               .format(fuse_type=fuse_type))
+                fuse_installed = StorageMounter.execute_and_check_command('install_s3_fuse_goofys')
                 return FUSE_GOOFYS_ID if fuse_installed else FUSE_NA_ID
         elif fuse_type == FUSE_PIPE_ID:
             return FUSE_PIPE_ID
         else:
-            Logger.warn("FUSE {fuse_type} type is not defined for S3 fuse".format(fuse_type=fuse_type),
-                        task_name=task_name)
+            Logger.warning("FUSE {fuse_type} type is not defined for S3 fuse".format(fuse_type=fuse_type))
             return FUSE_NA_ID
 
     @staticmethod
@@ -504,9 +495,9 @@ class S3Mounter(StorageMounter):
         return S3Mounter.fuse_type is not None
 
     @staticmethod
-    def init_tmp_dir(tmp_dir, task_name):
+    def init_tmp_dir(tmp_dir):
         fuse_tmp = os.path.join(tmp_dir, "s3fuse")
-        if StorageMounter.create_directory(fuse_tmp, task_name):
+        if StorageMounter.create_directory(fuse_tmp):
             S3Mounter.fuse_tmp = fuse_tmp
 
     def build_mount_params(self, mount_point):
@@ -522,7 +513,7 @@ class S3Mounter(StorageMounter):
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
-        if self.is_windows():
+        if is_windows():
             logging_file = os.path.join(os.getenv('LOG_DIR', 'c:\\logs'), 'fuse_{}.log'.format(self.storage.id))
         else:
             logging_file = '/var/log/fuse_{}.log'.format(self.storage.id)
@@ -593,20 +584,19 @@ class GCPMounter(StorageMounter):
         return GCP_TYPE
 
     @staticmethod
-    def check_or_install(task_name, sensitive_policy):
-        GCPMounter.fuse_type = GCPMounter._check_or_install(task_name)
+    def check_or_install(sensitive_policy):
+        GCPMounter.fuse_type = GCPMounter._check_or_install()
 
     @staticmethod
-    def _check_or_install(task_name):
+    def _check_or_install():
         fuse_type = os.getenv('CP_GCS_FUSE_TYPE', FUSE_GCSFUSE_ID)
         if fuse_type == FUSE_GCSFUSE_ID:
-            fuse_installed = StorageMounter.execute_and_check_command('install_gcsfuse', task_name=task_name)
+            fuse_installed = StorageMounter.execute_and_check_command('install_gcsfuse')
             return FUSE_GCSFUSE_ID if fuse_installed else FUSE_NA_ID
         elif fuse_type == FUSE_PIPE_ID:
             return FUSE_PIPE_ID
         else:
-            Logger.warn("FUSE {fuse_type} type is not defined for GSC fuse".format(fuse_type=fuse_type),
-                        task_name=task_name)
+            Logger.warning("FUSE {fuse_type} type is not defined for GSC fuse".format(fuse_type=fuse_type))
             return FUSE_NA_ID
 
     @staticmethod
@@ -614,13 +604,13 @@ class GCPMounter(StorageMounter):
         return GCPMounter.fuse_type is not None
 
     @staticmethod
-    def init_tmp_dir(tmp_dir, task_name):
+    def init_tmp_dir(tmp_dir):
         fuse_tmp = os.path.join(tmp_dir, "gcsfuse")
-        if StorageMounter.create_directory(fuse_tmp, task_name):
+        if StorageMounter.create_directory(fuse_tmp):
             GCPMounter.fuse_tmp = fuse_tmp
 
-    def mount(self, mount_root, task_name):
-        super(GCPMounter, self).mount(mount_root, task_name)
+    def mount(self, mount_root):
+        super(GCPMounter, self).mount(mount_root)
 
     def build_mount_params(self, mount_point):
         mount_timeout = os.getenv('CP_PIPE_FUSE_TIMEOUT', 500)
@@ -634,7 +624,7 @@ class GCPMounter(StorageMounter):
         if not PermissionHelper.is_storage_writable(self.storage):
             mask = '0554'
             permissions = 'ro'
-        if self.is_windows():
+        if is_windows():
             logging_file = os.path.join(os.getenv('LOG_DIR', 'c:\\logs'), 'fuse_{}.log'.format(self.storage.id))
         else:
             logging_file = '/var/log/fuse_{}.log'.format(self.storage.id)
@@ -687,12 +677,12 @@ class NFSMounter(StorageMounter):
         return NFS_TYPE
 
     @staticmethod
-    def check_or_install(task_name, sensitive_policy):
+    def check_or_install(sensitive_policy):
         NFSMounter.available = False if PermissionHelper.is_run_sensitive() and sensitive_policy == "SKIP" \
-            else StorageMounter.execute_and_check_command('install_nfs_client', task_name=task_name)
+            else StorageMounter.execute_and_check_command('install_nfs_client')
 
     @staticmethod
-    def init_tmp_dir(tmp_dir, task_name):
+    def init_tmp_dir(tmp_dir):
         pass
 
     @staticmethod
@@ -782,10 +772,30 @@ def main():
     parser.add_argument('--tmp-dir', required=True)
     parser.add_argument('--task', required=False, default=MOUNT_DATA_STORAGES)
     args = parser.parse_args()
+
+    api_url = os.environ['API']
+    run_id = os.getenv('RUN_ID', '-1')
+    logging_directory = os.getenv('CP_CAP_MOUNTS_STORAGES_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
+    logging_level = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_LEVEL', 'DEBUG')
+    logging_level_local = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_LEVEL_LOCAL', 'DEBUG')
+    logging_format = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_task = os.getenv('CP_CAP_MOUNTS_STORAGES_LOGGING_TASK', args.task)
+
+    logging.basicConfig(level=logging_level_local, format=logging_format,
+                        filename=os.path.join(logging_directory, 'mount_storages.log'))
+
+    api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
+    logger = RunLogger(api=api, run_id=run_id)
+    logger = TaskLogger(task=logging_task, inner=logger)
+    logger = LevelLogger(level=logging_level, inner=logger)
+    logger = LocalLogger(inner=logger)
+    Logger = logger
+    global Logger
+
     if EXEC_ENVIRONMENT in os.environ and os.environ[EXEC_ENVIRONMENT] == DTS:
-        Logger.success('Skipping cloud storage mount for execution environment %s' % DTS, task_name=args.task)
+        logger.success('Skipping cloud storage mount for execution environment %s' % DTS)
         return
-    MountStorageTask(args.task).run(args.mount_root, args.tmp_dir)
+    MountStorageTask(run_id, api).run(args.mount_root, args.tmp_dir)
 
 
 if __name__ == '__main__':
