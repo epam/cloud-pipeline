@@ -38,7 +38,7 @@ class bcolors:
 
     @staticmethod
     def colored(message, status):
-        return bcolors.STATUS_COLORS[status] + message + bcolors.ENDC
+        return bcolors.STATUS_COLORS.get(status, '') + message + bcolors.ENDC
 
 
 class Logger:
@@ -273,27 +273,27 @@ class RunLogger(CloudPipelineLogger):
         self._inner = inner
 
     def info(self, message, task=None, trace=False):
-        self._log(message=message, task=task, status='RUNNING', trace=trace)
+        self._log(message=message, task=task, status=TaskStatus.RUNNING, trace=trace)
         if self._inner:
             self._inner.info(message, task=task, trace=trace)
 
     def debug(self, message, task=None, trace=False):
-        self._log(message=message, task=task, status='RUNNING', trace=trace)
+        self._log(message=message, task=task, status=TaskStatus.RUNNING, trace=trace)
         if self._inner:
             self._inner.debug(message, task=task, trace=trace)
 
     def warning(self, message, task=None, trace=False):
-        self._log(message=message, task=task, status='RUNNING', trace=trace)
+        self._log(message=bcolors.WARNING + message + bcolors.ENDC, task=task, status=TaskStatus.RUNNING, trace=trace)
         if self._inner:
             self._inner.warning(message, task=task, trace=trace)
 
     def success(self, message, task=None, trace=False):
-        self._log(message=message, task=task, status='SUCCESS', trace=trace)
+        self._log(message=message, task=task, status=TaskStatus.SUCCESS, trace=trace)
         if self._inner:
             self._inner.success(message, task=task, trace=trace)
 
     def error(self, message, task=None, trace=False):
-        self._log(message=message, task=task, status='FAILURE', trace=trace)
+        self._log(message=message, task=task, status=TaskStatus.FAILURE, trace=trace)
         if self._inner:
             self._inner.error(message, task=task, trace=trace)
 
@@ -303,4 +303,8 @@ class RunLogger(CloudPipelineLogger):
         if trace:
             stacktrace = traceback.format_exc()
             message += ' ' + stacktrace
-        self._api.log_efficiently(run_id=self._run_id, message=message, task=task, status=status, date=formatted_dt)
+        if message.endswith('\n'):
+            message = message.rstrip('\n')
+        colored_message = bcolors.colored(message, status)
+        self._api.log_efficiently(run_id=self._run_id, message=colored_message, task=task, status=status,
+                                  date=formatted_dt)
