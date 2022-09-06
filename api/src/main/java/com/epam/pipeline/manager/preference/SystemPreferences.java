@@ -86,6 +86,7 @@ import java.util.stream.Collectors;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isGreaterThanOrEquals;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isLessThan;
+import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotBlank;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNotLessThanValueOrNull;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrGreaterThan;
 import static com.epam.pipeline.manager.preference.PreferenceValidators.isNullOrValidEnum;
@@ -581,6 +582,8 @@ public class SystemPreferences {
             "pods", LAUNCH_GROUP, pass);
     public static final StringPreference KUBE_POD_SEARCH_PATH = new StringPreference("launch.kube.pod.search.path",
             "pods.default.svc.cluster.local", LAUNCH_GROUP, pass);
+    public static final IntPreference  LAUNCH_UID_SEED = new IntPreference("launch.uid.seed", 70000,
+            LAUNCH_GROUP, pass, true);
 
 
     //DTS submission

@@ -634,6 +634,136 @@ function add_self_to_no_proxy() {
       export no_proxy="${_self_no_proxy},${_kube_no_proxy}"
 }
 
+function configure_owner_account() {
+    OWNER_ID="$(resolve_owner_id)"
+    export OWNER_ID
+
+    if [ "$OWNER" ]; then
+        # Crop OWNER account by @ if present
+        IFS='@' read -r -a owner_info <<< "$OWNER"
+        export OWNER="${owner_info[0]}"
+        export OWNER_HOME="${OWNER_HOME:-/home/$OWNER}"
+        export OWNER_GROUPS="${OWNER_GROUPS:-root}"
+        if check_cp_cap "CP_CAP_UID_SEED_DISABLED"; then
+            if check_user_created "$OWNER"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "" "" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
+        else
+            UID_SEED="$(get_pipe_preference_low_level "launch.uid.seed" "${CP_CAP_UID_SEED:-70000}")"
+            export UID_SEED
+            export OWNER_UID=$(( UID_SEED + OWNER_ID ))
+            export OWNER_GID="$OWNER_UID"
+            if check_user_created "$OWNER" "$OWNER_UID" "$OWNER_GID"; then
+                return 0
+            else
+                create_user "$OWNER" "$OWNER" "$OWNER_UID" "$OWNER_GID" "$OWNER_HOME" "$OWNER_GROUPS"
+                return "$?"
+            fi
+        fi
+    else
+        echo "OWNER is not set - skipping owner account configuration"
+        return 1
+    fi
+}
+
+function get_pipe_preference_low_level() {
+    # Returns Cloud Pipeline preference value similarly to get_pipe_preference
+    # but doesn't require pipe commons to be installed. Therefore can be used
+    # safely anywhere in launch.sh.
+    local _preference="$1"
+    local _default_value="$2"
+
+    _value="$(curl -X GET \
+                   --insecure \
+                   -s \
+                   --max-time 30 \
+                   --header "Accept: application/json" \
+                   --header "Authorization: Bearer $API_TOKEN" \
+                   "$API/preferences/$_preference" \
+        | jq -r '.payload.value // empty')"
+
+    if [ "$?" == "0" ] && [ "$_value" ]; then
+        echo "$_value"
+    else
+        echo "$_default_value"
+    fi
+}
+
+function resolve_owner_id() {
+    # Returns current cloud pipeline user id
+    curl -X GET \
+         --insecure \
+         -s \
+         --max-time 30 \
+         --header "Accept: application/json" \
+         --header "Authorization: Bearer $API_TOKEN" \
+         "$API/whoami" \
+        | jq -r '.payload.id // 0'
+}
+
+function check_user_created() {
+    local _user_name="$1"
+    local _user_uid="$2"
+    local _user_gid="$3"
+
+    if id "$OWNER" >/dev/null 2>&1; then
+        _existing_user_uid="$(id "$_user_name" -u)"
+        _existing_user_gid="$(id "$_user_name" -g)"
+        echo "User $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) already exists"
+        if [ "$_user_uid" ] && [ "$_user_uid" != "$_existing_user_uid" ] \
+            || [ "$_user_gid" ] && [ "$_user_gid" != "$_existing_user_gid" ]; then
+            echo "Existing user $_user_name (uid: $_existing_user_uid, gid: $_existing_user_gid) configuration is different from the expected one (uid: $_user_uid, gid: $_user_gid)"
+        fi
+        return 0
+    else
+        return 1
+    fi
+}
+
+function create_user() {
+    local _user_name="$1"
+    local _user_pass="$2"
+    local _user_uid="$3"
+    local _user_gid="$4"
+    local _user_home="$5"
+    local _user_groups="$6"
+
+    echo "Creating user $_user_name..."
+    if [ "$_user_uid" ] && [ "$_user_gid" ]; then
+        if check_installed "useradd" && check_installed "groupadd"; then
+            groupadd "$_user_name" -g "$_user_gid"
+            useradd -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser" && check_installed "addgroup"; then
+            addgroup "$_user_name" -g "$_user_gid"
+            adduser -s "/bin/bash" "$_user_name" -u "$_user_uid" -g "$_user_gid" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd/groupadd and adduser/addgroup commands are not installed"
+            return 1
+        fi
+    else
+        if check_installed "useradd"; then
+            useradd -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home"
+        elif check_installed "adduser"; then
+            adduser -s "/bin/bash" "$_user_name" -G "$_user_groups" -d "$_user_home" -D
+        else
+            echo "Cannot create user $_user_name: useradd and adduser commands are not installed"
+            return 1
+        fi
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Cannot create user $_user_name: creation command has failed"
+        return 1
+    fi
+    echo "$_user_name:$_user_pass" | chpasswd
+    _existing_user_uid="$(id "$_user_name" -u)"
+    _existing_user_gid="$(id "$_user_name" -g)"
+    echo "User ${_user_name} (uid: $_existing_user_uid, gid: $_existing_user_gid) has been created"
+    return 0
+}
+
 function configureHyperThreading() {
     mount -o rw,remount /sys
     if [ "${CP_DISABLE_HYPER_THREADING:-false}" == 'true' ]; then
@@ -1051,35 +1181,9 @@ echo
 echo Configure owner account
 echo "-"
 ######################################################
-if [ "$OWNER" ]
-then
 
-      # Crop OWNER account by @ if present
-	IFS='@' read -r -a owner_info <<< "$OWNER"
-	export OWNER="${owner_info[0]}"
-	export OWNER_HOME="/home/$OWNER"
-
-      export _OWNER_CONFIGURED=1
-
-      # Create OWNER account if not exists
-	if id "$OWNER" >/dev/null 2>&1
-	then
-		echo "User ${OWNER} already exists"
-	else
-            if check_installed "useradd"; then
-                  useradd -s "/bin/bash" "$OWNER" -G root -d $OWNER_HOME
-            elif check_installed "adduser"; then
-                  adduser -s "/bin/bash" $OWNER -d $OWNER_HOME -D -G root
-            else
-                  echo "Cannot add user $OWNER. useradd and adduser commands not installed"
-                  export _OWNER_CONFIGURED=0
-            fi
-		echo "$OWNER:$OWNER" | chpasswd
-	fi
-else
-	echo "OWNER is not set - skipping owner account configuration"
-fi
-
+configure_owner_account
+export _OWNER_CONFIGURED="$?"
 
 echo "------"
 echo
@@ -1434,9 +1538,9 @@ if [ "${OWNER}" ] && [ -d /root/.ssh ]; then
     cp /root/.ssh/* /home/${OWNER}/.ssh/ && \
     chown -R ${OWNER} /home/${OWNER}/.ssh
     ssh_fix_permissions /home/${OWNER}/.ssh
-    echo "Passworldess SSH for ${OWNER} is configured"
+    echo "Passwordless SSH for ${OWNER} is configured"
 else
-    echo "[ERROR] Failed to configure passworldess SSH for \"${OWNER}\""
+    echo "[ERROR] Failed to configure passwordless SSH for \"${OWNER}\""
 fi
 # Double check that root's SSH permissions are correct
 ssh_fix_permissions /root/.ssh
@@ -1710,7 +1814,7 @@ echo Symlink common locations for OWNER and root
 echo "-"
 ######################################################
 
-if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -ne 0 ]
+if [ "$OWNER" ] && [ "$OWNER_HOME" ] && [ $_OWNER_CONFIGURED -eq 0 ]
 then
       symlink_common_locations "$OWNER" "$OWNER_HOME"
       # Just double check the permissions for the OWNER on the OWNER_HOME
