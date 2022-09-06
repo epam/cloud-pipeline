@@ -294,6 +294,9 @@ class PipelineAPI:
     def load_run_efficiently(self, run_id):
         return self._request('GET', 'run/' + str(run_id)) or {}
 
+    def load_task_efficiently(self, run_id, task):
+        return self._request('GET', 'run/' + str(run_id) + '/task?taskName=' + str(task)) or []
+
     def log_efficiently(self, run_id, message, task, status, date):
         self._request('POST', 'run/' + str(run_id) + '/log', data={
             'runId': run_id,
@@ -305,6 +308,10 @@ class PipelineAPI:
 
     def get_preference_efficiently(self, name):
         return self._request('GET', 'preferences/' + name) or ''
+
+    def get_allowed_instance_types_efficiently(self, region_id, spot=False):
+        return self._request('GET', 'cluster/instance/allowed?regionId=' + str(region_id)
+                             + '&spot=' + str(spot).lower()) or {}
 
     def _request(self, http_method, endpoint, data=None):
         url = '{}/{}'.format(self.api_url, endpoint)
