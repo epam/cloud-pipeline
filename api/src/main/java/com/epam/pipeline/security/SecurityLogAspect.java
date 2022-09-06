@@ -59,21 +59,29 @@ public class SecurityLogAspect {
 
     public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
             "execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.create*(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.update*(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.prolong*(..))" +
-            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.delete*(..))";
+            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycle*Manager.update*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycle*Manager.prolong*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycle*Manager.delete*(..))";
 
+    public static final String AUTHORIZATION_RELATED_METHODS_POINTCUT =
+            "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..)) " +
+                    "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
+                    "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))";
 
-
+    public static final String DATA_STORAGE_LIFECYCLE_MANAGER_CLASS_NAME = "DataStorageLifecycleManager";
+    public static final String DATA_STORAGE_LIFECYCLE_RESTORE_MANAGER_CLASS_NAME = "DataStorageLifecycleRestoreManager";
 
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
+    public static final String KEY_TOPIC = "topic";
+    public static final String STORAGE_LIFECYCLE_TOPIC = "Storage Lifecycle";
+    public static final String SECURITY_TOPIC = "Security";
 
 
     @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
-            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
+            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
     public void addUserInfoFromSecurityContext() {
-        SecurityContext context = SecurityContextHolder.getContext();
+        final SecurityContext context = SecurityContextHolder.getContext();
         if (context != null) {
             ThreadContext.put(KEY_USER, context.getAuthentication() != null
                     ? context.getAuthentication().getName()
@@ -81,33 +89,46 @@ public class SecurityLogAspect {
         }
     }
 
+    @Before(PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
+            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
+    public void addContextTopic(final JoinPoint joinPoint) {
+        final String joinPointClass = joinPoint.getSourceLocation().getWithinType().getName();
+        switch (joinPointClass) {
+            case DATA_STORAGE_LIFECYCLE_MANAGER_CLASS_NAME:
+            case DATA_STORAGE_LIFECYCLE_RESTORE_MANAGER_CLASS_NAME:
+                ThreadContext.put(KEY_TOPIC, STORAGE_LIFECYCLE_TOPIC);
+                break;
+            default:
+                ThreadContext.put(KEY_TOPIC, SECURITY_TOPIC);
+                break;
+        }
+    }
+
     @Before(value = "execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..)) " +
             "&& args(authentication,..)")
-    public void addUserInfoFromSAMLProxy(JoinPoint joinPoint, Authentication authentication) {
+    public void addUserInfoFromSAMLProxy(final JoinPoint joinPoint, final Authentication authentication) {
         if (authentication != null) {
-            SAMLProxyAuthentication auth = (SAMLProxyAuthentication) authentication;
+            final SAMLProxyAuthentication auth = (SAMLProxyAuthentication) authentication;
             ThreadContext.put(KEY_USER, auth.getName() != null ? auth.getName() : ANONYMOUS);
         }
     }
 
     @Before(value = "execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..))" +
             "&& args(credential,..)")
-    public void addUserInfoFromSAML(JoinPoint joinPoint, SAMLCredential credential) {
+    public void addUserInfoFromSAML(final JoinPoint joinPoint, final SAMLCredential credential) {
         if (credential != null) {
             ThreadContext.put(KEY_USER, credential.getNameID().getValue().toUpperCase());
         }
     }
 
     @Before(value = "execution(* com.epam.pipeline.security.jwt.JwtTokenVerifier.readClaims(..)) && args(token,..)")
-    public void addUserInfoWhileAuthByJWT(JoinPoint joinPoint, String token) {
+    public void addUserInfoWhileAuthByJWT(final JoinPoint joinPoint, String token) {
         JWT decode = JWT.decode(token);
         ThreadContext.put(KEY_USER, decode.getSubject() != null ? decode.getSubject() : ANONYMOUS);
     }
 
-    @After(value = PERMISSION_RELATED_METHODS_POINTCUT +
-            "|| execution(* com.epam.pipeline.security.saml.SAMLUserDetailsServiceImpl.loadUserBySAML(..)) " +
-            "|| execution(* com.epam.pipeline.security.saml.SAMLProxyAuthenticationProvider.authenticate(..))" +
-            "|| execution(* com.epam.pipeline.security.jwt.JwtFilterAuthenticationFilter.doFilterInternal(..))")
+    @After(value = PERMISSION_RELATED_METHODS_POINTCUT + "||" + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT +
+            "|| " + AUTHORIZATION_RELATED_METHODS_POINTCUT)
     public void clearUserInfo() {
         ThreadContext.clearAll();
     }

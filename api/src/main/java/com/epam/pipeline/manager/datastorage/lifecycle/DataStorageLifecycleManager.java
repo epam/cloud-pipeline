@@ -22,6 +22,7 @@ import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleNotification;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleRuleTransition;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionCriterion;
 import com.epam.pipeline.dto.datastorage.lifecycle.transition.StorageLifecycleTransitionMethod;
 import com.epam.pipeline.entity.datastorage.AbstractDataStorage;
@@ -39,6 +40,7 @@ import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRu
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -103,6 +105,10 @@ public class DataStorageLifecycleManager {
         verifyStorageLifecycleRuleObject(rule);
         final StorageLifecycleRuleEntity saved = dataStorageLifecycleRuleRepository
                 .save(lifecycleEntityMapper.toEntity(rule));
+        log.info("Creating storage lifecycle rule with id='{}', " +
+                "storageId='{}', pathGlob='{}', objectGlob'{}', transitions='{}'",
+                rule.getId(), rule.getDatastorageId(), rule.getPathGlob(),
+                rule.getObjectGlob(), getTransitionDescriptionString(rule.getTransitions()));
         return lifecycleEntityMapper.toDto(saved);
     }
 
@@ -421,5 +427,18 @@ public class DataStorageLifecycleManager {
         } else {
             return formattedPath;
         }
+    }
+
+    private String getTransitionDescriptionString(final List<StorageLifecycleRuleTransition> transitions) {
+        if (CollectionUtils.isEmpty(transitions)) {
+            return EMPTY;
+        }
+        return transitions.stream()
+                .map(t ->
+                        "to " + t.getStorageClass()
+                                + (t.getTransitionDate() != null
+                                ? " on " + t.getTransitionDate()
+                                : " after " + t.getTransitionAfterDays().toString() + " days")
+                ).collect(Collectors.joining(";"));
     }
 }
