@@ -2,7 +2,6 @@ package com.epam.pipeline.dto.datastorage.lifecycle.restore;
 
 import lombok.Getter;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
