@@ -14,3 +14,4 @@
 
 __version__='0.17'
 __bundle_info__ = { 'bundle_type': 'source', 'build_os_id': 'generic', 'build_os_version_id': 'generic' }
+__component_version__='1111111111111111111111111111111111111111'
