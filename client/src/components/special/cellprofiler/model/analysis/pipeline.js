@@ -221,6 +221,16 @@ class AnalysisPipeline {
       configuration.filter(o => o.object).length === 0;
   }
 
+  @computed
+  get perametersWithErrors () {
+    return this.modules
+      .reduce((acc, current) => {
+        acc.push(...(current.parameters || []));
+        return acc;
+      }, [])
+      .filter(param => param.parameter?.required && !param.value);
+  }
+
   getObjectIsSpot = (object) => {
     return this.spots.some(aSpot => aSpot.name === object);
   }
