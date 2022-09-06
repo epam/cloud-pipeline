@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins":false,
+  "keepInformedOwner":false,
+  "enabled":true,
+  "subject":"Restore of `#$templateParameters[\"path\"]` for storage `#$templateParameters[\"storageName\"]` is ready"
+}

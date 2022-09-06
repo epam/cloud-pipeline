@@ -1,0 +1,6 @@
+{
+  "keepInformedAdmins":false,
+  "keepInformedOwner":false,
+  "enabled":true,
+  "subject":"For storage `#$templateParameters[\"storageName\"]` lifecycle action is about to be launched"
+}
