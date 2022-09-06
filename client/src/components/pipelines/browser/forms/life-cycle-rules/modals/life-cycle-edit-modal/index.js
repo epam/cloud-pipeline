@@ -97,6 +97,7 @@ function FormSection ({
 class LifeCycleEditModal extends React.Component {
   state={
     initialRule: null,
+    useDefaultNotify: undefined,
     expandedPanels: [
       PANELS.transitions,
       PANELS.notify
@@ -171,6 +172,17 @@ class LifeCycleEditModal extends React.Component {
     return form.getFieldValue('notification.disabled');
   }
 
+  get useDefaultNotify () {
+    const {useDefaultNotify} = this.state;
+    const {rule} = this.props;
+    const {notification = {}} = rule || {};
+    if (useDefaultNotify === undefined) {
+      return notification.subject === undefined &&
+        notification.body === undefined;
+    }
+    return useDefaultNotify;
+  }
+
   get showMatches () {
     const {form} = this.props;
     const criteriaType = form.getFieldValue('transitionCriterion.type');
@@ -182,6 +194,28 @@ class LifeCycleEditModal extends React.Component {
     const method = form.getFieldValue('transitionMethod');
     return METHODS[method] !== METHODS.ONE_BY_ONE;
   }
+
+  getNotificationPayload = (
+    ruleNotification = {},
+    formNotification = {}
+  ) => {
+    const {form} = this.props;
+    const method = form.getFieldValue('transitionMethod');
+    const notification = {
+      ...ruleNotification,
+      ...formNotification
+    };
+    notification.enabled = !formNotification.disabled;
+    delete notification.disabled;
+    if (METHODS[method] === METHODS.ONE_BY_ONE) {
+      notification.enabled = false;
+    }
+    if (!formNotification.disabled && this.useDefaultNotify) {
+      delete notification.body;
+      delete notification.subject;
+    }
+    return notification;
+  };
 
   handleSubmit = (e) => {
     const {form, onOk} = this.props;
@@ -213,18 +247,10 @@ class LifeCycleEditModal extends React.Component {
           }
         );
         delete payload.prolongations;
-        const method = form.getFieldValue('transitionMethod');
-        if (notification) {
-          payload.notification = notification;
-          payload.notification.enabled = !notification.disabled;
-          delete payload.notification.disabled;
-        }
-        if (METHODS[method] === METHODS.ONE_BY_ONE) {
-          if (!payload.notification) {
-            payload.notification = {};
-          }
-          payload.notification.enabled = false;
-        }
+        payload.notification = this.getNotificationPayload(
+          rule.notification,
+          notification
+        );
         if (transitions && transitions.length) {
           payload.transitions = transitions
             .filter(Boolean)
@@ -298,6 +324,13 @@ class LifeCycleEditModal extends React.Component {
           : false,
         errors: undefined
       }
+    });
+  };
+
+  onChangeUseDefaultNotify = checked => {
+    const {form} = this.props;
+    this.setState({useDefaultNotify: checked}, () => {
+      form.setFieldsValue({});
     });
   };
 
@@ -481,6 +514,8 @@ class LifeCycleEditModal extends React.Component {
                 form={form}
                 rule={rule}
                 notificationsDisabled={this.notificationsDisabled}
+                useDefaultNotify={this.useDefaultNotify}
+                onChangeUseDefaultNotify={this.onChangeUseDefaultNotify}
               />
             </FormSection>
           </Form>

@@ -160,7 +160,7 @@ class TransitionsForm extends React.Component {
                       message: ' '
                     }]
                   })(
-                    <Select style={{minWidth: '280px'}}>
+                    <Select className={styles.destinationSelect}>
                       {Object.entries(DESTINATIONS).map(([key, description]) => (
                         <Select.Option
                           value={key}

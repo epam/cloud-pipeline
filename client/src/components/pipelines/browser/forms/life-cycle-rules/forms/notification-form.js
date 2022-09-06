@@ -69,7 +69,11 @@ class NotificationForm extends React.Component {
   checkRequiredFields = () => {
     const {form} = this.props;
     form.validateFields(
-      ['notification.subject'],
+      [
+        'notification.recipients',
+        'notification.body',
+        'notification.subject'
+      ],
       {force: true}
     );
   };
@@ -78,102 +82,25 @@ class NotificationForm extends React.Component {
     this.setState({previewMode: preview});
   };
 
-  render () {
+  onChangeUseDefaultNotify = event => {
+    const {onChangeUseDefaultNotify} = this.props;
+    onChangeUseDefaultNotify && onChangeUseDefaultNotify(event.target.checked);
+  };
+
+  renderNotificationTemplate = () => {
     const {
       form,
       rule,
-      notificationsDisabled
+      notificationsDisabled,
+      useDefaultNotify
     } = this.props;
     const {previewMode, pending} = this.state;
     const {getFieldDecorator} = form;
+    if (useDefaultNotify) {
+      return null;
+    }
     return (
-      <div
-        style={{width: '100%'}}
-        ref={(el) => { this.notifyFormContainer = el; }}
-        className={styles.notificationsForm}
-      >
-        <Row>
-          <Form.Item
-            className={styles.formItem}
-            style={{marginLeft: 10}}
-          >
-            {getFieldDecorator('notification.disabled', {
-              valuePropName: 'checked',
-              initialValue: rule.notification && rule.notification.enabled !== undefined
-                ? !rule.notification.enabled
-                : false
-            })(
-              <Checkbox
-                disabled={pending}
-              >
-                Disable all notifications for the current rule
-              </Checkbox>
-            )}
-          </Form.Item>
-        </Row>
-        <Row>
-          <Form.Item
-            {...fullWidthLayout}
-            className={styles.formItem}
-            label="Recipients"
-          >
-            {getFieldDecorator('notification.recipients', {
-              type: 'array',
-              initialValue: rule.notification && rule.notification.recipients
-                ? rule.notification.recipients
-                : []
-            })(
-              <UsersRolesSelect
-                disabled={notificationsDisabled || pending}
-                style={{flex: 1}}
-                dropdownStyle={{maxHeight: '80%'}}
-                popupContainerFn={() => this.notifyFormContainer}
-              />
-            )}
-          </Form.Item>
-        </Row>
-        <Row
-          type="flex"
-          justify="space-between"
-        >
-          <Col style={{width: '50%'}}>
-            <Form.Item
-              {...columnLayout}
-              className={styles.formItem}
-              label="Notice period (days)"
-            >
-              {getFieldDecorator('notification.notifyBeforeDays', {
-                initialValue: rule.notification && rule.notification.notifyBeforeDays
-                  ? rule.notification.notifyBeforeDays
-                  : undefined
-              })(
-                <Input
-                  disabled={notificationsDisabled || pending}
-                />
-              )}
-            </Form.Item>
-          </Col>
-          <Col style={{width: '50%'}}>
-            <Form.Item
-              {...columnLayout}
-              labelCol={{sm: {span: 8}}}
-              wrapperCol={{sm: {span: 12}}}
-              className={styles.formItem}
-              label="Prolongation period (days)"
-            >
-              {getFieldDecorator('notification.prolongDays', {
-                initialValue: rule.notification && rule.notification.prolongDays
-                  ? rule.notification.prolongDays
-                  : undefined
-
-              })(
-                <Input
-                  disabled={notificationsDisabled || pending}
-                />
-              )}
-            </Form.Item>
-          </Col>
-        </Row>
+      <div>
         <Row
           type="flex"
           justify="start"
@@ -253,7 +180,11 @@ class NotificationForm extends React.Component {
               valuePropName: 'code',
               initialValue: rule.notification
                 ? rule.notification.body
-                : undefined
+                : undefined,
+              rules: [{
+                required: !notificationsDisabled,
+                message: ' '
+              }]
             })(
               <CodeEditor
                 className={classNames(
@@ -289,13 +220,132 @@ class NotificationForm extends React.Component {
         </Row>
       </div>
     );
+  };
+
+  render () {
+    const {
+      form,
+      rule,
+      notificationsDisabled,
+      useDefaultNotify
+    } = this.props;
+    const {pending} = this.state;
+    const {getFieldDecorator} = form;
+    return (
+      <div
+        style={{width: '100%'}}
+        ref={(el) => { this.notifyFormContainer = el; }}
+        className={styles.notificationsForm}
+      >
+        <Row>
+          <Form.Item
+            className={styles.formItem}
+            style={{marginLeft: 10}}
+          >
+            {getFieldDecorator('notification.disabled', {
+              valuePropName: 'checked',
+              initialValue: rule.notification && rule.notification.enabled !== undefined
+                ? !rule.notification.enabled
+                : false
+            })(
+              <Checkbox
+                disabled={pending}
+              >
+                Disable all notifications for the current rule
+              </Checkbox>
+            )}
+          </Form.Item>
+        </Row>
+        <Row>
+          <Form.Item
+            {...fullWidthLayout}
+            className={styles.formItem}
+            label="Recipients"
+          >
+            {getFieldDecorator('notification.recipients', {
+              type: 'array',
+              initialValue: rule.notification && rule.notification.recipients
+                ? rule.notification.recipients
+                : [],
+              rules: [{
+                required: !notificationsDisabled,
+                message: ' '
+              }]
+            })(
+              <UsersRolesSelect
+                disabled={notificationsDisabled || pending}
+                style={{flex: 1}}
+                dropdownStyle={{maxHeight: '80%'}}
+                popupContainerFn={() => this.notifyFormContainer}
+              />
+            )}
+          </Form.Item>
+        </Row>
+        <Row
+          type="flex"
+          justify="space-between"
+        >
+          <Col style={{width: '50%'}}>
+            <Form.Item
+              {...columnLayout}
+              className={styles.formItem}
+              label="Notice period (days)"
+            >
+              {getFieldDecorator('notification.notifyBeforeDays', {
+                initialValue: rule.notification && rule.notification.notifyBeforeDays
+                  ? rule.notification.notifyBeforeDays
+                  : undefined
+              })(
+                <Input
+                  disabled={notificationsDisabled || pending}
+                />
+              )}
+            </Form.Item>
+          </Col>
+          <Col style={{width: '50%'}}>
+            <Form.Item
+              {...columnLayout}
+              labelCol={{sm: {span: 8}}}
+              wrapperCol={{sm: {span: 12}}}
+              className={styles.formItem}
+              label="Prolongation period (days)"
+            >
+              {getFieldDecorator('notification.prolongDays', {
+                initialValue: rule.notification && rule.notification.prolongDays
+                  ? rule.notification.prolongDays
+                  : undefined
+
+              })(
+                <Input
+                  disabled={notificationsDisabled || pending}
+                />
+              )}
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row>
+          <Checkbox
+            checked={useDefaultNotify}
+            onChange={this.onChangeUseDefaultNotify}
+            className={styles.formItem}
+            style={{marginLeft: 10}}
+            disabled={notificationsDisabled || pending}
+          >
+            Use default template
+          </Checkbox>
+        </Row>
+        {this.renderNotificationTemplate()}
+      </div>
+    );
   }
 }
 
 NotificationForm.propTypes = {
   form: PropTypes.object,
   rule: PropTypes.object,
-  notificationsDisabled: PropTypes.bool
+  notificationsDisabled: PropTypes.bool,
+  useDefaultNotify: PropTypes.bool,
+  onChangeUseDefaultNotify: PropTypes.func
 };
 
 export default NotificationForm;

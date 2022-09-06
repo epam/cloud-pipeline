@@ -63,3 +63,12 @@
   align-self: flex-end;
 }
 
+.transition-form-item .destination-select {
+  width: 280px;
+}
+
+@media (max-width: 1200px) {
+  .transition-form-item .destination-select {
+    width: 140px;
+  }
+}
