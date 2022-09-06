@@ -122,6 +122,9 @@ function build_pipe {
 
     echo "__bundle_info__ = { 'bundle_type': '\$bundle_type', 'build_os_id': '\$build_os_id', 'build_os_version_id': '\$build_os_version_id' }" >> \$version_file
 
+    sed -i '/__component_version__/d' \$version_file
+    echo "__component_version__='\${PIPE_COMMIT_HASH}'" >> \$version_file
+
     cd $PIPE_CLI_SOURCES_DIR
     python2 $PYINSTALLER_PATH/pyinstaller/pyinstaller.py \
                                     --add-data "$PIPE_CLI_SOURCES_DIR/res/effective_tld_names.dat.txt:tld/res/" \
@@ -158,6 +161,10 @@ tar -zcf $PIPE_CLI_LINUX_DIST_DIR/dist/dist-folder/pipe.tar.gz \
 
 EOL
 
+cd $PIPE_CLI_SOURCES_DIR
+PIPE_COMMIT_HASH=$(git log --pretty=tformat:"%H" -n1 .)
+cd -
+
 docker pull $_BUILD_DOCKER_IMAGE &> /dev/null
 docker run -i --rm \
            -v $PIPE_CLI_SOURCES_DIR:$PIPE_CLI_SOURCES_DIR \
@@ -168,6 +175,7 @@ docker run -i --rm \
            --env PIPE_CLI_LINUX_DIST_DIR=$PIPE_CLI_LINUX_DIST_DIR \
            --env PIPE_CLI_RUNTIME_TMP_DIR="'"$PIPE_CLI_RUNTIME_TMP_DIR"'" \
            --env PYINSTALLER_PATH=$PYINSTALLER_PATH \
+           --env PIPE_COMMIT_HASH=$PIPE_COMMIT_HASH \
            $_BUILD_DOCKER_IMAGE \
            bash $_BUILD_SCRIPT_NAME
 
