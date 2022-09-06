@@ -37,6 +37,7 @@ import com.epam.pipeline.manager.user.OnlineUsersService;
 import com.epam.pipeline.manager.user.UserRunnersManager;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleExecutionRepository;
 import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageLifecycleRuleRepository;
+import com.epam.pipeline.repository.datastorage.lifecycle.DataStorageRestoreActionRepository;
 import com.epam.pipeline.repository.run.PipelineRunServiceUrlRepository;
 import com.epam.pipeline.repository.user.PipelineUserRepository;
 import com.epam.pipeline.security.jwt.JwtTokenGenerator;
@@ -162,6 +163,9 @@ public class TestApplication {
 
     @MockBean
     protected DataStorageLifecycleRuleExecutionRepository lifecycleRuleExecutionRepository;
+
+    @MockBean
+    protected DataStorageRestoreActionRepository dataStorageRestoreActionRepository;
 
     @MockBean
     public OnlineUsersService onlineUsersService;

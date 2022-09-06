@@ -88,6 +88,7 @@ public class DataStorageLifecycleManagerTest {
 
     private final UserManager userManager = Mockito.mock(UserManager.class);
 
+
     private final DataStorageLifecycleManager lifecycleManager = new DataStorageLifecycleManager(
             messageHelper, mapper, lifecycleRuleRepository, lifecycleRuleExecutionRepository,
             storageManager, providerManager, preferenceManager, userManager

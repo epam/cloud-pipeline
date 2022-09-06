@@ -26,6 +26,7 @@ import com.epam.pipeline.common.MessageHelper;
 import com.epam.pipeline.config.JsonMapper;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
 import com.epam.pipeline.entity.cluster.CloudRegionsConfiguration;
 import com.epam.pipeline.entity.datastorage.ActionStatus;
 import com.epam.pipeline.entity.datastorage.ContentDisposition;
@@ -60,6 +61,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.collections4.MapUtils;
+import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.util.Assert;
@@ -85,6 +87,9 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
      * */
     private static final List<String> SUPPORTED_STORAGE_CLASSES = Arrays.asList(
             "GLACIER", "DEEP_ARCHIVE", "GLACIER_IR", "DELETION");
+
+    public static final String STANDARD_RESTORE_MODE = "STANDARD";
+    private static final List<String> SUPPORTED_RESTORE_MODES = Arrays.asList(STANDARD_RESTORE_MODE, "BULK");
     private final AuthManager authManager;
     private final MessageHelper messageHelper;
     private final CloudRegionManager cloudRegionManager;
@@ -404,6 +409,23 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
     public void verifyStorageLifecycleRuleExecution(final StorageLifecycleRuleExecution execution) {
         Assert.isTrue(SUPPORTED_STORAGE_CLASSES.contains(execution.getStorageClass()),
                 "Storage class should be one of: " + SUPPORTED_STORAGE_CLASSES);
+    }
+
+    @Override
+    public Pair<Boolean, String> isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
+        final boolean result = listDataStorageFiles(dataStorage, path).findAny().isPresent();
+        final String reason = !result ? "Path not found!" : "";
+        return Pair.of(result, reason);
+    }
+
+    @Override
+    public String verifyOrDefaultRestoreMode(final StorageRestoreActionRequest restoreActionRequest) {
+        if (StringUtils.isEmpty(restoreActionRequest.getRestoreMode())) {
+            return STANDARD_RESTORE_MODE;
+        }
+        Assert.isTrue(SUPPORTED_RESTORE_MODES.contains(restoreActionRequest.getRestoreMode()),
+                "Restore request mode should be one of: " + SUPPORTED_RESTORE_MODES);
+        return restoreActionRequest.getRestoreMode();
     }
 
     public S3Helper getS3Helper(S3bucketDataStorage dataStorage) {
