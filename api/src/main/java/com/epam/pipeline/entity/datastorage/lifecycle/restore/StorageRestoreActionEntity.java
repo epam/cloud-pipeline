@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.epam.pipeline.entity.datastorage.lifecycle;
+package com.epam.pipeline.entity.datastorage.lifecycle.restore;
 
-import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreStatus;
+import com.epam.pipeline.entity.user.PipelineUser;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -29,6 +31,8 @@ import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 import javax.persistence.Table;
 import java.time.LocalDateTime;
 
@@ -37,19 +41,35 @@ import java.time.LocalDateTime;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-@Table(name = "datastorage_lifecycle_rule_execution", schema = "pipeline")
-public class StorageLifecycleRuleExecutionEntity {
+@Builder(toBuilder = true)
+@Table(name = "datastorage_lifecycle_restore_action", schema = "pipeline")
+public class StorageRestoreActionEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long ruleId;
+
+    @OneToOne
+    @JoinColumn(name = "user_actor_id")
+    private PipelineUser userActor;
+
+    private Long datastorageId;
     private String path;
-    private LocalDateTime updated;
 
     @Enumerated(EnumType.STRING)
-    private StorageLifecycleRuleExecutionStatus status;
+    private StorageRestorePathType type;
 
-    private String storageClass;
+    private Boolean restoreVersions;
+
+    private String restoreMode;
+
+    private Long days;
+    private LocalDateTime started;
+    private LocalDateTime updated;
+    private LocalDateTime restoredTill;
+
+    @Enumerated(EnumType.STRING)
+    private StorageRestoreStatus status;
+
+    private String notificationJson;
 }

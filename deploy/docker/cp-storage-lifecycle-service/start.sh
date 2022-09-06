@@ -34,7 +34,7 @@ fi
 python3 ${CP_SLS_HOME}/sls/sls/app.py --cp-api-url=${API} \
          --max-execution-running-days=${CP_STORAGE_LIFECYCLE_DAEMON_MAX_EXECUTION_RUNNING_DAYS:-2} \
          --mode=${CP_STORAGE_LIFECYCLE_DAEMON_MODE:-single} \
-         --at="${CP_STORAGE_LIFECYCLE_DAEMON_AT_TIME:-00:05}" >> $CP_SLS_HOME/logs/storage-lifecycle-service-$(date -u --iso-8601).log
+         --at="${CP_STORAGE_LIFECYCLE_DAEMON_AT_TIME:-00:05}" 2>&1 | tee -a  $CP_SLS_HOME/logs/storage-lifecycle-service-$(date -u --iso-8601).log
 
 
 

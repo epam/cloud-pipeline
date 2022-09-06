@@ -22,13 +22,16 @@ import com.epam.pipeline.controller.Result;
 import com.epam.pipeline.dto.datastorage.lifecycle.StorageLifecycleRule;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecution;
 import com.epam.pipeline.dto.datastorage.lifecycle.execution.StorageLifecycleRuleExecutionStatus;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreAction;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionRequest;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestoreActionSearchFilter;
+import com.epam.pipeline.dto.datastorage.lifecycle.restore.StorageRestorePathType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,11 +39,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-@Controller
+@RestController
 @Api(value = "Datastorage lifecycle methods")
 public class DataStorageLifecycleController extends AbstractRestController {
 
@@ -56,7 +59,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     private DataStorageLifecycleApiService dataStorageLifecycleApiService;
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule")
-    @ResponseBody
     @ApiOperation(
             value = "Lists all available lifecycle rules for specific data storage.",
             notes = "Lists all available lifecycle rules for specific data storage.",
@@ -71,7 +73,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}")
-    @ResponseBody
     @ApiOperation(
             value = "Gets specific lifecycle rule for specific data storage.",
             notes = "Gets specific lifecycle rule for specific data storage.",
@@ -86,7 +87,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/rule")
-    @ResponseBody
     @ApiOperation(
             value = "Creates lifecycle rule for specific data storage.",
             notes = "Creates lifecycle rule for specific data storage.",
@@ -101,7 +101,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/rule")
-    @ResponseBody
     @ApiOperation(
             value = "Updates lifecycle rule for specific data storage.",
             notes = "Updates lifecycle rule for specific data storage.",
@@ -116,7 +115,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/prolong")
-    @ResponseBody
     @ApiOperation(
             value = "Shift a moment in time when action from lifecycle rule should take place.",
             notes = "Shift a moment in time when action from lifecycle rule should take place.",
@@ -136,7 +134,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @DeleteMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}")
-    @ResponseBody
     @ApiOperation(
             value = "Deletes specific lifecycle rule for specific data storage.",
             notes = "Deletes specific lifecycle rule for specific data storage.",
@@ -151,7 +148,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/execution")
-    @ResponseBody
     @ApiOperation(
             value = "Creates lifecycle rule execution for specific rule.",
             notes = "Creates lifecycle rule execution for specific rule.",
@@ -169,7 +165,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/execution/{executionId}/status")
-    @ResponseBody
     @ApiOperation(
             value = "Updates lifecycle rule execution status.",
             notes = "Updates lifecycle rule execution status.",
@@ -187,7 +182,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @DeleteMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/execution/{executionId}")
-    @ResponseBody
     @ApiOperation(
             value = "Deletes lifecycle rule execution.",
             notes = "Deletes lifecycle rule execution.",
@@ -204,7 +198,6 @@ public class DataStorageLifecycleController extends AbstractRestController {
     }
 
     @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/rule/{ruleId}/execution")
-    @ResponseBody
     @ApiOperation(
             value = "Lists all available lifecycle rule executions.",
             notes = "Lists all available lifecycle rule executions. Could be filtered by path and status",
@@ -212,7 +205,7 @@ public class DataStorageLifecycleController extends AbstractRestController {
     @ApiResponses(
             value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
             })
-    public Result<List<StorageLifecycleRuleExecution>> listStorageLifecyclePolicyRuleExecutions(
+    public Result<List<StorageLifecycleRuleExecution>> filterStorageRestoreActions(
             @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
             @PathVariable(value = RULE_ID) final Long ruleId,
             @RequestParam(value = PATH, required = false) final String path,
@@ -220,5 +213,84 @@ public class DataStorageLifecycleController extends AbstractRestController {
         return Result.success(
                 dataStorageLifecycleApiService.listStorageLifecyclePolicyRuleExecutions(
                         datastorageId, ruleId, path, status));
+    }
+
+    @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/restore")
+    @ApiOperation(
+            value = "Initiate process of restoring objects in datastorage under specified path.",
+            notes = "Initiate process of restoring objects in datastorage under specified path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<StorageRestoreAction>> initiateRestoreStorageObjects(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestBody final StorageRestoreActionRequest request) {
+        return Result.success(
+                dataStorageLifecycleApiService.initiateStorageRestores(datastorageId, request));
+    }
+
+    @PutMapping(value = "/datastorage/{datastorageId}/lifecycle/restore")
+    @ApiOperation(
+            value = "Updates lifecycle restore action.",
+            notes = "Updates lifecycle restore action.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageRestoreAction> updateRestoreAction(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestBody final StorageRestoreAction action) {
+        return Result.success(dataStorageLifecycleApiService.updateStorageRestoreAction(datastorageId, action));
+    }
+
+    @PostMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/filter")
+    @ApiOperation(
+            value = "Filter lifecycle restore actions for storage",
+            notes = "Filter lifecycle restore actions for storage",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<StorageRestoreAction>> filterStorageRestoreActions(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestBody final StorageRestoreActionSearchFilter filter) {
+        return Result.success(
+                dataStorageLifecycleApiService.filterRestoreStorageActions(datastorageId, filter));
+    }
+
+    @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/effective")
+    @ApiOperation(
+            value = "Find last applied restore action for datastorage and path.",
+            notes = "Find last applied restore action for datastorage and path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<StorageRestoreAction> loadEffectiveRestoreStoragePathAction(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam final StorageRestorePathType pathType) {
+        return Result.success(
+                dataStorageLifecycleApiService.loadEffectiveRestoreStorageAction(
+                        datastorageId, path, pathType));
+    }
+
+    @GetMapping(value = "/datastorage/{datastorageId}/lifecycle/restore/effectiveHierarchy")
+    @ApiOperation(
+            value = "Loads hierarchy of last applied restore actions for datastorage and path.",
+            notes = "Loads hierarchy of last applied restore actions for datastorage and path.",
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @ApiResponses(
+            value = {@ApiResponse(code = HTTP_STATUS_OK, message = API_STATUS_DESCRIPTION)
+            })
+    public Result<List<StorageRestoreAction>> loadEffectiveHierarchyRestoreStoragePathAction(
+            @PathVariable(value = DATASTORAGE_ID) final Long datastorageId,
+            @RequestParam(value = PATH) final String path,
+            @RequestParam final StorageRestorePathType pathType,
+            @RequestParam(defaultValue = "false") final Boolean recursive) {
+        return Result.success(
+                dataStorageLifecycleApiService.loadEffectiveRestoreStorageActionHierarchy(
+                        datastorageId, path, pathType, recursive));
     }
 }
