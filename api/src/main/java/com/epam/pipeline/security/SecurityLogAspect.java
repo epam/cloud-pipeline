@@ -57,13 +57,21 @@ public class SecurityLogAspect {
             "|| execution(* com.epam.pipeline.manager.user.ImpersonateFailureHandler.onAuthenticationFailure(..))" +
             "|| execution(* com.epam.pipeline.manager.user.ImpersonationManager.check(..))";
 
+    public static final String STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT =
+            "execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.create*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.update*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.prolong*(..))" +
+            "|| execution(* com.epam.pipeline.manager.user.DataStorageLifecycleManager.delete*(..))";
+
+
+
 
     public static final String ANONYMOUS = "Anonymous";
     public static final String KEY_USER = "user";
 
 
     @Before(value = PERMISSION_RELATED_METHODS_POINTCUT + " || " + USER_RELATED_METHODS_POINTCUT +
-            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT)
+            " || " + IMPERSONATE_RELATED_METHODS_POINTCUT + STORAGE_LIFECYCLE_RELATED_METHODS_POINTCUT)
     public void addUserInfoFromSecurityContext() {
         SecurityContext context = SecurityContextHolder.getContext();
         if (context != null) {
