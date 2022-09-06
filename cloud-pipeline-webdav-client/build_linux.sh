@@ -27,8 +27,8 @@ cat >$_BUILD_SCRIPT_NAME <<'EOL'
 cd /cloud-data
 
 version_file="scripts/PublishVersionPlugin.js"
-cp \$version_file /tmp/version.bkp
-sed -i "s/1111111111111111111111111111111111111111/\$CLOUD_DATA_COMMIT_HASH/g" \$version_file
+cp $version_file /tmp/version.bkp
+sed -i "s/1111111111111111111111111111111111111111/$CLOUD_DATA_COMMIT_HASH/g" $version_file
 
 npm install
 npm run package:linux
