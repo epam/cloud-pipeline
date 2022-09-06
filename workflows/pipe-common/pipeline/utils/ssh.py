@@ -44,7 +44,7 @@ class LoggingExecutor(CloudPipelineExecutor):
         self._inner = inner
 
     def execute(self, command, user=None, logger=None):
-        self._inner.execute(command, user=user, logger=logger or self._logger)
+        return self._inner.execute(command, user=user, logger=logger or self._logger)
 
 
 class UserExecutor(CloudPipelineExecutor):
@@ -54,7 +54,7 @@ class UserExecutor(CloudPipelineExecutor):
         self._inner = inner
 
     def execute(self, command, user=None, logger=None):
-        self._inner.execute(command, user=user or self._user, logger=logger)
+        return self._inner.execute(command, user=user or self._user, logger=logger)
 
 
 class RemoteHostExecutor(CloudPipelineExecutor):
@@ -94,6 +94,7 @@ class LocalExecutor(CloudPipelineExecutor):
             logger.debug(err)
         if exit_code != 0:
             raise ExecutorError('Command has finished with exit code ' + str(exit_code))
+        return out, err
 
     def _execute(self, command, user=None):
         stdout, stderr = self._get_stdout_and_stderr()
