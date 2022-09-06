@@ -1,6 +1,6 @@
-name: Cloud-Pipeline-Dsitribution
+name: Cloud-Pipeline-Distribution
 
-concurrency: Cloud-Pipeline-Dsitribution
+concurrency: Cloud-Pipeline-Distribution
 
 on:
   push:
