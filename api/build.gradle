@@ -40,6 +40,13 @@ task copyFsAutoscalerScripts(type: Copy) {
     into "$rootDir/api/src/main/resources/static/"
 }
 
+task generateComponentsVersions(type: Exec) {
+    commandLine "bash", 
+                "$project.rootDir/scripts/pipeline-scripts/generate_components_versions.sh",
+                "$project.rootDir",
+                "$rootDir/api/src/main/resources/static/components_versions.json"
+}
+
 jar {
     archiveName "pipeline.jar"
     manifest {
@@ -238,4 +245,5 @@ dependencies {
 }
 
 // >>>>> processes profiles
-processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts])
+processResources.dependsOn.addAll([copyConfiguration, copyLaunchScripts, copyCommitRunScripts, copyFsAutoscalerScripts,
+                                   generateComponentsVersions])

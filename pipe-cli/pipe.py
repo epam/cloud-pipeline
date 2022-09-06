@@ -48,7 +48,7 @@ from src.utilities.ssh_operations import run_ssh, run_scp, create_tunnel, kill_t
 from src.utilities.update_cli_version import UpdateCLIVersionManager
 from src.utilities.user_operations_manager import UserOperationsManager
 from src.utilities.user_token_operations import UserTokenOperations
-from src.version import __version__, __bundle_info__
+from src.version import __version__, __bundle_info__, __component_version__
 
 MAX_INSTANCE_COUNT = 1000
 MAX_CORES_COUNT = 10000
@@ -85,7 +85,7 @@ def print_version(ctx, param, value):
     if value is False:
         return
     silent_print_api_version()
-    click.echo('Cloud Pipeline CLI, version {}'.format(__version__))
+    click.echo('Cloud Pipeline CLI, version {} ({})'.format(__version__, __component_version__))
     silent_print_creds_info()
     ctx.exit()
 
