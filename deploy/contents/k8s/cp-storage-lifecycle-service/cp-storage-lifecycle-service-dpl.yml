@@ -1,0 +1,48 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: cp-storage-lifecycle-service
+  namespace: default
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: cp-storage-lifecycle-service
+      namespace: default
+      labels:
+        cloud-pipeline/cp-storage-lifecycle-service: "true"
+    spec:
+      nodeSelector:
+        cloud-pipeline/cp-storage-lifecycle-service: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      containers:
+        - name: cp-storage-lifecycle-service-archive
+          image: ${CP_DOCKER_DIST_SRV}lifescience/cloud-pipeline:storage-lifecycle-service-$CP_VERSION
+          imagePullPolicy: "Always"
+          command: ["/start.sh"]
+          env:
+            - name: CP_STORAGE_LIFECYCLE_DAEMON_MODE
+              value: daemon
+          envFrom:
+            - configMapRef:
+                name: cp-config-global
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - /liveness.sh
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            failureThreshold: 4
+          volumeMounts:
+            - mountPath: /opt/cp-sls/logs
+              name: cp-sls-logs
+      volumes:
+        - name: cp-sls-logs
+          hostPath:
+            path: /opt/cp-sls/logs
+      imagePullSecrets:
+        - name: cp-distr-docker-registry-secret

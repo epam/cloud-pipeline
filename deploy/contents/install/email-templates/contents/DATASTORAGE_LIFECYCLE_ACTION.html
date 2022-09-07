@@ -18,7 +18,6 @@
 <p>*** This is a system generated email, do not reply to this email ***</p>
 <p>Please be informed, that for a data storage <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/#/storage/${CP_DOLLAR}templateParameters.get("storageId")">${CP_DOLLAR}templateParameters.get("storageName")</a></p>
 <p>Files under the path <b>${CP_DOLLAR}templateParameters.get("path")</b> on <b>${CP_DOLLAR}templateParameters.get("dateOfAction")</b> will be transferred to <b>${CP_DOLLAR}templateParameters.get("storageClass")</b></p>
-<!--TODO make PUT call instead of GET-->
 <p>You can postpone this action on <b>${CP_DOLLAR}templateParameters.get("prolongDays")</b> by clicking this link: <a href="https://$CP_API_SRV_EXTERNAL_HOST:$CP_API_SRV_EXTERNAL_PORT/pipeline/restapi/storage/${CP_DOLLAR}templateParameters.get("storageId")/lifecycle/rule/${CP_DOLLAR}templateParameters.get("ruleId")/prolong?${CP_DOLLAR}templateParameters.get("prolongDays")">Postpone transfer</a></p>
 <br/>
 <p>Best regards,</p>
