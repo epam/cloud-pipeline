@@ -196,12 +196,26 @@ public class DataStorageLifecycleRestoreManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE,
                         storage.getPath(), storage.getType(), effectivePath, eligibility.getSecond()));
 
-        final StorageRestoreAction effectiveRestore = loadEffectiveRestoreStorageAction(storage, path);
+        final StorageRestoreAction effectiveRestore = filterRestoreStorageActions(
+                storage,
+                StorageRestoreActionSearchFilter.builder()
+                        .datastorageId(storage.getId())
+                        .path(path)
+                        .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
+                        .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
+                        .build()
+        ).stream().findFirst().orElse(null);
 
         final LocalDateTime nowUTC = DateUtils.nowUTC();
         if (effectiveRestore != null) {
+            final StorageRestoreStatus effActionStatus = effectiveRestore.getStatus();
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE,
-                    effectiveRestore.getPath(), effectiveRestore.getStatus()));
+                    effectiveRestore.getPath(), effActionStatus));
+            Assert.state(
+                    effActionStatus != StorageRestoreStatus.RUNNING && effActionStatus != StorageRestoreStatus.INITIATED,
+                    String.format("Can't create restore action, effective action for path %s is still running!",
+                            effectiveRestore.getPath())
+            );
             if (!force) {
                 Assert.isTrue(!isActionStillActive(effectiveRestore),
                         messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED,
