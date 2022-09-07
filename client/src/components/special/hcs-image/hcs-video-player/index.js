@@ -79,9 +79,7 @@ function HcsVideoPlayer ({className, style, videoSource}) {
           loop={videoSource.loop}
           crossOrigin={videoSource.crossOrigin}
         >
-          <source src={videoSource.videoUrl} type="video/mp4" />
-          <source src={videoSource.videoUrl} type="video/ogg" />
-          <source src={videoSource.videoUrl} type="video/webm" />
+          <source src={videoSource.videoUrl} type={videoSource.videoSourceType} />
           <p>Your browser cannot play the provided video file.</p>
         </video>
       </div>
