@@ -19,28 +19,21 @@ import multiprocessing
 import os
 import re
 import threading
+from abc import abstractmethod, ABCMeta
 from collections import Counter
+from xml.etree import ElementTree
 
 import itertools
 import sys
 import time
 from datetime import datetime, timedelta
-from xml.etree import ElementTree
 
 from pipeline import PipelineAPI, RunLogger, TaskLogger, LevelLogger, LocalLogger, APIError
 from pipeline.utils.lock import synchronized
-from pipeline.utils.ssh import LocalExecutor, LoggingExecutor
-
-
-class ExecutionError(RuntimeError):
-    pass
+from pipeline.utils.ssh import LocalExecutor, LoggingExecutor, ExecutorError, CloudPipelineExecutor
 
 
 class ParsingError(RuntimeError):
-    pass
-
-
-class LoggingError(RuntimeError):
     pass
 
 
@@ -48,13 +41,13 @@ class ScalingError(RuntimeError):
     pass
 
 
-class LineParsingExecutor:
+class LineParsingExecutor(CloudPipelineExecutor):
 
     def __init__(self, inner):
         self._inner = inner
 
-    def execute(self, command):
-        out, err = self._inner.execute(command)
+    def execute(self, command, user=None, logger=None):
+        out, err = self._inner.execute(command, user=user, logger=logger)
         return out
 
     def execute_to_lines(self, command):
@@ -137,7 +130,7 @@ class GridEngine:
     def get_jobs(self):
         try:
             output = self.cmd_executor.execute(GridEngine._QSTAT)
-        except ExecutionError:
+        except ExecutorError:
             Logger.warning('Grid engine jobs listing has failed.')
             return []
         jobs = {}
@@ -171,7 +164,8 @@ class GridEngine:
             job_name = job_list.findtext('JB_name')
             job_user = job_list.findtext('JB_owner')
             job_state = GridEngineJobState.from_letter_code(job_list.findtext('state'))
-            job_datetime = self._parse_date(job_list.findtext('JAT_start_time') or job_list.findtext('JB_submission_time'))
+            job_datetime = self._parse_date(job_list.findtext('JAT_start_time')
+                                            or job_list.findtext('JB_submission_time'))
             job_hosts = [job_host] if job_host else []
             requested_pe = job_list.find('requested_pe')
             job_slots = int(requested_pe.text if requested_pe is not None else '1')
@@ -369,7 +363,7 @@ class GridEngine:
         except Exception as e:
             Logger.warning(error_msg, trace=True)
             if not skip_on_failure:
-                raise RuntimeError(error_msg, e)
+                raise ScalingError(error_msg, e)
 
     def is_valid(self, host):
         """
@@ -569,10 +563,10 @@ class GridEngineScaleUpOrchestrator:
             number_of_finished_threads = len([thread for thread in threads if not thread.is_alive()])
             if number_of_finished_threads == number_of_threads:
                 Logger.debug('All %s/%s additional workers have been scaled up.'
-                            % (number_of_threads, number_of_threads))
+                             % (number_of_threads, number_of_threads))
                 break
             Logger.debug('Only %s/%s additional workers have been scaled up.'
-                        % (number_of_finished_threads, number_of_threads))
+                         % (number_of_finished_threads, number_of_threads))
             self._update_last_activity_for_currently_running_jobs()
 
     def _update_last_activity_for_currently_running_jobs(self):
@@ -590,8 +584,9 @@ class GridEngineScaleUpHandler:
     _GE_POLL_ATTEMPTS = 6
 
     def __init__(self, cmd_executor, api, grid_engine, host_storage, parent_run_id, default_hostfile, instance_disk,
-                 instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name, polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY,
-                 ge_polling_timeout=_GE_POLL_TIMEOUT, instance_family=None, instance_launch_params=None, clock=Clock()):
+                 instance_image, cmd_template, price_type, region_id, queue, hostlist, owner_param_name,
+                 polling_timeout=_POLL_TIMEOUT, polling_delay=_POLL_DELAY, ge_polling_timeout=_GE_POLL_TIMEOUT,
+                 instance_family=None, instance_launch_params=None, clock=Clock()):
         """
         Grid engine scale up handler.
 
@@ -732,7 +727,7 @@ class GridEngineScaleUpHandler:
                 Logger.debug('Additional worker #%s pod has started: %s (%s).' % (run_id, pod.name, pod.ip))
                 return pod
             Logger.debug('Additional worker #%s pod initialization hasn\'t finished yet. Only %s attempts remain left.'
-                        % (run_id, attempts))
+                         % (run_id, attempts))
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Additional worker #%s pod hasn\'t started after %s seconds.' % (run_id, self.polling_timeout)
@@ -761,7 +756,7 @@ class GridEngineScaleUpHandler:
                     Logger.debug('Additional worker #%s has been initialized.' % run_id)
                     return
             Logger.debug('Additional worker #%s hasn\'t been initialized yet. Only %s attempts remain left.'
-                        % (run_id, attempts))
+                         % (run_id, attempts))
             attempts -= 1
             time.sleep(self.polling_delay)
         error_msg = 'Additional worker #%s hasn\'t been initialized after %s seconds.' % (run_id, self.polling_timeout)
@@ -1028,9 +1023,9 @@ class FileSystemHostStorage:
         :return: A set of all additional hosts.
         """
         if os.path.exists(self.storage_file):
-            with open(self.storage_file) as file:
+            with open(self.storage_file) as f:
                 hosts = {}
-                for line in file.readlines():
+                for line in f.readlines():
                     stripped_line = line.strip().strip(FileSystemHostStorage._LINE_BREAKER)
                     if stripped_line:
                         host_stats = stripped_line.strip().split(FileSystemHostStorage._VALUE_BREAKER)
@@ -1052,8 +1047,8 @@ class FileSystemHostStorage:
 
 class GridEngineAutoscaler:
 
-    def __init__(self, grid_engine, cmd_executor, scale_up_orchestrator, scale_down_handler, host_storage, scale_up_timeout,
-                 scale_down_timeout, max_additional_hosts, idle_timeout=30, clock=Clock()):
+    def __init__(self, grid_engine, cmd_executor, scale_up_orchestrator, scale_down_handler, host_storage,
+                 scale_up_timeout, scale_down_timeout, max_additional_hosts, idle_timeout=30, clock=Clock()):
         """
         Grid engine autoscaler.
 
@@ -1106,45 +1101,45 @@ class GridEngineAutoscaler:
             expired_jobs = [job for index, job in enumerate(pending_jobs) if now >= expiration_datetimes[index]]
             if expired_jobs:
                 Logger.debug('There are %s waiting jobs that are in queue for more than %s seconds. '
-                            'Scaling up is required.' % (len(expired_jobs), self.scale_up_timeout.seconds))
+                             'Scaling up is required.' % (len(expired_jobs), self.scale_up_timeout.seconds))
                 if len(additional_hosts) < self.max_additional_hosts:
                     Logger.debug('There are %s/%s additional workers. Scaling up will be performed.' %
-                                (len(additional_hosts), self.max_additional_hosts))
+                                 (len(additional_hosts), self.max_additional_hosts))
                     resource_demands = self.grid_engine.get_resource_demands(pending_jobs)
                     resource_demand = functools.reduce(ComputeResource.add, resource_demands)
                     Logger.debug('Waiting jobs require: '
-                                '{cpu} cpus, {gpu} gpus, {mem} mem, {disk} disk.'
-                                .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu,
-                                        mem=resource_demand.memory, disk=resource_demand.disk))
+                                 '{cpu} cpus, {gpu} gpus, {mem} mem, {disk} disk.'
+                                 .format(cpu=resource_demand.cpu, gpu=resource_demand.gpu,
+                                         mem=resource_demand.memory, disk=resource_demand.disk))
                     remaining_additional_hosts = self.max_additional_hosts - len(additional_hosts)
                     self.scale_up(resource_demands, remaining_additional_hosts)
                 else:
                     Logger.debug('There are %s/%s additional workers. Scaling up is aborted.' %
-                                (len(additional_hosts), self.max_additional_hosts))
+                                 (len(additional_hosts), self.max_additional_hosts))
                     Logger.debug('Probable deadlock situation observed. Scaling down will be attempted.')
                     self._scale_down(running_jobs, additional_hosts)
             else:
                 Logger.debug('There are no waiting jobs that are in queue for more than %s seconds. '
-                            'Scaling up is not required.' % self.scale_up_timeout.seconds)
+                             'Scaling up is not required.' % self.scale_up_timeout.seconds)
         else:
             Logger.debug('There are no waiting jobs.')
             if self.latest_running_job:
                 Logger.debug('Latest started job with id %s has started at %s.' %
-                            (self.latest_running_job.id, self.latest_running_job.datetime))
+                             (self.latest_running_job.id, self.latest_running_job.datetime))
                 if now >= self.latest_running_job.datetime + self.scale_down_timeout:
                     Logger.debug('Latest job started more than %s seconds ago. Scaling down is required.' %
-                                self.scale_down_timeout.seconds)
+                                 self.scale_down_timeout.seconds)
                     self._scale_down(running_jobs, additional_hosts, now)
                 else:
                     Logger.debug('Latest job started less than %s seconds. '
-                                'Scaling down is not required.' % self.scale_down_timeout.seconds)
+                                 'Scaling down is not required.' % self.scale_down_timeout.seconds)
             else:
                 Logger.debug('There are no previously running jobs. Scaling down is required.')
                 self._scale_down(running_jobs, additional_hosts, now)
         Logger.debug('Finish scaling step at %s.' % self.clock.now())
         post_scale_additional_hosts = self.host_storage.load_hosts()
         Logger.debug('There are %s/%s additional workers.'
-                    % (len(post_scale_additional_hosts), self.max_additional_hosts))
+                     % (len(post_scale_additional_hosts), self.max_additional_hosts))
 
     def _filter_pending_job(self, updated_jobs):
         # kill jobs that are pending and can't be satisfied with requested resource
@@ -1303,6 +1298,11 @@ class GridEngineWorkerValidator:
 
 
 class GridEngineInstanceSelector:
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def select(self, demands, price_type):
+        pass
 
     def _resolve_owner(self, demands):
         owner_cpus_counter = sum([Counter({demand.owner: demand.cpu}) for demand in demands], Counter())
@@ -1400,7 +1400,7 @@ class CpuCapacityInstanceSelector(GridEngineInstanceSelector):
                 raise ScalingError('No instances were found which satisfy all resource demands.')
             best_instance_owner = self._resolve_owner(best_fulfilled_demands)
             logging.debug('Selecting %s instance using %s/%s cpus for %s user...'
-                         % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
+                          % (best_instance.name, best_capacity, best_instance.cpu, best_instance_owner))
             yield InstanceDemand(best_instance, best_instance_owner)
 
     def _apply(self, demands, supply):
@@ -1482,7 +1482,8 @@ class CloudPipelineInstanceProvider:
             return None
 
     def _is_instance_from_family(self, instance_type):
-        return CloudPipelineInstanceProvider.get_family_from_type(self.cloud_provider, instance_type) == self.instance_family
+        return CloudPipelineInstanceProvider.get_family_from_type(self.cloud_provider, instance_type) \
+               == self.instance_family
 
 
 class CloudProvider:
@@ -1571,6 +1572,9 @@ class GridEngineAutoscalingDaemon:
                 break
             except Exception:
                 Logger.warning('Scaling step has failed.', trace=True)
+            except BaseException:
+                Logger.error('Scaling step has failed completely.', trace=True)
+                raise
 
 
 class PreferenceManagingPipelineAPI:
@@ -1590,13 +1594,14 @@ class PreferenceManagingPipelineAPI:
         if hasattr(self._inner, name):
             return getattr(self._inner, name)
         else:
-            raise RuntimeError('Object of type %s and its inner object of type %s don\'t have %s attribute.'
+            raise ScalingError('Object of type %s and its inner object of type %s don\'t have %s attribute.'
                                % (type(self), type(self._inner), name))
 
 
 def fetch_instance_launch_params(api, master_run_id, queue, hostlist):
     parent_run = api.load_run_efficiently(master_run_id)
-    master_system_params = {param.get('name'): param.get('resolvedValue') for param in parent_run.get('pipelineRunParameters', [])}
+    master_system_params = {param.get('name'): param.get('resolvedValue')
+                            for param in parent_run.get('pipelineRunParameters', [])}
     system_launch_params_string = api.get_preference('launch.system.parameters', default_value='[]')
     system_launch_params = json.loads(system_launch_params_string)
     launch_params = {}
@@ -1797,7 +1802,8 @@ def main():
     worker_validator = GridEngineWorkerValidator(cmd_executor=cmd_executor, api=api, host_storage=host_storage,
                                                  grid_engine=grid_engine, scale_down_handler=scale_down_handler)
     autoscaler = GridEngineAutoscaler(grid_engine=grid_engine, cmd_executor=cmd_executor,
-                                      scale_up_orchestrator=scale_up_orchestrator, scale_down_handler=scale_down_handler,
+                                      scale_up_orchestrator=scale_up_orchestrator,
+                                      scale_down_handler=scale_down_handler,
                                       host_storage=host_storage, scale_up_timeout=scale_up_timeout,
                                       scale_down_timeout=scale_down_timeout, max_additional_hosts=additional_hosts,
                                       idle_timeout=idle_timeout, clock=scaling_operations_clock)
