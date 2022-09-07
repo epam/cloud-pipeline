@@ -38,7 +38,7 @@ public class ApplicationInfoManager {
     private String componentVersionFile;
 
     public ApplicationInfo getInfo() {
-       return new ApplicationInfo(getComponentVersions());
+        return new ApplicationInfo(getComponentVersions());
     }
 
     private Map<String, String> getComponentVersions() {
