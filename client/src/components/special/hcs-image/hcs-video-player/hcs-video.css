@@ -24,6 +24,14 @@
   height: 100%;
 }
 
+.hcs-video-container video::-webkit-media-controls-volume-slider {
+  display: none;
+}
+
+.hcs-video-container video::-webkit-media-controls-mute-button {
+  display: none;
+}
+
 .video-btn-group .btn {
   margin-right: 0;
   margin-left: 0;
