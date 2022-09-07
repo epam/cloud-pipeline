@@ -66,7 +66,7 @@ class VideoButton extends React.Component {
     }
     const iconType = videoSource.videoMode
       ? 'picture'
-      : 'play-circle';
+      : 'video-camera';
     return (
       <Button.Group
         className={

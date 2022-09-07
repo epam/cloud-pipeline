@@ -23,6 +23,11 @@ import LoadingView from '../../LoadingView';
 
 function HcsVideoPlayer ({className, style, videoSource}) {
   if (videoSource) {
+    const disablePictureInPicture = (videoTag) => {
+      if (videoTag) {
+        videoTag.disablePictureInPicture = true;
+      }
+    };
     if (videoSource.videoError) {
       return (
         <div
@@ -68,6 +73,8 @@ function HcsVideoPlayer ({className, style, videoSource}) {
       >
         <video
           controls
+          controlsList="nodownload noplaybackrate"
+          ref={disablePictureInPicture}
           autoPlay
           loop={videoSource.loop}
           crossOrigin={videoSource.crossOrigin}

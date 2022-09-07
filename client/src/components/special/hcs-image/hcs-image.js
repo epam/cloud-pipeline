@@ -710,11 +710,6 @@ class HcsImage extends React.PureComponent {
         <div
           className={styles.configurationActions}
         >
-          <VideoButton
-            className={styles.action}
-            videoSource={this.hcsVideoSource}
-            available={this.selectedSequence && this.selectedSequence.timeSeries.length > 1}
-          />
           {
             this.wellViewAvailable && (
               <Button
@@ -726,6 +721,11 @@ class HcsImage extends React.PureComponent {
               </Button>
             )
           }
+          <VideoButton
+            className={styles.action}
+            videoSource={this.hcsVideoSource}
+            available={this.selectedSequence && this.selectedSequence.timeSeries.length > 1}
+          />
           {this.renderDownloadBtn()}
           <Button
             className={styles.action}

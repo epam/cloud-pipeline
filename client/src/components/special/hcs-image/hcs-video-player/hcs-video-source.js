@@ -73,6 +73,7 @@ class HcsVideoSource {
   @observable channels = {};
   @observable videoEndpointAPI;
   @observable videoEndpointAPIError;
+  @observable generatedFilePath;
   @observable videoUrl;
   @observable videoError;
   @observable videoPending;
@@ -345,7 +346,8 @@ class HcsVideoSource {
           if (!this.objectStorage) {
             throw new Error(`Error generating video: unknown storage "${storagePath}"`);
           }
-          this.videoUrl = await this.objectStorage.generateFileUrl(resultedPath);
+          this.generatedFilePath = resultedPath;
+          await this.generateSignedUrl();
         }
       } catch (e) {
         if (this.responseToken === responseToken) {
@@ -357,9 +359,19 @@ class HcsVideoSource {
           this.videoPending = false;
         }
       }
+    } else if (this.generatedFilePath && this.objectStorage) {
+      await this.generateSignedUrl();
+      this.videoPending = false;
     } else {
       this.videoPending = false;
     }
+  };
+
+  generateSignedUrl = async () => {
+    if (!this.objectStorage || !this.generatedFilePath) {
+      return;
+    }
+    this.videoUrl = await this.objectStorage.generateFileUrl(this.generatedFilePath);
   };
 }
 
