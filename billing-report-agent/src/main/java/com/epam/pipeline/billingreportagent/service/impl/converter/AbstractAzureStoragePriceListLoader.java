@@ -53,7 +53,7 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
     protected static final String GIB_HOUR_DIMENSION = "GiB/Hour";
     protected static final String STORAGE_CATEGORY = "Storage";
     protected static final String DATA_STORE_METER_TEMPLATE = "%s Data Stored";
-    private final static Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)\\s([\\w/]+)");
+    private static final Pattern AZURE_UNIT_PATTERN = Pattern.compile("(\\d+)\\s([\\w/]+)");
 
     private CloudRegionLoader regionLoader;
     private AzureRateCardRawPriceLoader rawRateCardPriceLoader;
@@ -174,7 +174,8 @@ public abstract class AbstractAzureStoragePriceListLoader implements StoragePric
                 logger.info("Reading EA prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
                 priceList = rawEAPriceLoader.getRawPricesUsingPipelineRegion(region);
             } else {
-                logger.info("Reading RateCard prices for [{}, meterName={}]", region.getName(), region.getMeterRegionName());
+                logger.info("Reading RateCard prices for [{}, meterName={}]",
+                        region.getName(), region.getMeterRegionName());
                 priceList = rawRateCardPriceLoader.getRawPricesUsingPipelineRegion(region);
             }
             return getStoragePricingForRegion(priceList, region.getMeterRegionName());

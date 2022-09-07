@@ -47,7 +47,7 @@ public class AzureFilesStoragePriceListLoader extends AbstractAzureStoragePriceL
             .filter(meter -> FILES_SUBCATEGORY.equals(meter.getMeterSubCategory()))
             .filter(meter -> meter.getMeterName().equals(String.format(DATA_STORE_METER_TEMPLATE, storageTier)))
             .collect(Collectors.toMap(AzurePricingEntity::getMeterRegion,
-                    pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
+                pricing -> convertAzurePricing(pricing, getScaleFactor(pricing.getUnit()))));
     }
 
 }

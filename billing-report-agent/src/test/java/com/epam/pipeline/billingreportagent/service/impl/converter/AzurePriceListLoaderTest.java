@@ -33,7 +33,8 @@ public class AzurePriceListLoaderTest {
 
     @Test
     public void azureNetAppPriceListLoaderTest() {
-        final AzureNetAppStoragePriceListLoader loader = new AzureNetAppStoragePriceListLoader(null, null, null, "Standard");
+        final AzureNetAppStoragePriceListLoader loader = new AzureNetAppStoragePriceListLoader(
+                null, null, null, "Standard");
         final Float azureApiPrice = 2f;
         final AzurePricingEntity pricingEntity = AzurePricingEntity.builder()
                 .unit(THOUSAND + " GiB/Hour")

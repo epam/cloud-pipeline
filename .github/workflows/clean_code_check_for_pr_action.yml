@@ -20,7 +20,7 @@ jobs:
 
       - name: pmd
         run: ./gradlew pmdMain pmdTest
-      - uses: jwgmeligmeyling/pmd-github-action@master
+      - uses: jwgmeligmeyling/pmd-github-action@v1.2
         with:
             name: 'PMD Report'
             path: '**/pmd/*.xml'
@@ -40,7 +40,7 @@ jobs:
 
       - name: checkstyle
         run: ./gradlew checkstyleMain checkstyleTest
-      - uses: jwgmeligmeyling/checkstyle-github-action@master
+      - uses: jwgmeligmeyling/checkstyle-github-action@v1.2
         with:
             name: 'Checkstyle Report'
             path: '**/checkstyle/*.xml'

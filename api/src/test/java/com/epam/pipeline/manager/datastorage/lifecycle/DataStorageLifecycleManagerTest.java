@@ -162,7 +162,8 @@ public class DataStorageLifecycleManagerTest {
                         builder().type(StorageLifecycleTransitionCriterionType.MATCHING_FILES)
                                 .value(OBJECT_GLOB).build()
                 ).build();
-        final StorageLifecycleRule created = lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithAnotherCriterion);
+        final StorageLifecycleRule created =
+                lifecycleManager.createStorageLifecyclePolicyRule(ID, ruleWithAnotherCriterion);
         verifyRule(created, RULE_WITH_ID);
     }
 
