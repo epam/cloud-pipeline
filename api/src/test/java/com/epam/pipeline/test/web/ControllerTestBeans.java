@@ -50,6 +50,7 @@ import com.epam.pipeline.acl.metadata.CategoricalAttributeApiService;
 import com.epam.pipeline.acl.metadata.MetadataApiService;
 import com.epam.pipeline.acl.metadata.MetadataEntityApiService;
 import com.epam.pipeline.acl.region.CloudRegionApiService;
+import com.epam.pipeline.manager.app.ApplicationInfoManager;
 import com.epam.pipeline.manager.cloudaccess.CloudAccessApiService;
 import com.epam.pipeline.manager.firecloud.FirecloudApiService;
 import com.epam.pipeline.manager.google.CredentialsManager;
@@ -262,4 +263,7 @@ public class ControllerTestBeans {
 
     @MockBean
     protected DataStorageLifecycleApiService lifecycleApiService;
+
+    @MockBean
+    protected ApplicationInfoManager applicationInfoManager;
 }
