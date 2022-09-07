@@ -22,7 +22,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "LineLength"})
 public final class GitRepositoryUrl {
     private static final String INVALID_URL_FORMAT_MESSAGE = "Invalid repository URL format.";
     private static final String PROTOCOL_PATTERN = "https?";

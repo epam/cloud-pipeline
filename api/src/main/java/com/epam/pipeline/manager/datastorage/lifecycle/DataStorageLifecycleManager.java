@@ -323,7 +323,7 @@ public class DataStorageLifecycleManager {
                         .orElse(StorageLifecycleTransitionCriterion.StorageLifecycleTransitionCriterionType.DEFAULT)
                         .equals(StorageLifecycleTransitionCriterion.StorageLifecycleTransitionCriterionType.DEFAULT);
         Assert.isTrue(ifTransitionMethodIsOneByOneThenCriterionIsDefault,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_HAS_DEFAULT_CRITERION));
+                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_WRONG_CRITERION));
         Assert.isTrue(!StringUtils.isEmpty(rule.getDatastorageId()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
         Assert.isTrue(!StringUtils.isEmpty(rule.getPathGlob()),
@@ -388,7 +388,8 @@ public class DataStorageLifecycleManager {
                 !rule.getTransitionMethod().equals(StorageLifecycleTransitionMethod.ONE_BY_ONE)
                         || rule.getNotification() != null && !rule.getNotification().getEnabled();
         Assert.isTrue(ifTransitionMethodIsOneByOneThenNotificationDisabled,
-                messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED));
+                messageHelper.getMessage(
+                        MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED));
 
         if (notification == null) {
             return;

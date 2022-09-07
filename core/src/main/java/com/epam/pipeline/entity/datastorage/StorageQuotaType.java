@@ -33,11 +33,11 @@ public enum StorageQuotaType {
     private final String sourceString;
     private final String thresholdLabel;
 
-    private static final Map<String, StorageQuotaType> idMap = Stream.of(StorageQuotaType.values())
+    private static final Map<String, StorageQuotaType> ID_MAP = Stream.of(StorageQuotaType.values())
         .collect(Collectors.toMap(StorageQuotaType::getSourceString, Function.identity()));
 
     @JsonCreator
     public static StorageQuotaType fromString(final String string) {
-        return idMap.getOrDefault(string, null);
+        return ID_MAP.getOrDefault(string, null);
     }
 }

@@ -137,15 +137,15 @@ public class SystemPreferences {
 
     // COMMIT_GROUP
     public static final StringPreference COMMIT_DEPLOY_KEY = new StringPreference("commit.deploy.key", null,
-                                                                  COMMIT_GROUP, PreferenceValidators.isNotBlank);
+                                                                  COMMIT_GROUP, isNotBlank);
     public static final IntPreference COMMIT_TIMEOUT = new IntPreference("commit.timeout", 600, COMMIT_GROUP,
                                                                          isGreaterThan(0));
     public static final StringPreference COMMIT_USERNAME = new StringPreference("commit.username", null,
-                                                                         COMMIT_GROUP, PreferenceValidators.isNotBlank);
+                                                                         COMMIT_GROUP, isNotBlank);
     public static final StringPreference PRE_COMMIT_COMMAND_PATH = new StringPreference("commit.pre.command.path",
-            "/root/pre_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+            "/root/pre_commit.sh", COMMIT_GROUP, isNotBlank);
     public static final StringPreference POST_COMMIT_COMMAND_PATH = new StringPreference("commit.post.command.path",
-            "/root/post_commit.sh", COMMIT_GROUP, PreferenceValidators.isNotBlank);
+            "/root/post_commit.sh", COMMIT_GROUP, isNotBlank);
     public static final IntPreference PAUSE_TIMEOUT = new IntPreference("pause.timeout", 24 * 60 * 60,
             COMMIT_GROUP, isGreaterThan(0));
     // List of ',' separated env vars to be cleaned up from docker image before commit
@@ -385,13 +385,13 @@ public class SystemPreferences {
 
     public static final StringPreference CLUSTER_ALLOWED_INSTANCE_TYPES = new StringPreference(
             "cluster.allowed.instance.types", "m5.*,c5.*,r4.*,t2.*", CLUSTER_GROUP,
-            PreferenceValidators.isNotBlank);
+            isNotBlank);
     public static final StringPreference CLUSTER_ALLOWED_PRICE_TYPES = new StringPreference(
             "cluster.allowed.price.types", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
-            CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            CLUSTER_GROUP, isNotBlank);
     public static final StringPreference CLUSTER_ALLOWED_MASTER_PRICE_TYPES = new StringPreference(
             "cluster.allowed.price.types.master", String.format("%s,%s", PriceType.SPOT, PriceType.ON_DEMAND),
-            CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            CLUSTER_GROUP, isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_TYPE = new StringPreference("cluster.instance.type",
         "m5.large", CLUSTER_GROUP, PreferenceValidators.isClusterInstanceTypeAllowed, CLUSTER_ALLOWED_INSTANCE_TYPES);
 
@@ -441,10 +441,10 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_INSTANCE_HDD_SCALE_DISK_MAX_SIZE = new IntPreference(
             "cluster.instance.hdd.scale.disk.max.size", 16384, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_PREFIX = new StringPreference(
-            "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            "cluster.instance.device.prefix", "/dev/sd", CLUSTER_GROUP, isNotBlank);
     public static final StringPreference CLUSTER_INSTANCE_DEVICE_SUFFIXES = new StringPreference(
             "cluster.instance.device.suffixes", "defghijklmnopqrstuvwxyz", CLUSTER_GROUP,
-            PreferenceValidators.isNotBlank);
+            isNotBlank);
     public static final ObjectPreference<CloudRegionsConfiguration> CLUSTER_NETWORKS_CONFIG =
         new ObjectPreference<>("cluster.networks.config", null, new TypeReference<CloudRegionsConfiguration>() {},
                                CLUSTER_GROUP, isNullOrValidJson(new TypeReference<CloudRegionsConfiguration>() {}));
@@ -453,7 +453,7 @@ public class SystemPreferences {
     public static final IntPreference CLUSTER_LOST_RUN_ATTEMPTS = new IntPreference("cluster.lost.run.attempts",
             5, CLUSTER_GROUP, isGreaterThan(0));
     public static final StringPreference CLUSTER_AWS_EBS_TYPE = new StringPreference(
-            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, PreferenceValidators.isNotBlank);
+            "cluster.aws.ebs.type", "gp3", CLUSTER_GROUP, isNotBlank);
 
     /**
      * If this property is true, pipelines without parent (batch ID) will have the highest priority,
@@ -517,7 +517,7 @@ public class SystemPreferences {
             + "command -v wget >/dev/null 2>&1 && { LAUNCH_CMD=\"wget --no-check-certificate -q -O - '%s'\"; }; "
             + "command -v curl >/dev/null 2>&1 && { LAUNCH_CMD=\"curl -s -k '%s'\"; }; "
             + "eval $LAUNCH_CMD | bash /dev/stdin \"%s\" '%s' '%s'",
-            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+            LAUNCH_GROUP, isNotBlank);
     public static final StringPreference LAUNCH_POD_CMD_TEMPLATE_WINDOWS = new StringPreference(
             "launch.pod.cmd.template.windows", "Add-Type @\"\n" +
             "using System.Net;\n" +
@@ -537,7 +537,7 @@ public class SystemPreferences {
             "\"@ | Out-File -FilePath .\\task.ps1 -Encoding ascii -Force\n" +
             "$env:CP_TASK_PATH = Join-Path $(pwd) \"task.ps1\"\n" +
             "python .\\launch.py",
-            LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+            LAUNCH_GROUP, isNotBlank);
     public static final IntPreference LAUNCH_JWT_TOKEN_EXPIRATION = new IntPreference(
         "launch.jwt.token.expiration", 2592000, LAUNCH_GROUP, isGreaterThan(0));
     public static final ObjectPreference<EnvVarsSettings> LAUNCH_ENV_PROPERTIES = new ObjectPreference<>(
@@ -571,7 +571,7 @@ public class SystemPreferences {
     public static final IntPreference LAUNCH_SERVERLESS_ENDPOINT_WAIT_TIME = new IntPreference(
             "launch.serverless.endpoint.wait.time", 20000, LAUNCH_GROUP, isGreaterThan(0));
     public static final StringPreference LAUNCH_ORIGINAL_OWNER_PARAMETER = new StringPreference(
-            "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, PreferenceValidators.isNotBlank);
+            "launch.original.owner.parameter", "ORIGINAL_OWNER", LAUNCH_GROUP, isNotBlank);
     public static final StringPreference KUBE_SERVICE_SUFFIX = new StringPreference("launch.kube.service.suffix",
             "svc.cluster.local", LAUNCH_GROUP, pass);
     public static final ObjectPreference<Map<String, LaunchCapability>> LAUNCH_CAPABILITIES = new ObjectPreference<>(
@@ -653,7 +653,7 @@ public class SystemPreferences {
         "ui.controls.settings", null, new TypeReference<List<ControlEntry>>() {}, UI_GROUP,
         isNullOrValidJson(new TypeReference<List<ControlEntry>>() {}));
     public static final StringPreference UI_DEPLOYMENT_NAME = new StringPreference("ui.pipeline.deployment.name",
-            "Cloud Pipeline", UI_GROUP, PreferenceValidators.isNotBlank);
+            "Cloud Pipeline", UI_GROUP, isNotBlank);
     public static final ObjectPreference<Map<String, String>> UI_PIPE_DRIVE_MAPPING = new ObjectPreference<>(
             "ui.pipe.drive.mapping", null, new TypeReference<Map<String, String>>() {}, UI_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, String>>() {}));
@@ -863,9 +863,9 @@ public class SystemPreferences {
     public static final StringPreference FIRECLOUD_LAUNCHER_TOOL = new StringPreference("firecloud.launcher.tool",
             null, FIRECLOUD_GROUP, null);
     public static final StringPreference FIRECLOUD_LAUNCHER_CMD = new StringPreference("firecloud.launcher.cmd",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isNotBlank);
+            null, FIRECLOUD_GROUP, isNotBlank);
     public static final StringPreference FIRECLOUD_BILLING_PROJECT = new StringPreference("firecloud.billing.project",
-            null, FIRECLOUD_GROUP, PreferenceValidators.isNotBlank);
+            null, FIRECLOUD_GROUP, isNotBlank);
     public static final StringPreference FIRECLOUD_INSTANCE_TYPE = new StringPreference("firecloud.instance.type",
             "m4.xlarge", FIRECLOUD_GROUP, pass);
     public static final IntPreference FIRECLOUD_INSTANCE_DISK = new IntPreference("firecloud.instance.disk",
@@ -876,7 +876,7 @@ public class SystemPreferences {
                                                                                      MISC_GROUP, isGreaterThan(0));
     public static final StringPreference MISC_SYSTEM_EVENTS_CONFIRMATION_METADATA_KEY = new StringPreference(
             "system.events.confirmation.metadata.key", "confirmed_notifications", MISC_GROUP,
-            PreferenceValidators.isNotBlank);
+            isNotBlank);
     public static final ObjectPreference<List<String>> MISC_METADATA_SENSITIVE_KEYS = new ObjectPreference<>(
             "misc.metadata.sensitive.keys", null, new TypeReference<List<String>>() {}, MISC_GROUP,
             isNullOrValidJson(new TypeReference<List<String>>() {}));
@@ -958,7 +958,7 @@ public class SystemPreferences {
             "gcp.sku.mapping", null, new TypeReference<Map<String, GCPResourceMapping>>() {}, GCP_GROUP,
             isNullOrValidJson(new TypeReference<Map<String, GCPResourceMapping>>() {}));
     public static final StringPreference GCP_DEFAULT_GPU_TYPE = new StringPreference(
-            "gcp.default.gpu.type", "a100", GCP_GROUP, PreferenceValidators.isNotBlank);
+            "gcp.default.gpu.type", "a100", GCP_GROUP, isNotBlank);
 
     // Billing Reports
     public static final StringPreference BILLING_USER_NAME_ATTRIBUTE = new StringPreference(
@@ -1037,25 +1037,25 @@ public class SystemPreferences {
     //NGS Preprocessing
     public static final StringPreference PREPROCESSING_MACHINE_RUN_CLASS = new StringPreference(
             "ngs.preprocessing.machine.run.metadata.class.name", "MachineRun",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLE_CLASS = new StringPreference(
             "ngs.preprocessing.sample.metadata.class.name", "Sample",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_MACHINE_RUN_TO_SAMPLE_COLUMN = new StringPreference(
             "ngs.preprocessing.machinerun.to.sample.column", "Samples",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLESHEET_FILE_NAME = new StringPreference(
             "ngs.preprocessing.samplesheet.file.name", "samplesheet.csv",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_DATA_FOLDER = new StringPreference(
             "ngs.preprocessing.data.folder", "ngs-data",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_SAMPLESHEET_LINK_COLUMN = new StringPreference(
             "ngs.preprocessing.samplesheet.link.column", "Sample Sheet",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
     public static final StringPreference PREPROCESSING_MACHINE_RUN_COLUMN_NAME = new StringPreference(
             "ngs.preprocessing.machine.run.column.name", "Machine Run",
-            NGS_PREPROCESSING_GROUP, PreferenceValidators.isNotBlank);
+            NGS_PREPROCESSING_GROUP, isNotBlank);
 
     // Monitoring
     public static final IntPreference MONITORING_POOL_USAGE_DELAY = new IntPreference(

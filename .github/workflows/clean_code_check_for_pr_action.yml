@@ -1,0 +1,47 @@
+name: PMD & CheckStyle
+on:
+  pull_request:
+    branches: [ develop, 'release/**', 'stage/**' ]
+
+  workflow_dispatch:
+
+jobs:
+  pmd:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+
+      - name: pmd
+        run: ./gradlew pmdMain pmdTest
+      - uses: jwgmeligmeyling/pmd-github-action@v1.2
+        with:
+            name: 'PMD Report'
+            path: '**/pmd/*.xml'
+        if: always()
+
+  checkstyle:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "8"
+          cache: "gradle"
+
+      - name: checkstyle
+        run: ./gradlew checkstyleMain checkstyleTest
+      - uses: jwgmeligmeyling/checkstyle-github-action@v1.2
+        with:
+            name: 'Checkstyle Report'
+            path: '**/checkstyle/*.xml'
+        if: always()
