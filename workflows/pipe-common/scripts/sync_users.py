@@ -38,16 +38,17 @@ def sync_users():
     uid_seed_default = int(os.getenv('CP_CAP_UID_SEED', '70000'))
     sync_timeout = int(os.getenv('CP_CAP_SYNC_USERS_TIMEOUT_SECONDS', '60'))
     logging_directory = os.getenv('CP_CAP_SYNC_USERS_LOG_DIR', os.getenv('LOG_DIR', '/var/log'))
-    logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'ERROR')
+    logging_level = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL', 'INFO')
     logging_level_local = os.getenv('CP_CAP_SYNC_USERS_LOGGING_LEVEL_LOCAL', 'DEBUG')
     logging_format = os.getenv('CP_CAP_SYNC_USERS_LOGGING_FORMAT', '%(asctime)s:%(levelname)s: %(message)s')
+    logging_task = os.getenv('CP_CAP_SYNC_USERS_LOGGING_TASK', 'UsersSynchronization')
 
     logging.basicConfig(level=logging_level_local, format=logging_format,
                         filename=os.path.join(logging_directory, 'sync_users.log'))
 
     api = PipelineAPI(api_url=api_url, log_dir=logging_directory)
     logger = RunLogger(api=api, run_id=run_id)
-    logger = TaskLogger(task='UsersSynchronization', inner=logger)
+    logger = TaskLogger(task=logging_task, inner=logger)
     logger = LevelLogger(level=logging_level, inner=logger)
     logger = LocalLogger(inner=logger)
 
@@ -57,35 +58,32 @@ def sync_users():
     while True:
         try:
             time.sleep(sync_timeout)
-            logger.info('Starting users synchronization...')
+            logger.debug('Starting users synchronization...')
 
-            logger.info('Loading preferences...')
+            logger.debug('Loading preferences...')
             try:
                 uid_seed = int(api.get_preference_efficiently('launch.uid.seed') or uid_seed_default)
             except APIError:
                 uid_seed = uid_seed_default
-            logger.info('Loaded uid seed: {}.', uid_seed)
+            logger.debug('Loaded uid seed: {}.', uid_seed)
 
-            logger.info('Loading shared users and groups...')
+            logger.debug('Loading shared users and groups...')
             run_users, run_groups = _get_run_shared_users_and_groups(api, run_id)
             shared_users = set()
             shared_users.update(run_users)
             shared_users.update(_get_group_users(api, run_groups))
-            logger.info('Loaded {} shared users.'.format(len(shared_users)))
-            logger.debug('Loaded shared users: {}'.format(shared_users))
+            logger.debug('Loaded {} shared users: {}'.format(len(shared_users), shared_users))
 
-            logger.info('Loading local users...')
+            logger.debug('Loading local users...')
             local_users = set(_get_local_users())
-            logger.info('Loaded {} local users.'.format(len(local_users)))
-            logger.debug('Loaded local users: {}'.format(local_users))
+            logger.debug('Loaded {} local users: {}'.format(len(local_users), local_users))
 
-            logger.info('Loading user details...')
+            logger.debug('Loading user details...')
             user_details = {user['userName']: user for user in api.load_users()}
-            logger.info('Loaded {} user details.'.format(len(user_details.keys())))
+            logger.debug('Loaded {} user details.'.format(len(user_details.keys())))
 
             users_to_create = shared_users - local_users
-            logger.info('Creating {} users...'.format(len(users_to_create)))
-            logger.debug('Creating users {}...'.format(users_to_create))
+            logger.debug('Creating {} users {}...'.format(len(users_to_create), users_to_create))
 
             for user in users_to_create:
                 try:
@@ -96,12 +94,13 @@ def sync_users():
                     user_uid, user_gid, user_home_dir = _create_account(user, user_id, uid_seed, root_home_dir,
                                                                         executor, logger)
                     _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logger)
+                    logger.info('User {} has been created.')
                 except KeyboardInterrupt:
                     logger.warning('Interrupted.')
                     raise
                 except Exception:
                     logger.warning('User {} creation has failed.'.format(user), trace=True)
-            logger.info('Finishing users synchronization...')
+            logger.debug('Finishing users synchronization...')
         except KeyboardInterrupt:
             logger.warning('Interrupted.')
             break
@@ -148,7 +147,7 @@ def _create_account(user, user_id, uid_seed, root_home_dir, executor, logger):
     mkdir(os.path.dirname(user_home_dir))
     create_user(user, user, uid=user_uid, gid=user_gid, home_dir=user_home_dir,
                 skip_existing=True, executor=executor)
-    logger.info('User {} account has been created.'.format(user))
+    logger.debug('User {} account has been created.'.format(user))
     return user_uid, user_gid, user_home_dir
 
 
@@ -185,7 +184,7 @@ def _configure_ssh_keys(user, user_uid, user_gid, user_home_dir, executor, logge
         ssh_file_target_path = os.path.join(user_ssh_dir, ssh_file_path)
         if os.path.exists(ssh_file_target_path):
             _set_permissions(ssh_file_target_path, user_uid, user_gid)
-    logger.info('User {} SSH keys have been configured.'.format(user))
+    logger.debug('User {} SSH keys have been configured.'.format(user))
 
 
 if __name__ == '__main__':
