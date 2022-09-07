@@ -141,9 +141,8 @@ public class DataStorageLifecycleRestoreManager {
                         .build()
         );
         return relatedActions.stream()
-                .filter(a -> a.getStatus() == StorageRestoreStatus.SUCCEEDED
-                        && a.getRestoredTill().isAfter(DateUtils.nowUTC())
-                ).findFirst().orElse(relatedActions.stream().findFirst().orElse(null));
+                .filter(DataStorageLifecycleRestoreManager::isActionStillActive)
+                .findFirst().orElse(relatedActions.stream().findFirst().orElse(null));
     }
 
     public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final AbstractDataStorage storage,
@@ -167,7 +166,8 @@ public class DataStorageLifecycleRestoreManager {
                         ).build())
                 .stream()
                 // check if root action override child
-                .filter(childAction -> !rootActionIsActive || childAction.getStarted().isAfter(root.getStarted()))
+                .filter(childAction -> childAction != root &&
+                        (!rootActionIsActive || childAction.getStarted().isAfter(root.getStarted())))
                 // check if child action still active
                 .filter(DataStorageLifecycleRestoreManager::isActionStillActive).collect(Collectors.toList());
 
@@ -212,7 +212,8 @@ public class DataStorageLifecycleRestoreManager {
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE,
                     effectiveRestore.getPath(), effActionStatus));
             Assert.state(
-                    effActionStatus != StorageRestoreStatus.RUNNING && effActionStatus != StorageRestoreStatus.INITIATED,
+                    effActionStatus != StorageRestoreStatus.RUNNING
+                            && effActionStatus != StorageRestoreStatus.INITIATED,
                     String.format("Can't create restore action, effective action for path %s is still running!",
                             effectiveRestore.getPath())
             );
