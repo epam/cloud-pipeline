@@ -82,7 +82,7 @@ def _parse_host_and_port(url, default_host, default_port):
 
 try:
     logging_format = _extract_parameter('CP_LOGGING_FORMAT', default='%(asctime)s:%(levelname)s: %(message)s')
-    logging_level = _extract_parameter('CP_LOGGING_LEVEL', default='INFO')
+    logging_level = _extract_parameter('CP_LOGGING_LEVEL', default='DEBUG')
     host_root = _extract_parameter('CP_HOST_ROOT_DIR', default='c:\\host')
     runs_root = _extract_parameter('CP_RUNS_ROOT_DIR', default='c:\\runs')
     run_id = _extract_parameter('RUN_ID', default='0')
