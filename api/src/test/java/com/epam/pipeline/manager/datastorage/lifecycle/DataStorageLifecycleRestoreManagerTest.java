@@ -55,6 +55,12 @@ public class DataStorageLifecycleRestoreManagerTest {
     private static final long DAYST_TO_RESTORE_50 = 50L;
     private static final long DAYS_TO_RESTORE_10 = 10L;
 
+    public static final StorageRestoreActionEntity SUCCEEDED_ACTION = StorageRestoreActionEntity.builder().id(ID)
+            .datastorageId(ID).path(PATH_1)
+            .status(StorageRestoreStatus.SUCCEEDED)
+            .days(DAYST_TO_RESTORE_50)
+            .started(DateUtils.nowUTC().minus(TWO, ChronoUnit.DAYS)).build();
+
     public static final StorageRestoreActionEntity RUNNING_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
             .status(StorageRestoreStatus.RUNNING)
@@ -137,10 +143,25 @@ public class DataStorageLifecycleRestoreManagerTest {
                 new StorageRestoreActionNotification(true, Collections.emptyList()));
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void failToInitiateRestoreIfAlreadyExistRunningAndIsForcedTest() {
+        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
+        Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
+                .when(dataStoragePathRestoreActionRepository)
+                .save(Mockito.any(StorageRestoreActionEntity.class));
+        final StorageRestoreActionEntity storageRestoreAction =
+                lifecycleManager.buildStoragePathRestoreAction(dataStorage,
+                        StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
+                        STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, true, DISABLED_NOTIFICATION);
+        Assert.assertNotNull(storageRestoreAction);
+        Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
+    }
 
     @Test
     public void succeedToInitiateRestoreIfAlreadyExistAndIsForcedTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
+        Mockito.doReturn(Collections.singletonList(SUCCEEDED_ACTION))
+                .when(dataStoragePathRestoreActionRepository).filterBy(Mockito.any());
         Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
                 .when(dataStoragePathRestoreActionRepository)
                 .save(Mockito.any(StorageRestoreActionEntity.class));
