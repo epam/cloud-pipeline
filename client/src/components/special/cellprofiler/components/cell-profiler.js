@@ -39,6 +39,7 @@ class CellProfiler extends React.Component {
     const {analysis} = this.props;
     return !analysis.available ||
     analysis.analysing ||
+    analysis.isEmpty ||
     (
       analysis.batch &&
       analysis.pipeline &&

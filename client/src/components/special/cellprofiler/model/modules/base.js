@@ -189,6 +189,22 @@ class AnalysisModule {
       return undefined;
     }).filter(Boolean);
   }
+
+  @computed
+  get outputParameters () {
+    return this.outputsConfiguration.map((outputConfiguration) => {
+      const {
+        name,
+        criteria
+      } = outputConfiguration;
+      const parameterConfiguration = this.getParameterConfiguration(name);
+      if (parameterConfiguration && criteria(this)) {
+        return parameterConfiguration;
+      }
+      return undefined;
+    }).filter(Boolean);
+  }
+
   @computed
   get sourceImage () {
     if (!this.pipeline || !this.sourceImageParameter) {
@@ -224,6 +240,11 @@ class AnalysisModule {
   registerParameters (...parameter) {
     this.parametersConfigurations.push(...parameter);
   }
+
+  /**
+   * @param name
+   * @returns {ModuleParameter}
+   */
   getParameterConfiguration (name) {
     return this.parametersConfigurations.find(config => config.name === name) ||
       this.parametersConfigurations.find(config => config.parameterName === name);

@@ -228,7 +228,7 @@ class AnalysisPipeline {
         ...acc,
         ...(current.parameters || [])
       ]), [])
-      .filter(param => param.parameter?.required && !param.value);
+      .filter(param => param.isInvalid);
   }
 
   getObjectIsSpot = (object) => {
