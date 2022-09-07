@@ -20,6 +20,11 @@ jobs:
 
       - name: pmd
         run: ./gradlew pmdMain pmdTest
+      - uses: jwgmeligmeyling/pmd-github-action@master
+        with:
+            name: 'PMD Report'
+            path: '**/pmd/*.xml'
+        if: always()
 
   checkstyle:
     runs-on: ubuntu-20.04
@@ -35,4 +40,8 @@ jobs:
 
       - name: checkstyle
         run: ./gradlew checkstyleMain checkstyleTest
-
+      - uses: jwgmeligmeyling/checkstyle-github-action@master
+        with:
+            name: 'Checkstyle Report'
+            path: '**/checkstyle/*.xml'
+        if: always()
