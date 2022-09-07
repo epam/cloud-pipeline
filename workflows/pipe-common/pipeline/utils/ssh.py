@@ -77,7 +77,8 @@ class RemoteHostExecutor(CloudPipelineExecutor):
                 stripped_line = line.strip('\n')
                 logger.warning(stripped_line)
         if exit_code != 0:
-            raise SSHError('Command has finished with exit code ' + str(exit_code))
+            raise SSHError('Command has finished with non zero exit code ({exit_code}).'
+                           .format(exit_code=exit_code))
         client.close()
 
 
@@ -93,7 +94,11 @@ class LocalExecutor(CloudPipelineExecutor):
         if err and logger:
             logger.debug(err)
         if exit_code != 0:
-            raise ExecutorError('Command has finished with exit code ' + str(exit_code))
+            raise ExecutorError('Command has finished with non zero exit code ({exit_code}): '
+                                '{command}, stdout: {stdout}, stderr: {stderr}.'
+                                .format(command=command, exit_code=exit_code,
+                                        stdout=out.strip() if out.strip() else '-',
+                                        stderr=err.strip() if err.strip() else '-'))
         return out, err
 
     def _execute(self, command, user=None):
