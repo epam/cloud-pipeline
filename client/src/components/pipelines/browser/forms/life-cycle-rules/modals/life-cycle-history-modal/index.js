@@ -179,7 +179,7 @@ class LifeCycleHistoryModal extends React.Component {
               Root:
             </span>
             <span className={styles.headerText}>
-              {rule.objectGlob}
+              {rule.pathGlob}
             </span>
           </div>
           <div className={styles.headerCell}>
@@ -187,7 +187,7 @@ class LifeCycleHistoryModal extends React.Component {
               Glob:
             </span>
             <span className={styles.headerText}>
-              {rule.pathGlob}
+              {rule.objectGlob}
             </span>
           </div>
           <div className={styles.headerCell}>

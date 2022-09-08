@@ -72,7 +72,7 @@ class LifeCycleCounter extends React.Component {
           {rulesAmount}
         </b>
         <span>
-          rules for the folder.
+          rule{rulesAmount === 1 ? '' : 's'} for the folder.
         </span>
       </div>
     );
