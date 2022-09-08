@@ -183,7 +183,7 @@ class LifecycleRuleParser:
             prolong_days=notification_json["prolongDays"]
             if "prolongDays" in notification_json else default_notification.prolong_days,
             recipients=notification_json["recipients"]
-            if "recipients" in notification_json else notification_json.recipients,
+            if "recipients" in notification_json else default_notification.recipients,
             enabled=notification_json["enabled"] if "enabled" in notification_json else default_notification.enabled,
             subject=notification_json["subject"] if "subject" in notification_json else default_notification.subject,
             body=notification_json["body"] if "body" in notification_json else default_notification.body
