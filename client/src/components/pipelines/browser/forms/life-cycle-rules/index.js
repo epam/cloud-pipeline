@@ -20,6 +20,7 @@ import {computed} from 'mobx';
 import PropTypes from 'prop-types';
 import {
   Button,
+  Modal,
   Tooltip,
   Spin,
   Icon,
@@ -142,7 +143,7 @@ class LifeCycleRules extends React.Component {
 
   deleteRule = (ruleId) => {
     const {storageId} = this.props;
-    if (storageId && ruleId) {
+    const onConfirm = async () => {
       const request = new DataStorageLifeCycleRulesDelete(storageId, ruleId);
       this.setState({pending: true}, async () => {
         await request.send();
@@ -154,7 +155,16 @@ class LifeCycleRules extends React.Component {
         }
         this.setState({pending: false});
       });
-    }
+    };
+    Modal.confirm({
+      title: `Are you sure you want to delete transition rule?`,
+      style: {
+        wordWrap: 'break-word'
+      },
+      onOk () {
+        return onConfirm();
+      }
+    });
   };
 
   onOkEditRule = (payload, ruleId) => {
