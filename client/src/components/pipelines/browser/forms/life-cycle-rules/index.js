@@ -143,7 +143,7 @@ class LifeCycleRules extends React.Component {
 
   deleteRule = (ruleId) => {
     const {storageId} = this.props;
-    const onConfirm = async () => {
+    const onConfirm = () => {
       const request = new DataStorageLifeCycleRulesDelete(storageId, ruleId);
       this.setState({pending: true}, async () => {
         await request.send();
