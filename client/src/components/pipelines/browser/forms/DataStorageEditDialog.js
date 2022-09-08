@@ -160,6 +160,16 @@ export class DataStorageEditDialog extends React.Component {
   }
 
   @computed
+  get transitionRulesAvailable () {
+    const {
+      dataStorage
+    } = this.props;
+    return dataStorage &&
+      dataStorage.id &&
+      /^s3$/i.test(dataStorage.storageType || dataStorage.type);
+  }
+
+  @computed
   get awsRegions () {
     return this.props.awsRegions.loaded ? (this.props.awsRegions.value || []).map(r => r) : [];
   }
@@ -222,7 +232,7 @@ export class DataStorageEditDialog extends React.Component {
                   <Button
                     id="edit-storage-dialog-delete-button"
                     type="danger"
-                    onClick={this.openDeleteDialog}>Delete</Button>
+                    onClick={this.openDeleteDialog}>DELETE</Button>
                 )
               }
             </Row>
@@ -231,12 +241,12 @@ export class DataStorageEditDialog extends React.Component {
             <Row type="flex" justify="end">
               <Button
                 id="edit-storage-dialog-cancel-button"
-                onClick={this.props.onCancel}>Cancel</Button>
+                onClick={this.props.onCancel}>CANCEL</Button>
               <Button
                 id="edit-storage-dialog-save-button"
                 type="primary"
                 htmlType="submit"
-                onClick={this.handleSubmit}>Save</Button>
+                onClick={this.handleSubmit}>SAVE</Button>
             </Row>
           </Col>
         </Row>
@@ -575,9 +585,7 @@ export class DataStorageEditDialog extends React.Component {
                   objectType="DATA_STORAGE" />
               </Tabs.TabPane>
             }
-            {this.props.dataStorage &&
-            this.props.dataStorage.id &&
-            /^s3$/i.test(this.props.dataStorage.type) && (
+            {this.transitionRulesAvailable && (
               <Tabs.TabPane key="transitionRules" tab="Transition rules">
                 <LifeCycleRules
                   storageId={this.props.dataStorage.id}

@@ -357,14 +357,14 @@ class LifeCycleEditModal extends React.Component {
         footer={
           <Row type="flex" justify="end">
             <Button onClick={this.onCancel}>
-              Cancel
+              CANCEL
             </Button>
             <Button
               type="primary"
               onClick={this.handleSubmit}
               disabled={pending || !this.modified}
             >
-              Save
+              SAVE
             </Button>
           </Row>
         }

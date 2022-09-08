@@ -234,7 +234,7 @@ class LifeCycleHistoryModal extends React.Component {
               onClick={onOk}
               type="primary"
             >
-              Ok
+              OK
             </Button>
           </Row>
         )}

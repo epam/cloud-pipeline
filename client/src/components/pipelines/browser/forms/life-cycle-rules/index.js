@@ -236,7 +236,7 @@ class LifeCycleRules extends React.Component {
             </Tooltip>
           ) : null}
         </td>
-        <td style={{padding: '0 5px'}}>
+        <td style={{padding: '0 5px', textAlign: 'right'}}>
           {controls}
         </td>
       </tr>
