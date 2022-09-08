@@ -14,8 +14,8 @@
 
 import datetime
 
-from sls.datasorce.cp_data_source import CloudPipelineDataSource
-from sls.model.rule_model import StorageLifecycleRuleExecution
+from sls.app.cp_api_interface import CloudPipelineDataSource
+from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleExecution
 
 
 class MockCloudPipelineDataSource(CloudPipelineDataSource):

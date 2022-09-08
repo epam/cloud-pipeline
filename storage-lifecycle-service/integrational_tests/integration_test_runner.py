@@ -50,14 +50,23 @@ class IntegrationTestsRunner(unittest.TestCase):
     cp_api = PipelineAPI(config.get("CP_API_URL"), "/tmp/")
     aws_region = cp_api.get_region(int(config.get("CP_STORAGE_LIFECYCLE_DAEMON_AWS_REGION_ID")))
 
-    processors_chain = ProcessorChain(logger=logger).with_preprocessors([
+    set_uppers = [
         CloudTestCasePreparator(aws_region["regionId"], environment_preparation.SETUP_MODE),
         CloudPipelinePlatformTestCasePreparator(cp_api, aws_region["id"], environment_preparation.SETUP_MODE)
-    ]).with_processors([TestCaseExecutor(config, logger)]).with_postprocessors([
+    ]
+
+    clean_uppers = [
         CloudTestCasePreparator(aws_region["regionId"], environment_preparation.CLEAN_UP_MODE),
         CloudPipelinePlatformTestCasePreparator(cp_api, aws_region["id"], environment_preparation.CLEAN_UP_MODE)
-    ]).with_gatherers(
-        [PlatformTestCaseResultGatherer(cp_api), CloudTestCaseResultGatherer(aws_region["regionId"])])
+    ]
+
+    processors_chain = ProcessorChain(logger=logger)\
+        .with_preprocessors(set_uppers)\
+        .with_processors([TestCaseExecutor(config, logger)])\
+        .with_postprocessors(clean_uppers)\
+        .with_gatherers(
+            [PlatformTestCaseResultGatherer(cp_api), CloudTestCaseResultGatherer(aws_region["regionId"])]
+        )
 
     @parameterized.expand([case_file for case_file in os.listdir(config.get("CP_STORAGE_LIFECYCLE_DAEMON_TEST_CASES_PATH"))])
     def test_run_integration_test_cases(self, case_file):

@@ -41,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -251,15 +252,18 @@ public class DataStorageLifecycleRestoreManager {
 
     private static String getEffectivePathForRestoreAction(final StorageRestorePath path, final String delimiter) {
         final String result;
-        if (path.getPath() == null) {
-            result = EMPTY;
-        } else if (path.getPath().startsWith(delimiter)) {
-            result = path.getPath().substring(delimiter.length());
+        if (StringUtils.isEmpty(path.getPath())) {
+            result = delimiter;
+        } else if (!path.getPath().startsWith(delimiter)) {
+            result = delimiter + path.getPath();
         } else {
             result = path.getPath();
         }
         switch (path.getType()) {
             case FOLDER:
+                if (EMPTY.equals(result)) {
+                    return result;
+                }
                 return result.endsWith(delimiter) ? result : result + delimiter;
             case FILE:
             default:

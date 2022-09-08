@@ -14,14 +14,14 @@
 #
 import json
 
-import sls.datasorce.cp_data_source
+import sls.pipelineapi.cp_api_interface_impl
 from integrational_tests.decorator import cp_api_decator
 from integrational_tests.decorator.cloud_decator import AttributesChangingStorageOperations
 from integrational_tests.processor.processor import TestCaseProcessor
 from sls.app.cloud_storage_adapter import PlatformToCloudOperationsAdapter
-from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
-from sls.cloud.cloud import S3StorageOperations
-from sls.model.config_model import SynchronizerConfig
+from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArchivingSynchronizer
+from sls.cloud.s3_cloud import S3StorageOperations
+from sls.app.model.config_model import SynchronizerConfig
 from sls.util.logger import AppLogger
 
 
@@ -34,7 +34,7 @@ class TestCaseExecutor(TestCaseProcessor):
     def process(self, testcase):
         logger = AppLogger()
         data_source = cp_api_decator.MockedNotificationRESTApiCloudPipelineDataSource(
-            sls.datasorce.cp_data_source.configure_cp_data_source(
+            sls.cloudpipelineapi.cp_api_interface_impl.configure_cp_data_source(
                 self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp", logger)
         )
 
@@ -51,7 +51,8 @@ class TestCaseExecutor(TestCaseProcessor):
 
         cloud_adapter = PlatformToCloudOperationsAdapter._from_provided_cloud_operations(cloud_operations)
 
-        synchronizer = StorageLifecycleSynchronizer(SynchronizerConfig(), data_source, cloud_adapter, logger)
+        synchronizer = StorageLifecycleArchivingSynchronizer(
+            SynchronizerConfig(command="archive"), data_source, cloud_adapter, logger)
         for storage in testcase.platform.storages:
             loaded_storage = data_source.load_storage(str(storage.datastorage_id))
             synchronizer._sync_storage(loaded_storage)
