@@ -73,12 +73,13 @@ public class DataStorageLifecycleManager {
     private final UserManager userManager;
 
     public List<StorageLifecycleRule> listStorageLifecyclePolicyRules(final Long storageId, final String path) {
-        validatePathIsAbsolute(path);
+        final String formattedPath = StringUtils.hasText(path) ? formatGlobPath(path) : path;
         return StreamSupport.stream(
                         dataStorageLifecycleRuleRepository.findByDatastorageId(storageId).spliterator(),
                         false
                 ).map(lifecycleEntityMapper::toDto)
-                .filter(rule -> !StringUtils.hasText(path) || PATH_MATCHER.match(rule.getPathGlob(), path))
+                .filter(rule -> !StringUtils.hasText(formattedPath)
+                        || PATH_MATCHER.match(rule.getPathGlob(), formattedPath))
                 .collect(Collectors.toList());
     }
 
@@ -328,7 +329,7 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
         Assert.isTrue(!StringUtils.isEmpty(rule.getPathGlob()),
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_ROOT_PATH_NOT_SPECIFIED));
-        validatePathIsAbsolute(rule.getPathGlob());
+        rule.setPathGlob(formatGlobPath(rule.getPathGlob()));
         final AbstractDataStorage dataStorage = storageManager.load(datastorageId);
         Assert.notNull(datastorageId,
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_DATASTORAGE_ID_NOT_SPECIFIED));
@@ -410,10 +411,15 @@ public class DataStorageLifecycleManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_WRONG_NOTIFY_BEFORE_DAYS));
     }
 
-    private void validatePathIsAbsolute(final String path) {
-        if (StringUtils.hasText(path)) {
-            Assert.isTrue(path.startsWith(PATH_SEPARATOR),
-                    messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_IS_NOT_ABSOLUTE));
+    private String formatGlobPath(final String path) {
+        if (!StringUtils.hasText(path)) {
+            return PATH_SEPARATOR;
+        }
+        final String formattedPath = !path.startsWith(PATH_SEPARATOR) ? PATH_SEPARATOR + path : path;
+        if (formattedPath.endsWith(PATH_SEPARATOR) && !formattedPath.equals(PATH_SEPARATOR)) {
+            return formattedPath.substring(0, formattedPath.length() - PATH_SEPARATOR.length());
+        } else {
+            return formattedPath;
         }
     }
 }
