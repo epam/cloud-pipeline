@@ -16,25 +16,25 @@ import datetime
 import os
 import unittest
 
-from sls.app import storage_synchronizer
-from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
-from sls.model.cloud_object_model import CloudObject
-from sls.model.config_model import SynchronizerConfig
-from sls.model.rule_model import StorageLifecycleRule, StorageLifecycleRuleTransition, StorageLifecycleRuleExecution
+from sls.app.synchronizer import archiving_synchronizer_impl
+from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArchivingSynchronizer
+from sls.cloud.model.cloud_object_model import CloudObject
+from sls.app.model.config_model import SynchronizerConfig
+from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRule, StorageLifecycleRuleTransition, StorageLifecycleRuleExecution
 from sls.util.logger import AppLogger
 from tests.mock.cp_data_source_mock import MockCloudPipelineDataSource
 
 
 class TestSynchronizerBuildsActionsForFiles(unittest.TestCase):
 
-    synchronizer = StorageLifecycleSynchronizer(None, None, None, None)
+    synchronizer = StorageLifecycleArchivingSynchronizer(None, None, None, None)
 
     def test_build_actions_for_files_find_files_correctly_with_date_in_transition(self):
         folder = "/datastorage"
         now = datetime.datetime.now()
         rule = StorageLifecycleRule(
             1, 1, "/*",
-            storage_synchronizer.METHOD_LATEST_FILE,
+            archiving_synchronizer_impl.METHOD_LATEST_FILE,
             transitions=[StorageLifecycleRuleTransition("GLACIER", transition_date=now.date())]
         )
         subject_files = [
@@ -52,7 +52,7 @@ class TestSynchronizerBuildsActionsForFiles(unittest.TestCase):
         now = datetime.datetime.now()
         rule = StorageLifecycleRule(
             1, 1, "/*",
-            storage_synchronizer.METHOD_LATEST_FILE,
+            archiving_synchronizer_impl.METHOD_LATEST_FILE,
             transitions=[StorageLifecycleRuleTransition("GLACIER", transition_after_days=1)]
         )
         subject_files = [
@@ -71,7 +71,7 @@ class TestSynchronizerGetEligibleTransition(unittest.TestCase):
     folder = "/datastorage"
     now = datetime.datetime.now(datetime.timezone.utc)
     today = now.date()
-    synchronizer = StorageLifecycleSynchronizer(None, None, None, None)
+    synchronizer = StorageLifecycleArchivingSynchronizer(None, None, None, None)
 
     def test_get_eligible_transition_when_no_execution(self):
         criterion_file = CloudObject(os.path.join(self.folder, "file2.txt"), self.now - datetime.timedelta(days=1), None)
@@ -101,8 +101,9 @@ class TestSynchronizerGetEligibleTransition(unittest.TestCase):
             StorageLifecycleRuleTransition("DEEP_ARCHIVE", transition_after_days=3)
         ]
         executions = [
-            StorageLifecycleRuleExecution(1, 1, storage_synchronizer.EXECUTION_NOTIFICATION_SENT_STATUS, self.folder,
-                                          "GLACIER", None)
+            StorageLifecycleRuleExecution(
+                1, 1, archiving_synchronizer_impl.EXECUTION_NOTIFICATION_SENT_STATUS,
+                self.folder, "GLACIER", None)
         ]
         transition_class, transition_date, transition_execution, trn_subject_file = \
             self.synchronizer._get_eligible_transition(
@@ -111,7 +112,8 @@ class TestSynchronizerGetEligibleTransition(unittest.TestCase):
                 subject_files, self.today)
         self.assertEqual("GLACIER", transition_class)
         self.assertEqual(self.today, transition_date)
-        self.assertEqual(storage_synchronizer.EXECUTION_NOTIFICATION_SENT_STATUS, transition_execution.status)
+        self.assertEqual(
+            archiving_synchronizer_impl.EXECUTION_NOTIFICATION_SENT_STATUS, transition_execution.status)
         self.assertEqual(len(subject_files), len(trn_subject_file))
 
     def test_get_eligible_transition_when_execution_running(self):
@@ -126,8 +128,9 @@ class TestSynchronizerGetEligibleTransition(unittest.TestCase):
             StorageLifecycleRuleTransition("DEEP_ARCHIVE", transition_after_days=3)
         ]
         executions = [
-            StorageLifecycleRuleExecution(1, 1, storage_synchronizer.EXECUTION_RUNNING_STATUS, self.folder,
-                                          "GLACIER", None)
+            StorageLifecycleRuleExecution(
+                1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS,
+                self.folder, "GLACIER", None)
         ]
         transition_class, transition_date, transition_execution, trn_subject_file = \
             self.synchronizer._get_eligible_transition(
@@ -136,7 +139,8 @@ class TestSynchronizerGetEligibleTransition(unittest.TestCase):
                 subject_files, self.today)
         self.assertEqual("GLACIER", transition_class)
         self.assertEqual(self.today, transition_date)
-        self.assertEqual(storage_synchronizer.EXECUTION_RUNNING_STATUS, transition_execution.status)
+        self.assertEqual(
+            archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, transition_execution.status)
         self.assertEqual(len(subject_files), len(trn_subject_file))
 
     def test_get_eligible_transition_when_execution_complete(self):
@@ -151,8 +155,9 @@ class TestSynchronizerGetEligibleTransition(unittest.TestCase):
             StorageLifecycleRuleTransition("DEEP_ARCHIVE", transition_after_days=3)
         ]
         executions = [
-            StorageLifecycleRuleExecution(1, 1, storage_synchronizer.EXECUTION_SUCCESS_STATUS, self.folder,
-                                          "GLACIER", self.now - datetime.timedelta(days=1))
+            StorageLifecycleRuleExecution(
+                1, 1, archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS, self.folder,
+                "GLACIER", self.now - datetime.timedelta(days=1))
         ]
         transition_class, transition_date, transition_execution, trn_subject_file = \
             self.synchronizer._get_eligible_transition(
@@ -169,7 +174,9 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
 
     folder = "/datastorage"
     now = datetime.datetime.now(datetime.timezone.utc)
-    synchronizer = StorageLifecycleSynchronizer(SynchronizerConfig(), MockCloudPipelineDataSource(), None, AppLogger())
+    synchronizer = \
+        StorageLifecycleArchivingSynchronizer(
+            SynchronizerConfig(command="archive"), MockCloudPipelineDataSource(), None, AppLogger())
 
     def test_check_rule_execution_progress_still_running(self):
         subject_files = [
@@ -177,7 +184,7 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             CloudObject(os.path.join(self.folder, "file2.txt"), self.now, "STANDARD")
         ]
         execution = StorageLifecycleRuleExecution(
-            1, 1, storage_synchronizer.EXECUTION_RUNNING_STATUS, self.folder,
+            1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now
         )
         self.assertIsNone(self.synchronizer._check_rule_execution_progress(1, subject_files, execution))
@@ -188,11 +195,11 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             CloudObject(os.path.join(self.folder, "file2.txt"), self.now, "STANDARD")
         ]
         execution = StorageLifecycleRuleExecution(
-            1, 1, storage_synchronizer.EXECUTION_RUNNING_STATUS, self.folder,
+            1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=3)
         )
         updated_execution = self.synchronizer._check_rule_execution_progress(1, subject_files, execution)
-        self.assertEqual(updated_execution.status, storage_synchronizer.EXECUTION_FAILED_STATUS)
+        self.assertEqual(updated_execution.status, archiving_synchronizer_impl.EXECUTION_FAILED_STATUS)
 
     def test_check_rule_execution_progress_running_should_succeed(self):
         subject_files = [
@@ -200,11 +207,12 @@ class TestSynchronizerCheckRuleExecutionProgress(unittest.TestCase):
             CloudObject(os.path.join(self.folder, "file2.txt"), self.now, "GLACIER")
         ]
         execution = StorageLifecycleRuleExecution(
-            1, 1, storage_synchronizer.EXECUTION_RUNNING_STATUS, self.folder,
+            1, 1, archiving_synchronizer_impl.EXECUTION_RUNNING_STATUS, self.folder,
             "GLACIER", self.now - datetime.timedelta(days=2)
         )
         updated_execution = self.synchronizer._check_rule_execution_progress(1, subject_files, execution)
-        self.assertEqual(updated_execution.status, storage_synchronizer.EXECUTION_SUCCESS_STATUS)
+        self.assertEqual(updated_execution.status, archiving_synchronizer_impl.EXECUTION_SUCCESS_STATUS)
+
 
 if __name__ == '__main__':
     unittest.main()

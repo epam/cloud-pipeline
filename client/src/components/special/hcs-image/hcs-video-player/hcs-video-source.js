@@ -23,7 +23,7 @@ import getBrowserDependentConfiguration from '../../../../utils/browserDependent
 
 const DEFAULT_DELAY_MS = 500;
 
-function timePointsArraysAreEqual (arr1, arr2) {
+function numberArraysAreEqual (arr1, arr2) {
   const sortedArray1 = [...new Set(arr1)].sort((a, b) => Number(a) - Number(b));
   const sortedArray2 = [...new Set(arr2)].sort((a, b) => Number(a) - Number(b));
   if (sortedArray1.length !== sortedArray2.length) {
@@ -84,6 +84,7 @@ class HcsVideoSource {
   @observable storageId;
   @observable sequenceId;
   @observable timePoints = [];
+  @observable zPlanes = [];
   @observable wellView = false;
   @observable imageId;
   @observable channels = {};
@@ -94,7 +95,7 @@ class HcsVideoSource {
   @observable videoError;
   @observable videoPending;
   @observable videoMode = false;
-  @observable playbackSpeed = 1;
+  @observable delay = 1;
   @observable crossOrigin = 'anonymous';
   @observable loop = true;
   @observable videoType = DEFAULT_VIDEO_TYPE;
@@ -164,9 +165,9 @@ class HcsVideoSource {
     }
   };
 
-  setPlaybackSpeed = (speed) => {
-    if (speed !== this.playbackSpeed) {
-      this.playbackSpeed = speed;
+  setPlaybackDelay = (delay) => {
+    if (delay !== this.delay) {
+      this.delay = delay;
       this.generateUrlDelayed();
     }
   }
@@ -174,10 +175,18 @@ class HcsVideoSource {
   setSequenceTimePoints = (sequenceId, timePoints = []) => {
     if (
       sequenceId !== this.sequenceId ||
-      !timePointsArraysAreEqual(timePoints, this.timePoints)
+      !numberArraysAreEqual(timePoints, this.timePoints)
     ) {
       this.sequenceId = sequenceId;
       this.timePoints = timePoints;
+      this.generateUrlDelayed();
+    }
+  };
+
+  setZPlanes = (zPlanes = []) => {
+    console.log('set z planes', zPlanes);
+    if (!numberArraysAreEqual(zPlanes, this.zPlanes)) {
+      this.zPlanes = zPlanes;
       this.generateUrlDelayed();
     }
   };
@@ -247,7 +256,7 @@ class HcsVideoSource {
         api,
         crossorigin = 'anonymous',
         crossOrigin = crossorigin,
-        defaultFPS = 1,
+        delay = 1,
         loop = true,
         type = DEFAULT_VIDEO_TYPE,
         codec,
@@ -266,10 +275,10 @@ class HcsVideoSource {
       this.videoEndpointAPI = new AnalysisApi(api);
       this.crossOrigin = crossOrigin;
       this.loop = loop;
-      this.playbackSpeed = defaultFPS;
+      this.delay = delay;
       this.videoType = browserDependentFormat.type || type;
       this.videoCodec = browserDependentFormat.codec ||
-        getDefaultVideoCodecForType(this.videoCodec);
+        getDefaultVideoCodecForType(this.videoType);
     } catch (e) {
       this.videoEndpointAPIError = e.message;
       this.videoEndpointAPI = undefined;
@@ -300,8 +309,9 @@ class HcsVideoSource {
       pathMask: this.pathMask,
       sequenceId: this.sequenceId,
       timePoints: [...this.timePoints],
+      zPlanes: [...this.zPlanes],
       wellView: this.wellView,
-      fps: this.playbackSpeed
+      delay: this.delay
     };
     const {
       imageId: currentImageId,
@@ -310,9 +320,10 @@ class HcsVideoSource {
       path: currentPath,
       pathMask: currentPathMask,
       // timePoints: currentTimePoints = [],
+      // zPlanes: currentZPlanes = [],
       wellView: currentWellView,
       channels: currentChannels = {},
-      fps: currentFPS
+      delay: currentDelay
     } = this.currentPayload || {};
     this.currentPayload = payload;
     if (
@@ -332,7 +343,7 @@ class HcsVideoSource {
         // !timePointsArraysAreEqual(currentTimePoints, payload.timePoints) ||
         !channelsAreEqual(currentChannels, payload.channels || {}) ||
         payload.wellView !== currentWellView ||
-        payload.fps !== currentFPS
+        payload.delay !== currentDelay
       )
     ) {
       let path = payload.path;
@@ -347,9 +358,10 @@ class HcsVideoSource {
         byField: payload.wellView ? 0 : 1,
         sequenceId: payload.sequenceId,
         path,
-        fps: payload.fps,
+        duration: payload.delay,
         format: `.${this.videoType}`,
         codec: this.videoCodec,
+        planeId: payload.zPlanes.length > 0 ? payload.zPlanes[0] : 1,
         ...(
           Object
             .entries(payload.channels)

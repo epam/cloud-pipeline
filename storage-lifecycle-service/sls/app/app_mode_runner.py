@@ -25,7 +25,7 @@ class ApplicationModeRunner:
     @staticmethod
     def get_application_runner(slm, config):
         if config.mode == "daemon":
-            return DaemonApplicationModeRunner(slm, config.at_time)
+            return DaemonApplicationModeRunner(slm, config.start_at, config.start_each)
         else:
             return SingleApplicationModeRunner(slm)
 
@@ -41,13 +41,18 @@ class SingleApplicationModeRunner(ApplicationModeRunner):
 
 class DaemonApplicationModeRunner(ApplicationModeRunner):
 
-    def __init__(self, storage_lifecycle_manager, at_time):
+    def __init__(self, storage_lifecycle_manager, start_at_time, start_each):
         self.storage_lifecycle_manager = storage_lifecycle_manager
-
-        self.at_time = at_time
+        self.start_each = start_each
+        self.start_at_time = start_at_time
 
     def run(self):
-        schedule.every().day.at(self.at_time).do(self.storage_lifecycle_manager.sync)
+        if self.start_at_time:
+            schedule.every().day.at(self.start_at_time).do(self.storage_lifecycle_manager.sync)
+        elif self.start_each:
+            schedule.every(self.start_each).minutes.do(self.storage_lifecycle_manager.sync)
+        else:
+            raise RuntimeError("Neither 'start-at' or 'start-each' provided! Stopping.")
         while True:
             schedule.run_pending()
             sleep(1)

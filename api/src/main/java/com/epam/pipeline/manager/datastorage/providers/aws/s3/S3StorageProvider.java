@@ -413,7 +413,10 @@ public class S3StorageProvider implements StorageProvider<S3bucketDataStorage> {
 
     @Override
     public Pair<Boolean, String> isRestoreActionEligible(final S3bucketDataStorage dataStorage, final String path) {
-        final boolean result = listDataStorageFiles(dataStorage, path).findAny().isPresent();
+        final String storagePathPrefix = path.startsWith(dataStorage.getDelimiter())
+                ? path.substring(dataStorage.getDelimiter().length())
+                : path;
+        final boolean result = listDataStorageFiles(dataStorage, storagePathPrefix).findAny().isPresent();
         final String reason = !result ? "Path not found!" : "";
         return Pair.of(result, reason);
     }

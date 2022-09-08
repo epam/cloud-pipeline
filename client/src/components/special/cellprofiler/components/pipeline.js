@@ -29,6 +29,14 @@ class CellProfilerPipeline extends React.Component {
     expanded: []
   };
 
+  get moduleIdsWithErrors () {
+    const {pipeline} = this.props;
+    const ids = (pipeline.parametersWithErrors || [])
+      .map(parameter => parameter.cpModule?.uuid)
+      .filter(Boolean);
+    return [...new Set(ids)];
+  }
+
   getExpanded = (key) => {
     const {expanded = []} = this.state;
     return expanded.includes(key);
@@ -92,6 +100,7 @@ class CellProfilerPipeline extends React.Component {
                 header={(
                   <CellProfilerModuleHeader
                     cpModule={cpModule}
+                    hasErrors={this.moduleIdsWithErrors.includes(cpModule.uuid)}
                   />
                 )}
               >

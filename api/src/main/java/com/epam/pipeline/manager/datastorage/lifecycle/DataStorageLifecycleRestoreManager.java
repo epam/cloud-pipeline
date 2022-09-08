@@ -41,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -141,9 +142,8 @@ public class DataStorageLifecycleRestoreManager {
                         .build()
         );
         return relatedActions.stream()
-                .filter(a -> a.getStatus() == StorageRestoreStatus.SUCCEEDED
-                        && a.getRestoredTill().isAfter(DateUtils.nowUTC())
-                ).findFirst().orElse(relatedActions.stream().findFirst().orElse(null));
+                .filter(DataStorageLifecycleRestoreManager::isActionStillActive)
+                .findFirst().orElse(relatedActions.stream().findFirst().orElse(null));
     }
 
     public List<StorageRestoreAction> loadEffectiveRestoreStorageActionHierarchy(final AbstractDataStorage storage,
@@ -167,7 +167,8 @@ public class DataStorageLifecycleRestoreManager {
                         ).build())
                 .stream()
                 // check if root action override child
-                .filter(childAction -> !rootActionIsActive || childAction.getStarted().isAfter(root.getStarted()))
+                .filter(childAction -> childAction != root &&
+                        (!rootActionIsActive || childAction.getStarted().isAfter(root.getStarted())))
                 // check if child action still active
                 .filter(DataStorageLifecycleRestoreManager::isActionStillActive).collect(Collectors.toList());
 
@@ -196,12 +197,27 @@ public class DataStorageLifecycleRestoreManager {
                 messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_RESTORE_CANNOT_BE_DONE,
                         storage.getPath(), storage.getType(), effectivePath, eligibility.getSecond()));
 
-        final StorageRestoreAction effectiveRestore = loadEffectiveRestoreStorageAction(storage, path);
+        final StorageRestoreAction effectiveRestore = filterRestoreStorageActions(
+                storage,
+                StorageRestoreActionSearchFilter.builder()
+                        .datastorageId(storage.getId())
+                        .path(path)
+                        .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
+                        .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
+                        .build()
+        ).stream().findFirst().orElse(null);
 
         final LocalDateTime nowUTC = DateUtils.nowUTC();
         if (effectiveRestore != null) {
+            final StorageRestoreStatus effActionStatus = effectiveRestore.getStatus();
             log.debug(messageHelper.getMessage(MessageConstants.DEBUG_DATASTORAGE_LIFECYCLE_EXISTING_RESTORE,
-                    effectiveRestore.getPath(), effectiveRestore.getStatus()));
+                    effectiveRestore.getPath(), effActionStatus));
+            Assert.state(
+                    effActionStatus != StorageRestoreStatus.RUNNING
+                            && effActionStatus != StorageRestoreStatus.INITIATED,
+                    String.format("Can't create restore action, effective action for path %s is still running!",
+                            effectiveRestore.getPath())
+            );
             if (!force) {
                 Assert.isTrue(!isActionStillActive(effectiveRestore),
                         messageHelper.getMessage(MessageConstants.ERROR_DATASTORAGE_LIFECYCLE_PATH_ALREADY_RESTORED,
@@ -236,15 +252,18 @@ public class DataStorageLifecycleRestoreManager {
 
     private static String getEffectivePathForRestoreAction(final StorageRestorePath path, final String delimiter) {
         final String result;
-        if (path.getPath() == null) {
-            result = EMPTY;
-        } else if (path.getPath().startsWith(delimiter)) {
-            result = path.getPath().substring(delimiter.length());
+        if (StringUtils.isEmpty(path.getPath())) {
+            result = delimiter;
+        } else if (!path.getPath().startsWith(delimiter)) {
+            result = delimiter + path.getPath();
         } else {
             result = path.getPath();
         }
         switch (path.getType()) {
             case FOLDER:
+                if (EMPTY.equals(result)) {
+                    return result;
+                }
                 return result.endsWith(delimiter) ? result : result + delimiter;
             case FILE:
             default:

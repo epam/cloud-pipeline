@@ -184,6 +184,12 @@ class ModuleParameter {
     return this.pipeline.channels;
   }
 
+  @computed
+  get isOutput () {
+    return this.cpModule &&
+      !!this.cpModule.outputParameters.find(o => o === this);
+  }
+
   wrapValuesWithEmptyValue = (values = []) => {
     const _values = [];
     if (this.isList && !this.multiple && this.emptyValue) {
@@ -320,12 +326,25 @@ class ModuleParameterValue {
       (typeof aValue === 'object' && aValue.length === 0);
   }
 
-  @computed
+  get isOutput () {
+    if (!this.parameter) {
+      return true;
+    }
+    return this.parameter.isOutput;
+  }
+
   get isInvalid () {
     if (!this.parameter) {
       return true;
     }
-    return this.parameter.required && this.isEmpty;
+    return (this.parameter.required && this.isEmpty) ||
+      (
+        this.parameter.isOutput &&
+        this.cpModule &&
+        this.cpModule.modulesBefore.filter((cpModule) => !cpModule.hidden)
+          .reduce((outputs, cpModule) => ([...outputs, ...cpModule.outputs]), [])
+          .filter((output) => output.name === this.value).length > 0
+      );
   }
 
   get payload () {

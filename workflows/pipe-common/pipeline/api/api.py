@@ -234,6 +234,9 @@ class PipelineAPI:
     RUN_CONFIGURATION = '/runConfiguration'
     NOTIFICATION_SETTING_URL = 'notification/settings'
     NOTIFICATION_TEMPLATE_URL = 'notification/template'
+    LIFECYCLE_RESTORE_ACTION_URL = "/datastorage/{id}/lifecycle/restore"
+    LIFECYCLE_RESTORE_ACTION_FILTER_URL = "/datastorage/{id}/lifecycle/restore/filter"
+
 
     # Pipeline API default header
 
@@ -1148,3 +1151,23 @@ class PipelineAPI:
             return self.execute_request(str(self.api_url) + self.NOTIFICATION_SETTING_URL)
         except Exception as e:
             raise RuntimeError("Failed to load notification settings. Error message {}", str(e.message))
+
+    def filter_lifecycle_restore_action(self, datastorage_id, filter_obj):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RESTORE_ACTION_FILTER_URL.format(id=datastorage_id),
+                                        data=json.dumps(filter_obj),  method='post')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to load lifecycle restore actions for storage: '{}', and filters: '{}'.".format(
+                    str(datastorage_id), filter_obj), "Error message: {}".format(str(e.message)))
+
+    def update_lifecycle_restore_action(self, datastorage_id, restore_action):
+        try:
+            return self.execute_request(str(self.api_url) +
+                                        self.LIFECYCLE_RESTORE_ACTION_URL.format(id=datastorage_id),
+                                        data=json.dumps(restore_action), method='put')
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to update lifecycle restore actions for storage: '{}', action: '{}'.".format(
+                    str(datastorage_id), restore_action), "Error message: {}".format(str(e.message)))

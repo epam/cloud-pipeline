@@ -105,6 +105,14 @@ class Analysis {
   }
 
   @computed
+  get isEmpty () {
+    if (!this.pipeline) {
+      return [];
+    }
+    return this.pipeline.modules.length === 0;
+  }
+
+  @computed
   get batch () {
     return this.namesAndTypes && this.namesAndTypes.multipleFields;
   }

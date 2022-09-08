@@ -13,7 +13,7 @@
 #  limitations under the License.
 #
 
-from sls.datasorce.cp_data_source import CloudPipelineDataSource
+from sls.app.cp_api_interface import CloudPipelineDataSource
 
 
 class MockedNotificationRESTApiCloudPipelineDataSource(CloudPipelineDataSource):
