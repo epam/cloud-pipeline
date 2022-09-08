@@ -293,19 +293,19 @@ public interface CloudPipelineAPI {
     Call<Result<DtsRegistry>> updateDtsHeartbeat(@Path(ID) String dtsId);
 
     @GET("preferences/{key}")
-    Call<Result<Preference>> loadPreference(@Path(KEY) final String preferenceName);
+    Call<Result<Preference>> loadPreference(@Path(KEY) String preferenceName);
 
     @GET("preferences")
     Call<Result<List<Preference>>> loadAllPreference();
 
     @GET("filesharemount/{id}")
-    Call<Result<FileShareMount>> loadShareMount(@Path(ID) final Long id);
+    Call<Result<FileShareMount>> loadShareMount(@Path(ID) Long id);
 
     @GET("app/info")
     Call<Result<ApplicationInfo>> fetchVersion();
 
     @POST("cluster/pool/usage")
-    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body final List<NodePoolUsage> records);
+    Call<Result<List<NodePoolUsage>>> saveNodePoolUsage(@Body List<NodePoolUsage> records);
 
     @DELETE("cluster/pool/usage")
     Call<Result<Boolean>> deleteExpiredNodePoolUsage(@Query("date") LocalDate date);

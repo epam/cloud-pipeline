@@ -18,12 +18,16 @@ package com.epam.pipeline.entity.app;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class ApplicationInfo {
 
     private final String version;
+    private final Map<String, String> components;
 
-    public ApplicationInfo() {
+    public ApplicationInfo(final Map<String, String> components) {
         this.version = getClass().getPackage().getImplementationVersion();
+        this.components = components;
     }
 }

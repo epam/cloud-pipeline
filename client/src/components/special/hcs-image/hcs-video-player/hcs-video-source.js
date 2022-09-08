@@ -19,6 +19,7 @@ import {getVideoSettings} from '../../cellprofiler/model/analysis/job-utilities'
 import AnalysisApi from '../../cellprofiler/model/analysis/analysis-api';
 import dataStorageAvailable from '../../../../models/dataStorage/DataStorageAvailable';
 import {createObjectStorageWrapper} from '../../../../utils/object-storage';
+import getBrowserDependentConfiguration from '../../../../utils/browserDependentStyle';
 
 const DEFAULT_DELAY_MS = 500;
 
@@ -62,6 +63,21 @@ function channelsAreEqual (channelsSet1, channelsSet2) {
   return true;
 }
 
+const DEFAULT_VIDEO_TYPE = 'mp4';
+
+function getDefaultVideoCodecForType (aType) {
+  if (/^mp4$/i.test(aType)) {
+    return 'libx264';
+  }
+  if (/^(ogv|ogg|ogm)$/i.test(aType)) {
+    return 'libtheora';
+  }
+  if (/^webm$/i.test(aType)) {
+    return 'libvpx';
+  }
+  return undefined;
+}
+
 class HcsVideoSource {
   @observable path;
   @observable pathMask;
@@ -81,6 +97,8 @@ class HcsVideoSource {
   @observable playbackSpeed = 1;
   @observable crossOrigin = 'anonymous';
   @observable loop = true;
+  @observable videoType = DEFAULT_VIDEO_TYPE;
+  @observable videoCodec = getDefaultVideoCodecForType(DEFAULT_VIDEO_TYPE);
   /**
    * @type {ObjectStorage}
    */
@@ -105,6 +123,20 @@ class HcsVideoSource {
   @computed
   get initialized () {
     return !!this.videoEndpointAPI;
+  }
+
+  @computed
+  get videoSourceType () {
+    if (/^mp4$/i.test(this.videoType)) {
+      return 'video/mp4';
+    }
+    if (/^webm$/i.test(this.videoType)) {
+      return 'video/webm';
+    }
+    if (/^(ogv|ogg|ogm)$/i.test(this.videoType)) {
+      return 'video/ogg';
+    }
+    return undefined;
   }
 
   setVideoMode = (enabled) => {
@@ -216,15 +248,28 @@ class HcsVideoSource {
         crossorigin = 'anonymous',
         crossOrigin = crossorigin,
         defaultFPS = 1,
-        loop = true
+        loop = true,
+        type = DEFAULT_VIDEO_TYPE,
+        codec,
+        formats = {}
       } = settings;
       if (!api) {
         throw new Error('HCS video endpoint is not specified');
       }
+      const browserDependentFormat = getBrowserDependentConfiguration({
+        default: {
+          type,
+          codec
+        },
+        ...formats
+      });
       this.videoEndpointAPI = new AnalysisApi(api);
       this.crossOrigin = crossOrigin;
       this.loop = loop;
       this.playbackSpeed = defaultFPS;
+      this.videoType = browserDependentFormat.type || type;
+      this.videoCodec = browserDependentFormat.codec ||
+        getDefaultVideoCodecForType(this.videoCodec);
     } catch (e) {
       this.videoEndpointAPIError = e.message;
       this.videoEndpointAPI = undefined;
@@ -303,6 +348,8 @@ class HcsVideoSource {
         sequenceId: payload.sequenceId,
         path,
         fps: payload.fps,
+        format: `.${this.videoType}`,
+        codec: this.videoCodec,
         ...(
           Object
             .entries(payload.channels)

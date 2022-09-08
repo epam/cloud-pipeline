@@ -22,9 +22,9 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum MetadataFilterOperator {
-     EQ("="),
-     GE(">="),
-     LE("<="),
-     DEFAULT("ILIKE");
-     private final String value;
+    EQ("="),
+    GE(">="),
+    LE("<="),
+    DEFAULT("ILIKE");
+    private final String value;
 }

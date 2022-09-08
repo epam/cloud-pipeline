@@ -32,6 +32,7 @@ import java.util.Optional;
 
 import static com.epam.pipeline.billingreportagent.service.ElasticsearchSynchronizer.DOC_TYPE_FIELD;
 
+@SuppressWarnings("LineLength")
 @RequiredArgsConstructor
 @Getter
 public class StorageBillingMapper extends AbstractEntityMapper<StorageBillingInfo> {

@@ -31,6 +31,8 @@ public final class DateUtils {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    public static final int SECS_IN_HOUR = 3600;
+    public static final int MIN_IN_HOUR = 60;
 
     private DateUtils() {
         //no op
@@ -62,15 +64,15 @@ public final class DateUtils {
     }
 
     public static long convertSecsToHours(final long secs) {
-        return secs / 3600;
+        return secs / SECS_IN_HOUR;
     }
 
     public static long convertSecsToMinOfHour(final long secs) {
-        return secs % 3600 / 60;
+        return secs % SECS_IN_HOUR / MIN_IN_HOUR;
     }
 
     public static long convertSecsToSecsOfMin(final long secs) {
-        return secs % 60;
+        return secs % MIN_IN_HOUR;
     }
 
     public static long daysBetweenDates(final LocalDateTime one, final LocalDateTime another) {

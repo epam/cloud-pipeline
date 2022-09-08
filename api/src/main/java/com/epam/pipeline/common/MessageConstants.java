@@ -330,7 +330,7 @@ public final class MessageConstants {
             "error.datastorage.lifecycle.rule.provide.enable.flag";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_TRANSITION_CRITERION_VALUE_NOT_PROVIDED =
             "error.datastorage.lifecycle.rule.transition.criterion.value.is.not.provided";
-    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_HAS_DEFAULT_CRITERION =
+    public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_WRONG_CRITERION =
             "error.datastorage.lifecycle.rule.one.by.one.has.default.criterion";
     public static final String ERROR_DATASTORAGE_LIFECYCLE_RULE_ONE_BY_ONE_NOTIFICATION_ENABLED =
             "error.datastorage.lifecycle.rule.one.by.one.notification.enabled";

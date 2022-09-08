@@ -371,7 +371,8 @@ public class MetadataEntityDao extends NamedParameterJdbcDaoSupport {
                     filter.getOperator() :
                     MetadataFilterOperator.DEFAULT;
             final String filterClause = filter.isPredefined()
-                    ? addFilterClause(filter, getTemplate(operator, true), filter.getKey(), operator)
+                    ? addFilterClause(filter, getTemplate(operator, true),
+                    getDBName(filter.getKey()), operator)
                     : (CollectionUtils.isEmpty(filter.getValues())
                         ? getEmptyFieldClause(filter.getKey())
                         : addFilterClause(filter, getTemplate(operator, false), filter.getKey(), operator));

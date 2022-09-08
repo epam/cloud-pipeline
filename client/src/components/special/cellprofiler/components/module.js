@@ -52,7 +52,8 @@ function CellProfilerModuleHeaderRenderer (props) {
   const {
     cpModule,
     movable,
-    removable
+    removable,
+    hasErrors = false
   } = props;
   if (!cpModule) {
     return null;
@@ -136,6 +137,7 @@ function CellProfilerModuleHeaderRenderer (props) {
         alignItems: 'center',
         flex: 1
       }}
+      className={hasErrors ? 'cp-error' : ''}
     >
       <b style={{marginRight: 'auto'}}>
         {renderIcon()}

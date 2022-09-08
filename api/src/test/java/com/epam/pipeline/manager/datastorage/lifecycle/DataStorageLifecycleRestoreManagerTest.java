@@ -46,25 +46,37 @@ import java.util.List;
 
 public class DataStorageLifecycleRestoreManagerTest {
 
-    private static final long ID = 1L;
+    private static final long ONE = 1L;
+    private static final long TWO = 2L;
+
+    private static final long ID = ONE;
     private static final String STORAGE_NAME = "storage-name";
     private static final String PATH_1 = "data/";
+    private static final long DAYST_TO_RESTORE_50 = 50L;
+    private static final long DAYS_TO_RESTORE_10 = 10L;
+
+    public static final StorageRestoreActionEntity SUCCEEDED_ACTION = StorageRestoreActionEntity.builder().id(ID)
+            .datastorageId(ID).path(PATH_1)
+            .status(StorageRestoreStatus.SUCCEEDED)
+            .days(DAYST_TO_RESTORE_50)
+            .started(DateUtils.nowUTC().minus(TWO, ChronoUnit.DAYS)).build();
+
     public static final StorageRestoreActionEntity RUNNING_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
             .status(StorageRestoreStatus.RUNNING)
-            .days(50L)
-            .started(DateUtils.nowUTC().minus(2L, ChronoUnit.DAYS)).build();
+            .days(DAYST_TO_RESTORE_50)
+            .started(DateUtils.nowUTC().minus(TWO, ChronoUnit.DAYS)).build();
     public static final StorageRestoreActionEntity INITIATED_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
             .status(StorageRestoreStatus.INITIATED)
-            .days(10L)
-            .started(DateUtils.nowUTC().minus(1L, ChronoUnit.DAYS)).build();
+            .days(DAYS_TO_RESTORE_10)
+            .started(DateUtils.nowUTC().minus(ONE, ChronoUnit.DAYS)).build();
 
     public static final StorageRestoreActionEntity CANCELLED_ACTION = StorageRestoreActionEntity.builder().id(ID)
             .datastorageId(ID).path(PATH_1)
             .status(StorageRestoreStatus.CANCELLED)
-            .days(10L)
-            .started(DateUtils.nowUTC().minus(1L, ChronoUnit.DAYS)).build();
+            .days(DAYS_TO_RESTORE_10)
+            .started(DateUtils.nowUTC().minus(ONE, ChronoUnit.DAYS)).build();
     private static final String PATH_2 = "data2/";
     public static final String STANDARD_RESTORE_MODE = "Standard";
     public static final StorageRestoreActionNotification DISABLED_NOTIFICATION =
@@ -94,17 +106,17 @@ public class DataStorageLifecycleRestoreManagerTest {
     @Before
     public void setUp() {
         Mockito.doReturn(filteredAsEffective)
-                .when(dataStoragePathRestoreActionRepository)
-                .filterBy(
-                        Mockito.eq(
-                            StorageRestoreActionSearchFilter.builder()
-                                    .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
-                                    .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
-                                    .datastorageId(ID)
-                                    .path(new StorageRestorePath(PATH_1, StorageRestorePathType.FOLDER))
-                                    .build()
-                        )
-                );
+            .when(dataStoragePathRestoreActionRepository)
+            .filterBy(
+                Mockito.eq(
+                    StorageRestoreActionSearchFilter.builder()
+                        .searchType(StorageRestoreActionSearchFilter.SearchType.SEARCH_PARENT)
+                        .statuses(StorageRestoreStatus.ACTIVE_STATUSES)
+                        .datastorageId(ID)
+                        .path(new StorageRestorePath(PATH_1, StorageRestorePathType.FOLDER))
+                        .build()
+                )
+            );
     }
 
     @Test
@@ -120,20 +132,19 @@ public class DataStorageLifecycleRestoreManagerTest {
     public void failToInitiateRestoreIfAlreadyExistAndIsntForcedTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
-                STANDARD_RESTORE_MODE, 10L, false, false, DISABLED_NOTIFICATION);
+                STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false, DISABLED_NOTIFICATION);
     }
 
     @Test(expected = IllegalStateException.class)
     public void failToInitiateRestoreWithoutWellFormedNotificationTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         lifecycleManager.buildStoragePathRestoreAction(dataStorage, StorageRestorePath.builder().path(PATH_1).build(),
-                STANDARD_RESTORE_MODE, 10L, false, false,
+                STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false,
                 new StorageRestoreActionNotification(true, Collections.emptyList()));
     }
 
-
-    @Test
-    public void succeedToInitiateRestoreIfAlreadyExistAndIsForcedTest() {
+    @Test(expected = IllegalStateException.class)
+    public void failToInitiateRestoreIfAlreadyExistRunningAndIsForcedTest() {
         Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
         Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
                 .when(dataStoragePathRestoreActionRepository)
@@ -141,7 +152,23 @@ public class DataStorageLifecycleRestoreManagerTest {
         final StorageRestoreActionEntity storageRestoreAction =
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, 10L, false, true, DISABLED_NOTIFICATION);
+                        STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, true, DISABLED_NOTIFICATION);
+        Assert.assertNotNull(storageRestoreAction);
+        Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
+    }
+
+    @Test
+    public void succeedToInitiateRestoreIfAlreadyExistAndIsForcedTest() {
+        Mockito.doReturn(Pair.of(true, "")).when(providerManager).isRestoreActionEligible(Mockito.any(), Mockito.any());
+        Mockito.doReturn(Collections.singletonList(SUCCEEDED_ACTION))
+                .when(dataStoragePathRestoreActionRepository).filterBy(Mockito.any());
+        Mockito.doReturn(StorageRestoreActionEntity.builder().id(ID).status(StorageRestoreStatus.INITIATED).build())
+                .when(dataStoragePathRestoreActionRepository)
+                .save(Mockito.any(StorageRestoreActionEntity.class));
+        final StorageRestoreActionEntity storageRestoreAction =
+                lifecycleManager.buildStoragePathRestoreAction(dataStorage,
+                        StorageRestorePath.builder().path(PATH_1).type(StorageRestorePathType.FOLDER).build(),
+                        STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, true, DISABLED_NOTIFICATION);
         Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }
@@ -155,7 +182,7 @@ public class DataStorageLifecycleRestoreManagerTest {
         final StorageRestoreActionEntity storageRestoreAction =
                 lifecycleManager.buildStoragePathRestoreAction(dataStorage,
                         StorageRestorePath.builder().path(PATH_2).type(StorageRestorePathType.FOLDER).build(),
-                        STANDARD_RESTORE_MODE, 10L, false, false, DISABLED_NOTIFICATION);
+                        STANDARD_RESTORE_MODE, DAYS_TO_RESTORE_10, false, false, DISABLED_NOTIFICATION);
         Assert.assertNotNull(storageRestoreAction);
         Assert.assertEquals(StorageRestoreStatus.INITIATED, storageRestoreAction.getStatus());
     }

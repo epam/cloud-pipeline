@@ -35,6 +35,21 @@ class CellProfiler extends React.Component {
     savePipelineOptions: undefined
   };
 
+  get analysisDisabled () {
+    const {analysis} = this.props;
+    return !analysis.available ||
+    analysis.analysing ||
+    analysis.isEmpty ||
+    (
+      analysis.batch &&
+      analysis.pipeline &&
+      analysis.pipeline.defineResultsAreEmpty
+    ) || (
+      analysis.pipeline &&
+      (analysis.pipeline.parametersWithErrors || []).length > 0
+    );
+  }
+
   onSavePipelineClicked = async (asNew = false) => {
     const {
       analysis
@@ -242,15 +257,7 @@ class CellProfiler extends React.Component {
               marginRight: 5
             }}
             size="small"
-            disabled={
-              !analysis.available ||
-              analysis.analysing ||
-              (
-                analysis.batch &&
-                analysis.pipeline &&
-                analysis.pipeline.defineResultsAreEmpty
-              )
-            }
+            disabled={this.analysisDisabled}
             onClick={this.runAnalysis}
           >
             <Icon type="caret-right" />
