@@ -239,7 +239,7 @@ class S3StorageOperations(StorageOperations):
              for file in files]
         )
 
-        job_location_prefix = os.path.join(self.config["tagging_job_report_bucket_prefix"], bucket, operation_id)
+        job_location_prefix = os.path.join(self.config["batch_operation_job_report_bucket_prefix"], bucket, operation_id)
 
         manifest_key = os.path.join(
             job_location_prefix,
@@ -248,17 +248,17 @@ class S3StorageOperations(StorageOperations):
         )
         manifest_object = self.aws_s3_client.put_object(
             Body=manifest_content,
-            Bucket=self.config["tagging_job_report_bucket"],
+            Bucket=self.config["batch_operation_job_report_bucket"],
             Key=manifest_key,
             ServerSideEncryption='AES256'
         )
 
-        s3_tagging_job = aws_s3control_client.create_job(
-            AccountId=self.config["tagging_job_aws_account_id"],
+        s3_batch_operation_job = aws_s3control_client.create_job(
+            AccountId=self.config["batch_operation_job_aws_account_id"],
             ConfirmationRequired=False,
             Operation=operation_obj,
             Report={
-                'Bucket': "arn:aws:s3:::" + self.config["tagging_job_report_bucket"],
+                'Bucket': "arn:aws:s3:::" + self.config["batch_operation_job_report_bucket"],
                 'Format': 'Report_CSV_20180820',
                 'Enabled': True,
                 'Prefix': job_location_prefix,
@@ -271,60 +271,60 @@ class S3StorageOperations(StorageOperations):
                 },
                 'Location': {
                     'ObjectArn': "".join(
-                        ["arn:aws:s3:::", self.config["tagging_job_report_bucket"], "/", manifest_key]),
+                        ["arn:aws:s3:::", self.config["batch_operation_job_report_bucket"], "/", manifest_key]),
                     'ETag': manifest_object["ETag"]
                 }
             },
             Priority=1,
-            RoleArn=self.config["tagging_job_role_arn"]
+            RoleArn=self.config["batch_operation_job_role_arn"]
         )
 
-        s3_tagging_job_description = None
-        for try_i in range(self.config["tagging_job_poll_status_retry_count"]):
-            self.logger.log("Get Job {} status with try: {}".format(s3_tagging_job["JobId"], try_i))
-            s3_tagging_job_description = aws_s3control_client.describe_job(
-                AccountId=self.config["tagging_job_aws_account_id"],
-                JobId=s3_tagging_job["JobId"]
+        s3_batch_operation_job_description = None
+        for try_i in range(self.config["batch_operation_job_poll_status_retry_count"]):
+            self.logger.log("Get Job {} status with try: {}".format(s3_batch_operation_job["JobId"], try_i))
+            s3_batch_operation_job_description = aws_s3control_client.describe_job(
+                AccountId=self.config["batch_operation_job_aws_account_id"],
+                JobId=s3_batch_operation_job["JobId"]
             )
-            if "Job" in s3_tagging_job_description and "Status" in s3_tagging_job_description["Job"]:
-                if s3_tagging_job_description["Job"]["Status"] == "Complete" or s3_tagging_job_description["Job"]["Status"] == "Failed":
-                    self.logger.log("Job status: {}. Proceeding.".format(s3_tagging_job_description["Job"]["Status"]))
+            if "Job" in s3_batch_operation_job_description and "Status" in s3_batch_operation_job_description["Job"]:
+                if s3_batch_operation_job_description["Job"]["Status"] == "Complete" or s3_batch_operation_job_description["Job"]["Status"] == "Failed":
+                    self.logger.log("Job status: {}. Proceeding.".format(s3_batch_operation_job_description["Job"]["Status"]))
                     break
                 else:
-                    self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Job"]["Status"]))
-            sleep(self.config["tagging_job_poll_status_sleep_sec"])
+                    self.logger.log("Job status: {}. Wait.".format(s3_batch_operation_job_description["Job"]["Status"]))
+            sleep(self.config["batch_operation_job_poll_status_sleep_sec"])
 
-        if not self._is_s3_batch_operation_succeeded(s3_tagging_job_description):
+        if not self._is_s3_batch_operation_succeeded(s3_batch_operation_job_description):
             self.logger.log(
                 "Job status is not successful. Will keep manifest and report and skip. Task summary: {}".format(
-                    str(s3_tagging_job_description))
+                    str(s3_batch_operation_job_description))
             )
         else:
-            self._clean_up_after_job(job_location_prefix, manifest_key, s3_tagging_job["JobId"])
+            self._clean_up_after_job(job_location_prefix, manifest_key, s3_batch_operation_job["JobId"])
 
-        return s3_tagging_job_description
+        return s3_batch_operation_job_description
 
     def _clean_up_after_job(self, job_location_prefix, manifest_key, job_id):
         job_report_dir = os.path.join(job_location_prefix, "job-" + job_id)
-        job_related_files = self.list_objects_by_prefix(self.config["tagging_job_report_bucket"], job_report_dir,
+        job_related_files = self.list_objects_by_prefix(self.config["batch_operation_job_report_bucket"], job_report_dir,
                                                         list_versions=False, convert_paths=False)
         for file in job_related_files:
             self.aws_s3_client.delete_object(
-                Bucket=self.config["tagging_job_report_bucket"],
+                Bucket=self.config["batch_operation_job_report_bucket"],
                 Key=file.path
             )
         self.aws_s3_client.delete_object(
-            Bucket=self.config["tagging_job_report_bucket"],
+            Bucket=self.config["batch_operation_job_report_bucket"],
             Key=manifest_key
         )
 
     @staticmethod
-    def _is_s3_batch_operation_succeeded(s3_tagging_job_description):
-        return s3_tagging_job_description and "Job" in s3_tagging_job_description and \
-               "Status" in s3_tagging_job_description["Job"] \
-               and s3_tagging_job_description["Job"]["Status"] == "Complete" \
-               and "ProgressSummary" in s3_tagging_job_description["Job"] \
-               and s3_tagging_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] == 0
+    def _is_s3_batch_operation_succeeded(s3_batch_operation_job_description):
+        return s3_batch_operation_job_description and "Job" in s3_batch_operation_job_description and \
+               "Status" in s3_batch_operation_job_description["Job"] \
+               and s3_batch_operation_job_description["Job"]["Status"] == "Complete" \
+               and "ProgressSummary" in s3_batch_operation_job_description["Job"] \
+               and s3_batch_operation_job_description["Job"]["ProgressSummary"]["NumberOfTasksFailed"] == 0
 
     @staticmethod
     def _map_s3_obj_to_cloud_obj(s3_object, convert_path):
@@ -338,30 +338,30 @@ class S3StorageOperations(StorageOperations):
     @staticmethod
     def _verify_config(config):
         result = dict(config)
-        if "tagging_job_aws_account_id" not in result:
-            raise RuntimeError("Please provide tagging_job_aws_account_id within S3 storage lifecycle service cloud configuration")
+        if "batch_operation_job_aws_account_id" not in result:
+            raise RuntimeError("Please provide batch_operation_job_aws_account_id within S3 storage lifecycle service cloud configuration")
 
-        if "tagging_job_report_bucket" not in result:
-            raise RuntimeError("Please provide tagging_job_report_bucket within S3 storage lifecycle service cloud configuration")
+        if "batch_operation_job_report_bucket" not in result:
+            raise RuntimeError("Please provide batch_operation_job_report_bucket within S3 storage lifecycle service cloud configuration")
 
-        if "tagging_job_role_arn" not in result:
-            raise RuntimeError("Please provide tagging_job_role_arn within S3 storage lifecycle service cloud configuration")
+        if "batch_operation_job_role_arn" not in result:
+            raise RuntimeError("Please provide batch_operation_job_role_arn within S3 storage lifecycle service cloud configuration")
 
-        if "tagging_job_report_bucket_prefix" not in result:
-            result["tagging_job_report_bucket_prefix"] = "cp_storage_lifecycle_tagging"
-        result["tagging_job_report_bucket_prefix"] = result.get("tagging_job_report_bucket_prefix").strip("/")
+        if "batch_operation_job_report_bucket_prefix" not in result:
+            result["batch_operation_job_report_bucket_prefix"] = "cp_storage_lifecycle_tagging"
+        result["batch_operation_job_report_bucket_prefix"] = result.get("batch_operation_job_report_bucket_prefix").strip("/")
 
-        if "tagging_job_poll_status_retry_count" not in result:
-            result["tagging_job_poll_status_retry_count"] = 30
-        if result["tagging_job_poll_status_retry_count"] < 1:
+        if "batch_operation_job_poll_status_retry_count" not in result:
+            result["batch_operation_job_poll_status_retry_count"] = 30
+        if result["batch_operation_job_poll_status_retry_count"] < 1:
             raise RuntimeError(
-                "Value tagging_job_poll_status_retry_count within S3 storage lifecycle service cloud configuration should be > 1")
+                "Value batch_operation_job_poll_status_retry_count within S3 storage lifecycle service cloud configuration should be > 1")
 
-        if "tagging_job_poll_status_sleep_sec" not in result:
-            result["tagging_job_poll_status_sleep_sec"] = 5
-        if result["tagging_job_poll_status_sleep_sec"] < 1:
+        if "batch_operation_job_poll_status_sleep_sec" not in result:
+            result["batch_operation_job_poll_status_sleep_sec"] = 5
+        if result["batch_operation_job_poll_status_sleep_sec"] < 1:
             raise RuntimeError(
-                "Value tagging_job_poll_status_sleep_sec within S3 storage lifecycle service cloud configuration should be > 1")
+                "Value batch_operation_job_poll_status_sleep_sec within S3 storage lifecycle service cloud configuration should be > 1")
 
         return result
 
