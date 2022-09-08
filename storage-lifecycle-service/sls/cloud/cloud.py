@@ -132,7 +132,7 @@ class S3StorageOperations(StorageOperations):
         aws_s3control_client = boto3.client("s3control", region_name=region)
         manifest_content = "\n".join(["{},{}".format(bucket, self._path_to_s3_format(file.path)) for file in files])
 
-        job_location_prefix = os.path.join(self.config["tagging_job_report_bucket_prefix"], bucket, "rule_" + transit_id)
+        job_location_prefix = os.path.join(self.config["batch_operation_job_report_bucket_prefix"], bucket, "rule_" + transit_id)
 
         manifest_key = os.path.join(
             job_location_prefix,
@@ -141,13 +141,13 @@ class S3StorageOperations(StorageOperations):
         )
         manifest_object = self.aws_s3_client.put_object(
             Body=manifest_content,
-            Bucket=self.config["tagging_job_report_bucket"],
+            Bucket=self.config["batch_operation_job_report_bucket"],
             Key=manifest_key,
             ServerSideEncryption='AES256'
         )
 
         s3_tagging_job = aws_s3control_client.create_job(
-            AccountId=self.config["tagging_job_aws_account_id"],
+            AccountId=self.config["batch_operation_job_aws_account_id"],
             ConfirmationRequired=False,
             Operation={
                 'S3PutObjectTagging': {
@@ -160,7 +160,7 @@ class S3StorageOperations(StorageOperations):
                 },
             },
             Report={
-                'Bucket': "arn:aws:s3:::" + self.config["tagging_job_report_bucket"],
+                'Bucket': "arn:aws:s3:::" + self.config["batch_operation_job_report_bucket"],
                 'Format': 'Report_CSV_20180820',
                 'Enabled': True,
                 'Prefix': job_location_prefix,
@@ -172,19 +172,19 @@ class S3StorageOperations(StorageOperations):
                     'Fields': ['Bucket', 'Key']
                 },
                 'Location': {
-                    'ObjectArn': "".join(["arn:aws:s3:::", self.config["tagging_job_report_bucket"], "/", manifest_key]),
+                    'ObjectArn': "".join(["arn:aws:s3:::", self.config["batch_operation_job_report_bucket"], "/", manifest_key]),
                     'ETag': manifest_object["ETag"]
                 }
             },
             Priority=1,
-            RoleArn=self.config["tagging_job_role_arn"]
+            RoleArn=self.config["batch_operation_job_role_arn"]
         )
 
         s3_tagging_job_description = None
-        for try_i in range(self.config["tagging_job_poll_status_retry_count"]):
+        for try_i in range(self.config["batch_operation_job_poll_status_retry_count"]):
             self.logger.log("Get Job {} status with try: {}".format(s3_tagging_job["JobId"], try_i))
             s3_tagging_job_description = aws_s3control_client.describe_job(
-                AccountId=self.config["tagging_job_aws_account_id"],
+                AccountId=self.config["batch_operation_job_aws_account_id"],
                 JobId=s3_tagging_job["JobId"]
             )
             if "Job" in s3_tagging_job_description and "Status" in s3_tagging_job_description["Job"]:
@@ -193,7 +193,7 @@ class S3StorageOperations(StorageOperations):
                     break
                 else:
                     self.logger.log("Job status: {}. Wait.".format(s3_tagging_job_description["Job"]["Status"]))
-            sleep(self.config["tagging_job_poll_status_sleep_sec"])
+            sleep(self.config["batch_operation_job_poll_status_sleep_sec"])
 
         if not s3_tagging_job_description or "Job" not in s3_tagging_job_description or \
                 "Status" not in s3_tagging_job_description["Job"] \
@@ -211,14 +211,14 @@ class S3StorageOperations(StorageOperations):
 
     def _clean_up_after_job(self, job_location_prefix, manifest_key, job_id):
         job_report_dir = os.path.join(job_location_prefix, "job-" + job_id)
-        job_related_files = self.list_objects_by_prefix(self.config["tagging_job_report_bucket"], job_report_dir, False)
+        job_related_files = self.list_objects_by_prefix(self.config["batch_operation_job_report_bucket"], job_report_dir, False)
         for file in job_related_files:
             self.aws_s3_client.delete_object(
-                Bucket=self.config["tagging_job_report_bucket"],
+                Bucket=self.config["batch_operation_job_report_bucket"],
                 Key=file.path
             )
         self.aws_s3_client.delete_object(
-            Bucket=self.config["tagging_job_report_bucket"],
+            Bucket=self.config["batch_operation_job_report_bucket"],
             Key=manifest_key
         )
 
@@ -233,30 +233,30 @@ class S3StorageOperations(StorageOperations):
     @staticmethod
     def _verify_config(config):
         result = dict(config)
-        if "tagging_job_aws_account_id" not in result:
-            raise RuntimeError("Please provide tagging_job_aws_account_id within S3 storage lifecycle service cloud configuration")
+        if "batch_operation_job_aws_account_id" not in result:
+            raise RuntimeError("Please provide batch_operation_job_aws_account_id within S3 storage lifecycle service cloud configuration")
 
-        if "tagging_job_report_bucket" not in result:
-            raise RuntimeError("Please provide tagging_job_report_bucket within S3 storage lifecycle service cloud configuration")
+        if "batch_operation_job_report_bucket" not in result:
+            raise RuntimeError("Please provide batch_operation_job_report_bucket within S3 storage lifecycle service cloud configuration")
 
-        if "tagging_job_role_arn" not in result:
-            raise RuntimeError("Please provide tagging_job_role_arn within S3 storage lifecycle service cloud configuration")
+        if "batch_operation_job_role_arn" not in result:
+            raise RuntimeError("Please provide batch_operation_job_role_arn within S3 storage lifecycle service cloud configuration")
 
-        if "tagging_job_report_bucket_prefix" not in result:
-            result["tagging_job_report_bucket_prefix"] = "cp_storage_lifecycle_tagging"
-        result["tagging_job_report_bucket_prefix"] = result.get("tagging_job_report_bucket_prefix").strip("/")
+        if "batch_operation_job_report_bucket_prefix" not in result:
+            result["batch_operation_job_report_bucket_prefix"] = "cp_storage_lifecycle_batch_operation"
+        result["batch_operation_job_report_bucket_prefix"] = result.get("batch_operation_job_report_bucket_prefix").strip("/")
 
-        if "tagging_job_poll_status_retry_count" not in result:
-            result["tagging_job_poll_status_retry_count"] = 30
-        if result["tagging_job_poll_status_retry_count"] < 1:
+        if "batch_operation_job_poll_status_retry_count" not in result:
+            result["batch_operation_job_poll_status_retry_count"] = 30
+        if result["batch_operation_job_poll_status_retry_count"] < 1:
             raise RuntimeError(
-                "Value tagging_job_poll_status_retry_count within S3 storage lifecycle service cloud configuration should be > 1")
+                "Value batch_operation_job_poll_status_retry_count within S3 storage lifecycle service cloud configuration should be > 1")
 
-        if "tagging_job_poll_status_sleep_sec" not in result:
-            result["tagging_job_poll_status_sleep_sec"] = 5
-        if result["tagging_job_poll_status_sleep_sec"] < 1:
+        if "batch_operation_job_poll_status_sleep_sec" not in result:
+            result["batch_operation_job_poll_status_sleep_sec"] = 5
+        if result["batch_operation_job_poll_status_sleep_sec"] < 1:
             raise RuntimeError(
-                "Value tagging_job_poll_status_sleep_sec within S3 storage lifecycle service cloud configuration should be > 1")
+                "Value batch_operation_job_poll_status_sleep_sec within S3 storage lifecycle service cloud configuration should be > 1")
 
         return result
 
