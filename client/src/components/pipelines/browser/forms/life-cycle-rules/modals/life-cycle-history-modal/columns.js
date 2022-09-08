@@ -16,11 +16,15 @@
 
 import React from 'react';
 import {DESTINATIONS} from '../life-cycle-edit-modal';
+import displayDate from '../../../../../../../utils/displayDate';
+
+const FORMAT = 'YYYY-MM-DD';
 
 const columns = [{
   title: 'Date',
   dataIndex: 'date',
-  key: 'date'
+  key: 'date',
+  render: (aDate) => displayDate(aDate)
 }, {
   title: 'Action',
   dataIndex: 'action',
@@ -54,7 +58,8 @@ const columns = [{
 }, {
   title: 'Renewed transition',
   dataIndex: 'transition',
-  key: 'transition'
+  key: 'transition',
+  render: (aDate) => displayDate(aDate, FORMAT)
 }];
 
 export default columns;

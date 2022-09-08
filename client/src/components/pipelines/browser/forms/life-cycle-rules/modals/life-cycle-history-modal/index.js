@@ -40,18 +40,13 @@ const ACTION_TYPES = {
   prolongation: 'Prolongation'
 };
 
-const FORMAT = 'DD.MM.YYYY';
-const FULL_FORMAT = `${FORMAT} HH:mm:ss`;
-
 function mapDestination (destination) {
   return DESTINATIONS[destination] || '';
 }
 
 function getTransitionDate (prolongation = {}) {
   if (prolongation.prolongedDate && prolongation.days) {
-    return moment.utc(prolongation.prolongedDate)
-      .add(prolongation.days, 'days')
-      .format(FORMAT);
+    return moment.utc(prolongation.prolongedDate).add(prolongation.days, 'days');
   }
   return undefined;
 }
@@ -106,7 +101,7 @@ class LifeCycleHistoryModal extends React.Component {
   get history () {
     const {executions} = this.state;
     const executionsData = executions.map(execution => ({
-      date: moment.utc(execution.updated).format(FULL_FORMAT),
+      date: moment.utc(execution.updated),
       action: DESTINATIONS[execution.storageClass] === DESTINATIONS.DELETION
         ? ACTION_TYPES.deletion
         : ACTION_TYPES.transition,
@@ -118,7 +113,7 @@ class LifeCycleHistoryModal extends React.Component {
     }));
     const prolongationsData = this.prolongations
       .map(prolongation => ({
-        date: moment.utc(prolongation.prolongedDate).format(FULL_FORMAT),
+        date: moment.utc(prolongation.prolongedDate),
         action: ACTION_TYPES.prolongation,
         user: prolongation.userId
           ? this.getUserById(prolongation.userId)
@@ -129,7 +124,7 @@ class LifeCycleHistoryModal extends React.Component {
         destination: undefined
       }));
     return [...executionsData, ...prolongationsData]
-      .sort((a, b) => moment(a.date) - moment(b.date));
+      .sort((a, b) => a.date - b.date);
   }
 
   get filteredHistory () {
