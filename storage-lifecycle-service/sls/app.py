@@ -30,7 +30,8 @@ def main():
     parser.add_argument("--cp-api-token", required=False)
     parser.add_argument("--command", default="archive", choices=['archive', 'restore'])
     parser.add_argument("--mode", default="single", choices=['single', 'daemon'])
-    parser.add_argument("--at", default="00:01", required=False)
+    parser.add_argument("--start-at", required=False)
+    parser.add_argument("--start-each", required=False)
     parser.add_argument("--data-source", default="RESTApi", choices=['RESTApi'])
     parser.add_argument("--log-dir", default="/var/log/")
     parser.add_argument("--max-execution-running-days", default=2)
@@ -44,11 +45,8 @@ def main():
 def run_application(args, logger):
     data_source = configure_cp_data_source(args.cp_api_url, args.cp_api_token, args.log_dir, logger, args.data_source)
 
-    if not re.match("\\d\\d:\\d\\d", args.at):
-        raise RuntimeError("Wrong format of 'at' argument: {}, please specify it in format: 00:00".format(args.at))
-
     cloud_adapter = PlatformToCloudOperationsAdapter(data_source, logger)
-    config = SynchronizerConfig(args.command, args.mode, args.at, int(args.max_execution_running_days))
+    config = SynchronizerConfig(args.command, args.mode, args.start_at, args.start_each, int(args.max_execution_running_days))
     logger.log("Running application with config: {}".format(config.to_json()))
 
     lifecycle_storage_synchronizer = StorageLifecycleRestoringSynchronizer(config, data_source, cloud_adapter, logger) \
