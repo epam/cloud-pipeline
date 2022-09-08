@@ -216,7 +216,7 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                 if _relation_search_filter(a)
                 and root_action.started > a.started
                 and root_action is not a
-                and not statuses or a.status in statuses]
+                and (not statuses or a.status in statuses)]
 
     def _fetch_restore_action_paths_sorted(self, _ongoing_restore_actions):
         _actions_by_path = {}

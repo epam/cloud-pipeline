@@ -131,6 +131,9 @@ class S3StorageOperations(StorageOperations):
         return result
 
     def tag_files_to_transit(self, bucket, files, storage_class, region, transit_id):
+        if not files:
+            self.logger.log("No files to tag!")
+            return None
         tag_operation = {
             'S3PutObjectTagging': {
                 'TagSet': [
@@ -145,14 +148,22 @@ class S3StorageOperations(StorageOperations):
         return self._is_s3_batch_operation_succeeded(job_description)
 
     def run_files_restore(self, bucket, files, days, restore_tear, region, restore_operation_id):
+        archived_files_to_restore = [f for f in files if f.storage_class != self.STANDARD]
+        if not archived_files_to_restore:
+            self.logger.log("No files to tag!")
+            return {
+                "status": False,
+                "reason": "No files to perform restore!",
+                "value": None
+            }
+
+        self.logger.log("Filtered '{}' actual archived files to restore.".format(len(archived_files_to_restore)))
         restore_operation = {
             'S3InitiateRestoreObject': {
                 'ExpirationInDays': days,
                 'GlacierJobTier': restore_tear
             }
         }
-        archived_files_to_restore = [f for f in files if f.storage_class != self.STANDARD]
-        self.logger.log("Filtered '{}' actual archived files to restore.".format(len(files)))
         job_description = self._run_s3_batch_operation(
             bucket, archived_files_to_restore, region, restore_operation, restore_operation_id)
         return {
@@ -321,7 +332,7 @@ class S3StorageOperations(StorageOperations):
             S3StorageOperations._path_from_s3_format(s3_object["Key"]) if convert_path else s3_object["Key"],
             s3_object["LastModified"],
             s3_object["StorageClass"],
-            s3_object["VersionId"] if 'VersionId' in s3_object else None
+            s3_object["VersionId"] if 'VersionId' in s3_object and s3_object['VersionId'] != "null" else None
         )
 
     @staticmethod
