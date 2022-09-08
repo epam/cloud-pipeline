@@ -67,11 +67,11 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
             effective_action = next(iter(sorted(actions, key=lambda a: a.started, reverse=True)), None)
             if effective_action and effective_action.status == self.INITIATED_STATUS:
 
+                # search for parent or child running action (so, related)
                 running_related_action = next(
-                    filter(lambda a: a.status == self.RUNNING_STATUS,
-                           sorted(self._fetch_child_actions_to_current_one(effective_action, ongoing_actions),
-                                  key=lambda a: a.started, reverse=True)),
-                    None
+                       iter(self._fetch_related_actions_to_current_one(effective_action, ongoing_actions,
+                                                                       statuses=[self.RUNNING_STATUS])),
+                       None
                 )
 
                 if running_related_action:
@@ -85,9 +85,13 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                         .format(storage.id, effective_action.action_id, path, effective_action.status, effective_action.updated))
                     self._process_action_and_update(storage, effective_action)
 
+                # Child actions with INITIATED_STATUS and started date that is before then
+                # effective action started date can be cancelled because effective action override it
                 related_actions_to_cancel = [a for a in
-                                             self._fetch_child_actions_to_current_one(effective_action, ongoing_actions)
-                                             if a.status == self.INITIATED_STATUS]
+                                             self._fetch_related_actions_to_current_one(
+                                                 effective_action, ongoing_actions,
+                                                 search_down=True, statuses=[self.INITIATED_STATUS])
+                                             if a.started < effective_action.started]
                 if len(related_actions_to_cancel) > 0:
                     self.logger.log(
                         "Storage: {}. Action: {}. Path: {}. There are '{}' related actions, that will be cancelled.".format(
@@ -197,11 +201,22 @@ class StorageLifecycleRestoringSynchronizer(StorageLifecycleSynchronizer):
                             .format(storage.id, action.action_id, action.path, subject, body, to_user))
 
     @staticmethod
-    def _fetch_child_actions_to_current_one(root_action, actions):
+    def _fetch_related_actions_to_current_one(root_action, actions, search_down=None, statuses=None):
+        def _relation_search_filter(a):
+            if search_down is None:
+                return root_action.path.startswith(a.path) or a.path.startswith(root_action.path)
+            elif search_down:
+                return a.path.startswith(root_action.path)
+            else:
+                return root_action.path.startswith(a.path)
+
+        if statuses is None:
+            statuses = []
         return [a for a in actions
-                if a.path.startswith(root_action.path)
+                if _relation_search_filter(a)
                 and root_action.started > a.started
-                and root_action is not a]
+                and root_action is not a
+                and not statuses or a.status in statuses]
 
     def _fetch_restore_action_paths_sorted(self, _ongoing_restore_actions):
         _actions_by_path = {}

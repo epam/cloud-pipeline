@@ -13,8 +13,10 @@
 #  limitations under the License.
 #
 import json
+import os
 
 from sls.cloud.s3_cloud import S3StorageOperations
+from sls.util import path_utils
 
 S3_TYPE = "S3"
 
@@ -62,7 +64,7 @@ class PlatformToCloudOperationsAdapter:
         try:
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
             files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
-                storage_cloud_identifier, storage_path_prefix + action.path,
+                storage_cloud_identifier, path_utils.join_paths(storage_path_prefix, action.path),
                 convert_paths=False, list_versions=action.restore_versions
             )
             self.logger.log("Storage: {}. Action: {}. Path: {}. Listed '{}' files to possible restore."

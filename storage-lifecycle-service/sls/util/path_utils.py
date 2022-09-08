@@ -55,3 +55,9 @@ def generate_all_possible_dir_paths(paths):
     for path in paths:
         result = result.union(generate_hierarchy(path))
     return result
+
+
+def join_paths(prefix, suffix, delimiter="/"):
+    formatted_prefix = prefix[:-len(delimiter)] if prefix.endswith(delimiter) else prefix
+    formatted_suffix = suffix[len(delimiter)::] if suffix.startswith(delimiter) else suffix
+    return delimiter.join([formatted_prefix, formatted_suffix])
