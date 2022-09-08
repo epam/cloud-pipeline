@@ -31,14 +31,3 @@
 .hcs-video-container video::-webkit-media-controls-mute-button {
   display: none;
 }
-
-.video-btn-group .btn {
-  margin-right: 0;
-  margin-left: 0;
-  line-height: 1;
-}
-
-.video-settings {
-  width: 200px;
-  padding: 5px;
-}

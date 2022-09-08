@@ -334,6 +334,7 @@ class HcsImage extends React.PureComponent {
       if (newZ !== currentZ && this.hcsImageViewer) {
         this.hcsImageViewer.setGlobalZPosition(Number(newZ));
       }
+      this.hcsVideoSource.setZPlanes([this.selectedZCoordinate + 1]);
       this.loadImageForAnalysis();
     });
   };
@@ -1059,6 +1060,7 @@ class HcsImage extends React.PureComponent {
         hcsViewerState={this.hcsViewerState}
         hcsSourceState={this.hcsSourceState}
         hcsAnalysis={this.hcsAnalysis}
+        hcsVideoSource={this.hcsVideoSource}
       >
         <div
           className={
