@@ -190,7 +190,8 @@ class UsersRolesSelect extends React.Component {
       users,
       roles,
       value = [],
-      showRoles = true
+      showRoles = true,
+      popupContainerFn
     } = this.props;
     const {
       searchString = ''
@@ -211,7 +212,10 @@ class UsersRolesSelect extends React.Component {
         onChange={this.onChange}
         filterOption={false}
         placeholder={this.props.placeholder || ''}
-        getPopupContainer={o => o.parentNode}
+        getPopupContainer={o => popupContainerFn
+          ? popupContainerFn(o)
+          : o.parentNode
+        }
         onSearch={this.onChangeSearchString}
         onBlur={() => this.onChangeSearchString()}
         notFoundContent={
@@ -268,7 +272,8 @@ UsersRolesSelect.propTypes = {
   style: PropTypes.object,
   disabled: PropTypes.bool,
   value: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  onChange: PropTypes.func
+  onChange: PropTypes.func,
+  popupContainerFn: PropTypes.func
 };
 
 UsersRolesSelect.defaultProps = {

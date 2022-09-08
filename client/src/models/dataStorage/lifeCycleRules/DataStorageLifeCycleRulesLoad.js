@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2020 EPAM Systems, Inc. (https://www.epam.com/)
+ * Copyright 2017-2022 EPAM Systems, Inc. (https://www.epam.com/)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,19 @@
  * limitations under the License.
  */
 
-.data-storage-form-item {
-  margin-bottom: 5px;
-}
+import Remote from '../../basic/Remote';
 
-.custom-label {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: end;
+export default class DataStorageLifeCycleRulesLoad extends Remote {
+  url;
+  path;
+
+  constructor (id, path = '') {
+    super();
+    if (path) {
+      this.path = path.startsWith('/') ? path : `/${path}`;
+      this.url = `/datastorage/${id}/lifecycle/rule?path=${this.path}`;
+    } else {
+      this.url = `/datastorage/${id}/lifecycle/rule`;
+    }
+  };
 }

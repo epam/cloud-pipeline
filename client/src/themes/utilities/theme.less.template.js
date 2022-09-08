@@ -413,7 +413,9 @@ export default `
   border-color: @color-red;
   box-shadow: 0 0 0 2px fade(@color-red, 20%);
 }
-@THEME .ant-form-item-control.has-error .ant-input {
+@THEME .ant-form-item-control.has-error .ant-select-selection,
+@THEME .ant-form-item-control.has-error .ant-input,
+@THEME .ant-form-item-control.has-error .CodeMirror-wrap {
   border-color: @color-red;
 }
 @THEME .cp-text-not-important {
