@@ -54,7 +54,7 @@ spec:
             - name: CP_STORAGE_LIFECYCLE_RUN_COMMAND
               value: restore
             - name: CP_STORAGE_LIFECYCLE_DAEMON_START_EACH
-              value: 20
+              value: "20"
           envFrom:
             - configMapRef:
                 name: cp-config-global
