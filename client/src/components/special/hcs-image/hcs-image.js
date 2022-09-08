@@ -1059,6 +1059,7 @@ class HcsImage extends React.PureComponent {
         hcsViewerState={this.hcsViewerState}
         hcsSourceState={this.hcsSourceState}
         hcsAnalysis={this.hcsAnalysis}
+        hcsVideoSource={this.hcsVideoSource}
       >
         <div
           className={
