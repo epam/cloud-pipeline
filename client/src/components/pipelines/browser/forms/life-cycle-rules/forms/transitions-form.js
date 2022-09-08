@@ -26,14 +26,8 @@ import {
   Icon
 } from 'antd';
 import moment from 'moment-timezone';
+import {DESTINATIONS} from '../modals';
 import styles from './life-cycle-forms.css';
-
-const DESTINATIONS = {
-  GLACIER_IR: 'S3 Glacier Instant Retrieval',
-  GLACIER: 'S3 Glacier Flexible Retrieval (formerly Glacier)',
-  DEEP_ARCHIVE: 'S3 Glacier Deep Archive',
-  DELETION: 'Deletion'
-};
 
 const TRANSITION_PERIOD = {
   after: 'after',

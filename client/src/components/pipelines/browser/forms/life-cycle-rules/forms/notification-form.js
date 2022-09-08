@@ -17,6 +17,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import {observer} from 'mobx-react';
+import {observable, computed} from 'mobx';
 import {
   Button,
   Input,
@@ -24,11 +26,13 @@ import {
   Row,
   Col,
   Icon,
-  Checkbox
+  Checkbox,
+  message
 } from 'antd';
 import UsersRolesSelect from '../../../../../special/users-roles-select';
 import CodeEditor from '../../../../../special/CodeEditor';
 import EmailPreview from '../../../../../../components/settings/forms/EmailPreview';
+import NotificationTemplates from '../../../../../../models/settings/NotificationTemplates';
 import styles from './life-cycle-forms.css';
 
 const columnLayout = {
@@ -52,19 +56,69 @@ const fullWidthLayout = {
   }
 };
 
+const TEMPLATE_KEY = 'DATASTORAGE_LIFECYCLE_ACTION';
+
+@observer
 class NotificationForm extends React.Component {
   state = {
     previewMode: false,
     pending: false
   }
 
+  @observable systemTemplate;
+
   notifyFormContainer;
+
+  componentDidMount () {
+    this.fetchEmailSettings();
+  }
 
   componentDidUpdate (prevProps) {
     if (this.props.notificationsDisabled !== prevProps.notificationsDisabled) {
       this.checkRequiredFields();
     }
+    if (this.props.rule.id !== prevProps.rule.id) {
+      this.fetchEmailSettings();
+    }
   }
+
+  @computed
+  get initialBody () {
+    const {rule} = this.props;
+    if (rule.notification && rule.notification.body) {
+      return rule.notification.body;
+    }
+    if (this.systemTemplate) {
+      return this.systemTemplate.body;
+    }
+    return undefined;
+  }
+
+  @computed
+  get initialSubject () {
+    const {rule} = this.props;
+    if (rule.notification && rule.notification.subject) {
+      return rule.notification.subject;
+    }
+    if (this.systemTemplate) {
+      return this.systemTemplate.subject;
+    }
+    return undefined;
+  }
+
+  fetchEmailSettings = () => {
+    this.setState({pending: true}, async () => {
+      const request = new NotificationTemplates();
+      await request.fetch();
+      this.setState({pending: false}, () => {
+        if (request.error) {
+          message.error(request.error, 5);
+        }
+        this.systemTemplate = (request.value || [])
+          .find(template => template.name === TEMPLATE_KEY);
+      });
+    });
+  };
 
   checkRequiredFields = () => {
     const {form} = this.props;
@@ -90,7 +144,6 @@ class NotificationForm extends React.Component {
   renderNotificationTemplate = () => {
     const {
       form,
-      rule,
       notificationsDisabled,
       useDefaultNotify
     } = this.props;
@@ -131,9 +184,7 @@ class NotificationForm extends React.Component {
             style={{display: previewMode ? 'none' : 'inherit'}}
           >
             {getFieldDecorator('notification.subject', {
-              initialValue: rule.notification
-                ? rule.notification.subject
-                : undefined,
+              initialValue: this.initialSubject,
               rules: [{
                 required: !notificationsDisabled,
                 message: ' '
@@ -178,9 +229,7 @@ class NotificationForm extends React.Component {
           >
             {getFieldDecorator('notification.body', {
               valuePropName: 'code',
-              initialValue: rule.notification
-                ? rule.notification.body
-                : undefined,
+              initialValue: this.initialBody,
               rules: [{
                 required: !notificationsDisabled,
                 message: ' '
