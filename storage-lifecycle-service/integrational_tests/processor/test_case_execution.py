@@ -34,7 +34,7 @@ class TestCaseExecutor(TestCaseProcessor):
     def process(self, testcase):
         logger = AppLogger()
         data_source = cp_api_decator.MockedNotificationRESTApiCloudPipelineDataSource(
-            sls.cloudpipelineapi.cp_api_interface_impl.configure_cp_data_source(
+            sls.pipelineapi.cp_api_interface_impl.configure_cp_data_source(
                 self.config.get("CP_API_URL"), self.config.get("CP_API_TOKEN"), "/tmp", logger)
         )
 
