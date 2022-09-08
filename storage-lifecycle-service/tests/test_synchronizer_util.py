@@ -16,10 +16,10 @@ import datetime
 import os
 import unittest
 
-from sls.app import storage_synchronizer
-from sls.app.storage_synchronizer import StorageLifecycleSynchronizer
-from sls.model.cloud_object_model import CloudObject
-from sls.model.rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation, StorageLifecycleRule, \
+from sls.app.synchronizer import archiving_synchronizer_impl
+from sls.app.synchronizer.archiving_synchronizer_impl import StorageLifecycleArchivingSynchronizer
+from sls.cloud.model.cloud_object_model import CloudObject
+from sls.pipelineapi.model.archive_rule_model import StorageLifecycleRuleTransition, StorageLifecycleRuleProlongation, StorageLifecycleRule, \
     StorageLifecycleTransitionCriterion
 
 
@@ -33,7 +33,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
             CloudObject("/dir2/file.txt", None, None),
             CloudObject("/dir1/subdir1/file.txt", None, None),
         ]
-        self.assertEqual([glob], StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+        self.assertEqual([glob], StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
 
     def test_identify_datasets_from_root(self):
         glob = "/*"
@@ -44,7 +44,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
         ]
         self.assertEqual(
             sorted(["/dataset1", "/dataset2", "/dataset3"]),
-            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+            sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
 
     def test_identify_datasets_from_root_glob(self):
@@ -56,7 +56,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
         ]
         self.assertEqual(
             sorted(["/dataset1", "/dataset2", "/dataset3", "/dataset3/subdir1"]),
-            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+            sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
 
     def test_identify_datasets_from_wide_root_glob_and_suffix(self):
@@ -68,7 +68,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
         ]
         self.assertEqual(
             sorted(["/dataset3/subdir1/machinerun3", "/dataset3/machinerun2", "/machinerun1"]),
-            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+            sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
 
     def test_identify_datasets_from_root_by_prefix(self):
@@ -80,7 +80,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
         ]
         self.assertEqual(
             sorted(["/dataset1", "/dataset2"]),
-            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+            sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
 
     def test_identify_datasets_from_sub_folder_by_prefix(self):
@@ -92,7 +92,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
         ]
         self.assertEqual(
             sorted(["/dir1/dataset1", "/dir2/dataset2"]),
-            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+            sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
 
     def test_identify_datasets_from_hierarchy_by_prefix(self):
@@ -111,7 +111,7 @@ class TestIdentificationSubjectFolders(unittest.TestCase):
                     "/folder3/subdir2/dataset3", "/folder3/subdir2/subsubdir3/dataset3"
                 ]
             ),
-            sorted(StorageLifecycleSynchronizer._identify_subject_folders(files, glob))
+            sorted(StorageLifecycleArchivingSynchronizer._identify_subject_folders(files, glob))
         )
 
 
@@ -120,32 +120,32 @@ class TestDefineEffectiveTransitions(unittest.TestCase):
     def test_effective_transition_with_days_is_the_same_if_no_prolongation(self):
         transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=5)
         empty_prolongation = StorageLifecycleRuleProlongation(prolongation_id=-1, prolonged_date=None, days=0, path=None)
-        effective = StorageLifecycleSynchronizer._define_effective_transitions(empty_prolongation, [transition])[0]
+        effective = StorageLifecycleArchivingSynchronizer._define_effective_transitions(empty_prolongation, [transition])[0]
         self.assertEqual(effective.transition_after_days, transition.transition_after_days)
 
     def test_effective_transition_with_date_is_the_same_if_no_prolongation(self):
         transition = StorageLifecycleRuleTransition("GLACIER", transition_date=datetime.datetime.now().date())
         empty_prolongation = StorageLifecycleRuleProlongation(prolongation_id=-1, prolonged_date=None, days=0, path=None)
-        effective = StorageLifecycleSynchronizer._define_effective_transitions(empty_prolongation, [transition])[0]
+        effective = StorageLifecycleArchivingSynchronizer._define_effective_transitions(empty_prolongation, [transition])[0]
         self.assertEqual(effective.transition_date, transition.transition_date)
 
     def test_effective_transition_with_days_is_calculated_right(self):
         transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=5)
         prolongation = StorageLifecycleRuleProlongation(prolongation_id=-1, prolonged_date=None, days=1, path=None)
-        effective = StorageLifecycleSynchronizer._define_effective_transitions(prolongation, [transition])[0]
+        effective = StorageLifecycleArchivingSynchronizer._define_effective_transitions(prolongation, [transition])[0]
         self.assertEqual(effective.transition_after_days, transition.transition_after_days + 1)
 
     def test_effective_transition_with_date_is_calculated_right(self):
         transition = StorageLifecycleRuleTransition("GLACIER", transition_date=datetime.datetime.now().date())
         prolongation = StorageLifecycleRuleProlongation(prolongation_id=-1, prolonged_date=None, days=1, path=None)
-        effective = StorageLifecycleSynchronizer._define_effective_transitions(prolongation, [transition])[0]
+        effective = StorageLifecycleArchivingSynchronizer._define_effective_transitions(prolongation, [transition])[0]
         self.assertEqual(effective.transition_date, transition.transition_date + datetime.timedelta(days=1))
 
 
 class TestDefineCriterionFile(unittest.TestCase):
 
     def test_define_criterion_file_find_correctly_for_default_criterion_and_latest_method(self):
-        rule = StorageLifecycleRule(1, 1, "/", storage_synchronizer.METHOD_LATEST_FILE)
+        rule = StorageLifecycleRule(1, 1, "/", archiving_synchronizer_impl.METHOD_LATEST_FILE)
         folder = "/datastorage"
         now = datetime.datetime.now()
         latest_file = CloudObject(os.path.join(folder, "file1.txt"), now, None)
@@ -159,11 +159,11 @@ class TestDefineCriterionFile(unittest.TestCase):
             latest_file,
             CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None),
         ]
-        criterion_file = StorageLifecycleSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
+        criterion_file = StorageLifecycleArchivingSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
         self.assertEqual(criterion_file.path, latest_file.path)
 
     def test_define_criterion_file_find_correctly_for_default_criterion_and_earliest_method(self):
-        rule = StorageLifecycleRule(1, 1, "/", storage_synchronizer.METHOD_EARLIEST_FILE)
+        rule = StorageLifecycleRule(1, 1, "/", archiving_synchronizer_impl.METHOD_EARLIEST_FILE)
         folder = "/datastorage"
         now = datetime.datetime.now()
         earliest_file = CloudObject(os.path.join(folder, "file1.txt"), now - datetime.timedelta(days=1), None)
@@ -177,11 +177,11 @@ class TestDefineCriterionFile(unittest.TestCase):
             earliest_file,
             CloudObject(os.path.join(folder, "file2.txt"), now, None),
         ]
-        criterion_file = StorageLifecycleSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
+        criterion_file = StorageLifecycleArchivingSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
         self.assertEqual(criterion_file.path, earliest_file.path)
 
     def test_define_criterion_file_find_correctly_for_matching_file_criterion_and_latest_method(self):
-        rule = StorageLifecycleRule(1, 1, "/", storage_synchronizer.METHOD_LATEST_FILE,
+        rule = StorageLifecycleRule(1, 1, "/", archiving_synchronizer_impl.METHOD_LATEST_FILE,
                                     transition_criterion=StorageLifecycleTransitionCriterion("MATCHING_FILES", "*.pdf"))
         folder = "/datastorage"
         now = datetime.datetime.now()
@@ -196,11 +196,11 @@ class TestDefineCriterionFile(unittest.TestCase):
             CloudObject(os.path.join(folder, "file1.txt"), now, None),
             CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None),
         ]
-        criterion_file = StorageLifecycleSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
+        criterion_file = StorageLifecycleArchivingSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
         self.assertEqual(criterion_file.path, latest_file.path)
 
     def test_define_criterion_file_not_find_correctly_for_matching_file_criterion_and_latest_method(self):
-        rule = StorageLifecycleRule(1, 1, "/", storage_synchronizer.METHOD_LATEST_FILE,
+        rule = StorageLifecycleRule(1, 1, "/", archiving_synchronizer_impl.METHOD_LATEST_FILE,
                                     transition_criterion=StorageLifecycleTransitionCriterion("MATCHING_FILES", "*.pdf"))
         folder = "/datastorage"
         now = datetime.datetime.now()
@@ -212,7 +212,7 @@ class TestDefineCriterionFile(unittest.TestCase):
             CloudObject(os.path.join(folder, "file1.txt"), now, None),
             CloudObject(os.path.join(folder, "file2.txt"), now - datetime.timedelta(days=1), None),
         ]
-        criterion_file = StorageLifecycleSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
+        criterion_file = StorageLifecycleArchivingSynchronizer._define_criterion_file(rule, listing, folder, subject_files)
         self.assertIsNone(criterion_file, )
 
 
@@ -223,7 +223,7 @@ class TestCalculateTransitionDate(unittest.TestCase):
         transition = StorageLifecycleRuleTransition("GLACIER", transition_after_days=5)
         file = CloudObject(os.path.join("/datastorage", "file1.txt"), now, None)
         self.assertEqual(
-            StorageLifecycleSynchronizer._calculate_transition_date(file, transition),
+            StorageLifecycleArchivingSynchronizer._calculate_transition_date(file, transition),
             now.date() + datetime.timedelta(days=5)
         )
 
@@ -233,7 +233,7 @@ class TestCalculateTransitionDate(unittest.TestCase):
         transition = StorageLifecycleRuleTransition("GLACIER", transition_date=date_of_action)
         file = CloudObject(os.path.join("/datastorage", "file1.txt"), now, None)
         self.assertEqual(
-            StorageLifecycleSynchronizer._calculate_transition_date(file, transition),
+            StorageLifecycleArchivingSynchronizer._calculate_transition_date(file, transition),
             date_of_action
         )
 

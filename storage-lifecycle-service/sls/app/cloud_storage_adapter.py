@@ -13,8 +13,10 @@
 #  limitations under the License.
 #
 import json
+import os
 
-from sls.cloud.cloud import S3StorageOperations
+from sls.cloud.s3_cloud import S3StorageOperations
+from sls.util import path_utils
 
 S3_TYPE = "S3"
 
@@ -37,24 +39,66 @@ class PlatformToCloudOperationsAdapter:
 
     def list_objects_by_prefix(self, storage, prefix):
         storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+        storage_is_versioned = storage.policy.versioning if storage.policy else False
         files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(storage_cloud_identifier,
-                                                                                   storage_path_prefix + prefix)
+                                                                                   storage_path_prefix + prefix,
+                                                                                   list_versions=storage_is_versioned)
         for file in files:
             if storage_path_prefix and file.path.startswith(storage_path_prefix):
                 file.path = file.path.replace(storage_path_prefix, "", 1)
         return files
 
-    def tag_files_to_transit(self, storage, files, storage_class, transit_id):
+    def tag_files_to_transit(self, storage, files, storage_class, transit_operation_id):
         try:
             storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
             for file in files:
                 if storage_path_prefix:
                     file.path = storage_path_prefix + file.path
             return self.cloud_operations[storage.storage_type].tag_files_to_transit(
-                storage_cloud_identifier, files, storage_class, storage.region_name, transit_id)
+                storage_cloud_identifier, files, storage_class, storage.region_name, transit_operation_id)
         except Exception as e:
             self.logger.log("Something went wrong when try to tag files from {}. Cause: {}".format(storage.path, e))
             return False
+
+    def run_restore_action(self, storage, action, restore_operation_id):
+        try:
+            storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
+                storage_cloud_identifier, path_utils.join_paths(storage_path_prefix, action.path),
+                convert_paths=False, list_versions=action.restore_versions
+            )
+            self.logger.log("Storage: {}. Action: {}. Path: {}. Listed '{}' files to possible restore."
+                            .format(storage.id, action.action_id, action.path, len(files)))
+            return self.cloud_operations[storage.storage_type].run_files_restore(
+                storage_cloud_identifier, files, action.days, action.restore_mode,
+                storage.region_name, restore_operation_id
+            )
+        except Exception as e:
+            self.logger.log("Storage: {}. Path: {}. Problem with restoring files, cause: {}"
+                            .format(storage.id, action.path, e))
+            return {
+                "status": False,
+                "reason": e,
+                "value": None
+            }
+
+    def check_restore_action(self, storage, action):
+        try:
+            storage_cloud_identifier, storage_path_prefix = self._parse_storage_path(storage)
+            files = self.cloud_operations[storage.storage_type].list_objects_by_prefix(
+                storage_cloud_identifier, storage_path_prefix + action.path,
+                convert_paths=False, list_versions=action.restore_versions
+            )
+            return self.cloud_operations[storage.storage_type].check_files_restore(
+                storage_cloud_identifier, files, action.updated, action.restore_mode
+            )
+        except Exception as e:
+            self.logger.log("Problem with cheking restoring files, cause: {}".format(e))
+            return {
+                "status": False,
+                "reason": e,
+                "value": None
+            }
 
     @staticmethod
     def fetch_storage_lifecycle_service_config(data_source):
