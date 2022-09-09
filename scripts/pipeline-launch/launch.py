@@ -237,7 +237,7 @@ try:
     logger.info('Configuring owner account on the node...')
     node_ssh.execute(f'{python_dir}\\python.exe -c \\"'
                      f'from pipeline.utils.account import create_user; '
-                     f'create_user(\'{owner}\', \'{owner_password}\', \'{owner_groups}\')\\"')
+                     f'create_user(\'{owner}\', \'{owner_password}\', groups=\'{owner_groups}\')\\"')
 
     logger.info('Persisting environment...')
     with open(persisted_env_path, 'w') as f:
