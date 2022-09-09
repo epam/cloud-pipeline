@@ -177,6 +177,36 @@ A new SSH key named `CP-SSH-Key`
             "Resource": [
                 "arn:aws:iam::<account-id>:role/CP-S3viaSTS"
             ]
+        },
+        {
+            "Sid": "CloudUserManagementAllow",
+            "Effect": "Allow",
+            "Action": [
+                "iam:DeleteAccessKey",
+                "iam:UpdateUser",
+                "iam:GetAccessKeyLastUsed",
+                "iam:AttachUserPolicy",
+                "iam:DeleteUserPolicy",
+                "iam:UpdateAccessKey",
+                "iam:DeleteUser",
+                "iam:ListUserPolicies",
+                "iam:CreateUser",
+                "iam:CreateAccessKey",
+                "iam:GetUserPolicy",
+                "iam:PutUserPolicy",
+                "iam:GetUser",
+                "iam:ListAccessKeys"
+            ],
+            "Resource": "arn:aws:iam::<account-id>:user/cp-*"
+        },
+        {
+            "Sid": "PassSLSRoleAllow",
+	        "Effect": "Allow",
+	        "Action": [
+	            "iam:GetRole",
+	            "iam:PassRole"
+	        ],
+        	"Resource": "arn:aws:iam::<account-id>:role/CP-SLS-Role"
         }
     ]
 }
@@ -238,11 +268,63 @@ A new SSH key named `CP-SSH-Key`
 }
 ```
 
+* Name: **CP-SLS-Policy**
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:DeleteObject",
+                "s3:GetObject",
+                "s3:PutObjectTagging",
+                "s3:GetObjectTagging",
+                "s3:DeleteObjectTagging",
+                "s3:ListBucket",
+                "s3:PutObject",
+                "s3:ListBucketVersions",
+                "s3:DeleteObjectVersion",
+                "s3:GetObjectVersion",
+                "s3:PutObjectVersionTagging",
+                "s3:GetObjectVersionTagging",
+                "s3:DeleteObjectVersionTagging",
+		        "s3:RestoreObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::*"
+            ]
+        },
+
+    ]
+}
+```
+
+* Name: **CP-SLS-Assume-Policy**
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "Service": "batchoperations.s3.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+        }
+    ]
+}
+```
+
 ### Roles
 
 * **AWSServiceRoleForEC2Spot**: policies according to the AWS Documentation [Manually create the AWSServiceRoleForEC2Spot service-linked role](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#service-linked-roles-spot-instance-requests)
 
 * **CP-Service**: CP-Service-Policy and CP-KMS-Assume-Policy
+
+* **CP-SLS-Service**: CP-SLS-Policy and CP-SLS-Assume-Policy
 
 * **CP-S3viaSTS**: 
   * Policies: CP-S3viaSTS-Policy and CP-KMS-Assume-Policy
