@@ -79,7 +79,10 @@ export default class UserName extends React.Component {
     } = this.props;
     if (this.user) {
       return (
-        <Tooltip overlay={this.renderUserAttributes(this.user)}>
+        <Tooltip
+          overlay={this.renderUserAttributes(this.user)}
+          placement="right"
+        >
           <span
             className={className}
             style={Object.assign({cursor: 'default'}, style)}

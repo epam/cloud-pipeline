@@ -59,6 +59,7 @@ function CellProfilerJob (props) {
         <StatusIcon
           run={job.job}
           small
+          tooltipPlacement="right"
         />
         <span
           className={styles.title}
