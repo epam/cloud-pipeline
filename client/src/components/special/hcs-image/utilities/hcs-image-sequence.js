@@ -89,6 +89,8 @@ class HCSImageSequence {
     this.error = undefined;
     this.omeTiff = undefined;
     this.offsetsJson = undefined;
+    this.metadata = [];
+    this.timeouts = [];
   }
 
   destroy () {
@@ -139,6 +141,8 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.omeTiff = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OMETiffURL);
+        this.timeouts.push(setTimeout(() => this.generateOMETiffURL(), 890000));
       })
       .catch((e) => {
         this.error = e.message;
@@ -151,6 +155,8 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.offsetsJson = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OffsetsJsonURL);
+        this.timeouts.push(setTimeout(() => this.generateOffsetsJsonURL(), 890000));
       })
       .catch(() => {});
     return promise;
@@ -159,10 +165,7 @@ class HCSImageSequence {
   fetchMetadata = () => {
     if (!this.metadataPromise) {
       this.metadataPromise = new Promise((resolve) => {
-        Promise.all([
-          this.generateOMETiffURL(),
-          this.generateOffsetsJsonURL()
-        ])
+        Promise.resolve()
           .then(() => {
             if (this.omeTiff && this.offsetsJson) {
               return fetchSourceInfo({url: this.omeTiff, offsetsUrl: this.offsetsJson});
@@ -214,6 +217,8 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.overviewOmeTiff = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OverviewOMETiffURL);
+        this.timeouts.push(setTimeout(() => this.generateOverviewOMETiffURL(), 890000));
       })
       .catch((e) => {
         this.error = e.message;
@@ -227,18 +232,28 @@ class HCSImageSequence {
     promise
       .then((url) => {
         this.overviewOffsetsJson = url;
+        this.hcs.emit(HCSConstants.DATA_URLS.OverviewOffsetsJsonURL);
+        this.timeouts.push(setTimeout(() => this.generateOverviewOffsetsJsonURL(), 890000));
       })
       .catch(() => {});
     return promise;
   }
 
-  resignDataURLs () {
+  regenerateDataURLs () {
     return Promise.all([
       this.generateOMETiffURL(),
       this.generateOffsetsJsonURL(),
       this.generateOverviewOMETiffURL(),
       this.generateOverviewOffsetsJsonURL()
     ]);
+  }
+
+  destroy = () => {
+    if (this.timeouts.length) {
+      for (let j = 0; j < this.timeouts.length; j++) {
+        clearTimeout(this.timeouts[j]);
+      }
+    }
   }
 }
 

@@ -77,6 +77,12 @@ class HcsImage extends React.PureComponent {
   @observable hcsImageViewer;
   @observable hcsAnalysis = new Analysis();
 
+  constructor () {
+    super();
+    this.listeners = [];
+    this.addEventListener('dataURLsRegenerated', this.loadImage);
+  }
+
   componentDidMount () {
     this.hcsVideoSource.attachViewerState(this.hcsViewerState);
     this.hcsAnalysis.setCurrentUser(this.props.authenticatedUserInfo);
@@ -104,6 +110,26 @@ class HcsImage extends React.PureComponent {
       this.hcsInfo.destroy();
       this.hcsInfo = undefined;
     }
+    this.removeEventListener('dataURLsRegenerated');
+  }
+
+  addEventListener = (event, listener) => {
+    this.listeners.push({event, listener});
+  }
+
+  removeEventListener = (event, listener) => {
+    this.listeners = this.listeners.filter((o) => o.event !== event);
+  }
+
+  emit = (event, payload) => {
+    this.listeners
+      .filter(o => o.event === event)
+      .map(o => o.listener)
+      .forEach(listener => {
+        if (typeof listener === 'function') {
+          listener(payload);
+        }
+      });
   }
 
   @computed
@@ -209,6 +235,10 @@ class HcsImage extends React.PureComponent {
     return batchAnalysis && batchJobId;
   }
 
+  emitDataURLsRegenerated = () => {
+    this.emit('dataURLsRegenerated');
+  }
+
   prepare = () => {
     const {
       storage,
@@ -237,7 +267,8 @@ class HcsImage extends React.PureComponent {
         selectedZCoordinates: [],
         mergeZPlanes: false
       }, () => {
-        HCSInfo.fetch({storageInfo: storage, storageId, path})
+        const emitDataURLsRegenerated = this.emitDataURLsRegenerated;
+        HCSInfo.fetch({storageInfo: storage, storageId, path, emitDataURLsRegenerated})
           .then(info => {
             const {
               sequences = [],
@@ -347,7 +378,7 @@ class HcsImage extends React.PureComponent {
       }, () => {
         sequence
           .fetch()
-          .then(() => sequence.resignDataURLs())
+          .then(() => sequence.regenerateDataURLs())
           .then(() => sequence.fetchMetadata())
           .then(() => {
             const {wells = []} = sequence;
