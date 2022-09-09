@@ -60,7 +60,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             )
 
         file_listing_cache = {}
-
+        self.cloud_bridge.prepare_bucket_if_needed(storage)
         for rule in rules:
             self.logger.log("Storage: {}. Rule: {}. [Starting]".format(storage.id, rule.rule_id))
             try:
@@ -392,11 +392,17 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         self._create_or_update_execution(
             rule.datastorage_id, rule, storage_class, path, EXECUTION_NOTIFICATION_SENT_STATUS)
         subject, body, to_user, copy_users, parameters = _prepare_massage()
-        result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
-        if not result:
-            self._create_or_update_execution(
-                rule.datastorage_id, rule, storage_class, path, EXECUTION_FAILED_STATUS)
-            raise RuntimeError("Problem to send a notification for: {}".format(str(notification_properties)))
+        if subject and body and to_user:
+            result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
+            if not result:
+                self._create_or_update_execution(
+                    rule.datastorage_id, rule, storage_class, path, EXECUTION_FAILED_STATUS)
+                raise RuntimeError("Problem to send a notification for: {}".format(str(notification_properties)))
+        else:
+            self.logger.log("Storage: {}. Rule: {}. Path: '{}'. "
+                            "Will not send notification because parameters are not present, "
+                            "subject: {} body: {} to_user: {}"
+                            .format(storage.id, rule.rule_id, path, subject, body, to_user))
 
     @staticmethod
     def _notification_should_be_sent(notification, execution, date_of_action, today):
