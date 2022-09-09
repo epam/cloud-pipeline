@@ -46,7 +46,7 @@ const formItemLayout = {
 
 const DESTINATIONS = {
   GLACIER_IR: 'S3 Glacier Instant Retrieval',
-  GLACIER: 'S3 Glacier Flexible Retrieval (formally Glacier)',
+  GLACIER: 'S3 Glacier Flexible Retrieval',
   DEEP_ARCHIVE: 'S3 Glacier Deep Archive',
   DELETION: 'Deletion'
 };
