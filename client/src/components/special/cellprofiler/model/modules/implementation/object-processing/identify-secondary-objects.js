@@ -22,8 +22,8 @@ export default {
   sourceImageParameter: 'input',
   parameters: [
     'Select the input image|file|ALIAS input|REQUIRED',
-    'Select the input objects|object|ALIAS inputObjects|REQUIRED',
-    'Name the objects to be identified|ALIAS=name|REQUIRED',
+    'Select the input objects|object|ALIAS inputObjects|REQUIRED|DEFAULT_FROM IdentifyPrimaryObjects',
+    'Name the objects to be identified|string|IdentifySecondaryObjects|ALIAS=name|REQUIRED',
     'Select the method to identify the secondary objects|[Propagation,Watershed - Gradient,Watershed - Image,Distance - N,Distance - B]|Distance - N|ALIAS method',
 
     // Thresholding

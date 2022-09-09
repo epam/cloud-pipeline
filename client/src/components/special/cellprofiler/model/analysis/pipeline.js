@@ -277,6 +277,7 @@ class AnalysisPipeline {
   add = async (analysisModuleConfiguration) => {
     const newModule = new AnalysisModule(this, analysisModuleConfiguration);
     this.modules.push(newModule);
+    newModule.setParameterDefaultValues();
     return newModule;
   };
 
