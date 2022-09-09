@@ -186,8 +186,9 @@ function getVariableOptions (pipeline) {
   return objects
     .map(object => {
       const spot = pipeline.getObjectIsSpot(object);
+      const spotWithParent = spot && pipeline.getObjectIsSpotWithParent(object);
       const hasChild = pipeline.getObjectHasSpots(object);
-      const props = getObjectProperties({spot, hasChild});
+      const props = getObjectProperties({spot, spotWithParent, hasChild});
       return props
         .map(prop => {
           if (prop === ObjectProperty.numberOfObjects) {

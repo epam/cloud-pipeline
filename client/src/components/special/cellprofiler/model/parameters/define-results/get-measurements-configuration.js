@@ -22,10 +22,12 @@ function expandProperties (properties, pipeline, object) {
     return [];
   }
   const spot = pipeline.getObjectIsSpot(object);
+  const spotWithParent = spot && pipeline.getObjectIsSpotWithParent(object);
   const hasChild = pipeline.getObjectHasSpots(object);
   return (properties || [])
     .map(aProp => aProp.name === ObjectProperty.all
-      ? getObjectProperties({hasChild, spot}).map(o => ({name: o, stats: AllStats}))
+      ? getObjectProperties({hasChild, spotWithParent, spot})
+        .map(o => ({name: o, stats: AllStats}))
       : [aProp]
     )
     .reduce((r, c) => ([...r, ...c]));

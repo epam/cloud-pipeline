@@ -51,11 +51,12 @@ const ObjectPropertyName = {
 };
 
 /**
- * @param {{spot: boolean?, hasChild: boolean?}} objectOptions
+ * @param {{spot: boolean?, spotWithParent: boolean?, hasChild: boolean?}} objectOptions
  */
 function getObjectProperties (objectOptions = {}) {
   const {
     spot = false,
+    spotWithParent = false,
     hasChild = false
   } = objectOptions;
   const props = [
@@ -84,9 +85,9 @@ function getObjectProperties (objectOptions = {}) {
       ObjectProperty.relativeSpotIntensity,
       ObjectProperty.uncorrectedSpotIntensity,
       ObjectProperty.spotContrast,
-      ObjectProperty.regionIntensity,
-      ObjectProperty.spotToRegionIntensity
-    ]);
+      spotWithParent ? ObjectProperty.regionIntensity : false,
+      spotWithParent ? ObjectProperty.spotToRegionIntensity : false
+    ].filter(Boolean));
   }
   return [...new Set(props)];
 }
