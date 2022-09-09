@@ -27,7 +27,8 @@ export default class UserName extends React.Component {
     className: PropTypes.string,
     userName: PropTypes.string,
     style: PropTypes.object,
-    showIcon: PropTypes.bool
+    showIcon: PropTypes.bool,
+    tooltipPlacement: PropTypes.string
   };
 
   @computed
@@ -75,13 +76,14 @@ export default class UserName extends React.Component {
     const {
       className,
       showIcon,
-      style = {}
+      style = {},
+      tooltipPlacement
     } = this.props;
     if (this.user) {
       return (
         <Tooltip
           overlay={this.renderUserAttributes(this.user)}
-          placement="right"
+          placement={tooltipPlacement}
         >
           <span
             className={className}

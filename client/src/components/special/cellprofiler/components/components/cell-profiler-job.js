@@ -79,6 +79,7 @@ function CellProfilerJob (props) {
         <UserName
           userName={job.owner}
           showIcon
+          tooltipPlacement="right"
         />
         {
           job.startDate && (
