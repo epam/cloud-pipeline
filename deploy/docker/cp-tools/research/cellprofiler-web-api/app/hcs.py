@@ -203,8 +203,8 @@ def get_movie():
     manager = app.config['hcs']
     try:
         params = flask.request.args
-        total_time = manager.create_clip(params)
-        return jsonify(success({"totalTime": total_time}))
+        clip_full_path, total_time = manager.create_clip(params)
+        return jsonify(success({"path": clip_full_path, "time": total_time}))
     except Exception as e:
         print(traceback.format_exc())
         return jsonify(error(e.__str__()))

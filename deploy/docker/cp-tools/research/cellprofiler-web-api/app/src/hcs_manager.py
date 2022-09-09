@@ -168,9 +168,13 @@ class HCSManager:
         t = time.time()
 
         clip_format = params.get('format') if 'format' in params else '.webm'
-        codec = params.get('codec') if 'codec' in params else None
+        codec = params.get('codec') if 'codec' in params else ('mpeg4' if clip_format == '.mp4' else None)
         fps = int(params.get('fps')) if 'fps' in params else 1
+        duration = float(params.get('duration')) if 'duration' in params else 1
+        if duration < 1:
+            raise RuntimeError('Duration should be >= 1')
         sequence_id = params.get('sequenceId') if 'sequenceId' in params else None
+        plane_id = params.get('planeId') if 'planeId' in params else '1'
 
         path = self._get_required_field(params, 'path')
         path = self.extract_local_path(path)
@@ -181,14 +185,19 @@ class HCSManager:
         preview_dir = self.extract_local_path(preview_dir)
         index_path = preview_dir + '/index.xml'
         all_channels = self.get_all_channels(index_path)
+        planes = self.get_planes(index_path)
+        if plane_id not in planes:
+            raise RuntimeError('Incorrect Z plane id [{}]'.format(plane_id))
         channels_num = len(all_channels)
         selected_channel_ids, selected_channels = self.get_selected_channels(params, all_channels)
 
         clips = []
+        durations = []
         for seq in sequences.keys():
             timepoints = len(sequences[seq])
             ome_tiff_path = self.get_ome_tiff_path(preview_dir, seq, by_field)
-            images = imread(ome_tiff_path, key=self.get_pages(selected_channel_ids, channels_num, timepoints, cell))
+            pages = self.get_pages(selected_channel_ids, plane_id, planes, channels_num, timepoints, cell)
+            images = self.read_images(ome_tiff_path, pages)
             curr = 0
             for time_point in range(timepoints):
                 channel_images = []
@@ -199,15 +208,23 @@ class HCSManager:
                     curr = curr + 1
                 merged_image = self.merge_channels(channel_images)
                 clips.append(np.array(merged_image))
+                durations.append(duration)
 
         clip_path = CELLPROFILER_API_COMMON_RESULTS_DIR + self.get_clip_file_dir(path)
         self._mkdir(clip_path)
-        clip_name = self.get_clip_file_name(by_field, cell, clip_format, sequence_id)
+        clip_name = self.get_clip_file_name(by_field, cell, clip_format, sequence_id, plane_id)
         clip_full_path = clip_path + clip_name
-        slide = ImageSequenceClip(clips, fps)
-        slide.write_videofile(clip_full_path, codec=codec)
+        slide = ImageSequenceClip(clips, durations=durations)
+        slide.write_videofile(clip_full_path, codec=codec, fps=fps)
         t1 = time.time()
         return clip_full_path, round((t1 - t), 2)
+
+    @staticmethod
+    def read_images(ome_tiff_path, pages):
+        images = imread(ome_tiff_path, key=pages)
+        if len(pages) == 1:
+            images = np.reshape(images, (1, 1080, 1080))
+        return images
 
     @staticmethod
     def get_clip_file_dir(path):
@@ -216,20 +233,22 @@ class HCSManager:
         return '/video/{}/'.format(hcs_file_name)
 
     @staticmethod
-    def get_clip_file_name(by_field, cell, clip_format, sequence_id):
+    def get_clip_file_name(by_field, cell, clip_format, sequence_id, plane_id):
         cell_prefix = ('field{}' if by_field else '/well{}').format(str(cell))
+        plane_prefix = 'plane{}'.format(plane_id)
         sequence_prefix = ('' if sequence_id is None else 'seq{}').format(sequence_id)
-        return cell_prefix + sequence_prefix + clip_format
+        return cell_prefix + sequence_prefix + plane_prefix + clip_format
 
     @staticmethod
-    def get_pages(channel_ids, channels, timepoints, cell):
+    def get_pages(channel_ids, plane_id, planes, channels, timepoints, cell):
         pages = []
         num = 0
         for time_point in range(timepoints):
-            for channel_id in range(channels):
-                if channel_id in channel_ids:
-                    pages.append(num + channels * timepoints * cell)
-                num = num + 1
+            for plane in planes:
+                for channel_id in range(channels):
+                    if (channel_id in channel_ids) and (plane == plane_id):
+                        pages.append(num + len(planes) * channels * timepoints * cell)
+                    num = num + 1
         return pages
 
     @staticmethod
@@ -266,6 +285,18 @@ class HCSManager:
                     channel['name'] = channel_name.text
                     channels.append(channel)
         return channels
+
+    def get_planes(self, path):
+        tree = ET.parse(path)
+        hcs_xml_info_root = tree.getroot()
+        hcs_schema_prefix = self.extract_xml_schema(hcs_xml_info_root)
+        images = hcs_xml_info_root.find(hcs_schema_prefix + 'Images').findall(hcs_schema_prefix + 'Image')
+        planes = []
+        for i in images:
+            plane_id = i.find(hcs_schema_prefix + 'PlaneID').text
+            if plane_id not in planes:
+                planes.append(plane_id)
+        return planes
 
     @staticmethod
     def extract_local_path(path, cloud_scheme=HCS_CLOUD_FILES_SCHEMA):
