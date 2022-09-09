@@ -47,7 +47,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
         if storage.shared:
             self.logger.log("Storage {} marked as shared, skipping".format(storage.path))
 
-        rules = self.cp_data_source.load_lifecycle_rules_for_storage(storage.id)
+        rules = self.pipeline_api_client.load_lifecycle_rules_for_storage(storage.id)
 
         # No rules for storage exist - just skip it
         if not rules:
@@ -77,7 +77,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     files = self.cloud_bridge.list_objects_by_prefix(storage, path_prefix)
                     file_listing_cache[path_prefix] = files
 
-                running_executions = set(self.cp_data_source.load_lifecycle_rule_executions(
+                running_executions = set(self.pipeline_api_client.load_lifecycle_rule_executions(
                     rule.datastorage_id, rule.rule_id, status=EXECUTION_RUNNING_STATUS))
                 subject_folders = set(self._identify_subject_folders(files, rule.path_glob))
                 subject_folders.update(e.path for e in running_executions)
@@ -166,7 +166,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
     def _build_action_items_for_folder(self, path, rule_subject_files, criterion_file, rule):
         result = StorageLifecycleRuleActionItems().with_folder(path).with_rule_id(rule.rule_id)
 
-        rule_executions = self.cp_data_source.load_lifecycle_rule_executions(
+        rule_executions = self.pipeline_api_client.load_lifecycle_rule_executions(
             rule.datastorage_id, rule.rule_id, path=path)
 
         self.logger.log("Storage: {}. Rule: {}. Path: '{}'. Found {} executions.".format(
@@ -305,14 +305,14 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                         .format(rule.datastorage_id, rule.rule_id, action_items.folder))
 
     def _create_or_update_execution(self, storage_id, rule, storage_class, path, status):
-        executions = self.cp_data_source.load_lifecycle_rule_executions(storage_id, rule.rule_id, path=path)
+        executions = self.pipeline_api_client.load_lifecycle_rule_executions(storage_id, rule.rule_id, path=path)
         execution = next(filter(lambda e: e.storage_class == storage_class, executions), None)
 
         if execution:
-            self.cp_data_source.update_status_lifecycle_rule_execution(
+            self.pipeline_api_client.update_status_lifecycle_rule_execution(
                 storage_id, execution.execution_id, status)
         else:
-            self.cp_data_source.create_lifecycle_rule_execution(
+            self.pipeline_api_client.create_lifecycle_rule_execution(
                 storage_id, rule.rule_id,
                 {
                     "status": status,
@@ -342,7 +342,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                     "All files moved to destination location, completing the action.".format(
                         storage_id, execution.rule_id, execution.path, execution.storage_class)
                 )
-                return self.cp_data_source.update_status_lifecycle_rule_execution(
+                return self.pipeline_api_client.update_status_lifecycle_rule_execution(
                     storage_id, execution.execution_id, EXECUTION_SUCCESS_STATUS)
             elif execution.updated + datetime.timedelta(days=max_running_days) < datetime.datetime.now(datetime.timezone.utc):
                 self.logger.log(
@@ -351,7 +351,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                         storage_id, execution.rule_id, execution.path, execution.storage_class,
                         str(max_running_days), file_in_wrong_location.storage_class)
                 )
-                return self.cp_data_source.update_status_lifecycle_rule_execution(
+                return self.pipeline_api_client.update_status_lifecycle_rule_execution(
                     storage_id, execution.execution_id, EXECUTION_FAILED_STATUS)
         return None
 
@@ -362,7 +362,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
                 if recipient["principal"]:
                     cc_users.append(recipient["name"])
                 else:
-                    loaded_role = self.cp_data_source.load_role_by_name(recipient["name"])
+                    loaded_role = self.pipeline_api_client.load_role_by_name(recipient["name"])
                     if loaded_role and "users" in loaded_role:
                         cc_users.extend([user["userName"] for user in loaded_role["users"]])
 
@@ -393,7 +393,7 @@ class StorageLifecycleArchivingSynchronizer(StorageLifecycleSynchronizer):
             rule.datastorage_id, rule, storage_class, path, EXECUTION_NOTIFICATION_SENT_STATUS)
         subject, body, to_user, copy_users, parameters = _prepare_massage()
         if subject and body and to_user:
-            result = self.cp_data_source.send_notification(subject, body, to_user, copy_users, parameters)
+            result = self.pipeline_api_client.send_notification(subject, body, to_user, copy_users, parameters)
             if not result:
                 self._create_or_update_execution(
                     rule.datastorage_id, rule, storage_class, path, EXECUTION_FAILED_STATUS)

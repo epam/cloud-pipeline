@@ -13,7 +13,6 @@
 #  limitations under the License.
 #
 import json
-import os
 
 from sls.cloud.s3_cloud import S3StorageOperations
 from sls.util import path_utils
@@ -23,8 +22,9 @@ S3_TYPE = "S3"
 
 class PlatformToCloudOperationsAdapter:
 
-    def __init__(self, data_source, logger):
-        storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(data_source)
+    def __init__(self, pipeline_api_client, logger):
+        storage_lifecycle_service_config = self.fetch_storage_lifecycle_service_config(pipeline_api_client)
+        self.regions_by_id = {region.id: region for region in pipeline_api_client.load_regions()}
         self.logger = logger
         self.cloud_operations = {
             S3_TYPE: S3StorageOperations(storage_lifecycle_service_config[S3_TYPE], logger)

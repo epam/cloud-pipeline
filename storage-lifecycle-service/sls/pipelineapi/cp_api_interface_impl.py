@@ -20,7 +20,7 @@ from sls.pipelineapi.model.archive_rule_model import LifecycleRuleParser, Storag
 from sls.pipelineapi.model.restore_action_model import StorageLifecycleRestoreAction
 
 
-def configure_cp_data_source(cp_api_url, cp_api_token, api_log_dir, logger, data_source_type="RESTApi"):
+def configure_pipeline_api(cp_api_url, cp_api_token, api_log_dir, logger, data_source_type="RESTApi"):
     data_source = None
     if data_source_type is "RESTApi":
         if not cp_api_url:
